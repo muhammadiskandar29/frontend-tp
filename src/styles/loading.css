@@ -1,0 +1,72 @@
+/* ==== GLOBAL LOADING STYLE ==== */
+.loading-container {
+  @apply flex flex-col items-center justify-center min-h-screen;
+  background: radial-gradient(circle at center, #fff8ee 0%, #ffffff 100%);
+}
+
+/* ==== CIRCLE BASE ==== */
+.loading-circle {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, #f1a124, #ffd27b, #f1a124);
+  animation: rotate 2s linear infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 20px rgba(241, 161, 36, 0.4);
+}
+
+/* ==== INNER GLOW ==== */
+.loading-glow {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff6e1 0%, #ffe3b0 60%, #f1a124 100%);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+/* ==== TEXT ==== */
+.loading-text {
+  margin-top: 20px;
+  font-weight: 500;
+  color: #9a6b1b;
+  letter-spacing: 0.3px;
+  animation: fadeIn 1.5s ease-in-out infinite alternate;
+}
+
+/* ==== ANIMATIONS ==== */
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.9);
+    opacity: 0.8;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0.6;
+  }
+  to {
+    opacity: 1;
+  }
+}

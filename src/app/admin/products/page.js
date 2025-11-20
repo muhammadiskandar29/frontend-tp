@@ -1,0 +1,297 @@
+"use client";
+
+import { useEffect, useMemo, useState, memo, useCallback } from "react";
+import Layout from "@/components/Layout";
+import { useProducts } from "@/hooks/useProducts";
+import { useRouter } from "next/navigation";
+import "@/styles/dashboard.css";
+import "@/styles/admin.css";
+
+function useDebouncedValue(value, delay = 250) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(id);
+  }, [value, delay]);
+  return debounced;
+}
+
+export default function AdminProductsPage() {
+  const { products, loading, error, handleDelete, handleDuplicate, setProducts } = useProducts();
+  const [searchInput, setSearchInput] = useState("");
+  const debouncedSearch = useDebouncedValue(searchInput);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 25;
+  const router = useRouter();
+
+  const filtered = useMemo(() => {
+    const term = debouncedSearch.trim().toLowerCase();
+    return products.filter((p) => {
+      if (!term) return true;
+      return (
+        p.nama?.toLowerCase().includes(term) ||
+        p.kategori_rel?.nama?.toLowerCase().includes(term) ||
+        p.user_rel?.nama?.toLowerCase().includes(term)
+      );
+    });
+  }, [products, debouncedSearch]);
+
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedData = useMemo(() => {
+    return filtered.slice(startIndex, endIndex);
+  }, [filtered, startIndex, endIndex]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch]);
+
+  const formatPrice = useCallback((price) => {
+    if (!price) return "Rp 0";
+    return `Rp ${parseInt(price).toLocaleString("id-ID")}`;
+  }, []);
+
+  const formatDate = useCallback((dateString) => {
+    if (!dateString) return "-";
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("id-ID", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+    } catch {
+      return dateString;
+    }
+  }, []);
+
+  const getStatusBadge = useCallback((status) => {
+    if (status === "1") {
+      return <span className="customers-verif-tag is-verified">Active</span>;
+    }
+    return <span className="customers-verif-tag is-unverified">Inactive</span>;
+  }, []);
+
+  return (
+    <Layout title="Products | One Dashboard">
+      <div className="dashboard-shell customers-shell">
+        <section className="dashboard-hero customers-hero">
+          <div className="dashboard-hero__copy">
+            <p className="dashboard-hero__eyebrow">Products</p>
+            <h2 className="dashboard-hero__title">Product Directory</h2>
+            <span className="dashboard-hero__meta">
+              Manage your product catalog and track inventory.
+            </span>
+          </div>
+
+          <div className="customers-toolbar">
+            <div className="customers-search">
+              <input
+                type="search"
+                placeholder="Cari produk, kategori, atau pembuat"
+                className="customers-search__input"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+              />
+              <span className="customers-search__icon pi pi-search" />
+            </div>
+            <button
+              className="customers-button customers-button--primary"
+              onClick={() => router.push("/admin/products/addProducts")}
+            >
+              + Tambah Produk
+            </button>
+          </div>
+        </section>
+
+        <section className="dashboard-summary customers-summary">
+          {[
+            {
+              label: "Total products",
+              value: products.length,
+              accent: "accent-blue",
+              icon: "📦",
+            },
+            {
+              label: "Active products",
+              value: products.filter((p) => p.status === "1").length,
+              accent: "accent-emerald",
+              icon: "✅",
+            },
+            {
+              label: "Filtered",
+              value: filtered.length,
+              accent: "accent-amber",
+              icon: "🔍",
+            },
+          ].map((card) => (
+            <article className="summary-card" key={card.label}>
+              <div className={`summary-card__icon ${card.accent}`}>{card.icon}</div>
+              <div>
+                <p className="summary-card__label">{card.label}</p>
+                <p className="summary-card__value">{card.value}</p>
+              </div>
+            </article>
+          ))}
+        </section>
+
+        <section className="panel products-panel">
+          <div className="panel__header">
+            <div>
+              <p className="panel__eyebrow">Directory</p>
+              <h3 className="panel__title">Product roster</h3>
+            </div>
+            <span className="panel__meta">{filtered.length} produk</span>
+          </div>
+
+          {error && (
+            <div className="customers-error">
+              <p>⚠️ {error}</p>
+            </div>
+          )}
+
+          <div className="products-table__wrapper">
+            <div className="products-table">
+              <div className="products-table__head">
+                <span>Image</span>
+                <span>Product</span>
+                <span>Price</span>
+                <span>Category</span>
+                <span>Status</span>
+                <span>Event Date</span>
+                <span>Created By</span>
+                <span>Created At</span>
+              </div>
+              <div className="products-table__body">
+                {loading ? (
+                  <p className="products-empty">Loading data...</p>
+                ) : paginatedData.length > 0 ? (
+                  paginatedData.map((p, i) => (
+                    <div className="products-table__row" key={p.id}>
+                      <div className="products-table__cell" data-label="Image">
+                        <div className="product-table__image">
+                          {p.header ? (
+                            <img
+                              src={`https://onedashboardapi-production.up.railway.app/storage/${p.header}`}
+                              alt={p.nama}
+                              onError={(e) => {
+                                e.target.style.display = "none";
+                                e.target.nextElementSibling.style.display = "flex";
+                              }}
+                            />
+                          ) : null}
+                          <div
+                            className="product-table__image-placeholder"
+                            style={{ display: p.header ? "none" : "flex" }}
+                          >
+                            <i className="pi pi-box" />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="products-table__cell products-table__cell--strong" data-label="Product">
+                        <div className="product-table__info">
+                          <span
+                            className="product-table__name"
+                            onClick={() => router.push(`/admin/products/view/${p.id}`)}
+                          >
+                            {p.nama || "-"}
+                          </span>
+                          <div className="product-table__actions">
+                            <button
+                              className="product-table__action-link"
+                              onClick={() => {
+                                const kodeProduk = p.kode || (p.url ? p.url.replace(/^\//, '') : null);
+                                if (kodeProduk) {
+                                  router.push(`/landing/${kodeProduk}`);
+                                } else {
+                                  alert('Kode produk tidak tersedia');
+                                }
+                              }}
+                            >
+                              Review
+                            </button>
+                            <button
+                              className="product-table__action-link"
+                              onClick={async () => {
+                                try {
+                                  await handleDuplicate(p.id);
+                                } catch (err) {
+                                  console.error("Error duplicating product:", err);
+                                }
+                              }}
+                            >
+                              Duplicate
+                            </button>
+                            <button
+                              className="product-table__action-link product-table__action-link--danger"
+                              onClick={async () => {
+                                if (confirm(`Yakin hapus produk "${p.nama}"?`)) {
+                                  try {
+                                    await handleDelete(p.id);
+                                  } catch (err) {
+                                    console.error("Error deleting product:", err);
+                                  }
+                                }
+                              }}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="products-table__cell" data-label="Price">
+                        {formatPrice(p.harga_asli)}
+                      </div>
+                      <div className="products-table__cell" data-label="Category">
+                        {p.kategori_rel?.nama || "-"}
+                      </div>
+                      <div className="products-table__cell" data-label="Status">
+                        {getStatusBadge(p.status)}
+                      </div>
+                      <div className="products-table__cell" data-label="Event Date">
+                        {formatDate(p.tanggal_event)}
+                      </div>
+                      <div className="products-table__cell" data-label="Created By">
+                        {p.user_rel?.nama || "-"}
+                      </div>
+                      <div className="products-table__cell" data-label="Created At">
+                        {formatDate(p.create_at)}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="products-empty">
+                    {products.length ? "Tidak ada hasil pencarian." : "Belum ada produk."}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {totalPages > 1 && (
+            <div className="customers-pagination">
+              <button
+                className="customers-pagination__btn"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                <i className="pi pi-chevron-left" />
+              </button>
+              <span className="customers-pagination__info">
+                Page {currentPage} of {totalPages} ({filtered.length} total)
+              </span>
+              <button
+                className="customers-pagination__btn"
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+              >
+                <i className="pi pi-chevron-right" />
+              </button>
+            </div>
+          )}
+        </section>
+      </div>
+    </Layout>
+  );
+}

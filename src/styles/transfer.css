@@ -1,0 +1,130 @@
+/* ===========================
+   BANK TRANSFER PAGE STYLE
+   Modern, Clean & Premium Look
+=========================== */
+
+.transfer-container {
+  max-width: 480px;
+  margin: 40px auto;
+  padding: 24px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  font-family: "Inter", sans-serif;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.transfer-container h2 {
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+/* --- Rekening Box --- */
+
+.rekening-box {
+  background: #f5f9ff;
+  border: 1px solid #d4e4ff;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.bank-logo {
+  width: 90px;
+  margin-bottom: 12px;
+}
+
+.label {
+  color: #555;
+  font-size: 0.85rem;
+}
+
+.number {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 6px 0;
+  letter-spacing: 1px;
+  color: #1a3fa3;
+}
+
+.atas-nama {
+  color: #333;
+  font-size: 0.9rem;
+}
+
+/* --- Instruksi Box --- */
+
+.instruksi {
+  margin-bottom: 28px;
+}
+
+.instruksi h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #333;
+}
+
+.instruksi ul {
+  margin-left: 18px;
+}
+
+.instruksi li {
+  margin-bottom: 6px;
+  color: #444;
+  font-size: 0.9rem;
+}
+
+/* --- Upload Bukti --- */
+
+.upload-box {
+  background: #fafafa;
+  border: 1px dashed #bfc7d1;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.upload-box input[type="file"] {
+  margin-bottom: 16px;
+}
+
+.btn-submit {
+  width: 100%;
+  padding: 12px;
+  background: #1a73e8;
+  color: #fff;
+  border: none;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-submit:hover {
+  background: #1558b0;
+  transform: translateY(-1px);
+}
+
+/* --- Responsive --- */
+
+@media (max-width: 480px) {
+  .transfer-container {
+    margin: 20px;
+    padding: 20px;
+  }
+
+  .number {
+    font-size: 1.3rem;
+  }
+}
