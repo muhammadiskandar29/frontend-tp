@@ -176,25 +176,30 @@ export default function LandingPage() {
       });
 
       const text = await response.text();
-      console.log("EWALLET RAW:", text);
+      console.log("🔵 [EWALLET] RAW Response:", text);
 
       let json;
       try {
         json = JSON.parse(text);
+        console.log("🔵 [EWALLET] Parsed JSON:", json);
       } catch {
-        console.error("❌ Ewallet balikin HTML:", text);
+        console.error("❌ [EWALLET] Failed to parse JSON:", text);
         toast.error("Gagal memproses pembayaran e-wallet");
-        return;
+        throw new Error("Invalid response from server");
       }
 
       if (json.redirect_url) {
+        console.log("✅ [EWALLET] Redirecting to:", json.redirect_url);
         window.location.href = json.redirect_url;
       } else {
+        console.error("❌ [EWALLET] No redirect_url in response:", json);
         toast.error(json.message || "Gagal mendapatkan URL pembayaran");
+        throw new Error(json.message || "No redirect URL");
       }
     } catch (error) {
-      console.error("❌ Ewallet error:", error);
-      toast.error("Terjadi kesalahan saat memproses pembayaran");
+      console.error("❌ [EWALLET] Error:", error);
+      toast.error(error.message || "Terjadi kesalahan saat memproses pembayaran");
+      throw error;
     }
   }
 
@@ -215,25 +220,30 @@ export default function LandingPage() {
       });
 
       const text = await response.text();
-      console.log("CC RAW:", text);
+      console.log("🔵 [CC] RAW Response:", text);
 
       let json;
       try {
         json = JSON.parse(text);
+        console.log("🔵 [CC] Parsed JSON:", json);
       } catch {
-        console.error("❌ CC balikin HTML:", text);
+        console.error("❌ [CC] Failed to parse JSON:", text);
         toast.error("Gagal memproses pembayaran kartu kredit");
-        return;
+        throw new Error("Invalid response from server");
       }
 
       if (json.redirect_url) {
+        console.log("✅ [CC] Redirecting to:", json.redirect_url);
         window.location.href = json.redirect_url;
       } else {
+        console.error("❌ [CC] No redirect_url in response:", json);
         toast.error(json.message || "Gagal mendapatkan URL pembayaran");
+        throw new Error(json.message || "No redirect URL");
       }
     } catch (error) {
-      console.error("❌ CC error:", error);
-      toast.error("Terjadi kesalahan saat memproses pembayaran");
+      console.error("❌ [CC] Error:", error);
+      toast.error(error.message || "Terjadi kesalahan saat memproses pembayaran");
+      throw error;
     }
   }
 
@@ -254,25 +264,30 @@ export default function LandingPage() {
       });
 
       const text = await response.text();
-      console.log("VA RAW:", text);
+      console.log("🔵 [VA] RAW Response:", text);
 
       let json;
       try {
         json = JSON.parse(text);
+        console.log("🔵 [VA] Parsed JSON:", json);
       } catch {
-        console.error("❌ VA balikin HTML:", text);
+        console.error("❌ [VA] Failed to parse JSON:", text);
         toast.error("Gagal memproses pembayaran virtual account");
-        return;
+        throw new Error("Invalid response from server");
       }
 
       if (json.redirect_url) {
+        console.log("✅ [VA] Redirecting to:", json.redirect_url);
         window.location.href = json.redirect_url;
       } else {
+        console.error("❌ [VA] No redirect_url in response:", json);
         toast.error(json.message || "Gagal mendapatkan URL pembayaran");
+        throw new Error(json.message || "No redirect URL");
       }
     } catch (error) {
-      console.error("❌ VA error:", error);
-      toast.error("Terjadi kesalahan saat memproses pembayaran");
+      console.error("❌ [VA] Error:", error);
+      toast.error(error.message || "Terjadi kesalahan saat memproses pembayaran");
+      throw error;
     }
   }
 
@@ -301,18 +316,32 @@ export default function LandingPage() {
 
     try {
       // simpan order dulu ke DB
+      console.log("🔵 [SUBMIT] Submitting order...", payload);
       const order = await submitCustomerOrder(payload);
+      console.log("🔵 [SUBMIT] Order response:", order);
+      
       const orderId = order?.data?.id; // ambil ID order backend
 
-      if (!order.success) throw new Error(order.message);
+      if (!order.success) {
+        console.error("❌ [SUBMIT] Order failed:", order.message);
+        throw new Error(order.message);
+      }
+      
       if (!orderId) {
+        console.error("❌ [SUBMIT] No order ID in response");
         toast.error("Order ID tidak ditemukan");
         return;
       }
+      
+      console.log("✅ [SUBMIT] Order saved successfully, ID:", orderId);
       toast.success("Pesanan berhasil disimpan");
-      await new Promise((r) => setTimeout(r, 300));
+      
+      // Tunggu sebentar agar toast terlihat
+      await new Promise((r) => setTimeout(r, 500));
 
       // === lanjut ke pembayaran ===
+      console.log("🔵 [SUBMIT] Proceeding to payment method:", paymentMethod);
+      
       if (paymentMethod === "ewallet") {
         await payEwallet(payload);
         return;
@@ -330,6 +359,7 @@ export default function LandingPage() {
 
       // manual transfer
       if (paymentMethod === "manual") {
+        console.log("🔵 [SUBMIT] Redirecting to manual payment page");
         const query = new URLSearchParams({
           product: form.nama,
           harga: form.harga_asli,
@@ -337,10 +367,11 @@ export default function LandingPage() {
           sumber,
         });
         window.location.href = `/payment?${query.toString()}`;
+        return;
       }
     } catch (err) {
-      console.error("Submit order error:", err);
-      toast.error("Gagal menyimpan pesanan");
+      console.error("❌ [SUBMIT] Submit order error:", err);
+      toast.error(err.message || "Gagal menyimpan pesanan");
     }
   };
 

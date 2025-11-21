@@ -175,38 +175,94 @@ export default function AdminKategoriPage() {
             <span className="panel__meta">{filtered.length} kategori</span>
           </div>
 
-          <div className="products-table__wrapper">
-            <div className="products-table">
-              <div className="products-table__head">
-                <span>#</span>
-                <span>Nama Kategori</span>
-                <span className="text-center">Actions</span>
+          <div className="products-table__wrapper" style={{ overflowX: "auto", maxWidth: "100%" }}>
+            <div className="products-table" style={{ minWidth: "100%", width: "100%" }}>
+              <div 
+                className="products-table__head" 
+                style={{ 
+                  display: "grid", 
+                  gridTemplateColumns: "60px 1fr 120px",
+                  gap: "1rem",
+                  padding: "0.75rem 1rem"
+                }}
+              >
+                <span style={{ fontSize: "0.875rem", fontWeight: "600" }}>#</span>
+                <span style={{ fontSize: "0.875rem", fontWeight: "600" }}>Nama Kategori</span>
+                <span style={{ fontSize: "0.875rem", fontWeight: "600", textAlign: "center" }}>Actions</span>
               </div>
               <div className="products-table__body">
                 {paginatedData.length > 0 ? (
                   paginatedData.map((kat, i) => (
-                    <div className="products-table__row" key={kat.id}>
-                      <div className="products-table__cell" data-label="#">
+                    <div 
+                      className="products-table__row" 
+                      key={kat.id}
+                      style={{ 
+                        display: "grid", 
+                        gridTemplateColumns: "60px 1fr 120px",
+                        gap: "1rem",
+                        padding: "0.75rem 1rem",
+                        borderTop: "1px solid #e5e7eb"
+                      }}
+                    >
+                      <div className="products-table__cell" data-label="#" style={{ fontSize: "0.875rem", color: "#6b7280" }}>
                         {startIndex + i + 1}
                       </div>
-                      <div className="products-table__cell products-table__cell--strong" data-label="Nama Kategori">
+                      <div 
+                        className="products-table__cell products-table__cell--strong" 
+                        data-label="Nama Kategori"
+                        style={{ 
+                          fontSize: "0.875rem",
+                          fontWeight: "500",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap"
+                        }}
+                      >
                         {kat.nama}
                       </div>
-                      <div className="products-table__cell" data-label="Actions">
-                        <div className="product-table__actions">
-                          <button
-                            className="product-table__action-link"
-                            onClick={() => handleEdit(kat)}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            className="product-table__action-link product-table__action-link--danger"
-                            onClick={() => handleDelete(kat)}
-                          >
-                            Delete
-                          </button>
-                        </div>
+                      <div className="products-table__cell" data-label="Actions" style={{ display: "flex", gap: "0.5rem", justifyContent: "center" }}>
+                        <button
+                          onClick={() => handleEdit(kat)}
+                          style={{
+                            width: "32px",
+                            height: "32px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            border: "none",
+                            borderRadius: "6px",
+                            backgroundColor: "#3b82f6",
+                            color: "white",
+                            cursor: "pointer",
+                            transition: "all 0.2s"
+                          }}
+                          onMouseEnter={(e) => e.target.style.backgroundColor = "#2563eb"}
+                          onMouseLeave={(e) => e.target.style.backgroundColor = "#3b82f6"}
+                          title="Edit"
+                        >
+                          <i className="pi pi-pencil" style={{ fontSize: "0.875rem" }}></i>
+                        </button>
+                        <button
+                          onClick={() => handleDelete(kat)}
+                          style={{
+                            width: "32px",
+                            height: "32px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            border: "none",
+                            borderRadius: "6px",
+                            backgroundColor: "#ef4444",
+                            color: "white",
+                            cursor: "pointer",
+                            transition: "all 0.2s"
+                          }}
+                          onMouseEnter={(e) => e.target.style.backgroundColor = "#dc2626"}
+                          onMouseLeave={(e) => e.target.style.backgroundColor = "#ef4444"}
+                          title="Delete"
+                        >
+                          <i className="pi pi-trash" style={{ fontSize: "0.875rem" }}></i>
+                        </button>
                       </div>
                     </div>
                   ))

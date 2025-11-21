@@ -113,7 +113,7 @@ export default function FollowupReportPage() {
           ))}
         </section>
 
-        <section className="panel orders-panel">
+        <section className="panel users-panel">
           <div className="panel__header">
             <div>
               <p className="panel__eyebrow">Report</p>
@@ -124,61 +124,52 @@ export default function FollowupReportPage() {
             </span>
           </div>
 
-          <div className="products-table__wrapper">
-            <div className="products-table">
-              <div className="products-table__head">
+          <div className="users-table__wrapper">
+            <div className="users-table">
+              <div className="users-table__head">
                 {columns.map((column) => (
                   <span key={column}>{column}</span>
                 ))}
               </div>
-
-              <div className="products-table__body">
+              <div className="users-table__body">
                 {loading ? (
-                  <p className="products-empty">Memuat data...</p>
+                  <p className="users-empty">Memuat data...</p>
                 ) : error ? (
-                  <p className="products-empty">
+                  <p className="users-empty">
                     Gagal memuat data log follow up
                   </p>
                 ) : filteredLogs.length === 0 ? (
-                  <p className="products-empty">
+                  <p className="users-empty">
                     {logs.length
                       ? "Tidak ada log yang cocok."
                       : "Belum ada data log follow up."}
                   </p>
                 ) : (
                   filteredLogs.map((log, i) => (
-                    <div className="products-table__row" key={log.id}>
-                      <div className="products-table__cell" data-label="#">
+                    <div className="users-table__row" key={log.id}>
+                      <div className="users-table__cell" data-label="#">
                         {i + 1}
                       </div>
-                      <div
-                        className="products-table__cell products-table__cell--strong"
-                        data-label="Customer"
-                      >
-                        <div className="product-table__info">
-                          <span className="product-table__name">
-                            {log.customerName}
-                          </span>
-                          <span className="product-table__meta" style={{ fontSize: "0.875rem", color: "#6b7280" }}>
-                            {log.customerPhone}
-                          </span>
+                      <div className="users-table__cell users-table__cell--profile" data-label="Customer">
+                        <div className="users-meta">
+                          <p className="users-name">{log.customerName}</p>
+                          <p className="users-email">{log.customerPhone}</p>
                         </div>
                       </div>
-                      <div className="products-table__cell" data-label="Keterangan">
-                        <p style={{ 
-                          maxWidth: "300px", 
-                          overflow: "hidden", 
-                          textOverflow: "ellipsis", 
-                          whiteSpace: "nowrap",
-                          margin: 0 
+                      <div className="users-table__cell" data-label="Keterangan">
+                        <p className="users-contact-line" style={{ 
+                          maxWidth: "300px",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap"
                         }}>
                           {log.keterangan}
                         </p>
                       </div>
-                      <div className="products-table__cell" data-label="Event">
-                        {log.event}
+                      <div className="users-table__cell" data-label="Event">
+                        <p className="users-contact-line">{log.event}</p>
                       </div>
-                      <div className="products-table__cell" data-label="Status">
+                      <div className="users-table__cell" data-label="Status">
                         <span
                           className={`followup-status-pill ${
                             log.status === "Terkirim"
@@ -189,16 +180,18 @@ export default function FollowupReportPage() {
                           {log.status}
                         </span>
                       </div>
-                      <div className="products-table__cell" data-label="Waktu">
-                        {log.waktu !== "-"
-                          ? new Date(log.waktu).toLocaleString("id-ID", {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
-                          : "-"}
+                      <div className="users-table__cell" data-label="Waktu">
+                        <span className="users-contact-line users-contact-line--muted">
+                          {log.waktu !== "-"
+                            ? new Date(log.waktu).toLocaleString("id-ID", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            : "-"}
+                        </span>
                       </div>
                     </div>
                   ))

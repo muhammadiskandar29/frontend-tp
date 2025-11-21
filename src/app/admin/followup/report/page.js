@@ -137,7 +137,7 @@ export default function FollowupReportPage() {
           ))}
         </section>
 
-        <section className="panel orders-panel">
+        <section className="panel users-panel">
           <div className="panel__header">
             <div>
               <p className="panel__eyebrow">Report</p>
@@ -148,111 +148,74 @@ export default function FollowupReportPage() {
             </span>
           </div>
 
-          <div className="products-table__wrapper" style={{ overflowX: "auto", maxWidth: "100%" }}>
-            <div className="products-table" style={{ minWidth: "100%", tableLayout: "fixed", width: "100%" }}>
-              <div className="products-table__head" style={{ display: "grid", gridTemplateColumns: "60px 1.5fr 2fr 1.5fr 120px 180px" }}>
+          <div className="users-table__wrapper">
+            <div className="users-table">
+              <div className="users-table__head">
                 {columns.map((column) => (
-                  <span key={column} style={{ padding: "0.75rem 1rem", fontSize: "0.875rem", fontWeight: "600" }}>
-                    {column}
-                  </span>
+                  <span key={column}>{column}</span>
                 ))}
               </div>
-
-              <div className="products-table__body">
+              <div className="users-table__body">
                 {loading ? (
-                  <p className="products-empty">Memuat data...</p>
+                  <p className="users-empty">Memuat data...</p>
                 ) : error ? (
-                  <p className="products-empty">
+                  <p className="users-empty">
                     Gagal memuat data log follow up
                   </p>
                 ) : filteredLogs.length === 0 ? (
-                  <p className="products-empty">
+                  <p className="users-empty">
                     {logs.length
                       ? "Tidak ada log yang cocok."
                       : "Belum ada data log follow up."}
                   </p>
                 ) : (
                   paginatedData.map((log, i) => (
-                    <div 
-                      className="products-table__row" 
-                      key={log.id}
-                      style={{ display: "grid", gridTemplateColumns: "60px 1.5fr 2fr 1.5fr 120px 180px" }}
-                    >
-                      <div className="products-table__cell" data-label="#" style={{ padding: "0.75rem 1rem", fontSize: "0.875rem" }}>
+                    <div className="users-table__row" key={log.id}>
+                      <div className="users-table__cell" data-label="#">
                         {startIndex + i + 1}
                       </div>
-                      <div
-                        className="products-table__cell products-table__cell--strong"
-                        data-label="Customer"
-                        style={{ padding: "0.75rem 1rem", minWidth: 0 }}
-                      >
-                        <div className="product-table__info" style={{ minWidth: 0 }}>
-                          <span className="product-table__name" style={{ 
-                            display: "block",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                            fontSize: "0.875rem",
-                            fontWeight: "500"
-                          }}>
-                            {log.customerName}
-                          </span>
-                          <span className="product-table__meta" style={{ 
-                            fontSize: "0.75rem", 
-                            color: "#6b7280",
-                            display: "block",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap"
-                          }}>
-                            {log.customerPhone}
-                          </span>
+                      <div className="users-table__cell users-table__cell--profile" data-label="Customer">
+                        <div className="users-meta">
+                          <p className="users-name">{log.customerName}</p>
+                          <p className="users-email">{log.customerPhone}</p>
                         </div>
                       </div>
-                      <div className="products-table__cell" data-label="Keterangan" style={{ padding: "0.75rem 1rem", minWidth: 0 }}>
-                        <p style={{ 
-                          overflow: "hidden", 
-                          textOverflow: "ellipsis", 
-                          whiteSpace: "nowrap",
-                          margin: 0,
-                          fontSize: "0.875rem"
+                      <div className="users-table__cell" data-label="Keterangan">
+                        <p className="users-contact-line" style={{ 
+                          maxWidth: "300px",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap"
                         }}>
                           {log.keterangan}
                         </p>
                       </div>
-                      <div className="products-table__cell" data-label="Event" style={{ padding: "0.75rem 1rem", minWidth: 0 }}>
-                        <span style={{
-                          display: "block",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                          fontSize: "0.875rem"
-                        }}>
-                          {log.event}
-                        </span>
+                      <div className="users-table__cell" data-label="Event">
+                        <p className="users-contact-line">{log.event}</p>
                       </div>
-                      <div className="products-table__cell" data-label="Status" style={{ padding: "0.75rem 1rem" }}>
+                      <div className="users-table__cell" data-label="Status">
                         <span
                           className={`followup-status-pill ${
                             log.status === "Terkirim"
                               ? "followup-status-pill--success"
                               : "followup-status-pill--danger"
                           }`}
-                          style={{ fontSize: "0.75rem", padding: "0.25rem 0.5rem" }}
                         >
                           {log.status}
                         </span>
                       </div>
-                      <div className="products-table__cell" data-label="Waktu" style={{ padding: "0.75rem 1rem", fontSize: "0.75rem", color: "#6b7280" }}>
-                        {log.waktu !== "-"
-                          ? new Date(log.waktu).toLocaleString("id-ID", {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
-                          : "-"}
+                      <div className="users-table__cell" data-label="Waktu">
+                        <span className="users-contact-line users-contact-line--muted">
+                          {log.waktu !== "-"
+                            ? new Date(log.waktu).toLocaleString("id-ID", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            : "-"}
+                        </span>
                       </div>
                     </div>
                   ))
