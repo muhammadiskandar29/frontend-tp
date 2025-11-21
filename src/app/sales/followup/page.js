@@ -6,7 +6,7 @@ import AddFollowupModal from "./addFollowup";
 import EditFollowupModal from "./editFollowup";
 import DeleteFollowupModal from "./deleteFollowup";
 import ViewFollowup from "./viewFollowup";
-import { getFollowups } from "@/lib/followup";
+import { getFollowupTemplates } from "@/lib/followup";
 import "@/styles/dashboard.css";
 import "@/styles/admin.css";
 import "@/styles/followup.css";
@@ -23,7 +23,7 @@ export default function AdminFollowupPage() {
 useEffect(() => {
   const loadFollowups = async () => {
     try {
-      const res = await getFollowups();
+      const res = await getFollowupTemplates();
       if (res.success && Array.isArray(res.data)) {
         // Map data API ke struktur lokal yang dipakai komponen
         const mapped = res.data.map((f) => ({

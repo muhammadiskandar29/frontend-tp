@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useCallback, memo } from "react";
 import Layout from "@/components/Layout";
 import dynamic from "next/dynamic";
-import { getFollowups } from "@/lib/followup";
+import { getFollowupTemplates } from "@/lib/followup";
 import "@/styles/dashboard.css";
 import "@/styles/admin.css";
 import "@/styles/followup.css";
@@ -26,7 +26,7 @@ export default function AdminFollowupPage() {
 useEffect(() => {
   const loadFollowups = async () => {
     try {
-      const res = await getFollowups();
+      const res = await getFollowupTemplates();
       if (res.success && Array.isArray(res.data)) {
         // Map data API ke struktur lokal yang dipakai komponen
         const mapped = res.data.map((f) => ({

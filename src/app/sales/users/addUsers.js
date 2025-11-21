@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import "@/styles/admin.css";
-import { postOrder } from "@/lib/orders";
+import { createOrderAdmin } from "@/lib/orders";
 
 export default function AddUserModal({ onClose, onSave }) {
   const [formData, setFormData] = useState({
@@ -84,7 +84,7 @@ export default function AddUserModal({ onClose, onSave }) {
   };
 async function handleSaveOrder(payload) {
   try {
-    const res = await postOrder(payload);
+    const res = await createOrderAdmin(payload);
     console.log("✅ Order berhasil dibuat:", res);
     showToast("Order berhasil dibuat!");
     onClose();
