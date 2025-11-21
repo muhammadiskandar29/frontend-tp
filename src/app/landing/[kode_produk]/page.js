@@ -41,8 +41,10 @@ export default function LandingPage() {
     async function fetchData() {
       try {
         const res = await fetch(
-          `/api/landing/${kode_produk}`
+          `https://onedashboardapi-production.up.railway.app/api/landing/${kode_produk}`,
+          { cache: "no-store" }
         );
+        
         const json = await res.json();
 
         if (!json.success || !json.data) return setData(null);
