@@ -148,11 +148,13 @@ export default function FollowupReportPage() {
             </span>
           </div>
 
-          <div className="products-table__wrapper">
-            <div className="products-table">
-              <div className="products-table__head">
+          <div className="products-table__wrapper" style={{ overflowX: "auto", maxWidth: "100%" }}>
+            <div className="products-table" style={{ minWidth: "100%", tableLayout: "fixed", width: "100%" }}>
+              <div className="products-table__head" style={{ display: "grid", gridTemplateColumns: "60px 1.5fr 2fr 1.5fr 120px 180px" }}>
                 {columns.map((column) => (
-                  <span key={column}>{column}</span>
+                  <span key={column} style={{ padding: "0.75rem 1rem", fontSize: "0.875rem", fontWeight: "600" }}>
+                    {column}
+                  </span>
                 ))}
               </div>
 
@@ -171,49 +173,77 @@ export default function FollowupReportPage() {
                   </p>
                 ) : (
                   paginatedData.map((log, i) => (
-                    <div className="products-table__row" key={log.id}>
-                      <div className="products-table__cell" data-label="#">
+                    <div 
+                      className="products-table__row" 
+                      key={log.id}
+                      style={{ display: "grid", gridTemplateColumns: "60px 1.5fr 2fr 1.5fr 120px 180px" }}
+                    >
+                      <div className="products-table__cell" data-label="#" style={{ padding: "0.75rem 1rem", fontSize: "0.875rem" }}>
                         {startIndex + i + 1}
                       </div>
                       <div
                         className="products-table__cell products-table__cell--strong"
                         data-label="Customer"
+                        style={{ padding: "0.75rem 1rem", minWidth: 0 }}
                       >
-                        <div className="product-table__info">
-                          <span className="product-table__name">
+                        <div className="product-table__info" style={{ minWidth: 0 }}>
+                          <span className="product-table__name" style={{ 
+                            display: "block",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                            fontSize: "0.875rem",
+                            fontWeight: "500"
+                          }}>
                             {log.customerName}
                           </span>
-                          <span className="product-table__meta" style={{ fontSize: "0.875rem", color: "#6b7280" }}>
+                          <span className="product-table__meta" style={{ 
+                            fontSize: "0.75rem", 
+                            color: "#6b7280",
+                            display: "block",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap"
+                          }}>
                             {log.customerPhone}
                           </span>
                         </div>
                       </div>
-                      <div className="products-table__cell" data-label="Keterangan">
+                      <div className="products-table__cell" data-label="Keterangan" style={{ padding: "0.75rem 1rem", minWidth: 0 }}>
                         <p style={{ 
-                          maxWidth: "300px", 
                           overflow: "hidden", 
                           textOverflow: "ellipsis", 
                           whiteSpace: "nowrap",
-                          margin: 0 
+                          margin: 0,
+                          fontSize: "0.875rem"
                         }}>
                           {log.keterangan}
                         </p>
                       </div>
-                      <div className="products-table__cell" data-label="Event">
-                        {log.event}
+                      <div className="products-table__cell" data-label="Event" style={{ padding: "0.75rem 1rem", minWidth: 0 }}>
+                        <span style={{
+                          display: "block",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          fontSize: "0.875rem"
+                        }}>
+                          {log.event}
+                        </span>
                       </div>
-                      <div className="products-table__cell" data-label="Status">
+                      <div className="products-table__cell" data-label="Status" style={{ padding: "0.75rem 1rem" }}>
                         <span
                           className={`followup-status-pill ${
                             log.status === "Terkirim"
                               ? "followup-status-pill--success"
                               : "followup-status-pill--danger"
                           }`}
+                          style={{ fontSize: "0.75rem", padding: "0.25rem 0.5rem" }}
                         >
                           {log.status}
                         </span>
                       </div>
-                      <div className="products-table__cell" data-label="Waktu">
+                      <div className="products-table__cell" data-label="Waktu" style={{ padding: "0.75rem 1rem", fontSize: "0.75rem", color: "#6b7280" }}>
                         {log.waktu !== "-"
                           ? new Date(log.waktu).toLocaleString("id-ID", {
                               day: "2-digit",
