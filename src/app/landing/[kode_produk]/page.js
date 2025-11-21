@@ -16,6 +16,7 @@ export default function LandingPage() {
   const [paymentMethod, setPaymentMethod] = useState(""); // cc | ewallet | va | manual
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [customerSession, setCustomerSession] = useState(null);
 
   const sumber = searchParams.get("utm_sumber") || "website";
 
@@ -71,6 +72,23 @@ export default function LandingPage() {
 
     fetchData();
   }, [kode_produk]);
+
+  // --- LOAD EXISTING CUSTOMER SESSION (JIKA ADA) ---
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = localStorage.getItem("customer_user");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.id || parsed?.customer_id) {
+          setCustomerSession(parsed);
+          console.log("🔵 [SESSION] Loaded customer session:", parsed);
+        }
+      }
+    } catch (error) {
+      console.error("❌ [SESSION] Failed to parse customer session:", error);
+    }
+  }, []);
 
   // SEO Meta Tags & Structured Data
   useEffect(() => {
@@ -312,6 +330,10 @@ export default function LandingPage() {
       sumber,
       custom_value: customerForm.custom_value,
       product_name: form.nama, // Tambahkan product_name untuk payment
+      customer_id:
+        customerSession?.id ??
+        customerSession?.customer_id ??
+        0, // Kirim 0 agar backend tidak error Undefined variable
     };
 
     try {
