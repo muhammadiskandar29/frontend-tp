@@ -4,11 +4,9 @@ import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import Loading from "@/app/loading";
-import useCustomerOrder from "@/hooks/useCustomerOrder";
 import "@/styles/landing.css";
 
 export default function LandingPage() {
-  const { submitCustomerOrder } = useCustomerOrder();
   const { kode_produk } = useParams();
   const searchParams = useSearchParams();
 
@@ -40,10 +38,9 @@ export default function LandingPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const res = await fetch(
-          `https://onedashboardapi-production.up.railway.app/api/landing/${kode_produk}`,
-          { cache: "no-store" }
-        );
+        const res = await fetch(`/api/landing/${kode_produk}`, {
+          cache: "no-store",
+        });
         
         const json = await res.json();
 
@@ -162,7 +159,7 @@ export default function LandingPage() {
   // 🔥 PEMBAYARAN MIDTRANS — 3 ENDPOINT FIX SESUAI BACKEND LU
   // ==========================================================
   async function payEwallet(payload) {
-    const API_BASE = "https://onedashboardapi-production.up.railway.app/api";
+    const API_BASE = "/api";
 
   const formData = new FormData();
   formData.append("name", payload.nama);
@@ -170,7 +167,7 @@ export default function LandingPage() {
   formData.append("amount", payload.total_harga);
   formData.append("product_name", payload.product_name);
 
-  const response = await fetch(`${API_BASE}/midtrans/create-snap-ewallet`, {
+      const response = await fetch(`${API_BASE}/midtrans/create-snap-ewallet`, {
     method: "POST",
     body: formData
   });
@@ -190,7 +187,7 @@ export default function LandingPage() {
 }
 
 async function payCC(payload) {
-    const API_BASE = "https://onedashboardapi-production.up.railway.app/api";
+    const API_BASE = "/api";
 
   const response = await fetch(`${API_BASE}/midtrans/create-snap-cc`, {
     method: "POST",
@@ -218,7 +215,7 @@ async function payCC(payload) {
 }
 
   async function payVA(payload) {
-    const API_BASE = "https://onedashboardapi-production.up.railway.app/api";
+    const API_BASE = "/api";
 
   const response = await fetch(`${API_BASE}/midtrans/create-snap-va`, {
     method: "POST",
@@ -269,16 +266,21 @@ async function payCC(payload) {
     };
 
     try {
-      // simpan order dulu ke DB
-      const order = await submitCustomerOrder(payload);
-      const orderId = order?.data?.id; // ambil ID order backend
+      // simpan order dulu ke DB via API proxy
+      const response = await fetch("/api/order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-      if (!order.success) throw new Error(order.message);
-      if (!orderId) {
-        toast.error("Order ID tidak ditemukan");
-        return;
+      const order = await response.json();
+      const orderId = order?.data?.order?.id;
+
+      if (!response.ok || order?.success !== true || !orderId) {
+        throw new Error(order?.message || "Gagal membuat order");
       }
-      toast.success("Pesanan berhasil disimpan");
+
+      toast.success(order?.message || "Pesanan berhasil disimpan");
       await new Promise((r) => setTimeout(r, 300));
 
       // === lanjut ke pembayaran ===
