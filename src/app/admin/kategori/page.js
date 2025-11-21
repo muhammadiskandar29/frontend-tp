@@ -1,32 +1,58 @@
 "use client";
 
-import { useState, useCallback, memo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Layout from "@/components/Layout";
 import dynamic from "next/dynamic";
 import useKategori from "@/hooks/useKategori";
-import "@/styles/admin-base.css";
+import { toast } from "react-hot-toast";
+import "@/styles/dashboard.css";
+import "@/styles/admin.css";
 
 // Lazy load modals
 const AddKategoriModal = dynamic(() => import("./addKategori"), { ssr: false });
 const EditKategoriModal = dynamic(() => import("./editKategori"), { ssr: false });
 const DeleteKategoriModal = dynamic(() => import("./deleteKategori"), { ssr: false });
 
+function useDebouncedValue(value, delay = 250) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(id);
+  }, [value, delay]);
+  return debounced;
+}
+
 export default function AdminKategoriPage() {
   const { kategori, addKategori, updateKategori, deleteKategori, loading } = useKategori();
-
+  const [searchInput, setSearchInput] = useState("");
+  const debouncedSearch = useDebouncedValue(searchInput);
   const [selectedKategori, setSelectedKategori] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 25;
 
-  // === TOAST HANDLER ===
-  const showToast = (message, type = "success") => {
-    const toast = document.createElement("div");
-    toast.className = `toast ${type === "error" ? "toast-error" : type === "warning" ? "toast-warning" : ""}`;
-    toast.innerText = message;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 2500);
-  };
+  // Filter kategori berdasarkan search
+  const filtered = useMemo(() => {
+    const term = debouncedSearch.trim().toLowerCase();
+    return kategori.filter((kat) => {
+      if (!term) return true;
+      return kat.nama?.toLowerCase().includes(term);
+    });
+  }, [kategori, debouncedSearch]);
+
+  // Pagination
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedData = useMemo(() => {
+    return filtered.slice(startIndex, endIndex);
+  }, [filtered, startIndex, endIndex]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch]);
 
   // === HANDLERS ===
   const handleAdd = () => setShowAdd(true);
@@ -35,9 +61,9 @@ export default function AdminKategoriPage() {
     try {
       await addKategori(newData.nama);
       setShowAdd(false);
-      showToast("Kategori berhasil ditambahkan!");
+      toast.success("Kategori berhasil ditambahkan!");
     } catch (err) {
-      showToast("Gagal menambah kategori!", "error");
+      toast.error("Gagal menambah kategori!");
     }
   };
 
@@ -51,9 +77,9 @@ export default function AdminKategoriPage() {
       await updateKategori(selectedKategori.id, updated.nama);
       setShowEdit(false);
       setSelectedKategori(null);
-      showToast("Kategori berhasil diperbarui!");
+      toast.success("Kategori berhasil diperbarui!");
     } catch (err) {
-      showToast("Gagal mengedit kategori!", "error");
+      toast.error("Gagal mengedit kategori!");
     }
   };
 
@@ -67,9 +93,9 @@ export default function AdminKategoriPage() {
       await deleteKategori(selectedKategori.id);
       setShowDelete(false);
       setSelectedKategori(null);
-      showToast("Kategori berhasil dihapus!", "success");
+      toast.success("Kategori berhasil dihapus!");
     } catch (err) {
-      showToast("Gagal menghapus kategori!", "error");
+      toast.error("Gagal menghapus kategori!");
     }
   };
 
@@ -77,56 +103,144 @@ export default function AdminKategoriPage() {
   if (loading)
     return (
       <Layout title="Loading...">
-        <div className="loading">Memuat data kategori...</div>
+        <div className="dashboard-shell">
+          <p className="products-empty">Memuat data kategori...</p>
+        </div>
       </Layout>
     );
 
   return (
     <Layout title="Kategori | One Dashboard">
-      <div className="admin-followup-page">
-        {/* HEADER */}
-        <div className="admin-header">
-          <h1 className="admin-title">Manage Categories</h1>
-          <div className="admin-header-actions">
-            <div className="left-action">
-              <button className="admin-button" onClick={handleAdd}>
-                + Add Category
-              </button>
+      <div className="dashboard-shell customers-shell">
+        <section className="dashboard-hero customers-hero">
+          <div className="dashboard-hero__copy">
+            <p className="dashboard-hero__eyebrow">Categories</p>
+            <h2 className="dashboard-hero__title">Category Management</h2>
+            <span className="dashboard-hero__meta">
+              Manage product categories and organize your catalog.
+            </span>
+          </div>
+
+          <div className="customers-toolbar">
+            <div className="customers-search">
+              <input
+                type="search"
+                placeholder="Cari kategori..."
+                className="customers-search__input"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+              />
+              <span className="customers-search__icon pi pi-search" />
             </div>
-            <div className="right-action">
-              <div className="search-bar">
-                <input type="text" placeholder="Search..." className="search-input" />
-                <i className="pi pi-search search-icon"></i>
+            <button
+              className="customers-button customers-button--primary"
+              onClick={handleAdd}
+            >
+              + Tambah Kategori
+            </button>
+          </div>
+        </section>
+
+        <section className="dashboard-summary customers-summary">
+          {[
+            {
+              label: "Total categories",
+              value: kategori.length,
+              accent: "accent-blue",
+              icon: "📁",
+            },
+            {
+              label: "Filtered",
+              value: filtered.length,
+              accent: "accent-amber",
+              icon: "🔍",
+            },
+          ].map((card) => (
+            <article className="summary-card" key={card.label}>
+              <div className={`summary-card__icon ${card.accent}`}>{card.icon}</div>
+              <div>
+                <p className="summary-card__label">{card.label}</p>
+                <p className="summary-card__value">{card.value}</p>
+              </div>
+            </article>
+          ))}
+        </section>
+
+        <section className="panel products-panel">
+          <div className="panel__header">
+            <div>
+              <p className="panel__eyebrow">Directory</p>
+              <h3 className="panel__title">Category roster</h3>
+            </div>
+            <span className="panel__meta">{filtered.length} kategori</span>
+          </div>
+
+          <div className="products-table__wrapper">
+            <div className="products-table">
+              <div className="products-table__head">
+                <span>#</span>
+                <span>Nama Kategori</span>
+                <span className="text-center">Actions</span>
+              </div>
+              <div className="products-table__body">
+                {paginatedData.length > 0 ? (
+                  paginatedData.map((kat, i) => (
+                    <div className="products-table__row" key={kat.id}>
+                      <div className="products-table__cell" data-label="#">
+                        {startIndex + i + 1}
+                      </div>
+                      <div className="products-table__cell products-table__cell--strong" data-label="Nama Kategori">
+                        {kat.nama}
+                      </div>
+                      <div className="products-table__cell" data-label="Actions">
+                        <div className="product-table__actions">
+                          <button
+                            className="product-table__action-link"
+                            onClick={() => handleEdit(kat)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="product-table__action-link product-table__action-link--danger"
+                            onClick={() => handleDelete(kat)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="products-empty">
+                    {kategori.length ? "Tidak ada hasil pencarian." : "Belum ada kategori."}
+                  </p>
+                )}
               </div>
             </div>
           </div>
-        </div>
 
-        {/* TABLE HEADER */}
-        <div className="field-header">
-          <span>#</span>
-          <span>Nama Kategori</span>
-          <span className="text-center">Actions</span>
-        </div>
-
-        {/* LIST DATA */}
-        <div className="data-list">
-          {kategori.length === 0 && <p className="no-data">Belum ada kategori</p>}
-          {kategori.map((kat, i) => (
-            <div className="data-card" key={kat.id}>
-              <span data-label="#"> {i + 1}</span>
-              <span data-label="Nama">{kat.nama}</span>
-              <div className="action-buttons">
-                <button className="btn-icon btn-edit" onClick={() => handleEdit(kat)}>
-                  <i className="pi pi-pencil"></i>
-                </button>
-                <button className="btn-icon btn-delete" onClick={() => handleDelete(kat)}>
-                  <i className="pi pi-trash"></i>
-                </button>
-              </div>
+          {totalPages > 1 && (
+            <div className="customers-pagination">
+              <button
+                className="customers-pagination__btn"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                <i className="pi pi-chevron-left" />
+              </button>
+              <span className="customers-pagination__info">
+                Page {currentPage} of {totalPages} ({filtered.length} total)
+              </span>
+              <button
+                className="customers-pagination__btn"
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+              >
+                <i className="pi pi-chevron-right" />
+              </button>
             </div>
-          ))}
-        </div>
+          )}
+        </section>
 
         {/* MODALS */}
         {showAdd && <AddKategoriModal onClose={() => setShowAdd(false)} onSave={handleSaveAdd} />}
@@ -145,7 +259,6 @@ export default function AdminKategoriPage() {
           />
         )}
       </div>
-
     </Layout>
   );
 }

@@ -160,92 +160,121 @@ export default function LandingPage() {
   // 🔥 PEMBAYARAN MIDTRANS — 3 ENDPOINT FIX SESUAI BACKEND LU
   // ==========================================================
   async function payEwallet(payload) {
-  // Use Next.js proxy to avoid CORS
-  const API_BASE = "/api";
+    // Use Next.js proxy to avoid CORS
+    const API_BASE = "/api";
 
-  const formData = new FormData();
-  formData.append("name", payload.nama);
-  formData.append("email", payload.email);
-  formData.append("amount", payload.total_harga);
-  formData.append("product_name", payload.product_name);
+    const formData = new FormData();
+    formData.append("name", payload.nama);
+    formData.append("email", payload.email);
+    formData.append("amount", payload.total_harga);
+    formData.append("product_name", payload.product_name || form.nama);
 
-  const response = await fetch(`${API_BASE}/midtrans/create-snap-ewallet`, {
-    method: "POST",
-    body: formData
-  });
+    try {
+      const response = await fetch(`${API_BASE}/midtrans/create-snap-ewallet`, {
+        method: "POST",
+        body: formData
+      });
 
-  const text = await response.text();
-  console.log("EWALLET RAW:", text);
+      const text = await response.text();
+      console.log("EWALLET RAW:", text);
 
-  let json;
-  try {
-    json = JSON.parse(text);
-  } catch {
-    console.error("❌ Ewallet balikin HTML:", text);
-    return;
+      let json;
+      try {
+        json = JSON.parse(text);
+      } catch {
+        console.error("❌ Ewallet balikin HTML:", text);
+        toast.error("Gagal memproses pembayaran e-wallet");
+        return;
+      }
+
+      if (json.redirect_url) {
+        window.location.href = json.redirect_url;
+      } else {
+        toast.error(json.message || "Gagal mendapatkan URL pembayaran");
+      }
+    } catch (error) {
+      console.error("❌ Ewallet error:", error);
+      toast.error("Terjadi kesalahan saat memproses pembayaran");
+    }
   }
 
-  if (json.redirect_url) window.location.href = json.redirect_url;
-}
+  async function payCC(payload) {
+    // Use Next.js proxy to avoid CORS
+    const API_BASE = "/api";
 
-async function payCC(payload) {
-  // Use Next.js proxy to avoid CORS
-  const API_BASE = "/api";
+    try {
+      const response = await fetch(`${API_BASE}/midtrans/create-snap-cc`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: payload.nama,
+          email: payload.email,
+          amount: payload.total_harga,
+          product_name: payload.product_name || form.nama,
+        }),
+      });
 
-  const response = await fetch(`${API_BASE}/midtrans/create-snap-cc`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      name: payload.nama,
-      email: payload.email,
-      amount: payload.total_harga,
-      product_name: payload.product_name,
-    }),
-  });
+      const text = await response.text();
+      console.log("CC RAW:", text);
 
-  const text = await response.text();
-  console.log("CC RAW:", text);
+      let json;
+      try {
+        json = JSON.parse(text);
+      } catch {
+        console.error("❌ CC balikin HTML:", text);
+        toast.error("Gagal memproses pembayaran kartu kredit");
+        return;
+      }
 
-  let json;
-  try {
-    json = JSON.parse(text);
-  } catch {
-    console.error("❌ CC balikin HTML:", text);
-    return;
+      if (json.redirect_url) {
+        window.location.href = json.redirect_url;
+      } else {
+        toast.error(json.message || "Gagal mendapatkan URL pembayaran");
+      }
+    } catch (error) {
+      console.error("❌ CC error:", error);
+      toast.error("Terjadi kesalahan saat memproses pembayaran");
+    }
   }
-
-  if (json.redirect_url) window.location.href = json.redirect_url;
-}
-
 
   async function payVA(payload) {
-  // Use Next.js proxy to avoid CORS
-  const API_BASE = "/api";
+    // Use Next.js proxy to avoid CORS
+    const API_BASE = "/api";
 
-  const response = await fetch(`${API_BASE}/midtrans/create-snap-va`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      name: payload.nama,
-      email: payload.email,
-      amount: payload.total_harga,
-      product_name: payload.product_name,
-    }),
-  });
+    try {
+      const response = await fetch(`${API_BASE}/midtrans/create-snap-va`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: payload.nama,
+          email: payload.email,
+          amount: payload.total_harga,
+          product_name: payload.product_name || form.nama,
+        }),
+      });
 
-  const text = await response.text();
-  console.log("VA RAW:", text);
+      const text = await response.text();
+      console.log("VA RAW:", text);
 
-  let json;
-  try {
-    json = JSON.parse(text);
-  } catch {
-    console.error("❌ VA balikin HTML:", text);
-    return;
+      let json;
+      try {
+        json = JSON.parse(text);
+      } catch {
+        console.error("❌ VA balikin HTML:", text);
+        toast.error("Gagal memproses pembayaran virtual account");
+        return;
+      }
+
+      if (json.redirect_url) {
+        window.location.href = json.redirect_url;
+      } else {
+        toast.error(json.message || "Gagal mendapatkan URL pembayaran");
+      }
+    } catch (error) {
+      console.error("❌ VA error:", error);
+      toast.error("Terjadi kesalahan saat memproses pembayaran");
+    }
   }
-
-  if (json.redirect_url) window.location.href = json.redirect_url;
-}
 
   // ==========================================================
   // 🔥 SUBMIT ORDER → LANJUT PEMBAYARAN
@@ -267,6 +296,7 @@ async function payCC(payload) {
       metode_bayar: paymentMethod,
       sumber,
       custom_value: customerForm.custom_value,
+      product_name: form.nama, // Tambahkan product_name untuk payment
     };
 
     try {
@@ -283,18 +313,20 @@ async function payCC(payload) {
       await new Promise((r) => setTimeout(r, 300));
 
       // === lanjut ke pembayaran ===
+      if (paymentMethod === "ewallet") {
+        await payEwallet(payload);
+        return;
+      }
 
-if (paymentMethod === "ewallet") {
-  return payEwallet(payload);
-}
+      if (paymentMethod === "cc") {
+        await payCC(payload);
+        return;
+      }
 
-if (paymentMethod === "cc") {
-  return payCC(payload);
-}
-
-if (paymentMethod === "va") {
-  return payVA(payload);
-}
+      if (paymentMethod === "va") {
+        await payVA(payload);
+        return;
+      }
 
       // manual transfer
       if (paymentMethod === "manual") {

@@ -122,55 +122,63 @@ export default function FollowupReportPage() {
             <span className="panel__meta">
               {filteredLogs.length} log ditampilkan
             </span>
-            <section className="users-table followup-report-table">
-              <div className="users-table__head">
+          </div>
+
+          <div className="products-table__wrapper">
+            <div className="products-table">
+              <div className="products-table__head">
                 {columns.map((column) => (
                   <span key={column}>{column}</span>
                 ))}
               </div>
 
-              <div className="users-table__body followup-report__body">
+              <div className="products-table__body">
                 {loading ? (
-                  <p className="users-empty">Memuat data...</p>
+                  <p className="products-empty">Memuat data...</p>
                 ) : error ? (
-                  <p className="users-empty users-empty--error">
+                  <p className="products-empty">
                     Gagal memuat data log follow up
                   </p>
                 ) : filteredLogs.length === 0 ? (
-                  <p className="users-empty">
+                  <p className="products-empty">
                     {logs.length
                       ? "Tidak ada log yang cocok."
                       : "Belum ada data log follow up."}
                   </p>
                 ) : (
                   filteredLogs.map((log, i) => (
-                    <section className="users-table__row followup-report__row" key={log.id}>
-                      <div className="users-table__cell" data-label="#">
+                    <div className="products-table__row" key={log.id}>
+                      <div className="products-table__cell" data-label="#">
                         {i + 1}
                       </div>
                       <div
-                        className="users-table__cell users-table__cell--profile followup-report__customer"
+                        className="products-table__cell products-table__cell--strong"
                         data-label="Customer"
                       >
-                        <p className="users-name">
-                          {log.customerName}
-                        </p>
-                        <p className="users-email">
-                          {log.customerPhone}
-                        </p>
+                        <div className="product-table__info">
+                          <span className="product-table__name">
+                            {log.customerName}
+                          </span>
+                          <span className="product-table__meta" style={{ fontSize: "0.875rem", color: "#6b7280" }}>
+                            {log.customerPhone}
+                          </span>
+                        </div>
                       </div>
-                      <div className="users-table__cell followup-report__desc" data-label="Keterangan">
-                        <p className="followup-template__text">
+                      <div className="products-table__cell" data-label="Keterangan">
+                        <p style={{ 
+                          maxWidth: "300px", 
+                          overflow: "hidden", 
+                          textOverflow: "ellipsis", 
+                          whiteSpace: "nowrap",
+                          margin: 0 
+                        }}>
                           {log.keterangan}
                         </p>
                       </div>
-                      <div className="users-table__cell followup-report__event" data-label="Event">
+                      <div className="products-table__cell" data-label="Event">
                         {log.event}
                       </div>
-                      <div
-                        className="users-table__cell followup-report__status"
-                        data-label="Status"
-                      >
+                      <div className="products-table__cell" data-label="Status">
                         <span
                           className={`followup-status-pill ${
                             log.status === "Terkirim"
@@ -181,25 +189,22 @@ export default function FollowupReportPage() {
                           {log.status}
                         </span>
                       </div>
-                      <div
-                        className="users-table__cell followup-report__time"
-                        data-label="Waktu"
-                      >
+                      <div className="products-table__cell" data-label="Waktu">
                         {log.waktu !== "-"
                           ? new Date(log.waktu).toLocaleString("id-ID", {
                               day: "2-digit",
-                              month: "long",
+                              month: "short",
                               year: "numeric",
                               hour: "2-digit",
                               minute: "2-digit",
                             })
                           : "-"}
                       </div>
-                    </section>
+                    </div>
                   ))
                 )}
               </div>
-            </section>
+            </div>
           </div>
         </section>
       </div>
