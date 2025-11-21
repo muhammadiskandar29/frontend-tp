@@ -7,16 +7,10 @@
 @import "primereact/resources/primereact.min.css";
 @import "primeicons/primeicons.css";
 
-
-/* Style tambahan kamu */
+/* Style tambahan */
 :root {
   --background: #ffffff;
   --foreground: #171717;
-}
-
-@theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
