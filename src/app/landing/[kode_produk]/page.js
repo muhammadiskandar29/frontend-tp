@@ -41,7 +41,7 @@ export default function LandingPage() {
     async function fetchData() {
       try {
         const res = await fetch(
-          `https://onedashboardapi-production.up.railway.app/api/landing/${kode_produk}`
+          `/api/landing/${kode_produk}`
         );
         const json = await res.json();
 
