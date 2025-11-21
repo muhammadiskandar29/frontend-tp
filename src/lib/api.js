@@ -1,6 +1,7 @@
 import { toast } from "react-hot-toast";
 
-const BASE_URL = "https://onedashboardapi-production.up.railway.app/api";
+// Use relative path - Next.js rewrite will proxy to backend
+const BASE_URL = "/api";
 
 export async function api(endpoint, options = {}) {
   const token = localStorage.getItem("token");

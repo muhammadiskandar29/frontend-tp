@@ -43,6 +43,7 @@ export default function Layout({ children, title, description }) {
       localStorage.clear();
       toast.error("🚫 Anda belum login!");
       setIsAuthorized(false);
+      // Don't return null immediately, let redirect happen
       setTimeout(() => router.replace("/login"), 1000);
       return;
     }
@@ -67,7 +68,19 @@ export default function Layout({ children, title, description }) {
     return user.name.charAt(0).toUpperCase();
   }, [user]);
 
-  if (!isAuthorized) return null;
+  // Show loading state instead of null to prevent blank screen
+  if (!isAuthorized && !pathname.includes("/login")) {
+    return (
+      <div style={{ 
+        display: "flex", 
+        justifyContent: "center", 
+        alignItems: "center", 
+        minHeight: "100vh" 
+      }}>
+        <p>Redirecting to login...</p>
+      </div>
+    );
+  }
 
   const handleLogout = async () => {
     try {

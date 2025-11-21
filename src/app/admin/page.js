@@ -114,14 +114,14 @@ const divisionConfigs = {
     label: "Admin Overview",
     title: "Admin Dashboard Overview",
     description: "Aggregated snapshot across divisions.",
-    endpoint: "https://onedashboardapi-production.up.railway.app/api/admin/sales/dashboard",
+    endpoint: "/api/admin/sales/dashboard",
     Icon: LayoutIcon,
   },
   sales: {
     label: "Sales Dashboard",
     title: "Sales Dashboard Overview",
     description: "Sales pipeline, revenue, and fulfillment.",
-    endpoint: "https://onedashboardapi-production.up.railway.app/api/admin/sales/dashboard",
+    endpoint: "/api/admin/sales/dashboard",
     Icon: ShoppingBag,
   },
   hr: {
@@ -158,8 +158,11 @@ export default function Dashboard() {
       try {
         const token = localStorage.getItem("token");
         const response = await fetch(config.endpoint, {
+          method: "GET",
           headers: {
-            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
         });
 
@@ -186,7 +189,9 @@ export default function Dashboard() {
   }, [activeDivision, loadDivisionData]);
 
   const activeData = dataMap[activeDivision];
-  const loading = loadingMap[activeDivision] ?? !activeData;
+  const isLoading = loadingMap[activeDivision] ?? false;
+  // Only show loading if we're actually loading AND don't have data yet
+  const loading = isLoading && !activeData && !errorMap[activeDivision];
   const error = errorMap[activeDivision];
   const overview = activeData?.overview;
   const financial = activeData?.financial;
