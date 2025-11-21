@@ -5,7 +5,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import Loading from "@/app/loading";
 import useCustomerOrder from "@/hooks/useCustomerOrder";
-import { api } from "@/lib/api";
+import { api } from "@/lib/api"; // pastikan ini bener ya
 import "@/styles/landing.css";
 
 export default function LandingPage() {
@@ -16,7 +16,6 @@ export default function LandingPage() {
   const [paymentMethod, setPaymentMethod] = useState(""); // cc | ewallet | va | manual
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [customerSession, setCustomerSession] = useState(null);
 
   const sumber = searchParams.get("utm_sumber") || "website";
 
@@ -43,7 +42,7 @@ export default function LandingPage() {
     async function fetchData() {
       try {
         const res = await fetch(
-          `/api/landing/${kode_produk}`
+          `https://onedashboardapi-production.up.railway.app/api/landing/${kode_produk}`
         );
         const json = await res.json();
 
@@ -73,102 +72,6 @@ export default function LandingPage() {
     fetchData();
   }, [kode_produk]);
 
-  // --- LOAD EXISTING CUSTOMER SESSION (JIKA ADA) ---
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const raw = localStorage.getItem("customer_user");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed?.id || parsed?.customer_id) {
-          setCustomerSession(parsed);
-          console.log("🔵 [SESSION] Loaded customer session:", parsed);
-        }
-      }
-    } catch (error) {
-      console.error("❌ [SESSION] Failed to parse customer session:", error);
-    }
-  }, []);
-
-  // SEO Meta Tags & Structured Data
-  useEffect(() => {
-    if (!data) return;
-
-    // Update document title
-    document.title = `${data.nama} - Beli Sekarang | Ternak Properti`;
-
-    // Update meta description
-    const metaDescription = document.querySelector('meta[name="description"]');
-    const description = data.deskripsi 
-      ? `${data.deskripsi.substring(0, 155)}...` 
-      : `Dapatkan ${data.nama} dengan harga terbaik. ${data.harga_asli ? `Hanya Rp ${data.harga_asli}` : ''} - Tawaran terbatas!`;
-    
-    if (metaDescription) {
-      metaDescription.setAttribute('content', description);
-    } else {
-      const meta = document.createElement('meta');
-      meta.name = 'description';
-      meta.content = description;
-      document.head.appendChild(meta);
-    }
-
-    // Update Open Graph tags
-    const updateOGTag = (property, content) => {
-      let ogTag = document.querySelector(`meta[property="${property}"]`);
-      if (!ogTag) {
-        ogTag = document.createElement('meta');
-        ogTag.setAttribute('property', property);
-        document.head.appendChild(ogTag);
-      }
-      ogTag.setAttribute('content', content);
-    };
-
-    updateOGTag('og:title', data.nama);
-    updateOGTag('og:description', description);
-    updateOGTag('og:type', 'product');
-    if (data.header?.path) {
-      updateOGTag('og:image', data.header.path);
-    }
-    updateOGTag('og:url', typeof window !== 'undefined' ? window.location.href : '');
-
-    // Add structured data (JSON-LD)
-    const structuredData = {
-      "@context": "https://schema.org",
-      "@type": "Product",
-      "name": data.nama,
-      "description": data.deskripsi || description,
-      "image": data.header?.path ? [data.header.path] : [],
-      "offers": {
-        "@type": "Offer",
-        "price": data.harga_asli || "0",
-        "priceCurrency": "IDR",
-        "availability": "https://schema.org/InStock",
-        "url": typeof window !== 'undefined' ? window.location.href : ''
-      },
-      "brand": {
-        "@type": "Brand",
-        "name": "Ternak Properti"
-      },
-      "category": data.kategori_rel?.nama || "Produk"
-    };
-
-    // Remove existing structured data
-    const existingScript = document.getElementById('product-structured-data');
-    if (existingScript) existingScript.remove();
-
-    // Add new structured data
-    const script = document.createElement('script');
-    script.id = 'product-structured-data';
-    script.type = 'application/ld+json';
-    script.textContent = JSON.stringify(structuredData);
-    document.head.appendChild(script);
-
-    return () => {
-      const scriptToRemove = document.getElementById('product-structured-data');
-      if (scriptToRemove) scriptToRemove.remove();
-    };
-  }, [data]);
-
   if (loading) return <Loading />;
   if (!data) return <div className="p-6">Produk tidak ditemukan</div>;
 
@@ -178,136 +81,89 @@ export default function LandingPage() {
   // 🔥 PEMBAYARAN MIDTRANS — 3 ENDPOINT FIX SESUAI BACKEND LU
   // ==========================================================
   async function payEwallet(payload) {
-    // Use Next.js proxy to avoid CORS
-    const API_BASE = "/api";
+  const API_BASE = "https://onedashboardapi-production.up.railway.app/api";
 
-    const formData = new FormData();
-    formData.append("name", payload.nama);
-    formData.append("email", payload.email);
-    formData.append("amount", payload.total_harga);
-    formData.append("product_name", payload.product_name || form.nama);
+  const formData = new FormData();
+  formData.append("name", payload.nama);
+  formData.append("email", payload.email);
+  formData.append("amount", payload.total_harga);
+  formData.append("product_name", payload.product_name);
 
-    try {
-      const response = await fetch(`${API_BASE}/midtrans/create-snap-ewallet`, {
-        method: "POST",
-        body: formData
-      });
+  const response = await fetch(`${API_BASE}/midtrans/create-snap-ewallet`, {
+    method: "POST",
+    body: formData
+  });
 
-      const text = await response.text();
-      console.log("🔵 [EWALLET] RAW Response:", text);
+  const text = await response.text();
+  console.log("EWALLET RAW:", text);
 
-      let json;
-      try {
-        json = JSON.parse(text);
-        console.log("🔵 [EWALLET] Parsed JSON:", json);
-      } catch {
-        console.error("❌ [EWALLET] Failed to parse JSON:", text);
-        toast.error("Gagal memproses pembayaran e-wallet");
-        throw new Error("Invalid response from server");
-      }
-
-      if (json.redirect_url) {
-        console.log("✅ [EWALLET] Redirecting to:", json.redirect_url);
-        window.location.href = json.redirect_url;
-      } else {
-        console.error("❌ [EWALLET] No redirect_url in response:", json);
-        toast.error(json.message || "Gagal mendapatkan URL pembayaran");
-        throw new Error(json.message || "No redirect URL");
-      }
-    } catch (error) {
-      console.error("❌ [EWALLET] Error:", error);
-      toast.error(error.message || "Terjadi kesalahan saat memproses pembayaran");
-      throw error;
-    }
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    console.error("❌ Ewallet balikin HTML:", text);
+    return;
   }
 
-  async function payCC(payload) {
-    // Use Next.js proxy to avoid CORS
-    const API_BASE = "/api";
+  if (json.redirect_url) window.location.href = json.redirect_url;
+}
 
-    try {
-      const response = await fetch(`${API_BASE}/midtrans/create-snap-cc`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: payload.nama,
-          email: payload.email,
-          amount: payload.total_harga,
-          product_name: payload.product_name || form.nama,
-        }),
-      });
+async function payCC(payload) {
+  const API_BASE = "https://onedashboardapi-production.up.railway.app/api";
 
-      const text = await response.text();
-      console.log("🔵 [CC] RAW Response:", text);
+  const response = await fetch(`${API_BASE}/midtrans/create-snap-cc`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: payload.nama,
+      email: payload.email,
+      amount: payload.total_harga,
+      product_name: payload.product_name,
+    }),
+  });
 
-      let json;
-      try {
-        json = JSON.parse(text);
-        console.log("🔵 [CC] Parsed JSON:", json);
-      } catch {
-        console.error("❌ [CC] Failed to parse JSON:", text);
-        toast.error("Gagal memproses pembayaran kartu kredit");
-        throw new Error("Invalid response from server");
-      }
+  const text = await response.text();
+  console.log("CC RAW:", text);
 
-      if (json.redirect_url) {
-        console.log("✅ [CC] Redirecting to:", json.redirect_url);
-        window.location.href = json.redirect_url;
-      } else {
-        console.error("❌ [CC] No redirect_url in response:", json);
-        toast.error(json.message || "Gagal mendapatkan URL pembayaran");
-        throw new Error(json.message || "No redirect URL");
-      }
-    } catch (error) {
-      console.error("❌ [CC] Error:", error);
-      toast.error(error.message || "Terjadi kesalahan saat memproses pembayaran");
-      throw error;
-    }
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    console.error("❌ CC balikin HTML:", text);
+    return;
   }
+
+  if (json.redirect_url) window.location.href = json.redirect_url;
+}
+
 
   async function payVA(payload) {
-    // Use Next.js proxy to avoid CORS
-    const API_BASE = "/api";
+  const API_BASE = "https://onedashboardapi-production.up.railway.app/api";
 
-    try {
-      const response = await fetch(`${API_BASE}/midtrans/create-snap-va`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: payload.nama,
-          email: payload.email,
-          amount: payload.total_harga,
-          product_name: payload.product_name || form.nama,
-        }),
-      });
+  const response = await fetch(`${API_BASE}/midtrans/create-snap-va`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: payload.nama,
+      email: payload.email,
+      amount: payload.total_harga,
+      product_name: payload.product_name,
+    }),
+  });
 
-      const text = await response.text();
-      console.log("🔵 [VA] RAW Response:", text);
+  const text = await response.text();
+  console.log("VA RAW:", text);
 
-      let json;
-      try {
-        json = JSON.parse(text);
-        console.log("🔵 [VA] Parsed JSON:", json);
-      } catch {
-        console.error("❌ [VA] Failed to parse JSON:", text);
-        toast.error("Gagal memproses pembayaran virtual account");
-        throw new Error("Invalid response from server");
-      }
-
-      if (json.redirect_url) {
-        console.log("✅ [VA] Redirecting to:", json.redirect_url);
-        window.location.href = json.redirect_url;
-      } else {
-        console.error("❌ [VA] No redirect_url in response:", json);
-        toast.error(json.message || "Gagal mendapatkan URL pembayaran");
-        throw new Error(json.message || "No redirect URL");
-      }
-    } catch (error) {
-      console.error("❌ [VA] Error:", error);
-      toast.error(error.message || "Terjadi kesalahan saat memproses pembayaran");
-      throw error;
-    }
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    console.error("❌ VA balikin HTML:", text);
+    return;
   }
+
+  if (json.redirect_url) window.location.href = json.redirect_url;
+}
 
   // ==========================================================
   // 🔥 SUBMIT ORDER → LANJUT PEMBAYARAN
@@ -329,59 +185,37 @@ export default function LandingPage() {
       metode_bayar: paymentMethod,
       sumber,
       custom_value: customerForm.custom_value,
-      product_name: form.nama, // Tambahkan product_name untuk payment
-      customer_id:
-        customerSession?.id ??
-        customerSession?.customer_id ??
-        0, // Kirim 0 agar backend tidak error Undefined variable
     };
 
     try {
       // simpan order dulu ke DB
-      console.log("🔵 [SUBMIT] Submitting order...", payload);
       const order = await submitCustomerOrder(payload);
-      console.log("🔵 [SUBMIT] Order response:", order);
-      
       const orderId = order?.data?.id; // ambil ID order backend
 
-      if (!order.success) {
-        console.error("❌ [SUBMIT] Order failed:", order.message);
-        throw new Error(order.message);
-      }
-      
+      if (!order.success) throw new Error(order.message);
       if (!orderId) {
-        console.error("❌ [SUBMIT] No order ID in response");
         toast.error("Order ID tidak ditemukan");
         return;
       }
-      
-      console.log("✅ [SUBMIT] Order saved successfully, ID:", orderId);
       toast.success("Pesanan berhasil disimpan");
-      
-      // Tunggu sebentar agar toast terlihat
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 300));
 
       // === lanjut ke pembayaran ===
-      console.log("🔵 [SUBMIT] Proceeding to payment method:", paymentMethod);
-      
-      if (paymentMethod === "ewallet") {
-        await payEwallet(payload);
-        return;
-      }
 
-      if (paymentMethod === "cc") {
-        await payCC(payload);
-        return;
-      }
+if (paymentMethod === "ewallet") {
+  return payEwallet(payload);
+}
 
-      if (paymentMethod === "va") {
-        await payVA(payload);
-        return;
-      }
+if (paymentMethod === "cc") {
+  return payCC(payload);
+}
+
+if (paymentMethod === "va") {
+  return payVA(payload);
+}
 
       // manual transfer
       if (paymentMethod === "manual") {
-        console.log("🔵 [SUBMIT] Redirecting to manual payment page");
         const query = new URLSearchParams({
           product: form.nama,
           harga: form.harga_asli,
@@ -389,11 +223,10 @@ export default function LandingPage() {
           sumber,
         });
         window.location.href = `/payment?${query.toString()}`;
-        return;
       }
     } catch (err) {
-      console.error("❌ [SUBMIT] Submit order error:", err);
-      toast.error(err.message || "Gagal menyimpan pesanan");
+      console.error("Submit order error:", err);
+      toast.error("Gagal menyimpan pesanan");
     }
   };
 
@@ -401,53 +234,42 @@ export default function LandingPage() {
   // RENDER PAGE
   // ==========================================================
   return (
-    <article className="landing-wrapper" itemScope itemType="https://schema.org/Product">
-        <div className="produk-preview">
-          
-          {/* Judul Promo */}
-          <div className="promo-text" role="banner">
-            <strong>Tawaran Terbatas!</strong>
-            <br />
-            <span>Isi Form Hari Ini Untuk Mendapatkan Akses Group Exclusive!</span>
-          </div>
+    <div className="landing-wrapper">
+      <div className="produk-preview">
+        
+        {/* Judul Promo */}
+        <div className="promo-text">
+          Tawaran Terbatas! <br />
+          <strong>Isi Form Hari Ini Untuk Mendapatkan Akses Group Exclusive!</strong>
+        </div>
 
-          {/* Nama Produk */}
-          <h1 className="preview-title" itemProp="name">{form.nama}</h1>
+        {/* Nama Produk */}
+        <h4 className="preview-title">{form.nama}</h4>
 
-          {/* Header */}
-          <div className="header-wrapper">
-            {form.header?.path ? (
-              <img 
-                src={form.header.path} 
-                alt={`${form.nama} - Header Image`}
-                className="preview-header-img"
-                itemProp="image"
-                loading="eager"
-                width="900"
-                height="500"
-              />
-            ) : (
-              <div className="preview-header-img" style={{ background: "#e5e7eb" }} aria-label="Product header placeholder" />
-            )}
-          </div>
-          
-          {/* Deskripsi */}
-          {form.deskripsi && (
-            <div className="preview-description" itemProp="description">
-              {form.deskripsi}
-            </div>
+        {/* Header */}
+        <div className="header-wrapper">
+          {form.header?.path ? (
+            <img src={form.header.path} alt="Header" className="preview-header-img" />
+          ) : (
+            <div className="preview-header-img" style={{ background: "#e5e7eb" }} />
           )}
+        </div>
+        
+        {/* Deskripsi */}
+        {form.deskripsi && (
+          <div className="preview-description">{form.deskripsi}</div>
+        )}
 
         {/* List Point */}
         {form.list_point?.length > 0 && (
-          <section className="preview-points" aria-label="Product benefits">
-            <h2>Benefit yang akan Anda dapatkan:</h2>
-            <ul itemProp="featureList">
+          <div className="preview-points">
+            <h3>Benefit yang akan Anda dapatkan:</h3>
+            <ul>
               {form.list_point.map((p, i) => (
-                <li key={i} itemProp="itemListElement">{p.nama}</li>
+                <li key={i}>{p.nama}</li>
               ))}
             </ul>
-          </section>
+          </div>
         )}
 
         {/* Intro Harga */}
@@ -459,19 +281,9 @@ export default function LandingPage() {
 
         {/* Harga */}
         {(form.harga_coret || form.harga_asli) && (
-          <div className="preview-price" itemScope itemType="https://schema.org/Offer">
-            {form.harga_coret && (
-              <span className="old" aria-label="Harga lama">
-                Rp {form.harga_coret}
-              </span>
-            )}
-            {form.harga_asli && (
-              <span className="new" itemProp="price" content={form.harga_asli}>
-                Rp {form.harga_asli}
-              </span>
-            )}
-            <meta itemProp="priceCurrency" content="IDR" />
-            <meta itemProp="availability" content="https://schema.org/InStock" />
+          <div className="preview-price">
+            {form.harga_coret && <span className="old">Rp {form.harga_coret}</span>}
+            {form.harga_asli && <span className="new">Rp {form.harga_asli}</span>}
           </div>
         )}
 
@@ -479,77 +291,46 @@ export default function LandingPage() {
 
         {/* Gallery */}
         {form.gambar?.length > 0 && (
-          <section className="preview-gallery" aria-label="Product gallery">
-            <h2 className="gallery-title">Galeri Produk</h2>
-            <div className="images" itemProp="image">
+          <div className="preview-gallery">
+            <div className="images">
               {form.gambar.map((g, i) =>
-                g.path ? (
-                  <img 
-                    key={i} 
-                    src={g.path} 
-                    alt={g.caption || `${form.nama} - Gambar ${i + 1}`}
-                    loading="lazy"
-                    width="450"
-                    height="300"
-                  />
-                ) : null
+                g.path ? <img key={i} src={g.path} alt={`Gallery ${i}`} /> : null
               )}
             </div>
-          </section>
+          </div>
         )}
 
         {/* Video */}
         {form.video?.length > 0 && (
-          <section className="preview-video" aria-label="Product videos">
-            <h2 className="video-title">Video Produk</h2>
+          <div className="preview-video">
             {form.video.map((v, i) => {
               let url = v;
               if (url.includes("watch?v=")) url = url.replace("watch?v=", "embed/");
-              return (
-                <iframe 
-                  key={i} 
-                  src={url} 
-                  allowFullScreen
-                  title={`Video ${form.nama} - ${i + 1}`}
-                  loading="lazy"
-                />
-              );
+              return <iframe key={i} src={url} allowFullScreen></iframe>;
             })}
-          </section>
+          </div>
         )}
 
         {/* Testimoni */}
         {form.testimoni?.length > 0 && (
-          <section className="preview-testimonials" aria-label="Customer testimonials">
-            <h2>Testimoni Pembeli</h2>
-            <div itemScope itemType="https://schema.org/Review">
-              {form.testimoni.map((t, i) => (
-                <article key={i} className="testi-item" itemScope itemType="https://schema.org/Review">
-                  {t.gambar && (
-                    <img 
-                      src={t.gambar} 
-                      alt={`Foto ${t.nama}`}
-                      itemProp="author"
-                      loading="lazy"
-                      width="60"
-                      height="60"
-                    />
-                  )}
+          <div className="preview-testimonials">
+            <h3>Testimoni Pembeli</h3>
 
-                  <div className="info">
-                    <div className="name" itemProp="author" itemScope itemType="https://schema.org/Person">
-                      <span itemProp="name">{t.nama}</span>
-                    </div>
-                    <div className="desc" itemProp="reviewBody">{t.deskripsi}</div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
+            {form.testimoni.map((t, i) => (
+              <div key={i} className="testi-item">
+                {t.gambar && <img src={t.gambar} alt={t.nama} />}
+
+                <div className="info">
+                  <div className="name">{t.nama}</div>
+                  <div className="desc">{t.deskripsi}</div>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
 {/* INFORMASI DASAR */}
-<section className="preview-form space-y-4 mt-6" aria-label="Order form">
-  <h2 className="font-semibold text-lg">Informasi Dasar</h2>
+<div className="preview-form space-y-4 mt-6">
+  <h3 className="font-semibold text-lg">Informasi Dasar</h3>
 
   {[
     { label: "Nama", key: "nama", placeholder: "Nama lengkap Anda" },
@@ -576,56 +357,58 @@ export default function LandingPage() {
   ))}
 
   {/* ALAMAT */}
-  <div className="space-y-2 p-4 border border-gray-200 rounded-xl bg-white shadow-sm">
-    <br></br>
+<div className="space-y-2 p-4 border border-gray-200 rounded-xl bg-white shadow-sm">
+        <br></br>
 
-    <label className="block text-sm font-semibold text-gray-700">
-      Alamat
-    </label>
+  <label className="block text-sm font-semibold text-gray-700">
+    Alamat
+  </label>
 
-    <textarea
-      placeholder="Alamat lengkap"
-      className="w-full p-3 border border-gray-300 rounded-xl mt-2 focus:border-blue-500 focus:ring focus:ring-blue-200 transition"
-      rows={3}
-      value={customerForm.alamat}
-      onChange={(e) => setCustomerForm({...customerForm, alamat: e.target.value})}
-    />
-  </div>
-</section>
+<textarea
+  placeholder="Alamat lengkap"
+  className="..."
+  rows={3}
+  value={customerForm.alamat}
+  onChange={(e) => setCustomerForm({...customerForm, alamat: e.target.value})}
+/>
+
+</div>
+
+</div>
 
 
 
 
         {/* Custom Field */}
-        {form.custom_field?.length > 0 && (
-          <section className="preview-form space-y-4 mt-5" aria-label="Additional information">
-            <h2 className="font-semibold text-lg">Lengkapi Data Tambahan</h2>
+{form.custom_field?.length > 0 && (
+  <div className="preview-form space-y-4 mt-5">
+    <h3 className="font-semibold text-lg">Lengkapi Data Tambahan</h3>
 
-            {form.custom_field.map((f, i) => (
-              <div key={i} className="flex flex-col p-3 border rounded bg-gray-50">
-                <label className="font-medium">{f.nama_field}</label>
+    {form.custom_field.map((f, i) => (
+      <div key={i} className="flex flex-col p-3 border rounded bg-gray-50">
+        <label className="font-medium">{f.nama_field}</label>
 
-                <input
-                  type="text"
-                  placeholder={`Masukkan ${f.nama_field}`}
-                  className="border rounded p-2 mt-1"
-                  onChange={(e) => {
-                    const temp = [...customerForm.custom_value];
-                    temp[i] = {
-                      nama: f.nama_field,
-                      value: e.target.value,
-                    };
-                    setCustomerForm({ ...customerForm, custom_value: temp });
-                  }}
-                />
-              </div>
-            ))}
-          </section>
-        )}
+        <input
+          type="text"
+          placeholder={`Masukkan ${f.nama_field}`}
+          className="border rounded p-2 mt-1"
+          onChange={(e) => {
+            const temp = [...customerForm.custom_value];
+            temp[i] = {
+              nama: f.nama_field,
+              value: e.target.value,
+            };
+            setCustomerForm({ ...customerForm, custom_value: temp });
+          }}
+        />
+      </div>
+    ))}
+  </div>
+)}
 
         {/* Payment */}
-<section className="payment-section" aria-label="Payment methods">
-  <h2 className="payment-title">Metode Pembayaran</h2>
+<div className="payment-section">
+  <h3 className="payment-title">Metode Pembayaran</h3>
 
   {/* E-Payment */}
   <label className="payment-card">
@@ -718,18 +501,15 @@ export default function LandingPage() {
       <p className="payment-note">Klik untuk masuk ke halaman konfirmasi bayar</p>
     </div>
   </label>
-</section>
+</div>
+
+
 
         {/* CTA */}
-        <button 
-          className="cta-button" 
-          onClick={handleSubmit}
-          aria-label={`Pesan ${form.nama} sekarang`}
-          itemProp="offers"
-        >
-          Pesan Sekarang
-        </button>
-        </div>
-      </article>
+<button className="cta-button" onClick={handleSubmit}>
+  Pesan Sekarang
+</button>
+      </div>
+    </div>
   );
 }
