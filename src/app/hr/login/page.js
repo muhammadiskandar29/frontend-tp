@@ -14,7 +14,7 @@ export default function HRLoginPage() {
           <h3>Welcome Back!</h3>
           <p>Sign in to your HR account</p>
 
-          <form>
+          <form autoComplete="off" data-form-type="other">
             <div className="hr-form-group">
               <label>Email</label>
               <input
@@ -22,6 +22,7 @@ export default function HRLoginPage() {
                 name="email"
                 placeholder="Email address"
                 required
+                autoComplete="email"
               />
             </div>
 
@@ -32,6 +33,10 @@ export default function HRLoginPage() {
                 name="password"
                 placeholder="Enter your password"
                 required
+                autoComplete="current-password"
+                data-1p-ignore
+                data-lpignore="true"
+                data-form-type="other"
               />
             </div>
 

@@ -98,7 +98,7 @@ export default function LoginPage() {
 
           {showError && <div className="login-alert">{errorMsg}</div>}
 
-        <form onSubmit={handleLogin} className="login-form">
+        <form onSubmit={handleLogin} className="login-form" autoComplete="off" data-form-type="other">
             <div className="login-form-group">
               <label>Email</label>
             <input
@@ -131,6 +131,9 @@ export default function LoginPage() {
                 placeholder="••••••••"
                 required
                 autoComplete="current-password"
+                data-1p-ignore
+                data-lpignore="true"
+                data-form-type="other"
               />
               <button
                 type="button"

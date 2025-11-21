@@ -202,6 +202,14 @@ export default function DashboardPage() {
     // Check immediately
     checkVerification();
 
+    // Safety timeout: jika modal stuck lebih dari 30 detik, force close
+    const safetyTimeout = setTimeout(() => {
+      if (showVerificationModal) {
+        console.warn("⚠️ [DASHBOARD] Modal stuck for 30s, forcing close");
+        setShowVerificationModal(false);
+      }
+    }, 30000);
+
     // Also check when page becomes visible (user returns from OTP page)
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
@@ -219,10 +227,11 @@ export default function DashboardPage() {
     window.addEventListener('focus', handleFocus);
 
     return () => {
+      clearTimeout(safetyTimeout);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);
     };
-  }, [router, loadDashboardData]);
+  }, [router, loadDashboardData, showVerificationModal]);
 
   const handleVerificationOK = async () => {
     const session = getCustomerSession();
@@ -313,10 +322,16 @@ export default function DashboardPage() {
             alignItems: "center",
             justifyContent: "center",
             zIndex: 9999,
+            pointerEvents: "auto",
           }}
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               // Jangan tutup jika klik di luar modal
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") {
+              // Don't allow closing with ESC for verification modal
             }
           }}
         >
@@ -328,6 +343,9 @@ export default function DashboardPage() {
               maxWidth: "500px",
               width: "90%",
               boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
+              pointerEvents: "auto",
+              position: "relative",
+              zIndex: 10000,
             }}
           >
             <h2
@@ -353,7 +371,11 @@ export default function DashboardPage() {
             </p>
             <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
               <button
-                onClick={handleVerificationOK}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleVerificationOK();
+                }}
                 disabled={sendingOTP}
                 style={{
                   padding: "12px 24px",
@@ -366,6 +388,9 @@ export default function DashboardPage() {
                   cursor: sendingOTP ? "not-allowed" : "pointer",
                   opacity: sendingOTP ? 0.6 : 1,
                   transition: "all 0.3s ease",
+                  pointerEvents: sendingOTP ? "none" : "auto",
+                  position: "relative",
+                  zIndex: 10001,
                 }}
                 onMouseOver={(e) => {
                   if (!sendingOTP) {

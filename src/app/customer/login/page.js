@@ -215,7 +215,7 @@ return ( <div className="login-container">
       <h3>Welcome Back!</h3>
       <p>Sign in to your account</p>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} autoComplete="off" data-form-type="other">
         <div className="form-group">
           <label>Email</label>
           <input
@@ -225,6 +225,7 @@ return ( <div className="login-container">
             value={formData.email}
             onChange={handleChange}
             required
+            autoComplete="email"
           />
         </div>
 
@@ -237,6 +238,10 @@ return ( <div className="login-container">
             value={formData.password}
             onChange={handleChange}
             required
+            autoComplete="current-password"
+            data-1p-ignore
+            data-lpignore="true"
+            data-form-type="other"
           />
         </div>
 
