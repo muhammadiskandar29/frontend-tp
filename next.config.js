@@ -20,6 +20,9 @@ const nextConfig = {
     optimizeCss: true,
   },
 
+  // Turbopack config to silence warning
+  turbopack: {},
+
   // Webpack optimizations
   webpack: (config, { isServer }) => {
     // Optimize bundle size
