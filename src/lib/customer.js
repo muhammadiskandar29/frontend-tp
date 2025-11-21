@@ -1,10 +1,12 @@
-const BASE_URL = "https://onedashboardapi-production.up.railway.app/api";
+// Use Next.js proxy to avoid CORS
+const BASE_URL = "/api";
 
 export async function getCustomers() {
   try {
     const token = localStorage.getItem("token");
     const headers = {
       "Content-Type": "application/json",
+      "Accept": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };
 
@@ -29,7 +31,11 @@ export async function deleteCustomer(id) {
 
     const res = await fetch(`${BASE_URL}/admin/customer/${id}`, {
       method: "DELETE",
-      headers,
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
     });
 
     if (!res.ok) throw new Error("Gagal menghapus customer");

@@ -199,7 +199,7 @@ const generateKode = (text) =>
       console.log("FINAL PAYLOAD:", payload);
 
       const res = await fetch(
-        "https://onedashboardapi-production.up.railway.app/api/admin/produk",
+        "/api/admin/produk",
         {
           method: "POST",
           headers: {
@@ -239,7 +239,7 @@ useEffect(() => {
 
       // 1️⃣ Fetch kategori
       const kategoriRes = await fetch(
-        "https://onedashboardapi-production.up.railway.app/api/admin/kategori-produk",
+        "/api/admin/kategori-produk",
         { headers }
       );
       const kategoriData = await kategoriRes.json();
@@ -250,14 +250,14 @@ useEffect(() => {
 
       // 2️⃣ Fetch produk (misal edit mode)
       const produkRes = await fetch(
-        "https://onedashboardapi-production.up.railway.app/api/admin/produk/1",
+        "/api/admin/produk/1",
         { headers }
       );
       const produkData = await produkRes.json();
 
       // 3️⃣ Fetch users
       const usersRes = await fetch(
-        "https://onedashboardapi-production.up.railway.app/api/admin/users",
+        "/api/admin/users",
         { headers }
       );
       const usersJson = await usersRes.json();

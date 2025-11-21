@@ -72,7 +72,7 @@ export default function AdminProductsPage() {
   <div className="product-info">
     <img
       className="product-header-img"
-      src={`https://onedashboardapi-production.up.railway.app/storage/${p.header}`}
+      src={`/storage/${p.header}`}
       alt={p.nama}
       onError={(e) => (e.target.style.display = "none")}
     />

@@ -85,7 +85,7 @@ export default function Layout({ children, title, description }) {
   const handleLogout = async () => {
     try {
       const token = localStorage.getItem("token");
-      await fetch("https://onedashboardapi-production.up.railway.app/api/logout", {
+      await fetch("/api/logout", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

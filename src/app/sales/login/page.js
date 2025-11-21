@@ -10,7 +10,7 @@ import { setToken } from '@/lib/storage';
 
 import { isTokenExpired } from '@/lib/checkToken';
 
-const API_URL = 'https://onedashboardapi-production.up.railway.app/api/login';
+const API_URL = '/api/login';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -61,7 +61,7 @@ export default function LoginPage() {
         setToken(data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
 
-        // ✅ Simpan cookie yang bisa dibaca middleware (tanpa Secure biar jalan di localhost)
+        // ✅ Simpan cookie yang bisa dibaca middleware
         document.cookie = `token=${data.token}; path=/; max-age=${60 * 60 * 24}; SameSite=Lax`;
 
         router.replace('/admin');

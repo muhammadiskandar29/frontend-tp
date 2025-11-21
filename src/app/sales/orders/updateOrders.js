@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import "@/styles/pesanan.css";
 
-const BASE_URL = "https://onedashboardapi-production.up.railway.app/api";
+// Use Next.js proxy to avoid CORS
+const BASE_URL = "/api";
 
 // Helper function to clean order data
 const cleanOrderData = (orderData) => {

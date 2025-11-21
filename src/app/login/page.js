@@ -61,7 +61,7 @@ export default function LoginPage() {
         localStorage.setItem('user', JSON.stringify(data.user));
         localStorage.setItem('division', data.user?.divisi || '');
 
-        // ✅ Simpan cookie yang bisa dibaca middleware (tanpa Secure biar jalan di localhost)
+        // ✅ Simpan cookie yang bisa dibaca middleware
         document.cookie = `token=${data.token}; path=/; max-age=${60 * 60 * 24}; SameSite=Lax`;
 
         const targetRoute = getDivisionHome(data.user?.divisi);
@@ -120,16 +120,16 @@ export default function LoginPage() {
               <label>Password</label>
               <div className="login-password-wrapper">
               <input
-                id="password"
+              id="password"
                   type={showPasswordField ? 'text' : 'password'}
                   name="password"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (showError) setShowError(false);
-                }}
-                placeholder="••••••••"
-                required
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (showError) setShowError(false);
+              }}
+              placeholder="••••••••"
+              required
                 autoComplete="current-password"
                 data-1p-ignore
                 data-lpignore="true"

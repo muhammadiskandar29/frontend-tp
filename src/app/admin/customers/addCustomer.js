@@ -3,7 +3,8 @@
 import { useState } from "react";
 import "@/styles/customer.css";
 
-const BASE_URL = "https://onedashboardapi-production.up.railway.app/api";
+// Use Next.js proxy to avoid CORS
+const BASE_URL = "/api";
 
 export default function AddCustomerModal({ onClose, onSuccess }) {
   const [formData, setFormData] = useState({

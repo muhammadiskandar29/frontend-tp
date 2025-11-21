@@ -1,4 +1,5 @@
-const BASE_URL = "https://onedashboardapi-production.up.railway.app/api";
+// Use Next.js proxy to avoid CORS
+const BASE_URL = "/api";
 
 export async function getLogsFollowUp() {
   try {
@@ -6,6 +7,7 @@ export async function getLogsFollowUp() {
 
     const headers = {
       "Content-Type": "application/json",
+      "Accept": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };
 

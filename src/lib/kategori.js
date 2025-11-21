@@ -1,5 +1,6 @@
 // /lib/kategori.js
-const BASE_URL = "https://onedashboardapi-production.up.railway.app/api";
+// Use Next.js proxy to avoid CORS
+const BASE_URL = "/api";
 
 /**
  * Ambil semua kategori

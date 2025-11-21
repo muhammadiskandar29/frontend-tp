@@ -78,7 +78,7 @@ export default function DetailProdukPage({ params }) {
             {/* HEADER IMAGE */}
             <div className="header-section">
               <img
-                src={`https://onedashboardapi-production.up.railway.app/storage/${product.header}`}
+                src={`/storage/${product.header}`}
                 className="header-image"
                 alt={product.nama}
               />
@@ -141,7 +141,7 @@ export default function DetailProdukPage({ params }) {
                     {gallery.map((g, i) => (
                       <div key={i} className="gallery-item">
                         <img
-                          src={`https://onedashboardapi-production.up.railway.app/storage/${g.path}`}
+                          src={`/storage/${g.path}`}
                           alt={g.caption}
                         />
                         <p>{g.caption}</p>

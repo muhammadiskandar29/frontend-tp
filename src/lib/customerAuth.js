@@ -1,12 +1,11 @@
 import { toast } from "react-hot-toast";
 
-const DEFAULT_BASE_URL =
-  process.env.NEXT_PUBLIC_CUSTOMER_API_URL ||
-  "https://onedashboardapi-production.up.railway.app/api/customer";
+// Use Next.js proxy to avoid CORS
+const BASE_URL = "/api/customer";
 
 function buildUrl(endpoint) {
   if (endpoint.startsWith("http")) return endpoint;
-  return `${DEFAULT_BASE_URL}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
+  return `${BASE_URL}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
 }
 
 function handleUnauthorized() {
@@ -224,8 +223,8 @@ export function getCustomerSession() {
   };
 }
 
-// OTP Functions
-const OTP_BASE_URL = "https://onedashboardapi-production.up.railway.app/api";
+// OTP Functions - Use Next.js proxy
+const OTP_BASE_URL = "/api/customer";
 
 export async function sendCustomerOTP(customerId, wa, tokenFromCaller) {
   const token = tokenFromCaller || localStorage.getItem("customer_token");
@@ -240,7 +239,7 @@ export async function sendCustomerOTP(customerId, wa, tokenFromCaller) {
   }
 
   try {
-    const response = await fetch(`${OTP_BASE_URL}/customer/otp/send`, {
+    const response = await fetch(`${OTP_BASE_URL}/otp/send`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -289,7 +288,7 @@ export async function verifyCustomerOTP(customerId, otp) {
   const token = localStorage.getItem("customer_token");
   
   try {
-    const response = await fetch(`${OTP_BASE_URL}/customer/otp/verify`, {
+    const response = await fetch(`${OTP_BASE_URL}/otp/verify`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -362,7 +361,7 @@ export async function resendCustomerOTP(customerId, wa) {
   }
   
   try {
-    const response = await fetch(`${OTP_BASE_URL}/customer/otp/resend`, {
+    const response = await fetch(`${OTP_BASE_URL}/otp/resend`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

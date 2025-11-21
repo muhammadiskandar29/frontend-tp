@@ -42,7 +42,7 @@ export default function LandingPage() {
     async function fetchData() {
       try {
         const res = await fetch(
-          `https://onedashboardapi-production.up.railway.app/api/landing/${kode_produk}`
+          `/api/landing/${kode_produk}`
         );
         const json = await res.json();
 
@@ -160,7 +160,8 @@ export default function LandingPage() {
   // 🔥 PEMBAYARAN MIDTRANS — 3 ENDPOINT FIX SESUAI BACKEND LU
   // ==========================================================
   async function payEwallet(payload) {
-  const API_BASE = "https://onedashboardapi-production.up.railway.app/api";
+  // Use Next.js proxy to avoid CORS
+  const API_BASE = "/api";
 
   const formData = new FormData();
   formData.append("name", payload.nama);
@@ -188,7 +189,8 @@ export default function LandingPage() {
 }
 
 async function payCC(payload) {
-  const API_BASE = "https://onedashboardapi-production.up.railway.app/api";
+  // Use Next.js proxy to avoid CORS
+  const API_BASE = "/api";
 
   const response = await fetch(`${API_BASE}/midtrans/create-snap-cc`, {
     method: "POST",
@@ -217,7 +219,8 @@ async function payCC(payload) {
 
 
   async function payVA(payload) {
-  const API_BASE = "https://onedashboardapi-production.up.railway.app/api";
+  // Use Next.js proxy to avoid CORS
+  const API_BASE = "/api";
 
   const response = await fetch(`${API_BASE}/midtrans/create-snap-va`, {
     method: "POST",

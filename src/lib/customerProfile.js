@@ -1,12 +1,11 @@
 import { toast } from "react-hot-toast";
 
-const DEFAULT_BASE_URL =
-  process.env.NEXT_PUBLIC_CUSTOMER_API_URL ||
-  "https://onedashboardapi-production.up.railway.app/api/customer";
+// Use Next.js proxy to avoid CORS
+const BASE_URL = "/api/customer";
 
 function buildUrl(endpoint) {
   if (endpoint.startsWith("http")) return endpoint;
-  return `${DEFAULT_BASE_URL}${
+  return `${BASE_URL}${
     endpoint.startsWith("/") ? endpoint : `/${endpoint}`
   }`;
 }

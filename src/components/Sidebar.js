@@ -78,8 +78,8 @@ export default function Sidebar({ role }) {
           { label: "Report", href: "/admin/followup/report" },
         ],
       },
-      { label: "Aktivitas", href: "/admin/aktivitas", icon: <Activity size={18} /> },
-      { label: "Settings", href: "/admin/settings", icon: <Settings size={18} /> },
+      // { label: "Aktivitas", href: "/admin/aktivitas", icon: <Activity size={18} /> }, // Route belum tersedia
+      // { label: "Settings", href: "/admin/settings", icon: <Settings size={18} /> }, // Route belum tersedia
     ];
 
     setMenu(baseMenu);

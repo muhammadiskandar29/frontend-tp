@@ -12,7 +12,8 @@ const ViewOrders = dynamic(() => import("./viewOrders"), { ssr: false });
 const UpdateOrders = dynamic(() => import("./updateOrders"), { ssr: false });
 const AddOrders = dynamic(() => import("./addOrders"), { ssr: false });
 
-const BASE_URL = "https://onedashboardapi-production.up.railway.app/api";
+// Use Next.js proxy to avoid CORS
+const BASE_URL = "/api";
 
 const STATUS_MAP = {
   0: "Unpaid",

@@ -22,7 +22,8 @@ const computeStatusBayar = (order) => {
   return 0; // Unpaid
 };
 
-const BASE_URL = "https://onedashboardapi-production.up.railway.app";
+// Use Next.js proxy to avoid CORS
+const BASE_URL = "/api";
 
 export default function ViewOrders({ order, onClose }) {
   if (!order) return null;

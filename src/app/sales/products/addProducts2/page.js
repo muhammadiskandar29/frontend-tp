@@ -199,7 +199,7 @@ const generateKode = (text) =>
       console.log("FINAL PAYLOAD:", payload);
 
       const res = await fetch(
-        "https://onedashboardapi-production.up.railway.app/api/admin/produk",
+        "/api/admin/produk",
         {
           method: "POST",
           headers: {
@@ -239,8 +239,15 @@ useEffect(() => {
 
       // 1️⃣ Fetch kategori
       const kategoriRes = await fetch(
-        "https://onedashboardapi-production.up.railway.app/api/admin/kategori-produk",
-        { headers }
+        "/api/admin/kategori-produk",
+        { 
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            ...headers
+          }
+        }
       );
       const kategoriData = await kategoriRes.json();
       const kategoriOpts = Array.isArray(kategoriData.data)
@@ -250,15 +257,29 @@ useEffect(() => {
 
       // 2️⃣ Fetch produk (misal edit mode)
       const produkRes = await fetch(
-        "https://onedashboardapi-production.up.railway.app/api/admin/produk/1",
-        { headers }
+        "/api/admin/produk/1",
+        { 
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            ...headers
+          }
+        }
       );
       const produkData = await produkRes.json();
 
       // 3️⃣ Fetch users
       const usersRes = await fetch(
-        "https://onedashboardapi-production.up.railway.app/api/admin/users",
-        { headers }
+        "/api/admin/users",
+        { 
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            ...headers
+          }
+        }
       );
       const usersJson = await usersRes.json();
       const userOpts = Array.isArray(usersJson.data)

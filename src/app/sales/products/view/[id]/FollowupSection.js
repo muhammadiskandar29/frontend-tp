@@ -5,7 +5,8 @@ import { useParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import dynamic from "next/dynamic";
 
-const BASE_URL = "https://onedashboardapi-production.up.railway.app/api";
+// Use Next.js proxy to avoid CORS
+const BASE_URL = "/api";
 
 const EmojiPicker = dynamic(() => import("emoji-picker-react"), {
   ssr: false,

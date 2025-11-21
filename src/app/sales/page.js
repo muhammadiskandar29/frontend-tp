@@ -31,9 +31,12 @@ export default function Dashboard() {
 
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch("https://onedashboardapi-production.up.railway.app/api/admin/sales/dashboard", {
+        const response = await fetch("/api/admin/sales/dashboard", {
+          method: "GET",
           headers: {
-            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
         });
 
