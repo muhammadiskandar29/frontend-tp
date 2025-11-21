@@ -8,7 +8,7 @@ import { setToken } from '@/lib/storage';
 import { getDivisionHome } from '@/lib/divisionRoutes';
 import { isTokenExpired } from '@/lib/checkToken';
 
-const API_URL = 'https://onedashboardapi-production.up.railway.app/api/login';
+const API_URL = '/api/login';
 
 export default function LoginPage() {
   const router = useRouter();
