@@ -1,114 +1,59 @@
-// /lib/kategori.js
-// Use Next.js proxy to avoid CORS
-const BASE_URL = "/api";
+/**
+ * Categories API Functions
+ * Centralized functions untuk category management
+ * Menggunakan API_ENDPOINTS untuk konsistensi
+ */
+
+import { api } from "./api";
+import { API_ENDPOINTS } from "@/config/api";
 
 /**
- * Ambil semua kategori
+ * 📘 GET - Ambil semua kategori
+ * @returns {Promise<Array>} Array of categories
  */
 export async function getKategori() {
-  try {
-    const token = localStorage.getItem("token");
-    const headers = {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    };
-
-    const res = await fetch(`${BASE_URL}/admin/kategori-produk`, {
-      method: "GET",
-      headers,
-      cache: "no-store",
-    });
-
-    if (!res.ok) throw new Error("Gagal mengambil data kategori");
-
-    const result = await res.json();
-    console.log("📡 [GET] /admin/kategori-produk", result);
-
-    return Array.isArray(result.data) ? result.data : [];
-  } catch (err) {
-    console.error("❌ Error getKategori:", err);
-    return [];
-  }
+  const res = await api(API_ENDPOINTS.admin.categories, { method: "GET" });
+  return Array.isArray(res.data) ? res.data : [];
 }
 
 /**
- * Tambah kategori baru
+ * 🟢 POST - Tambah kategori baru
+ * @param {string} nama - Category name
+ * @returns {Promise<object|null>} Created category or null
  */
 export async function addKategori(nama) {
-  try {
-    const token = localStorage.getItem("token");
-    const headers = {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    };
+  const res = await api(API_ENDPOINTS.admin.categories, {
+    method: "POST",
+    body: JSON.stringify({ nama }),
+  });
 
-    const res = await fetch(`${BASE_URL}/admin/kategori-produk`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ nama }),
-    });
-
-    if (!res.ok) throw new Error("Gagal menambahkan kategori");
-
-    const result = await res.json();
-    console.log("✅ [POST] /admin/kategori-produk", result);
-    return result.data;
-  } catch (err) {
-    console.error("❌ Error addKategori:", err);
-    return null;
-  }
+  return res.success ? res.data : null;
 }
 
 /**
- * Update kategori berdasarkan ID
+ * 🟡 PUT - Update kategori berdasarkan ID
+ * @param {number|string} id - Category ID
+ * @param {string} nama - Updated category name
+ * @returns {Promise<object|null>} Updated category or null
  */
 export async function updateKategori(id, nama) {
-  try {
-    const token = localStorage.getItem("token");
-    const headers = {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    };
+  const res = await api(API_ENDPOINTS.admin.categoryById(id), {
+    method: "PUT",
+    body: JSON.stringify({ nama }),
+  });
 
-    const res = await fetch(`${BASE_URL}/admin/kategori-produk/${id}`, {
-      method: "PUT",
-      headers,
-      body: JSON.stringify({ nama }),
-    });
-
-    if (!res.ok) throw new Error("Gagal memperbarui kategori");
-
-    const result = await res.json();
-    console.log("✏️ [PUT] /admin/kategori-produk", result);
-    return result.data;
-  } catch (err) {
-    console.error("❌ Error updateKategori:", err);
-    return null;
-  }
+  return res.success ? res.data : null;
 }
 
 /**
- * Hapus kategori berdasarkan ID
+ * 🔴 DELETE - Hapus kategori berdasarkan ID
+ * @param {number|string} id - Category ID
+ * @returns {Promise<boolean>} Success status
  */
 export async function deleteKategori(id) {
-  try {
-    const token = localStorage.getItem("token");
-    const headers = {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    };
+  const res = await api(API_ENDPOINTS.admin.categoryById(id), {
+    method: "DELETE",
+  });
 
-    const res = await fetch(`${BASE_URL}/admin/kategori-produk/${id}`, {
-      method: "DELETE",
-      headers,
-    });
-
-    if (!res.ok) throw new Error("Gagal menghapus kategori");
-
-    console.log(`🗑 [DELETE] /admin/kategori-produk/${id} berhasil`);
-    return true;
-  } catch (err) {
-    console.error("❌ Error deleteKategori:", err);
-    return false;
-  }
+  return res.success;
 }

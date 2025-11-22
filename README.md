@@ -1,36 +1,116 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# One Dashboard - Frontend
 
-## Getting Started
+Next.js application untuk One Dashboard management system.
 
-First, run the development server:
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js 18+ 
+- npm/yarn/pnpm
+
+### Installation
 
 ```bash
+# Install dependencies
+npm install
+
+# Setup environment variables
+cp .env.example .env.local
+# Edit .env.local dengan backend URL yang sesuai
+
+# Run development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to see the result.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## 📁 Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+├── config/          # Configuration (env, API endpoints)
+├── lib/             # API functions & utilities
+├── hooks/           # Custom React hooks
+├── app/             # Next.js pages & API routes
+└── components/      # React components
+```
 
-## Learn More
+Lihat [ARCHITECTURE.md](./ARCHITECTURE.md) untuk detail struktur.
 
-To learn more about Next.js, take a look at the following resources:
+## ⚙️ Environment Setup
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Lihat [ENV_SETUP.md](./ENV_SETUP.md) untuk panduan lengkap setup environment variables.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Quick Setup
 
-## Deploy on Vercel
+**Development:**
+```bash
+# .env.local
+BACKEND_URL=http://localhost:8000
+NODE_ENV=development
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Production:**
+Set environment variables di hosting platform (Vercel, Railway, dll):
+- `BACKEND_URL`
+- `NEXT_PUBLIC_BACKEND_URL`
+- `NODE_ENV=production`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🏗️ Architecture
+
+Project ini menggunakan **layered architecture**:
+
+1. **Components** - UI layer
+2. **Hooks** - State management
+3. **Lib Functions** - API calls & business logic
+4. **Base API Client** - Centralized API handling
+5. **Config** - Environment & endpoints
+
+### Kapan Pakai Apa?
+
+- **Hooks** (`useUsers`, `useKategori`) - Untuk complex state management
+- **Lib Functions** (`getUsers`, `getKategori`) - Untuk simple operations
+- **API Routes** (`app/api/`) - Hanya untuk proxy CORS
+
+Lihat [ARCHITECTURE.md](./ARCHITECTURE.md) untuk detail.
+
+## 📚 Documentation
+
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - Architecture & patterns
+- [ENV_SETUP.md](./ENV_SETUP.md) - Environment setup guide
+
+## 🛠️ Development
+
+```bash
+# Development
+npm run dev
+
+# Build
+npm run build
+
+# Production
+npm start
+
+# Lint
+npm run lint
+```
+
+## 🌍 Environment Migration
+
+Project ini **mudah dipindahkan** ke environment manapun:
+
+1. **Ubah environment variables** di `.env.local` atau hosting platform
+2. **Backend URL otomatis ter-update** via `src/config/env.js`
+3. **Tidak perlu ubah code** - semua menggunakan config
+
+## 📦 Tech Stack
+
+- **Next.js 16** - React framework
+- **React 19** - UI library
+- **Tailwind CSS** - Styling
+- **React Hot Toast** - Notifications
+- **PrimeReact** - UI components
+
+## 📝 License
+
+Private project - All rights reserved

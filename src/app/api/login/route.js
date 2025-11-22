@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server';
+import { getBackendUrl } from '@/config/api';
 
-const BACKEND_URL = 'https://onedashboardapi-production.up.railway.app/api/login';
-
+/**
+ * Login API Proxy Route
+ * Proxy untuk menghindari CORS issues
+ */
 export async function POST(request) {
   try {
     const body = await request.json();
+    const backendUrl = getBackendUrl('/login');
     
-    const response = await fetch(BACKEND_URL, {
+    const response = await fetch(backendUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

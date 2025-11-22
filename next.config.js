@@ -67,10 +67,16 @@ const nextConfig = {
   },
 
   async rewrites() {
+    // Get backend URL from environment variable
+    const backendUrl = 
+      process.env.BACKEND_URL || 
+      process.env.NEXT_PUBLIC_BACKEND_URL || 
+      "https://onedashboardapi-production.up.railway.app";
+    
     return [
       {
         source: "/api/:path*",
-        destination: "https://onedashboardapi-production.up.railway.app/api/:path*", // backend API
+        destination: `${backendUrl}/api/:path*`,
       },
     ];
   },
