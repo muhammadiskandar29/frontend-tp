@@ -150,12 +150,22 @@ const summaryCards = useMemo(
       
       console.log("🟢 [UPDATE_USER] Update result:", result);
       
-      // ⚠️ PERINGATAN: Jika email berubah, user perlu login ulang dengan email baru
+      // ⚠️ PERINGATAN: Jika email berubah, backend harus update email di tabel authentication juga
       if (selectedUser.email !== updatedData.email) {
         showToast(
-          `⚠️ Email berubah dari "${selectedUser.email}" ke "${updatedData.email}". User harus login ulang dengan email baru!`,
+          `⚠️ Email berubah dari "${selectedUser.email}" ke "${updatedData.email}". ` +
+          `PENTING: Pastikan backend juga mengupdate email di tabel authentication/login. ` +
+          `Jika tidak, user tidak bisa login dengan email baru!`,
           "warning"
         );
+        
+        // Log untuk debugging
+        console.warn("⚠️ [EMAIL_CHANGE] Email changed but backend must update authentication table:", {
+          userId: selectedUser.id,
+          oldEmail: selectedUser.email,
+          newEmail: updatedData.email,
+          note: "Backend harus sync email ke tabel authentication/login"
+        });
       } else {
         showToast("Perubahan berhasil disimpan!");
       }
