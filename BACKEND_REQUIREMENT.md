@@ -1,21 +1,41 @@
 # Backend Requirement: Email Update Sync
 
-## ⚠️ Masalah yang Terjadi
+## ⚠️ Masalah yang Terjadi (CONFIRMED BUG)
 
+### Contoh Kasus Real:
+- **User ID:** 11
+- **Nama:** Asep
+- **Email di tabel `users`:** `asep@gmail.com` ✅ (sudah terupdate)
+- **Email di tabel `authentication/login`:** `asep@gmai.com` ❌ (masih email lama)
+
+### Hasil:
+- ❌ Login dengan `asep@gmail.com` → **"Email tidak terdaftar"**
+- ✅ Login dengan `asep@gmai.com` → **Berhasil** (tapi ini email typo!)
+
+### Root Cause:
 Ketika admin mengubah email user dari `asep@gmai.com` ke `asep@gmail.com`:
 
-1. ✅ Email di tabel `users` sudah terupdate
-2. ❌ Email di tabel `authentication/login` masih pakai email lama
-3. ❌ User tidak bisa login dengan email baru, harus pakai email lama
+1. ✅ Email di tabel `users` sudah terupdate → `asep@gmail.com`
+2. ❌ Email di tabel `authentication/login` masih pakai email lama → `asep@gmai.com`
+3. ❌ Backend login endpoint cek email di tabel `authentication/login`, bukan di tabel `users`
+4. ❌ User tidak bisa login dengan email baru, harus pakai email lama
 
 ## 🔧 Solusi yang Diperlukan
+
+### ⚠️ URGENT: Backend harus fix ini segera!
 
 ### Endpoint: `PUT /api/admin/users/{id}`
 
 **Backend harus mengupdate email di 2 tempat:**
 
-1. **Tabel `users`** (sudah dilakukan)
-2. **Tabel `authentication/login`** (perlu ditambahkan)
+1. **Tabel `users`** ✅ (sudah dilakukan)
+2. **Tabel `authentication/login`** ❌ (perlu ditambahkan - **INI YANG MASALAH**)
+
+### Endpoint: `POST /api/login`
+
+**Backend login endpoint harus cek email di tabel yang benar:**
+- Saat ini: Cek email di tabel `authentication/login` (masih email lama)
+- Seharusnya: Cek email di tabel `users` (sudah terupdate) ATAU sync kedua tabel
 
 ### Contoh Implementasi
 
@@ -65,24 +85,79 @@ public function updateUser($id, $data) {
 - [ ] Test: Pastikan login dengan email lama tidak bisa (jika diperlukan)
 - [ ] Test: Pastikan login dengan email baru bisa
 
-## 🧪 Test Case
+## 🧪 Test Case (CONFIRMED FAILING)
 
-1. **Test 1: Update email typo ke email valid**
-   - User: `asep@gmai.com` → `asep@gmail.com`
-   - Expected: User bisa login dengan `asep@gmail.com`
-   - Current: ❌ User tidak bisa login dengan email baru
+### Test Case 1: Update email typo ke email valid
+**Status:** ❌ **FAILING**
 
-2. **Test 2: Update email ke email lain**
-   - User: `user@yahoo.com` → `user@gmail.com`
-   - Expected: User bisa login dengan `user@gmail.com`
-   - Current: ❌ User tidak bisa login dengan email baru
+- **Setup:**
+  - User ID: 11
+  - Daftar dengan: `asep@gmai.com` (typo)
+  - Edit menjadi: `asep@gmail.com` (benar)
+  
+- **Expected:**
+  - ✅ User bisa login dengan `asep@gmail.com`
+  - ❌ Login dengan `asep@gmai.com` tidak bisa (email lama)
+  
+- **Current Result:**
+  - ❌ Login dengan `asep@gmail.com` → **"Email tidak terdaftar"**
+  - ✅ Login dengan `asep@gmai.com` → **Berhasil** (masalah!)
 
-## 📝 Catatan
+- **Data di Database:**
+  ```json
+  // Tabel users (SUDAH TERUPDATE)
+  {
+    "id": 11,
+    "email": "asep@gmail.com"  ✅
+  }
+  
+  // Tabel authentication/login (MASIH EMAIL LAMA)
+  {
+    "user_id": 11,
+    "email": "asep@gmai.com"  ❌
+  }
+  ```
 
+### Test Case 2: Update email ke email lain
+**Status:** ❌ **FAILING** (same issue)
+
+- User: `user@yahoo.com` → `user@gmail.com`
+- Expected: User bisa login dengan `user@gmail.com`
+- Current: ❌ User tidak bisa login dengan email baru
+
+## 📝 Catatan Penting
+
+- ⚠️ **URGENT:** Masalah ini sudah terjadi di production
 - Frontend sudah memberikan warning yang jelas saat email diubah
 - Frontend sudah meminta konfirmasi sebelum update email
-- Backend harus memastikan email di tabel authentication juga terupdate
-- Jika tidak, user akan tetap harus login dengan email lama
+- **Backend HARUS memastikan email di tabel authentication juga terupdate**
+- Jika tidak, user akan tetap harus login dengan email lama (termasuk email typo!)
+
+## 🔍 Debugging Steps untuk Backend
+
+1. **Cek tabel `users`:**
+   ```sql
+   SELECT id, email FROM users WHERE id = 11;
+   -- Result: email = "asep@gmail.com" ✅
+   ```
+
+2. **Cek tabel `authentication/login`:**
+   ```sql
+   SELECT user_id, email FROM auth_table WHERE user_id = 11;
+   -- Result: email = "asep@gmai.com" ❌ (MASALAH DI SINI!)
+   ```
+
+3. **Fix:**
+   ```sql
+   -- Update email di tabel authentication
+   UPDATE auth_table 
+   SET email = 'asep@gmail.com' 
+   WHERE user_id = 11;
+   ```
+
+4. **Test login:**
+   - Login dengan `asep@gmail.com` → Harus berhasil ✅
+   - Login dengan `asep@gmai.com` → Harus gagal ✅
 
 ## 🔗 Related Files
 

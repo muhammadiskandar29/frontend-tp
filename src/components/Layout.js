@@ -82,24 +82,10 @@ export default function Layout({ children, title, description }) {
     );
   }
 
-  const handleLogout = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      await fetch("/api/logout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-    } catch (e) {
-      console.error("Logout error:", e);
-    } finally {
-      localStorage.clear();
-      toast.success("");
-      router.push("/login");
-    }
-  };
+  const handleLogout = () => {
+    localStorage.clear();
+    router.push("/login");
+  };  
 
   return (
     <>

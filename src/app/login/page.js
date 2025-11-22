@@ -68,7 +68,19 @@ export default function LoginPage() {
         localStorage.setItem('division_home', targetRoute);
         router.replace(targetRoute);
       } else {
-        setErrorMsg(data?.message || 'Email atau password salah.');
+        // Check if error is "Email tidak terdaftar" - might be email sync issue
+        const errorMessage = data?.message || 'Email atau password salah.';
+        
+        // If email not found, check if it might be a sync issue
+        if (errorMessage.includes('tidak terdaftar') || errorMessage.includes('Email tidak terdaftar')) {
+          setErrorMsg(
+            errorMessage + 
+            ' Jika email baru saja diubah, coba login dengan email lama terlebih dahulu. ' +
+            'Hubungi admin jika masalah berlanjut.'
+          );
+        } else {
+          setErrorMsg(errorMessage);
+        }
         setShowError(true);
       }
     } catch (error) {
