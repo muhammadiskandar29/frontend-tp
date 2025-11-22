@@ -1,3 +1,5 @@
+import ToasterProvider from "@/components/ToasterProvider";
+
 export const metadata = {
   title: "One Dashboard",
   description: "Dashboard system for multi-role access",
@@ -12,7 +14,10 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="id">
-      <body>{children}</body>
+      <body>
+        {children}
+        <ToasterProvider />
+      </body>
     </html>
   );
 }

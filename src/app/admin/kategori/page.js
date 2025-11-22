@@ -166,7 +166,7 @@ export default function AdminKategoriPage() {
           ))}
         </section>
 
-        <section className="panel products-panel">
+        <section className="panel users-panel">
           <div className="panel__header">
             <div>
               <p className="panel__eyebrow">Directory</p>
@@ -175,99 +175,45 @@ export default function AdminKategoriPage() {
             <span className="panel__meta">{filtered.length} kategori</span>
           </div>
 
-          <div className="products-table__wrapper" style={{ overflowX: "auto", maxWidth: "100%" }}>
-            <div className="products-table" style={{ minWidth: "100%", width: "100%" }}>
-              <div 
-                className="products-table__head" 
-                style={{ 
-                  display: "grid", 
-                  gridTemplateColumns: "60px 1fr 120px",
-                  gap: "1rem",
-                  padding: "0.75rem 1rem"
-                }}
-              >
-                <span style={{ fontSize: "0.875rem", fontWeight: "600" }}>#</span>
-                <span style={{ fontSize: "0.875rem", fontWeight: "600" }}>Nama Kategori</span>
-                <span style={{ fontSize: "0.875rem", fontWeight: "600", textAlign: "center" }}>Actions</span>
+          <div className="users-table__wrapper">
+            <div className="users-table">
+              <div className="users-table__head">
+                <span>#</span>
+                <span>Nama Kategori</span>
+                <span>Actions</span>
               </div>
-              <div className="products-table__body">
+              <div className="users-table__body">
                 {paginatedData.length > 0 ? (
                   paginatedData.map((kat, i) => (
-                    <div 
-                      className="products-table__row" 
-                      key={kat.id}
-                      style={{ 
-                        display: "grid", 
-                        gridTemplateColumns: "60px 1fr 120px",
-                        gap: "1rem",
-                        padding: "0.75rem 1rem",
-                        borderTop: "1px solid #e5e7eb"
-                      }}
-                    >
-                      <div className="products-table__cell" data-label="#" style={{ fontSize: "0.875rem", color: "#6b7280" }}>
+                    <div className="users-table__row" key={kat.id}>
+                      <div className="users-table__cell" data-label="#">
                         {startIndex + i + 1}
                       </div>
-                      <div 
-                        className="products-table__cell products-table__cell--strong" 
-                        data-label="Nama Kategori"
-                        style={{ 
-                          fontSize: "0.875rem",
-                          fontWeight: "500",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap"
-                        }}
-                      >
+                      <div className="users-table__cell" data-label="Nama Kategori">
                         {kat.nama}
                       </div>
-                      <div className="products-table__cell" data-label="Actions" style={{ display: "flex", gap: "0.5rem", justifyContent: "center" }}>
+                      <div className="users-table__cell users-table__cell--actions" data-label="Actions">
                         <button
+                          className="users-action-btn users-action-btn--ghost"
+                          title="Edit kategori"
+                          aria-label="Edit kategori"
                           onClick={() => handleEdit(kat)}
-                          style={{
-                            width: "32px",
-                            height: "32px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            border: "none",
-                            borderRadius: "6px",
-                            backgroundColor: "#3b82f6",
-                            color: "white",
-                            cursor: "pointer",
-                            transition: "all 0.2s"
-                          }}
-                          onMouseEnter={(e) => e.target.style.backgroundColor = "#2563eb"}
-                          onMouseLeave={(e) => e.target.style.backgroundColor = "#3b82f6"}
-                          title="Edit"
                         >
-                          <i className="pi pi-pencil" style={{ fontSize: "0.875rem" }}></i>
+                          <i className="pi pi-pencil" />
                         </button>
                         <button
+                          className="users-action-btn users-action-btn--danger"
+                          title="Hapus kategori"
+                          aria-label="Hapus kategori"
                           onClick={() => handleDelete(kat)}
-                          style={{
-                            width: "32px",
-                            height: "32px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            border: "none",
-                            borderRadius: "6px",
-                            backgroundColor: "#ef4444",
-                            color: "white",
-                            cursor: "pointer",
-                            transition: "all 0.2s"
-                          }}
-                          onMouseEnter={(e) => e.target.style.backgroundColor = "#dc2626"}
-                          onMouseLeave={(e) => e.target.style.backgroundColor = "#ef4444"}
-                          title="Delete"
                         >
-                          <i className="pi pi-trash" style={{ fontSize: "0.875rem" }}></i>
+                          <i className="pi pi-trash" />
                         </button>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <p className="products-empty">
+                  <p className="users-empty">
                     {kategori.length ? "Tidak ada hasil pencarian." : "Belum ada kategori."}
                   </p>
                 )}

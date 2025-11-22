@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import "@/styles/admin.css";
-import { createOrderAdmin } from "@/lib/orders";
 
 export default function AddUserModal({ onClose, onSave }) {
   const [formData, setFormData] = useState({
@@ -66,8 +65,8 @@ export default function AddUserModal({ onClose, onSave }) {
       tanggal_lahir: normalizeTanggal(formData.tanggal_lahir),
       tanggal_join: normalizeTanggal(formData.tanggal_join),
       alamat: formData.alamat.trim(),
-      divisi: formData.divisi.toString(),
-      level: formData.level.toString(),
+      divisi: parseInt(formData.divisi, 10), // Convert to integer
+      level: parseInt(formData.level, 10), // Convert to integer
       no_telp: formData.no_telp.trim(),
     };
 
@@ -82,17 +81,7 @@ export default function AddUserModal({ onClose, onSave }) {
       showToast(err.message || "Terjadi kesalahan saat menyimpan data", "error");
     }
   };
-async function handleSaveOrder(payload) {
-  try {
-    const res = await createOrderAdmin(payload);
-    console.log("✅ Order berhasil dibuat:", res);
-    showToast("Order berhasil dibuat!");
-    onClose();
-  } catch (err) {
-    console.error("❌ Gagal simpan order:", err);
-    showToast(err.message || "Terjadi kesalahan saat menyimpan data", "error");
-  }
-}
+
   return (
     <div className="modal-overlay">
       <div className="modal-card">

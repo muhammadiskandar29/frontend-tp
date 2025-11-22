@@ -277,7 +277,9 @@ async function payCC(payload) {
       const orderId = order?.data?.order?.id;
 
       if (!response.ok || order?.success !== true || !orderId) {
-        throw new Error(order?.message || "Gagal membuat order");
+        // Extract error message from response
+        const errorMessage = order?.message || order?.error || "Gagal membuat order";
+        throw new Error(errorMessage);
       }
 
       toast.success(order?.message || "Pesanan berhasil disimpan");
@@ -308,7 +310,9 @@ if (paymentMethod === "va") {
       }
     } catch (err) {
       console.error("Submit order error:", err);
-      toast.error("Gagal menyimpan pesanan");
+      // Show the actual error message from the API
+      const errorMessage = err.message || "Gagal menyimpan pesanan";
+      toast.error(errorMessage);
     }
   };
 

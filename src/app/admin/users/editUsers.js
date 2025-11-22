@@ -75,8 +75,8 @@ export default function EditUserModal({ user, onClose, onSave }) {
       tanggal_lahir: toBackendFormat(formData.tanggal_lahir),
       tanggal_join: toBackendFormat(formData.tanggal_join),
       alamat: formData.alamat.trim(),
-      divisi: formData.divisi.toString(),
-      level: formData.level.toString(),
+      divisi: parseInt(formData.divisi, 10), // Convert to integer
+      level: parseInt(formData.level, 10), // Convert to integer
       no_telp: formData.no_telp.trim(),
     };
 
