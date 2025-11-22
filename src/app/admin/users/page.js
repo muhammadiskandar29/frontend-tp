@@ -127,12 +127,27 @@ const summaryCards = useMemo(
 
   const handleSaveAdd = async (newUser) => {
     try {
-      await createUser(newUser);
+      console.log("🟢 [CREATE_USER] Creating user with payload:", newUser);
+      const result = await createUser(newUser);
+      console.log("🟢 [CREATE_USER] Create result:", result);
+      
+      if (!result.success) {
+        throw new Error(result.message || "Gagal menambahkan user");
+      }
+      
       await refreshUsers();
       showToast("✅ User berhasil ditambahkan!");
     } catch (err) {
-      console.error("Error creating user:", err);
-      showToast("❌ Gagal menambahkan user", "error");
+      console.error("❌ [CREATE_USER] Error creating user:", err);
+      console.error("❌ [CREATE_USER] Error details:", {
+        message: err.message,
+        status: err.status,
+        data: err.data,
+        validationErrors: err.validationErrors
+      });
+      
+      // Re-throw error dengan detail untuk ditampilkan di modal
+      throw err;
     } finally {
       setShowAdd(false);
     }

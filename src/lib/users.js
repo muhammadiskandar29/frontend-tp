@@ -1,25 +1,28 @@
 /**
  * Users API Functions
- * Centralized functions untuk user management
- * Menggunakan API_ENDPOINTS untuk konsistensi
+ * Sesuai dokumentasi API backend
  */
 
 import { api } from "./api";
 import { API_ENDPOINTS } from "@/config/api";
 
-/** 
- * 📘 GET - Ambil semua user 
+/**
+ * GET /api/admin/users
+ * Tampil Data User
  * @returns {Promise<Array>} Array of users
  */
 export async function getUsers() {
   const res = await api(API_ENDPOINTS.admin.users, { method: "GET" });
-  return res.data || []; 
+  return res.data || [];
 }
 
-/** 
- * 🟢 POST - Tambah user baru 
- * @param {object} userData - User data (nama, email, divisi, level, dll)
- * @returns {Promise<{success: boolean, message: string, data: object}>}
+/**
+ * POST /api/admin/users
+ * Input Data User
+ * Request: nama, email, tanggal_lahir (dd-mm-yyyy), tanggal_join (dd-mm-yyyy), 
+ *          alamat, divisi (integer), level (integer), no_telp
+ * @param {object} userData - User data sesuai requirement API
+ * @returns {Promise<{success: boolean, data: object}>}
  */
 export async function createUser(userData) {
   const res = await api(API_ENDPOINTS.admin.users, {
@@ -29,15 +32,18 @@ export async function createUser(userData) {
 
   return {
     success: res.success,
-    message: res.message || "User berhasil ditambahkan",
+    message: res.message,
     data: res.data,
   };
 }
 
-/** 
- * 🟡 PUT - Update user 
+/**
+ * PUT /api/admin/users/{id}
+ * Update User
+ * Request: nama, email, tanggal_lahir (dd-mm-yyyy), tanggal_join (dd-mm-yyyy),
+ *          alamat, divisi (integer), level (integer), no_telp
  * @param {number|string} id - User ID
- * @param {object} userData - Updated user data
+ * @param {object} userData - Updated user data sesuai requirement API
  * @returns {Promise<{success: boolean, message: string, data: object}>}
  */
 export async function updateUser(id, userData) {
@@ -48,13 +54,14 @@ export async function updateUser(id, userData) {
 
   return {
     success: res.success,
-    message: res.message || "User berhasil diperbarui",
+    message: res.message,
     data: res.data,
   };
 }
 
-/** 
- * 🔴 DELETE - Nonaktifkan user (status 1 -> N)
+/**
+ * DELETE /api/admin/users/{id}
+ * Delete User
  * @param {number|string} id - User ID
  * @returns {Promise<{success: boolean, message: string}>}
  */
@@ -65,6 +72,6 @@ export async function deleteUser(id) {
 
   return {
     success: res.success,
-    message: res.message || "User berhasil dihapus",
+    message: res.message,
   };
 }

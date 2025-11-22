@@ -159,13 +159,23 @@ export default function AddUserModal({ onClose, onSave }) {
   };
 
   // === FORMAT TANGGAL (dd-mm-yyyy) ===
+  // Sesuai requirement API: format dd-mm-yyyy
   const normalizeTanggal = (val) => {
     if (!val) return "";
-    const d = new Date(val);
-    const day = String(d.getDate()).padStart(2, "0");
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const y = d.getFullYear();
-    return `${day}-${m}-${y}`;
+    try {
+      const d = new Date(val);
+      if (isNaN(d.getTime())) {
+        console.warn("⚠️ Invalid date:", val);
+        return "";
+      }
+      const day = String(d.getDate()).padStart(2, "0");
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const y = d.getFullYear();
+      return `${day}-${m}-${y}`;
+    } catch (err) {
+      console.error("❌ Error formatting date:", err);
+      return "";
+    }
   };
 
   // === HANDLE SUBMIT ===
@@ -174,7 +184,7 @@ export default function AddUserModal({ onClose, onSave }) {
 
     // validasi wajib diisi
     if (!formData.nama || !formData.email || !formData.divisi || !formData.level) {
-      showToast("Semua field wajib diisi!", "warning");
+      showToast("Nama, Email, Divisi, dan Level wajib diisi!", "warning");
       return;
     }
 
@@ -190,26 +200,48 @@ export default function AddUserModal({ onClose, onSave }) {
       return;
     }
 
+    // validasi tanggal wajib diisi (sesuai requirement API)
+    if (!formData.tanggal_lahir || !formData.tanggal_join) {
+      showToast("Tanggal lahir dan tanggal join wajib diisi!", "warning");
+      return;
+    }
+
+    // Build payload sesuai requirement API POST /api/admin/users
+    // Format: semua field required, tanggal format dd-mm-yyyy, divisi & level integer
     const payload = {
       nama: formData.nama.trim(),
       email: formData.email.trim(),
-      tanggal_lahir: normalizeTanggal(formData.tanggal_lahir),
-      tanggal_join: normalizeTanggal(formData.tanggal_join),
-      alamat: formData.alamat.trim(),
-      divisi: parseInt(formData.divisi, 10), // Convert to integer
-      level: parseInt(formData.level, 10), // Convert to integer
+      tanggal_lahir: normalizeTanggal(formData.tanggal_lahir), // Format: dd-mm-yyyy
+      tanggal_join: normalizeTanggal(formData.tanggal_join), // Format: dd-mm-yyyy
+      alamat: formData.alamat.trim() || "",
+      divisi: parseInt(formData.divisi, 10), // Integer: 1=Admin, 2=Sales, 3=Multimedia, 4=Finance
+      level: parseInt(formData.level, 10), // Integer: 1=Leader, 2=Staff
       no_telp: formData.no_telp.trim(),
     };
 
     console.log("🟢 Payload dikirim ke API:", payload);
+    console.log("🟢 Payload JSON:", JSON.stringify(payload, null, 2));
 
     try {
       await onSave(payload);
       showToast("User baru berhasil dibuat!");
       onClose();
     } catch (err) {
-      console.error("Error submit:", err);
-      showToast(err.message || "Terjadi kesalahan saat menyimpan data", "error");
+      console.error("❌ Error submit:", err);
+      console.error("❌ Error details:", {
+        message: err.message,
+        status: err.status,
+        data: err.data,
+        validationErrors: err.validationErrors
+      });
+      
+      // Show detailed error message
+      let errorMessage = err.message || "Terjadi kesalahan saat menyimpan data";
+      if (err.validationErrors) {
+        errorMessage = `Validasi gagal: ${Object.values(err.validationErrors).flat().join(', ')}`;
+      }
+      
+      showToast(errorMessage, "error");
     }
   };
 

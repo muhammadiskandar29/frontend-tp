@@ -98,6 +98,40 @@ const handleResponse = async (res, endpoint, options = {}) => {
 
   // Error response
   if (!res.ok) {
+    // Handle 422 Unprocessable Entity (Validation Error)
+    if (res.status === 422) {
+      // Extract validation errors from response
+      const validationErrors = data?.errors || data?.error || {};
+      const errorMessages = [];
+      
+      // Laravel-style validation errors
+      if (typeof validationErrors === 'object' && !Array.isArray(validationErrors)) {
+        Object.keys(validationErrors).forEach((field) => {
+          const fieldErrors = Array.isArray(validationErrors[field]) 
+            ? validationErrors[field] 
+            : [validationErrors[field]];
+          fieldErrors.forEach((err) => {
+            if (err) errorMessages.push(`${field}: ${err}`);
+          });
+        });
+      }
+      
+      const message = errorMessages.length > 0
+        ? `Validasi gagal: ${errorMessages.join(', ')}`
+        : data?.message || data?.error || 'Data yang dikirim tidak valid. Periksa kembali semua field.';
+      
+      if (config.features.enableToast) {
+        toast.error(message);
+      }
+      
+      throw Object.assign(new Error(message), { 
+        status: res.status, 
+        data,
+        endpoint,
+        validationErrors
+      });
+    }
+
     const message =
       data?.message ||
       data?.error ||

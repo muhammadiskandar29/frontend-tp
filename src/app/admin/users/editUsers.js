@@ -208,6 +208,12 @@ export default function EditUserModal({ user, onClose, onSave }) {
       return;
     }
 
+    // Validasi tanggal wajib diisi (sesuai requirement API)
+    if (!formData.tanggal_lahir || !formData.tanggal_join) {
+      showToast("Tanggal lahir dan tanggal join wajib diisi!", "warning");
+      return;
+    }
+
     // ⚠️ WARNING: Jika email berubah, konfirmasi dulu
     const originalEmail = user?.email?.toLowerCase().trim();
     const newEmail = formData.email.toLowerCase().trim();
@@ -224,14 +230,16 @@ export default function EditUserModal({ user, onClose, onSave }) {
       }
     }
 
+    // Build payload sesuai requirement API PUT /api/admin/users/{id}
+    // Format: semua field required, tanggal format dd-mm-yyyy, divisi & level integer
     const payload = {
       nama: formData.nama.trim(),
       email: formData.email.trim(),
-      tanggal_lahir: toBackendFormat(formData.tanggal_lahir),
-      tanggal_join: toBackendFormat(formData.tanggal_join),
-      alamat: formData.alamat.trim(),
-      divisi: parseInt(formData.divisi, 10), // Convert to integer
-      level: parseInt(formData.level, 10), // Convert to integer
+      tanggal_lahir: toBackendFormat(formData.tanggal_lahir), // Format: dd-mm-yyyy
+      tanggal_join: toBackendFormat(formData.tanggal_join), // Format: dd-mm-yyyy
+      alamat: formData.alamat.trim() || "",
+      divisi: parseInt(formData.divisi, 10), // Integer: 1=Admin, 2=Sales, 3=Multimedia, 4=Finance
+      level: parseInt(formData.level, 10), // Integer: 1=Leader, 2=Staff
       no_telp: formData.no_telp.trim(),
     };
 
