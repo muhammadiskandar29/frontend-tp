@@ -12,6 +12,7 @@ const AddUserModal = dynamic(() => import("./addUsers"), { ssr: false });
 const EditUserModal = dynamic(() => import("./editUsers"), { ssr: false });
 const DeleteUserModal = dynamic(() => import("./deleteUsers"), { ssr: false });
 const ViewUserModal = dynamic(() => import("./viewUsers"), { ssr: false });
+const EmailSyncWarningModal = dynamic(() => import("./emailSyncWarning"), { ssr: false });
 
 const DIVISI_MAP = {
   1: "Admin",
@@ -59,6 +60,8 @@ export default function AdminUsersPage() {
   const [showDelete, setShowDelete] = useState(false);
   const [showView, setShowView] = useState(false);
   const [toast, setToast] = useState(DEFAULT_TOAST);
+  const [showEmailWarning, setShowEmailWarning] = useState(false);
+  const [emailWarningData, setEmailWarningData] = useState(null);
 
   useEffect(() => {
     const loadUsers = async () => {
@@ -152,10 +155,16 @@ const summaryCards = useMemo(
       
       // ⚠️ PERINGATAN: Jika email berubah, backend harus update email di tabel authentication juga
       if (selectedUser.email !== updatedData.email) {
+        // Set warning modal data
+        setEmailWarningData({
+          userId: selectedUser.id,
+          oldEmail: selectedUser.email,
+          newEmail: updatedData.email,
+        });
+        setShowEmailWarning(true);
+        
         showToast(
-          `⚠️ Email berubah dari "${selectedUser.email}" ke "${updatedData.email}". ` +
-          `PENTING: Pastikan backend juga mengupdate email di tabel authentication/login. ` +
-          `Jika tidak, user tidak bisa login dengan email baru!`,
+          `⚠️ Email berubah! User harus login dengan email lama sampai backend di-fix.`,
           "warning"
         );
         
@@ -164,7 +173,8 @@ const summaryCards = useMemo(
           userId: selectedUser.id,
           oldEmail: selectedUser.email,
           newEmail: updatedData.email,
-          note: "Backend harus sync email ke tabel authentication/login"
+          note: "Backend harus sync email ke tabel authentication/login",
+          sqlFix: `UPDATE auth_table SET email = '${updatedData.email}' WHERE user_id = ${selectedUser.id};`
         });
       } else {
         showToast("Perubahan berhasil disimpan!");
@@ -387,6 +397,19 @@ const handleCloseModals = () => {
           >
             {toast.message}
           </div>
+        )}
+
+        {/* Email Warning Modal */}
+        {showEmailWarning && emailWarningData && (
+          <EmailSyncWarningModal
+            userId={emailWarningData.userId}
+            oldEmail={emailWarningData.oldEmail}
+            newEmail={emailWarningData.newEmail}
+            onClose={() => {
+              setShowEmailWarning(false);
+              setEmailWarningData(null);
+            }}
+          />
         )}
       </div>
     </Layout>

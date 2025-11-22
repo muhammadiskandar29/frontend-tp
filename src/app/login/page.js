@@ -74,9 +74,7 @@ export default function LoginPage() {
         // If email not found, check if it might be a sync issue
         if (errorMessage.includes('tidak terdaftar') || errorMessage.includes('Email tidak terdaftar')) {
           setErrorMsg(
-            errorMessage + 
-            ' Jika email baru saja diubah, coba login dengan email lama terlebih dahulu. ' +
-            'Hubungi admin jika masalah berlanjut.'
+            'Email tidak terdaftar. Jika email baru saja diubah oleh admin, coba login dengan email lama terlebih dahulu.'
           );
         } else {
           setErrorMsg(errorMessage);
@@ -92,9 +90,7 @@ export default function LoginPage() {
     }
   };
 
-  const helperMessage = showError
-    ? errorMsg
-    : 'Gunakan akun yang diberikan admin untuk mengakses dashboard.';
+  const helperMessage = 'Gunakan akun yang diberikan admin untuk mengakses dashboard.';
 
   // === UI ===
   return (
