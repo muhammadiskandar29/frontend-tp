@@ -96,7 +96,7 @@ export default function Layout({ children, title, description }) {
       console.error("Logout error:", e);
     } finally {
       localStorage.clear();
-      toast.success("✅ Logout berhasil!");
+      toast.success("");
       router.push("/login");
     }
   };

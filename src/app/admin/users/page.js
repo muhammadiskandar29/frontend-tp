@@ -139,11 +139,30 @@ const summaryCards = useMemo(
     if (!selectedUser) return;
 
     try {
-      await updateUser(selectedUser.id, updatedData);
+      console.log("🟡 [UPDATE_USER] Updating user:", {
+        id: selectedUser.id,
+        oldEmail: selectedUser.email,
+        newEmail: updatedData.email,
+        data: updatedData
+      });
+      
+      const result = await updateUser(selectedUser.id, updatedData);
+      
+      console.log("🟢 [UPDATE_USER] Update result:", result);
+      
+      // ⚠️ PERINGATAN: Jika email berubah, user perlu login ulang dengan email baru
+      if (selectedUser.email !== updatedData.email) {
+        showToast(
+          `⚠️ Email berubah dari "${selectedUser.email}" ke "${updatedData.email}". User harus login ulang dengan email baru!`,
+          "warning"
+        );
+      } else {
+        showToast("Perubahan berhasil disimpan!");
+      }
+      
       await refreshUsers();
-      showToast("Perubahan berhasil disimpan!");
     } catch (err) {
-      console.error("Error updating user:", err);
+      console.error("❌ [UPDATE_USER] Error updating user:", err);
       showToast("Gagal menyimpan perubahan", "error");
     } finally {
       setShowEdit(false);
