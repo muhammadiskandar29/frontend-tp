@@ -44,12 +44,15 @@ const buildHeaders = (options = {}) => {
  */
 const handleResponse = async (res, endpoint, options = {}) => {
   let data;
+  let rawText = "";
 
   try {
-    const text = await res.text();
-    data = text ? JSON.parse(text) : null;
-  } catch {
+    rawText = await res.text();
+    data = rawText ? JSON.parse(rawText) : null;
+  } catch (parseError) {
     console.warn(`⚠️ Response dari ${endpoint} bukan JSON valid`);
+    console.warn(`⚠️ Raw response text:`, rawText);
+    console.warn(`⚠️ Parse error:`, parseError);
     data = null;
   }
 
@@ -100,12 +103,20 @@ const handleResponse = async (res, endpoint, options = {}) => {
   if (!res.ok) {
     // Handle 422 Unprocessable Entity (Validation Error)
     if (res.status === 422) {
+      // Log full response for debugging
+      console.error("❌ [422 VALIDATION ERROR] Full response:", {
+        status: res.status,
+        statusText: res.statusText,
+        data: data,
+        endpoint: endpoint
+      });
+      
       // Extract validation errors from response
-      const validationErrors = data?.errors || data?.error || {};
+      const validationErrors = data?.errors || data?.error || data?.data?.errors || {};
       const errorMessages = [];
       
       // Laravel-style validation errors
-      if (typeof validationErrors === 'object' && !Array.isArray(validationErrors)) {
+      if (typeof validationErrors === 'object' && !Array.isArray(validationErrors) && Object.keys(validationErrors).length > 0) {
         Object.keys(validationErrors).forEach((field) => {
           const fieldErrors = Array.isArray(validationErrors[field]) 
             ? validationErrors[field] 
@@ -116,9 +127,21 @@ const handleResponse = async (res, endpoint, options = {}) => {
         });
       }
       
-      const message = errorMessages.length > 0
-        ? `Validasi gagal: ${errorMessages.join(', ')}`
-        : data?.message || data?.error || 'Data yang dikirim tidak valid. Periksa kembali semua field.';
+      // Build error message
+      let message;
+      if (errorMessages.length > 0) {
+        message = `Validasi gagal: ${errorMessages.join(', ')}`;
+      } else if (data?.message) {
+        message = data.message;
+      } else if (data?.error) {
+        message = typeof data.error === 'string' ? data.error : JSON.stringify(data.error);
+      } else {
+        // Show full response for debugging
+        message = `Data yang dikirim tidak valid. Response: ${JSON.stringify(data)}`;
+      }
+      
+      console.error("❌ [422] Error message:", message);
+      console.error("❌ [422] Validation errors:", validationErrors);
       
       if (config.features.enableToast) {
         toast.error(message);
@@ -128,7 +151,7 @@ const handleResponse = async (res, endpoint, options = {}) => {
         status: res.status, 
         data,
         endpoint,
-        validationErrors
+        validationErrors: Object.keys(validationErrors).length > 0 ? validationErrors : undefined
       });
     }
 

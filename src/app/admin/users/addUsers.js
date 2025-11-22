@@ -219,26 +219,49 @@ export default function AddUserModal({ onClose, onSave }) {
       no_telp: formData.no_telp.trim(),
     };
 
-    console.log("🟢 Payload dikirim ke API:", payload);
-    console.log("🟢 Payload JSON:", JSON.stringify(payload, null, 2));
+    console.log("🟢 [ADD_USER] Payload dikirim ke API:", payload);
+    console.log("🟢 [ADD_USER] Payload JSON:", JSON.stringify(payload, null, 2));
+    console.log("🟢 [ADD_USER] Payload types:", {
+      nama: typeof payload.nama,
+      email: typeof payload.email,
+      tanggal_lahir: typeof payload.tanggal_lahir + " (" + payload.tanggal_lahir + ")",
+      tanggal_join: typeof payload.tanggal_join + " (" + payload.tanggal_join + ")",
+      alamat: typeof payload.alamat,
+      divisi: typeof payload.divisi + " (" + payload.divisi + ")",
+      level: typeof payload.level + " (" + payload.level + ")",
+      no_telp: typeof payload.no_telp
+    });
 
     try {
       await onSave(payload);
       showToast("User baru berhasil dibuat!");
       onClose();
     } catch (err) {
-      console.error("❌ Error submit:", err);
-      console.error("❌ Error details:", {
+      console.error("❌ [ADD_USER] Error submit:", err);
+      console.error("❌ [ADD_USER] Error details:", {
         message: err.message,
         status: err.status,
         data: err.data,
-        validationErrors: err.validationErrors
+        validationErrors: err.validationErrors,
+        fullError: err
       });
       
       // Show detailed error message
       let errorMessage = err.message || "Terjadi kesalahan saat menyimpan data";
-      if (err.validationErrors) {
-        errorMessage = `Validasi gagal: ${Object.values(err.validationErrors).flat().join(', ')}`;
+      
+      // If we have validation errors, show them
+      if (err.validationErrors && Object.keys(err.validationErrors).length > 0) {
+        const validationMessages = Object.entries(err.validationErrors)
+          .map(([field, errors]) => {
+            const errorList = Array.isArray(errors) ? errors : [errors];
+            return `${field}: ${errorList.join(', ')}`;
+          })
+          .join('; ');
+        errorMessage = `Validasi gagal: ${validationMessages}`;
+      } else if (err.data) {
+        // Show full error data for debugging
+        console.error("❌ [ADD_USER] Full error data:", err.data);
+        errorMessage = err.message || JSON.stringify(err.data);
       }
       
       showToast(errorMessage, "error");
