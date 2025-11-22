@@ -173,11 +173,23 @@ const generateKode = (text) =>
         payload.append("landingpage", form.landingpage);
         payload.append("status", form.status);
         payload.append("user_input", JSON.stringify(form.user_input));
-        const kategoriNama = form.kategori && form.kategori.length ? form.kategori[0] : null;
+        // Get kategori ID from form and convert to nama for backend
+        const kategoriId = form.kategori && form.kategori.length ? form.kategori[0] : null;
+        const idToNama = kategoriMap.idToNama || {};
+        // Convert ID to nama, or use directly if it's already a string (backward compatibility)
+        const kategoriNama = kategoriId 
+          ? (typeof kategoriId === 'number' ? (idToNama[kategoriId] || kategoriId) : kategoriId)
+          : null;
         payload.append("kategori", kategoriNama);
       } else {
-        // Pastikan kategori dikirim sebagai nama (string), bukan array
-        const kategoriNama = form.kategori && form.kategori.length ? form.kategori[0] : null;
+        // Get kategori ID from form and convert to nama for backend
+        const kategoriId = form.kategori && form.kategori.length ? form.kategori[0] : null;
+        const idToNama = kategoriMap.idToNama || {};
+        // Convert ID to nama, or use directly if it's already a string (backward compatibility)
+        const kategoriNama = kategoriId 
+          ? (typeof kategoriId === 'number' ? (idToNama[kategoriId] || kategoriId) : kategoriId)
+          : null;
+        
         payload = {
           ...form,
           kategori: kategoriNama, // Kirim nama kategori sebagai string
@@ -237,6 +249,7 @@ const generateKode = (text) =>
 
 const [kategoriOptions, setKategoriOptions] = useState([]);
 const [userOptions, setUserOptions] = useState([]);
+const [kategoriMap, setKategoriMap] = useState({}); // Map ID to nama for reference
 
 useEffect(() => {
   async function fetchInitialData() {
@@ -250,10 +263,24 @@ useEffect(() => {
         { headers }
       );
       const kategoriData = await kategoriRes.json();
+      
+      // Create options with ID as value and name as label
       const kategoriOpts = Array.isArray(kategoriData.data)
-        ? kategoriData.data.map((k) => ({ label: k.nama, value: k.nama }))
+        ? kategoriData.data.map((k) => ({ label: k.nama, value: k.id }))
         : [];
       setKategoriOptions(kategoriOpts);
+      
+      // Create map for easy lookup: ID -> nama (for converting ID to name when submitting)
+      const idToNamaMap = {};
+      const namaToIdMap = {}; // For reverse lookup when loading product data
+      if (Array.isArray(kategoriData.data)) {
+        kategoriData.data.forEach((k) => {
+          idToNamaMap[k.id] = k.nama;
+          namaToIdMap[k.nama] = k.id;
+        });
+      }
+      // Store both maps
+      setKategoriMap({ idToNama: idToNamaMap, namaToId: namaToIdMap });
 
       // 2️⃣ Fetch produk (misal edit mode)
       const produkRes = await fetch(
@@ -277,10 +304,19 @@ useEffect(() => {
       const kodeGenerated =
         produkData.kode || generateKode(produkData.nama || "produk-baru");
 
+      // Handle kategori: if kategori_rel exists, use its ID; otherwise try to find by name
+      let kategoriValue = null;
+      if (produkData.kategori_rel) {
+        kategoriValue = produkData.kategori_rel.id || produkData.kategori_rel.nama;
+      } else if (produkData.kategori) {
+        // If kategori is a string (name), find its ID using namaToId map
+        kategoriValue = namaToIdMap[produkData.kategori] || produkData.kategori;
+      }
+
       setForm((f) => ({
         ...f,
         ...produkData,
-        kategori: produkData.kategori_rel ? [produkData.kategori_rel.nama] : [],
+        kategori: kategoriValue ? [kategoriValue] : [],
         assign: produkData.assign_rel ? produkData.assign_rel.map((u) => u.id) : [],
         user_input: produkData.user_input_rel ? [produkData.user_input_rel.id] : [],
         custom_field: [],
@@ -336,10 +372,14 @@ useEffect(() => {
   <label className="font-semibold">Kategori</label>
 <Dropdown
   className="w-full"
-  value={form.kategori[0] || null}
+  value={form.kategori && form.kategori.length > 0 ? form.kategori[0] : null}
   options={kategoriOptions}
-  onChange={(e) => handleChange("kategori", [e.value])}
+  onChange={(e) => {
+    // Store the category ID in the form
+    handleChange("kategori", e.value ? [e.value] : []);
+  }}
   placeholder="Pilih Kategori"
+  showClear
 />
 </div>
 

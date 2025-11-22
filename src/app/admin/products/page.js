@@ -213,15 +213,11 @@ export default function AdminProductsPage() {
                             </button>
                             <button
                               className="product-table__action-link"
-                              onClick={async () => {
-                                try {
-                                  await handleDuplicate(p.id);
-                                } catch (err) {
-                                  console.error("Error duplicating product:", err);
-                                }
+                              onClick={() => {
+                                router.push(`/admin/products/editProducts/${p.id}`);
                               }}
                             >
-                              Duplicate
+                              Edit
                             </button>
                             <button
                               className="product-table__action-link product-table__action-link--danger"

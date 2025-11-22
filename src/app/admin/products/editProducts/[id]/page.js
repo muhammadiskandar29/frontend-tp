@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter, useParams } from "next/navigation";
 import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
 import { InputNumber } from "primereact/inputnumber";
@@ -10,9 +11,14 @@ import { InputSwitch } from "primereact/inputswitch";
 import { Button } from "primereact/button";
 import LandingTemplate from "@/components/LandingTemplate";
 import { MultiSelect } from "primereact/multiselect";
+import { ArrowLeft } from "lucide-react";
 import "@/styles/add-products.css";
 
 export default function Page() {
+  const router = useRouter();
+  const params = useParams();
+  const productId = params?.id;
+
   // ============================
   // SLUGIFY
   // ============================
@@ -75,6 +81,7 @@ const generateKode = (text) =>
 
 
   const [form, setForm] = useState(defaultForm);
+  const [loading, setLoading] = useState(true);
 
   // ============================
   // HANDLER INPUT
@@ -104,6 +111,11 @@ const generateKode = (text) =>
   // SUBMIT
   // ============================
   const handleSubmit = async () => {
+    if (!productId) {
+      alert("Product ID tidak ditemukan!");
+      return;
+    }
+
     try {
       const hasFile =
         (form.header.type === "file" && form.header.value) ||
@@ -169,23 +181,11 @@ const generateKode = (text) =>
         payload.append("landingpage", form.landingpage);
         payload.append("status", form.status);
         payload.append("user_input", JSON.stringify(form.user_input));
-        // Get kategori ID from form and convert to nama for backend
-        const kategoriId = form.kategori && form.kategori.length ? form.kategori[0] : null;
-        const idToNama = kategoriMap.idToNama || {};
-        // Convert ID to nama, or use directly if it's already a string (backward compatibility)
-        const kategoriNama = kategoriId 
-          ? (typeof kategoriId === 'number' ? (idToNama[kategoriId] || kategoriId) : kategoriId)
-          : null;
+        const kategoriNama = form.kategori && form.kategori.length ? form.kategori[0] : null;
         payload.append("kategori", kategoriNama);
       } else {
-        // Get kategori ID from form and convert to nama for backend
-        const kategoriId = form.kategori && form.kategori.length ? form.kategori[0] : null;
-        const idToNama = kategoriMap.idToNama || {};
-        // Convert ID to nama, or use directly if it's already a string (backward compatibility)
-        const kategoriNama = kategoriId 
-          ? (typeof kategoriId === 'number' ? (idToNama[kategoriId] || kategoriId) : kategoriId)
-          : null;
-        
+        // Pastikan kategori dikirim sebagai nama (string), bukan array
+        const kategoriNama = form.kategori && form.kategori.length ? form.kategori[0] : null;
         payload = {
           ...form,
           kategori: kategoriNama, // Kirim nama kategori sebagai string
@@ -214,7 +214,7 @@ const generateKode = (text) =>
       console.log("FINAL PAYLOAD:", payload);
 
       const res = await fetch(
-        "/api/admin/produk",
+        `/api/admin/produk/${productId}`,
         {
           method: "POST",
           headers: {
@@ -230,12 +230,13 @@ const generateKode = (text) =>
 
       if (!res.ok) {
         console.error("❌ API ERROR:", data);
-        alert("Gagal membuat produk!");
+        alert("Gagal mengupdate produk!");
         return;
       }
 
-      alert("Produk berhasil dibuat!");
+      alert("Produk berhasil diupdate!");
       console.log("SUCCESS:", data);
+      router.push("/admin/products");
     } catch (err) {
       console.error("❌ Submit error:", err);
       alert("Terjadi kesalahan saat submit.");
@@ -245,10 +246,14 @@ const generateKode = (text) =>
 
 const [kategoriOptions, setKategoriOptions] = useState([]);
 const [userOptions, setUserOptions] = useState([]);
-const [kategoriMap, setKategoriMap] = useState({}); // Map ID to nama for reference
 
 useEffect(() => {
   async function fetchInitialData() {
+    if (!productId) {
+      setLoading(false);
+      return;
+    }
+
     try {
       const token = localStorage.getItem("token");
       const headers = { Authorization: `Bearer ${token}` };
@@ -256,60 +261,32 @@ useEffect(() => {
       // 1️⃣ Fetch kategori
       const kategoriRes = await fetch(
         "/api/admin/kategori-produk",
-        { 
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            ...headers
-          }
-        }
+        { headers }
       );
       const kategoriData = await kategoriRes.json();
-      
-      // Create options with ID as value and name as label
       const kategoriOpts = Array.isArray(kategoriData.data)
-        ? kategoriData.data.map((k) => ({ label: k.nama, value: k.id }))
+        ? kategoriData.data.map((k) => ({ label: k.nama, value: k.nama }))
         : [];
       setKategoriOptions(kategoriOpts);
-      
-      // Create map for easy lookup: ID -> nama (for converting ID to name when submitting)
-      const idToNamaMap = {};
-      const namaToIdMap = {}; // For reverse lookup when loading product data
-      if (Array.isArray(kategoriData.data)) {
-        kategoriData.data.forEach((k) => {
-          idToNamaMap[k.id] = k.nama;
-          namaToIdMap[k.nama] = k.id;
-        });
-      }
-      // Store both maps
-      setKategoriMap({ idToNama: idToNamaMap, namaToId: namaToIdMap });
 
-      // 2️⃣ Fetch produk (misal edit mode)
+      // 2️⃣ Fetch produk berdasarkan ID
       const produkRes = await fetch(
-        "/api/admin/produk/1",
-        { 
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            ...headers
-          }
-        }
+        `/api/admin/produk/${productId}`,
+        { headers }
       );
-      const produkData = await produkRes.json();
+      const produkResponse = await produkRes.json();
+      
+      if (!produkRes.ok || !produkResponse.success) {
+        throw new Error(produkResponse.message || "Gagal memuat data produk");
+      }
+
+      // Parse data produk untuk form
+      const produkFormData = produkResponse.data || produkResponse;
 
       // 3️⃣ Fetch users
       const usersRes = await fetch(
         "/api/admin/users",
-        { 
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            ...headers
-          }
-        }
+        { headers }
       );
       const usersJson = await usersRes.json();
       const userOpts = Array.isArray(usersJson.data)
@@ -319,43 +296,100 @@ useEffect(() => {
 
       // ✅ generate kode otomatis jika null
       const kodeGenerated =
-        produkData.kode || generateKode(produkData.nama || "produk-baru");
+        produkFormData.kode || generateKode(produkFormData.nama || "produk-baru");
 
-      // Handle kategori: if kategori_rel exists, use its ID; otherwise try to find by name
-      let kategoriValue = null;
-      if (produkData.kategori_rel) {
-        kategoriValue = produkData.kategori_rel.id || produkData.kategori_rel.nama;
-      } else if (produkData.kategori) {
-        // If kategori is a string (name), find its ID using namaToId map
-        kategoriValue = namaToIdMap[produkData.kategori] || produkData.kategori;
-      }
-
+      // Helper function untuk parse JSON fields
+      const safeParseJSON = (value, fallback = []) => {
+        if (!value) return fallback;
+        if (Array.isArray(value)) return value;
+        try {
+          return JSON.parse(value);
+        } catch {
+          return fallback;
+        }
+      };
+      
       setForm((f) => ({
         ...f,
-        ...produkData,
-        kategori: kategoriValue ? [kategoriValue] : [],
-        assign: produkData.assign_rel ? produkData.assign_rel.map((u) => u.id) : [],
-        user_input: produkData.user_input_rel ? [produkData.user_input_rel.id] : [],
-        custom_field: [],
+        ...produkFormData,
+        id: produkFormData.id || productId,
+        kategori: produkFormData.kategori_rel ? [produkFormData.kategori_rel.nama] : [],
+        assign: produkFormData.assign_rel ? produkFormData.assign_rel.map((u) => u.id) : [],
+        user_input: produkFormData.user_input_rel ? [produkFormData.user_input_rel.id] : [],
+        custom_field: safeParseJSON(produkFormData.custom_field, []).map(f => ({
+          label: f.nama_field || f.label || "",
+          value: f.value || "",
+          required: f.required || false
+        })),
+        list_point: safeParseJSON(produkFormData.list_point, []).map(p => ({
+          nama: p.nama || p
+        })),
+        testimoni: safeParseJSON(produkFormData.testimoni, []).map(t => ({
+          gambar: t.gambar ? { type: "url", value: typeof t.gambar === "string" ? t.gambar : t.gambar.path || t.gambar } : { type: "file", value: null },
+          nama: t.nama || "",
+          deskripsi: t.deskripsi || ""
+        })),
+        fb_pixel: safeParseJSON(produkFormData.fb_pixel, []),
+        event_fb_pixel: safeParseJSON(produkFormData.event_fb_pixel, []),
+        gtm: safeParseJSON(produkFormData.gtm, []),
+        gambar: safeParseJSON(produkFormData.gambar, []).map(g => ({
+          path: { 
+            type: "url", 
+            value: typeof g === "string" ? g : (g.path || g) 
+          }, 
+          caption: g.caption || "" 
+        })),
+        header: produkFormData.header ? { 
+          type: "url", 
+          value: typeof produkFormData.header === "string" 
+            ? produkFormData.header 
+            : (produkFormData.header.path || produkFormData.header) 
+        } : { type: "file", value: null },
         kode: kodeGenerated,
-        url: "/" + kodeGenerated,
+        url: produkFormData.url || "/" + kodeGenerated,
+        video: produkFormData.video ? (
+          Array.isArray(produkFormData.video) 
+            ? produkFormData.video.join(", ") 
+            : safeParseJSON(produkFormData.video, []).join(", ")
+        ) : "",
       }));
     } catch (err) {
       console.error("Fetch initial data error:", err);
+      alert("Gagal memuat data produk!");
+    } finally {
+      setLoading(false);
     }
   }
 
   fetchInitialData();
-}, []);
+}, [productId]);
 
 
   // ============================
   // UI
   // ============================
+  if (loading) {
+    return (
+      <div className="produk-container" style={{ padding: "2rem", textAlign: "center" }}>
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
   return (
-<div className="produk-container">
+    <div className="produk-container">
     <div className="produk-form">
-      <h2 className="text-xl font-bold mb-2">Product Form</h2>
+      {/* Back Button */}
+      <button
+        className="back-to-products-btn"
+        onClick={() => router.push("/admin/products")}
+        aria-label="Back to products list"
+      >
+        <ArrowLeft size={18} />
+        <span>Back to Products</span>
+      </button>
+
+      <h2 className="text-xl font-bold mb-2">Edit Product</h2>
 
       {/* NAMA PRODUK */}
       <div>
@@ -419,6 +453,12 @@ useEffect(() => {
       {/* HEADER */}
       <div>
         <label className="font-semibold">Header (Upload File)</label>
+        {form.header?.type === "url" && form.header.value && (
+          <div className="mb-2">
+            <img src={form.header.value} alt="Current header" style={{ maxWidth: "200px", maxHeight: "100px" }} />
+            <p className="text-sm text-gray-500">Current header image</p>
+          </div>
+        )}
         <input
           type="file"
           accept="image/*"
@@ -473,6 +513,9 @@ useEffect(() => {
         <label className="font-semibold">Gallery</label>
         {form.gambar.map((g, i) => (
           <div key={i} className="flex gap-2 items-center mb-2 border p-2 rounded">
+            {g.path?.type === "url" && g.path.value && (
+              <img src={g.path.value} alt={`Gallery ${i}`} style={{ maxWidth: "100px", maxHeight: "100px" }} />
+            )}
             <input
               type="file"
               accept="image/*"
@@ -505,6 +548,9 @@ useEffect(() => {
         <label className="font-semibold">Testimoni</label>
         {form.testimoni.map((t, i) => (
           <div key={i} className="flex gap-2 items-center mb-2 border p-2 rounded">
+            {t.gambar?.type === "url" && t.gambar.value && (
+              <img src={t.gambar.value} alt={`Testimoni ${i}`} style={{ maxWidth: "100px", maxHeight: "100px" }} />
+            )}
             <input
               type="file"
               accept="image/*"
@@ -575,7 +621,6 @@ useEffect(() => {
       />
     </div>
         <br></br>
-
   </div>
 
   {/* EMAIL */}
@@ -615,7 +660,7 @@ useEffect(() => {
     <div className="col-span-4">
       <InputText
         className="w-full"
-        value={f.label}
+        value={f.label || f.nama_field}
         placeholder="Nama Field"
         onChange={(e) => updateArrayItem("custom_field", i, "label", e.target.value)}
       />
@@ -626,7 +671,7 @@ useEffect(() => {
       <InputText
         className="w-full"
         value={f.value}
-        placeholder={(f.label || "Isi field") + (f.required ? " *" : "")}
+        placeholder={(f.label || f.nama_field || "Isi field") + (f.required ? " *" : "")}
         onChange={(e) => updateArrayItem("custom_field", i, "value", e.target.value)}
       />
     </div>
@@ -709,10 +754,11 @@ useEffect(() => {
       </div>
 
       {/* SUBMIT */}
-      <Button label="Save" icon="pi pi-save" className="p-button-primary mt-5" onClick={handleSubmit} />
+      <Button label="Update Product" className="p-button-primary mt-5" onClick={handleSubmit} />
     </div>
           {/* ================= RIGHT: PREVIEW ================= */}
         <LandingTemplate form={form} />
     </div>
   );
 }
+
