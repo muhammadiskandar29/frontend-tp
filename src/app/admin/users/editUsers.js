@@ -231,15 +231,15 @@ export default function EditUserModal({ user, onClose, onSave }) {
     }
 
     // Build payload sesuai requirement API PUT /api/admin/users/{id}
-    // Format: semua field required, tanggal format dd-mm-yyyy, divisi & level integer
+    // Format: semua field required, tanggal format dd-mm-yyyy, divisi & level string
     const payload = {
       nama: formData.nama.trim(),
       email: formData.email.trim(),
       tanggal_lahir: toBackendFormat(formData.tanggal_lahir), // Format: dd-mm-yyyy
       tanggal_join: toBackendFormat(formData.tanggal_join), // Format: dd-mm-yyyy
       alamat: formData.alamat.trim() || "",
-      divisi: parseInt(formData.divisi, 10), // Integer: 1=Admin, 2=Sales, 3=Multimedia, 4=Finance
-      level: parseInt(formData.level, 10), // Integer: 1=Leader, 2=Staff
+      divisi: formData.divisi.toString(), // String sesuai requirement backend
+      level: formData.level.toString(), // String sesuai requirement backend
       no_telp: formData.no_telp.trim(),
     };
 

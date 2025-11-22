@@ -3,26 +3,6 @@
 import { useState } from "react";
 import "@/styles/admin.css";
 
-// Whitelist domain email yang valid
-const VALID_EMAIL_DOMAINS = [
-  "gmail.com",
-  "yahoo.com",
-  "yahoo.co.id",
-  "hotmail.com",
-  "outlook.com",
-  "icloud.com",
-  "protonmail.com",
-  "mail.com",
-  "aol.com",
-  "zoho.com",
-  "yandex.com",
-  "gmx.com",
-  "live.com",
-  "msn.com",
-  "company.com", // Contoh domain perusahaan (bisa disesuaikan)
-  "onedashboard.id", // Domain perusahaan
-];
-
 export default function AddUserModal({ onClose, onSave }) {
   const [formData, setFormData] = useState({
     nama: "",
@@ -34,8 +14,6 @@ export default function AddUserModal({ onClose, onSave }) {
     level: "",
     no_telp: "",
   });
-
-  const [emailError, setEmailError] = useState("");
 
   // === FUNGSI TOAST NOTIFIKASI ===
   const showToast = (message, type = "success") => {
@@ -49,133 +27,20 @@ export default function AddUserModal({ onClose, onSave }) {
     }, 2500);
   };
 
-  // === VALIDASI EMAIL ===
-  const validateEmail = (email) => {
-    if (!email) {
-      setEmailError("");
-      return false;
-    }
-
-    // Basic email format check
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setEmailError("Format email tidak valid");
-      return false;
-    }
-
-    // Extract domain
-    const domain = email.split("@")[1]?.toLowerCase();
-    if (!domain) {
-      setEmailError("Domain email tidak ditemukan");
-      return false;
-    }
-
-    // Check if domain is in whitelist
-    const isValidDomain = VALID_EMAIL_DOMAINS.some(
-      (validDomain) => domain === validDomain || domain.endsWith(`.${validDomain}`)
-    );
-
-    if (!isValidDomain) {
-      const suggestedDomain = findClosestDomain(domain);
-      setEmailError(
-        `Domain "${domain}" tidak valid. ${suggestedDomain ? `Mungkin maksudnya "${suggestedDomain}"?` : "Gunakan domain yang valid seperti @gmail.com, @yahoo.com, dll."}`
-      );
-      return false;
-    }
-
-    setEmailError("");
-    return true;
-  };
-
-  // === FIND CLOSEST DOMAIN (untuk typo detection) ===
-  const findClosestDomain = (inputDomain) => {
-    // Common typos
-    const typoMap = {
-      "gmai.com": "gmail.com",
-      "gmal.com": "gmail.com",
-      "gmial.com": "gmail.com",
-      "gmaill.com": "gmail.com",
-      "yahooo.com": "yahoo.com",
-      "yaho.com": "yahoo.com",
-      "hotmai.com": "hotmail.com",
-      "hotmial.com": "hotmail.com",
-      "outlok.com": "outlook.com",
-      "outlok.com": "outlook.com",
-    };
-
-    if (typoMap[inputDomain]) {
-      return typoMap[inputDomain];
-    }
-
-    // Find similar domain (Levenshtein distance)
-    let closest = null;
-    let minDistance = Infinity;
-
-    VALID_EMAIL_DOMAINS.forEach((validDomain) => {
-      const distance = levenshteinDistance(inputDomain, validDomain);
-      if (distance < minDistance && distance <= 2) {
-        minDistance = distance;
-        closest = validDomain;
-      }
-    });
-
-    return closest;
-  };
-
-  // === LEVENSHTEIN DISTANCE (untuk typo detection) ===
-  const levenshteinDistance = (str1, str2) => {
-    const matrix = [];
-    for (let i = 0; i <= str2.length; i++) {
-      matrix[i] = [i];
-    }
-    for (let j = 0; j <= str1.length; j++) {
-      matrix[0][j] = j;
-    }
-    for (let i = 1; i <= str2.length; i++) {
-      for (let j = 1; j <= str1.length; j++) {
-        if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
-          matrix[i][j] = matrix[i - 1][j - 1];
-        } else {
-          matrix[i][j] = Math.min(
-            matrix[i - 1][j - 1] + 1,
-            matrix[i][j - 1] + 1,
-            matrix[i - 1][j] + 1
-          );
-        }
-      }
-    }
-    return matrix[str2.length][str1.length];
-  };
-
   // === HANDLE FORM INPUT ===
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-
-    // Real-time email validation
-    if (name === "email") {
-      validateEmail(value);
-    }
   };
 
   // === FORMAT TANGGAL (dd-mm-yyyy) ===
-  // Sesuai requirement API: format dd-mm-yyyy
   const normalizeTanggal = (val) => {
     if (!val) return "";
-    try {
-      const d = new Date(val);
-      if (isNaN(d.getTime())) {
-        console.warn("⚠️ Invalid date:", val);
-        return "";
-      }
-      const day = String(d.getDate()).padStart(2, "0");
-      const m = String(d.getMonth() + 1).padStart(2, "0");
-      const y = d.getFullYear();
-      return `${day}-${m}-${y}`;
-    } catch (err) {
-      console.error("❌ Error formatting date:", err);
-      return "";
-    }
+    const d = new Date(val);
+    const day = String(d.getDate()).padStart(2, "0");
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const y = d.getFullYear();
+    return `${day}-${m}-${y}`;
   };
 
   // === HANDLE SUBMIT ===
@@ -184,13 +49,7 @@ export default function AddUserModal({ onClose, onSave }) {
 
     // validasi wajib diisi
     if (!formData.nama || !formData.email || !formData.divisi || !formData.level) {
-      showToast("Nama, Email, Divisi, dan Level wajib diisi!", "warning");
-      return;
-    }
-
-    // validasi email format dan domain
-    if (!validateEmail(formData.email.trim())) {
-      showToast(emailError || "Email tidak valid!", "error");
+      showToast("Semua field wajib diisi!", "warning");
       return;
     }
 
@@ -200,71 +59,26 @@ export default function AddUserModal({ onClose, onSave }) {
       return;
     }
 
-    // validasi tanggal wajib diisi (sesuai requirement API)
-    if (!formData.tanggal_lahir || !formData.tanggal_join) {
-      showToast("Tanggal lahir dan tanggal join wajib diisi!", "warning");
-      return;
-    }
-
-    // Build payload sesuai requirement API POST /api/admin/users
-    // Format: semua field required, tanggal format dd-mm-yyyy, divisi & level integer
     const payload = {
       nama: formData.nama.trim(),
       email: formData.email.trim(),
-      tanggal_lahir: normalizeTanggal(formData.tanggal_lahir), // Format: dd-mm-yyyy
-      tanggal_join: normalizeTanggal(formData.tanggal_join), // Format: dd-mm-yyyy
-      alamat: formData.alamat.trim() || "",
-      divisi: parseInt(formData.divisi, 10), // Integer: 1=Admin, 2=Sales, 3=Multimedia, 4=Finance
-      level: parseInt(formData.level, 10), // Integer: 1=Leader, 2=Staff
+      tanggal_lahir: normalizeTanggal(formData.tanggal_lahir),
+      tanggal_join: normalizeTanggal(formData.tanggal_join),
+      alamat: formData.alamat.trim(),
+      divisi: formData.divisi.toString(), // String sesuai requirement backend
+      level: formData.level.toString(), // String sesuai requirement backend
       no_telp: formData.no_telp.trim(),
     };
 
-    console.log("🟢 [ADD_USER] Payload dikirim ke API:", payload);
-    console.log("🟢 [ADD_USER] Payload JSON:", JSON.stringify(payload, null, 2));
-    console.log("🟢 [ADD_USER] Payload types:", {
-      nama: typeof payload.nama,
-      email: typeof payload.email,
-      tanggal_lahir: typeof payload.tanggal_lahir + " (" + payload.tanggal_lahir + ")",
-      tanggal_join: typeof payload.tanggal_join + " (" + payload.tanggal_join + ")",
-      alamat: typeof payload.alamat,
-      divisi: typeof payload.divisi + " (" + payload.divisi + ")",
-      level: typeof payload.level + " (" + payload.level + ")",
-      no_telp: typeof payload.no_telp
-    });
+    console.log("🟢 Payload dikirim ke API:", payload);
 
     try {
       await onSave(payload);
       showToast("User baru berhasil dibuat!");
       onClose();
     } catch (err) {
-      console.error("❌ [ADD_USER] Error submit:", err);
-      console.error("❌ [ADD_USER] Error details:", {
-        message: err.message,
-        status: err.status,
-        data: err.data,
-        validationErrors: err.validationErrors,
-        fullError: err
-      });
-      
-      // Show detailed error message
-      let errorMessage = err.message || "Terjadi kesalahan saat menyimpan data";
-      
-      // If we have validation errors, show them
-      if (err.validationErrors && Object.keys(err.validationErrors).length > 0) {
-        const validationMessages = Object.entries(err.validationErrors)
-          .map(([field, errors]) => {
-            const errorList = Array.isArray(errors) ? errors : [errors];
-            return `${field}: ${errorList.join(', ')}`;
-          })
-          .join('; ');
-        errorMessage = `Validasi gagal: ${validationMessages}`;
-      } else if (err.data) {
-        // Show full error data for debugging
-        console.error("❌ [ADD_USER] Full error data:", err.data);
-        errorMessage = err.message || JSON.stringify(err.data);
-      }
-      
-      showToast(errorMessage, "error");
+      console.error("Error submit:", err);
+      showToast(err.message || "Terjadi kesalahan saat menyimpan data", "error");
     }
   };
 
@@ -299,48 +113,8 @@ export default function AddUserModal({ onClose, onSave }) {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  onBlur={() => validateEmail(formData.email)}
-                  placeholder="contoh@gmail.com"
-                  className={emailError ? "input-error" : ""}
-                  style={{
-                    borderColor: emailError ? "#ef4444" : "",
-                    borderWidth: emailError ? "2px" : "1px",
-                  }}
+                  placeholder="contoh@email.com"
                 />
-                {emailError && (
-                  <p
-                    style={{
-                      color: "#ef4444",
-                      fontSize: "0.875rem",
-                      marginTop: "0.25rem",
-                      marginBottom: 0,
-                    }}
-                  >
-                    {emailError}
-                  </p>
-                )}
-                {!emailError && formData.email && (
-                  <p
-                    style={{
-                      color: "#10b981",
-                      fontSize: "0.875rem",
-                      marginTop: "0.25rem",
-                      marginBottom: 0,
-                    }}
-                  >
-                    ✓ Email valid
-                  </p>
-                )}
-                <p
-                  style={{
-                    color: "#6b7280",
-                    fontSize: "0.75rem",
-                    marginTop: "0.5rem",
-                    marginBottom: 0,
-                  }}
-                >
-                  Domain yang valid: @gmail.com, @yahoo.com, @hotmail.com, @outlook.com, dll.
-                </p>
               </div>
 
               <div className="form-group">

@@ -5,6 +5,7 @@ import { toast } from "react-hot-toast";
 import CustomerLayout from "@/components/customer/CustomerLayout";
 import { getCustomerSession } from "@/lib/customerAuth";
 import { fetchCustomerDashboard } from "@/lib/customerDashboard";
+import OTPVerificationModal from "./otpVerificationModal";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -233,50 +234,11 @@ export default function DashboardPage() {
     };
   }, [router, loadDashboardData, showVerificationModal]);
 
-  const handleVerificationOK = async () => {
-    const session = getCustomerSession();
-    console.log("🔵 [DASHBOARD] handleVerificationOK called");
-    console.log("🔵 [DASHBOARD] Session:", session);
-
-    const token = session.token;
-    const user = session.user;
-
-    if (!token || !user) {
-      toast.error("Sesi tidak valid. Silakan login kembali.");
-      router.replace("/customer/login");
-      return;
-    }
-
-    const customerId = user.id || user.customer_id;
-    const wa = user.wa || user.phone;
-
-    if (!customerId || !wa) {
-      console.error("❌ [DASHBOARD] Missing customer ID or WA number", { customerId, wa, user });
-      toast.error("Data customer tidak lengkap. Silakan hubungi admin.");
-      return;
-    }
-
-    setSendingOTP(true);
-
-    try {
-      console.log("🔵 [DASHBOARD] Sending OTP with existing session token...");
-      const { sendCustomerOTP } = await import("@/lib/customerAuth");
-      const otpResult = await sendCustomerOTP(customerId, wa, token);
-
-      if (otpResult.success) {
-        console.log("✅ [DASHBOARD] OTP sent successfully, redirecting to OTP page");
-        setShowVerificationModal(false);
-        router.replace("/customer/otp");
-      } else {
-        console.error("❌ [DASHBOARD] Failed to send OTP:", otpResult.message);
-        toast.error(otpResult.message || "Gagal mengirim OTP");
-      }
-    } catch (error) {
-      console.error("❌ [DASHBOARD] Error in handleVerificationOK:", error);
-      toast.error("Terjadi kesalahan. Silakan coba lagi.");
-    } finally {
-      setSendingOTP(false);
-    }
+  // Handler untuk OTP sent callback
+  const handleOTPSent = (data) => {
+    console.log("✅ [DASHBOARD] OTP sent successfully:", data);
+    setShowVerificationModal(false);
+    router.replace("/customer/otp");
   };
 
   const getCountdownLabel = (order) => {
@@ -308,107 +270,25 @@ export default function DashboardPage() {
 
   return (
     <CustomerLayout>
-      {/* Modal Verifikasi */}
-      {showVerificationModal && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 9999,
-            pointerEvents: "auto",
-          }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              // Jangan tutup jika klik di luar modal
-            }
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") {
-              // Don't allow closing with ESC for verification modal
-            }
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: "white",
-              borderRadius: "16px",
-              padding: "32px",
-              maxWidth: "500px",
-              width: "90%",
-              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
-              pointerEvents: "auto",
-              position: "relative",
-              zIndex: 10000,
+      {/* Modal Verifikasi OTP */}
+      {showVerificationModal && (() => {
+        const session = getCustomerSession();
+        const customerData = customerInfo || session.user;
+        return customerData ? (
+          <OTPVerificationModal
+            customerInfo={customerData}
+            onClose={() => {
+              // Jangan tutup modal dengan klik di luar atau ESC
+              // Modal hanya bisa ditutup setelah OTP berhasil dikirim
             }}
-          >
-            <h2
-              style={{
-                fontSize: "24px",
-                fontWeight: "bold",
-                marginBottom: "16px",
-                color: "#1f1b16",
-              }}
-            >
-              ⚠️ Verifikasi Diperlukan
-            </h2>
-            <p
-              style={{
-                fontSize: "16px",
-                color: "#666",
-                marginBottom: "24px",
-                lineHeight: "1.6",
-              }}
-            >
-              Akun Anda belum terverifikasi. Silakan verifikasi akun Anda terlebih dahulu untuk melanjutkan.
-              Kode OTP akan dikirim ke WhatsApp Anda.
-            </p>
-            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleVerificationOK();
-                }}
-                disabled={sendingOTP}
-                style={{
-                  padding: "12px 24px",
-                  backgroundColor: "#F1A124",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "16px",
-                  fontWeight: "500",
-                  cursor: sendingOTP ? "not-allowed" : "pointer",
-                  opacity: sendingOTP ? 0.6 : 1,
-                  transition: "all 0.3s ease",
-                  pointerEvents: sendingOTP ? "none" : "auto",
-                  position: "relative",
-                  zIndex: 10001,
-                }}
-                onMouseOver={(e) => {
-                  if (!sendingOTP) {
-                    e.target.style.backgroundColor = "#d98f1e";
-                  }
-                }}
-                onMouseOut={(e) => {
-                  if (!sendingOTP) {
-                    e.target.style.backgroundColor = "#F1A124";
-                  }
-                }}
-              >
-                {sendingOTP ? "Mengirim OTP..." : "OK"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            onOTPSent={(data) => {
+              console.log("✅ [DASHBOARD] OTP sent successfully:", data);
+              setShowVerificationModal(false);
+              router.replace("/customer/otp");
+            }}
+          />
+        ) : null;
+      })()}
 
       <div className="customer-dashboard">
         <header className="customer-dashboard__hero" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
