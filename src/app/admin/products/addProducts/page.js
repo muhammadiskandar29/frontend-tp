@@ -173,11 +173,14 @@ const generateKode = (text) =>
         payload.append("landingpage", form.landingpage);
         payload.append("status", form.status);
         payload.append("user_input", JSON.stringify(form.user_input));
-        const kategoriId = form.kategori && form.kategori.length ? form.kategori[0] : null;
-        payload.append("kategori", kategoriId);
+        const kategoriNama = form.kategori && form.kategori.length ? form.kategori[0] : null;
+        payload.append("kategori", kategoriNama);
       } else {
+        // Pastikan kategori dikirim sebagai nama (string), bukan array
+        const kategoriNama = form.kategori && form.kategori.length ? form.kategori[0] : null;
         payload = {
           ...form,
+          kategori: kategoriNama, // Kirim nama kategori sebagai string
           harga_coret: Number(form.harga_coret) || 0,
           harga_asli: Number(form.harga_asli) || 0,
           tanggal_event: formatDateForBackend(form.tanggal_event),
@@ -248,7 +251,7 @@ useEffect(() => {
       );
       const kategoriData = await kategoriRes.json();
       const kategoriOpts = Array.isArray(kategoriData.data)
-        ? kategoriData.data.map((k) => ({ label: k.nama, value: k.id }))
+        ? kategoriData.data.map((k) => ({ label: k.nama, value: k.nama }))
         : [];
       setKategoriOptions(kategoriOpts);
 
@@ -277,7 +280,7 @@ useEffect(() => {
       setForm((f) => ({
         ...f,
         ...produkData,
-        kategori: produkData.kategori_rel ? [produkData.kategori_rel.id] : [],
+        kategori: produkData.kategori_rel ? [produkData.kategori_rel.nama] : [],
         assign: produkData.assign_rel ? produkData.assign_rel.map((u) => u.id) : [],
         user_input: produkData.user_input_rel ? [produkData.user_input_rel.id] : [],
         custom_field: [],
