@@ -54,7 +54,7 @@ const generateKode = (text) =>
   // ============================
   const defaultForm = {
   id: null,
-  kategori: [],
+  kategori_id: null, // Integer, bukan array
   user_input: [],
   nama: "",
   url: "",
@@ -173,26 +173,18 @@ const generateKode = (text) =>
         payload.append("landingpage", form.landingpage);
         payload.append("status", form.status);
         payload.append("user_input", JSON.stringify(form.user_input));
-        // Get kategori ID from form and convert to nama for backend
-        const kategoriId = form.kategori && form.kategori.length ? form.kategori[0] : null;
-        const idToNama = kategoriMap.idToNama || {};
-        // Convert ID to nama, or use directly if it's already a string (backward compatibility)
-        const kategoriNama = kategoriId 
-          ? (typeof kategoriId === 'number' ? (idToNama[kategoriId] || kategoriId) : kategoriId)
-          : null;
-        payload.append("kategori", kategoriNama);
+        // Kirim kategori_id sebagai integer
+        const kategoriId = form.kategori_id ? Number(form.kategori_id) : null;
+        if (kategoriId) {
+          payload.append("kategori_id", kategoriId);
+        }
       } else {
-        // Get kategori ID from form and convert to nama for backend
-        const kategoriId = form.kategori && form.kategori.length ? form.kategori[0] : null;
-        const idToNama = kategoriMap.idToNama || {};
-        // Convert ID to nama, or use directly if it's already a string (backward compatibility)
-        const kategoriNama = kategoriId 
-          ? (typeof kategoriId === 'number' ? (idToNama[kategoriId] || kategoriId) : kategoriId)
-          : null;
+        // Kirim kategori_id sebagai integer
+        const kategoriId = form.kategori_id ? Number(form.kategori_id) : null;
         
         payload = {
           ...form,
-          kategori: kategoriNama, // Kirim nama kategori sebagai string
+          kategori_id: kategoriId, // Kirim kategori_id sebagai integer
           harga_coret: Number(form.harga_coret) || 0,
           harga_asli: Number(form.harga_asli) || 0,
           tanggal_event: formatDateForBackend(form.tanggal_event),
@@ -249,7 +241,6 @@ const generateKode = (text) =>
 
 const [kategoriOptions, setKategoriOptions] = useState([]);
 const [userOptions, setUserOptions] = useState([]);
-const [kategoriMap, setKategoriMap] = useState({}); // Map ID to nama for reference
 
 useEffect(() => {
   async function fetchInitialData() {
@@ -257,30 +248,24 @@ useEffect(() => {
       const token = localStorage.getItem("token");
       const headers = { Authorization: `Bearer ${token}` };
 
-      // 1️⃣ Fetch kategori
+      // 1️⃣ Fetch kategori dan filter hanya yang aktif (status === "1")
       const kategoriRes = await fetch(
         "/api/admin/kategori-produk",
         { headers }
       );
       const kategoriData = await kategoriRes.json();
       
-      // Create options with ID as value and name as label
-      const kategoriOpts = Array.isArray(kategoriData.data)
-        ? kategoriData.data.map((k) => ({ label: k.nama, value: k.id }))
+      // Filter hanya kategori yang aktif (status === "1")
+      const activeCategories = Array.isArray(kategoriData.data)
+        ? kategoriData.data.filter((k) => k.status === "1")
         : [];
-      setKategoriOptions(kategoriOpts);
       
-      // Create map for easy lookup: ID -> nama (for converting ID to name when submitting)
-      const idToNamaMap = {};
-      const namaToIdMap = {}; // For reverse lookup when loading product data
-      if (Array.isArray(kategoriData.data)) {
-        kategoriData.data.forEach((k) => {
-          idToNamaMap[k.id] = k.nama;
-          namaToIdMap[k.nama] = k.id;
-        });
-      }
-      // Store both maps
-      setKategoriMap({ idToNama: idToNamaMap, namaToId: namaToIdMap });
+      // Create options with ID as value and name as label
+      const kategoriOpts = activeCategories.map((k) => ({
+        label: `${k.id} - ${k.nama}`,
+        value: k.id
+      }));
+      setKategoriOptions(kategoriOpts);
 
       // 2️⃣ Fetch produk (misal edit mode)
       const produkRes = await fetch(
@@ -304,19 +289,23 @@ useEffect(() => {
       const kodeGenerated =
         produkData.kode || generateKode(produkData.nama || "produk-baru");
 
-      // Handle kategori: if kategori_rel exists, use its ID; otherwise try to find by name
-      let kategoriValue = null;
+      // Handle kategori_id: if kategori_rel exists, use its ID; otherwise use produkData.kategori_id
+      let kategoriId = null;
       if (produkData.kategori_rel) {
-        kategoriValue = produkData.kategori_rel.id || produkData.kategori_rel.nama;
+        kategoriId = produkData.kategori_rel.id ? Number(produkData.kategori_rel.id) : null;
+      } else if (produkData.kategori_id) {
+        kategoriId = Number(produkData.kategori_id);
       } else if (produkData.kategori) {
-        // If kategori is a string (name), find its ID using namaToId map
-        kategoriValue = namaToIdMap[produkData.kategori] || produkData.kategori;
+        // Backward compatibility: if kategori is string (name), try to find ID
+        // This should not happen in new implementation, but handle for old data
+        const found = activeCategories.find(k => k.nama === produkData.kategori);
+        kategoriId = found ? Number(found.id) : null;
       }
 
       setForm((f) => ({
         ...f,
         ...produkData,
-        kategori: kategoriValue ? [kategoriValue] : [],
+        kategori_id: kategoriId,
         assign: produkData.assign_rel ? produkData.assign_rel.map((u) => u.id) : [],
         user_input: produkData.user_input_rel ? [produkData.user_input_rel.id] : [],
         custom_field: [],
@@ -372,11 +361,11 @@ useEffect(() => {
   <label className="font-semibold">Kategori</label>
 <Dropdown
   className="w-full"
-  value={form.kategori && form.kategori.length > 0 ? form.kategori[0] : null}
+  value={form.kategori_id || null}
   options={kategoriOptions}
   onChange={(e) => {
-    // Store the category ID in the form
-    handleChange("kategori", e.value ? [e.value] : []);
+    // Store the category ID as integer
+    handleChange("kategori_id", e.value ? Number(e.value) : null);
   }}
   placeholder="Pilih Kategori"
   showClear
