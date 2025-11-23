@@ -1,13 +1,16 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+
+const BACKEND_URL = process.env.BACKEND_URL || 
+  process.env.NEXT_PUBLIC_BACKEND_URL || 
+  'https://onedashboardapi-production.up.railway.app';
 
 export async function POST(request) {
   try {
     const body = await request.json();
 
-    // Validasi field wajib
-    const requiredFields = ['nama', 'email', 'wa', 'produk', 'harga', 'total_harga', 'metode_bayar'];
-    const missingFields = requiredFields.filter(field => !body[field]);
+    // Validasi field wajib sesuai requirement backend
+    const requiredFields = ['nama', 'wa', 'email', 'produk', 'harga', 'ongkir', 'total_harga', 'metode_bayar', 'sumber'];
+    const missingFields = requiredFields.filter(field => !body[field] && body[field] !== 0);
     
     if (missingFields.length > 0) {
       return NextResponse.json(
@@ -19,32 +22,34 @@ export async function POST(request) {
       );
     }
 
-    // Validasi tipe data
-    if (typeof body.harga !== 'number' && typeof body.harga !== 'string') {
+    // Siapkan payload sesuai format backend
+    const payload = {
+      nama: String(body.nama),
+      wa: String(body.wa),
+      email: String(body.email),
+      alamat: body.alamat ? String(body.alamat) : '',
+      produk: parseInt(body.produk, 10),
+      harga: parseInt(body.harga, 10),
+      ongkir: String(body.ongkir || '0'),
+      total_harga: parseInt(body.total_harga, 10),
+      metode_bayar: String(body.metode_bayar),
+      sumber: String(body.sumber),
+      custom_value: Array.isArray(body.custom_value) ? body.custom_value : (body.custom_value ? [body.custom_value] : []),
+    };
+
+    // Validasi produk harus integer
+    if (isNaN(payload.produk)) {
       return NextResponse.json(
         {
           success: false,
-          message: 'harga harus berupa number atau string yang bisa dikonversi ke number',
+          message: 'produk harus berupa ID yang valid (integer)',
         },
         { status: 400 }
       );
     }
 
-    if (typeof body.total_harga !== 'number' && typeof body.total_harga !== 'string') {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'total_harga harus berupa number atau string yang bisa dikonversi ke number',
-        },
-        { status: 400 }
-      );
-    }
-
-    // Konversi harga dan total_harga ke integer
-    const harga = parseInt(body.harga, 10);
-    const total_harga = parseInt(body.total_harga, 10);
-
-    if (isNaN(harga) || isNaN(total_harga)) {
+    // Validasi harga dan total_harga harus integer
+    if (isNaN(payload.harga) || isNaN(payload.total_harga)) {
       return NextResponse.json(
         {
           success: false,
@@ -54,85 +59,40 @@ export async function POST(request) {
       );
     }
 
-    // Pastikan ongkir adalah string
-    const ongkir = body.ongkir ? String(body.ongkir) : "0";
-
-    // Siapkan data untuk disimpan
-    const orderData = {
-      nama: String(body.nama),
-      email: String(body.email),
-      wa: String(body.wa),
-      alamat: body.alamat ? String(body.alamat) : null,
-      produkId: parseInt(body.produk, 10),
-      harga: harga,
-      ongkir: ongkir,
-      total_harga: total_harga,
-      metode_bayar: String(body.metode_bayar),
-      custom_value: body.custom_value ? body.custom_value : null,
-      sumber: body.sumber ? String(body.sumber) : null,
-    };
-
-    // Validasi produkId
-    if (isNaN(orderData.produkId)) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'produk harus berupa ID yang valid',
-        },
-        { status: 400 }
-      );
-    }
-
-    // Simpan ke database
-    const order = await prisma.order.create({
-      data: orderData,
+    // Proxy ke backend
+    const response = await fetch(`${BACKEND_URL}/api/order`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify(payload),
     });
 
-    return NextResponse.json(
-      {
-        success: true,
-        message: 'Order berhasil dibuat',
-        data: {
-          order: {
-            id: order.id,
-            ...orderData,
-            createdAt: order.createdAt,
-          },
+    const data = await response.json();
+
+    if (!response.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: data?.message || 'Gagal membuat order',
+          error: data?.error || data,
         },
-      },
-      { status: 201 }
-    );
+        { status: response.status }
+      );
+    }
+
+    // Return response dari backend
+    return NextResponse.json(data, {
+      status: response.status,
+    });
   } catch (error) {
-    console.error('❌ Order creation error:', error);
-
-    // Handle Prisma errors
-    if (error.code === 'P2002') {
-      // Unique constraint violation
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Email sudah terdaftar',
-        },
-        { status: 400 }
-      );
-    }
-
-    if (error.code === 'P2003') {
-      // Foreign key constraint violation
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Produk tidak ditemukan',
-        },
-        { status: 400 }
-      );
-    }
-
+    console.error('❌ Order API Proxy Error:', error);
     return NextResponse.json(
-      {
-        success: false,
-        message: error.message || 'Gagal membuat order',
-        error: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      { 
+        success: false, 
+        message: 'Gagal terhubung ke server. Coba lagi nanti.',
+        error: error.message 
       },
       { status: 500 }
     );

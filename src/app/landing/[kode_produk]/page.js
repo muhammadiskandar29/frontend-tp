@@ -186,7 +186,8 @@ export default function LandingPage() {
       }
 
       if (json.redirect_url) {
-        window.location.href = json.redirect_url;
+        // Buka di tab baru sesuai requirement
+        window.open(json.redirect_url, '_blank');
       } else {
         console.error("❌ Ewallet tidak mengembalikan redirect_url:", json);
         toast.error(json.message || "Gagal membuat transaksi e-wallet");
@@ -225,7 +226,8 @@ export default function LandingPage() {
       }
 
       if (json.redirect_url) {
-        window.location.href = json.redirect_url;
+        // Buka di tab baru sesuai requirement
+        window.open(json.redirect_url, '_blank');
       } else {
         console.error("❌ CC tidak mengembalikan redirect_url:", json);
         toast.error(json.message || "Gagal membuat transaksi credit card");
@@ -264,7 +266,8 @@ export default function LandingPage() {
       }
 
       if (json.redirect_url) {
-        window.location.href = json.redirect_url;
+        // Buka di tab baru sesuai requirement
+        window.open(json.redirect_url, '_blank');
       } else {
         console.error("❌ VA tidak mengembalikan redirect_url:", json);
         toast.error(json.message || "Gagal membuat transaksi virtual account");
@@ -283,18 +286,22 @@ export default function LandingPage() {
     if (!customerForm.nama || !customerForm.email || !customerForm.wa)
       return toast.error("Lengkapi nama, WA, dan email dahulu");
 
+    // Payload sesuai format backend requirement
     const payload = {
       nama: customerForm.nama,
       wa: customerForm.wa,
       email: customerForm.email,
-      alamat: customerForm.alamat,
-      produk: form.id,
-      harga: form.harga_asli,
-      ongkir: "0",
-      total_harga: form.harga_asli,
+      alamat: customerForm.alamat || '',
+      produk: parseInt(form.id, 10), // integer
+      harga: parseInt(form.harga_asli, 10), // integer
+      ongkir: "0", // string
+      total_harga: parseInt(form.harga_asli, 10), // integer
       metode_bayar: paymentMethod,
-      sumber,
-      custom_value: customerForm.custom_value,
+      sumber: sumber || 'website',
+      custom_value: Array.isArray(customerForm.custom_value) 
+        ? customerForm.custom_value 
+        : (customerForm.custom_value ? [customerForm.custom_value] : []), // array
+      // product_name hanya untuk Midtrans, tidak dikirim ke /api/order
       product_name: form.product_name || form.nama,
     };
 
@@ -317,6 +324,9 @@ export default function LandingPage() {
 
       toast.success(order?.message || "Pesanan berhasil disimpan");
       await new Promise((r) => setTimeout(r, 300));
+      
+      // Update payload dengan orderId jika diperlukan
+      payload.orderId = orderId;
 
       // === lanjut ke pembayaran ===
 if (paymentMethod === "ewallet") {
