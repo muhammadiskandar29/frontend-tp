@@ -24,6 +24,7 @@ export async function POST(request) {
 
     // Siapkan payload sesuai format backend
     // Backend mengharapkan harga dan total_harga sebagai STRING, bukan integer
+    // HANYA kirim field yang diperlukan, jangan kirim field tambahan apapun
     const payload = {
       nama: String(body.nama),
       wa: String(body.wa),
@@ -37,6 +38,25 @@ export async function POST(request) {
       sumber: String(body.sumber),
       custom_value: Array.isArray(body.custom_value) ? body.custom_value : (body.custom_value ? [body.custom_value] : []),
     };
+
+    // Pastikan tidak ada field tambahan yang dikirim
+    // Hapus field yang tidak diperlukan (jika ada)
+    const cleanPayload = {
+      nama: payload.nama,
+      wa: payload.wa,
+      email: payload.email,
+      alamat: payload.alamat,
+      produk: payload.produk,
+      harga: payload.harga,
+      ongkir: payload.ongkir,
+      total_harga: payload.total_harga,
+      metode_bayar: payload.metode_bayar,
+      sumber: payload.sumber,
+      custom_value: payload.custom_value,
+    };
+
+    // Log untuk debugging (hapus di production jika tidak perlu)
+    console.log('📤 Payload yang dikirim ke backend:', JSON.stringify(cleanPayload, null, 2));
 
     // Validasi produk harus integer
     if (isNaN(payload.produk)) {
@@ -71,13 +91,14 @@ export async function POST(request) {
     }
 
     // Proxy ke backend
+    // Gunakan cleanPayload yang sudah dibersihkan dari field tambahan
     const response = await fetch(`${BACKEND_URL}/api/order`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(cleanPayload),
     });
 
     const data = await response.json();

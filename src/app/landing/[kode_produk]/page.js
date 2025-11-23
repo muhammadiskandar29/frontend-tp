@@ -307,11 +307,15 @@ export default function LandingPage() {
     };
 
     try {
+      // Hapus product_name dari payload karena tidak diperlukan di /api/order
+      // product_name hanya untuk Midtrans
+      const { product_name, ...orderPayload } = payload;
+      
       // simpan order dulu ke DB via API proxy
       const response = await fetch("/api/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(orderPayload),
       });
 
       const order = await response.json();
