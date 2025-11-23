@@ -1,7 +1,37 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { submitCustomerProfile } from "@/lib/customerProfile";
+// Update customer menggunakan endpoint /api/customer/customer
+async function updateCustomer(payload) {
+  const token = localStorage.getItem("customer_token");
+
+  if (!token) {
+    throw new Error("Token tidak ditemukan. Silakan login kembali.");
+  }
+
+  try {
+    const response = await fetch("/api/customer/customer", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || data?.success !== true) {
+      throw new Error(data?.message || "Gagal mengupdate customer");
+    }
+
+    return data;
+  } catch (error) {
+    console.error("❌ [UPDATE_CUSTOMER] Error:", error);
+    throw error;
+  }
+}
 import { getCustomerSession } from "@/lib/customerAuth";
 
 const initialFormState = {
@@ -70,7 +100,7 @@ export default function UpdateCustomerModal({
         ...formData,
       };
 
-      const result = await submitCustomerProfile(payload);
+      const result = await updateCustomer(payload);
       if (typeof onSuccess === "function") {
         onSuccess(result?.data);
       }
@@ -80,6 +110,7 @@ export default function UpdateCustomerModal({
       setFormData(initialFormState);
     } catch (error) {
       console.error("[UPDATE_CUSTOMER] Submit failed:", error);
+      alert(error.message || "Gagal mengupdate customer");
     } finally {
       setLoading(false);
     }
@@ -92,14 +123,10 @@ export default function UpdateCustomerModal({
       <div className="customer-modal">
         <div className="customer-modal__header">
           <h2>{title}</h2>
-          <button
-            type="button"
-            className="customer-modal__close"
-            onClick={onClose}
-            aria-label="Close modal"
-          >
-            ✕
-          </button>
+          {/* Modal tidak bisa ditutup sebelum submit */}
+          {loading ? (
+            <span style={{ color: "#6b7280", fontSize: "14px" }}>Menyimpan...</span>
+          ) : null}
         </div>
 
         <form className="customer-modal__body" onSubmit={handleSubmit}>
@@ -204,18 +231,12 @@ export default function UpdateCustomerModal({
           </div>
 
           <div className="customer-modal__footer">
-            <button
-              type="button"
-              className="customer-btn customer-btn--ghost"
-              onClick={onClose}
-              disabled={loading}
-            >
-              Batal
-            </button>
+            {/* Modal tidak bisa ditutup sebelum submit, jadi tidak ada tombol Batal */}
             <button
               type="submit"
               className="customer-btn customer-btn--primary"
               disabled={loading}
+              style={{ width: "100%" }}
             >
               {loading ? "Menyimpan..." : "Simpan Data"}
             </button>

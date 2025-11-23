@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { toast } from "react-hot-toast";
+import { useRouter } from "next/navigation";
 
 export default function OTPVerificationModal({ customerInfo, onClose, onOTPSent }) {
+  const router = useRouter();
   const [sendingOTP, setSendingOTP] = useState(false);
 
   const handleSendOTP = async () => {
@@ -60,9 +62,12 @@ export default function OTPVerificationModal({ customerInfo, onClose, onOTPSent 
 
       if (data?.success) {
         toast.success(data?.message || "OTP berhasil dikirim ke WhatsApp Anda");
+        // Redirect ke halaman OTP setelah berhasil kirim
         if (onOTPSent) {
           onOTPSent(data);
         }
+        // Redirect ke halaman OTP
+        router.replace("/customer/otp");
       } else {
         throw new Error(data?.message || "Gagal mengirim OTP");
       }
@@ -114,9 +119,6 @@ export default function OTPVerificationModal({ customerInfo, onClose, onOTPSent 
         </div>
 
         <div className="modal-footer" style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
-          <button type="button" className="btn-cancel" onClick={onClose} disabled={sendingOTP}>
-            Batal
-          </button>
           <button
             type="button"
             className="btn-save"
@@ -127,7 +129,7 @@ export default function OTPVerificationModal({ customerInfo, onClose, onOTPSent 
               cursor: sendingOTP ? "not-allowed" : "pointer",
             }}
           >
-            {sendingOTP ? "Mengirim..." : "Kirim OTP"}
+            {sendingOTP ? "Mengirim..." : "OK"}
           </button>
         </div>
       </div>

@@ -147,12 +147,9 @@ try {
 
     console.log("User verified:", verified, "verifikasi:", verifikasiValue);
 
+    // Selalu redirect ke dashboard dulu, nanti dashboard akan handle modal OTP
     setTimeout(() => {
-      if (verified) {
-        router.replace("/customer/dashboard");
-      } else {
-        router.replace("/customer/otp");
-      }
+      router.replace("/customer/dashboard");
     }, 300);
 
         

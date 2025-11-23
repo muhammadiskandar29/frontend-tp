@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import "@/styles/otp.css";
 import { getCustomerSession, verifyCustomerOTP, resendCustomerOTP } from "@/lib/customerAuth";
+import UpdateCustomerModal from "@/app/customer/dashboard/updateCustomer";
 
 const OTP_VALID_DURATION = 5 * 60; // 5 minutes in seconds
 
@@ -17,6 +18,7 @@ export default function CustomerOTPPage() {
   const [wa, setWa] = useState(null);
   const [timeLeft, setTimeLeft] = useState(OTP_VALID_DURATION);
   const [timerActive, setTimerActive] = useState(true);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
   const inputs = useRef([]);
 
   const resetOtpTimer = () => {
@@ -144,10 +146,8 @@ export default function CustomerOTPPage() {
           console.log("✅ [OTP] User data updated (fallback):", session.user);
         }
         
-        // Redirect ke dashboard setelah 1.5 detik
-        setTimeout(() => {
-          router.replace("/customer/dashboard");
-        }, 1500);
+        // Tampilkan modal updateCustomer setelah verifikasi berhasil
+        setShowUpdateModal(true);
       } else {
         setMessage(result.message || "Kode OTP salah atau sudah kadaluarsa.");
       }
@@ -191,53 +191,74 @@ export default function CustomerOTPPage() {
     }
   };
 
+  const handleUpdateCustomerSuccess = () => {
+    // Setelah update customer berhasil, redirect ke dashboard
+    setTimeout(() => {
+      router.replace("/customer/dashboard");
+    }, 500);
+  };
+
   return (
-    <div className="otp-container">
-      <div className="otp-box">
-        <h1 className="otp-title">Verifikasi OTP</h1>
-        <p className="otp-desc">
-          Masukkan 6 digit kode OTP yang telah dikirim ke WhatsApp atau email kamu.
-          <br />
-          <span style={{ fontSize: "0.85rem", color: "#ef4444", marginTop: "0.5rem", display: "block" }}>
-            ⏱️ OTP berlaku selama 5 menit {timeLeft > 0 ? `(tersisa ${formatTimeLeft()})` : "(kedaluwarsa)"}
-          </span>
-        </p>
-
-        <form onSubmit={handleSubmit} className="otp-form">
-          <div className="otp-input-group">
-            {otp.map((digit, i) => (
-              <input
-                key={i}
-                type="text"
-                maxLength="1"
-                value={digit}
-                onChange={(e) => handleChange(e, i)}
-                onKeyDown={(e) => handleKeyDown(e, i)}
-                ref={(el) => (inputs.current[i] = el)}
-                className="otp-input"
-              />
-            ))}
-          </div>
-
-          {message && <p className="otp-message">{message}</p>}
-
-          <button type="submit" className="otp-btn" disabled={loading}>
-            {loading ? "Memverifikasi..." : "Verifikasi"}
-          </button>
-
-          {/* 🔸 Kirim ulang kode bukan button lagi */}
-          <p 
-            className="otp-resend" 
-            onClick={handleResend}
-            style={{
-              cursor: resending ? "not-allowed" : "pointer",
-              opacity: resending ? 0.6 : 1,
-            }}
-          >
-            {resending ? "Mengirim ulang..." : "Kirim ulang kode OTP"}
+    <>
+      <div className="otp-container">
+        <div className="otp-box">
+          <h1 className="otp-title">Verifikasi OTP</h1>
+          <p className="otp-desc">
+            Masukkan 6 digit kode OTP yang telah dikirim ke WhatsApp atau email kamu.
+            <br />
+            <span style={{ fontSize: "0.85rem", color: "#ef4444", marginTop: "0.5rem", display: "block" }}>
+              ⏱️ OTP berlaku selama 5 menit {timeLeft > 0 ? `(tersisa ${formatTimeLeft()})` : "(kedaluwarsa)"}
+            </span>
           </p>
-        </form>
+
+          <form onSubmit={handleSubmit} className="otp-form">
+            <div className="otp-input-group">
+              {otp.map((digit, i) => (
+                <input
+                  key={i}
+                  type="text"
+                  maxLength="1"
+                  value={digit}
+                  onChange={(e) => handleChange(e, i)}
+                  onKeyDown={(e) => handleKeyDown(e, i)}
+                  ref={(el) => (inputs.current[i] = el)}
+                  className="otp-input"
+                />
+              ))}
+            </div>
+
+            {message && <p className="otp-message">{message}</p>}
+
+            <button type="submit" className="otp-btn" disabled={loading}>
+              {loading ? "Memverifikasi..." : "Verifikasi"}
+            </button>
+
+            {/* 🔸 Kirim ulang kode bukan button lagi */}
+            <p 
+              className="otp-resend" 
+              onClick={handleResend}
+              style={{
+                cursor: resending ? "not-allowed" : "pointer",
+                opacity: resending ? 0.6 : 1,
+              }}
+            >
+              {resending ? "Mengirim ulang..." : "Kirim ulang kode OTP"}
+            </p>
+          </form>
+        </div>
       </div>
-    </div>
+
+      {/* Modal Update Customer */}
+      {showUpdateModal && (
+        <UpdateCustomerModal
+          isOpen={showUpdateModal}
+          onClose={() => {
+            // Jangan tutup modal, harus lengkapi data dulu
+          }}
+          onSuccess={handleUpdateCustomerSuccess}
+          title="Lengkapi Data Customer"
+        />
+      )}
+    </>
   );
 }

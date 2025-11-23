@@ -154,85 +154,59 @@ export default function DashboardPage() {
     }
   }, [router]);
 
-  // Cek apakah user sudah verifikasi
+  // Cek apakah user sudah verifikasi dan tampilkan modal setelah 5 detik
   useEffect(() => {
-    const checkVerification = () => {
-      const session = getCustomerSession();
-      console.log("🔵 [DASHBOARD] Checking verification status...");
-      console.log("🔵 [DASHBOARD] Session:", session);
+    const session = getCustomerSession();
+    console.log("🔵 [DASHBOARD] Checking verification status...");
+    console.log("🔵 [DASHBOARD] Session:", session);
+    
+    if (!session.token) {
+      console.log("⚠️ [DASHBOARD] No token, redirecting to login");
+      router.replace("/customer/login");
+      return;
+    }
+
+    // Load dashboard data dulu
+    loadDashboardData();
+
+    if (session.user) {
+      // Cek apakah user sudah verifikasi (verifikasi = 1 atau "1" atau true)
+      const verifikasiValue = session.user.verifikasi;
+      // Normalize: convert string "1" to number 1, "0" to 0, etc.
+      const normalizedVerifikasi = verifikasiValue === "1" ? 1 : verifikasiValue === "0" ? 0 : verifikasiValue;
+      const isVerified = normalizedVerifikasi === 1 || normalizedVerifikasi === true;
       
-      if (session.user) {
-        // Cek apakah user sudah verifikasi (verifikasi = 1 atau "1" atau true)
-        const verifikasiValue = session.user.verifikasi;
-        // Normalize: convert string "1" to number 1, "0" to 0, etc.
-        const normalizedVerifikasi = verifikasiValue === "1" ? 1 : verifikasiValue === "0" ? 0 : verifikasiValue;
-        const isVerified = normalizedVerifikasi === 1 || normalizedVerifikasi === true;
-        
-        console.log("🔵 [DASHBOARD] Checking verification:");
-        console.log("🔵 [DASHBOARD] Raw verifikasi value:", verifikasiValue);
-        console.log("🔵 [DASHBOARD] Verifikasi type:", typeof verifikasiValue);
-        console.log("🔵 [DASHBOARD] Normalized verifikasi:", normalizedVerifikasi);
-        console.log("🔵 [DASHBOARD] Is verified:", isVerified);
-        
-        if (isVerified) {
-          console.log("✅ [DASHBOARD] User already verified, hiding modal and allowing access");
-          setShowVerificationModal(false);
-          // User sudah verifikasi, langsung masuk dashboard tanpa modal
-          loadDashboardData();
-          return;
-        } else {
-          console.log("⚠️ [DASHBOARD] User not verified, showing modal");
-          console.log("⚠️ [DASHBOARD] Verifikasi value that failed check:", verifikasiValue);
-          setShowVerificationModal(true);
-        }
-      } else {
-        // Jika tidak ada user data
-        console.log("⚠️ [DASHBOARD] No user data");
-        // Jika tidak ada token juga, redirect ke login
-        if (!session.token) {
-          console.log("⚠️ [DASHBOARD] No token, redirecting to login");
-          router.replace("/customer/login");
-        } else {
-          // Ada token tapi tidak ada user data, mungkin perlu verifikasi
-          console.log("⚠️ [DASHBOARD] Has token but no user data, showing modal");
-          setShowVerificationModal(true);
-        }
-      }
-    };
-
-    // Check immediately
-    checkVerification();
-
-    // Safety timeout: jika modal stuck lebih dari 30 detik, force close
-    const safetyTimeout = setTimeout(() => {
-      if (showVerificationModal) {
-        console.warn("⚠️ [DASHBOARD] Modal stuck for 30s, forcing close");
+      console.log("🔵 [DASHBOARD] Checking verification:");
+      console.log("🔵 [DASHBOARD] Raw verifikasi value:", verifikasiValue);
+      console.log("🔵 [DASHBOARD] Verifikasi type:", typeof verifikasiValue);
+      console.log("🔵 [DASHBOARD] Normalized verifikasi:", normalizedVerifikasi);
+      console.log("🔵 [DASHBOARD] Is verified:", isVerified);
+      
+      if (isVerified) {
+        console.log("✅ [DASHBOARD] User already verified, hiding modal and allowing access");
         setShowVerificationModal(false);
+        // User sudah verifikasi, langsung masuk dashboard tanpa modal
+        return;
+      } else {
+        console.log("⚠️ [DASHBOARD] User not verified, will show modal after 5 seconds");
+        // Tampilkan modal setelah 5 detik
+        const modalTimeout = setTimeout(() => {
+          console.log("⚠️ [DASHBOARD] Showing verification modal after 5 seconds");
+          setShowVerificationModal(true);
+        }, 5000);
+
+        return () => clearTimeout(modalTimeout);
       }
-    }, 30000);
+    } else {
+      // Jika tidak ada user data, mungkin perlu verifikasi
+      console.log("⚠️ [DASHBOARD] Has token but no user data, will show modal after 5 seconds");
+      const modalTimeout = setTimeout(() => {
+        setShowVerificationModal(true);
+      }, 5000);
 
-    // Also check when page becomes visible (user returns from OTP page)
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        checkVerification();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // Also check on focus (when user switches back to tab)
-    const handleFocus = () => {
-      checkVerification();
-    };
-
-    window.addEventListener('focus', handleFocus);
-
-    return () => {
-      clearTimeout(safetyTimeout);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
-    };
-  }, [router, loadDashboardData, showVerificationModal]);
+      return () => clearTimeout(modalTimeout);
+    }
+  }, [router, loadDashboardData]);
 
   // Handler untuk OTP sent callback
   const handleOTPSent = (data) => {
