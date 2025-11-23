@@ -23,15 +23,16 @@ export async function POST(request) {
     }
 
     // Siapkan payload sesuai format backend
+    // Backend mengharapkan harga dan total_harga sebagai STRING, bukan integer
     const payload = {
       nama: String(body.nama),
       wa: String(body.wa),
       email: String(body.email),
       alamat: body.alamat ? String(body.alamat) : '',
-      produk: parseInt(body.produk, 10),
-      harga: parseInt(body.harga, 10),
+      produk: parseInt(body.produk, 10), // produk tetap integer
+      harga: String(body.harga), // harga sebagai string (backend requirement)
       ongkir: String(body.ongkir || '0'),
-      total_harga: parseInt(body.total_harga, 10),
+      total_harga: String(body.total_harga), // total_harga sebagai string (backend requirement)
       metode_bayar: String(body.metode_bayar),
       sumber: String(body.sumber),
       custom_value: Array.isArray(body.custom_value) ? body.custom_value : (body.custom_value ? [body.custom_value] : []),
@@ -48,12 +49,22 @@ export async function POST(request) {
       );
     }
 
-    // Validasi harga dan total_harga harus integer
-    if (isNaN(payload.harga) || isNaN(payload.total_harga)) {
+    // Validasi harga dan total_harga harus ada (setelah dikonversi ke string)
+    if (!payload.harga || payload.harga === 'undefined' || payload.harga === 'null') {
       return NextResponse.json(
         {
           success: false,
-          message: 'harga dan total_harga harus berupa angka valid',
+          message: 'harga wajib diisi',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!payload.total_harga || payload.total_harga === 'undefined' || payload.total_harga === 'null') {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'total_harga wajib diisi',
         },
         { status: 400 }
       );

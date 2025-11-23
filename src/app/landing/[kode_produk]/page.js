@@ -287,15 +287,16 @@ export default function LandingPage() {
       return toast.error("Lengkapi nama, WA, dan email dahulu");
 
     // Payload sesuai format backend requirement
+    // Backend mengharapkan harga dan total_harga sebagai STRING
     const payload = {
       nama: customerForm.nama,
       wa: customerForm.wa,
       email: customerForm.email,
       alamat: customerForm.alamat || '',
-      produk: parseInt(form.id, 10), // integer
-      harga: parseInt(form.harga_asli, 10), // integer
+      produk: parseInt(form.id, 10), // produk tetap integer
+      harga: String(form.harga_asli || '0'), // harga sebagai string
       ongkir: "0", // string
-      total_harga: parseInt(form.harga_asli, 10), // integer
+      total_harga: String(form.harga_asli || '0'), // total_harga sebagai string
       metode_bayar: paymentMethod,
       sumber: sumber || 'website',
       custom_value: Array.isArray(customerForm.custom_value) 
