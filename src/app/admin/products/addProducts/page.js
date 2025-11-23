@@ -224,6 +224,11 @@ const generateKode = (text) =>
       );
 
       const data = await res.json();
+      
+      // Logging struktur JSON lengkap
+      console.log("Success:", data.success);
+      console.log("Data:", data.data);
+      console.table(data.data);
 
       if (!res.ok) {
         console.error("❌ API ERROR:", data);
@@ -256,6 +261,11 @@ useEffect(() => {
       );
       const kategoriData = await kategoriRes.json();
       
+      // Logging struktur JSON lengkap
+      console.log("Success:", kategoriData.success);
+      console.log("Data:", kategoriData.data);
+      console.table(kategoriData.data);
+      
       // Filter hanya kategori yang aktif (status === "1")
       const activeCategories = Array.isArray(kategoriData.data)
         ? kategoriData.data.filter((k) => k.status === "1")
@@ -274,6 +284,11 @@ useEffect(() => {
         { headers }
       );
       const produkData = await produkRes.json();
+      
+      // Logging struktur JSON lengkap
+      console.log("Success:", produkData.success);
+      console.log("Data:", produkData.data);
+      console.table(produkData.data);
 
       // 3️⃣ Fetch users - filter hanya status 1
       const usersRes = await fetch(
@@ -281,6 +296,11 @@ useEffect(() => {
         { headers }
       );
       const usersJson = await usersRes.json();
+      
+      // Logging struktur JSON lengkap
+      console.log("Success:", usersJson.success);
+      console.log("Data:", usersJson.data);
+      console.table(usersJson.data);
       const userOpts = Array.isArray(usersJson.data)
         ? usersJson.data
             .filter((u) => u.status === "1" || u.status === 1) // Filter hanya status 1
