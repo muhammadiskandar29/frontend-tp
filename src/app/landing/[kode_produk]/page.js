@@ -24,6 +24,13 @@ export default function LandingPage() {
     custom_value: [],
   });
 
+  // Helper function untuk format harga IDR
+  const formatPrice = (price) => {
+    if (!price) return "0";
+    const numPrice = typeof price === 'string' ? parseInt(price.replace(/[^\d]/g, '')) : price;
+    return numPrice.toLocaleString('id-ID');
+  };
+
   // --- SAFE JSON ---
   const safeParse = (value, fallback) => {
     if (!value) return fallback;
@@ -71,67 +78,127 @@ export default function LandingPage() {
     fetchData();
   }, [kode_produk]);
 
-  // SEO Meta Tags & Structured Data
+  // SEO Meta Tags & Structured Data - Optimized
   useEffect(() => {
     if (!data) return;
 
+    const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+    const fullImageUrl = data.header?.path 
+      ? (data.header.path.startsWith('http') ? data.header.path : `https://onedashboardapi-production.up.railway.app${data.header.path}`)
+      : '';
+
     // Update document title
-    document.title = `${data.nama} - Beli Sekarang | Ternak Properti`;
+    const title = `${data.nama} - Beli Sekarang | Ternak Properti`;
+    document.title = title;
 
     // Update meta description
-    const metaDescription = document.querySelector('meta[name="description"]');
     const description = data.deskripsi 
       ? `${data.deskripsi.substring(0, 155)}...` 
-      : `Dapatkan ${data.nama} dengan harga terbaik. ${data.harga_asli ? `Hanya Rp ${data.harga_asli}` : ''} - Tawaran terbatas!`;
+      : `Dapatkan ${data.nama} dengan harga terbaik. ${data.harga_asli ? `Hanya Rp ${formatPrice(data.harga_asli)}` : ''} - Tawaran terbatas!`;
     
-    if (metaDescription) {
-      metaDescription.setAttribute('content', description);
-    } else {
-      const meta = document.createElement('meta');
-      meta.name = 'description';
-      meta.content = description;
-      document.head.appendChild(meta);
-    }
-
-    // Update Open Graph tags
-    const updateOGTag = (property, content) => {
-      let ogTag = document.querySelector(`meta[property="${property}"]`);
-      if (!ogTag) {
-        ogTag = document.createElement('meta');
-        ogTag.setAttribute('property', property);
-        document.head.appendChild(ogTag);
+    const updateMetaTag = (name, content, isProperty = false) => {
+      const selector = isProperty ? `meta[property="${name}"]` : `meta[name="${name}"]`;
+      let metaTag = document.querySelector(selector);
+      if (!metaTag) {
+        metaTag = document.createElement('meta');
+        if (isProperty) {
+          metaTag.setAttribute('property', name);
+        } else {
+          metaTag.setAttribute('name', name);
+        }
+        document.head.appendChild(metaTag);
       }
-      ogTag.setAttribute('content', content);
+      metaTag.setAttribute('content', content);
     };
 
-    updateOGTag('og:title', data.nama);
-    updateOGTag('og:description', description);
-    updateOGTag('og:type', 'product');
-    if (data.header?.path) {
-      updateOGTag('og:image', data.header.path);
+    // Basic Meta Tags
+    updateMetaTag('description', description);
+    updateMetaTag('keywords', `${data.nama}, ${data.kategori_rel?.nama || 'Produk'}, Ternak Properti, Beli Online`);
+    updateMetaTag('author', 'Ternak Properti');
+    updateMetaTag('robots', 'index, follow');
+    
+    // Canonical URL
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonical);
     }
-    updateOGTag('og:url', typeof window !== 'undefined' ? window.location.href : '');
+    canonical.setAttribute('href', currentUrl);
 
-    // Add structured data (JSON-LD)
+    // Open Graph Tags
+    updateMetaTag('og:title', title, true);
+    updateMetaTag('og:description', description, true);
+    updateMetaTag('og:type', 'product', true);
+    updateMetaTag('og:url', currentUrl, true);
+    if (fullImageUrl) {
+      updateMetaTag('og:image', fullImageUrl, true);
+      updateMetaTag('og:image:width', '1200', true);
+      updateMetaTag('og:image:height', '630', true);
+      updateMetaTag('og:image:alt', data.nama, true);
+    }
+    updateMetaTag('og:site_name', 'Ternak Properti', true);
+    updateMetaTag('og:locale', 'id_ID', true);
+
+    // Twitter Card Tags
+    updateMetaTag('twitter:card', 'summary_large_image', true);
+    updateMetaTag('twitter:title', title, true);
+    updateMetaTag('twitter:description', description, true);
+    if (fullImageUrl) {
+      updateMetaTag('twitter:image', fullImageUrl, true);
+    }
+
+    // Add structured data (JSON-LD) - Enhanced
     const structuredData = {
       "@context": "https://schema.org",
       "@type": "Product",
       "name": data.nama,
       "description": data.deskripsi || description,
-      "image": data.header?.path ? [data.header.path] : [],
+      "image": fullImageUrl ? [fullImageUrl] : [],
+      "sku": data.kode || data.id?.toString(),
+      "mpn": data.id?.toString(),
+      "brand": {
+        "@type": "Brand",
+        "name": "Ternak Properti"
+      },
+      "category": data.kategori_rel?.nama || "Produk",
       "offers": {
         "@type": "Offer",
         "price": data.harga_asli || "0",
         "priceCurrency": "IDR",
         "availability": "https://schema.org/InStock",
-        "url": typeof window !== 'undefined' ? window.location.href : ''
+        "url": currentUrl,
+        "priceValidUntil": data.tanggal_event || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        "seller": {
+          "@type": "Organization",
+          "name": "Ternak Properti"
+        }
       },
-      "brand": {
-        "@type": "Brand",
-        "name": "Ternak Properti"
-      },
-      "category": data.kategori_rel?.nama || "Produk"
+      "aggregateRating": data.testimoni?.length > 0 ? {
+        "@type": "AggregateRating",
+        "ratingValue": "5",
+        "reviewCount": data.testimoni.length.toString()
+      } : undefined,
+      "review": data.testimoni?.length > 0 ? data.testimoni.slice(0, 5).map(t => ({
+        "@type": "Review",
+        "author": {
+          "@type": "Person",
+          "name": t.nama
+        },
+        "reviewBody": t.deskripsi,
+        "reviewRating": {
+          "@type": "Rating",
+          "ratingValue": "5"
+        }
+      })) : undefined
     };
+
+    // Remove undefined fields
+    Object.keys(structuredData).forEach(key => {
+      if (structuredData[key] === undefined) {
+        delete structuredData[key];
+      }
+    });
 
     // Remove existing structured data
     const existingScript = document.getElementById('product-structured-data');
@@ -423,26 +490,24 @@ if (paymentMethod === "va") {
           </section>
         )}
 
-        {/* Intro Harga */}
+        {/* Intro Harga & Harga - Combined */}
         {(form.harga_coret || form.harga_asli) && (
-          <div className="price-intro">
-            Dengan semua manfaat di atas, kamu bisa mendapatkannya hanya dengan:
-          </div>
-        )}
-
-        {/* Harga */}
-        {(form.harga_coret || form.harga_asli) && (
-          <div className="preview-price" itemScope itemType="https://schema.org/Offer">
-            {form.harga_coret && (
-              <span className="old" aria-label="Harga lama">
-                Rp {form.harga_coret}
-              </span>
-            )}
-            {form.harga_asli && (
-              <span className="new" itemProp="price" content={form.harga_asli}>
-                Rp {form.harga_asli}
-              </span>
-            )}
+          <div className="price-section" itemScope itemType="https://schema.org/Offer">
+            <div className="price-intro">
+              Dengan semua manfaat di atas, kamu bisa mendapatkannya hanya dengan:
+            </div>
+            <div className="preview-price">
+              {form.harga_coret && (
+                <span className="old" aria-label="Harga lama">
+                  Rp {formatPrice(form.harga_coret)}
+                </span>
+              )}
+              {form.harga_asli && (
+                <span className="new" itemProp="price" content={form.harga_asli}>
+                  Rp {formatPrice(form.harga_asli)}
+                </span>
+              )}
+            </div>
             <meta itemProp="priceCurrency" content="IDR" />
             <meta itemProp="availability" content="https://schema.org/InStock" />
           </div>

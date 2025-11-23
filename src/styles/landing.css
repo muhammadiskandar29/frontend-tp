@@ -97,29 +97,39 @@ body {
   display: block;
 }
 
-/* PRICE - Professional Highlight */
-.price-intro {
-  font-size: 1.1rem;
+/* PRICE SECTION - Combined */
+.price-section {
   text-align: center;
-  margin-top: 45px;
-  font-weight: 600;
-  color: var(--text);
-  padding: 18px;
-  background: var(--bg-light);
-  border-radius: 8px;
-  border: 1px solid var(--border);
-}
-
-.preview-price {
-  display: flex;
-  flex-direction: column;
-  text-align: center;
-  margin-top: 25px;
-  padding: 35px 40px;
-  background: var(--bg-light);
+  margin: 40px 0;
+  padding: 35px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
   border-radius: 12px;
   border: 2px solid var(--primary);
   box-shadow: var(--shadow-md);
+}
+
+.price-section .price-intro {
+  font-size: 1.1rem;
+  color: var(--text);
+  margin-bottom: 25px;
+  font-weight: 600;
+  line-height: 1.6;
+  margin-top: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+.price-section .preview-price {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 .preview-price .old {

@@ -97,6 +97,12 @@ export default function DaftarPesanan() {
           },
         });
         const produkResult = await resProduk.json();
+        
+        // Logging struktur JSON lengkap
+        console.log("Success:", produkResult.success);
+        console.log("Data:", produkResult.data);
+        console.table(produkResult.data);
+        
         const produkList = Array.isArray(produkResult.data) ? produkResult.data : [];
         const mapProduk = {};
         produkList.forEach((p) => {
@@ -106,6 +112,12 @@ export default function DaftarPesanan() {
 
         // Ambil orders
         const ordersResult = await getOrders();
+        
+        // Logging struktur JSON lengkap
+        console.log("Success:", ordersResult?.success !== undefined ? ordersResult.success : true);
+        console.log("Data:", Array.isArray(ordersResult) ? ordersResult : ordersResult?.data);
+        console.table(Array.isArray(ordersResult) ? ordersResult : ordersResult?.data);
+        
         const finalOrders = Array.isArray(ordersResult)
           ? ordersResult
           : ordersResult.data || [];
@@ -147,6 +159,12 @@ export default function DaftarPesanan() {
         },
       });
       const produkResult = await resProduk.json();
+      
+      // Logging struktur JSON lengkap
+      console.log("Success:", produkResult.success);
+      console.log("Data:", produkResult.data);
+      console.table(produkResult.data);
+      
       const produkList = Array.isArray(produkResult.data) ? produkResult.data : [];
       const mapProduk = {};
       produkList.forEach((p) => {
@@ -156,6 +174,12 @@ export default function DaftarPesanan() {
 
       // Ambil orders
       const ordersResult = await getOrders();
+      
+      // Logging struktur JSON lengkap
+      console.log("Success:", ordersResult?.success !== undefined ? ordersResult.success : true);
+      console.log("Data:", Array.isArray(ordersResult) ? ordersResult : ordersResult?.data);
+      console.table(Array.isArray(ordersResult) ? ordersResult : ordersResult?.data);
+      
       const finalOrders = Array.isArray(ordersResult)
         ? ordersResult
         : ordersResult.data || [];
