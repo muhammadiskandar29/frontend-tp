@@ -1,63 +1,138 @@
 import { NextResponse } from 'next/server';
-
-const BACKEND_URL = 'https://onedashboardapi-production.up.railway.app/api/order';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request) {
   try {
     const body = await request.json();
+
+    // Validasi field wajib
+    const requiredFields = ['nama', 'email', 'wa', 'produk', 'harga', 'total_harga', 'metode_bayar'];
+    const missingFields = requiredFields.filter(field => !body[field]);
     
-    const response = await fetch(BACKEND_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
-
-    const data = await response.json();
-
-    // Handle validation errors (like duplicate email) properly
-    // Backend might return 500 for validation errors, but we should check the message
-    if (!response.ok) {
-      // If the error message indicates a validation error (like duplicate email),
-      // return it as a 400 Bad Request instead of 500
-      if (data?.message && (
-        data.message.includes('email has already been taken') ||
-        data.message.includes('email') && data.message.includes('already')
-      )) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: data.message || 'The email has already been taken.',
-            error: data.error || data.message,
-          },
-          { status: 400 }
-        );
-      }
-
-      // For other errors, return the original status
+    if (missingFields.length > 0) {
       return NextResponse.json(
         {
           success: false,
-          message: data?.message || 'An error occurred while creating the order.',
-          error: data?.error || data?.message,
+          message: `Field wajib tidak lengkap: ${missingFields.join(', ')}`,
         },
-        { status: response.status }
+        { status: 400 }
       );
     }
 
-    // Success response
-    return NextResponse.json(data, {
-      status: response.status,
+    // Validasi tipe data
+    if (typeof body.harga !== 'number' && typeof body.harga !== 'string') {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'harga harus berupa number atau string yang bisa dikonversi ke number',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (typeof body.total_harga !== 'number' && typeof body.total_harga !== 'string') {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'total_harga harus berupa number atau string yang bisa dikonversi ke number',
+        },
+        { status: 400 }
+      );
+    }
+
+    // Konversi harga dan total_harga ke integer
+    const harga = parseInt(body.harga, 10);
+    const total_harga = parseInt(body.total_harga, 10);
+
+    if (isNaN(harga) || isNaN(total_harga)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'harga dan total_harga harus berupa angka valid',
+        },
+        { status: 400 }
+      );
+    }
+
+    // Pastikan ongkir adalah string
+    const ongkir = body.ongkir ? String(body.ongkir) : "0";
+
+    // Siapkan data untuk disimpan
+    const orderData = {
+      nama: String(body.nama),
+      email: String(body.email),
+      wa: String(body.wa),
+      alamat: body.alamat ? String(body.alamat) : null,
+      produkId: parseInt(body.produk, 10),
+      harga: harga,
+      ongkir: ongkir,
+      total_harga: total_harga,
+      metode_bayar: String(body.metode_bayar),
+      custom_value: body.custom_value ? body.custom_value : null,
+      sumber: body.sumber ? String(body.sumber) : null,
+    };
+
+    // Validasi produkId
+    if (isNaN(orderData.produkId)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'produk harus berupa ID yang valid',
+        },
+        { status: 400 }
+      );
+    }
+
+    // Simpan ke database
+    const order = await prisma.order.create({
+      data: orderData,
     });
-  } catch (error) {
-    console.error('API Proxy Error:', error);
+
     return NextResponse.json(
-      { 
-        success: false, 
-        message: 'Gagal terhubung ke server. Coba lagi nanti.',
-        error: error.message 
+      {
+        success: true,
+        message: 'Order berhasil dibuat',
+        data: {
+          order: {
+            id: order.id,
+            ...orderData,
+            createdAt: order.createdAt,
+          },
+        },
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error('❌ Order creation error:', error);
+
+    // Handle Prisma errors
+    if (error.code === 'P2002') {
+      // Unique constraint violation
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Email sudah terdaftar',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (error.code === 'P2003') {
+      // Foreign key constraint violation
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Produk tidak ditemukan',
+        },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: error.message || 'Gagal membuat order',
+        error: process.env.NODE_ENV === 'development' ? error.stack : undefined,
       },
       { status: 500 }
     );
@@ -74,4 +149,3 @@ export async function OPTIONS() {
     },
   });
 }
-

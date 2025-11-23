@@ -159,88 +159,121 @@ export default function LandingPage() {
   // 🔥 PEMBAYARAN MIDTRANS — 3 ENDPOINT FIX SESUAI BACKEND LU
   // ==========================================================
   async function payEwallet(payload) {
-    const API_BASE = "/api";
+    try {
+      const API_BASE = "/api";
 
-  const formData = new FormData();
-  formData.append("name", payload.nama);
-  formData.append("email", payload.email);
-  formData.append("amount", payload.total_harga);
-  formData.append("product_name", payload.product_name);
+      const formData = new FormData();
+      formData.append("name", payload.nama);
+      formData.append("email", payload.email);
+      formData.append("amount", payload.total_harga);
+      formData.append("product_name", payload.product_name);
 
       const response = await fetch(`${API_BASE}/midtrans/create-snap-ewallet`, {
-    method: "POST",
-    body: formData
-  });
+        method: "POST",
+        body: formData
+      });
 
-  const text = await response.text();
-  console.log("EWALLET RAW:", text);
+      const text = await response.text();
+      console.log("EWALLET RAW:", text);
 
-  let json;
-  try {
-    json = JSON.parse(text);
-  } catch {
-    console.error("❌ Ewallet balikin HTML:", text);
-    return;
+      let json;
+      try {
+        json = JSON.parse(text);
+      } catch {
+        console.error("❌ Ewallet balikin HTML:", text);
+        toast.error("Gagal memproses pembayaran e-wallet");
+        return;
+      }
+
+      if (json.redirect_url) {
+        window.location.href = json.redirect_url;
+      } else {
+        console.error("❌ Ewallet tidak mengembalikan redirect_url:", json);
+        toast.error(json.message || "Gagal membuat transaksi e-wallet");
+      }
+    } catch (err) {
+      console.error("❌ Ewallet error:", err);
+      toast.error("Terjadi kesalahan saat memproses pembayaran e-wallet");
+    }
   }
 
-  if (json.redirect_url) window.location.href = json.redirect_url;
-}
+  async function payCC(payload) {
+    try {
+      const API_BASE = "/api";
 
-async function payCC(payload) {
-    const API_BASE = "/api";
+      const response = await fetch(`${API_BASE}/midtrans/create-snap-cc`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: payload.nama,
+          email: payload.email,
+          amount: payload.total_harga,
+          product_name: payload.product_name,
+        }),
+      });
 
-  const response = await fetch(`${API_BASE}/midtrans/create-snap-cc`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      name: payload.nama,
-      email: payload.email,
-      amount: payload.total_harga,
-      product_name: payload.product_name,
-    }),
-  });
+      const text = await response.text();
+      console.log("CC RAW:", text);
 
-  const text = await response.text();
-  console.log("CC RAW:", text);
+      let json;
+      try {
+        json = JSON.parse(text);
+      } catch {
+        console.error("❌ CC balikin HTML:", text);
+        toast.error("Gagal memproses pembayaran credit card");
+        return;
+      }
 
-  let json;
-  try {
-    json = JSON.parse(text);
-  } catch {
-    console.error("❌ CC balikin HTML:", text);
-    return;
+      if (json.redirect_url) {
+        window.location.href = json.redirect_url;
+      } else {
+        console.error("❌ CC tidak mengembalikan redirect_url:", json);
+        toast.error(json.message || "Gagal membuat transaksi credit card");
+      }
+    } catch (err) {
+      console.error("❌ CC error:", err);
+      toast.error("Terjadi kesalahan saat memproses pembayaran credit card");
+    }
   }
-
-  if (json.redirect_url) window.location.href = json.redirect_url;
-}
 
   async function payVA(payload) {
-    const API_BASE = "/api";
+    try {
+      const API_BASE = "/api";
 
-  const response = await fetch(`${API_BASE}/midtrans/create-snap-va`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      name: payload.nama,
-      email: payload.email,
-      amount: payload.total_harga,
-      product_name: payload.product_name,
-    }),
-  });
+      const response = await fetch(`${API_BASE}/midtrans/create-snap-va`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: payload.nama,
+          email: payload.email,
+          amount: payload.total_harga,
+          product_name: payload.product_name,
+        }),
+      });
 
-  const text = await response.text();
-  console.log("VA RAW:", text);
+      const text = await response.text();
+      console.log("VA RAW:", text);
 
-  let json;
-  try {
-    json = JSON.parse(text);
-  } catch {
-    console.error("❌ VA balikin HTML:", text);
-    return;
+      let json;
+      try {
+        json = JSON.parse(text);
+      } catch {
+        console.error("❌ VA balikin HTML:", text);
+        toast.error("Gagal memproses pembayaran virtual account");
+        return;
+      }
+
+      if (json.redirect_url) {
+        window.location.href = json.redirect_url;
+      } else {
+        console.error("❌ VA tidak mengembalikan redirect_url:", json);
+        toast.error(json.message || "Gagal membuat transaksi virtual account");
+      }
+    } catch (err) {
+      console.error("❌ VA error:", err);
+      toast.error("Terjadi kesalahan saat memproses pembayaran virtual account");
+    }
   }
-
-  if (json.redirect_url) window.location.href = json.redirect_url;
-}
 
   // ==========================================================
   // 🔥 SUBMIT ORDER → LANJUT PEMBAYARAN
