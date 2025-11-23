@@ -103,7 +103,26 @@ export async function POST(request) {
 
     const data = await response.json();
 
+    // Handle kasus khusus: Data berhasil masuk tapi backend return 500
+    // Cek apakah response mengandung data order yang valid
     if (!response.ok) {
+      // Jika ada data order di response, berarti data berhasil disimpan
+      // meskipun ada error di backend (misal: undefined variable $customerId)
+      if (data?.data?.order?.id || data?.data?.order) {
+        console.warn('⚠️ Backend return error tapi data order berhasil disimpan:', data);
+        // Return sebagai success karena data sudah masuk
+        return NextResponse.json(
+          {
+            success: true,
+            message: data?.message || 'Order berhasil dibuat',
+            data: data.data,
+            warning: 'Backend mengembalikan error tapi data berhasil disimpan',
+          },
+          { status: 200 }
+        );
+      }
+
+      // Jika tidak ada data order, return error
       return NextResponse.json(
         {
           success: false,
@@ -114,7 +133,7 @@ export async function POST(request) {
       );
     }
 
-    // Return response dari backend
+    // Return response dari backend (success case)
     return NextResponse.json(data, {
       status: response.status,
     });
