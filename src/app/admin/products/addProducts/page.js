@@ -65,7 +65,7 @@ const generateKode = (text) =>
   deskripsi: "",
   tanggal_event: "",
   gambar: [], // [{ path: {type:'file', value:File}, caption }]
-  landingpage: "",
+  landingpage: "1",
   status: 1,
   assign: [],
   custom_field: [],   // <--- kosong di awal
@@ -275,14 +275,16 @@ useEffect(() => {
       );
       const produkData = await produkRes.json();
 
-      // 3️⃣ Fetch users
+      // 3️⃣ Fetch users - filter hanya status 1
       const usersRes = await fetch(
         "/api/admin/users",
         { headers }
       );
       const usersJson = await usersRes.json();
       const userOpts = Array.isArray(usersJson.data)
-        ? usersJson.data.map((u) => ({ label: u.nama || u.name, value: u.id }))
+        ? usersJson.data
+            .filter((u) => u.status === "1" || u.status === 1) // Filter hanya status 1
+            .map((u) => ({ label: u.nama || u.name, value: u.id }))
         : [];
       setUserOptions(userOpts);
 
@@ -314,6 +316,7 @@ useEffect(() => {
         custom_field: [],
         kode: kodeGenerated,
         url: "/" + kodeGenerated,
+        landingpage: produkData.landingpage || "1", // Default landing page ke "1"
       }));
     } catch (err) {
       console.error("Fetch initial data error:", err);
@@ -407,12 +410,16 @@ useEffect(() => {
       </div>
       {/* HEADER */}
       <div>
-        <label className="font-semibold">Header (Upload File)</label>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => handleChange("header", { type: "file", value: e.target.files[0] })}
-        />
+        <label className="font-semibold block mb-2">Header Image</label>
+        <div className="border rounded p-3 bg-gray-50">
+          <label className="block text-sm font-medium mb-2">Upload File</label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => handleChange("header", { type: "file", value: e.target.files[0] })}
+            className="w-full"
+          />
+        </div>
       </div>
 
       {/* HARGA */}
@@ -461,26 +468,34 @@ useEffect(() => {
       <div>
         <label className="font-semibold">Gallery</label>
         {form.gambar.map((g, i) => (
-          <div key={i} className="flex gap-2 items-center mb-2 border p-2 rounded">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) =>
-                updateArrayItem("gambar", i, "path", { type: "file", value: e.target.files[0] })
-              }
-            />
-            <InputText
-              className="flex-1"
-              placeholder="Caption"
-              value={g.caption}
-              onChange={(e) => updateArrayItem("gambar", i, "caption", e.target.value)}
-            />
+          <div key={i} className="mb-4 border p-4 rounded">
+            <div className="mb-3">
+              <label className="block text-sm font-medium mb-1">Upload Gambar</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) =>
+                  updateArrayItem("gambar", i, "path", { type: "file", value: e.target.files[0] })
+                }
+                className="w-full"
+              />
+            </div>
+            <div className="mb-2">
+              <label className="block text-sm font-medium mb-1">Caption</label>
+              <InputText
+                className="w-full"
+                placeholder="Masukkan caption gambar"
+                value={g.caption}
+                onChange={(e) => updateArrayItem("gambar", i, "caption", e.target.value)}
+              />
+            </div>
             <Button
-  icon="pi pi-trash"
-  severity="danger"
-  className="p-button-danger"
-  onClick={() => removeArray("gambar", i)}
-/>
+              icon="pi pi-trash"
+              severity="danger"
+              className="p-button-danger"
+              onClick={() => removeArray("gambar", i)}
+              label="Hapus"
+            />
           </div>
         ))}
         <Button
@@ -493,28 +508,43 @@ useEffect(() => {
       <div>
         <label className="font-semibold">Testimoni</label>
         {form.testimoni.map((t, i) => (
-          <div key={i} className="flex gap-2 items-center mb-2 border p-2 rounded">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) =>
-                updateArrayItem("testimoni", i, "gambar", { type: "file", value: e.target.files[0] })
-              }
+          <div key={i} className="mb-4 border p-4 rounded">
+            <div className="mb-3">
+              <label className="block text-sm font-medium mb-1">Upload Gambar</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) =>
+                  updateArrayItem("testimoni", i, "gambar", { type: "file", value: e.target.files[0] })
+                }
+                className="w-full"
+              />
+            </div>
+            <div className="mb-3">
+              <label className="block text-sm font-medium mb-1">Nama</label>
+              <InputText
+                className="w-full"
+                placeholder="Masukkan nama testimoni"
+                value={t.nama}
+                onChange={(e) => updateArrayItem("testimoni", i, "nama", e.target.value)}
+              />
+            </div>
+            <div className="mb-2">
+              <label className="block text-sm font-medium mb-1">Deskripsi</label>
+              <InputTextarea
+                className="w-full"
+                rows={3}
+                placeholder="Masukkan deskripsi testimoni"
+                value={t.deskripsi}
+                onChange={(e) => updateArrayItem("testimoni", i, "deskripsi", e.target.value)}
+              />
+            </div>
+            <Button 
+              icon="pi pi-trash" 
+              severity="danger" 
+              onClick={() => removeArray("testimoni", i)}
+              label="Hapus"
             />
-            <InputText
-              className="flex-1"
-              placeholder="Nama"
-              value={t.nama}
-              onChange={(e) => updateArrayItem("testimoni", i, "nama", e.target.value)}
-            />
-            <InputTextarea
-              className="flex-1"
-              rows={2}
-              placeholder="Deskripsi"
-              value={t.deskripsi}
-              onChange={(e) => updateArrayItem("testimoni", i, "deskripsi", e.target.value)}
-            />
-            <Button icon="pi pi-trash" severity="danger" onClick={() => removeArray("testimoni", i)} />
           </div>
         ))}
         <Button
@@ -669,14 +699,17 @@ useEffect(() => {
 </div>
 
       <div>
-  <label className="font-semibold">Assign</label>
-<Dropdown
-  className="w-full"
-  value={form.assign}
-  options={userOptions}
-  onChange={(e) => handleChange("assign", [e.value])} // <--- jadikan array
-/>
-</div>
+        <label className="font-semibold">Assign</label>
+        <MultiSelect
+          className="w-full"
+          value={form.assign}
+          options={userOptions}
+          onChange={(e) => handleChange("assign", e.value || [])}
+          placeholder="Pilih user yang di-assign"
+          display="chip"
+          showClear
+        />
+      </div>
 
 
 <div>
@@ -692,9 +725,23 @@ useEffect(() => {
 
 
       {/* STATUS */}
-      <div className="flex items-center gap-3">
-        <label className="font-semibold">Status</label>
-        <InputSwitch checked={form.status === 1} onChange={(e) => handleChange("status", e.value ? 1 : 0)} />
+      <div className="border rounded-lg p-4 bg-gray-50">
+        <div className="flex items-center justify-between">
+          <div>
+            <label className="font-semibold text-base mb-1 block">Status Produk</label>
+            <p className="text-sm text-gray-600">
+              {form.status === 1 ? (
+                <span className="text-green-600 font-medium">● Aktif</span>
+              ) : (
+                <span className="text-gray-500 font-medium">○ Tidak Aktif</span>
+              )}
+            </p>
+          </div>
+          <InputSwitch 
+            checked={form.status === 1} 
+            onChange={(e) => handleChange("status", e.value ? 1 : 0)} 
+          />
+        </div>
       </div>
 
       {/* SUBMIT */}

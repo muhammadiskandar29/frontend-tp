@@ -253,6 +253,8 @@ const handleSubmitUpdate = async (e) => {
                   name="harga"
                   value={updatedOrder.harga ?? order.harga ?? ""}
                   onChange={handleChange}
+                  disabled
+                  style={{ background: "#f3f4f6", cursor: "not-allowed" }}
                 />
               </label>
               <label>

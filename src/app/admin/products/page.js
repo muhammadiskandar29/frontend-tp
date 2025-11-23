@@ -203,7 +203,7 @@ export default function AdminProductsPage() {
                               onClick={() => {
                                 const kodeProduk = p.kode || (p.url ? p.url.replace(/^\//, '') : null);
                                 if (kodeProduk) {
-                                  router.push(`/landing/${kodeProduk}`);
+                                  window.open(`/landing/${kodeProduk}`, '_blank');
                                 } else {
                                   alert('Kode produk tidak tersedia');
                                 }

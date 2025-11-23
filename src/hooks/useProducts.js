@@ -7,7 +7,8 @@ import { useEffect, useState } from "react";
 import { 
   getProducts, 
   deleteProduct, 
-  duplicateProduct 
+  duplicateProduct,
+  updateProductStatus
 } from "@/lib/products";
 
 export function useProducts() {
@@ -42,19 +43,23 @@ export function useProducts() {
   }, []);
 
   // =====================================================
-  // 🧹 Hapus produk
+  // 🧹 Hapus produk (ubah status menjadi 0 = Inactive)
   // =====================================================
   const handleDelete = async (id) => {
     try {
-      await deleteProduct(id);
+      // Update status menjadi 0 (Inactive) bukan delete
+      await updateProductStatus(id, "0");
 
       // Debug
-      console.log(`🗑️ Produk ${id} dihapus`);
+      console.log(`🗑️ Produk ${id} diubah menjadi Inactive`);
 
-      setProducts((prev) => prev.filter((p) => p.id !== id));
+      // Update status di local state
+      setProducts((prev) => 
+        prev.map((p) => p.id === id ? { ...p, status: "0" } : p)
+      );
     } catch (err) {
-      console.error("❌ Error deleting product:", err);
-      setError(err?.message || "Gagal menghapus produk");
+      console.error("❌ Error updating product status:", err);
+      setError(err?.message || "Gagal mengubah status produk");
     }
   };
 

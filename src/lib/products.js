@@ -103,3 +103,26 @@ export async function createProduct(payload) {
     throw err;
   }
 }
+
+/* =====================================================
+   🔄 UPDATE: Update status produk (1 = Active, 0 = Inactive)
+   ===================================================== */
+export async function updateProductStatus(id, status) {
+  try {
+    const res = await api(`/admin/produk/${id}`, {
+      method: "POST",
+      body: JSON.stringify({ status: String(status) }),
+    });
+
+    if (!res?.success) {
+      throw new Error(res?.message || "Gagal mengupdate status produk");
+    }
+
+    console.log(`🔄 updateProductStatus(${id}, ${status}) → success`);
+
+    return res.data || null;
+  } catch (err) {
+    console.error("❌ Error updateProductStatus:", err);
+    throw err;
+  }
+}
