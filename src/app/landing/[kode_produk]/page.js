@@ -359,8 +359,6 @@ if (paymentMethod === "va") {
         const query = new URLSearchParams({
           product: form.nama,
           harga: form.harga_asli,
-          via: "manual",
-          sumber,
         });
         window.location.href = `/payment?${query.toString()}`;
       }

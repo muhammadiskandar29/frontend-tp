@@ -1,36 +1,19 @@
 "use client";
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
 import "@/styles/transfer.css";
 
 export default function BankTransferPage() {
   const params = useSearchParams();
   const product = params.get("product");
   const harga = params.get("harga");
-  const via = params.get("via");
-  const sumber = params.get("sumber");
 
-  // Nomor rekening (bisa dipindahkan ke env atau database)
-  const rekeningInfo = [
-    {
-      bank: "BCA",
-      logo: "/assets/bca.png",
-      nomor: "1234567890",
-      atasNama: "PT Dukung Dunia Akademi",
-    },
-    {
-      bank: "Mandiri",
-      logo: "/assets/mandiri.png",
-      nomor: "9876543210",
-      atasNama: "PT Dukung Dunia Akademi",
-    },
-    {
-      bank: "BNI",
-      logo: "/assets/bni.png",
-      nomor: "1122334455",
-      atasNama: "PT Dukung Dunia Akademi",
-    },
-  ];
+  // Nomor rekening BCA (bisa dipindahkan ke env)
+  const rekeningBCA = {
+    bank: "BCA",
+    logo: "/assets/bca.png",
+    nomor: "1234567890",
+    atasNama: "PT Dukung Dunia Akademi",
+  };
 
   // Nomor WhatsApp admin (bisa dipindahkan ke env)
   const adminWA = "6281234567890"; // Format: 62xxxxxxxxxx (tanpa +)
@@ -39,70 +22,119 @@ export default function BankTransferPage() {
     const message = encodeURIComponent(
       `Halo, saya sudah melakukan transfer untuk:\n\n` +
       `Produk: ${product || "Produk"}\n` +
-      `Harga: Rp ${Number(harga || 0).toLocaleString("id-ID")}\n` +
-      `Via: ${via || "Manual Transfer"}\n` +
-      `Sumber: ${sumber || "Website"}`
+      `Harga: Rp ${Number(harga || 0).toLocaleString("id-ID")}`
     );
     window.open(`https://wa.me/${adminWA}?text=${message}`, "_blank");
   };
 
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text).then(() => {
+      alert("Nomor rekening berhasil disalin!");
+    }).catch(() => {
+      alert("Gagal menyalin. Silakan salin manual: " + text);
+    });
+  };
+
   return (
-    <div className="transfer-container">
-      <div className="transfer-header">
-        <h2>Bank Transfer (Manual)</h2>
-        <p className="subtitle">Silakan transfer sesuai total tagihan</p>
-      </div>
-
-      {/* Info Produk */}
-      {product && (
-        <div className="product-info">
-          <h3>Detail Pesanan</h3>
-          <p><strong>Produk:</strong> {product}</p>
-          {sumber && <p><strong>Sumber:</strong> {sumber}</p>}
+    <div className="payment-page">
+      <div className="payment-container">
+        {/* Header */}
+        <div className="payment-header">
+          <div className="payment-icon">💳</div>
+          <h1>Pembayaran Bank Transfer</h1>
+          <p className="payment-subtitle">Silakan transfer sesuai total tagihan</p>
         </div>
-      )}
 
-      {/* Total Tagihan */}
-      <div className="total-box">
-        <p className="label">Total Tagihan</p>
-        <p className="tagihan">Rp {Number(harga || 0).toLocaleString("id-ID")}</p>
-      </div>
-
-      {/* Rekening Bank */}
-      <div className="rekening-section">
-        <h3>Rekening Tujuan</h3>
-        {rekeningInfo.map((rek, idx) => (
-          <div key={idx} className="rekening-box">
-            <img src={rek.logo} alt={rek.bank} className="bank-logo" />
-            <p className="label">Nomor Rekening {rek.bank}</p>
-            <p className="number">{rek.nomor}</p>
-            <p className="atas-nama">a.n {rek.atasNama}</p>
+        {/* Product Info Card */}
+        {product && (
+          <div className="product-card">
+            <div className="product-icon">📦</div>
+            <div className="product-details">
+              <p className="product-label">Produk</p>
+              <p className="product-name">{product}</p>
+            </div>
           </div>
-        ))}
-      </div>
+        )}
 
-      {/* Instruksi */}
-      <div className="instruksi">
-        <h3>Instruksi Pembayaran:</h3>
-        <ul>
-          <li>Transfer sesuai total tagihan agar proses verifikasi lebih cepat.</li>
-          <li>Tim kami akan cek dan verifikasi pembayaran maksimal 1×24 jam.</li>
-          <li>Jangan lupa kirim bukti transfer setelah melakukan pembayaran.</li>
-          <li>Pastikan nomor rekening dan nominal transfer sudah benar.</li>
-        </ul>
-      </div>
+        {/* Total Tagihan Card */}
+        <div className="total-card">
+          <p className="total-label">Total Tagihan</p>
+          <p className="total-amount">Rp {Number(harga || 0).toLocaleString("id-ID")}</p>
+        </div>
 
-      {/* Tombol Sudah Transfer */}
-      <div className="action-buttons">
-        <button className="btn-primary" onClick={handleSudahTransfer}>
-          📱 Sudah Transfer (Kirim Bukti via WA)
-        </button>
-        <button
-          className="btn-secondary"
-          onClick={() => window.history.back()}
-        >
-          Kembali
-        </button>
+        {/* Rekening BCA Card */}
+        <div className="rekening-card">
+          <div className="rekening-header">
+            <img src={rekeningBCA.logo} alt={rekeningBCA.bank} className="bank-logo-large" />
+            <h3>Rekening Tujuan</h3>
+          </div>
+          
+          <div className="rekening-content">
+            <div className="rekening-item">
+              <span className="rekening-label">Nomor Rekening</span>
+              <div className="rekening-number-wrapper">
+                <span className="rekening-number">{rekeningBCA.nomor}</span>
+                <button 
+                  className="copy-btn" 
+                  onClick={() => copyToClipboard(rekeningBCA.nomor)}
+                  title="Salin nomor rekening"
+                >
+                  📋
+                </button>
+              </div>
+            </div>
+            
+            <div className="rekening-item">
+              <span className="rekening-label">Atas Nama</span>
+              <span className="rekening-name">{rekeningBCA.atasNama}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Instruksi Card */}
+        <div className="instruksi-card">
+          <h3 className="instruksi-title">📋 Instruksi Pembayaran</h3>
+          <ul className="instruksi-list">
+            <li>
+              <span className="instruksi-icon">✓</span>
+              Transfer sesuai total tagihan agar proses verifikasi lebih cepat
+            </li>
+            <li>
+              <span className="instruksi-icon">✓</span>
+              Tim kami akan cek dan verifikasi pembayaran maksimal 1×24 jam
+            </li>
+            <li>
+              <span className="instruksi-icon">✓</span>
+              Sales kami akan menghubungi Anda untuk follow-up pembayaran
+            </li>
+            <li>
+              <span className="instruksi-icon">✓</span>
+              Pastikan nomor rekening dan nominal transfer sudah benar
+            </li>
+          </ul>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="action-section">
+          <button className="btn-primary" onClick={handleSudahTransfer}>
+            <span className="btn-icon">💬</span>
+            <span>Hubungi Sales via WhatsApp</span>
+          </button>
+          <button
+            className="btn-secondary"
+            onClick={() => window.history.back()}
+          >
+            Kembali
+          </button>
+        </div>
+
+        {/* Info Box */}
+        <div className="info-box">
+          <p className="info-text">
+            💡 <strong>Tips:</strong> Setelah transfer, klik tombol di atas untuk menghubungi sales kami. 
+            Sales akan membantu proses verifikasi pembayaran Anda.
+          </p>
+        </div>
       </div>
     </div>
   );
