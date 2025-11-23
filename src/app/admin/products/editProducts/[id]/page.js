@@ -22,19 +22,15 @@ export default function Page() {
   // ============================
   // SLUGIFY
   // ============================
-const generateKode = (text) =>
-  (text || "")
-    .toString()
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9 -]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-");
+  const generateKode = (text) =>
+    (text || "")
+      .toString()
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9 -]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-");
 
-
-
-
-// form state
   // ============================
   // FORMAT TANGGAL KE BACKEND
   // ============================
@@ -55,30 +51,29 @@ const generateKode = (text) =>
   // DEFAULT FORM
   // ============================
   const defaultForm = {
-  id: null,
-  kategori: [],
-  user_input: [],
-  nama: "",
-  url: "",
-  kode: "",
-  header: { type: "file", value: null },
-  harga_coret: "",
-  harga_asli: "",
-  deskripsi: "",
-  tanggal_event: "",
-  gambar: [], // [{ path: {type:'file', value:File}, caption }]
-  landingpage: "",
-  status: 1,
-  assign: [],
-  custom_field: [],   // <--- kosong di awal
-  list_point: [],   
-  testimoni: [],
-  fb_pixel: [],
-  event_fb_pixel: [],
-  gtm: [],
-  video: "",
-};
-
+    id: null,
+    kategori: null, // Integer, bukan array
+    user_input: [],
+    nama: "",
+    url: "",
+    kode: "",
+    header: { type: "file", value: null },
+    harga_coret: "",
+    harga_asli: "",
+    deskripsi: "",
+    tanggal_event: "",
+    gambar: [], // [{ path: {type:'file', value:File}, caption }]
+    landingpage: "1",
+    status: 1,
+    assign: [],
+    custom_field: [],
+    list_point: [],
+    testimoni: [],
+    fb_pixel: [],
+    event_fb_pixel: [],
+    gtm: [],
+    video: "",
+  };
 
   const [form, setForm] = useState(defaultForm);
   const [loading, setLoading] = useState(true);
@@ -108,7 +103,7 @@ const generateKode = (text) =>
   };
 
   // ============================
-  // SUBMIT
+  // SUBMIT - POST ke /api/admin/produk/{id}
   // ============================
   const handleSubmit = async () => {
     if (!productId) {
@@ -119,8 +114,8 @@ const generateKode = (text) =>
     try {
       const hasFile =
         (form.header.type === "file" && form.header.value) ||
-        form.gambar.some((g) => g.path.type === "file" && g.path.value) ||
-        form.testimoni.some((t) => t.gambar.type === "file" && t.gambar.value);
+        form.gambar.some((g) => g.path?.type === "file" && g.path.value) ||
+        form.testimoni.some((t) => t.gambar?.type === "file" && t.gambar.value);
 
       let payload;
       let isFormData = false;
@@ -136,19 +131,19 @@ const generateKode = (text) =>
 
         // Gallery
         form.gambar.forEach((g, idx) => {
-          if (g.path.type === "file" && g.path.value) {
+          if (g.path?.type === "file" && g.path.value) {
             payload.append(`gambar[${idx}][path]`, g.path.value);
           }
-          payload.append(`gambar[${idx}][caption]`, g.caption);
+          payload.append(`gambar[${idx}][caption]`, g.caption || "");
         });
 
         // Testimoni
         form.testimoni.forEach((t, idx) => {
-          if (t.gambar.type === "file" && t.gambar.value) {
+          if (t.gambar?.type === "file" && t.gambar.value) {
             payload.append(`testimoni[${idx}][gambar]`, t.gambar.value);
           }
-          payload.append(`testimoni[${idx}][nama]`, t.nama);
-          payload.append(`testimoni[${idx}][deskripsi]`, t.deskripsi);
+          payload.append(`testimoni[${idx}][nama]`, t.nama || "");
+          payload.append(`testimoni[${idx}][deskripsi]`, t.deskripsi || "");
         });
 
         // Fields
@@ -156,15 +151,15 @@ const generateKode = (text) =>
         payload.append("url", form.url);
         const kode = form.kode || generateKode(form.nama);
         payload.append("kode", kode);
-        payload.append("url", "/" + kode); // pastikan url selalu sinkron
-        payload.append("deskripsi", form.deskripsi);
+        payload.append("url", "/" + kode);
+        payload.append("deskripsi", form.deskripsi || "");
         payload.append("harga_coret", form.harga_coret || 0);
         payload.append("harga_asli", form.harga_asli || 0);
         payload.append("tanggal_event", formatDateForBackend(form.tanggal_event));
         payload.append("assign", JSON.stringify(form.assign));
         const payloadCustomField = form.custom_field.map((f, idx) => ({
-        nama_field: f.label || f.key,
-        urutan: idx + 1
+          nama_field: f.label || f.key,
+          urutan: idx + 1
         }));
         payload.append("custom_field", JSON.stringify(payloadCustomField));
         payload.append("list_point", JSON.stringify(form.list_point));
@@ -175,20 +170,24 @@ const generateKode = (text) =>
         );
         payload.append("gtm", JSON.stringify(form.gtm));
         const videoArray = form.video
-        ? form.video.split(",").map(v => v.trim()).filter(v => v)
-        : [];
-        payload.append("video", JSON.stringify(videoArray));        
+          ? form.video.split(",").map(v => v.trim()).filter(v => v)
+          : [];
+        payload.append("video", JSON.stringify(videoArray));
         payload.append("landingpage", form.landingpage);
         payload.append("status", form.status);
         payload.append("user_input", JSON.stringify(form.user_input));
-        const kategoriNama = form.kategori && form.kategori.length ? form.kategori[0] : null;
-        payload.append("kategori", kategoriNama);
+        // Kirim kategori_id sebagai integer
+        const kategoriId = form.kategori ? Number(form.kategori) : null;
+        if (kategoriId) {
+          payload.append("kategori", kategoriId);
+        }
       } else {
-        // Pastikan kategori dikirim sebagai nama (string), bukan array
-        const kategoriNama = form.kategori && form.kategori.length ? form.kategori[0] : null;
+        // Kirim kategori_id sebagai integer
+        const kategoriId = form.kategori ? Number(form.kategori) : null;
+        
         payload = {
           ...form,
-          kategori: kategoriNama, // Kirim nama kategori sebagai string
+          kategori: kategoriId,
           harga_coret: Number(form.harga_coret) || 0,
           harga_asli: Number(form.harga_asli) || 0,
           tanggal_event: formatDateForBackend(form.tanggal_event),
@@ -199,13 +198,16 @@ const generateKode = (text) =>
             form.event_fb_pixel.map((ev) => ({ event: ev }))
           ),
           gambar: JSON.stringify(
-            form.gambar.map((g) => ({ path: null, caption: g.caption }))
+            form.gambar.map((g) => ({ 
+              path: g.path?.type === "url" ? g.path.value : null, 
+              caption: g.caption || "" 
+            }))
           ),
           testimoni: JSON.stringify(
             form.testimoni.map((t) => ({
-              gambar: null,
-              nama: t.nama,
-              deskripsi: t.deskripsi,
+              gambar: t.gambar?.type === "url" ? t.gambar.value : null,
+              nama: t.nama || "",
+              deskripsi: t.deskripsi || "",
             }))
           ),
         };
@@ -227,6 +229,11 @@ const generateKode = (text) =>
       );
 
       const data = await res.json();
+      
+      // Logging struktur JSON lengkap
+      console.log("Success:", data.success);
+      console.log("Data:", data.data);
+      console.table(data.data);
 
       if (!res.ok) {
         console.error("❌ API ERROR:", data);
@@ -243,127 +250,188 @@ const generateKode = (text) =>
     }
   };
 
+  const [kategoriOptions, setKategoriOptions] = useState([]);
+  const [userOptions, setUserOptions] = useState([]);
 
-const [kategoriOptions, setKategoriOptions] = useState([]);
-const [userOptions, setUserOptions] = useState([]);
-
-useEffect(() => {
-  async function fetchInitialData() {
-    if (!productId) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem("token");
-      const headers = { Authorization: `Bearer ${token}` };
-
-      // 1️⃣ Fetch kategori
-      const kategoriRes = await fetch(
-        "/api/admin/kategori-produk",
-        { headers }
-      );
-      const kategoriData = await kategoriRes.json();
-      const kategoriOpts = Array.isArray(kategoriData.data)
-        ? kategoriData.data.map((k) => ({ label: k.nama, value: k.nama }))
-        : [];
-      setKategoriOptions(kategoriOpts);
-
-      // 2️⃣ Fetch produk berdasarkan ID
-      const produkRes = await fetch(
-        `/api/admin/produk/${productId}`,
-        { headers }
-      );
-      const produkResponse = await produkRes.json();
-      
-      if (!produkRes.ok || !produkResponse.success) {
-        throw new Error(produkResponse.message || "Gagal memuat data produk");
+  useEffect(() => {
+    async function fetchInitialData() {
+      if (!productId) {
+        setLoading(false);
+        return;
       }
 
-      // Parse data produk untuk form
-      const produkFormData = produkResponse.data || produkResponse;
+      try {
+        const token = localStorage.getItem("token");
+        const headers = { Authorization: `Bearer ${token}` };
 
-      // 3️⃣ Fetch users
-      const usersRes = await fetch(
-        "/api/admin/users",
-        { headers }
-      );
-      const usersJson = await usersRes.json();
-      const userOpts = Array.isArray(usersJson.data)
-        ? usersJson.data.map((u) => ({ label: u.nama || u.name, value: u.id }))
-        : [];
-      setUserOptions(userOpts);
+        // 1️⃣ Fetch kategori dan filter hanya yang aktif (status === "1")
+        const kategoriRes = await fetch(
+          "/api/admin/kategori-produk",
+          { headers }
+        );
+        const kategoriData = await kategoriRes.json();
+        
+        // Logging struktur JSON lengkap
+        console.log("Success:", kategoriData.success);
+        console.log("Data:", kategoriData.data);
+        console.table(kategoriData.data);
+        
+        // Filter hanya kategori yang aktif (status === "1")
+        const activeCategories = Array.isArray(kategoriData.data)
+          ? kategoriData.data.filter((k) => k.status === "1")
+          : [];
+        
+        // Create options with ID as value and name as label
+        const kategoriOpts = activeCategories.map((k) => ({
+          label: `${k.id} - ${k.nama}`,
+          value: k.id
+        }));
+        setKategoriOptions(kategoriOpts);
 
-      // ✅ generate kode otomatis jika null
-      const kodeGenerated =
-        produkFormData.kode || generateKode(produkFormData.nama || "produk-baru");
-
-      // Helper function untuk parse JSON fields
-      const safeParseJSON = (value, fallback = []) => {
-        if (!value) return fallback;
-        if (Array.isArray(value)) return value;
-        try {
-          return JSON.parse(value);
-        } catch {
-          return fallback;
+        // 2️⃣ Fetch produk berdasarkan ID
+        const produkRes = await fetch(
+          `/api/admin/produk/${productId}`,
+          { headers }
+        );
+        const produkResponse = await produkRes.json();
+        
+        // Logging struktur JSON lengkap
+        console.log("Success:", produkResponse.success);
+        console.log("Data:", produkResponse.data);
+        console.table(produkResponse.data);
+        
+        if (!produkRes.ok || !produkResponse.success) {
+          throw new Error(produkResponse.message || "Gagal memuat data produk");
         }
-      };
-      
-      setForm((f) => ({
-        ...f,
-        ...produkFormData,
-        id: produkFormData.id || productId,
-        kategori: produkFormData.kategori_rel ? [produkFormData.kategori_rel.nama] : [],
-        assign: produkFormData.assign_rel ? produkFormData.assign_rel.map((u) => u.id) : [],
-        user_input: produkFormData.user_input_rel ? [produkFormData.user_input_rel.id] : [],
-        custom_field: safeParseJSON(produkFormData.custom_field, []).map(f => ({
+
+        const produkData = produkResponse.data || produkResponse;
+
+        // 3️⃣ Fetch users - filter hanya status 1
+        const usersRes = await fetch(
+          "/api/admin/users",
+          { headers }
+        );
+        const usersJson = await usersRes.json();
+        
+        // Logging struktur JSON lengkap
+        console.log("Success:", usersJson.success);
+        console.log("Data:", usersJson.data);
+        console.table(usersJson.data);
+        
+        const userOpts = Array.isArray(usersJson.data)
+          ? usersJson.data
+              .filter((u) => u.status === "1" || u.status === 1)
+              .map((u) => ({ label: u.nama || u.name, value: u.id }))
+          : [];
+        setUserOptions(userOpts);
+
+        // Helper function untuk parse JSON fields
+        const safeParseJSON = (value, fallback = []) => {
+          if (!value) return fallback;
+          if (Array.isArray(value)) return value;
+          try {
+            return JSON.parse(value);
+          } catch {
+            return fallback;
+          }
+        };
+
+        // Handle kategori_id
+        let kategoriId = null;
+        if (produkData.kategori_rel) {
+          kategoriId = produkData.kategori_rel.id ? Number(produkData.kategori_rel.id) : null;
+        } else if (produkData.kategori_id) {
+          kategoriId = Number(produkData.kategori_id);
+        } else if (produkData.kategori) {
+          // Backward compatibility: if kategori is string (name), try to find ID
+          const found = activeCategories.find(k => k.nama === produkData.kategori);
+          kategoriId = found ? Number(found.id) : null;
+        }
+
+        // Parse existing data
+        const kodeGenerated = produkData.kode || generateKode(produkData.nama || "produk-baru");
+        
+        // Parse gambar - handle existing images (type: "url")
+        const parsedGambar = safeParseJSON(produkData.gambar, []).map(g => {
+          const imagePath = typeof g === "string" ? g : (g.path || g);
+          return {
+            path: imagePath 
+              ? { type: "url", value: imagePath }
+              : { type: "file", value: null },
+            caption: g.caption || ""
+          };
+        });
+
+        // Parse testimoni - handle existing images (type: "url")
+        const parsedTestimoni = safeParseJSON(produkData.testimoni, []).map(t => {
+          const imagePath = t.gambar ? (typeof t.gambar === "string" ? t.gambar : (t.gambar.path || t.gambar)) : null;
+          return {
+            gambar: imagePath
+              ? { type: "url", value: imagePath }
+              : { type: "file", value: null },
+            nama: t.nama || "",
+            deskripsi: t.deskripsi || ""
+          };
+        });
+
+        // Parse custom_field
+        const parsedCustomField = safeParseJSON(produkData.custom_field, []).map(f => ({
           label: f.nama_field || f.label || "",
           value: f.value || "",
           required: f.required || false
-        })),
-        list_point: safeParseJSON(produkFormData.list_point, []).map(p => ({
+        }));
+
+        // Parse list_point
+        const parsedListPoint = safeParseJSON(produkData.list_point, []).map(p => ({
           nama: p.nama || p
-        })),
-        testimoni: safeParseJSON(produkFormData.testimoni, []).map(t => ({
-          gambar: t.gambar ? { type: "url", value: typeof t.gambar === "string" ? t.gambar : t.gambar.path || t.gambar } : { type: "file", value: null },
-          nama: t.nama || "",
-          deskripsi: t.deskripsi || ""
-        })),
-        fb_pixel: safeParseJSON(produkFormData.fb_pixel, []),
-        event_fb_pixel: safeParseJSON(produkFormData.event_fb_pixel, []),
-        gtm: safeParseJSON(produkFormData.gtm, []),
-        gambar: safeParseJSON(produkFormData.gambar, []).map(g => ({
-          path: { 
-            type: "url", 
-            value: typeof g === "string" ? g : (g.path || g) 
-          }, 
-          caption: g.caption || "" 
-        })),
-        header: produkFormData.header ? { 
-          type: "url", 
-          value: typeof produkFormData.header === "string" 
-            ? produkFormData.header 
-            : (produkFormData.header.path || produkFormData.header) 
-        } : { type: "file", value: null },
-        kode: kodeGenerated,
-        url: produkFormData.url || "/" + kodeGenerated,
-        video: produkFormData.video ? (
-          Array.isArray(produkFormData.video) 
-            ? produkFormData.video.join(", ") 
-            : safeParseJSON(produkFormData.video, []).join(", ")
-        ) : "",
-      }));
-    } catch (err) {
-      console.error("Fetch initial data error:", err);
-      alert("Gagal memuat data produk!");
-    } finally {
-      setLoading(false);
+        }));
+
+        // Parse video
+        const parsedVideo = produkData.video
+          ? (Array.isArray(produkData.video) 
+              ? produkData.video.join(", ")
+              : safeParseJSON(produkData.video, []).join(", "))
+          : "";
+
+        // Handle header image - existing image (type: "url")
+        const headerImage = produkData.header
+          ? (typeof produkData.header === "string"
+              ? { type: "url", value: produkData.header }
+              : (produkData.header.path
+                  ? { type: "url", value: produkData.header.path }
+                  : { type: "file", value: null }))
+          : { type: "file", value: null };
+
+        setForm((f) => ({
+          ...f,
+          ...produkData,
+          id: produkData.id || productId,
+          kategori: kategoriId,
+          assign: produkData.assign_rel ? produkData.assign_rel.map((u) => u.id) : [],
+          user_input: produkData.user_input_rel ? [produkData.user_input_rel.id] : [],
+          custom_field: parsedCustomField,
+          list_point: parsedListPoint,
+          testimoni: parsedTestimoni,
+          fb_pixel: safeParseJSON(produkData.fb_pixel, []),
+          event_fb_pixel: safeParseJSON(produkData.event_fb_pixel, []),
+          gtm: safeParseJSON(produkData.gtm, []),
+          gambar: parsedGambar,
+          header: headerImage,
+          kode: kodeGenerated,
+          url: produkData.url || "/" + kodeGenerated,
+          video: parsedVideo,
+          landingpage: produkData.landingpage || "1",
+        }));
+      } catch (err) {
+        console.error("Fetch initial data error:", err);
+        alert("Gagal memuat data produk!");
+      } finally {
+        setLoading(false);
+      }
     }
-  }
 
-  fetchInitialData();
-}, [productId]);
-
+    fetchInitialData();
+  }, [productId]);
 
   // ============================
   // UI
@@ -378,387 +446,582 @@ useEffect(() => {
 
   return (
     <div className="produk-container">
-    <div className="produk-form">
-      {/* Back Button */}
-      <button
-        className="back-to-products-btn"
-        onClick={() => router.push("/admin/products")}
-        aria-label="Back to products list"
-      >
-        <ArrowLeft size={18} />
-        <span>Back to Products</span>
-      </button>
-
-      <h2 className="text-xl font-bold mb-2">Edit Product</h2>
-
-      {/* NAMA PRODUK */}
-      <div>
-        <label className="font-semibold">Nama Produk</label>
-<InputText
-  className="w-full"
-  value={form.nama}
-  onChange={(e) => {
-    const nama = e.target.value;
-    const kodeGenerated = generateKode(nama);
-    setForm({ 
-      ...form, 
-      nama, 
-      kode: kodeGenerated,  // kode otomatis dari nama
-      url: "/" + kodeGenerated // url ikut kode
-    });
-  }}
-/>
-      </div>
-<div>
-  <label className="font-semibold">Kategori</label>
-<Dropdown
-  className="w-full"
-  value={form.kategori[0] || null}
-  options={kategoriOptions}
-  onChange={(e) => handleChange("kategori", [e.value])}
-  placeholder="Pilih Kategori"
-/>
-</div>
-
-
-
-
-      {/* KODE */}
-<div>
-  <label className="font-semibold">Kode</label>
-<InputText
-  className="w-full"
-  value={form.kode || ""}  // <--- fallback
-  onChange={(e) => {
-    const kode = e.target.value;
-    setForm({
-      ...form,
-      kode,
-      url: "/" + (kode || "produk-baru"), // selalu ada url
-    });
-  }}
-  placeholder="Isi kode produk"
-/>
-</div>
-
-      {/* URL */}
-      <div>
-        <label className="font-semibold">URL</label>
-        <InputText
-          className="w-full"
-          value={form.url || ""}   // <--- fallback
-          onChange={(e) => handleChange("url", e.target.value)}
-        />
-      </div>
-      {/* HEADER */}
-      <div>
-        <label className="font-semibold">Header (Upload File)</label>
-        {form.header?.type === "url" && form.header.value && (
-          <div className="mb-2">
-            <img src={form.header.value} alt="Current header" style={{ maxWidth: "200px", maxHeight: "100px" }} />
-            <p className="text-sm text-gray-500">Current header image</p>
+      <div className="produk-form">
+        {/* Header Section */}
+        <div className="form-header-section">
+          <button
+            className="back-to-products-btn"
+            onClick={() => router.push("/admin/products")}
+            aria-label="Back to products list"
+          >
+            <ArrowLeft size={18} />
+            <span>Back to Products</span>
+          </button>
+          <div className="form-title-wrapper">
+            <h2 className="form-title">Edit Produk</h2>
+            <p className="form-subtitle">Ubah informasi produk di bawah ini</p>
           </div>
-        )}
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => handleChange("header", { type: "file", value: e.target.files[0] })}
-        />
-      </div>
-
-      {/* HARGA */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="font-semibold">Harga Coret</label>
-          <InputNumber
-            className="w-full"
-            value={Number(form.harga_coret)}
-            onValueChange={(e) => handleChange("harga_coret", e.value)}
-          />
         </div>
-        <div>
-          <label className="font-semibold">Harga Asli</label>
-          <InputNumber
-            className="w-full"
-            value={Number(form.harga_asli)}
-            onValueChange={(e) => handleChange("harga_asli", e.value)}
-          />
+
+        {/* SECTION 1: Informasi Dasar */}
+        <div className="form-section-card">
+          <div className="section-header">
+            <h3 className="section-title">📋 Informasi Dasar</h3>
+            <p className="section-description">Data utama produk yang akan ditampilkan</p>
+          </div>
+          <div className="section-content">
+            {/* NAMA PRODUK */}
+            <div className="form-field-group">
+              <label className="form-label">
+                <span className="label-icon">📦</span>
+                Nama Produk <span className="required">*</span>
+              </label>
+              <InputText
+                className="w-full form-input"
+                value={form.nama}
+                placeholder="Masukkan nama produk"
+                onChange={(e) => {
+                  const nama = e.target.value;
+                  const kodeGenerated = generateKode(nama);
+                  setForm({ 
+                    ...form, 
+                    nama, 
+                    kode: kodeGenerated,
+                    url: "/" + kodeGenerated
+                  });
+                }}
+              />
+            </div>
+
+            {/* KATEGORI */}
+            <div className="form-field-group">
+              <label className="form-label">
+                <span className="label-icon">🏷️</span>
+                Kategori <span className="required">*</span>
+              </label>
+              <Dropdown
+                className="w-full form-input"
+                value={form.kategori || null}
+                options={kategoriOptions}
+                onChange={(e) => {
+                  handleChange("kategori", e.value ? Number(e.value) : null);
+                }}
+                placeholder="Pilih Kategori"
+                showClear
+              />
+            </div>
+
+            {/* KODE & URL */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="form-field-group">
+                <label className="form-label">
+                  <span className="label-icon">🔗</span>
+                  Kode Produk
+                </label>
+                <InputText
+                  className="w-full form-input"
+                  value={form.kode || ""}
+                  onChange={(e) => {
+                    const kode = e.target.value;
+                    setForm({
+                      ...form,
+                      kode,
+                      url: "/" + (kode || "produk-baru"),
+                    });
+                  }}
+                  placeholder="Kode otomatis dari nama"
+                />
+              </div>
+              <div className="form-field-group">
+                <label className="form-label">
+                  <span className="label-icon">🌐</span>
+                  URL
+                </label>
+                <InputText
+                  className="w-full form-input"
+                  value={form.url || ""}
+                  onChange={(e) => handleChange("url", e.target.value)}
+                  placeholder="/kode-produk"
+                />
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* DESKRIPSI */}
-      <div>
-        <label className="font-semibold">Deskripsi</label>
-        <InputTextarea
-          className="w-full"
-          rows={4}
-          value={form.deskripsi}
-          onChange={(e) => handleChange("deskripsi", e.target.value)}
-        />
-      </div>
+        {/* SECTION 2: Media & Konten */}
+        <div className="form-section-card">
+          <div className="section-header">
+            <h3 className="section-title">🖼️ Media & Konten</h3>
+            <p className="section-description">Gambar, deskripsi, dan konten produk</p>
+          </div>
+          <div className="section-content">
+            {/* HEADER IMAGE */}
+            <div className="form-field-group">
+              <label className="form-label">
+                <span className="label-icon">🖼️</span>
+                Header Image
+              </label>
+              <div className="file-upload-card">
+                {form.header?.type === "url" && form.header.value && (
+                  <div className="file-preview">
+                    <img 
+                      src={form.header.value} 
+                      alt="Current header" 
+                      className="preview-thumbnail"
+                    />
+                    <p className="field-hint">Gambar saat ini</p>
+                  </div>
+                )}
+                <label className="file-upload-label">Upload File Baru</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleChange("header", { type: "file", value: e.target.files[0] })}
+                  className="file-input"
+                />
+                {form.header?.type === "file" && form.header.value && (
+                  <div className="file-preview">
+                    <img 
+                      src={URL.createObjectURL(form.header.value)} 
+                      alt="Preview" 
+                      className="preview-thumbnail"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
 
-      {/* TANGGAL EVENT */}
-      <div>
-        <label className="font-semibold">Tanggal Event</label>
-        <Calendar
-          className="w-full"
-          showTime
-          value={form.tanggal_event ? new Date(form.tanggal_event) : null}
-          onChange={(e) => handleChange("tanggal_event", e.value)}
-        />
-      </div>
+            {/* DESKRIPSI */}
+            <div className="form-field-group">
+              <label className="form-label">
+                <span className="label-icon">📝</span>
+                Deskripsi Produk
+              </label>
+              <InputTextarea
+                className="w-full form-input"
+                rows={5}
+                value={form.deskripsi}
+                placeholder="Masukkan deskripsi lengkap produk"
+                onChange={(e) => handleChange("deskripsi", e.target.value)}
+              />
+            </div>
 
-      {/* GALLERY */}
-      <div>
-        <label className="font-semibold">Gallery</label>
-        {form.gambar.map((g, i) => (
-          <div key={i} className="flex gap-2 items-center mb-2 border p-2 rounded">
-            {g.path?.type === "url" && g.path.value && (
-              <img src={g.path.value} alt={`Gallery ${i}`} style={{ maxWidth: "100px", maxHeight: "100px" }} />
-            )}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) =>
-                updateArrayItem("gambar", i, "path", { type: "file", value: e.target.files[0] })
-              }
-            />
-            <InputText
-              className="flex-1"
-              placeholder="Caption"
-              value={g.caption}
-              onChange={(e) => updateArrayItem("gambar", i, "caption", e.target.value)}
-            />
+            {/* HARGA */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="form-field-group">
+                <label className="form-label">
+                  <span className="label-icon">💰</span>
+                  Harga Coret
+                </label>
+                <InputNumber
+                  className="w-full form-input"
+                  value={Number(form.harga_coret)}
+                  onValueChange={(e) => handleChange("harga_coret", e.value)}
+                  placeholder="Harga sebelum diskon"
+                  mode="currency"
+                  currency="IDR"
+                  locale="id-ID"
+                />
+              </div>
+              <div className="form-field-group">
+                <label className="form-label">
+                  <span className="label-icon">💵</span>
+                  Harga Asli <span className="required">*</span>
+                </label>
+                <InputNumber
+                  className="w-full form-input"
+                  value={Number(form.harga_asli)}
+                  onValueChange={(e) => handleChange("harga_asli", e.value)}
+                  placeholder="Harga setelah diskon"
+                  mode="currency"
+                  currency="IDR"
+                  locale="id-ID"
+                />
+              </div>
+            </div>
+
+            {/* TANGGAL EVENT */}
+            <div className="form-field-group">
+              <label className="form-label">
+                <span className="label-icon">📅</span>
+                Tanggal Event
+              </label>
+              <Calendar
+                className="w-full form-input"
+                showTime
+                value={form.tanggal_event ? new Date(form.tanggal_event) : null}
+                onChange={(e) => handleChange("tanggal_event", e.value)}
+                placeholder="Pilih tanggal event"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* SECTION 3: Gallery */}
+        <div className="form-section-card">
+          <div className="section-header">
+            <h3 className="section-title">🖼️ Gallery Produk</h3>
+            <p className="section-description">Tambah gambar produk dengan caption</p>
+          </div>
+          <div className="section-content">
+            {form.gambar.map((g, i) => (
+              <div key={i} className="gallery-item-card">
+                <div className="gallery-item-header">
+                  <span className="gallery-item-number">Gambar {i + 1}</span>
+                  <Button
+                    icon="pi pi-trash"
+                    severity="danger"
+                    className="p-button-danger p-button-sm"
+                    onClick={() => removeArray("gambar", i)}
+                    tooltip="Hapus gambar"
+                  />
+                </div>
+                <div className="gallery-item-content">
+                  <div className="form-field-group">
+                    <label className="form-label-small">Upload Gambar</label>
+                    {g.path?.type === "url" && g.path.value && (
+                      <div className="file-preview">
+                        <img 
+                          src={g.path.value} 
+                          alt={`Current ${i + 1}`}
+                          className="preview-thumbnail"
+                        />
+                        <p className="field-hint">Gambar saat ini</p>
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) =>
+                        updateArrayItem("gambar", i, "path", { type: "file", value: e.target.files[0] })
+                      }
+                      className="file-input"
+                    />
+                    {g.path?.type === "file" && g.path.value && (
+                      <div className="file-preview">
+                        <img 
+                          src={URL.createObjectURL(g.path.value)} 
+                          alt={`Preview ${i + 1}`}
+                          className="preview-thumbnail"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <div className="form-field-group">
+                    <label className="form-label-small">Caption</label>
+                    <InputText
+                      className="w-full form-input"
+                      placeholder="Masukkan caption gambar"
+                      value={g.caption}
+                      onChange={(e) => updateArrayItem("gambar", i, "caption", e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
             <Button
-  icon="pi pi-trash"
-  severity="danger"
-  className="p-button-danger"
-  onClick={() => removeArray("gambar", i)}
-/>
+              icon="pi pi-plus"
+              label="Tambah Gambar"
+              className="add-item-btn"
+              onClick={() => addArray("gambar", { path: { type: "file", value: null }, caption: "" })}
+            />
           </div>
-        ))}
-        <Button
-          label="+ Tambah Gambar"
-          onClick={() => addArray("gambar", { path: { type: "file", value: null }, caption: "" })}
-        />
-      </div>
+        </div>
 
-      {/* TESTIMONI */}
-      <div>
-        <label className="font-semibold">Testimoni</label>
-        {form.testimoni.map((t, i) => (
-          <div key={i} className="flex gap-2 items-center mb-2 border p-2 rounded">
-            {t.gambar?.type === "url" && t.gambar.value && (
-              <img src={t.gambar.value} alt={`Testimoni ${i}`} style={{ maxWidth: "100px", maxHeight: "100px" }} />
-            )}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) =>
-                updateArrayItem("testimoni", i, "gambar", { type: "file", value: e.target.files[0] })
+        {/* SECTION 4: Testimoni */}
+        <div className="form-section-card">
+          <div className="section-header">
+            <h3 className="section-title">⭐ Testimoni</h3>
+            <p className="section-description">Tambah testimoni dari pembeli</p>
+          </div>
+          <div className="section-content">
+            {form.testimoni.map((t, i) => (
+              <div key={i} className="testimoni-item-card">
+                <div className="testimoni-item-header">
+                  <span className="testimoni-item-number">Testimoni {i + 1}</span>
+                  <Button
+                    icon="pi pi-trash"
+                    severity="danger"
+                    className="p-button-danger p-button-sm"
+                    onClick={() => removeArray("testimoni", i)}
+                    tooltip="Hapus testimoni"
+                  />
+                </div>
+                <div className="testimoni-item-content">
+                  <div className="form-field-group">
+                    <label className="form-label-small">Upload Foto</label>
+                    {t.gambar?.type === "url" && t.gambar.value && (
+                      <div className="file-preview">
+                        <img 
+                          src={t.gambar.value} 
+                          alt={`Current Testimoni ${i + 1}`}
+                          className="preview-thumbnail"
+                        />
+                        <p className="field-hint">Foto saat ini</p>
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) =>
+                        updateArrayItem("testimoni", i, "gambar", { type: "file", value: e.target.files[0] })
+                      }
+                      className="file-input"
+                    />
+                    {t.gambar?.type === "file" && t.gambar.value && (
+                      <div className="file-preview">
+                        <img 
+                          src={URL.createObjectURL(t.gambar.value)} 
+                          alt={`Testimoni ${i + 1}`}
+                          className="preview-thumbnail"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <div className="form-field-group">
+                    <label className="form-label-small">Nama</label>
+                    <InputText
+                      className="w-full form-input"
+                      placeholder="Masukkan nama testimoni"
+                      value={t.nama}
+                      onChange={(e) => updateArrayItem("testimoni", i, "nama", e.target.value)}
+                    />
+                  </div>
+                  <div className="form-field-group">
+                    <label className="form-label-small">Deskripsi</label>
+                    <InputTextarea
+                      className="w-full form-input"
+                      rows={3}
+                      placeholder="Masukkan deskripsi testimoni"
+                      value={t.deskripsi}
+                      onChange={(e) => updateArrayItem("testimoni", i, "deskripsi", e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+            <Button
+              icon="pi pi-plus"
+              label="Tambah Testimoni"
+              className="add-item-btn"
+              onClick={() =>
+                addArray("testimoni", { gambar: { type: "file", value: null }, nama: "", deskripsi: "" })
               }
             />
-            <InputText
-              className="flex-1"
-              placeholder="Nama"
-              value={t.nama}
-              onChange={(e) => updateArrayItem("testimoni", i, "nama", e.target.value)}
-            />
-            <InputTextarea
-              className="flex-1"
-              rows={2}
-              placeholder="Deskripsi"
-              value={t.deskripsi}
-              onChange={(e) => updateArrayItem("testimoni", i, "deskripsi", e.target.value)}
-            />
-            <Button icon="pi pi-trash" severity="danger" onClick={() => removeArray("testimoni", i)} />
           </div>
-        ))}
-        <Button
-          label="+ Tambah Testimoni"
-          onClick={() =>
-            addArray("testimoni", { gambar: { type: "file", value: null }, nama: "", deskripsi: "" })
-          }
-        />
+        </div>
+
+        {/* SECTION 5: Konten Tambahan */}
+        <div className="form-section-card">
+          <div className="section-header">
+            <h3 className="section-title">🎬 Konten Tambahan</h3>
+            <p className="section-description">Video, list point, dan konten pendukung</p>
+          </div>
+          <div className="section-content">
+            {/* VIDEO */}
+            <div className="form-field-group">
+              <label className="form-label">
+                <span className="label-icon">🎥</span>
+                Video (URL, pisahkan dengan koma)
+              </label>
+              <InputTextarea
+                className="w-full form-input"
+                rows={3}
+                value={form.video}
+                placeholder="https://youtube.com/watch?v=..., https://youtube.com/watch?v=..."
+                onChange={(e) => handleChange("video", e.target.value)}
+              />
+              <p className="field-hint">Masukkan URL video YouTube, pisahkan dengan koma jika lebih dari satu</p>
+            </div>
+
+            {/* LIST POINT */}
+            <div className="form-field-group">
+              <label className="form-label">
+                <span className="label-icon">✅</span>
+                List Point (Benefit)
+              </label>
+              {form.list_point.map((p, i) => (
+                <div key={i} className="list-point-item">
+                  <div className="list-point-number">{i + 1}</div>
+                  <InputText
+                    className="flex-1 form-input"
+                    value={p.nama}
+                    placeholder={`Point ${i + 1}`}
+                    onChange={(e) => updateArrayItem("list_point", i, "nama", e.target.value)}
+                  />
+                  <Button 
+                    icon="pi pi-trash" 
+                    severity="danger" 
+                    className="p-button-danger p-button-sm"
+                    onClick={() => removeArray("list_point", i)}
+                  />
+                </div>
+              ))}
+              <Button
+                icon="pi pi-plus"
+                label="Tambah List Point"
+                className="add-item-btn"
+                onClick={() => addArray("list_point", { nama: "" })}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* SECTION 6: Form Fields */}
+        <div className="form-section-card">
+          <div className="section-header">
+            <h3 className="section-title">📋 Form Fields</h3>
+            <p className="section-description">Field yang akan muncul di form pembeli</p>
+          </div>
+          <div className="section-content">
+            <div className="info-box">
+              <p className="info-text">
+                <strong>Info:</strong> Field berikut akan otomatis muncul di form pembeli: Nama, WhatsApp, Email, Alamat
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* SECTION 7: Custom Fields */}
+        <div className="form-section-card">
+          <div className="section-header">
+            <h3 className="section-title">🔧 Custom Fields</h3>
+            <p className="section-description">Tambah field tambahan untuk form pembeli</p>
+          </div>
+          <div className="section-content">
+            {form.custom_field.map((f, i) => (
+              <div key={i} className="custom-field-item-card">
+                <div className="custom-field-header">
+                  <span className="custom-field-number">Field {i + 1}</span>
+                  {!f.required && (
+                    <Button
+                      icon="pi pi-trash"
+                      severity="danger"
+                      className="p-button-danger p-button-sm"
+                      onClick={() => removeArray("custom_field", i)}
+                    />
+                  )}
+                </div>
+                <div className="custom-field-content">
+                  <div className="form-field-group">
+                    <label className="form-label-small">Nama Field</label>
+                    <InputText
+                      className="w-full form-input"
+                      value={f.label}
+                      placeholder="Contoh: Nomor HP, Instansi, dll"
+                      onChange={(e) => updateArrayItem("custom_field", i, "label", e.target.value)}
+                    />
+                  </div>
+                  <div className="form-field-group">
+                    <label className="form-label-small">Placeholder / Contoh</label>
+                    <InputText
+                      className="w-full form-input"
+                      value={f.value}
+                      placeholder={(f.label || "Contoh isian") + (f.required ? " *" : "")}
+                      onChange={(e) => updateArrayItem("custom_field", i, "value", e.target.value)}
+                    />
+                  </div>
+                  <div className="custom-field-required">
+                    <input
+                      type="checkbox"
+                      id={`required-${i}`}
+                      checked={f.required}
+                      onChange={(e) => updateArrayItem("custom_field", i, "required", e.target.checked)}
+                    />
+                    <label htmlFor={`required-${i}`} className="checkbox-label">
+                      Field wajib diisi
+                    </label>
+                  </div>
+                </div>
+              </div>
+            ))}
+            <Button
+              icon="pi pi-plus"
+              label="Tambah Custom Field"
+              className="add-item-btn"
+              onClick={() => addArray("custom_field", { key: "", label: "", value: "", required: false })}
+            />
+          </div>
+        </div>
+
+        {/* SECTION 8: Pengaturan */}
+        <div className="form-section-card">
+          <div className="section-header">
+            <h3 className="section-title">⚙️ Pengaturan</h3>
+            <p className="section-description">Assign user, landing page, dan status produk</p>
+          </div>
+          <div className="section-content">
+            {/* ASSIGN */}
+            <div className="form-field-group">
+              <label className="form-label">
+                <span className="label-icon">👥</span>
+                Assign User
+              </label>
+              <MultiSelect
+                className="w-full form-input"
+                value={form.assign}
+                options={userOptions}
+                onChange={(e) => handleChange("assign", e.value || [])}
+                placeholder="Pilih user yang di-assign"
+                display="chip"
+                showClear
+              />
+              <p className="field-hint">Pilih user yang akan menangani produk ini</p>
+            </div>
+
+            {/* LANDING PAGE */}
+            <div className="form-field-group">
+              <label className="form-label">
+                <span className="label-icon">🌐</span>
+                Landing Page
+              </label>
+              <InputText
+                className="w-full form-input"
+                value={form.landingpage || "1"}
+                onChange={(e) => handleChange("landingpage", e.target.value)}
+                placeholder="Masukkan nama landing page atau kode"
+              />
+              <p className="field-hint">Default: 1</p>
+            </div>
+
+            {/* STATUS */}
+            <div className="status-card">
+              <div className="status-content">
+                <div className="status-info">
+                  <label className="form-label">
+                    <span className="label-icon">🔘</span>
+                    Status Produk
+                  </label>
+                  <p className="status-indicator">
+                    {form.status === 1 ? (
+                      <span className="status-active">● Aktif</span>
+                    ) : (
+                      <span className="status-inactive">○ Tidak Aktif</span>
+                    )}
+                  </p>
+                </div>
+                <InputSwitch 
+                  checked={form.status === 1} 
+                  onChange={(e) => handleChange("status", e.value ? 1 : 0)} 
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* SUBMIT BUTTON */}
+        <div className="submit-section">
+          <Button 
+            label="Update Produk" 
+            icon="pi pi-save"
+            className="p-button-primary submit-btn" 
+            onClick={handleSubmit}
+          />
+          <p className="submit-hint">Pastikan semua data sudah lengkap sebelum mengupdate</p>
+        </div>
       </div>
-
-      {/* VIDEO, CUSTOM_FIELD, LIST_POINT */}
-      <div>
-        <label className="font-semibold">Video</label>
-<InputTextarea
-  className="w-full"
-  rows={2}
-  value={form.video} // langsung string
-  onChange={(e) => handleChange("video", e.target.value)}
-/>
-      </div>
-
-{/* HARD-CODE FIELDS */}
-<div>
-  <label className="font-semibold">Informasi Dasar</label>
-
-  {/* NAMA */}
-  <div className="grid grid-cols-12 gap-2 items-center mb-3 p-3 border rounded bg-gray-50">
-    <div className="col-span-4">
-      <label>Nama</label>
-      <input
-        type="text"
-        placeholder="Nama"
-        className="w-full p-2 border rounded"
-      />
-    </div>
-        <br></br>
-  </div>
-
-  {/* NOMOR WHATSAPP */}
-  <div className="grid grid-cols-12 gap-2 items-center mb-3 p-3 border rounded bg-gray-50">
-    <div className="col-span-4">
-      <label>Nomor WhatsApp</label>
-      <input
-        type="text"
-        placeholder="Nomor WhatsApp"
-        className="w-full p-2 border rounded"
-      />
-    </div>
-        <br></br>
-  </div>
-
-  {/* EMAIL */}
-  <div className="grid grid-cols-12 gap-2 items-center mb-3 p-3 border rounded bg-gray-50">
-    <div className="col-span-4">
-      <label>Email</label>
-      <input
-        type="text"
-        placeholder="Email"
-        className="w-full p-2 border rounded"
-      />
-    </div>
-    <br></br>
-  </div>
-
-  {/* ALAMAT */}
-  <div className="grid grid-cols-12 gap-2 items-center mb-3 p-3 border rounded bg-gray-50">
-    <div className="col-span-4">
-      <label>Alamat</label>
-      <input
-        type="text"
-        placeholder="Alamat"
-        className="w-full p-2 border rounded"
-      />
-    </div>
-  </div>
-</div>
-
-<div>
-  <label className="font-semibold">Custom Fields</label>
-  {form.custom_field.map((f, i) => (
-  <div
-    key={i}
-    className="grid grid-cols-12 gap-2 items-center mb-3 p-3 border rounded bg-gray-50"
-  >
-    {/* LABEL FIELD */}
-    <div className="col-span-4">
-      <InputText
-        className="w-full"
-        value={f.label || f.nama_field}
-        placeholder="Nama Field"
-        onChange={(e) => updateArrayItem("custom_field", i, "label", e.target.value)}
-      />
-    </div>
-
-    {/* VALUE FIELD */}
-    <div className="col-span-5">
-      <InputText
-        className="w-full"
-        value={f.value}
-        placeholder={(f.label || f.nama_field || "Isi field") + (f.required ? " *" : "")}
-        onChange={(e) => updateArrayItem("custom_field", i, "value", e.target.value)}
-      />
-    </div>
-
-    {/* REQUIRED TOGGLE */}
-    <div className="col-span-2 flex items-center gap-2">
-      <input
-        type="checkbox"
-        checked={f.required}
-        onChange={(e) => updateArrayItem("custom_field", i, "required", e.target.checked)}
-      />
-      <span className="text-sm">Required</span>
-    </div>
-
-    {/* DELETE (jangan tampilkan untuk field default) */}
-    <div className="col-span-1 text-right">
-      {!f.required && (
-        <Button
-          icon="pi pi-trash"
-          severity="danger"
-          text
-          onClick={() => removeArray("custom_field", i)}
-        />
-      )}
-    </div>
-  </div>
-))}
-  <Button
-    label="+ Tambah Field"
-    onClick={() => addArray("custom_field", { key: "", label: "", value: "", required: false })}
-  />
-</div>
-
-
-<div>
-  <label className="font-semibold">List Point</label>
-  {form.list_point.map((p, i) => (
-    <div key={i} className="flex gap-2 items-center mb-1">
-      <InputText
-        className="flex-1"
-        value={p.nama}
-        onChange={(e) => updateArrayItem("list_point", i, "nama", e.target.value)}
-      />
-      <Button icon="pi pi-trash" severity="danger" onClick={() => removeArray("list_point", i)} />
-    </div>
-  ))}
-  <Button
-    label="Tambah List Point"
-    onClick={() => addArray("list_point", { nama: "" })}
-  />
-</div>
-
-      <div>
-  <label className="font-semibold">Assign</label>
-<Dropdown
-  className="w-full"
-  value={form.assign}
-  options={userOptions}
-  onChange={(e) => handleChange("assign", [e.value])} // <--- jadikan array
-/>
-</div>
-
-
-<div>
-  <label className="font-semibold">Landing Page</label>
-  <InputText
-    className="w-full"
-    value={form.landingpage || ""}
-    onChange={(e) => handleChange("landingpage", e.target.value)}
-    placeholder="Masukkan nama landing page atau kode"
-  />
-</div>
-
-
-
-      {/* STATUS */}
-      <div className="flex items-center gap-3">
-        <label className="font-semibold">Status</label>
-        <InputSwitch checked={form.status === 1} onChange={(e) => handleChange("status", e.value ? 1 : 0)} />
-      </div>
-
-      {/* SUBMIT */}
-      <Button label="Update Product" className="p-button-primary mt-5" onClick={handleSubmit} />
-    </div>
-          {/* ================= RIGHT: PREVIEW ================= */}
-        <LandingTemplate form={form} />
+      {/* ================= RIGHT: PREVIEW ================= */}
+      <LandingTemplate form={form} />
     </div>
   );
 }
-

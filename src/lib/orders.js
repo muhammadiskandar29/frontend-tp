@@ -6,8 +6,36 @@ import { api } from "./api";
 
 /** 📘 GET Semua Order (Admin) */
 export async function getOrders() {
-  const res = await api("/admin/order", { method: "GET" });
-  return res.data || [];
+  try {
+    const res = await api("/admin/order", { method: "GET" });
+    
+    // Logging struktur JSON lengkap sesuai requirement
+    console.log("📦 getOrders() - Success:", res.success);
+    console.log("📦 getOrders() - Data:", res.data);
+    console.table(res.data);
+    
+    // Handle different response formats
+    if (res.success === true && res.data) {
+      return Array.isArray(res.data) ? res.data : [res.data];
+    }
+    
+    // If response is already an array (legacy format)
+    if (Array.isArray(res)) {
+      return res;
+    }
+    
+    // If response has data property
+    if (res.data) {
+      return Array.isArray(res.data) ? res.data : [res.data];
+    }
+    
+    // Fallback: return empty array
+    console.warn("⚠️ getOrders() - Unexpected response format:", res);
+    return [];
+  } catch (error) {
+    console.error("❌ getOrders() - Error:", error);
+    return [];
+  }
 }
 
 /** 📘 GET Order by ID (Admin) */

@@ -156,8 +156,20 @@ const handleSubmit = async (e) => {
 
 
   return (
-    <div className="update-modal-overlay">
-      <div className="update-modal-card" style={{ width: "100%", maxWidth: 650 }}>
+    <div 
+      className="update-modal-overlay"
+      onClick={(e) => {
+        // Close modal when clicking on overlay (not on modal content)
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div 
+        className="update-modal-card" 
+        style={{ width: "100%", maxWidth: 650 }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="update-modal-header">
           <h2>Tambah Order</h2>
           <button className="close-btn" onClick={onClose}>✕</button>
