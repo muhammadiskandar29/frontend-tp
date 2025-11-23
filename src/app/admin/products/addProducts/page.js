@@ -54,7 +54,7 @@ const generateKode = (text) =>
   // ============================
   const defaultForm = {
   id: null,
-  kategori_id: null, // Integer, bukan array
+  kategori: null, // Integer, bukan array
   user_input: [],
   nama: "",
   url: "",
@@ -174,17 +174,18 @@ const generateKode = (text) =>
         payload.append("status", form.status);
         payload.append("user_input", JSON.stringify(form.user_input));
         // Kirim kategori_id sebagai integer
-        const kategoriId = form.kategori_id ? Number(form.kategori_id) : null;
+        const kategoriId = form.kategori        ? Number(form.kategori        ) : null;
         if (kategoriId) {
-          payload.append("kategori_id", kategoriId);
+          payload.append("kategori", kategoriId);
         }
       } else {
         // Kirim kategori_id sebagai integer
-        const kategoriId = form.kategori_id ? Number(form.kategori_id) : null;
+        const kategoriId = form.kategori        ? Number(form.kategori
+        ) : null;
         
         payload = {
           ...form,
-          kategori_id: kategoriId, // Kirim kategori_id sebagai integer
+          kategori: kategoriId, // Kirim kategori_id sebagai integer
           harga_coret: Number(form.harga_coret) || 0,
           harga_asli: Number(form.harga_asli) || 0,
           tanggal_event: formatDateForBackend(form.tanggal_event),
@@ -293,8 +294,10 @@ useEffect(() => {
       let kategoriId = null;
       if (produkData.kategori_rel) {
         kategoriId = produkData.kategori_rel.id ? Number(produkData.kategori_rel.id) : null;
-      } else if (produkData.kategori_id) {
-        kategoriId = Number(produkData.kategori_id);
+      } else if (produkData.kategori
+      ) {
+        kategoriId = Number(produkData.kategori
+        );
       } else if (produkData.kategori) {
         // Backward compatibility: if kategori is string (name), try to find ID
         // This should not happen in new implementation, but handle for old data
@@ -305,7 +308,7 @@ useEffect(() => {
       setForm((f) => ({
         ...f,
         ...produkData,
-        kategori_id: kategoriId,
+        kategori: kategoriId,
         assign: produkData.assign_rel ? produkData.assign_rel.map((u) => u.id) : [],
         user_input: produkData.user_input_rel ? [produkData.user_input_rel.id] : [],
         custom_field: [],
@@ -361,11 +364,11 @@ useEffect(() => {
   <label className="font-semibold">Kategori</label>
 <Dropdown
   className="w-full"
-  value={form.kategori_id || null}
+  value={form.kategori    || null}
   options={kategoriOptions}
   onChange={(e) => {
     // Store the category ID as integer
-    handleChange("kategori_id", e.value ? Number(e.value) : null);
+    handleChange("kategori", e.value ? Number(e.value) : null);
   }}
   placeholder="Pilih Kategori"
   showClear
