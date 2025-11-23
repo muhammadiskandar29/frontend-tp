@@ -321,17 +321,25 @@ export default function LandingPage() {
       const order = await response.json();
       const orderId = order?.data?.order?.id;
 
-      if (!response.ok || order?.success !== true || !orderId) {
+      // Handle kasus khusus: Backend error tapi data sudah masuk
+      // Jika ada warning, berarti data sudah tersimpan meskipun ada error
+      if (order?.warning) {
+        console.warn('⚠️', order.warning);
+        toast.success(order?.message || "Pesanan berhasil disimpan");
+        // Lanjut ke payment meskipun tidak ada orderId (tidak diperlukan untuk payment)
+      } else if (!response.ok || order?.success !== true) {
         // Extract error message from response
         const errorMessage = order?.message || order?.error || "Gagal membuat order";
         throw new Error(errorMessage);
+      } else {
+        // Success normal
+        toast.success(order?.message || "Pesanan berhasil disimpan");
+        if (orderId) {
+          payload.orderId = orderId;
+        }
       }
 
-      toast.success(order?.message || "Pesanan berhasil disimpan");
       await new Promise((r) => setTimeout(r, 300));
-      
-      // Update payload dengan orderId jika diperlukan
-      payload.orderId = orderId;
 
       // === lanjut ke pembayaran ===
 if (paymentMethod === "ewallet") {
