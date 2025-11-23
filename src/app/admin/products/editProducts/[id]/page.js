@@ -218,7 +218,7 @@ export default function Page() {
       const res = await fetch(
         `/api/admin/produk/${productId}`,
         {
-          method: "POST",
+          method: "PUT",
           headers: {
             ...(isFormData ? {} : { "Content-Type": "application/json" }),
             Accept: "application/json",
@@ -445,7 +445,7 @@ export default function Page() {
   }
 
   return (
-    <div className="produk-container">
+    <div className="produk-container" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem", alignItems: "start" }}>
       <div className="produk-form">
         {/* Header Section */}
         <div className="form-header-section">
@@ -1021,7 +1021,9 @@ export default function Page() {
         </div>
       </div>
       {/* ================= RIGHT: PREVIEW ================= */}
-      <LandingTemplate form={form} />
+      <div style={{ position: "sticky", top: "2rem" }}>
+        <LandingTemplate form={form} />
+      </div>
     </div>
   );
 }

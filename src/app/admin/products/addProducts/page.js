@@ -351,8 +351,8 @@ useEffect(() => {
   // UI
   // ============================
   return (
-    <div className="produk-container">
-    <div className="produk-form">
+    <div className="produk-container" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem", alignItems: "start" }}>
+      <div className="produk-form">
       {/* Header Section */}
       <div className="form-header-section">
         <button
@@ -895,9 +895,11 @@ useEffect(() => {
         />
         <p className="submit-hint">Pastikan semua data sudah lengkap sebelum menyimpan</p>
       </div>
-    </div>
-          {/* ================= RIGHT: PREVIEW ================= */}
+      </div>
+      {/* ================= RIGHT: PREVIEW ================= */}
+      <div style={{ position: "sticky", top: "2rem" }}>
         <LandingTemplate form={form} />
+      </div>
     </div>
   );
 }
