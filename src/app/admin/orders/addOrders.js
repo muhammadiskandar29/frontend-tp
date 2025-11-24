@@ -132,22 +132,25 @@ const handleSubmit = async (e) => {
 
   const res = await createOrder(payload);
 
-  if (res?.success) {
+  // Handle success (termasuk jika ada warning tapi data berhasil masuk)
+  if (res?.success || (res?.warning && res?.data)) {
     onAdd?.(res.data);
     setToast?.({
       show: true,
       type: "success",
-      message: res.message || "✅ Order berhasil dibuat!",
+      message: res.warning 
+        ? `✅ Order berhasil dibuat! (${res.warning})`
+        : res.message || "✅ Order berhasil dibuat!",
     });
     setTimeout(() => {
       setToast?.((prev) => ({ ...prev, show: false }));
       onClose();
-    }, 1000);
+    }, 1500);
   } else {
     setToast?.({
       show: true,
       type: "error",
-      message: res.message || "❌ Gagal membuat order.",
+      message: res?.message || "❌ Gagal membuat order.",
     });
   }
 

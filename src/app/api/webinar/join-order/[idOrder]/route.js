@@ -4,7 +4,8 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "https://onedashboardapi-
 
 export async function GET(request, { params }) {
   try {
-    const { idOrder } = params;
+    // Next.js 15+ requires params to be awaited
+    const { idOrder } = await params;
     
     if (!idOrder) {
       return NextResponse.json(
@@ -25,6 +26,7 @@ export async function GET(request, { params }) {
     const token = authHeader.replace("Bearer ", "");
 
     console.log("🟢 [WEBINAR_JOIN] Fetching webinar data for order:", idOrder);
+    console.log("🟢 [WEBINAR_JOIN] Backend URL:", `${BACKEND_URL}/api/webinar/join-order/${idOrder}`);
 
     // Forward ke backend
     const response = await fetch(`${BACKEND_URL}/api/webinar/join-order/${idOrder}`, {
@@ -36,13 +38,31 @@ export async function GET(request, { params }) {
       },
     });
 
-    const data = await response.json();
+    console.log("🟢 [WEBINAR_JOIN] Backend response status:", response.status);
+    console.log("🟢 [WEBINAR_JOIN] Backend response ok:", response.ok);
 
-    console.log("🟢 [WEBINAR_JOIN] Backend response:", data);
+    let data;
+    try {
+      data = await response.json();
+      console.log("🟢 [WEBINAR_JOIN] Backend response data:", JSON.stringify(data, null, 2));
+    } catch (parseError) {
+      console.error("❌ [WEBINAR_JOIN] Failed to parse JSON:", parseError);
+      const text = await response.text();
+      console.error("❌ [WEBINAR_JOIN] Response text:", text);
+      return NextResponse.json(
+        { success: false, message: "Gagal memparse response dari backend" },
+        { status: 500 }
+      );
+    }
 
     if (!response.ok) {
+      console.error("❌ [WEBINAR_JOIN] Backend error:", data);
       return NextResponse.json(
-        { success: false, message: data?.message || "Gagal mengambil data webinar" },
+        { 
+          success: false, 
+          message: data?.message || "Gagal mengambil data webinar",
+          error: data?.error || "Unknown error"
+        },
         { status: response.status }
       );
     }

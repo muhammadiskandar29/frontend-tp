@@ -816,11 +816,12 @@ margin-top: 20px;
   display: flex !important;
   justify-content: center !important;
   align-items: center !important;
-  z-index: 9999 !important;
+  z-index: 99999 !important;
   backdrop-filter: blur(4px);
   overflow-y: auto;
   padding: 2rem;
   box-sizing: border-box;
+  margin: 0 !important;
 }
 
 /* Prevent body scroll when modal is open */

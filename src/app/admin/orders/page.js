@@ -538,58 +538,6 @@ export default function DaftarPesanan() {
           )}
         </section>
 
-        {/* MODALS */}
-        {showAdd && (
-          <AddOrders
-            onClose={() => setShowAdd(false)}
-            onAdd={async () => {
-              setShowAdd(false);
-              // Refresh data and show success message
-              await requestRefresh("Pesanan baru berhasil ditambahkan!");
-            }}
-          />
-        )}
-
-        {showView && selectedOrder && (
-          <ViewOrders
-            order={{
-              ...selectedOrder,
-              customer:
-                selectedOrder.customer_rel?.nama ||
-                (typeof selectedOrder.customer === "object"
-                  ? selectedOrder.customer?.nama
-                  : customers[selectedOrder.customer]) ||
-                "-",
-            }}
-            onClose={() => {
-              setShowView(false);
-              setSelectedOrder(null);
-            }}
-          />
-        )}
-
-        {showEdit && selectedOrder && (
-          <UpdateOrders
-            order={{
-              ...selectedOrder,
-              customer:
-                selectedOrder.customer_rel?.nama ||
-                (typeof selectedOrder.customer === "object"
-                  ? selectedOrder.customer?.nama
-                  : customers[selectedOrder.customer]) ||
-                "-",
-            }}
-            onClose={() => {
-              setShowEdit(false);
-              setSelectedOrder(null);
-              setNeedsRefresh(true);  // ⬅️ ini auto refresh
-            }}
-            onSave={handleSuccessEdit}
-            setToast={setToast}
-            refreshOrders={() => setNeedsRefresh(true)}
-          />
-        )}
-
         {/* TOAST */}
         {toast.show && (
           <div
@@ -601,6 +549,59 @@ export default function DaftarPesanan() {
           </div>
         )}
       </div>
+
+      {/* MODALS - Render di luar main content untuk memastikan z-index bekerja */}
+      {showAdd && (
+        <AddOrders
+          onClose={() => setShowAdd(false)}
+          onAdd={async () => {
+            setShowAdd(false);
+            // Refresh data and show success message
+            await requestRefresh("Pesanan baru berhasil ditambahkan!");
+          }}
+          setToast={showToast}
+        />
+      )}
+
+      {showView && selectedOrder && (
+        <ViewOrders
+          order={{
+            ...selectedOrder,
+            customer:
+              selectedOrder.customer_rel?.nama ||
+              (typeof selectedOrder.customer === "object"
+                ? selectedOrder.customer?.nama
+                : customers[selectedOrder.customer]) ||
+              "-",
+          }}
+          onClose={() => {
+            setShowView(false);
+            setSelectedOrder(null);
+          }}
+        />
+      )}
+
+      {showEdit && selectedOrder && (
+        <UpdateOrders
+          order={{
+            ...selectedOrder,
+            customer:
+              selectedOrder.customer_rel?.nama ||
+              (typeof selectedOrder.customer === "object"
+                ? selectedOrder.customer?.nama
+                : customers[selectedOrder.customer]) ||
+              "-",
+          }}
+          onClose={() => {
+            setShowEdit(false);
+            setSelectedOrder(null);
+            setNeedsRefresh(true);  // ⬅️ ini auto refresh
+          }}
+          onSave={handleSuccessEdit}
+          setToast={setToast}
+          refreshOrders={() => setNeedsRefresh(true)}
+        />
+      )}
     </Layout>
   );
 }

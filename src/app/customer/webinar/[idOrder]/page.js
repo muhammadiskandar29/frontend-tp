@@ -58,9 +58,9 @@ export default function WebinarGatewayPage() {
 
       // Cek apakah order dengan idOrder ada di list orders customer
       const orderIdNumber = Number(idOrder);
-      const hasAccess = allOrders.some(order => Number(order.id) === orderIdNumber);
+      const foundOrder = allOrders.find(order => Number(order.id) === orderIdNumber);
 
-      if (!hasAccess) {
+      if (!foundOrder) {
         setError("Anda tidak memiliki akses ke webinar ini. Hanya customer yang membeli order ini yang dapat mengakses.");
         setErrorType("unauthorized");
         setLoading(false);
@@ -68,8 +68,19 @@ export default function WebinarGatewayPage() {
         return;
       }
 
-      // Jika validasi berhasil, lanjut fetch webinar data
-      await fetchWebinarData();
+      // Jika order ditemukan, cek apakah ada webinar data
+      // Logika: Order ID → Produk ID → Webinar (1 link yang sama untuk semua yang beli produk yang sama)
+      if (!foundOrder.webinar) {
+        setError("Webinar tidak tersedia untuk order ini. Silakan hubungi support.");
+        setErrorType("not_found");
+        setLoading(false);
+        setValidating(false);
+        return;
+      }
+
+      // Jika validasi berhasil dan ada webinar, lanjut fetch webinar data
+      // Gunakan produk_id dari order untuk mendapatkan webinar yang sama (many-to-many)
+      await fetchWebinarData(foundOrder);
     } catch (err) {
       console.error("❌ [WEBINAR] Validation error:", err);
       setError("Gagal memvalidasi akses. Silakan coba lagi atau hubungi support.");
@@ -79,14 +90,49 @@ export default function WebinarGatewayPage() {
     }
   };
 
-  const fetchWebinarData = async () => {
+  const fetchWebinarData = async (orderData = null) => {
     try {
       setLoading(true);
       setValidating(false);
       setError("");
       const session = getCustomerSession();
       
-      // Fetch webinar data
+      // Logika: Order ID → Produk ID → Webinar (1 link yang sama untuk semua yang beli produk yang sama)
+      // Jika orderData sudah ada dari validasi, gunakan data tersebut
+      let order = orderData;
+      let kategoriNama = "webinar";
+      
+      if (!order) {
+        // Fetch order data dari dashboard untuk mendapatkan produk_id dan webinar
+        const dashboardData = await fetchCustomerDashboard(session.token);
+        const allOrders = [
+          ...(dashboardData.orders_aktif || []),
+          ...(dashboardData.orders_pending || [])
+        ];
+        order = allOrders.find(o => Number(o.id) === Number(idOrder));
+      }
+
+      if (!order) {
+        setError("Order tidak ditemukan.");
+        setErrorType("not_found");
+        setLoading(false);
+        return;
+      }
+
+      // Ambil kategori dari produk (jika sudah di-fetch sebelumnya)
+      // Atau gunakan kategori_nama dari order
+      kategoriNama = order.kategori_nama || "webinar";
+
+      // Cek apakah ada webinar data di order
+      if (!order.webinar) {
+        setError("Webinar tidak tersedia untuk produk ini.");
+        setErrorType("not_found");
+        setLoading(false);
+        return;
+      }
+
+      // Fetch webinar data dari backend untuk mendapatkan signature dan data lengkap
+      // Backend akan: Order ID → Produk ID → Webinar (many-to-many)
       const response = await fetch(`/api/webinar/join-order/${idOrder}`, {
         headers: {
           "Content-Type": "application/json",
@@ -140,28 +186,40 @@ export default function WebinarGatewayPage() {
         return;
       }
 
-      // Fetch order data untuk mendapatkan kategori produk
-      let kategoriNama = "webinar"; // default
-      try {
-        const orderResponse = await fetch(`/api/customer/order/${idOrder}`, {
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            Authorization: `Bearer ${session.token}`,
-          },
-        });
+      // Jika backend return error 404 (route tidak ditemukan), gunakan data webinar dari order
+      if (response.status === 404 && order.webinar) {
+        console.warn("⚠️ [WEBINAR] Backend route not found, using webinar data from order");
         
-        if (orderResponse.ok) {
-          const orderData = await orderResponse.json();
-          if (orderData.success && orderData.data?.produk?.kategori_rel?.nama) {
-            kategoriNama = orderData.data.produk.kategori_rel.nama;
-          }
-        }
-      } catch (err) {
-        console.warn("⚠️ [WEBINAR] Failed to fetch order data for category:", err);
-        // Tidak throw error, gunakan default "webinar"
+        // Ambil customer info untuk userName dan userEmail
+        const dashboardData = await fetchCustomerDashboard(session.token);
+        const customer = dashboardData.customer || {};
+        
+        // Gunakan data webinar dari order (sudah ada di dashboard response)
+        // Backend logic: Order ID → Produk ID → Webinar (1 link yang sama untuk semua yang beli produk yang sama)
+        // Note: Signature akan di-generate oleh backend saat join, atau bisa pakai join_url langsung
+        setWebinarData({
+          meetingNumber: order.webinar.meeting_id,
+          password: order.webinar.password,
+          join_url: order.webinar.join_url, // Bisa pakai join_url langsung jika signature tidak diperlukan
+          start_time: order.webinar.start_time,
+          start_time_formatted: order.webinar.start_time_formatted,
+          duration: order.webinar.duration,
+          userName: customer.nama || customer.nama_panggilan || "Customer",
+          userEmail: customer.email || "",
+          produkNama: order.produk_nama || "",
+          orderId: Number(idOrder),
+          kategoriNama: kategoriNama,
+          webinar: order.webinar,
+          // Signature dan SDK key akan di-generate oleh backend saat join
+          // Untuk sementara, kita bisa pakai join_url langsung atau generate signature di frontend
+          signature: null, // Akan di-generate saat join jika diperlukan
+          sdkKey: null // Akan diambil dari backend jika diperlukan
+        });
+        setLoading(false);
+        return;
       }
 
+      // Jika backend berhasil, gunakan data dari backend
       // Simpan data webinar termasuk kategori dari produk
       setWebinarData({
         ...data.data,
@@ -188,59 +246,94 @@ export default function WebinarGatewayPage() {
     if (!webinarData) return;
 
     try {
-      // Load Zoom SDK
-      await loadZoomSDK();
-      
-      // Initialize Zoom Meeting
-      const { ZoomMtg } = window.ZoomMtg || {};
-      
-      if (!ZoomMtg) {
-        throw new Error("Zoom SDK tidak dapat dimuat");
+      // Jika ada join_url langsung dan tidak ada signature, gunakan join_url (redirect ke Zoom web)
+      if (webinarData.join_url && !webinarData.signature) {
+        console.log("🔗 [WEBINAR] Using join_url directly:", webinarData.join_url);
+        window.open(webinarData.join_url, '_blank');
+        return;
       }
 
-      // Set Zoom JS Library
-      ZoomMtg.setZoomJSLib("https://source.zoom.us/2.18.0/lib", "/av");
-      
-      // Pre-load WebAssembly
-      ZoomMtg.preLoadWasm();
-      ZoomMtg.prepareWebSDK();
-      
-      // Required dependencies
-      ZoomMtg.downloadZoomMtg();
+      // Jika ada signature dan sdkKey, gunakan Zoom SDK
+      if (webinarData.signature && webinarData.sdkKey) {
+        // Load Zoom SDK
+        await loadZoomSDK();
+        
+        // Initialize Zoom Meeting
+        const { ZoomMtg } = window.ZoomMtg || {};
+        
+        if (!ZoomMtg) {
+          throw new Error("Zoom SDK tidak dapat dimuat");
+        }
 
-      // Initialize
-      ZoomMtg.init({
-        leaveOnPageUnload: true,
-        patchJsMedia: true,
-        success: () => {
-          console.log("✅ Zoom SDK initialized");
-          
-          // Join meeting
-          ZoomMtg.join({
-            sdkKey: webinarData.sdkKey,
-            signature: webinarData.signature,
-            meetingNumber: webinarData.meetingNumber,
-            passWord: webinarData.password,
-            userName: webinarData.userName,
-            userEmail: webinarData.userEmail,
-            success: (success) => {
-              console.log("✅ Zoom join success:", success);
-              setShowZoom(true);
-            },
-            error: (error) => {
-              console.error("❌ Zoom join error:", error);
-              alert("Gagal bergabung ke meeting. Silakan coba lagi.");
-            },
-          });
-        },
-        error: (error) => {
-          console.error("❌ Zoom SDK init error:", error);
-          alert("Gagal menginisialisasi Zoom SDK. Silakan coba lagi.");
-        },
-      });
+        // Set Zoom JS Library
+        ZoomMtg.setZoomJSLib("https://source.zoom.us/2.18.0/lib", "/av");
+        
+        // Pre-load WebAssembly
+        ZoomMtg.preLoadWasm();
+        ZoomMtg.prepareWebSDK();
+        
+        // Required dependencies
+        ZoomMtg.downloadZoomMtg();
+
+        // Initialize
+        ZoomMtg.init({
+          leaveOnPageUnload: true,
+          patchJsMedia: true,
+          success: () => {
+            console.log("✅ Zoom SDK initialized");
+            
+            // Join meeting
+            ZoomMtg.join({
+              sdkKey: webinarData.sdkKey,
+              signature: webinarData.signature,
+              meetingNumber: webinarData.meetingNumber,
+              passWord: webinarData.password,
+              userName: webinarData.userName,
+              userEmail: webinarData.userEmail,
+              success: (success) => {
+                console.log("✅ Zoom join success:", success);
+                setShowZoom(true);
+              },
+              error: (error) => {
+                console.error("❌ Zoom join error:", error);
+                // Fallback: gunakan join_url jika SDK gagal
+                if (webinarData.join_url) {
+                  console.log("⚠️ [WEBINAR] SDK failed, using join_url as fallback");
+                  window.open(webinarData.join_url, '_blank');
+                } else {
+                  alert("Gagal bergabung ke meeting. Silakan coba lagi.");
+                }
+              },
+            });
+          },
+          error: (error) => {
+            console.error("❌ Zoom SDK init error:", error);
+            // Fallback: gunakan join_url jika SDK init gagal
+            if (webinarData.join_url) {
+              console.log("⚠️ [WEBINAR] SDK init failed, using join_url as fallback");
+              window.open(webinarData.join_url, '_blank');
+            } else {
+              alert("Gagal menginisialisasi Zoom SDK. Silakan coba lagi.");
+            }
+          },
+        });
+      } else {
+        // Jika tidak ada signature dan sdkKey, gunakan join_url
+        if (webinarData.join_url) {
+          window.open(webinarData.join_url, '_blank');
+        } else {
+          alert("Data webinar tidak lengkap. Silakan hubungi support.");
+        }
+      }
     } catch (err) {
-      console.error("Error joining meeting:", err);
-      alert(err.message || "Gagal bergabung ke meeting");
+      console.error("❌ [WEBINAR] Error joining meeting:", err);
+      // Fallback: gunakan join_url jika ada
+      if (webinarData?.join_url) {
+        console.log("⚠️ [WEBINAR] Error occurred, using join_url as fallback");
+        window.open(webinarData.join_url, '_blank');
+      } else {
+        alert(err.message || "Gagal bergabung ke meeting");
+      }
     }
   };
 
