@@ -244,19 +244,20 @@ body {
 }
 
 .produk-builder-layout {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 2.5rem;
   align-items: flex-start;
 }
 
-.produk-builder-layout .produk-form,
 .produk-builder-layout .builder-preview-card {
-  flex: 1 1 0;
+  display: flex;
+  justify-content: center;
 }
 
 @media (max-width: 1280px) {
   .produk-builder-layout {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
 }
 

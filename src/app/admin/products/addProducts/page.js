@@ -743,19 +743,43 @@ useEffect(() => {
       </div>
 
       {/* SECTION 6: Form Fields */}
-      <div className="form-section-card">
-        <div className="section-header">
-          <h3 className="section-title">📋 Form Fields</h3>
-          <p className="section-description">Field yang akan muncul di form pembeli</p>
-        </div>
-        <div className="section-content">
-          <div className="info-box">
-            <p className="info-text">
-              <strong>Info:</strong> Field berikut akan otomatis muncul di form pembeli: Nama, WhatsApp, Email, Alamat
-            </p>
+      <section className="preview-form space-y-4 mt-6" aria-label="Order form">
+          <h2 className="font-semibold text-lg">Informasi Dasar</h2>
+
+          {[
+            { label: "Nama", key: "nama", placeholder: "Nama lengkap Anda" },
+            { label: "Nomor WhatsApp", key: "wa", placeholder: "08xxxxxxxxxx" },
+            { label: "Email", key: "email", placeholder: "email@example.com" },
+          ].map((field, i) => (
+            <div 
+              key={i}
+              className="p-4 border border-gray-200 rounded-xl bg-gray-50 shadow-sm"
+            >
+              <br></br>
+              <label className="font-medium text-gray-700">{field.label}</label>
+              <input
+                type="text"
+                placeholder={field.placeholder}
+                className="w-full p-3 border border-gray-300 rounded-xl mt-2 focus:border-blue-500 focus:ring focus:ring-blue-200 transition"
+                disabled
+              />
+            </div>
+          ))}
+
+          {/* ALAMAT */}
+          <div className="space-y-2 p-4 border border-gray-200 rounded-xl bg-white shadow-sm">
+            <br></br>
+            <label className="block text-sm font-semibold text-gray-700">
+              Alamat
+            </label>
+            <textarea
+              placeholder="Alamat lengkap"
+              className="w-full p-3 border border-gray-300 rounded-xl mt-2 focus:border-blue-500 focus:ring focus:ring-blue-200 transition"
+              rows={3}
+              disabled
+            />
           </div>
-        </div>
-      </div>
+        </section>
 
       {/* SECTION 7: Custom Fields */}
       <div className="form-section-card">
