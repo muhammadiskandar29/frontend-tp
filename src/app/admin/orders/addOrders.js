@@ -158,216 +158,216 @@ const handleSubmit = async (e) => {
   setLoading(false);
 };
 
-  // Render modal menggunakan Portal langsung ke document.body untuk menghindari stacking context issues
   const modalContent = (
-    <div 
-      className="update-modal-overlay add-order-modal-overlay"
+    <div
+      className="orders-modal-overlay"
       onClick={(e) => {
-        // Close modal when clicking on overlay (not on modal content)
-        if (e.target === e.currentTarget) {
-          onClose();
-        }
+        if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div 
-        className="update-modal-card add-order-modal-card" 
-        style={{ width: "100%", maxWidth: 650 }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="update-modal-header">
-          <h2>Tambah Order</h2>
-          <button className="close-btn" onClick={onClose}>✕</button>
+      <div className="orders-modal-card" onClick={(e) => e.stopPropagation()}>
+        <div className="orders-modal-header">
+          <div>
+            <p className="orders-modal-eyebrow">Kelola Pesanan</p>
+            <h2>Tambah Order</h2>
+          </div>
+          <button type="button" className="orders-modal-close" onClick={onClose} aria-label="Tutup modal">
+            <i className="pi pi-times" />
+          </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="update-modal-body">
-          {/* ==== CUSTOMER ==== */}
-          <div className="update-section">
-            <h4>Informasi Customer</h4>
+        <div className="orders-modal-body">
+          <form onSubmit={handleSubmit} className="orders-form-grid">
+            <div className="orders-section">
+              <h4>Informasi Customer</h4>
 
-            <label>
-              Cari Customer (Nama / WA)
-              <input
-                type="text"
-                value={customerSearch}
-                onChange={(e) => {
-                  setCustomerSearch(e.target.value);
-                  setShowCustomerForm(false);
-                }}
-                placeholder="Ketik minimal 2 huruf..."
-              />
-            </label>
+              <label className="orders-field">
+                Cari Customer (Nama / WA)
+                <input
+                  type="text"
+                  value={customerSearch}
+                  onChange={(e) => {
+                    setCustomerSearch(e.target.value);
+                    setShowCustomerForm(false);
+                  }}
+                  placeholder="Ketik minimal 2 huruf..."
+                />
+              </label>
 
-            {customerResults.length > 0 && (
-              <div style={{ border: "1px solid #ccc", borderRadius: 6, marginTop: 4 }}>
-                {customerResults.map((c) => (
-                  <div
-                    key={c.id}
-                    onClick={() => handleSelectCustomer(c)}
-                    style={{
-                      padding: "6px 10px",
-                      cursor: "pointer",
-                      borderBottom: "1px solid #eee",
-                    }}
-                  >
-                    {c.nama} | {c.wa}
-                  </div>
-                ))}
-              </div>
-            )}
+              {customerResults.length > 0 && (
+                <div className="orders-suggestion">
+                  {customerResults.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      className="orders-suggestion-item"
+                      onClick={() => handleSelectCustomer(c)}
+                    >
+                      <strong>{c.nama}</strong>
+                      <span>{c.wa}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
 
-            {customerResults.length === 0 && customerSearch && !showCustomerForm && (
-              <button
-                type="button"
-                onClick={() => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    nama: "",
-                    wa: "",
-                    email: "",
-                    alamat: "",
-                    customer: "",
-                  }));
-                  setShowCustomerForm(true);
-                }}
-                style={{
-                  marginTop: 8,
-                  color: "#2563eb",
-                  fontSize: 14,
-                  cursor: "pointer",
-                  background: "none",
-                  border: "none",
-                  textAlign: "left",
-                }}
-              >
-                + Tambah Customer Baru
-              </button>
-            )}
+              <label className="orders-field">
+                Nama
+                <input
+                  type="text"
+                  name="nama"
+                  value={formData.nama}
+                  onChange={handleChange}
+                  placeholder="Nama customer"
+                />
+              </label>
 
-            {showCustomerForm && (
-              <div
-                style={{
-                  marginTop: 10,
-                  padding: 12,
-                  border: "1px solid #ddd",
-                  borderRadius: 8,
-                  background: "#fafafa",
-                }}
-              >
-                <h5 style={{ marginBottom: 8 }}>Tambah Customer Baru</h5>
-                <label>
-                  Nama
-                  <input type="text" name="nama" value={formData.nama} onChange={handleChange} />
-                </label>
-                <label>
-                  Nomor WA
+              <div className="orders-dual-grid">
+                <label className="orders-field">
+                  WA (gunakan 62)
                   <input type="text" name="wa" value={formData.wa} onChange={handleChange} />
                 </label>
-                <label>
+                <label className="orders-field">
                   Email
                   <input type="email" name="email" value={formData.email} onChange={handleChange} />
                 </label>
-                <label>
-                  Alamat
-                  <textarea name="alamat" rows="2" value={formData.alamat} onChange={handleChange} />
+              </div>
+
+              <label className="orders-field">
+                Alamat
+                <textarea
+                  name="alamat"
+                  rows={2}
+                  value={formData.alamat}
+                  onChange={handleChange}
+                  placeholder="Alamat lengkap customer"
+                />
+              </label>
+
+              {!customerResults.length && !formData.nama && (
+                <label className="orders-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={showCustomerForm}
+                    onChange={() => setShowCustomerForm((prev) => !prev)}
+                  />
+                  Input customer tanpa data otomatis (manual)
+                </label>
+              )}
+            </div>
+
+            <div className="orders-section">
+              <h4>Detail Order</h4>
+
+              <label className="orders-field">
+                Cari Produk
+                <input
+                  type="text"
+                  value={productSearch}
+                  onChange={(e) => setProductSearch(e.target.value)}
+                  placeholder="Ketik minimal 2 huruf..."
+                />
+              </label>
+
+              {productResults.length > 0 && (
+                <div className="orders-suggestion">
+                  {productResults.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className="orders-suggestion-item"
+                      onClick={() => handleSelectProduct(p)}
+                    >
+                      <strong>{p.nama}</strong>
+                      <span>Rp {Number(p.harga).toLocaleString("id-ID")}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <label className="orders-field">
+                Produk (ID)
+                <input
+                  type="text"
+                  name="produk"
+                  value={formData.produk}
+                  onChange={handleChange}
+                  placeholder="ID produk"
+                  readOnly
+                />
+              </label>
+
+              <div className="orders-dual-grid">
+                <label className="orders-field">
+                  Harga Produk
+                  <input
+                    type="number"
+                    name="harga"
+                    value={formData.harga ?? ""}
+                    onChange={handleChange}
+                    min={0}
+                    required
+                  />
+                </label>
+                <label className="orders-field">
+                  Ongkir
+                  <input
+                    type="number"
+                    name="ongkir"
+                    value={formData.ongkir ?? ""}
+                    onChange={handleChange}
+                    min={0}
+                  />
                 </label>
               </div>
-            )}
-          </div>
 
-          {/* ==== PRODUK ==== */}
-          <div className="update-section">
-            <h4>Detail Order</h4>
+              <label className="orders-field">
+                Total Harga
+                <input type="number" name="total_harga" value={formData.total_harga ?? ""} readOnly />
+              </label>
 
-            <label>
-              Cari Produk
-              <input
-                type="text"
-                value={productSearch}
-                onChange={(e) => setProductSearch(e.target.value)}
-                placeholder="Ketik minimal 2 huruf..."
-              />
-            </label>
+              <label className="orders-field">
+                Sumber Order
+                <select name="sumber" value={formData.sumber} onChange={handleChange}>
+                  <option value="">Pilih sumber</option>
+                  <option value="website">Website</option>
+                  <option value="instagram">Instagram</option>
+                  <option value="tiktok">TikTok</option>
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="sales">Sales</option>
+                  <option value="event">Event</option>
+                </select>
+              </label>
 
-            {productResults.length > 0 && (
-              <div style={{ border: "1px solid #ccc", borderRadius: 6, marginTop: 4 }}>
-                {productResults.map((p) => (
-                  <div
-                    key={p.id}
-                    onClick={() => handleSelectProduct(p)}
-                    style={{
-                      padding: "6px 10px",
-                      cursor: "pointer",
-                      borderBottom: "1px solid #eee",
-                    }}
-                  >
-                    {p.nama} (Rp{p.harga})
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <label>
-              Harga Produk
-              <input type="number" name="harga" value={formData.harga ?? ""} onChange={handleChange} />
-            </label>
-
-            <label>
-              Ongkir
-              <input type="number" name="ongkir" value={formData.ongkir ?? ""} onChange={handleChange} />
-            </label>
-
-            <label>
-              Total Harga
-              <input type="number" name="total_harga" value={formData.total_harga ?? ""} readOnly />
-            </label>
-
-            <label>
-              Sumber Order
-              <input
-                type="text"
-                name="sumber"
-                value={formData.sumber}
-                onChange={handleChange}
-                placeholder="Instagram, Website, dll"
-              />
-            </label>
-
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
-              <input type="checkbox" name="notif" id="notif" checked={formData.notif} onChange={handleChange} />
-              <label htmlFor="notif" style={{ fontSize: 14 }}>Kirim notifikasi WhatsApp ke customer</label>
+              <label className="orders-checkbox">
+                <input
+                  type="checkbox"
+                  name="notif"
+                  checked={formData.notif}
+                  onChange={handleChange}
+                />
+                Kirim notifikasi WhatsApp ke customer
+              </label>
             </div>
-          </div>
 
-          {message && (
-            <p
-              style={{
-                marginTop: 8,
-                fontSize: 14,
-                textAlign: "center",
-                color: message.startsWith("✅") ? "green" : "red",
-              }}
-            >
-              {message}
-            </p>
-          )}
+            {message && <p className="orders-error">{message}</p>}
 
-          <div className="update-modal-footer">
-            <button type="button" onClick={onClose} className="btn-cancel" disabled={loading}>
-              Batal
-            </button>
-            <button type="submit" className="btn-save" disabled={loading}>
-              {loading ? "Menyimpan..." : "Simpan Order"}
-            </button>
-          </div>
-        </form>
+            <div className="orders-modal-footer">
+              <button type="button" className="orders-btn orders-btn--ghost" onClick={onClose} disabled={loading}>
+                Batal
+              </button>
+              <button type="submit" className="orders-btn orders-btn--primary" disabled={loading}>
+                {loading ? "Menyimpan..." : "Simpan Order"}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
 
-  // Render menggunakan Portal ke document.body untuk memastikan modal selalu di atas
   if (typeof window !== "undefined") {
     return createPortal(modalContent, document.body);
   }
-  
-  return null;
+
+  return modalContent;
 }

@@ -45,77 +45,78 @@ export default function ViewOrders({ order, onClose }) {
     : null;
 
   return (
-    <div className="view-modal-overlay">
-      <div className="view-modal-card">
+    <div className="orders-modal-overlay">
+      <div className="orders-modal-card">
         {/* Header */}
-        <div className="view-modal-header">
-          <h2>Detail Pesanan</h2>
-          <div className="header-actions">
-            <button className="close-btn" onClick={onClose}>
-              ✕
-            </button>
+        <div className="orders-modal-header">
+          <div>
+            <p className="orders-modal-eyebrow">Ringkasan Pesanan</p>
+            <h2>Detail Pesanan</h2>
           </div>
+          <button className="orders-modal-close" onClick={onClose} type="button" aria-label="Tutup detail">
+            <i className="pi pi-times" />
+          </button>
         </div>
 
         {/* Body */}
-        <div className="view-modal-body">
+        <div className="orders-modal-body">
           {/* Informasi Pelanggan */}
-          <div className="view-section">
+          <div className="orders-section">
             <h4>Informasi Pelanggan</h4>
-            <div className="view-row">
+            <div className="orders-row">
               <p>Nama</p>
               <span>{order.customer_rel?.nama || "-"}</span>
             </div>
-            <div className="view-row">
+            <div className="orders-row">
               <p>No. WhatsApp</p>
               <span>{order.customer_rel?.wa || "-"}</span>
             </div>
-            <div className="view-row">
+            <div className="orders-row">
               <p>Alamat</p>
               <span>{order.alamat || "-"}</span>
             </div>
           </div>
 
           {/* Detail Produk */}
-          <div className="view-section">
+          <div className="orders-section">
             <h4>Detail Produk</h4>
-            <div className="view-row">
+            <div className="orders-row">
               <p>Nama Produk</p>
               <span>{order.produk_rel?.nama || "-"}</span>
             </div>
-            <div className="view-row">
+            <div className="orders-row">
               <p>Harga</p>
               <span>Rp {Number(order.harga || 0).toLocaleString()}</span>
             </div>
-            <div className="view-row">
+            <div className="orders-row">
               <p>Ongkir</p>
               <span>Rp {Number(order.ongkir || 0).toLocaleString()}</span>
             </div>
-            <div className="view-row">
+            <div className="orders-row">
               <p>Total Harga</p>
               <span>Rp {Number(order.total_harga || 0).toLocaleString()}</span>
             </div>
           </div>
 
           {/* Pembayaran */}
-          <div className="view-section">
+          <div className="orders-section">
             <h4>Informasi Pembayaran</h4>
-            <div className="view-row">
+            <div className="orders-row">
               <p>Status Pembayaran</p>
               <span className={`status-badge ${statusLabel}`}>
                 {statusLabel}
               </span>
             </div>
-            <div className="view-row">
+            <div className="orders-row">
               <p>Metode Pembayaran</p>
               <span>{order.metode_bayar || "-"}</span>
             </div>
-            <div className="view-row">
+            <div className="orders-row">
               <p>Waktu Pembayaran</p>
               <span>{order.waktu_pembayaran || "-"}</span>
             </div>
             <div
-              className="view-row"
+              className="orders-row"
               style={{ flexDirection: "column", alignItems: "flex-start" }}
             >
               <p>Bukti Pembayaran</p>
@@ -148,17 +149,17 @@ export default function ViewOrders({ order, onClose }) {
           </div>
 
           {/* Informasi Tambahan */}
-          <div className="view-section">
+          <div className="orders-section">
             <h4>Informasi Tambahan</h4>
-            <div className="view-row">
+            <div className="orders-row">
               <p>Tanggal Pesanan</p>
               <span>{order.tanggal || "-"}</span>
             </div>
-            <div className="view-row">
+            <div className="orders-row">
               <p>Sumber Pesanan</p>
               <span>{order.sumber || "-"}</span>
             </div>
-            <div className="view-row">
+            <div className="orders-row">
               <p>Order ID</p>
               <span>#{order.id}</span>
             </div>
@@ -166,8 +167,8 @@ export default function ViewOrders({ order, onClose }) {
         </div>
 
         {/* Footer */}
-        <div className="view-modal-footer">
-          <button className="btn-close" onClick={onClose}>
+        <div className="orders-modal-footer">
+          <button className="orders-btn orders-btn--primary" onClick={onClose} type="button">
             Tutup
           </button>
         </div>

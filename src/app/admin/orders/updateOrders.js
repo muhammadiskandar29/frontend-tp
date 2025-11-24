@@ -188,17 +188,20 @@ const handleSubmitUpdate = async (e) => {
 
   return (
     <>
-      <div className="update-modal-overlay">
-        <div className="update-modal-card" style={{ width: "100%", maxWidth: 900 }}>
-          <div className="update-modal-header">
-            <h2>Update Pesanan</h2>
-            <button className="close-btn" onClick={onClose}>
-              ✕
+      <div className="orders-modal-overlay">
+        <div className="orders-modal-card" style={{ width: "100%", maxWidth: 900 }}>
+          <div className="orders-modal-header">
+            <div>
+              <p className="orders-modal-eyebrow">Kelola Pesanan</p>
+              <h2>Update Pesanan</h2>
+            </div>
+            <button className="orders-modal-close" onClick={onClose} type="button" aria-label="Tutup modal">
+              <i className="pi pi-times" />
             </button>
           </div>
 
-          <form className="update-modal-body" onSubmit={handleSubmitUpdate}>
-            <div className="update-section">
+          <form className="orders-modal-body" onSubmit={handleSubmitUpdate}>
+            <div className="orders-section">
               <h4>Informasi Order</h4>
               <label>
                 Customer
@@ -244,7 +247,7 @@ const handleSubmitUpdate = async (e) => {
               </label>
             </div>
 
-            <div className="update-section">
+            <div className="orders-section">
               <h4>Detail Pembayaran</h4>
               <label>
                 Harga Produk
@@ -306,13 +309,9 @@ const handleSubmitUpdate = async (e) => {
                 {computedStatus() === 0 ? (
                   <button
                     type="button"
-                    className="btn-primary"
+                    className="orders-btn orders-btn--primary"
                     disabled={!metodeBayar}
                     onClick={() => setShowKonfirmasiModal(true)}
-                    style={{
-                      opacity: !metodeBayar ? 0.5 : 1,
-                      cursor: !metodeBayar ? "not-allowed" : "pointer",
-                    }}
                   >
                     Konfirmasi Pembayaran
                   </button>
@@ -351,24 +350,14 @@ const handleSubmitUpdate = async (e) => {
             </div>
 
             {errorMsg && (
-              <div
-                style={{
-                  background: "#fee2e2",
-                  color: "#991b1b",
-                  padding: "0.75rem 1rem",
-                  borderRadius: 6,
-                  marginTop: 8,
-                }}
-              >
-                ⚠️ {errorMsg}
-              </div>
+              <div className="orders-error orders-error--inline">⚠️ {errorMsg}</div>
             )}
 
-            <div className="update-modal-footer">
-              <button type="button" onClick={onClose} className="btn-cancel">
+            <div className="orders-modal-footer">
+              <button type="button" onClick={onClose} className="orders-btn orders-btn--ghost">
                 Batal
               </button>
-              <button type="submit" className="btn-save">
+              <button type="submit" className="orders-btn orders-btn--primary">
                 Simpan Perubahan
               </button>
             </div>
@@ -378,9 +367,9 @@ const handleSubmitUpdate = async (e) => {
 
       {/* Modal Konfirmasi Pembayaran */}
       {showKonfirmasiModal && (
-        <div className="update-modal-overlay">
+        <div className="orders-modal-overlay">
           <div
-            className="update-modal-card"
+            className="orders-modal-card"
             style={{
               maxWidth: 450,
               padding: "1.5rem",
@@ -388,27 +377,18 @@ const handleSubmitUpdate = async (e) => {
               boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
             }}
           >
-            <div
-              className="update-modal-header"
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 16,
-              }}
-            >
-              <h3 style={{ fontSize: "1.1rem", fontWeight: 600 }}>Konfirmasi Pembayaran</h3>
+            <div className="orders-modal-header">
+              <div>
+                <p className="orders-modal-eyebrow">Pembayaran</p>
+                <h3 style={{ fontSize: "1.1rem", fontWeight: 600 }}>Konfirmasi Pembayaran</h3>
+              </div>
               <button
-                className="close-btn"
+                className="orders-modal-close"
                 onClick={() => setShowKonfirmasiModal(false)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  fontSize: 20,
-                  cursor: "pointer",
-                }}
+                type="button"
+                aria-label="Tutup konfirmasi"
               >
-                ✕
+                <i className="pi pi-times" />
               </button>
             </div>
 
@@ -463,12 +443,12 @@ const handleSubmitUpdate = async (e) => {
               >
                 <button
                   type="button"
-                  className="btn-cancel"
+                  className="orders-btn orders-btn--ghost"
                   onClick={() => setShowKonfirmasiModal(false)}
                 >
                   Batal
                 </button>
-                <button type="submit" className="btn-save">
+                <button type="submit" className="orders-btn orders-btn--primary">
                   Konfirmasi
                 </button>
               </div>

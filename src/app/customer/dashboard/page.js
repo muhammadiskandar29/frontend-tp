@@ -6,7 +6,6 @@ import CustomerLayout from "@/components/customer/CustomerLayout";
 import { getCustomerSession } from "@/lib/customerAuth";
 import { fetchCustomerDashboard } from "@/lib/customerDashboard";
 import OTPVerificationModal from "./otpVerificationModal";
-import config from "@/config/env";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -473,15 +472,9 @@ export default function DashboardPage() {
                       className="order-action"
                       onClick={() => {
                         const kategoriLower = order.kategoriNama?.toLowerCase() || "";
-                        const session = getCustomerSession();
-                        const token = session.token;
-                        
                         if (kategoriLower === "webinar" || kategoriLower === "seminar") {
-                          // Webinar/Seminar: redirect langsung ke backend URL untuk join meeting
-                          // Backend akan render halaman HTML lengkap dengan Zoom integration
-                          const backendUrl = config.backendUrl;
-                          const joinUrl = `${backendUrl}/customer/order/${order.id}/join?token=${token}`;
-                          window.location.href = joinUrl;
+                          // Arahkan ke halaman webinar internal
+                          router.push(`/customer/webinar/${order.id}`);
                         } else if (kategoriLower === "e-book" || kategoriLower === "ebook") {
                           // Ebook: redirect ke halaman ebook
                           if (order.slug && order.slug !== "-") {

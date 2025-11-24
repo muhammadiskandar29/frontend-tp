@@ -18,7 +18,6 @@ export default function WebinarGatewayPage() {
   const [error, setError] = useState("");
   const [errorType, setErrorType] = useState(""); // "unauthorized", "not_found", "server_error", "network_error"
   const [showZoom, setShowZoom] = useState(false);
-  const [zoomSDK, setZoomSDK] = useState(null);
 
   useEffect(() => {
     if (!idOrder) {
@@ -44,11 +43,13 @@ export default function WebinarGatewayPage() {
   const validateOrderAccess = async () => {
     try {
       setValidating(true);
+      setLoading(true);
       setError("");
       const session = getCustomerSession();
 
       // Fetch customer dashboard untuk mendapatkan list orders
       const dashboardData = await fetchCustomerDashboard(session.token);
+      const customer = dashboardData.customer || {};
       
       // Gabungkan semua orders (aktif dan pending)
       const allOrders = [
@@ -68,8 +69,7 @@ export default function WebinarGatewayPage() {
         return;
       }
 
-      // Jika order ditemukan, cek apakah ada webinar data
-      // Logika: Order ID → Produk ID → Webinar (1 link yang sama untuk semua yang beli produk yang sama)
+      // Pastikan order memiliki data webinar
       if (!foundOrder.webinar) {
         setError("Webinar tidak tersedia untuk order ini. Silakan hubungi support.");
         setErrorType("not_found");
@@ -78,9 +78,26 @@ export default function WebinarGatewayPage() {
         return;
       }
 
-      // Jika validasi berhasil dan ada webinar, lanjut fetch webinar data
-      // Gunakan produk_id dari order untuk mendapatkan webinar yang sama (many-to-many)
-      await fetchWebinarData(foundOrder);
+      // Susun data webinar dari order + info customer
+      setWebinarData({
+        meetingNumber: foundOrder.webinar.meeting_id,
+        password: foundOrder.webinar.password,
+        join_url: foundOrder.webinar.join_url,
+        start_time: foundOrder.webinar.start_time,
+        start_time_formatted: foundOrder.webinar.start_time_formatted,
+        duration: foundOrder.webinar.duration,
+        userName: customer.nama_panggilan || customer.nama || "Customer",
+        userEmail: customer.email || "",
+        produkNama: foundOrder.produk_nama || "",
+        orderId: Number(idOrder),
+        kategoriNama: foundOrder.kategori_nama || "Webinar",
+        webinar: foundOrder.webinar,
+        signature: null,
+        sdkKey: null
+      });
+
+      setLoading(false);
+      setValidating(false);
     } catch (err) {
       console.error("❌ [WEBINAR] Validation error:", err);
       setError("Gagal memvalidasi akses. Silakan coba lagi atau hubungi support.");
@@ -90,157 +107,7 @@ export default function WebinarGatewayPage() {
     }
   };
 
-  const fetchWebinarData = async (orderData = null) => {
-    try {
-      setLoading(true);
-      setValidating(false);
-      setError("");
-      const session = getCustomerSession();
-      
-      // Logika: Order ID → Produk ID → Webinar (1 link yang sama untuk semua yang beli produk yang sama)
-      // Jika orderData sudah ada dari validasi, gunakan data tersebut
-      let order = orderData;
-      let kategoriNama = "webinar";
-      
-      if (!order) {
-        // Fetch order data dari dashboard untuk mendapatkan produk_id dan webinar
-        const dashboardData = await fetchCustomerDashboard(session.token);
-        const allOrders = [
-          ...(dashboardData.orders_aktif || []),
-          ...(dashboardData.orders_pending || [])
-        ];
-        order = allOrders.find(o => Number(o.id) === Number(idOrder));
-      }
-
-      if (!order) {
-        setError("Order tidak ditemukan.");
-        setErrorType("not_found");
-        setLoading(false);
-        return;
-      }
-
-      // Ambil kategori dari produk (jika sudah di-fetch sebelumnya)
-      // Atau gunakan kategori_nama dari order
-      kategoriNama = order.kategori_nama || "webinar";
-
-      // Cek apakah ada webinar data di order
-      if (!order.webinar) {
-        setError("Webinar tidak tersedia untuk produk ini.");
-        setErrorType("not_found");
-        setLoading(false);
-        return;
-      }
-
-      // Fetch webinar data dari backend untuk mendapatkan signature dan data lengkap
-      // Backend akan: Order ID → Produk ID → Webinar (many-to-many)
-      const response = await fetch(`/api/webinar/join-order/${idOrder}`, {
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          Authorization: `Bearer ${session.token}`,
-        },
-      });
-
-      // Handle response status
-      if (response.status === 403) {
-        setError("Akses ditolak. Anda tidak memiliki izin untuk mengakses webinar ini.");
-        setErrorType("unauthorized");
-        setLoading(false);
-        return;
-      }
-
-      if (response.status === 404) {
-        setError("Webinar tidak ditemukan. Pastikan order ID benar atau hubungi support.");
-        setErrorType("not_found");
-        setLoading(false);
-        return;
-      }
-
-      let data;
-      try {
-        data = await response.json();
-      } catch (parseError) {
-        console.error("❌ [WEBINAR] Failed to parse JSON:", parseError);
-        setError("Terjadi kesalahan saat memproses response dari server.");
-        setErrorType("server_error");
-        setLoading(false);
-        return;
-      }
-
-      if (!response.ok || !data.success) {
-        const errorMessage = data?.message || "Gagal memuat data webinar";
-        
-        // Tentukan error type berdasarkan status code
-        if (response.status === 401) {
-          setError("Sesi Anda telah berakhir. Silakan login kembali.");
-          setErrorType("unauthorized");
-        } else if (response.status >= 500) {
-          setError("Server sedang mengalami masalah. Silakan coba lagi nanti.");
-          setErrorType("server_error");
-        } else {
-          setError(errorMessage);
-          setErrorType("server_error");
-        }
-        
-        setLoading(false);
-        return;
-      }
-
-      // Jika backend return error 404 (route tidak ditemukan), gunakan data webinar dari order
-      if (response.status === 404 && order.webinar) {
-        console.warn("⚠️ [WEBINAR] Backend route not found, using webinar data from order");
-        
-        // Ambil customer info untuk userName dan userEmail
-        const dashboardData = await fetchCustomerDashboard(session.token);
-        const customer = dashboardData.customer || {};
-        
-        // Gunakan data webinar dari order (sudah ada di dashboard response)
-        // Backend logic: Order ID → Produk ID → Webinar (1 link yang sama untuk semua yang beli produk yang sama)
-        // Note: Signature akan di-generate oleh backend saat join, atau bisa pakai join_url langsung
-        setWebinarData({
-          meetingNumber: order.webinar.meeting_id,
-          password: order.webinar.password,
-          join_url: order.webinar.join_url, // Bisa pakai join_url langsung jika signature tidak diperlukan
-          start_time: order.webinar.start_time,
-          start_time_formatted: order.webinar.start_time_formatted,
-          duration: order.webinar.duration,
-          userName: customer.nama || customer.nama_panggilan || "Customer",
-          userEmail: customer.email || "",
-          produkNama: order.produk_nama || "",
-          orderId: Number(idOrder),
-          kategoriNama: kategoriNama,
-          webinar: order.webinar,
-          // Signature dan SDK key akan di-generate oleh backend saat join
-          // Untuk sementara, kita bisa pakai join_url langsung atau generate signature di frontend
-          signature: null, // Akan di-generate saat join jika diperlukan
-          sdkKey: null // Akan diambil dari backend jika diperlukan
-        });
-        setLoading(false);
-        return;
-      }
-
-      // Jika backend berhasil, gunakan data dari backend
-      // Simpan data webinar termasuk kategori dari produk
-      setWebinarData({
-        ...data.data,
-        kategoriNama: kategoriNama
-      });
-    } catch (err) {
-      console.error("❌ [WEBINAR] Error fetching webinar data:", err);
-      
-      // Handle network errors
-      if (err.name === "TypeError" && err.message.includes("fetch")) {
-        setError("Tidak dapat terhubung ke server. Periksa koneksi internet Anda.");
-        setErrorType("network_error");
-      } else {
-        setError(err.message || "Gagal memuat data webinar. Silakan coba lagi.");
-        setErrorType("server_error");
-      }
-    } finally {
-      setLoading(false);
-      setValidating(false);
-    }
-  };
+  // Tidak lagi mem-fetch data webinar dari backend lain karena data sudah tersedia di order dashboard
 
   const handleJoinMeeting = async () => {
     if (!webinarData) return;
