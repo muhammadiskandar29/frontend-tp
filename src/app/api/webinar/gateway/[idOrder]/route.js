@@ -17,15 +17,6 @@ const buildJoinOrderUrl = (baseUrl, idOrder) => {
   return `${base}/api/webinar/join-order/${idOrder}`;
 };
 
-function extractValue(source, key) {
-  const regex = new RegExp(
-    `const\\s+${key}\\s*=\\s*["'\`]{1}([^"'\`]+)["'\`]{1}`,
-    "i"
-  );
-  const match = source.match(regex);
-  return match ? match[1] : "";
-}
-
 async function fetchJsonGateway(idOrder, token) {
   const url = buildJoinOrderUrl(BACKEND_URL, idOrder);
 
@@ -60,36 +51,6 @@ async function fetchJsonGateway(idOrder, token) {
   };
 }
 
-async function fetchHtmlGateway(idOrder, token) {
-  const joinUrl = `${normalizeBaseUrl(
-    BACKEND_URL
-  )}/customer/order/${idOrder}/join?token=${encodeURIComponent(token)}`;
-
-  const response = await fetch(joinUrl, {
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      Accept: "text/html",
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error("Gagal mengambil gateway webinar (HTML)");
-  }
-
-  const html = await response.text();
-
-  return {
-    meetingNumber: extractValue(html, "meetingNumber"),
-    meetingPassword: extractValue(html, "meetingPassword"),
-    userName: extractValue(html, "userName"),
-    userEmail: extractValue(html, "userEmail"),
-    sdkKey: extractValue(html, "sdkKey"),
-    signature: extractValue(html, "signature"),
-    joinLink: joinUrl,
-  };
-}
-
 export async function GET(request, { params }) {
   try {
     const { idOrder } = await params;
@@ -111,16 +72,7 @@ export async function GET(request, { params }) {
 
     const token = authHeader.replace("Bearer ", "");
 
-    let data;
-    try {
-      data = await fetchJsonGateway(idOrder, token);
-    } catch (jsonErr) {
-      console.warn(
-        "[WEBINAR_GATEWAY] JSON endpoint gagal, fallback ke HTML:",
-        jsonErr?.message
-      );
-      data = await fetchHtmlGateway(idOrder, token);
-    }
+    const data = await fetchJsonGateway(idOrder, token);
 
     if (!data.meetingNumber || !data.sdkKey || !data.signature) {
       return NextResponse.json(

@@ -118,6 +118,7 @@ export default function WebinarGatewayPage() {
           Accept: "application/json",
           Authorization: `Bearer ${token}`,
         },
+        cache: "no-store",
       });
 
       const payload = await response.json().catch(() => null);
@@ -166,7 +167,7 @@ export default function WebinarGatewayPage() {
         throw new Error("Zoom SDK tidak tersedia");
       }
 
-      ZoomMtg.setZoomJSLib("https://source.zoom.us/2.18.0/lib", "/av");
+      ZoomMtg.setZoomJSLib("https://source.zoom.us/4.0.5/lib", "/av");
       ZoomMtg.preLoadWasm();
       ZoomMtg.prepareWebSDK();
       ZoomMtg.i18n.load("en-US");
@@ -216,12 +217,12 @@ export default function WebinarGatewayPage() {
       }
 
       const scripts = [
-        "https://source.zoom.us/2.18.0/lib/vendor/react.min.js",
-        "https://source.zoom.us/2.18.0/lib/vendor/react-dom.min.js",
-        "https://source.zoom.us/2.18.0/lib/vendor/redux.min.js",
-        "https://source.zoom.us/2.18.0/lib/vendor/redux-thunk.min.js",
-        "https://source.zoom.us/2.18.0/lib/vendor/lodash.min.js",
-        "https://source.zoom.us/zoom-meeting-2.18.0.min.js",
+        "https://source.zoom.us/4.0.5/lib/vendor/react.min.js",
+        "https://source.zoom.us/4.0.5/lib/vendor/react-dom.min.js",
+        "https://source.zoom.us/4.0.5/lib/vendor/redux.min.js",
+        "https://source.zoom.us/4.0.5/lib/vendor/redux-thunk.min.js",
+        "https://source.zoom.us/4.0.5/lib/vendor/lodash.min.js",
+        "https://source.zoom.us/zoom-meeting-4.0.5.min.js",
       ];
 
       let loaded = 0;
