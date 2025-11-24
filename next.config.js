@@ -68,12 +68,17 @@ const nextConfig = {
 
   async rewrites() {
     // Get backend URL from environment variable
-    const backendUrl = 
-      process.env.BACKEND_URL || 
-      process.env.NEXT_PUBLIC_BACKEND_URL || 
+    const backendUrl =
+      process.env.BACKEND_URL ||
+      process.env.NEXT_PUBLIC_BACKEND_URL ||
       "https://onedashboardapi-production.up.railway.app";
-    
+
     return [
+      // Biarkan route internal Next (gateway) tetap di-handle oleh Next.js
+      {
+        source: "/api/webinar/gateway/:path*",
+        destination: "/api/webinar/gateway/:path*",
+      },
       {
         source: "/api/:path*",
         destination: `${backendUrl}/api/:path*`,
