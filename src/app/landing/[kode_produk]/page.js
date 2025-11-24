@@ -24,11 +24,18 @@ export default function LandingPage() {
     custom_value: [],
   });
 
-  // Helper function untuk format harga IDR
   const formatPrice = (price) => {
     if (!price) return "0";
-    const numPrice = typeof price === 'string' ? parseInt(price.replace(/[^\d]/g, '')) : price;
-    return numPrice.toLocaleString('id-ID');
+    const numPrice = typeof price === "string" ? parseInt(price.replace(/[^\d]/g, "")) : price;
+    return (isNaN(numPrice) ? 0 : numPrice).toLocaleString("id-ID");
+  };
+
+  const resolveHeaderSource = (header) => {
+    if (!header) return "";
+    if (typeof header === "string") return header;
+    if (header?.path && typeof header.path === "string") return header.path;
+    if (header?.value && typeof header.value === "string") return header.value;
+    return "";
   };
 
   // --- SAFE JSON ---
@@ -83,9 +90,12 @@ export default function LandingPage() {
     if (!data) return;
 
     const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
-    const fullImageUrl = data.header?.path 
-      ? (data.header.path.startsWith('http') ? data.header.path : `https://onedashboardapi-production.up.railway.app${data.header.path}`)
-      : '';
+    const headerPath = resolveHeaderSource(data.header);
+    const fullImageUrl = headerPath
+      ? headerPath.startsWith("http")
+        ? headerPath
+        : `https://onedashboardapi-production.up.railway.app${headerPath}`
+      : "";
 
     // Update document title
     const title = `${data.nama} - Beli Sekarang | Ternak Properti`;
@@ -440,6 +450,8 @@ if (paymentMethod === "va") {
   // ==========================================================
   // RENDER PAGE
   // ==========================================================
+  const headerSrc = resolveHeaderSource(form.header);
+
   return (
     <article className="landing-wrapper" itemScope itemType="https://schema.org/Product">
         <div className="produk-preview">
@@ -456,9 +468,9 @@ if (paymentMethod === "va") {
 
           {/* Header */}
           <div className="header-wrapper">
-            {form.header?.path ? (
+            {headerSrc ? (
               <img 
-                src={form.header.path} 
+                src={headerSrc} 
                 alt={`${form.nama} - Header Image`}
                 className="preview-header-img"
                 itemProp="image"

@@ -262,7 +262,6 @@ body {
   flex: 0 0 500px;
   position: sticky;
   top: 2rem;
-  max-height: calc(100vh - 4rem);
   background: #ffffff;
   border: 1.5px solid var(--border);
   border-radius: 20px;
@@ -270,8 +269,8 @@ body {
   display: flex;
   flex-direction: column;
   padding: 2rem;
-  overflow-y: auto;
-  overflow-x: hidden;
+  max-height: none;
+  overflow: visible;
 }
 
 .produk-preview::-webkit-scrollbar {
@@ -540,9 +539,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 2.5rem;
-  max-height: calc(100vh - 4rem);
-  overflow-y: auto;
-  overflow-x: hidden;
+  max-height: none;
+  overflow: visible;
 }
 
 /* ===== FORM HEADER ===== */

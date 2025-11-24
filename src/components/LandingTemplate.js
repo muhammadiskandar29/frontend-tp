@@ -1,28 +1,59 @@
 "use client";
 import React from "react";
-import '@/styles/landing.css';
+import "@/styles/landing.css";
+
+const resolveMediaSource = (input) => {
+  if (!input) return null;
+
+  // Direct string path or URL
+  if (typeof input === "string") return input;
+
+  // Object with type & value (builder form)
+  if (input?.type === "file" && input.value) {
+    return URL.createObjectURL(input.value);
+  }
+  if (input?.type === "url" && input.value) {
+    return input.value;
+  }
+
+  // Object with path property
+  if (input?.path) {
+    if (typeof input.path === "string") return input.path;
+    if (input.path?.type === "file" && input.path.value) {
+      return URL.createObjectURL(input.path.value);
+    }
+    if (input.path?.type === "url" && input.path.value) {
+      return input.path.value;
+    }
+  }
+
+  return null;
+};
 
 export default function LandingTemplate({ form }) {
   if (!form) return null;
 
-  // Helper untuk format harga IDR
   const formatPrice = (price) => {
     if (!price) return "0";
-    const numPrice = typeof price === 'string' ? parseInt(price.replace(/[^\d]/g, '')) : price;
-    return numPrice.toLocaleString('id-ID');
+    const numPrice =
+      typeof price === "string" ? parseInt(price.replace(/[^\d]/g, "")) : price;
+    return (isNaN(numPrice) ? 0 : numPrice).toLocaleString("id-ID");
   };
 
-  // Helper untuk parse video (bisa string atau array)
   const getVideoArray = () => {
     if (!form.video) return [];
     if (Array.isArray(form.video)) return form.video;
-    if (typeof form.video === 'string') {
-      return form.video.split(",").map((v) => v.trim()).filter((v) => v);
+    if (typeof form.video === "string") {
+      return form.video
+        .split(",")
+        .map((v) => v.trim())
+        .filter((v) => v);
     }
     return [];
   };
 
   const videoArray = getVideoArray();
+  const headerSrc = resolveMediaSource(form.header);
 
   return (
     <article className="landing-wrapper" itemScope itemType="https://schema.org/Product">
@@ -42,19 +73,9 @@ export default function LandingTemplate({ form }) {
 
         {/* Header */}
         <div className="header-wrapper">
-          {form.header?.type === "file" && form.header.value ? (
+          {headerSrc ? (
             <img
-              src={URL.createObjectURL(form.header.value)}
-              alt={`${form.nama || "Produk"} - Header Image`}
-              className="preview-header-img"
-              itemProp="image"
-              loading="eager"
-              width="900"
-              height="500"
-            />
-          ) : form.header?.type === "url" && form.header.value ? (
-            <img
-              src={form.header.value}
+              src={headerSrc}
               alt={`${form.nama || "Produk"} - Header Image`}
               className="preview-header-img"
               itemProp="image"
@@ -63,7 +84,11 @@ export default function LandingTemplate({ form }) {
               height="500"
             />
           ) : (
-            <div className="preview-header-img" style={{ background: "#e5e7eb" }} aria-label="Product header placeholder" />
+            <div
+              className="preview-header-img"
+              style={{ background: "#e5e7eb" }}
+              aria-label="Product header placeholder"
+            />
           )}
         </div>
         
@@ -115,20 +140,9 @@ export default function LandingTemplate({ form }) {
             <h2 className="gallery-title">Galeri Produk</h2>
             <div className="images" itemProp="image">
               {form.gambar.map((g, i) => {
-                let imageSrc = null;
-                if (g.path?.type === "file" && g.path.value) {
-                  imageSrc = URL.createObjectURL(g.path.value);
-                } else if (g.path?.type === "url" && g.path.value) {
-                  imageSrc = g.path.value;
-                } else if (typeof g === "string") {
-                  // Backward compatibility: jika g adalah string langsung
-                  imageSrc = g;
-                } else if (g.path && typeof g.path === "string") {
-                  // Backward compatibility: jika path adalah string
-                  imageSrc = g.path;
-                }
-
-                return imageSrc ? (
+                const imageSrc = resolveMediaSource(g) || resolveMediaSource(g?.path);
+                if (!imageSrc) return null;
+                return (
                   <img
                     key={i}
                     src={imageSrc}
@@ -137,7 +151,7 @@ export default function LandingTemplate({ form }) {
                     width="450"
                     height="300"
                   />
-                ) : null;
+                );
               })}
             </div>
           </section>
@@ -169,16 +183,7 @@ export default function LandingTemplate({ form }) {
             <h2>Testimoni Pembeli</h2>
             <div itemScope itemType="https://schema.org/Review">
               {form.testimoni.map((t, i) => {
-                let imageSrc = null;
-                if (t.gambar?.type === "file" && t.gambar.value) {
-                  imageSrc = URL.createObjectURL(t.gambar.value);
-                } else if (t.gambar?.type === "url" && t.gambar.value) {
-                  imageSrc = t.gambar.value;
-                } else if (t.gambar && typeof t.gambar === "string") {
-                  // Backward compatibility: jika gambar adalah string langsung
-                  imageSrc = t.gambar;
-                }
-
+                const imageSrc = resolveMediaSource(t.gambar);
                 return (
                   <article key={i} className="testi-item" itemScope itemType="https://schema.org/Review">
                     {imageSrc ? (
