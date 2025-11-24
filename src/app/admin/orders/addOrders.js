@@ -187,7 +187,12 @@ const handleSubmit = async (e) => {
     >
       <div
         className="modal-card"
-        style={{ width: "min(920px, 95vw)", maxHeight: "90vh", overflow: "hidden" }}
+        style={{
+          width: "min(920px, 95vw)",
+          maxHeight: "90vh",
+          display: "flex",
+          flexDirection: "column",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-header">
@@ -197,7 +202,10 @@ const handleSubmit = async (e) => {
           </button>
         </div>
 
-        <div className="modal-body" style={{ paddingBottom: "1.75rem" }}>
+        <div
+          className="modal-body orders-modal-scroll"
+          style={{ paddingBottom: "1.75rem", overflowY: "auto", flex: 1 }}
+        >
           <form onSubmit={handleSubmit} className="orders-form-grid">
             <div className="orders-columns">
               <section className="orders-section orders-section--customer">
