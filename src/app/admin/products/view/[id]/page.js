@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import { getProductById } from "@/lib/products";
 import FollowupSection from "./FollowupSection";
+import LinkZoomSection from "./LinkZoomSection";
 import "@/styles/product-detail.css";
 
 export default function DetailProdukPage({ params }) {
@@ -83,6 +84,12 @@ export default function DetailProdukPage({ params }) {
             onClick={() => setActiveTab("followup")}
           >
             Followup Text
+          </button>
+          <button
+            className={`tab ${activeTab === "link-zoom" ? "active" : ""}`}
+            onClick={() => setActiveTab("link-zoom")}
+          >
+            Link Zoom
           </button>
         </div>
 
@@ -169,10 +176,12 @@ export default function DetailProdukPage({ params }) {
         )}
 
         {/* === TAB FOLLOWUP TEXT === */}
-        {activeTab === "followup" && (
-  <FollowupSection productId={id} />
-)}
+        {activeTab === "followup" && <FollowupSection productId={id} />}
 
+        {/* === TAB LINK ZOOM === */}
+        {activeTab === "link-zoom" && (
+          <LinkZoomSection productId={id} productName={product.nama} />
+        )}
       </div>
     </Layout>
   );

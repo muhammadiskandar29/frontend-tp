@@ -5,15 +5,6 @@ const BACKEND_URL =
   process.env.BACKEND_URL ||
   "https://onedashboardapi-production.up.railway.app";
 
-function extractValue(source, key) {
-  const regex = new RegExp(
-    `const\\s+${key}\\s*=\\s*["'\`]{1}([^"'\`]+)["'\`]{1}`,
-    "i"
-  );
-  const match = source.match(regex);
-  return match ? match[1] : "";
-}
-
 export async function GET(request, { params }) {
   try {
     const { idOrder } = await params;
@@ -34,39 +25,55 @@ export async function GET(request, { params }) {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    const joinUrl = `${BACKEND_URL}/customer/order/${idOrder}/join?token=${encodeURIComponent(
-      token
-    )}`;
+    const joinUrl = `${BACKEND_URL}/api/webinar/join-order/${idOrder}`;
 
     const response = await fetch(joinUrl, {
       headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        Accept: "text/html",
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
       },
     });
+
+    const payload = await response.json().catch(() => null);
 
     if (!response.ok) {
       return NextResponse.json(
         {
           success: false,
-          message: "Gagal mengambil gateway webinar",
+          message:
+            payload?.message || "Gagal mengambil gateway webinar",
           status: response.status,
         },
         { status: response.status }
       );
     }
 
-    const html = await response.text();
+    if (!payload?.success || !payload?.data) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: payload?.message || "Gateway webinar tidak tersedia",
+        },
+        { status: 400 }
+      );
+    }
 
+    const apiData = payload.data;
     const data = {
-      meetingNumber: extractValue(html, "meetingNumber"),
-      meetingPassword: extractValue(html, "meetingPassword"),
-      userName: extractValue(html, "userName"),
-      userEmail: extractValue(html, "userEmail"),
-      sdkKey: extractValue(html, "sdkKey"),
-      signature: extractValue(html, "signature"),
-      joinLink: joinUrl,
+      meetingNumber: apiData.meetingNumber,
+      meetingPassword: apiData.password || apiData.meetingPassword,
+      userName: apiData.userName,
+      userEmail: apiData.userEmail,
+      sdkKey: apiData.sdkKey,
+      signature: apiData.signature,
+      joinLink:
+        apiData.webinar?.join_url ||
+        apiData.joinUrl ||
+        apiData.joinLink ||
+        "",
+      produkNama: apiData.produkNama,
+      orderId: apiData.orderId,
+      webinar: apiData.webinar,
     };
 
     if (!data.meetingNumber || !data.sdkKey || !data.signature) {

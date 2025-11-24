@@ -120,26 +120,34 @@ export default function WebinarGatewayPage() {
         },
       });
 
+      const payload = await response.json().catch(() => null);
+
       if (!response.ok) {
-        const data = await response.json().catch(() => null);
         const message =
-          data?.message || "Gagal memuat gateway webinar. Silakan coba lagi.";
+          payload?.message || "Gagal memuat gateway webinar. Silakan coba lagi.";
         throw new Error(message);
       }
 
-      const payload = await response.json();
       if (!payload?.success) {
         throw new Error(payload?.message || "Gateway tidak tersedia.");
       }
 
+      const data = payload.data || {};
       return {
-        meetingNumber: payload.data.meetingNumber,
-        password: payload.data.meetingPassword,
-        userName: payload.data.userName,
-        userEmail: payload.data.userEmail,
-        sdkKey: payload.data.sdkKey,
-        signature: payload.data.signature,
-        joinUrl: payload.data.joinLink,
+        meetingNumber: data.meetingNumber,
+        password: data.password || data.meetingPassword,
+        userName: data.userName,
+        userEmail: data.userEmail,
+        sdkKey: data.sdkKey,
+        signature: data.signature,
+        joinUrl:
+          data.joinUrl ||
+          data.joinLink ||
+          data.join_url ||
+          data.webinar?.join_url,
+        produkNama: data.produkNama,
+        orderId: data.orderId,
+        webinar: data.webinar,
       };
     } catch (err) {
       console.error("❌ [WEBINAR] Gateway fetch error:", err);
