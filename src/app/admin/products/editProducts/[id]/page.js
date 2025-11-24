@@ -112,39 +112,43 @@ export default function Page() {
     }
 
     try {
-      const hasFile =
-        (form.header.type === "file" && form.header.value) ||
-        form.gambar.some((g) => g.path?.type === "file" && g.path.value) ||
-        form.testimoni.some((t) => t.gambar?.type === "file" && t.gambar.value);
+      // Selalu gunakan FormData untuk edit (karena backend mengharapkan header selalu ada)
+      const payload = new FormData();
+      const isFormData = true;
 
-      let payload;
-      let isFormData = false;
+      // Header - kirim file jika diubah, atau kirim path string jika tidak diubah
+      if (form.header.type === "file" && form.header.value) {
+        // File baru (diubah)
+        payload.append("header", form.header.value);
+      } else if (form.header.type === "url" && form.header.value) {
+        // Path string yang sudah ada (tidak diubah)
+        payload.append("header", form.header.value);
+      }
 
-      if (hasFile) {
-        payload = new FormData();
-        isFormData = true;
-
-        // Header
-        if (form.header.type === "file" && form.header.value) {
-          payload.append("header", form.header.value);
+      // Gallery - kirim file jika diubah, atau kirim path string jika tidak diubah
+      form.gambar.forEach((g, idx) => {
+        if (g.path?.type === "file" && g.path.value) {
+          // File baru (diubah)
+          payload.append(`gambar[${idx}][path]`, g.path.value);
+        } else if (g.path?.type === "url" && g.path.value) {
+          // Path string yang sudah ada (tidak diubah)
+          payload.append(`gambar[${idx}][path]`, g.path.value);
         }
+        payload.append(`gambar[${idx}][caption]`, g.caption || "");
+      });
 
-        // Gallery
-        form.gambar.forEach((g, idx) => {
-          if (g.path?.type === "file" && g.path.value) {
-            payload.append(`gambar[${idx}][path]`, g.path.value);
-          }
-          payload.append(`gambar[${idx}][caption]`, g.caption || "");
-        });
-
-        // Testimoni
-        form.testimoni.forEach((t, idx) => {
-          if (t.gambar?.type === "file" && t.gambar.value) {
-            payload.append(`testimoni[${idx}][gambar]`, t.gambar.value);
-          }
-          payload.append(`testimoni[${idx}][nama]`, t.nama || "");
-          payload.append(`testimoni[${idx}][deskripsi]`, t.deskripsi || "");
-        });
+      // Testimoni - kirim file jika diubah, atau kirim path string jika tidak diubah
+      form.testimoni.forEach((t, idx) => {
+        if (t.gambar?.type === "file" && t.gambar.value) {
+          // File baru (diubah)
+          payload.append(`testimoni[${idx}][gambar]`, t.gambar.value);
+        } else if (t.gambar?.type === "url" && t.gambar.value) {
+          // Path string yang sudah ada (tidak diubah)
+          payload.append(`testimoni[${idx}][gambar]`, t.gambar.value);
+        }
+        payload.append(`testimoni[${idx}][nama]`, t.nama || "");
+        payload.append(`testimoni[${idx}][deskripsi]`, t.deskripsi || "");
+      });
 
         // Fields
         payload.append("nama", form.nama);
@@ -176,41 +180,10 @@ export default function Page() {
         payload.append("landingpage", form.landingpage);
         payload.append("status", form.status);
         payload.append("user_input", JSON.stringify(form.user_input));
-        // Kirim kategori_id sebagai integer
-        const kategoriId = form.kategori ? Number(form.kategori) : null;
-        if (kategoriId) {
-          payload.append("kategori", kategoriId);
-        }
-      } else {
-        // Kirim kategori_id sebagai integer
-        const kategoriId = form.kategori ? Number(form.kategori) : null;
-        
-        payload = {
-          ...form,
-          kategori: kategoriId,
-          harga_coret: Number(form.harga_coret) || 0,
-          harga_asli: Number(form.harga_asli) || 0,
-          tanggal_event: formatDateForBackend(form.tanggal_event),
-          assign: JSON.stringify(form.assign),
-          gtm: JSON.stringify(form.gtm),
-          fb_pixel: JSON.stringify(form.fb_pixel),
-          event_fb_pixel: JSON.stringify(
-            form.event_fb_pixel.map((ev) => ({ event: ev }))
-          ),
-          gambar: JSON.stringify(
-            form.gambar.map((g) => ({ 
-              path: g.path?.type === "url" ? g.path.value : null, 
-              caption: g.caption || "" 
-            }))
-          ),
-          testimoni: JSON.stringify(
-            form.testimoni.map((t) => ({
-              gambar: t.gambar?.type === "url" ? t.gambar.value : null,
-              nama: t.nama || "",
-              deskripsi: t.deskripsi || "",
-            }))
-          ),
-        };
+      // Kirim kategori_id sebagai integer
+      const kategoriId = form.kategori ? Number(form.kategori) : null;
+      if (kategoriId) {
+        payload.append("kategori", kategoriId);
       }
 
       console.log("FINAL PAYLOAD:", payload);
