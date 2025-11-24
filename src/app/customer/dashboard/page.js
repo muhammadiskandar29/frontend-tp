@@ -74,14 +74,19 @@ export default function DashboardPage() {
     );
   };
 
-  const adaptOrders = (orders = [], { status } = {}) =>
+  const adaptOrders = (orders = [], produkMap = {}, { status } = {}) =>
     orders.map((order) => {
-      const typeLabel =
-        order.tipe_produk === "ebook"
-          ? "E-Book"
-          : order.tipe_produk === "seminar"
-          ? "Seminar"
-          : (order.kategori_nama || "Produk");
+      // Ambil kategori dari produk yang di-fetch (lebih akurat)
+      const produkData = produkMap[order.produk];
+      const kategoriNama = produkData?.kategori_rel?.nama || order.kategori_nama || "Produk";
+      
+      // Format kategori nama (capitalize first letter)
+      const formatKategori = (nama) => {
+        if (!nama) return "Produk";
+        return nama.charAt(0).toUpperCase() + nama.slice(1);
+      };
+      
+      const typeLabel = formatKategori(kategoriNama);
 
       const schedule =
         order.webinar?.start_time_formatted ||
@@ -131,7 +136,32 @@ export default function DashboardPage() {
     setDashboardError("");
 
     try {
+      // Fetch dashboard data
       const data = await fetchCustomerDashboard(session.token);
+      
+      // Fetch semua produk untuk mendapatkan kategori yang benar
+      const token = session.token;
+      const produkRes = await fetch("/api/admin/produk", {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      let produkMap = {};
+      if (produkRes.ok) {
+        const produkData = await produkRes.json();
+        const produkList = Array.isArray(produkData.data) ? produkData.data : [];
+        
+        // Buat map produkId -> produkData (dengan kategori_rel)
+        produkList.forEach((p) => {
+          produkMap[p.id] = p;
+        });
+        
+        console.log("📦 [DASHBOARD] Produk map:", produkMap);
+      }
+      
       setCustomerInfo(data.customer || null);
       setStats((prev) =>
         prev.map((item) => {
@@ -144,8 +174,8 @@ export default function DashboardPage() {
           return item;
         })
       );
-      setActiveOrders(adaptOrders(data?.orders_aktif || []));
-      setPendingOrders(adaptOrders(data?.orders_pending || [], { status: "pending" }));
+      setActiveOrders(adaptOrders(data?.orders_aktif || [], produkMap));
+      setPendingOrders(adaptOrders(data?.orders_pending || [], produkMap, { status: "pending" }));
     } catch (error) {
       console.error("❌ [DASHBOARD] Failed to load data:", error);
       setDashboardError(error.message || "Gagal memuat data dashboard.");
