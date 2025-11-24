@@ -216,7 +216,16 @@ export default function Page() {
 
       alert("Produk berhasil diupdate!");
       console.log("SUCCESS:", data);
-      router.push("/admin/products");
+      
+      // Refresh data produk untuk menampilkan data terbaru
+      try {
+        await fetchProductData(false); // false = tidak set loading state
+      } catch (err) {
+        console.error("Error refreshing data:", err);
+      }
+      
+      // Opsi: redirect ke list produk (uncomment jika ingin redirect)
+      // router.push("/admin/products");
     } catch (err) {
       console.error("❌ Submit error:", err);
       alert("Terjadi kesalahan saat submit.");
@@ -225,6 +234,147 @@ export default function Page() {
 
   const [kategoriOptions, setKategoriOptions] = useState([]);
   const [userOptions, setUserOptions] = useState([]);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Function untuk fetch data produk
+  const fetchProductData = async (setLoadingState = false) => {
+    if (!productId) {
+      if (setLoadingState) setLoading(false);
+      return;
+    }
+
+    try {
+      if (setLoadingState) setLoading(true);
+      const token = localStorage.getItem("token");
+      const headers = { Authorization: `Bearer ${token}` };
+
+      // Fetch produk berdasarkan ID
+      const produkRes = await fetch(
+        `/api/admin/produk/${productId}`,
+        { headers }
+      );
+      const produkResponse = await produkRes.json();
+      
+      if (!produkRes.ok || !produkResponse.success) {
+        throw new Error(produkResponse.message || "Gagal memuat data produk");
+      }
+
+      const produkData = produkResponse.data || produkResponse;
+
+      // Helper function untuk parse JSON fields
+      const safeParseJSON = (value, fallback = []) => {
+        if (!value) return fallback;
+        if (Array.isArray(value)) return value;
+        try {
+          return JSON.parse(value);
+        } catch {
+          return fallback;
+        }
+      };
+
+      // Fetch kategori untuk mendapatkan kategori_id
+      const kategoriRes = await fetch(
+        "/api/admin/kategori-produk",
+        { headers }
+      );
+      const kategoriData = await kategoriRes.json();
+      const activeCategories = Array.isArray(kategoriData.data)
+        ? kategoriData.data.filter((k) => k.status === "1")
+        : [];
+
+      // Handle kategori_id
+      let kategoriId = null;
+      if (produkData.kategori_rel) {
+        kategoriId = produkData.kategori_rel.id ? Number(produkData.kategori_rel.id) : null;
+      } else if (produkData.kategori_id) {
+        kategoriId = Number(produkData.kategori_id);
+      } else if (produkData.kategori) {
+        kategoriId = Number(produkData.kategori);
+      }
+
+      // Parse existing data
+      const kodeGenerated = produkData.kode || generateKode(produkData.nama || "produk-baru");
+      
+      // Parse gambar - handle existing images (type: "url")
+      const parsedGambar = safeParseJSON(produkData.gambar, []).map(g => {
+        const imagePath = typeof g === "string" ? g : (g.path || g);
+        return {
+          path: imagePath 
+            ? { type: "url", value: imagePath }
+            : { type: "file", value: null },
+          caption: g.caption || ""
+        };
+      });
+
+      // Parse testimoni - handle existing images (type: "url")
+      const parsedTestimoni = safeParseJSON(produkData.testimoni, []).map(t => {
+        const imagePath = t.gambar ? (typeof t.gambar === "string" ? t.gambar : (t.gambar.path || t.gambar)) : null;
+        return {
+          gambar: imagePath
+            ? { type: "url", value: imagePath }
+            : { type: "file", value: null },
+          nama: t.nama || "",
+          deskripsi: t.deskripsi || ""
+        };
+      });
+
+      // Parse custom_field
+      const parsedCustomField = safeParseJSON(produkData.custom_field, []).map(f => ({
+        label: f.nama_field || f.label || "",
+        value: f.value || "",
+        required: f.required || false
+      }));
+
+      // Parse list_point
+      const parsedListPoint = safeParseJSON(produkData.list_point, []).map(p => ({
+        nama: p.nama || p
+      }));
+
+      // Parse video
+      const parsedVideo = produkData.video
+        ? (Array.isArray(produkData.video) 
+            ? produkData.video.join(", ")
+            : safeParseJSON(produkData.video, []).join(", "))
+        : "";
+
+      // Handle header image - existing image (type: "url")
+      const headerImage = produkData.header
+        ? (typeof produkData.header === "string"
+            ? { type: "url", value: produkData.header }
+            : (produkData.header.path
+                ? { type: "url", value: produkData.header.path }
+                : { type: "file", value: null }))
+        : { type: "file", value: null };
+
+      setForm((f) => ({
+        ...f,
+        ...produkData,
+        id: produkData.id || productId,
+        kategori: kategoriId,
+        assign: produkData.assign_rel ? produkData.assign_rel.map((u) => u.id) : safeParseJSON(produkData.assign, []),
+        user_input: produkData.user_input_rel ? [produkData.user_input_rel.id] : (produkData.user_input ? [produkData.user_input] : []),
+        custom_field: parsedCustomField,
+        list_point: parsedListPoint,
+        testimoni: parsedTestimoni,
+        fb_pixel: safeParseJSON(produkData.fb_pixel, []),
+        event_fb_pixel: safeParseJSON(produkData.event_fb_pixel, []),
+        gtm: safeParseJSON(produkData.gtm, []),
+        gambar: parsedGambar,
+        header: headerImage,
+        kode: kodeGenerated,
+        url: produkData.url || "/" + kodeGenerated,
+        video: parsedVideo,
+        landingpage: produkData.landingpage || "1",
+      }));
+    } catch (err) {
+      console.error("Fetch product data error:", err);
+      if (setLoadingState) {
+        alert("Gagal memuat data produk!");
+      }
+    } finally {
+      if (setLoadingState) setLoading(false);
+    }
+  };
 
   useEffect(() => {
     async function fetchInitialData() {
@@ -261,23 +411,8 @@ export default function Page() {
         }));
         setKategoriOptions(kategoriOpts);
 
-        // 2️⃣ Fetch produk berdasarkan ID
-        const produkRes = await fetch(
-          `/api/admin/produk/${productId}`,
-          { headers }
-        );
-        const produkResponse = await produkRes.json();
-        
-        // Logging struktur JSON lengkap
-        console.log("Success:", produkResponse.success);
-        console.log("Data:", produkResponse.data);
-        console.table(produkResponse.data);
-        
-        if (!produkRes.ok || !produkResponse.success) {
-          throw new Error(produkResponse.message || "Gagal memuat data produk");
-        }
-
-        const produkData = produkResponse.data || produkResponse;
+        // 2️⃣ Fetch produk berdasarkan ID - menggunakan fetchProductData
+        await fetchProductData(true);
 
         // 3️⃣ Fetch users - filter hanya status 1
         const usersRes = await fetch(
@@ -297,104 +432,6 @@ export default function Page() {
               .map((u) => ({ label: u.nama || u.name, value: u.id }))
           : [];
         setUserOptions(userOpts);
-
-        // Helper function untuk parse JSON fields
-        const safeParseJSON = (value, fallback = []) => {
-          if (!value) return fallback;
-          if (Array.isArray(value)) return value;
-          try {
-            return JSON.parse(value);
-          } catch {
-            return fallback;
-          }
-        };
-
-        // Handle kategori_id
-        let kategoriId = null;
-        if (produkData.kategori_rel) {
-          kategoriId = produkData.kategori_rel.id ? Number(produkData.kategori_rel.id) : null;
-        } else if (produkData.kategori_id) {
-          kategoriId = Number(produkData.kategori_id);
-        } else if (produkData.kategori) {
-          // Backward compatibility: if kategori is string (name), try to find ID
-          const found = activeCategories.find(k => k.nama === produkData.kategori);
-          kategoriId = found ? Number(found.id) : null;
-        }
-
-        // Parse existing data
-        const kodeGenerated = produkData.kode || generateKode(produkData.nama || "produk-baru");
-        
-        // Parse gambar - handle existing images (type: "url")
-        const parsedGambar = safeParseJSON(produkData.gambar, []).map(g => {
-          const imagePath = typeof g === "string" ? g : (g.path || g);
-          return {
-            path: imagePath 
-              ? { type: "url", value: imagePath }
-              : { type: "file", value: null },
-            caption: g.caption || ""
-          };
-        });
-
-        // Parse testimoni - handle existing images (type: "url")
-        const parsedTestimoni = safeParseJSON(produkData.testimoni, []).map(t => {
-          const imagePath = t.gambar ? (typeof t.gambar === "string" ? t.gambar : (t.gambar.path || t.gambar)) : null;
-          return {
-            gambar: imagePath
-              ? { type: "url", value: imagePath }
-              : { type: "file", value: null },
-            nama: t.nama || "",
-            deskripsi: t.deskripsi || ""
-          };
-        });
-
-        // Parse custom_field
-        const parsedCustomField = safeParseJSON(produkData.custom_field, []).map(f => ({
-          label: f.nama_field || f.label || "",
-          value: f.value || "",
-          required: f.required || false
-        }));
-
-        // Parse list_point
-        const parsedListPoint = safeParseJSON(produkData.list_point, []).map(p => ({
-          nama: p.nama || p
-        }));
-
-        // Parse video
-        const parsedVideo = produkData.video
-          ? (Array.isArray(produkData.video) 
-              ? produkData.video.join(", ")
-              : safeParseJSON(produkData.video, []).join(", "))
-          : "";
-
-        // Handle header image - existing image (type: "url")
-        const headerImage = produkData.header
-          ? (typeof produkData.header === "string"
-              ? { type: "url", value: produkData.header }
-              : (produkData.header.path
-                  ? { type: "url", value: produkData.header.path }
-                  : { type: "file", value: null }))
-          : { type: "file", value: null };
-
-        setForm((f) => ({
-          ...f,
-          ...produkData,
-          id: produkData.id || productId,
-          kategori: kategoriId,
-          assign: produkData.assign_rel ? produkData.assign_rel.map((u) => u.id) : [],
-          user_input: produkData.user_input_rel ? [produkData.user_input_rel.id] : [],
-          custom_field: parsedCustomField,
-          list_point: parsedListPoint,
-          testimoni: parsedTestimoni,
-          fb_pixel: safeParseJSON(produkData.fb_pixel, []),
-          event_fb_pixel: safeParseJSON(produkData.event_fb_pixel, []),
-          gtm: safeParseJSON(produkData.gtm, []),
-          gambar: parsedGambar,
-          header: headerImage,
-          kode: kodeGenerated,
-          url: produkData.url || "/" + kodeGenerated,
-          video: parsedVideo,
-          landingpage: produkData.landingpage || "1",
-        }));
       } catch (err) {
         console.error("Fetch initial data error:", err);
         alert("Gagal memuat data produk!");
@@ -404,7 +441,7 @@ export default function Page() {
     }
 
     fetchInitialData();
-  }, [productId]);
+  }, [productId, refreshKey]);
 
   // ============================
   // UI

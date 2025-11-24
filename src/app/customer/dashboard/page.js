@@ -94,12 +94,22 @@ export default function DashboardPage() {
         order.tanggal_order ||
         "-";
 
-      const actionLabel =
-        order.tipe_produk === "ebook"
-          ? "Lihat Materi"
-          : order.tipe_produk === "seminar"
-          ? "Join Seminar"
-          : "Lihat Detail";
+      // Tentukan action label berdasarkan kategori
+      const getActionLabel = (kategoriNama) => {
+        const kategoriLower = kategoriNama?.toLowerCase() || "";
+        if (kategoriLower === "seminar") {
+          return "Join Seminar";
+        } else if (kategoriLower === "e-book" || kategoriLower === "ebook") {
+          return "Buka Ebook";
+        } else if (kategoriLower === "webinar") {
+          return "Join Webinar";
+        } else if (kategoriLower === "workshop") {
+          return "Join Workshop";
+        }
+        return "Lihat Detail";
+      };
+
+      const actionLabel = getActionLabel(kategoriNama);
 
       const startDate = getOrderStartDate(order);
       const requiresPayment =
@@ -114,6 +124,7 @@ export default function DashboardPage() {
         title: order.produk_nama || "Produk Tanpa Nama",
         slug: order.ebook_url || order.produk_kode || order.kategori_nama || "-",
         total: order.total_harga_formatted || formatCurrency(order.total_harga),
+        kategoriNama: kategoriNama,
         orderDate: order.tanggal_order || "-",
         schedule,
         actionLabel,
@@ -477,7 +488,28 @@ export default function DashboardPage() {
                       <span>Jadwal Seminar</span>
                       <strong>{order.schedule}</strong>
                     </div>
-                    <button className="order-action">{order.actionLabel}</button>
+                    <button 
+                      className="order-action"
+                      onClick={() => {
+                        const kategoriLower = order.kategoriNama?.toLowerCase() || "";
+                        if (kategoriLower === "webinar") {
+                          // Webinar: redirect ke page gerbang zoom
+                          router.push(`/customer/webinar/${order.id}`);
+                        } else if (kategoriLower === "seminar") {
+                          // Seminar: sementara juga pakai link zoom (sama seperti webinar)
+                          router.push(`/customer/webinar/${order.id}`);
+                        } else if (kategoriLower === "e-book" || kategoriLower === "ebook") {
+                          // Ebook: nanti akan ada halaman khusus untuk buka ebook
+                          // TODO: Implement halaman ebook dengan materi yang diupload
+                          alert("Fitur Buka Ebook akan segera tersedia");
+                        } else {
+                          // Kategori lainnya: tampilkan detail order
+                          router.push(`/customer/orders/${order.id}`);
+                        }
+                      }}
+                    >
+                      {order.actionLabel}
+                    </button>
                   </div>
                 </div>
               ))}
