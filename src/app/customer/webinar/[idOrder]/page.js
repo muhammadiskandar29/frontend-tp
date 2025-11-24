@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getCustomerSession } from "@/lib/customerAuth";
 import { fetchCustomerDashboard } from "@/lib/customerDashboard";
-import config from "@/config/env";
 import "@/styles/webinar-gateway.css";
 
 export default function WebinarGatewayPage() {
@@ -46,7 +45,6 @@ export default function WebinarGatewayPage() {
       setLoading(true);
       setError("");
       const session = getCustomerSession();
-      const backendUrl = config.backendUrl || "";
 
       // Fetch customer dashboard untuk mendapatkan list orders
       const dashboardData = await fetchCustomerDashboard(session.token);
@@ -79,14 +77,10 @@ export default function WebinarGatewayPage() {
         return;
       }
 
-      // Susun data webinar dari order + info customer
-      const joinLink = `${backendUrl}/customer/order/${orderIdNumber}/join?token=${session.token}`;
-
-      setWebinarData({
+      const baseData = {
         meetingNumber: foundOrder.webinar.meeting_id,
         password: foundOrder.webinar.password,
         join_url: foundOrder.webinar.join_url,
-        joinUrl: joinLink,
         start_time: foundOrder.webinar.start_time,
         start_time_formatted: foundOrder.webinar.start_time_formatted,
         duration: foundOrder.webinar.duration,
@@ -96,8 +90,13 @@ export default function WebinarGatewayPage() {
         orderId: Number(idOrder),
         kategoriNama: foundOrder.kategori_nama || "Webinar",
         webinar: foundOrder.webinar,
-        signature: null,
-        sdkKey: null
+      };
+
+      const gatewayData = await fetchGatewayData(orderIdNumber, session.token);
+
+      setWebinarData({
+        ...baseData,
+        ...gatewayData,
       });
 
       setLoading(false);
@@ -111,16 +110,132 @@ export default function WebinarGatewayPage() {
     }
   };
 
-  // Tidak lagi mem-fetch data webinar dari backend lain karena data sudah tersedia di order dashboard
+  const fetchGatewayData = async (orderId, token) => {
+    try {
+      const response = await fetch(`/api/webinar/gateway/${orderId}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-  const handleJoinMeeting = () => {
-    if (!webinarData) return;
-    const embedUrl = webinarData.joinUrl || webinarData.join_url;
-    if (!embedUrl) {
-      alert("Link webinar tidak tersedia. Silakan hubungi support.");
-      return;
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        const message =
+          data?.message || "Gagal memuat gateway webinar. Silakan coba lagi.";
+        throw new Error(message);
+      }
+
+      const payload = await response.json();
+      if (!payload?.success) {
+        throw new Error(payload?.message || "Gateway tidak tersedia.");
+      }
+
+      return {
+        meetingNumber: payload.data.meetingNumber,
+        password: payload.data.meetingPassword,
+        userName: payload.data.userName,
+        userEmail: payload.data.userEmail,
+        sdkKey: payload.data.sdkKey,
+        signature: payload.data.signature,
+        joinUrl: payload.data.joinLink,
+      };
+    } catch (err) {
+      console.error("❌ [WEBINAR] Gateway fetch error:", err);
+      throw err;
     }
-    setShowZoom(true);
+  };
+
+  const handleJoinMeeting = async () => {
+    if (!webinarData) return;
+
+    try {
+      await loadZoomSDK();
+      const { ZoomMtg } = window;
+
+      if (!ZoomMtg) {
+        throw new Error("Zoom SDK tidak tersedia");
+      }
+
+      ZoomMtg.setZoomJSLib("https://source.zoom.us/2.18.0/lib", "/av");
+      ZoomMtg.preLoadWasm();
+      ZoomMtg.prepareWebSDK();
+      ZoomMtg.i18n.load("en-US");
+      ZoomMtg.i18n.reload("en-US");
+
+      ZoomMtg.init({
+        leaveUrl: window.location.href,
+        patchJsMedia: true,
+        success: () => {
+          ZoomMtg.join({
+            sdkKey: webinarData.sdkKey,
+            signature: webinarData.signature,
+            meetingNumber: webinarData.meetingNumber,
+            passWord: webinarData.password,
+            userName: webinarData.userName,
+            userEmail: webinarData.userEmail,
+            tk: "",
+            zak: "",
+            success: () => {
+              setShowZoom(true);
+            },
+            error: (error) => {
+              console.error("❌ Zoom join error:", error);
+              alert(
+                error?.reason ||
+                  "Gagal bergabung ke meeting. Silakan coba lagi atau hubungi support."
+              );
+            },
+          });
+        },
+        error: (error) => {
+          console.error("❌ Zoom init error:", error);
+          alert("Gagal memuat Zoom SDK. Silakan coba lagi.");
+        },
+      });
+    } catch (err) {
+      console.error("❌ [WEBINAR] Join error:", err);
+      alert(err.message || "Gagal memulai webinar.");
+    }
+  };
+
+  const loadZoomSDK = () => {
+    return new Promise((resolve, reject) => {
+      if (window.ZoomMtg) {
+        resolve();
+        return;
+      }
+
+      const scripts = [
+        "https://source.zoom.us/2.18.0/lib/vendor/react.min.js",
+        "https://source.zoom.us/2.18.0/lib/vendor/react-dom.min.js",
+        "https://source.zoom.us/2.18.0/lib/vendor/redux.min.js",
+        "https://source.zoom.us/2.18.0/lib/vendor/redux-thunk.min.js",
+        "https://source.zoom.us/2.18.0/lib/vendor/lodash.min.js",
+        "https://source.zoom.us/zoom-meeting-2.18.0.min.js",
+      ];
+
+      let loaded = 0;
+      const loadScript = (index) => {
+        if (index >= scripts.length) {
+          resolve();
+          return;
+        }
+
+        const script = document.createElement("script");
+        script.src = scripts[index];
+        script.onload = () => {
+          loaded++;
+          loadScript(index + 1);
+        };
+        script.onerror = () =>
+          reject(new Error(`Gagal memuat resource Zoom: ${scripts[index]}`));
+        document.body.appendChild(script);
+      };
+
+      loadScript(0);
+    });
   };
 
   if (loading || validating) {
@@ -227,12 +342,8 @@ export default function WebinarGatewayPage() {
       <div className="webinar-gateway-container">
         {showZoom && webinarData ? (
           <div className="webinar-embed-wrapper">
-            <iframe
-              src={webinarData.joinUrl || webinarData.join_url}
-              title="Zoom Meeting"
-              allow="camera; microphone; fullscreen; display-capture"
-              allowFullScreen
-            ></iframe>
+            <div id="zmmtg-root" />
+            <div id="aria-notify-area"></div>
           </div>
         ) : (
           <div className="webinar-gateway">
@@ -269,8 +380,9 @@ export default function WebinarGatewayPage() {
                   <span>Link Akses Webinar</span>
                   <button
                     onClick={() => {
-                      if (navigator.clipboard) {
-                        navigator.clipboard.writeText(webinarData.joinUrl || webinarData.join_url || "");
+                      const link = webinarData.joinUrl || webinarData.join_url;
+                      if (navigator.clipboard && link) {
+                        navigator.clipboard.writeText(link);
                       }
                     }}
                   >
