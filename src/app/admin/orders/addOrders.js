@@ -20,7 +20,7 @@ export default function AddOrders({ onClose, onAdd, setToast }) {
     notif: true,
   });
 
-  const [showCustomerForm, setShowCustomerForm] = useState(false);
+  const [showCustomerForm, setShowCustomerForm] = useState(true);
   const [customerSearch, setCustomerSearch] = useState("");
   const [productSearch, setProductSearch] = useState("");
   const [customerResults, setCustomerResults] = useState([]);
@@ -83,6 +83,20 @@ export default function AddOrders({ onClose, onAdd, setToast }) {
     setCustomerSearch(`${cust.nama} | ${cust.wa}`);
     setCustomerResults([]);
     setShowCustomerForm(false);
+  };
+
+  const resetCustomerSelection = () => {
+    setFormData((prev) => ({
+      ...prev,
+      customer: "",
+      nama: "",
+      wa: "",
+      email: "",
+      alamat: "",
+    }));
+    setCustomerSearch("");
+    setCustomerResults([]);
+    setShowCustomerForm(true);
   };
 
   // === 📦 Pilih Produk ===
@@ -158,6 +172,12 @@ const handleSubmit = async (e) => {
   setLoading(false);
 };
 
+  const customerId = formData.customer;
+  const hasSelectedCustomer = Boolean(customerId);
+  const isSearchActive = customerSearch.trim().length >= 2;
+  const noCustomerFound = isSearchActive && customerResults.length === 0;
+  const displayCustomerForm = showCustomerForm || !hasSelectedCustomer || noCustomerFound;
+
   return (
     <div
       className="modal-overlay"
@@ -179,175 +199,227 @@ const handleSubmit = async (e) => {
 
         <div className="modal-body" style={{ paddingBottom: "1.75rem" }}>
           <form onSubmit={handleSubmit} className="orders-form-grid">
-            <div className="orders-section">
-              <h4>Informasi Customer</h4>
-
-              <label className="orders-field">
-                Cari Customer (Nama / WA)
-                <input
-                  type="text"
-                  value={customerSearch}
-                  onChange={(e) => {
-                    setCustomerSearch(e.target.value);
-                    setShowCustomerForm(false);
-                  }}
-                  placeholder="Ketik minimal 2 huruf..."
-                />
-              </label>
-
-              {customerResults.length > 0 && (
-                <div className="orders-suggestion">
-                  {customerResults.map((c) => (
+            <div className="orders-columns">
+              <section className="orders-section orders-section--customer">
+                <div className="orders-panel-header">
+                  <div>
+                    <h4>Data Customer</h4>
+                    <p>Temukan customer atau tambah data baru.</p>
+                  </div>
+                  {hasSelectedCustomer && (
                     <button
-                      key={c.id}
                       type="button"
-                      className="orders-suggestion-item"
-                      onClick={() => handleSelectCustomer(c)}
+                      className="orders-link-btn"
+                      onClick={resetCustomerSelection}
                     >
-                      <strong>{c.nama}</strong>
-                      <span>{c.wa}</span>
+                      Ganti Customer
                     </button>
-                  ))}
+                  )}
                 </div>
-              )}
 
-              <label className="orders-field">
-                Nama
-                <input
-                  type="text"
-                  name="nama"
-                  value={formData.nama}
-                  onChange={handleChange}
-                  placeholder="Nama customer"
-                />
-              </label>
-
-              <div className="orders-dual-grid">
                 <label className="orders-field">
-                  WA (gunakan 62)
-                  <input type="text" name="wa" value={formData.wa} onChange={handleChange} />
+                  Cari Customer (Nama / WA)
+                  <input
+                    type="text"
+                    value={customerSearch}
+                    onChange={(e) => {
+                      setCustomerSearch(e.target.value);
+                      setShowCustomerForm(false);
+                    }}
+                    placeholder="Ketik minimal 2 huruf..."
+                  />
                 </label>
+
+                {customerResults.length > 0 && (
+                  <div className="orders-suggestion">
+                    {customerResults.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        className="orders-suggestion-item"
+                        onClick={() => handleSelectCustomer(c)}
+                      >
+                        <strong>{c.nama}</strong>
+                        <span>{c.wa}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {noCustomerFound && (
+                  <div className="orders-empty-state">
+                    Customer tidak ditemukan. Isi formulir di bawah untuk menambah data baru.
+                  </div>
+                )}
+
+                {hasSelectedCustomer && (
+                  <div className="customer-selected-card">
+                    <div>
+                      <span>Customer Terpilih</span>
+                      <strong>{formData.nama || "-"}</strong>
+                    </div>
+                    <ul>
+                      <li>WA: {formData.wa || "-"}</li>
+                      <li>Email: {formData.email || "-"}</li>
+                      <li>Alamat: {formData.alamat || "-"}</li>
+                    </ul>
+                    <button
+                      type="button"
+                      className="orders-link-btn"
+                      onClick={() => setShowCustomerForm(true)}
+                    >
+                      Ubah Data Customer
+                    </button>
+                  </div>
+                )}
+
+                {displayCustomerForm && (
+                  <div className="customer-form-card">
+                    <label className="orders-field">
+                      Nama
+                      <input
+                        type="text"
+                        name="nama"
+                        value={formData.nama}
+                        onChange={handleChange}
+                        placeholder="Nama customer"
+                      />
+                    </label>
+
+                    <div className="orders-dual-grid">
+                      <label className="orders-field">
+                        WA (gunakan 62)
+                        <input type="text" name="wa" value={formData.wa} onChange={handleChange} />
+                      </label>
+                      <label className="orders-field">
+                        Email
+                        <input
+                          type="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleChange}
+                        />
+                      </label>
+                    </div>
+
+                    <label className="orders-field">
+                      Alamat
+                      <textarea
+                        name="alamat"
+                        rows={2}
+                        value={formData.alamat}
+                        onChange={handleChange}
+                        placeholder="Alamat lengkap customer"
+                      />
+                    </label>
+
+                    {!hasSelectedCustomer && (
+                      <p className="customer-hint">
+                        Simpan order akan otomatis menambahkan customer baru.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </section>
+
+              <section className="orders-section orders-section--order">
+                <div className="orders-panel-header">
+                  <div>
+                    <h4>Detail Order</h4>
+                    <p>Pilih produk dan lengkapi informasi order.</p>
+                  </div>
+                </div>
+
                 <label className="orders-field">
-                  Email
-                  <input type="email" name="email" value={formData.email} onChange={handleChange} />
+                  Cari Produk
+                  <input
+                    type="text"
+                    value={productSearch}
+                    onChange={(e) => setProductSearch(e.target.value)}
+                    placeholder="Ketik minimal 2 huruf..."
+                  />
                 </label>
-              </div>
 
-              <label className="orders-field">
-                Alamat
-                <textarea
-                  name="alamat"
-                  rows={2}
-                  value={formData.alamat}
-                  onChange={handleChange}
-                  placeholder="Alamat lengkap customer"
-                />
-              </label>
+                {productResults.length > 0 && (
+                  <div className="orders-suggestion">
+                    {productResults.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        className="orders-suggestion-item"
+                        onClick={() => handleSelectProduct(p)}
+                      >
+                        <strong>{p.nama}</strong>
+                        <span>Rp {Number(p.harga).toLocaleString("id-ID")}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
 
-              {!customerResults.length && !formData.nama && (
+                <label className="orders-field">
+                  Produk (ID)
+                  <input
+                    type="text"
+                    name="produk"
+                    value={formData.produk}
+                    onChange={handleChange}
+                    placeholder="ID produk"
+                    readOnly
+                  />
+                </label>
+
+                <div className="orders-dual-grid">
+                  <label className="orders-field">
+                    Harga Produk
+                    <input
+                      type="number"
+                      name="harga"
+                      value={formData.harga ?? ""}
+                      onChange={handleChange}
+                      min={0}
+                      required
+                    />
+                  </label>
+                  <label className="orders-field">
+                    Ongkir
+                    <input
+                      type="number"
+                      name="ongkir"
+                      value={formData.ongkir ?? ""}
+                      onChange={handleChange}
+                      min={0}
+                    />
+                  </label>
+                </div>
+
+                <label className="orders-field">
+                  Total Harga
+                  <input type="number" name="total_harga" value={formData.total_harga ?? ""} readOnly />
+                </label>
+
+                <label className="orders-field">
+                  Sumber Order
+                  <select name="sumber" value={formData.sumber} onChange={handleChange}>
+                    <option value="">Pilih sumber</option>
+                    <option value="website">Website</option>
+                    <option value="instagram">Instagram</option>
+                    <option value="tiktok">TikTok</option>
+                    <option value="whatsapp">WhatsApp</option>
+                    <option value="sales">Sales</option>
+                    <option value="event">Event</option>
+                  </select>
+                </label>
+
                 <label className="orders-checkbox">
                   <input
                     type="checkbox"
-                    checked={showCustomerForm}
-                    onChange={() => setShowCustomerForm((prev) => !prev)}
-                  />
-                  Input customer tanpa data otomatis (manual)
-                </label>
-              )}
-            </div>
-
-            <div className="orders-section">
-              <h4>Detail Order</h4>
-
-              <label className="orders-field">
-                Cari Produk
-                <input
-                  type="text"
-                  value={productSearch}
-                  onChange={(e) => setProductSearch(e.target.value)}
-                  placeholder="Ketik minimal 2 huruf..."
-                />
-              </label>
-
-              {productResults.length > 0 && (
-                <div className="orders-suggestion">
-                  {productResults.map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      className="orders-suggestion-item"
-                      onClick={() => handleSelectProduct(p)}
-                    >
-                      <strong>{p.nama}</strong>
-                      <span>Rp {Number(p.harga).toLocaleString("id-ID")}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              <label className="orders-field">
-                Produk (ID)
-                <input
-                  type="text"
-                  name="produk"
-                  value={formData.produk}
-                  onChange={handleChange}
-                  placeholder="ID produk"
-                  readOnly
-                />
-              </label>
-
-              <div className="orders-dual-grid">
-                <label className="orders-field">
-                  Harga Produk
-                  <input
-                    type="number"
-                    name="harga"
-                    value={formData.harga ?? ""}
+                    name="notif"
+                    checked={formData.notif}
                     onChange={handleChange}
-                    min={0}
-                    required
                   />
+                  Kirim notifikasi WhatsApp ke customer
                 </label>
-                <label className="orders-field">
-                  Ongkir
-                  <input
-                    type="number"
-                    name="ongkir"
-                    value={formData.ongkir ?? ""}
-                    onChange={handleChange}
-                    min={0}
-                  />
-                </label>
-              </div>
-
-              <label className="orders-field">
-                Total Harga
-                <input type="number" name="total_harga" value={formData.total_harga ?? ""} readOnly />
-              </label>
-
-              <label className="orders-field">
-                Sumber Order
-                <select name="sumber" value={formData.sumber} onChange={handleChange}>
-                  <option value="">Pilih sumber</option>
-                  <option value="website">Website</option>
-                  <option value="instagram">Instagram</option>
-                  <option value="tiktok">TikTok</option>
-                  <option value="whatsapp">WhatsApp</option>
-                  <option value="sales">Sales</option>
-                  <option value="event">Event</option>
-                </select>
-              </label>
-
-              <label className="orders-checkbox">
-                <input
-                  type="checkbox"
-                  name="notif"
-                  checked={formData.notif}
-                  onChange={handleChange}
-                />
-                Kirim notifikasi WhatsApp ke customer
-              </label>
+              </section>
             </div>
 
             {message && <p className="orders-error">{message}</p>}
@@ -363,6 +435,97 @@ const handleSubmit = async (e) => {
           </form>
         </div>
       </div>
+      <style jsx>{`
+        .orders-columns {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+          gap: 20px;
+        }
+        .orders-section--customer,
+        .orders-section--order {
+          border: 1px solid #eef2ff;
+          border-radius: 16px;
+          padding: 20px;
+          background: #fff;
+        }
+        .orders-panel-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 12px;
+          margin-bottom: 16px;
+        }
+        .orders-panel-header h4 {
+          margin: 0;
+        }
+        .orders-panel-header p {
+          margin: 4px 0 0;
+          color: #6b7280;
+          font-size: 13px;
+        }
+        .orders-link-btn {
+          border: none;
+          background: transparent;
+          color: #2563eb;
+          font-weight: 600;
+          cursor: pointer;
+        }
+        .orders-empty-state {
+          background: #fef3c7;
+          border: 1px solid #fde68a;
+          color: #92400e;
+          border-radius: 10px;
+          padding: 10px 12px;
+          font-size: 13px;
+          margin-bottom: 12px;
+        }
+        .customer-form-card {
+          margin-top: 12px;
+          padding: 16px;
+          border-radius: 12px;
+          border: 1px solid #e5e7eb;
+          background: #f9fafb;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .customer-selected-card {
+          margin: 16px 0;
+          padding: 16px;
+          border-radius: 12px;
+          background: #eef2ff;
+          border: 1px solid #c7d2fe;
+        }
+        .customer-selected-card span {
+          font-size: 13px;
+          color: #6366f1;
+        }
+        .customer-selected-card strong {
+          display: block;
+          font-size: 18px;
+          margin-top: 4px;
+        }
+        .customer-selected-card ul {
+          margin: 12px 0;
+          padding-left: 18px;
+          color: #374151;
+          font-size: 14px;
+        }
+        .customer-selected-card ul li {
+          margin-bottom: 4px;
+        }
+        .customer-hint {
+          margin: 0;
+          font-size: 13px;
+          color: #6b7280;
+        }
+        @media (max-width: 640px) {
+          .orders-section--customer,
+          .orders-section--order {
+            padding: 16px;
+          }
+        }
+      `}</style>
     </div>
   );
 }
