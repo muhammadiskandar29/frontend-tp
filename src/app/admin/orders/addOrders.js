@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import useOrders from "@/hooks/useOrders";
 import { api } from "@/lib/api"; // ✅ supaya handleSearchCustomer & handleSearchProduct ikut pakai api()
 
@@ -157,10 +158,10 @@ const handleSubmit = async (e) => {
   setLoading(false);
 };
 
-
-  return (
+  // Render modal menggunakan Portal langsung ke document.body untuk menghindari stacking context issues
+  const modalContent = (
     <div 
-      className="update-modal-overlay"
+      className="update-modal-overlay add-order-modal-overlay"
       onClick={(e) => {
         // Close modal when clicking on overlay (not on modal content)
         if (e.target === e.currentTarget) {
@@ -169,7 +170,7 @@ const handleSubmit = async (e) => {
       }}
     >
       <div 
-        className="update-modal-card" 
+        className="update-modal-card add-order-modal-card" 
         style={{ width: "100%", maxWidth: 650 }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -362,4 +363,11 @@ const handleSubmit = async (e) => {
       </div>
     </div>
   );
+
+  // Render menggunakan Portal ke document.body untuk memastikan modal selalu di atas
+  if (typeof window !== "undefined") {
+    return createPortal(modalContent, document.body);
+  }
+  
+  return null;
 }

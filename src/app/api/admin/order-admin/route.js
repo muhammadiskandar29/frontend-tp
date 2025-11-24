@@ -16,7 +16,31 @@ export async function POST(request) {
     const token = authHeader.replace("Bearer ", "");
     const body = await request.json();
 
-    console.log("📤 [ORDER_ADMIN] Payload dikirim ke backend:", JSON.stringify(body, null, 2));
+    console.log("📤 [ORDER_ADMIN] Raw payload dari frontend:", JSON.stringify(body, null, 2));
+
+    // Bersihkan payload - hanya kirim field yang diperlukan dan tidak undefined/null
+    const cleanPayload = {};
+    
+    // Field wajib
+    if (body.nama) cleanPayload.nama = String(body.nama);
+    if (body.wa) cleanPayload.wa = String(body.wa);
+    if (body.email) cleanPayload.email = String(body.email);
+    if (body.alamat !== undefined && body.alamat !== null) cleanPayload.alamat = String(body.alamat);
+    if (body.produk !== undefined && body.produk !== null) cleanPayload.produk = Number(body.produk);
+    if (body.harga !== undefined && body.harga !== null) cleanPayload.harga = String(body.harga);
+    if (body.ongkir !== undefined && body.ongkir !== null) cleanPayload.ongkir = String(body.ongkir);
+    if (body.total_harga !== undefined && body.total_harga !== null) cleanPayload.total_harga = String(body.total_harga);
+    if (body.sumber !== undefined && body.sumber !== null) cleanPayload.sumber = String(body.sumber);
+    
+    // Field opsional
+    if (body.customer !== undefined && body.customer !== null && body.customer !== "") {
+      cleanPayload.customer = Number(body.customer);
+    }
+    if (body.notif !== undefined && body.notif !== null) {
+      cleanPayload.notif = body.notif ? 1 : 0;
+    }
+
+    console.log("📤 [ORDER_ADMIN] Clean payload dikirim ke backend:", JSON.stringify(cleanPayload, null, 2));
 
     // Forward ke backend
     const response = await fetch(`${BACKEND_URL}/api/admin/order-admin`, {
@@ -26,7 +50,7 @@ export async function POST(request) {
         Accept: "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(cleanPayload),
     });
 
     const data = await response.json();

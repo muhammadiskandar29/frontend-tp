@@ -824,6 +824,15 @@ margin-top: 20px;
   margin: 0 !important;
 }
 
+/* Add Order Modal - Z-index lebih tinggi untuk memastikan muncul di atas semua modal */
+.add-order-modal-overlay {
+  z-index: 999999 !important; /* Lebih tinggi dari update-modal (99999) dan view-modal (100) */
+}
+
+.add-order-modal-card {
+  z-index: 999999 !important;
+}
+
 /* Prevent body scroll when modal is open */
 body:has(.update-modal-overlay) {
   overflow: hidden !important;

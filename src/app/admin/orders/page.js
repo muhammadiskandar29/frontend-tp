@@ -82,107 +82,49 @@ export default function DaftarPesanan() {
     };
   }, []);
 
-  // 🔹 Load data dari backend
-  useEffect(() => {
-    if (!needsRefresh) return;
-    const loadData = async () => {
-      try {
-        const token = localStorage.getItem("token");
+  // 🔹 Load data dari backend - Optimized dengan useCallback dan prevent duplicate fetch
+  const loadData = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.warn("⚠️ No token found");
+        setNeedsRefresh(false);
+        return;
+      }
 
-        // Ambil produk
-        const resProduk = await fetch(`${BASE_URL}/admin/produk`, {
+      // Fetch produk dan orders secara parallel untuk optimasi
+      const [produkResponse, ordersResult] = await Promise.all([
+        // Ambil produk melalui Next.js proxy
+        fetch("/api/admin/produk", {
           headers: {
             "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
           },
-        });
-        const produkResult = await resProduk.json();
-        
-        // Logging struktur JSON lengkap
-        console.log("Success:", produkResult.success);
-        console.log("Data:", produkResult.data);
-        console.table(produkResult.data);
-        
-        const produkList = Array.isArray(produkResult.data) ? produkResult.data : [];
+        }).then(res => res.json()).catch(err => {
+          console.error("❌ Error fetching produk:", err);
+          return { success: false, data: [] };
+        }),
+        // Ambil orders
+        getOrders().catch(err => {
+          console.error("❌ Error fetching orders:", err);
+          return [];
+        })
+      ]);
+      
+      // Handle produk data
+      if (produkResponse.success && Array.isArray(produkResponse.data)) {
         const mapProduk = {};
-        produkList.forEach((p) => {
+        produkResponse.data.forEach((p) => {
           mapProduk[p.id] = p.nama;
         });
         setProdukMap(mapProduk);
-
-        // Ambil orders
-        const ordersResult = await getOrders();
-        
-        // Logging struktur JSON lengkap
-        console.log("Success:", ordersResult?.success !== undefined ? ordersResult.success : true);
-        console.log("Data:", Array.isArray(ordersResult) ? ordersResult : ordersResult?.data);
-        console.table(Array.isArray(ordersResult) ? ordersResult : ordersResult?.data);
-        
-        const finalOrders = Array.isArray(ordersResult)
-          ? ordersResult
-          : ordersResult.data || [];
-
-        // Map customer
-        const mapCustomer = {};
-        finalOrders.forEach((o) => {
-          if (o.customer_rel?.id) {
-            mapCustomer[o.customer_rel.id] = o.customer_rel.nama;
-          } else if (o.customer && typeof o.customer === "object" && o.customer.id) {
-            mapCustomer[o.customer.id] = o.customer.nama || "-";
-          } else if (o.customer && typeof o.customer === "number") {
-            // If customer is just an ID, we'll need to fetch it or leave it
-            // The customer_rel should handle most cases
-          }
-        });
-        setCustomers(mapCustomer);
-        setOrders(finalOrders);
-      } catch (err) {
-        console.error("❌ Error load data:", err);
-        showToast("Gagal memuat data", "error");
-      } finally {
-        setNeedsRefresh(false);
       }
-    };
-    loadData();
-  }, [needsRefresh, refreshKey]);
-
-  // 🔹 Direct refresh function that loads data immediately
-  const refreshData = async () => {
-    try {
-      const token = localStorage.getItem("token");
-
-      // Ambil produk
-      const resProduk = await fetch(`${BASE_URL}/admin/produk`, {
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
-      const produkResult = await resProduk.json();
       
-      // Logging struktur JSON lengkap
-      console.log("Success:", produkResult.success);
-      console.log("Data:", produkResult.data);
-      console.table(produkResult.data);
-      
-      const produkList = Array.isArray(produkResult.data) ? produkResult.data : [];
-      const mapProduk = {};
-      produkList.forEach((p) => {
-        mapProduk[p.id] = p.nama;
-      });
-      setProdukMap(mapProduk);
-
-      // Ambil orders
-      const ordersResult = await getOrders();
-      
-      // Logging struktur JSON lengkap
-      console.log("Success:", ordersResult?.success !== undefined ? ordersResult.success : true);
-      console.log("Data:", Array.isArray(ordersResult) ? ordersResult : ordersResult?.data);
-      console.table(Array.isArray(ordersResult) ? ordersResult : ordersResult?.data);
-      
+      // Handle orders data
       const finalOrders = Array.isArray(ordersResult)
         ? ordersResult
-        : ordersResult.data || [];
+        : ordersResult?.data || [];
 
       // Map customer
       const mapCustomer = {};
@@ -191,20 +133,30 @@ export default function DaftarPesanan() {
           mapCustomer[o.customer_rel.id] = o.customer_rel.nama;
         } else if (o.customer && typeof o.customer === "object" && o.customer.id) {
           mapCustomer[o.customer.id] = o.customer.nama || "-";
-        } else if (o.customer && typeof o.customer === "number") {
-          // If customer is just an ID, we'll need to fetch it or leave it
-          // The customer_rel should handle most cases
         }
       });
       
-      // Update all state at once to ensure UI updates immediately
       setCustomers(mapCustomer);
       setOrders(finalOrders);
+      setNeedsRefresh(false);
     } catch (err) {
-      console.error("❌ Error refresh data:", err);
+      console.error("❌ Error load data:", err);
       showToast("Gagal memuat data", "error");
+      setNeedsRefresh(false);
     }
-  };
+  }, []); // Empty dependency array - hanya load sekali saat mount
+
+  useEffect(() => {
+    if (needsRefresh) {
+      loadData();
+    }
+  }, [needsRefresh]); // Hanya trigger saat needsRefresh berubah
+
+  // 🔹 Direct refresh function that loads data immediately - Reuse loadData
+  const refreshData = useCallback(async () => {
+    setNeedsRefresh(true);
+    await loadData();
+  }, [loadData]);
 
   const requestRefresh = async (message, type = "success") => {
     // Immediately refresh data first, then show message

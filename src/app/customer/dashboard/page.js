@@ -6,6 +6,7 @@ import CustomerLayout from "@/components/customer/CustomerLayout";
 import { getCustomerSession } from "@/lib/customerAuth";
 import { fetchCustomerDashboard } from "@/lib/customerDashboard";
 import OTPVerificationModal from "./otpVerificationModal";
+import config from "@/config/env";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -150,28 +151,8 @@ export default function DashboardPage() {
       // Fetch dashboard data
       const data = await fetchCustomerDashboard(session.token);
       
-      // Fetch semua produk untuk mendapatkan kategori yang benar
-      const token = session.token;
-      const produkRes = await fetch("/api/admin/produk", {
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      
-      let produkMap = {};
-      if (produkRes.ok) {
-        const produkData = await produkRes.json();
-        const produkList = Array.isArray(produkData.data) ? produkData.data : [];
-        
-        // Buat map produkId -> produkData (dengan kategori_rel)
-        produkList.forEach((p) => {
-          produkMap[p.id] = p;
-        });
-        
-        console.log("📦 [DASHBOARD] Produk map:", produkMap);
-      }
+      // Tidak perlu fetch produk lagi karena kategori_nama sudah ada di order data
+      // Fetch produk dari admin endpoint menyebabkan error 500 karena customer token tidak memiliki akses admin
       
       setCustomerInfo(data.customer || null);
       setStats((prev) =>
@@ -185,8 +166,8 @@ export default function DashboardPage() {
           return item;
         })
       );
-      setActiveOrders(adaptOrders(data?.orders_aktif || [], produkMap));
-      setPendingOrders(adaptOrders(data?.orders_pending || [], produkMap, { status: "pending" }));
+      setActiveOrders(adaptOrders(data?.orders_aktif || [], {}));
+      setPendingOrders(adaptOrders(data?.orders_pending || [], {}, { status: "pending" }));
     } catch (error) {
       console.error("❌ [DASHBOARD] Failed to load data:", error);
       setDashboardError(error.message || "Gagal memuat data dashboard.");
@@ -492,16 +473,22 @@ export default function DashboardPage() {
                       className="order-action"
                       onClick={() => {
                         const kategoriLower = order.kategoriNama?.toLowerCase() || "";
-                        if (kategoriLower === "webinar") {
-                          // Webinar: redirect ke page gerbang zoom
-                          router.push(`/customer/webinar/${order.id}`);
-                        } else if (kategoriLower === "seminar") {
-                          // Seminar: sementara juga pakai link zoom (sama seperti webinar)
-                          router.push(`/customer/webinar/${order.id}`);
+                        const session = getCustomerSession();
+                        const token = session.token;
+                        
+                        if (kategoriLower === "webinar" || kategoriLower === "seminar") {
+                          // Webinar/Seminar: redirect langsung ke backend URL untuk join meeting
+                          // Backend akan render halaman HTML lengkap dengan Zoom integration
+                          const backendUrl = config.backendUrl;
+                          const joinUrl = `${backendUrl}/customer/order/${order.id}/join?token=${token}`;
+                          window.location.href = joinUrl;
                         } else if (kategoriLower === "e-book" || kategoriLower === "ebook") {
-                          // Ebook: nanti akan ada halaman khusus untuk buka ebook
-                          // TODO: Implement halaman ebook dengan materi yang diupload
-                          alert("Fitur Buka Ebook akan segera tersedia");
+                          // Ebook: redirect ke halaman ebook
+                          if (order.slug && order.slug !== "-") {
+                            router.push(order.slug);
+                          } else {
+                            alert("Fitur Buka Ebook akan segera tersedia");
+                          }
                         } else {
                           // Kategori lainnya: tampilkan detail order
                           router.push(`/customer/orders/${order.id}`);
