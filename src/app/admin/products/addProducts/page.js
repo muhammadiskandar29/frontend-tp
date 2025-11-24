@@ -351,7 +351,7 @@ useEffect(() => {
   // UI
   // ============================
   return (
-    <div className="produk-container" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem", alignItems: "start" }}>
+    <div className="produk-container produk-builder-layout">
       <div className="produk-form">
       {/* Header Section */}
       <div className="form-header-section">
@@ -897,7 +897,7 @@ useEffect(() => {
       </div>
       </div>
       {/* ================= RIGHT: PREVIEW ================= */}
-      <div style={{ position: "sticky", top: "2rem" }}>
+      <div className="builder-preview-card">
         <LandingTemplate form={form} />
       </div>
     </div>
