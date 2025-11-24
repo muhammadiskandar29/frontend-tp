@@ -511,7 +511,7 @@ export default function DaftarPesanan() {
             // Refresh data and show success message
             await requestRefresh("Pesanan baru berhasil ditambahkan!");
           }}
-          setToast={showToast}
+          showToast={showToast}
         />
       )}
 

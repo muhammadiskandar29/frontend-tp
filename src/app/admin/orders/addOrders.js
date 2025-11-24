@@ -5,7 +5,7 @@ import useOrders from "@/hooks/useOrders";
 import { api } from "@/lib/api"; // ✅ supaya handleSearchCustomer & handleSearchProduct ikut pakai api()
 import "@/styles/pesanan.css";
 
-export default function AddOrders({ onClose, onAdd, setToast }) {
+export default function AddOrders({ onClose, onAdd, showToast }) {
   const [formData, setFormData] = useState({
     nama: "",
     wa: "",
@@ -132,45 +132,36 @@ export default function AddOrders({ onClose, onAdd, setToast }) {
 
   // === 💾 Submit ===
   // === 💾 Submit ===
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  setMessage("");
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage("");
 
-  // 🧩 ubah angka ke string hanya saat kirim ke backend
-  const payload = {
-    ...formData,
-    harga: String(formData.harga ?? "0"),
-    ongkir: String(formData.ongkir ?? "0"),
-    total_harga: String(formData.total_harga ?? "0"),
+    const payload = {
+      ...formData,
+      harga: String(formData.harga ?? "0"),
+      ongkir: String(formData.ongkir ?? "0"),
+      total_harga: String(formData.total_harga ?? "0"),
+    };
+
+    const res = await createOrder(payload);
+
+    if (res?.success || (res?.warning && res?.data)) {
+      const toastType = res?.warning ? "warning" : "success";
+      const toastMessage =
+        res?.warning
+          ? `✅ Order berhasil dibuat! (${res.warning})`
+          : res?.message || "✅ Order berhasil dibuat!";
+
+      showToast?.(toastMessage, toastType);
+      onAdd?.(res.data);
+      onClose?.();
+    } else {
+      showToast?.(res?.message || "❌ Gagal membuat order.", "error");
+    }
+
+    setLoading(false);
   };
-
-  const res = await createOrder(payload);
-
-  // Handle success (termasuk jika ada warning tapi data berhasil masuk)
-  if (res?.success || (res?.warning && res?.data)) {
-    onAdd?.(res.data);
-    setToast?.({
-      show: true,
-      type: "success",
-      message: res.warning
-        ? `✅ Order berhasil dibuat! (${res.warning})`
-        : res.message || "✅ Order berhasil dibuat!",
-    });
-    setTimeout(() => {
-      setToast?.((prev) => ({ ...prev, show: false }));
-      onClose();
-    }, 1500);
-  } else {
-    setToast?.({
-      show: true,
-      type: "error",
-      message: res?.message || "❌ Gagal membuat order.",
-    });
-  }
-
-  setLoading(false);
-};
 
   const customerId = formData.customer;
   const hasSelectedCustomer = Boolean(customerId);

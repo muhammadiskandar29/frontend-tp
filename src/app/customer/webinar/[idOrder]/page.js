@@ -112,7 +112,7 @@ export default function WebinarGatewayPage() {
 
   const fetchGatewayData = async (orderId, token) => {
     try {
-      const response = await fetch(`/api/webinar/gateway/${orderId}`, {
+      const response = await fetch(`/api/webinar/join-order/${orderId}`, {
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
