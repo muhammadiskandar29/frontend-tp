@@ -244,19 +244,19 @@ body {
 }
 
 .produk-builder-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.9fr);
-  gap: 2.25rem;
+  display: flex;
+  gap: 2.5rem;
   align-items: flex-start;
+}
+
+.produk-builder-layout .produk-form,
+.produk-builder-layout .builder-preview-card {
+  flex: 1 1 0;
 }
 
 @media (max-width: 1280px) {
   .produk-builder-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .produk-builder-layout .builder-preview-card {
-    position: static;
+    flex-direction: column;
   }
 }
 
@@ -276,31 +276,26 @@ body {
 
 /* ===== KANAN: PREVIEW LANDING ===== */
 .produk-preview {
-  flex: 0 0 500px;
-  position: sticky;
-  top: 2rem;
+  width: 100%;
+  max-width: 520px;
   background: #ffffff;
   border: 1.5px solid var(--border);
   border-radius: 20px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.12);
   display: flex;
   flex-direction: column;
-  padding: 2rem;
-  max-height: none;
-  overflow: visible;
+  padding: 2.2rem;
 }
 
-.produk-builder-layout .builder-preview-card {
-  position: sticky;
-  top: 1.5rem;
-  align-self: flex-start;
+.builder-preview-card {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding-top: 0.5rem;
 }
 
-.produk-builder-layout .builder-preview-card .produk-preview {
+.builder-preview-card .produk-preview {
   position: static;
-  box-shadow: 0 18px 35px rgba(15, 23, 42, 0.18);
-  border-radius: 24px;
-  padding: 2.4rem;
 }
 
 .produk-preview::-webkit-scrollbar {

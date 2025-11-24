@@ -384,23 +384,6 @@ export default function WebinarGatewayPage() {
                 </div>
               </div>
 
-              <div className="join-link-card">
-                <div className="join-link-header">
-                  <span>Link Akses Webinar</span>
-                  <button
-                    onClick={() => {
-                      const link = webinarData.joinUrl || webinarData.join_url;
-                      if (navigator.clipboard && link) {
-                        navigator.clipboard.writeText(link);
-                      }
-                    }}
-                  >
-                    Salin Link
-                  </button>
-                </div>
-                <p>{webinarData.joinUrl || webinarData.join_url}</p>
-              </div>
-
               {webinarData.kategoriNama?.toLowerCase() === "seminar" ? (
                 <div className="webinar-schedule">
                   <div className="schedule-item">
