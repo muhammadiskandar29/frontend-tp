@@ -17,7 +17,7 @@
 /* ===== BASE ===== */
 body {
   background-color: var(--bg);
-  font-family: "Inter", sans-serif;
+  font-family: Inter,system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
   color: var(--text);
   font-size: clamp(0.85rem, 0.9vw, 1rem);
   margin: 0;

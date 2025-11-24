@@ -1,6 +1,6 @@
 /* ====== ERROR 404 PAGE (Animated) ====== */
 body {
-  font-family: "Inter", sans-serif;
+  font-family: Inter,system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
 }
 
 @keyframes fadeIn {

@@ -1,4 +1,9 @@
-﻿/* ===========================
+:root, body 
+{
+  font-family: Inter,system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+}
+
+/* ===========================
 LOGIN PAGE STYLES
 =========================== */
 
@@ -28,7 +33,6 @@ body {
   display: flex;
   flex-wrap: wrap;
   min-height: 100vh;
-  font-family: "Inter", sans-serif;
   background: var(--login-gray-bg);
 }
 

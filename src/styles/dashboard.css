@@ -1,3 +1,8 @@
+:root, body 
+{
+  font-family: Inter,system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+}
+
 :root {
   --dash-bg: #f8fafc;
   --dash-surface: #ffffff;

@@ -11,7 +11,7 @@
   min-height: 100vh;
   background: var(--layout-bg);
   color: var(--layout-heading);
-  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: Inter,system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
 }
 
 .layout-main {

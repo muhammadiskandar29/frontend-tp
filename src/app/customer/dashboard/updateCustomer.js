@@ -46,6 +46,97 @@ const initialFormState = {
   password: "",
 };
 
+const SECTION_CONFIG = [
+  {
+    title: "Informasi Dasar",
+    icon: "👤",
+    fields: [
+      {
+        name: "nama_panggilan",
+        label: "Nama Panggilan",
+        placeholder: "Masukkan nama panggilan",
+        required: true,
+      },
+      {
+        name: "instagram",
+        label: "Instagram",
+        placeholder: "@username",
+        icon: "📱",
+      },
+    ],
+  },
+  {
+    title: "Profesi & Pekerjaan",
+    icon: "💼",
+    fields: [
+      {
+        name: "profesi",
+        label: "Profesi",
+        placeholder: "Contoh: Software Engineer",
+        required: true,
+      },
+      {
+        name: "pendapatan_bln",
+        label: "Pendapatan / Bulan",
+        placeholder: "Contoh: Rp 5.000.000",
+        icon: "💰",
+      },
+      {
+        name: "industri_pekerjaan",
+        label: "Industri Pekerjaan",
+        placeholder: "Contoh: Teknologi Informasi",
+        icon: "🏢",
+        fullWidth: true,
+      },
+    ],
+  },
+  {
+    title: "Data Pribadi",
+    icon: "📋",
+    fields: [
+      {
+        name: "jenis_kelamin",
+        label: "Jenis Kelamin",
+        icon: "⚧️",
+        type: "select",
+        options: [
+          { value: "l", label: "Laki-laki" },
+          { value: "p", label: "Perempuan" },
+        ],
+      },
+      {
+        name: "tanggal_lahir",
+        label: "Tanggal Lahir",
+        icon: "🎂",
+        type: "date",
+      },
+      {
+        name: "alamat",
+        label: "Alamat",
+        icon: "📍",
+        type: "textarea",
+        placeholder: "Tulis alamat lengkap",
+        fullWidth: true,
+      },
+    ],
+  },
+  {
+    title: "Keamanan",
+    icon: "🔒",
+    fields: [
+      {
+        name: "password",
+        label: "Password Baru",
+        type: "password",
+        placeholder: "Masukkan password baru",
+        note: "Isi jika ingin mengganti password",
+        required: true,
+        fullWidth: true,
+      },
+    ],
+  },
+];
+
 export default function UpdateCustomerModal({
   isOpen,
   onClose,
@@ -130,176 +221,72 @@ export default function UpdateCustomerModal({
         </div>
 
         <form className="customer-modal__body" onSubmit={handleSubmit}>
-          {/* SECTION 1: Informasi Dasar */}
-          <div className="form-section">
-            <div className="section-header">
-              <h3 className="section-title">
-                <span className="section-icon">👤</span>
-                Informasi Dasar
-              </h3>
-            </div>
-            <div className="customer-grid">
-              <label className="form-field">
-                <span className="field-label">
-                  Nama Panggilan <span className="required">*</span>
-                </span>
-                <input
-                  type="text"
-                  name="nama_panggilan"
-                  value={formData.nama_panggilan}
-                  onChange={handleChange}
-                  placeholder="Masukkan nama panggilan"
-                  required
-                />
-              </label>
+          {SECTION_CONFIG.map((section) => (
+            <div className="form-section" key={section.title}>
+              <div className="section-header">
+                <h3 className="section-title">
+                  <span className="section-icon">{section.icon}</span>
+                  {section.title}
+                </h3>
+              </div>
 
-              <label className="form-field">
-                <span className="field-label">
-                  <span className="field-icon">📱</span>
-                  Instagram
-                </span>
-                <input
-                  type="text"
-                  name="instagram"
-                  placeholder="@username"
-                  value={formData.instagram}
-                  onChange={handleChange}
-                />
-              </label>
-            </div>
-          </div>
+              <div className="customer-grid">
+                {section.fields.map((field) => {
+                  const value = formData[field.name] ?? "";
+                  const baseProps = {
+                    name: field.name,
+                    value,
+                    onChange: handleChange,
+                    placeholder: field.placeholder,
+                    required: field.required,
+                  };
 
-          {/* SECTION 2: Profesi & Pekerjaan */}
-          <div className="form-section">
-            <div className="section-header">
-              <h3 className="section-title">
-                <span className="section-icon">💼</span>
-                Profesi & Pekerjaan
-              </h3>
-            </div>
-            <div className="customer-grid">
-              <label className="form-field">
-                <span className="field-label">
-                  Profesi <span className="required">*</span>
-                </span>
-                <input
-                  type="text"
-                  name="profesi"
-                  value={formData.profesi}
-                  onChange={handleChange}
-                  placeholder="Contoh: Software Engineer"
-                  required
-                />
-              </label>
+                  if (field.type === "textarea") {
+                    baseProps.rows = field.rows || 3;
+                  }
 
-              <label className="form-field">
-                <span className="field-label">
-                  <span className="field-icon">💰</span>
-                  Pendapatan / Bulan
-                </span>
-                <input
-                  type="text"
-                  name="pendapatan_bln"
-                  value={formData.pendapatan_bln}
-                  onChange={handleChange}
-                  placeholder="Contoh: Rp 5.000.000"
-                />
-              </label>
+                  const fieldClass = [
+                    "form-field",
+                    field.fullWidth ? "customer-grid__full" : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ");
 
-              <label className="form-field customer-grid__full">
-                <span className="field-label">
-                  <span className="field-icon">🏢</span>
-                  Industri Pekerjaan
-                </span>
-                <input
-                  type="text"
-                  name="industri_pekerjaan"
-                  value={formData.industri_pekerjaan}
-                  onChange={handleChange}
-                  placeholder="Contoh: Teknologi Informasi"
-                />
-              </label>
-            </div>
-          </div>
+                  return (
+                    <label className={fieldClass} key={field.name}>
+                      <span className="field-label">
+                        {field.icon && (
+                          <span className="field-icon">{field.icon}</span>
+                        )}
+                        {field.label}{" "}
+                        {field.required ? (
+                          <span className="required">*</span>
+                        ) : null}
+                      </span>
 
-          {/* SECTION 3: Data Pribadi */}
-          <div className="form-section">
-            <div className="section-header">
-              <h3 className="section-title">
-                <span className="section-icon">📋</span>
-                Data Pribadi
-              </h3>
-            </div>
-            <div className="customer-grid">
-              <label className="form-field">
-                <span className="field-label">
-                  <span className="field-icon">⚧️</span>
-                  Jenis Kelamin
-                </span>
-                <select
-                  name="jenis_kelamin"
-                  value={formData.jenis_kelamin}
-                  onChange={handleChange}
-                >
-                  <option value="l">Laki-laki</option>
-                  <option value="p">Perempuan</option>
-                </select>
-              </label>
+                      {field.type === "select" ? (
+                        <select {...baseProps}>
+                          {field.options?.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : field.type === "textarea" ? (
+                        <textarea {...baseProps} />
+                      ) : (
+                        <input type={field.type || "text"} {...baseProps} />
+                      )}
 
-              <label className="form-field">
-                <span className="field-label">
-                  <span className="field-icon">🎂</span>
-                  Tanggal Lahir
-                </span>
-                <input
-                  type="date"
-                  name="tanggal_lahir"
-                  value={formData.tanggal_lahir}
-                  onChange={handleChange}
-                />
-              </label>
-
-              <label className="form-field customer-grid__full">
-                <span className="field-label">
-                  <span className="field-icon">📍</span>
-                  Alamat
-                </span>
-                <textarea
-                  name="alamat"
-                  rows="3"
-                  value={formData.alamat}
-                  onChange={handleChange}
-                  placeholder="Tulis alamat lengkap"
-                />
-              </label>
+                      {field.note && (
+                        <p className="field-hint">{field.note}</p>
+                      )}
+                    </label>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-
-          {/* SECTION 4: Keamanan */}
-          <div className="form-section">
-            <div className="section-header">
-              <h3 className="section-title">
-                <span className="section-icon">🔒</span>
-                Keamanan
-              </h3>
-            </div>
-            <div className="customer-grid">
-              <label className="form-field customer-grid__full">
-                <span className="field-label">
-                  Password Baru <span className="required">*</span>
-                </span>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="Masukkan password baru"
-                  required
-                />
-                <p className="field-hint">Isi jika ingin mengganti password</p>
-              </label>
-            </div>
-          </div>
+          ))}
 
           <div className="customer-modal__footer">
             {/* Modal tidak bisa ditutup sebelum submit, jadi tidak ada tombol Batal */}
@@ -392,8 +379,8 @@ export default function UpdateCustomerModal({
 
         .customer-grid {
           display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 1.25rem;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 1.25rem 1.5rem;
         }
 
         .customer-grid__full {

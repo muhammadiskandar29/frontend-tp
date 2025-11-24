@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
 import useOrders from "@/hooks/useOrders";
 import { api } from "@/lib/api"; // ✅ supaya handleSearchCustomer & handleSearchProduct ikut pakai api()
+import "@/styles/pesanan.css";
 
 export default function AddOrders({ onClose, onAdd, setToast }) {
   const [formData, setFormData] = useState({
@@ -139,7 +139,7 @@ const handleSubmit = async (e) => {
     setToast?.({
       show: true,
       type: "success",
-      message: res.warning 
+      message: res.warning
         ? `✅ Order berhasil dibuat! (${res.warning})`
         : res.message || "✅ Order berhasil dibuat!",
     });
@@ -158,25 +158,26 @@ const handleSubmit = async (e) => {
   setLoading(false);
 };
 
-  const modalContent = (
+  return (
     <div
-      className="orders-modal-overlay"
+      className="modal-overlay"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="orders-modal-card" onClick={(e) => e.stopPropagation()}>
-        <div className="orders-modal-header">
-          <div>
-            <p className="orders-modal-eyebrow">Kelola Pesanan</p>
-            <h2>Tambah Order</h2>
-          </div>
-          <button type="button" className="orders-modal-close" onClick={onClose} aria-label="Tutup modal">
+      <div
+        className="modal-card"
+        style={{ width: "min(920px, 95vw)", maxHeight: "90vh", overflow: "hidden" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="modal-header">
+          <h2>Tambah Order</h2>
+          <button type="button" className="modal-close" onClick={onClose} aria-label="Tutup modal">
             <i className="pi pi-times" />
           </button>
         </div>
 
-        <div className="orders-modal-body">
+        <div className="modal-body" style={{ paddingBottom: "1.75rem" }}>
           <form onSubmit={handleSubmit} className="orders-form-grid">
             <div className="orders-section">
               <h4>Informasi Customer</h4>
@@ -364,10 +365,4 @@ const handleSubmit = async (e) => {
       </div>
     </div>
   );
-
-  if (typeof window !== "undefined") {
-    return createPortal(modalContent, document.body);
-  }
-
-  return modalContent;
 }

@@ -1,3 +1,8 @@
+:root, body 
+{
+  font-family: Inter,system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+}
+
 /* ===========================
 ADMIN FOLLOWUP PAGE STYLE (MATCH KATEGORI & USERS)
 =========================== */
@@ -825,13 +830,6 @@ margin-top: 20px;
 }
 
 /* Add Order Modal - Z-index lebih tinggi untuk memastikan muncul di atas semua modal */
-.add-order-modal-overlay {
-  z-index: 999999 !important; /* Lebih tinggi dari update-modal (99999) dan view-modal (100) */
-}
-
-.add-order-modal-card {
-  z-index: 999999 !important;
-}
 
 /* Prevent body scroll when modal is open */
 body:has(.update-modal-overlay) {

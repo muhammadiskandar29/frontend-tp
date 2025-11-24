@@ -9,7 +9,7 @@
 
 .dashboard-layout {
   min-height: 100vh;
-  font-family: "Inter", sans-serif;
+  font-family: Inter,system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
   background: #fff6ed;
 }
 

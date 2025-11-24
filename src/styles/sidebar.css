@@ -1,3 +1,8 @@
+:root, body 
+{
+  font-family: Inter,system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+}
+
 :root {
   --sidebar-width: 16rem;
   --sidebar-compact-width: 4.75rem;
