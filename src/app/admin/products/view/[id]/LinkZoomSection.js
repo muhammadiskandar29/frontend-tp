@@ -33,6 +33,8 @@ export default function LinkZoomSection({ productId, productName }) {
 
       try {
         const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+        console.log("🔍 [LINK ZOOM] Fetching webinar for product:", productId);
+        
         const res = await fetch(`/api/webinar?produk=${productId}`, {
           method: "GET",
           headers: {
@@ -41,10 +43,18 @@ export default function LinkZoomSection({ productId, productName }) {
           },
         });
 
-        const data = await res.json().catch(() => ({}));
+        console.log("🔍 [LINK ZOOM] Response status:", res.status);
+        
+        const data = await res.json().catch((err) => {
+          console.error("❌ [LINK ZOOM] JSON parse error:", err);
+          return {};
+        });
+
+        console.log("🔍 [LINK ZOOM] Response data:", data);
 
         if (res.ok && data?.success && data?.data) {
           const webinarData = data.data;
+          console.log("✅ [LINK ZOOM] Webinar data found:", webinarData);
           setWebinarResult(webinarData);
           
           // Fill form with existing data
@@ -61,6 +71,8 @@ export default function LinkZoomSection({ productId, productName }) {
           if (webinarData.duration || webinarData.webinar?.duration) {
             setDuration(webinarData.duration || webinarData.webinar?.duration || defaultDuration);
           }
+        } else {
+          console.log("ℹ️ [LINK ZOOM] No webinar data found or error:", data);
         }
       } catch (error) {
         console.error("❌ [LINK ZOOM] fetch existing error:", error);

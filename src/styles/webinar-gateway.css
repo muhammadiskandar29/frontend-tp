@@ -434,12 +434,26 @@ html, body {
   100% { transform: translateX(100%); }
 }
 
-.ticker-content {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  position: relative;
-  z-index: 10000 !important;
+.ticker span {
+  display: inline-block;
+  white-space: nowrap;
+  animation: scroll-text 18s linear infinite;
+  letter-spacing: 0.5px;
+  font-size: 0.95rem;
+}
+
+.ticker-bottom span {
+  animation: scroll-text-reverse 18s linear infinite;
+}
+
+@keyframes scroll-text {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+@keyframes scroll-text-reverse {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 .ticker-top {
@@ -458,38 +472,6 @@ html, body {
   visibility: visible !important;
   opacity: 1 !important;
   order: 999;
-}
-
-.ticker-bottom .ticker-text {
-  animation: scroll-text-reverse 20s linear infinite;
-}
-
-@keyframes scroll-text-reverse {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-
-.ticker-icon {
-  font-size: 1.25rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  animation: pulse-icon 2s ease-in-out infinite;
-  flex-shrink: 0;
-}
-
-@keyframes pulse-icon {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-}
-
-.ticker-text {
-  display: inline-block;
-  white-space: nowrap;
-  animation: scroll-text 20s linear infinite;
-  letter-spacing: 0.3px;
-  font-size: 0.9rem;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .webinar-embed-wrapper {
