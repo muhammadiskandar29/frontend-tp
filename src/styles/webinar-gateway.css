@@ -51,7 +51,7 @@ html, body {
   bottom: 0;
   width: 100%;
   margin: 0;
-  padding: 0;
+  padding: 4.5rem 0;
 }
 
 /* Ensure ticker is always visible at the top */
@@ -456,32 +456,25 @@ html, body {
   100% { transform: translateX(100%); }
 }
 
-.ticker-top {
-  position: relative !important;
+.ticker-top,
+.ticker-bottom {
+  position: fixed !important;
+  left: 0;
+  right: 0;
+  width: 100%;
   z-index: 10000 !important;
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
-  order: -1;
   pointer-events: none;
 }
 
-.ticker-top span {
-  pointer-events: none;
+.ticker-top {
+  top: 0;
 }
 
 .ticker-bottom {
-  position: relative !important;
-  z-index: 10000 !important;
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  order: 999;
-  pointer-events: none;
-}
-
-.ticker-bottom span {
-  pointer-events: none;
+  bottom: 0;
 }
 
 .webinar-embed-wrapper {
