@@ -76,12 +76,83 @@ export async function POST(request) {
   }
 }
 
+export async function GET(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const produk = searchParams.get("produk");
+
+    if (!produk) {
+      return NextResponse.json(
+        { success: false, message: "Parameter produk wajib diisi" },
+        { status: 400 }
+      );
+    }
+
+    const produkId = Number(produk);
+    if (Number.isNaN(produkId)) {
+      return NextResponse.json(
+        { success: false, message: "ID produk tidak valid" },
+        { status: 400 }
+      );
+    }
+
+    const authHeader = request.headers.get("authorization");
+    const token = authHeader?.replace("Bearer ", "");
+
+    const res = await fetch(`${BACKEND_URL}/api/webinar?produk=${produkId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      // Jika 404, berarti belum ada webinar untuk produk ini (bukan error)
+      if (res.status === 404) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Belum ada webinar untuk produk ini",
+            data: null,
+          },
+          { status: 200 }
+        );
+      }
+
+      return NextResponse.json(
+        {
+          success: false,
+          message: data?.message || "Gagal mengambil data webinar",
+          error: data?.error || data,
+        },
+        { status: res.status }
+      );
+    }
+
+    return NextResponse.json(data, { status: res.status });
+  } catch (error) {
+    console.error("❌ Webinar GET API Proxy Error:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Gagal terhubung ke server webinar",
+        error: error.message,
+      },
+      { status: 500 }
+    );
+  }
+}
+
 export function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: {
       "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization",
     },
   });

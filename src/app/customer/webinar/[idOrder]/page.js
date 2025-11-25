@@ -251,7 +251,10 @@ export default function WebinarGatewayPage() {
     return (
       <div className="webinar-gateway-page">
         <div className="ticker ticker-top">
-          <span>Selamat datang di Webinar One Dashboard — Pastikan kamera dan mikrofon siap, gunakan koneksi internet stabil, dan hubungi host bila mengalami kendala.</span>
+          <div className="ticker-content">
+            <span className="ticker-icon">🎥</span>
+            <span className="ticker-text">Selamat datang di Webinar One Dashboard — Pastikan kamera dan mikrofon siap, gunakan koneksi internet stabil, dan hubungi host bila mengalami kendala.</span>
+          </div>
         </div>
         <div className="webinar-gateway-container">
           <div className="webinar-loading">
@@ -269,7 +272,10 @@ export default function WebinarGatewayPage() {
     return (
       <div className="webinar-gateway-page">
         <div className="ticker ticker-top">
-          <span>Selamat datang di Webinar One Dashboard — Pastikan kamera dan mikrofon siap, gunakan koneksi internet stabil, dan hubungi host bila mengalami kendala.</span>
+          <div className="ticker-content">
+            <span className="ticker-icon">🎥</span>
+            <span className="ticker-text">Selamat datang di Webinar One Dashboard — Pastikan kamera dan mikrofon siap, gunakan koneksi internet stabil, dan hubungi host bila mengalami kendala.</span>
+          </div>
         </div>
         <div className="webinar-gateway-container">
           <div className="webinar-error">
@@ -309,9 +315,6 @@ export default function WebinarGatewayPage() {
             </div>
           </div>
         </div>
-        <div className="ticker ticker-bottom">
-          <span>Promo spesial! Raih diskon kelas lanjutan dan bonus e-book eksklusif untuk peserta webinar hari ini.</span>
-        </div>
       </div>
     );
   }
@@ -320,7 +323,10 @@ export default function WebinarGatewayPage() {
     return (
       <div className="webinar-gateway-page">
         <div className="ticker ticker-top">
-          <span>Selamat datang di Webinar One Dashboard — Pastikan kamera dan mikrofon siap, gunakan koneksi internet stabil, dan hubungi host bila mengalami kendala.</span>
+          <div className="ticker-content">
+            <span className="ticker-icon">🎥</span>
+            <span className="ticker-text">Selamat datang di Webinar One Dashboard — Pastikan kamera dan mikrofon siap, gunakan koneksi internet stabil, dan hubungi host bila mengalami kendala.</span>
+          </div>
         </div>
         <div className="webinar-gateway-container">
           <div className="webinar-error">
@@ -330,20 +336,17 @@ export default function WebinarGatewayPage() {
             </button>
           </div>
         </div>
-        <div className="ticker ticker-bottom">
-          <span>Promo spesial! Raih diskon kelas lanjutan dan bonus e-book eksklusif untuk peserta webinar hari ini.</span>
-        </div>
       </div>
     );
   }
 
-  const runningTextTop = "Selamat datang di Webinar One Dashboard — Pastikan kamera dan mikrofon siap, gunakan koneksi internet stabil, dan hubungi host bila mengalami kendala.";
-  const runningTextBottom = "Promo spesial! Raih diskon kelas lanjutan dan bonus e-book eksklusif untuk peserta webinar hari ini.";
-
   return (
     <div className="webinar-gateway-page">
       <div className="ticker ticker-top">
-        <span>{runningTextTop}</span>
+        <div className="ticker-content">
+          <span className="ticker-icon">🎥</span>
+          <span className="ticker-text">Selamat datang di Webinar One Dashboard — Pastikan kamera dan mikrofon siap, gunakan koneksi internet stabil, dan hubungi host bila mengalami kendala.</span>
+        </div>
       </div>
       <div className="webinar-gateway-container">
         {showZoom && webinarData ? (
@@ -422,9 +425,6 @@ export default function WebinarGatewayPage() {
             </div>
           </div>
         )}
-      </div>
-      <div className="ticker ticker-bottom">
-        <span>{runningTextBottom}</span>
       </div>
     </div>
   );

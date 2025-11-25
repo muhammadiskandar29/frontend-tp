@@ -12,6 +12,41 @@ export default function LinkZoomSection({ productId, productName }) {
   const [creating, setCreating] = useState(false);
   const [webinarResult, setWebinarResult] = useState(null);
   const [topicTouched, setTopicTouched] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch existing webinar data
+  useEffect(() => {
+    async function fetchExistingWebinar() {
+      if (!productId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+        const res = await fetch(`/api/webinar?produk=${productId}`, {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (res.ok && data?.success && data?.data) {
+          setWebinarResult(data.data);
+        }
+      } catch (error) {
+        console.error("❌ [LINK ZOOM] fetch existing error:", error);
+        // Silent fail - tidak ada webinar yang sudah dibuat
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchExistingWebinar();
+  }, [productId]);
 
   useEffect(() => {
     if (!topicTouched && productName) {
@@ -116,12 +151,38 @@ export default function LinkZoomSection({ productId, productName }) {
       webinarResult.passcode ||
       webinarResult.webinar?.password;
 
+    const topic = webinarResult.topic || webinarResult.webinar?.topic || "";
+    const startTime = webinarResult.start_time || webinarResult.webinar?.start_time || "";
+
     return (
       <div className="linkzoom-result">
         <div className="result-header">
-          <h3>Link Zoom Berhasil Dibuat</h3>
-          <p>Bagikan link berikut ke peserta webinar.</p>
+          <h3>Link Zoom Telah Dibuat</h3>
+          <p>Data webinar untuk produk ini sudah tersedia. Bagikan link berikut ke peserta webinar.</p>
         </div>
+        {(topic || startTime) && (
+          <div className="result-info">
+            {topic && (
+              <div className="info-item">
+                <span>Topic:</span>
+                <strong>{topic}</strong>
+              </div>
+            )}
+            {startTime && (
+              <div className="info-item">
+                <span>Jadwal:</span>
+                <strong>{new Date(startTime).toLocaleString("id-ID", {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit"
+                })}</strong>
+              </div>
+            )}
+          </div>
+        )}
         <div className="result-grid">
           {meetingId && (
             <div className="result-item">
@@ -214,7 +275,13 @@ export default function LinkZoomSection({ productId, productName }) {
         </button>
       </form>
 
-      {renderResultCard()}
+      {loading ? (
+        <div className="linkzoom-loading">
+          <p>Memuat data webinar...</p>
+        </div>
+      ) : (
+        renderResultCard()
+      )}
 
       <style>{`
         .linkzoom-card {
@@ -321,6 +388,37 @@ export default function LinkZoomSection({ productId, productName }) {
           color: white;
           cursor: pointer;
           font-size: 13px;
+        }
+        .result-info {
+          margin-bottom: 20px;
+          padding: 16px;
+          background: white;
+          border-radius: 10px;
+          border: 1px solid #e5e7eb;
+        }
+        .info-item {
+          display: flex;
+          gap: 12px;
+          margin-bottom: 12px;
+        }
+        .info-item:last-child {
+          margin-bottom: 0;
+        }
+        .info-item span {
+          font-size: 14px;
+          color: #6b7280;
+          min-width: 80px;
+        }
+        .info-item strong {
+          font-size: 14px;
+          color: #111827;
+          font-weight: 600;
+        }
+        .linkzoom-loading {
+          margin-top: 24px;
+          padding: 20px;
+          text-align: center;
+          color: #6b7280;
         }
       `}</style>
     </div>
