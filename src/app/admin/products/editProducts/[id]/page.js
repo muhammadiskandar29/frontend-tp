@@ -150,36 +150,35 @@ export default function Page() {
         payload.append(`testimoni[${idx}][deskripsi]`, t.deskripsi || "");
       });
 
-        // Fields
-        payload.append("nama", form.nama);
-        payload.append("url", form.url);
-        const kode = form.kode || generateKode(form.nama);
-        payload.append("kode", kode);
-        payload.append("url", "/" + kode);
-        payload.append("deskripsi", form.deskripsi || "");
-        payload.append("harga_coret", form.harga_coret || 0);
-        payload.append("harga_asli", form.harga_asli || 0);
-        payload.append("tanggal_event", formatDateForBackend(form.tanggal_event));
-        payload.append("assign", JSON.stringify(form.assign));
-        const payloadCustomField = form.custom_field.map((f, idx) => ({
-          nama_field: f.label || f.key,
-          urutan: idx + 1
-        }));
-        payload.append("custom_field", JSON.stringify(payloadCustomField));
-        payload.append("list_point", JSON.stringify(form.list_point));
-        payload.append("fb_pixel", JSON.stringify(form.fb_pixel));
-        payload.append(
-          "event_fb_pixel",
-          JSON.stringify(form.event_fb_pixel.map((ev) => ({ event: ev })))
-        );
-        payload.append("gtm", JSON.stringify(form.gtm));
-        const videoArray = form.video
-          ? form.video.split(",").map(v => v.trim()).filter(v => v)
-          : [];
-        payload.append("video", JSON.stringify(videoArray));
-        payload.append("landingpage", form.landingpage);
-        payload.append("status", form.status);
-        payload.append("user_input", JSON.stringify(form.user_input));
+      // Fields - urutan sama dengan addProducts
+      payload.append("nama", form.nama);
+      const kode = form.kode || generateKode(form.nama);
+      payload.append("kode", kode);
+      payload.append("url", "/" + kode); // pastikan url selalu sinkron dengan kode
+      payload.append("deskripsi", form.deskripsi || "");
+      payload.append("harga_coret", form.harga_coret || 0);
+      payload.append("harga_asli", form.harga_asli || 0);
+      payload.append("tanggal_event", formatDateForBackend(form.tanggal_event));
+      payload.append("assign", JSON.stringify(form.assign));
+      const payloadCustomField = form.custom_field.map((f, idx) => ({
+        nama_field: f.label || f.key,
+        urutan: idx + 1
+      }));
+      payload.append("custom_field", JSON.stringify(payloadCustomField));
+      payload.append("list_point", JSON.stringify(form.list_point));
+      payload.append("fb_pixel", JSON.stringify(form.fb_pixel));
+      payload.append(
+        "event_fb_pixel",
+        JSON.stringify(form.event_fb_pixel.map((ev) => ({ event: ev })))
+      );
+      payload.append("gtm", JSON.stringify(form.gtm));
+      const videoArray = form.video
+        ? form.video.split(",").map(v => v.trim()).filter(v => v)
+        : [];
+      payload.append("video", JSON.stringify(videoArray));
+      payload.append("landingpage", form.landingpage);
+      payload.append("status", form.status);
+      payload.append("user_input", JSON.stringify(form.user_input));
       // Kirim kategori_id sebagai integer
       const kategoriId = form.kategori ? Number(form.kategori) : null;
       if (kategoriId) {
@@ -448,14 +447,14 @@ export default function Page() {
   // ============================
   if (loading) {
     return (
-      <div className="produk-container" style={{ padding: "2rem", textAlign: "center" }}>
+      <div className="produk-container produk-builder-layout" style={{ padding: "2rem", textAlign: "center" }}>
         <p>Loading...</p>
       </div>
     );
   }
 
   return (
-    <div className="produk-container" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem", alignItems: "start" }}>
+    <div className="produk-container produk-builder-layout">
       <div className="produk-form">
         {/* Header Section */}
         <div className="form-header-section">
@@ -878,19 +877,43 @@ export default function Page() {
         </div>
 
         {/* SECTION 6: Form Fields */}
-        <div className="form-section-card">
-          <div className="section-header">
-            <h3 className="section-title">📋 Form Fields</h3>
-            <p className="section-description">Field yang akan muncul di form pembeli</p>
-          </div>
-          <div className="section-content">
-            <div className="info-box">
-              <p className="info-text">
-                <strong>Info:</strong> Field berikut akan otomatis muncul di form pembeli: Nama, WhatsApp, Email, Alamat
-              </p>
+        <section className="preview-form space-y-4 mt-6" aria-label="Order form">
+          <h2 className="font-semibold text-lg">Informasi Dasar</h2>
+
+          {[
+            { label: "Nama", key: "nama", placeholder: "Nama lengkap Anda" },
+            { label: "Nomor WhatsApp", key: "wa", placeholder: "08xxxxxxxxxx" },
+            { label: "Email", key: "email", placeholder: "email@example.com" },
+          ].map((field, i) => (
+            <div 
+              key={i}
+              className="p-4 border border-gray-200 rounded-xl bg-gray-50 shadow-sm"
+            >
+              <br></br>
+              <label className="font-medium text-gray-700">{field.label}</label>
+              <input
+                type="text"
+                placeholder={field.placeholder}
+                className="w-full p-3 border border-gray-300 rounded-xl mt-2 focus:border-blue-500 focus:ring focus:ring-blue-200 transition"
+                disabled
+              />
             </div>
+          ))}
+
+          {/* ALAMAT */}
+          <div className="space-y-2 p-4 border border-gray-200 rounded-xl bg-white shadow-sm">
+            <br></br>
+            <label className="block text-sm font-semibold text-gray-700">
+              Alamat
+            </label>
+            <textarea
+              placeholder="Alamat lengkap"
+              className="w-full p-3 border border-gray-300 rounded-xl mt-2 focus:border-blue-500 focus:ring focus:ring-blue-200 transition"
+              rows={3}
+              disabled
+            />
           </div>
-        </div>
+        </section>
 
         {/* SECTION 7: Custom Fields */}
         <div className="form-section-card">
@@ -1031,7 +1054,7 @@ export default function Page() {
         </div>
       </div>
       {/* ================= RIGHT: PREVIEW ================= */}
-      <div style={{ position: "sticky", top: "2rem" }}>
+      <div className="builder-preview-card">
         <LandingTemplate form={form} />
       </div>
     </div>
