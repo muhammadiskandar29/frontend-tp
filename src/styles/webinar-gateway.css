@@ -8,7 +8,7 @@ html, body {
   overflow: hidden;
 }
 
-/* Ensure Zoom SDK elements stay within container */
+/* Ensure Zoom SDK elements stay within container and don't cover ticker */
 .webinar-gateway-page #zmmtg-root {
   position: absolute !important;
   top: 0 !important;
@@ -27,6 +27,15 @@ html, body {
   z-index: 1 !important;
 }
 
+/* Ensure ticker is always on top */
+.webinar-gateway-page > .ticker {
+  position: relative !important;
+  z-index: 9999 !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
 .webinar-gateway-page {
   height: 100vh;
   max-height: 100vh;
@@ -43,6 +52,17 @@ html, body {
   width: 100%;
   margin: 0;
   padding: 0;
+}
+
+/* Ensure ticker is always visible at the top */
+.webinar-gateway-page > .ticker-top {
+  order: -1;
+  position: relative !important;
+  z-index: 9999 !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  width: 100% !important;
 }
 
 .webinar-gateway-container {
@@ -385,12 +405,16 @@ html, body {
   padding: 0.75rem 1.5rem;
   font-weight: 600;
   flex-shrink: 0;
-  z-index: 999;
+  z-index: 9999 !important;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3), 0 2px 8px rgba(0, 0, 0, 0.1);
   height: auto;
   min-height: fit-content;
-  position: relative;
+  position: relative !important;
+  width: 100%;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .ticker::before {
@@ -415,7 +439,15 @@ html, body {
   align-items: center;
   gap: 0.75rem;
   position: relative;
-  z-index: 1;
+  z-index: 10000 !important;
+}
+
+.ticker-top {
+  position: relative !important;
+  z-index: 9999 !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .ticker-icon {
