@@ -6,12 +6,14 @@ import { getCustomers, deleteCustomer } from "@/lib/customer";
 import dynamic from "next/dynamic";
 import "@/styles/dashboard.css";
 import "@/styles/admin.css";
+import "@/styles/customer.css";
 
 // Lazy load modals
 const EditCustomerModal = dynamic(() => import("./editCustomer"), { ssr: false });
 const ViewCustomerModal = dynamic(() => import("./viewCustomer"), { ssr: false });
 const DeleteCustomerModal = dynamic(() => import("./deleteCustomer"), { ssr: false });
 const AddCustomerModal = dynamic(() => import("./addCustomer"), { ssr: false });
+const HistoryCustomerModal = dynamic(() => import("./historyCustomer"), { ssr: false });
 
 /**
  * Simple debounce hook to avoid rerunning expensive computations
@@ -31,7 +33,7 @@ const CUSTOMERS_COLUMNS = [
   "Nama",
   "Email",
   "No Telepon",
-  "Instagram",
+  "Follow Up",
   "Riwayat Order",
   "Verifikasi",
   "Actions",
@@ -45,12 +47,15 @@ export default function AdminCustomerPage() {
   const [showDelete, setShowDelete] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [showView, setShowView] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [needsRefresh, setNeedsRefresh] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 25;
 
   const [toast, setToast] = useState(DEFAULT_TOAST);
+  const [followupMap, setFollowupMap] = useState({});
+  const [followupLoading, setFollowupLoading] = useState({});
   const toastTimeoutRef = useRef(null);
 
   const showToast = (message, type = "success") => {
@@ -107,19 +112,63 @@ export default function AdminCustomerPage() {
     setCurrentPage(1);
   }, [debouncedSearch]);
 
-  // 🔹 Mapping status order
-  const getStatusOrderText = (status) => {
-    switch (status) {
-      case "1":
-        return "Buku";
-      case "2":
-        return "Buku & Seminar";
-      case "3":
-        return "Buku, Seminar & Workshop";
-      default:
-        return "Belum membeli";
-    }
+  const FOLLOWUP_TYPES = {
+    1: { label: "Follow Up 1" },
+    2: { label: "Follow Up 2" },
+    3: { label: "Follow Up 3" },
+    4: { label: "Follow Up 4" },
+    5: { label: "Register" },
+    6: { label: "Processing" },
+    7: { label: "Selesai" },
+    8: { label: "Upselling" },
+    9: { label: "Redirect" },
   };
+
+  const fetchFollowupStatus = useCallback(
+    async (customerId) => {
+      if (!customerId || followupLoading[customerId] || followupMap[customerId] !== undefined)
+        return;
+
+      setFollowupLoading((prev) => ({ ...prev, [customerId]: true }));
+      try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+        const res = await fetch(`/api/admin/customer/followup/${customerId}`, {
+          headers: {
+            Accept: "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data?.success && Array.isArray(data.data)) {
+          const uniqueTypes = Array.from(
+            new Set(
+              data.data
+                .map((item) => Number(item.follup ?? item.follup_rel?.type ?? item.type))
+                .filter((type) => !Number.isNaN(type))
+            )
+          );
+          setFollowupMap((prev) => ({ ...prev, [customerId]: uniqueTypes }));
+        } else {
+          setFollowupMap((prev) => ({ ...prev, [customerId]: [] }));
+        }
+      } catch (err) {
+        console.error("❌ [FOLLOWUP] fetch error:", err);
+        setFollowupMap((prev) => ({ ...prev, [customerId]: [] }));
+      } finally {
+        setFollowupLoading((prev) => ({ ...prev, [customerId]: false }));
+      }
+    },
+    [followupLoading, followupMap]
+  );
+
+  useEffect(() => {
+    paginatedData.forEach((cust) => {
+      if (cust?.id) {
+        fetchFollowupStatus(cust.id);
+      }
+    });
+  }, [paginatedData, fetchFollowupStatus]);
 
   // 🔹 Helpers
   const closeAllModals = () => {
@@ -168,6 +217,11 @@ export default function AdminCustomerPage() {
   const handleView = (cust) => {
     setSelectedCustomer(cust);
     setShowView(true);
+  };
+
+  const handleHistory = (cust) => {
+    setSelectedCustomer(cust);
+    setShowHistory(true);
   };
 
   return (
@@ -262,11 +316,32 @@ export default function AdminCustomerPage() {
                     <div className="customers-table__cell" data-label="No Telepon">
                       {cust.wa || "-"}
                     </div>
-                    <div className="customers-table__cell" data-label="Instagram">
-                      {cust.instagram || "-"}
+                    <div className="customers-table__cell" data-label="Follow Up">
+                      {followupLoading[cust.id] ? (
+                        <span className="followup-chip followup-chip--loading">Memuat…</span>
+                      ) : (followupMap[cust.id]?.length || 0) > 0 ? (
+                        <div className="followup-chip-list">
+                          {followupMap[cust.id].map((type) => (
+                            <span key={`${cust.id}-${type}`} className="followup-chip">
+                              {FOLLOWUP_TYPES[type]?.label || `Type ${type}`}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="followup-chip followup-chip--empty">Belum ada</span>
+                      )}
                     </div>
                     <div className="customers-table__cell" data-label="Riwayat Order">
-                      {getStatusOrderText(cust.status_order)}
+                      <a
+                        href="#"
+                        className="customers-history-link"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleHistory(cust);
+                        }}
+                      >
+                        Lihat Riwayat
+                      </a>
                     </div>
                     <div className="customers-table__cell" data-label="Verifikasi">
                       <span
@@ -362,6 +437,16 @@ export default function AdminCustomerPage() {
             customer={selectedCustomer}
             onClose={() => {
               setShowView(false);
+              setSelectedCustomer(null);
+            }}
+          />
+        )}
+
+        {showHistory && selectedCustomer && (
+          <HistoryCustomerModal
+            customer={selectedCustomer}
+            onClose={() => {
+              setShowHistory(false);
               setSelectedCustomer(null);
             }}
           />

@@ -1,3 +1,41 @@
+.customers-history-link {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.customers-history-link:hover {
+  text-decoration: underline;
+}
+
+.followup-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.followup-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.followup-chip--loading {
+  background: #fef3c7;
+  color: #b45309;
+  border-color: #fde68a;
+}
+
+.followup-chip--empty {
+  background: #f3f4f6;
+  color: #4b5563;
+  border-color: #e5e7eb;
+}
 :root, body 
 {
   font-family: Inter,system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
