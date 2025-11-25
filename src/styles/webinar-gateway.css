@@ -8,34 +8,6 @@ html, body {
   overflow: hidden;
 }
 
-/* Ensure Zoom SDK elements stay within container and don't cover ticker */
-.webinar-gateway-page #zmmtg-root {
-  position: absolute !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  z-index: 1 !important;
-}
-
-/* Override when inside our container */
-.webinar-embed-wrapper #zmmtg-root {
-  position: relative !important;
-  width: 100% !important;
-  height: 100% !important;
-  max-height: 100% !important;
-  z-index: 1 !important;
-}
-
-/* Ensure ticker is always on top */
-.webinar-gateway-page > .ticker {
-  position: relative !important;
-  z-index: 9999 !important;
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-}
-
 .webinar-gateway-page {
   height: 100vh;
   max-height: 100vh;
@@ -50,19 +22,6 @@ html, body {
   right: 0;
   bottom: 0;
   width: 100%;
-  margin: 0;
-  padding: 4.5rem 0;
-}
-
-/* Ensure ticker is always visible at the top */
-.webinar-gateway-page > .ticker-top {
-  order: -1;
-  position: relative !important;
-  z-index: 9999 !important;
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  width: 100% !important;
 }
 
 .webinar-gateway-container {
@@ -75,21 +34,11 @@ html, body {
   width: 100%;
   margin: 0 auto;
   overflow: hidden;
-  position: relative;
-}
-
-.webinar-gateway-container > .webinar-embed-wrapper {
-  width: 100%;
-  max-width: 100%;
-  height: 100%;
-  max-height: 100%;
-  flex: 1 1 0;
-  min-height: 0;
 }
 
 .webinar-gateway {
   background: #ffffff;
-  padding: 2rem clamp(1.5rem, 2vw, 3rem);
+  padding: 2rem clamp(1.5rem, 4vw, 3rem);
   border-radius: 8px;
   box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
   width: min(420px, 100%);
@@ -122,28 +71,25 @@ html, body {
 .webinar-content {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.2rem;
   padding: 0;
   max-height: 100%;
   overflow: hidden;
   min-height: 0;
-  flex: 1 1 auto;
 }
 
 .webinar-title {
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 600;
   color: #1f2937;
-  margin: 0 0 1rem;
+  margin: 0 0 1.2rem;
   text-align: center;
-  flex-shrink: 0;
 }
 
 .webinar-info {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.8rem;
-  flex-shrink: 0;
 }
 
 .info-item {
@@ -173,7 +119,6 @@ html, body {
   background: #fef3c7;
   border-radius: 6px;
   border-left: 4px solid #f59e0b;
-  flex-shrink: 0;
 }
 
 .notice-text {
@@ -206,7 +151,6 @@ html, body {
   font-size: 0.9rem;
   cursor: pointer;
   transition: background 0.2s ease, transform 0.15s ease;
-  flex-shrink: 0;
 }
 
 .join-meeting-btn:hover {
@@ -221,17 +165,12 @@ html, body {
 .webinar-loading,
 .webinar-error {
   text-align: center;
-  padding: 2rem;
+  padding: 2rem; /* dari 3rem */
   background: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
-  max-width: 420px;
+  border-radius: 20px; /* dari 24 */
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.25);
+  max-width: 550px; /* dari 600 */
   width: 100%;
-  max-height: 100%;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
 }
 
 .error-icon {
@@ -326,7 +265,6 @@ html, body {
   background: #fff5e5;
   border-radius: 6px;
   border-left: 4px solid #f1a124;
-  flex-shrink: 0;
 }
 
 .schedule-item {
@@ -384,54 +322,19 @@ html, body {
     font-size: 0.95rem;
     margin-bottom: 1rem;
   }
-
-  .ticker {
-    padding: 0.6rem 1rem;
-  }
-
-  .ticker-icon {
-    font-size: 1.1rem;
-  }
-
-  .ticker-text {
-    font-size: 0.85rem;
-    animation: scroll-text 15s linear infinite;
-  }
 }
 
 .ticker {
-  background: linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #ea580c 100%);
+  background: linear-gradient(120deg, #f59e0b, #f97316);
   color: #ffffff;
-  padding: 0.75rem 1.5rem;
+  padding: 0.55rem 1rem;
   font-weight: 600;
   flex-shrink: 0;
-  z-index: 9999 !important;
+  z-index: 999;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3), 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
   height: auto;
   min-height: fit-content;
-  position: relative !important;
-  width: 100%;
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-}
-
-.ticker::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.1) 50%, transparent 100%);
-  animation: shimmer 3s infinite;
-  pointer-events: none;
-}
-
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
 }
 
 .ticker span {
@@ -439,91 +342,19 @@ html, body {
   white-space: nowrap;
   animation: scroll-text 18s linear infinite;
   letter-spacing: 0.5px;
-  font-size: 0.95rem;
 }
 
 .ticker-bottom span {
-  animation: scroll-text-reverse 18s linear infinite;
-}
-
-@keyframes scroll-text {
-  0% { transform: translateX(100%); }
-  100% { transform: translateX(-100%); }
-}
-
-@keyframes scroll-text-reverse {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-
-.ticker-top,
-.ticker-bottom {
-  position: fixed !important;
-  left: 0;
-  right: 0;
-  width: 100%;
-  z-index: 10000 !important;
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  pointer-events: none;
-}
-
-.ticker-top {
-  top: 0;
-}
-
-.ticker-bottom {
-  bottom: 0;
+  animation-direction: reverse;
 }
 
 .webinar-embed-wrapper {
   width: 100%;
-  height: 100%;
-  max-height: 100%;
+  height: 70vh; /* dari 80vh — supaya tidak kepotong */
   background: #000;
-  border-radius: 8px;
+  border-radius: 24px; /* dari 28 */
   overflow: hidden;
-  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  contain: layout style paint;
-}
-
-.webinar-embed-wrapper #zmmtg-root {
-  width: 100% !important;
-  height: 100% !important;
-  max-height: 100% !important;
-  position: relative !important;
-  overflow: hidden !important;
-  display: flex !important;
-  flex-direction: column !important;
-  contain: layout style paint;
-  z-index: 1 !important;
-}
-
-.webinar-embed-wrapper #zmmtg-root > * {
-  width: 100% !important;
-  height: 100% !important;
-  max-height: 100% !important;
-  position: relative !important;
-  z-index: 1 !important;
-}
-
-.webinar-embed-wrapper #aria-notify-area {
-  position: absolute !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100% !important;
-  z-index: 1000 !important;
-  pointer-events: none !important;
-}
-
-/* Ensure Zoom SDK elements don't cover tickers */
-.webinar-gateway-page #zmmtg-root,
-.webinar-gateway-page #zmmtg-root * {
-  z-index: 1 !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
 }
 
 .webinar-embed-wrapper iframe {
@@ -537,8 +368,6 @@ html, body {
   background: #fff9f0;
   border-radius: 6px;
   border: 1px solid #e5e7eb;
-  flex-shrink: 0;
-  margin-bottom: 1rem;
 }
 
 .join-link-header {
