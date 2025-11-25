@@ -13,6 +13,9 @@
   flex-wrap: wrap;
   gap: 6px;
 }
+.followup-chip-list--wrap {
+  max-width: 280px;
+}
 
 .followup-chip {
   display: inline-flex;
@@ -20,9 +23,8 @@
   padding: 2px 8px;
   border-radius: 999px;
   font-size: 11px;
-  background: #eff6ff;
-  color: #1d4ed8;
-  border: 1px solid #bfdbfe;
+  border: 1px solid transparent;
+  white-space: nowrap;
 }
 
 .followup-chip--loading {
@@ -35,6 +37,18 @@
   background: #f3f4f6;
   color: #4b5563;
   border-color: #e5e7eb;
+}
+
+.followup-chip--active {
+  background: #2563eb;
+  color: #fff;
+  border-color: #1d4ed8;
+}
+
+.followup-chip--inactive {
+  background: #f1f5f9;
+  color: #94a3b8;
+  border-color: #e2e8f0;
 }
 :root, body 
 {

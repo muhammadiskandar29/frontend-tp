@@ -141,14 +141,14 @@ export default function AdminCustomerPage() {
 
         const data = await res.json().catch(() => ({}));
         if (res.ok && data?.success && Array.isArray(data.data)) {
-          const uniqueTypes = Array.from(
-            new Set(
-              data.data
-                .map((item) => Number(item.follup ?? item.follup_rel?.type ?? item.type))
-                .filter((type) => !Number.isNaN(type))
-            )
-          );
-          setFollowupMap((prev) => ({ ...prev, [customerId]: uniqueTypes }));
+          const typeStatus = {};
+          data.data.forEach((item) => {
+            const typeNum = Number(item.follup ?? item.follup_rel?.type ?? item.type);
+            if (!Number.isNaN(typeNum)) {
+              typeStatus[typeNum] = true;
+            }
+          });
+          setFollowupMap((prev) => ({ ...prev, [customerId]: typeStatus }));
         } else {
           setFollowupMap((prev) => ({ ...prev, [customerId]: [] }));
         }
@@ -319,16 +319,24 @@ export default function AdminCustomerPage() {
                     <div className="customers-table__cell" data-label="Follow Up">
                       {followupLoading[cust.id] ? (
                         <span className="followup-chip followup-chip--loading">Memuat…</span>
-                      ) : (followupMap[cust.id]?.length || 0) > 0 ? (
-                        <div className="followup-chip-list">
-                          {followupMap[cust.id].map((type) => (
-                            <span key={`${cust.id}-${type}`} className="followup-chip">
-                              {FOLLOWUP_TYPES[type]?.label || `Type ${type}`}
-                            </span>
-                          ))}
-                        </div>
                       ) : (
-                        <span className="followup-chip followup-chip--empty">Belum ada</span>
+                        <div className="followup-chip-list followup-chip-list--wrap">
+                          {Object.keys(FOLLOWUP_TYPES).map((key) => {
+                            const type = Number(key);
+                            const isSent = !!followupMap[cust.id]?.[type];
+                            return (
+                              <span
+                                key={`${cust.id}-${type}`}
+                                className={`followup-chip ${
+                                  isSent ? "followup-chip--active" : "followup-chip--inactive"
+                                }`}
+                                title={FOLLOWUP_TYPES[type].label}
+                              >
+                                {FOLLOWUP_TYPES[type].label}
+                              </span>
+                            );
+                          })}
+                        </div>
                       )}
                     </div>
                     <div className="customers-table__cell" data-label="Riwayat Order">
