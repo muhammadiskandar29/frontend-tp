@@ -22,12 +22,12 @@
   width: 100%;
   margin: 0 auto;
   max-height: calc(100vh - 7rem);
-  overflow-y: auto;
+  overflow-y: hidden;
 }
 
 .webinar-gateway {
   background: #ffffff;
-  padding: 2rem clamp(1.5rem, 4vw, 3rem);
+  padding: 2rem clamp(1.5rem,2vw,3rem);
   border-radius: 8px;
   box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
   width: min(420px, 100%);
