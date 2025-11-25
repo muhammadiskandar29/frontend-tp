@@ -35,7 +35,7 @@ export default function LinkZoomSection({ productId, productName }) {
         const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
         console.log("🔍 [LINK ZOOM] Fetching webinar for product:", productId);
         
-        const res = await fetch(`/api/webinar?produk=${productId}`, {
+        const res = await fetch(`/api/admin/webinar/${productId}`, {
           method: "GET",
           headers: {
             Accept: "application/json",
@@ -52,24 +52,29 @@ export default function LinkZoomSection({ productId, productName }) {
 
         console.log("🔍 [LINK ZOOM] Response data:", data);
 
-        if (res.ok && data?.success && data?.data) {
-          const webinarData = data.data;
+        if (res.ok && data?.success && data?.data && Array.isArray(data.data) && data.data.length > 0) {
+          // Ambil webinar pertama dari array
+          const webinarData = data.data[0];
           console.log("✅ [LINK ZOOM] Webinar data found:", webinarData);
           setWebinarResult(webinarData);
           
           // Fill form with existing data
-          if (webinarData.topic || webinarData.webinar?.topic) {
-            setTopic(webinarData.topic || webinarData.webinar?.topic || "");
+          // Note: response tidak ada field 'topic', mungkin perlu dari produk atau default
+          if (webinarData.topic) {
+            setTopic(webinarData.topic);
+            setTopicTouched(true);
+          } else if (productName) {
+            // Fallback ke nama produk jika tidak ada topic
+            setTopic(`Webinar ${productName}`);
             setTopicTouched(true);
           }
           
-          if (webinarData.start_time || webinarData.webinar?.start_time) {
-            const startTimeValue = webinarData.start_time || webinarData.webinar?.start_time;
-            setStartTime(convertToDatetimeLocal(startTimeValue));
+          if (webinarData.start_time) {
+            setStartTime(convertToDatetimeLocal(webinarData.start_time));
           }
           
-          if (webinarData.duration || webinarData.webinar?.duration) {
-            setDuration(webinarData.duration || webinarData.webinar?.duration || defaultDuration);
+          if (webinarData.duration) {
+            setDuration(webinarData.duration || defaultDuration);
           }
         } else {
           console.log("ℹ️ [LINK ZOOM] No webinar data found or error:", data);
@@ -156,19 +161,47 @@ export default function LinkZoomSection({ productId, productName }) {
       }
 
       toast.success(data.message || "Link Zoom berhasil dibuat");
-      const resultData = data.data || data;
-      setWebinarResult(resultData);
       
-      // Update form with response data (if different from input)
-      if (resultData.topic || resultData.webinar?.topic) {
-        setTopic(resultData.topic || resultData.webinar?.topic || topic);
-      }
-      if (resultData.start_time || resultData.webinar?.start_time) {
-        const startTimeValue = resultData.start_time || resultData.webinar?.start_time;
-        setStartTime(convertToDatetimeLocal(startTimeValue));
-      }
-      if (resultData.duration || resultData.webinar?.duration) {
-        setDuration(resultData.duration || resultData.webinar?.duration || duration);
+      // Response POST mungkin mengembalikan data langsung atau perlu fetch ulang
+      // Jika ada data langsung, gunakan itu, jika tidak fetch ulang
+      if (data.data) {
+        // Handle jika data adalah array (format baru)
+        const resultData = Array.isArray(data.data) ? data.data[0] : data.data;
+        setWebinarResult(resultData);
+        
+        // Update form dengan data yang baru dibuat
+        if (resultData.start_time) {
+          setStartTime(convertToDatetimeLocal(resultData.start_time));
+        }
+        if (resultData.duration) {
+          setDuration(resultData.duration || duration);
+        }
+      } else {
+        // Jika tidak ada data langsung, fetch ulang dari GET endpoint
+        try {
+          const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+          const fetchRes = await fetch(`/api/admin/webinar/${productId}`, {
+            method: "GET",
+            headers: {
+              Accept: "application/json",
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+          });
+          
+          const fetchData = await fetchRes.json().catch(() => ({}));
+          if (fetchRes.ok && fetchData?.success && fetchData?.data && Array.isArray(fetchData.data) && fetchData.data.length > 0) {
+            const webinarData = fetchData.data[0];
+            setWebinarResult(webinarData);
+            if (webinarData.start_time) {
+              setStartTime(convertToDatetimeLocal(webinarData.start_time));
+            }
+            if (webinarData.duration) {
+              setDuration(webinarData.duration || duration);
+            }
+          }
+        } catch (fetchError) {
+          console.error("❌ [LINK ZOOM] Error fetching after create:", fetchError);
+        }
       }
     } catch (error) {
       console.error("❌ [LINK ZOOM] create error:", error);
