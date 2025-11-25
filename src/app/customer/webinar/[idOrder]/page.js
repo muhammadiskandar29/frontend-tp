@@ -416,9 +416,6 @@ export default function WebinarGatewayPage() {
           </div>
         )}
       </div>
-      <div className="ticker ticker-bottom">
-        <span>{runningTextBottom}</span>
-      </div>
     </div>
   );
 }
