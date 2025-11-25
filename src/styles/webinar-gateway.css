@@ -448,6 +448,25 @@ html, body {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
+  order: -1;
+}
+
+.ticker-bottom {
+  position: relative !important;
+  z-index: 9999 !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  order: 999;
+}
+
+.ticker-bottom .ticker-text {
+  animation: scroll-text-reverse 20s linear infinite;
+}
+
+@keyframes scroll-text-reverse {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 .ticker-icon {

@@ -264,6 +264,12 @@ export default function WebinarGatewayPage() {
             </p>
           </div>
         </div>
+        <div className="ticker ticker-bottom">
+          <div className="ticker-content">
+            <span className="ticker-icon">🎁</span>
+            <span className="ticker-text">Promo spesial! Raih diskon kelas lanjutan dan bonus e-book eksklusif untuk peserta webinar hari ini.</span>
+          </div>
+        </div>
       </div>
     );
   }
@@ -273,6 +279,7 @@ export default function WebinarGatewayPage() {
       <div className="webinar-gateway-page">
         <div className="ticker ticker-top">
           <div className="ticker-content">
+            <span className="ticker-icon">🎥</span>
             <span className="ticker-text">Selamat datang di Webinar One Dashboard — Pastikan kamera dan mikrofon siap, gunakan koneksi internet stabil, dan hubungi host bila mengalami kendala.</span>
           </div>
         </div>
@@ -314,6 +321,12 @@ export default function WebinarGatewayPage() {
             </div>
           </div>
         </div>
+        <div className="ticker ticker-bottom">
+          <div className="ticker-content">
+            <span className="ticker-icon">🎁</span>
+            <span className="ticker-text">Promo spesial! Raih diskon kelas lanjutan dan bonus e-book eksklusif untuk peserta webinar hari ini.</span>
+          </div>
+        </div>
       </div>
     );
   }
@@ -333,6 +346,12 @@ export default function WebinarGatewayPage() {
             <button onClick={() => router.push("/customer/dashboard")}>
               Kembali ke Dashboard
             </button>
+          </div>
+        </div>
+        <div className="ticker ticker-bottom">
+          <div className="ticker-content">
+            <span className="ticker-icon">🎁</span>
+            <span className="ticker-text">Promo spesial! Raih diskon kelas lanjutan dan bonus e-book eksklusif untuk peserta webinar hari ini.</span>
           </div>
         </div>
       </div>
@@ -424,6 +443,12 @@ export default function WebinarGatewayPage() {
             </div>
           </div>
         )}
+      </div>
+      <div className="ticker ticker-bottom">
+        <div className="ticker-content">
+          <span className="ticker-icon">🎁</span>
+          <span className="ticker-text">Promo spesial! Raih diskon kelas lanjutan dan bonus e-book eksklusif untuk peserta webinar hari ini.</span>
+        </div>
       </div>
     </div>
   );

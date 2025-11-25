@@ -371,6 +371,9 @@ export default function LinkZoomSection({ productId, productName }) {
           background: #93c5fd;
           cursor: not-allowed;
         }
+        .linkzoom-form {
+          margin-bottom: 24px;
+        }
         .linkzoom-result {
           margin-top: 24px;
           border: 1px solid #dbeafe;
