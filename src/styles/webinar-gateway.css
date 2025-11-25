@@ -61,9 +61,6 @@
   flex-direction: column;
   gap: 1.2rem;
   padding: 0;
-  max-height: 100%;
-  overflow: hidden;
-  min-height: 0;
 }
 
 .webinar-title {
@@ -281,13 +278,12 @@
 /* Responsive */
 @media (max-width: 768px) {
   .webinar-gateway-container {
-    padding: 1rem;
+    padding: 1.5rem;
+    max-height: calc(100vh - 6rem);
   }
 
   .webinar-gateway {
     padding: 1.5rem;
-    max-height: 100%;
-    overflow: hidden;
   }
 
   .webinar-header {
@@ -295,34 +291,24 @@
     padding: 1rem;
   }
 
-  .webinar-content {
-    gap: 1rem;
-    max-height: 100%;
-    overflow: hidden;
-  }
-
   .webinar-info {
     grid-template-columns: 1fr;
-    gap: 0.6rem;
   }
 
   .webinar-title {
     font-size: 0.95rem;
-    margin-bottom: 1rem;
   }
 }
 
 .ticker {
   background: linear-gradient(120deg, #f59e0b, #f97316);
   color: #ffffff;
-  padding: 0.55rem 1rem;
+  padding: 0.55rem 1rem; /* dari 0.65rem */
   font-weight: 600;
-  flex-shrink: 0;
+  position: sticky;
   z-index: 999;
   overflow: hidden;
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
-  height: auto;
-  min-height: fit-content;
 }
 
 .ticker span {

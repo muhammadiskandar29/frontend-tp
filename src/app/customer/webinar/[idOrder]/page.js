@@ -261,9 +261,6 @@ export default function WebinarGatewayPage() {
             </p>
           </div>
         </div>
-        <div className="ticker ticker-bottom">
-          <span>Promo spesial! Raih diskon kelas lanjutan dan bonus e-book eksklusif untuk peserta webinar hari ini.</span>
-        </div>
       </div>
     );
   }
@@ -312,9 +309,6 @@ export default function WebinarGatewayPage() {
             </div>
           </div>
         </div>
-        <div className="ticker ticker-bottom">
-          <span>Promo spesial! Raih diskon kelas lanjutan dan bonus e-book eksklusif untuk peserta webinar hari ini.</span>
-        </div>
       </div>
     );
   }
@@ -333,15 +327,11 @@ export default function WebinarGatewayPage() {
             </button>
           </div>
         </div>
-        <div className="ticker ticker-bottom">
-          <span>Promo spesial! Raih diskon kelas lanjutan dan bonus e-book eksklusif untuk peserta webinar hari ini.</span>
-        </div>
       </div>
     );
   }
 
   const runningTextTop = "Selamat datang di Webinar One Dashboard — Pastikan kamera dan mikrofon siap, gunakan koneksi internet stabil, dan hubungi host bila mengalami kendala.";
-  const runningTextBottom = "Promo spesial! Raih diskon kelas lanjutan dan bonus e-book eksklusif untuk peserta webinar hari ini.";
 
   return (
     <div className="webinar-gateway-page">
@@ -382,23 +372,6 @@ export default function WebinarGatewayPage() {
                   <span className="info-label">Meeting ID</span>
                   <span className="info-value">{webinarData.meetingNumber}</span>
                 </div>
-              </div>
-
-              <div className="join-link-card">
-                <div className="join-link-header">
-                  <span>Link Akses Webinar</span>
-                  <button
-                    onClick={() => {
-                      const link = webinarData.joinUrl || webinarData.join_url;
-                      if (navigator.clipboard && link) {
-                        navigator.clipboard.writeText(link);
-                      }
-                    }}
-                  >
-                    Salin Link
-                  </button>
-                </div>
-                <p>{webinarData.joinUrl || webinarData.join_url}</p>
               </div>
 
               {webinarData.kategoriNama?.toLowerCase() === "seminar" ? (
