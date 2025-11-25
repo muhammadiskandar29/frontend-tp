@@ -113,15 +113,15 @@ export default function AdminCustomerPage() {
   }, [debouncedSearch]);
 
   const FOLLOWUP_TYPES = {
-    1: { label: "Follow Up 1" },
-    2: { label: "Follow Up 2" },
-    3: { label: "Follow Up 3" },
-    4: { label: "Follow Up 4" },
-    5: { label: "Register" },
-    6: { label: "Processing" },
-    7: { label: "Selesai" },
-    8: { label: "Upselling" },
-    9: { label: "Redirect" },
+    1: { label: "F1" },
+    2: { label: "F2" },
+    3: { label: "F3" },
+    4: { label: "F4" },
+    5: { label: "Reg" },
+    6: { label: "Proc" },
+    7: { label: "Done" },
+    8: { label: "Up" },
+    9: { label: "Red" },
   };
 
   const fetchFollowupStatus = useCallback(
@@ -320,7 +320,7 @@ export default function AdminCustomerPage() {
                       {followupLoading[cust.id] ? (
                         <span className="followup-chip followup-chip--loading">Memuat…</span>
                       ) : (
-                        <div className="followup-chip-list followup-chip-list--wrap">
+                        <div className="followup-chip-list followup-chip-list--line">
                           {Object.keys(FOLLOWUP_TYPES).map((key) => {
                             const type = Number(key);
                             const isSent = !!followupMap[cust.id]?.[type];

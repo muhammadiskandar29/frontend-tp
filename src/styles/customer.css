@@ -13,8 +13,9 @@
   flex-wrap: wrap;
   gap: 6px;
 }
-.followup-chip-list--wrap {
-  max-width: 280px;
+.followup-chip-list--line {
+  max-width: 100%;
+  flex-wrap: nowrap;
 }
 
 .followup-chip {
