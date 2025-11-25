@@ -261,9 +261,6 @@ export default function WebinarGatewayPage() {
             </p>
           </div>
         </div>
-        <div className="ticker ticker-bottom">
-          <span>Promo spesial! Raih diskon kelas lanjutan dan bonus e-book eksklusif untuk peserta webinar hari ini.</span>
-        </div>
       </div>
     );
   }
