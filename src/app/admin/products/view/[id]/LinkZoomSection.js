@@ -14,6 +14,15 @@ export default function LinkZoomSection({ productId, productName }) {
   const [topicTouched, setTopicTouched] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Convert backend datetime to datetime-local format
+  const convertToDatetimeLocal = (backendTime) => {
+    if (!backendTime) return "";
+    // Format: "2024-12-25 14:00:00" -> "2024-12-25T14:00"
+    const dateTimeStr = backendTime.replace(" ", "T");
+    // Remove seconds if present
+    return dateTimeStr.substring(0, 16);
+  };
+
   // Fetch existing webinar data
   useEffect(() => {
     async function fetchExistingWebinar() {
@@ -35,7 +44,23 @@ export default function LinkZoomSection({ productId, productName }) {
         const data = await res.json().catch(() => ({}));
 
         if (res.ok && data?.success && data?.data) {
-          setWebinarResult(data.data);
+          const webinarData = data.data;
+          setWebinarResult(webinarData);
+          
+          // Fill form with existing data
+          if (webinarData.topic || webinarData.webinar?.topic) {
+            setTopic(webinarData.topic || webinarData.webinar?.topic || "");
+            setTopicTouched(true);
+          }
+          
+          if (webinarData.start_time || webinarData.webinar?.start_time) {
+            const startTimeValue = webinarData.start_time || webinarData.webinar?.start_time;
+            setStartTime(convertToDatetimeLocal(startTimeValue));
+          }
+          
+          if (webinarData.duration || webinarData.webinar?.duration) {
+            setDuration(webinarData.duration || webinarData.webinar?.duration || defaultDuration);
+          }
         }
       } catch (error) {
         console.error("❌ [LINK ZOOM] fetch existing error:", error);
@@ -49,10 +74,11 @@ export default function LinkZoomSection({ productId, productName }) {
   }, [productId]);
 
   useEffect(() => {
-    if (!topicTouched && productName) {
+    // Only set default topic if not touched and no existing webinar data
+    if (!topicTouched && productName && !webinarResult && !loading) {
       setTopic((prev) => prev || `Webinar ${productName}`);
     }
-  }, [productName, topicTouched]);
+  }, [productName, topicTouched, webinarResult, loading]);
 
   const formatStartTime = (value) => {
     if (!value) return "";
@@ -118,7 +144,20 @@ export default function LinkZoomSection({ productId, productName }) {
       }
 
       toast.success(data.message || "Link Zoom berhasil dibuat");
-      setWebinarResult(data.data || data);
+      const resultData = data.data || data;
+      setWebinarResult(resultData);
+      
+      // Update form with response data (if different from input)
+      if (resultData.topic || resultData.webinar?.topic) {
+        setTopic(resultData.topic || resultData.webinar?.topic || topic);
+      }
+      if (resultData.start_time || resultData.webinar?.start_time) {
+        const startTimeValue = resultData.start_time || resultData.webinar?.start_time;
+        setStartTime(convertToDatetimeLocal(startTimeValue));
+      }
+      if (resultData.duration || resultData.webinar?.duration) {
+        setDuration(resultData.duration || resultData.webinar?.duration || duration);
+      }
     } catch (error) {
       console.error("❌ [LINK ZOOM] create error:", error);
       toast.error(error.message || "Terjadi kesalahan");

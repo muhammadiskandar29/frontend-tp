@@ -273,7 +273,6 @@ export default function WebinarGatewayPage() {
       <div className="webinar-gateway-page">
         <div className="ticker ticker-top">
           <div className="ticker-content">
-            <span className="ticker-icon">🎥</span>
             <span className="ticker-text">Selamat datang di Webinar One Dashboard — Pastikan kamera dan mikrofon siap, gunakan koneksi internet stabil, dan hubungi host bila mengalami kendala.</span>
           </div>
         </div>
