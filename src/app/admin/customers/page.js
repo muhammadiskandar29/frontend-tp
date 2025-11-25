@@ -14,6 +14,7 @@ const ViewCustomerModal = dynamic(() => import("./viewCustomer"), { ssr: false }
 const DeleteCustomerModal = dynamic(() => import("./deleteCustomer"), { ssr: false });
 const AddCustomerModal = dynamic(() => import("./addCustomer"), { ssr: false });
 const HistoryCustomerModal = dynamic(() => import("./historyCustomer"), { ssr: false });
+const FollowupLogModal = dynamic(() => import("./followupLog"), { ssr: false });
 
 /**
  * Simple debounce hook to avoid rerunning expensive computations
@@ -48,14 +49,13 @@ export default function AdminCustomerPage() {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [showView, setShowView] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showFollowupLog, setShowFollowupLog] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [needsRefresh, setNeedsRefresh] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 25;
 
   const [toast, setToast] = useState(DEFAULT_TOAST);
-  const [followupMap, setFollowupMap] = useState({});
-  const [followupLoading, setFollowupLoading] = useState({});
   const toastTimeoutRef = useRef(null);
 
   const showToast = (message, type = "success") => {
@@ -112,64 +112,6 @@ export default function AdminCustomerPage() {
     setCurrentPage(1);
   }, [debouncedSearch]);
 
-  const FOLLOWUP_TYPES = {
-    1: { label: "F1" },
-    2: { label: "F2" },
-    3: { label: "F3" },
-    4: { label: "F4" },
-    5: { label: "Reg" },
-    6: { label: "Proc" },
-    7: { label: "Done" },
-    8: { label: "Up" },
-    9: { label: "Red" },
-  };
-
-  const fetchFollowupStatus = useCallback(
-    async (customerId) => {
-      if (!customerId || followupLoading[customerId] || followupMap[customerId] !== undefined)
-        return;
-
-      setFollowupLoading((prev) => ({ ...prev, [customerId]: true }));
-      try {
-        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-        const res = await fetch(`/api/admin/customer/followup/${customerId}`, {
-          headers: {
-            Accept: "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-        });
-
-        const data = await res.json().catch(() => ({}));
-        if (res.ok && data?.success && Array.isArray(data.data)) {
-          const typeStatus = {};
-          data.data.forEach((item) => {
-            const typeNum = Number(item.follup ?? item.follup_rel?.type ?? item.type);
-            if (!Number.isNaN(typeNum)) {
-              typeStatus[typeNum] = true;
-            }
-          });
-          setFollowupMap((prev) => ({ ...prev, [customerId]: typeStatus }));
-        } else {
-          setFollowupMap((prev) => ({ ...prev, [customerId]: [] }));
-        }
-      } catch (err) {
-        console.error("❌ [FOLLOWUP] fetch error:", err);
-        setFollowupMap((prev) => ({ ...prev, [customerId]: [] }));
-      } finally {
-        setFollowupLoading((prev) => ({ ...prev, [customerId]: false }));
-      }
-    },
-    [followupLoading, followupMap]
-  );
-
-  useEffect(() => {
-    paginatedData.forEach((cust) => {
-      if (cust?.id) {
-        fetchFollowupStatus(cust.id);
-      }
-    });
-  }, [paginatedData, fetchFollowupStatus]);
-
   // 🔹 Helpers
   const closeAllModals = () => {
     setShowEdit(false);
@@ -222,6 +164,11 @@ export default function AdminCustomerPage() {
   const handleHistory = (cust) => {
     setSelectedCustomer(cust);
     setShowHistory(true);
+  };
+
+  const handleFollowupLog = (cust) => {
+    setSelectedCustomer(cust);
+    setShowFollowupLog(true);
   };
 
   return (
@@ -317,27 +264,16 @@ export default function AdminCustomerPage() {
                       {cust.wa || "-"}
                     </div>
                     <div className="customers-table__cell" data-label="Follow Up">
-                      {followupLoading[cust.id] ? (
-                        <span className="followup-chip followup-chip--loading">Memuat…</span>
-                      ) : (
-                        <div className="followup-chip-list followup-chip-list--line">
-                          {Object.keys(FOLLOWUP_TYPES).map((key) => {
-                            const type = Number(key);
-                            const isSent = !!followupMap[cust.id]?.[type];
-                            return (
-                              <span
-                                key={`${cust.id}-${type}`}
-                                className={`followup-chip ${
-                                  isSent ? "followup-chip--active" : "followup-chip--inactive"
-                                }`}
-                                title={FOLLOWUP_TYPES[type].label}
-                              >
-                                {FOLLOWUP_TYPES[type].label}
-                              </span>
-                            );
-                          })}
-                        </div>
-                      )}
+                      <a
+                        href="#"
+                        className="customers-history-link"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleFollowupLog(cust);
+                        }}
+                      >
+                        Lihat Log
+                      </a>
                     </div>
                     <div className="customers-table__cell" data-label="Riwayat Order">
                       <a
@@ -455,6 +391,16 @@ export default function AdminCustomerPage() {
             customer={selectedCustomer}
             onClose={() => {
               setShowHistory(false);
+              setSelectedCustomer(null);
+            }}
+          />
+        )}
+
+        {showFollowupLog && selectedCustomer && (
+          <FollowupLogModal
+            customer={selectedCustomer}
+            onClose={() => {
+              setShowFollowupLog(false);
               setSelectedCustomer(null);
             }}
           />
