@@ -53,6 +53,8 @@ export default function FollowupSection() {
   const [templates, setTemplates] = useState([]); // array lokal template
   const [text, setText] = useState("");
   const [eventValue, setEventValue] = useState("1d-09:00");
+  const [scheduleDay, setScheduleDay] = useState(1);
+  const [scheduleTime, setScheduleTime] = useState("09:00");
   const [autoSend, setAutoSend] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -60,6 +62,19 @@ export default function FollowupSection() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const textareaRef = useRef(null);
+
+  const parseEventValue = (value = "1d-09:00") => {
+    const [dayPart = "1d", timePart = "09:00"] = value.split("-");
+    const dayNumber = Number(dayPart.replace(/[^0-9]/g, "")) || 0;
+    const time = timePart?.trim() ? timePart : "09:00";
+    return { days: dayNumber, time };
+  };
+
+  const formatEventValue = (days, time) => {
+    const safeDay = Math.max(0, Number.isNaN(days) ? 0 : days);
+    const safeTime = time || "09:00";
+    return `${safeDay}d-${safeTime}`;
+  };
 
   const insertAtCursor = (value) => {
     if (!value) return;
@@ -159,6 +174,12 @@ export default function FollowupSection() {
       console.log("ℹ️ [FOLLOWUP] No template found for type", activeType);
     }
   }, [activeType, templates]);
+
+  useEffect(() => {
+    const { days, time } = parseEventValue(eventValue);
+    setScheduleDay(days);
+    setScheduleTime(time);
+  }, [eventValue]);
 
   // Save template ke backend & update array lokal
   const handleSave = async () => {
@@ -332,14 +353,39 @@ export default function FollowupSection() {
           />
           Enable Auto Send
         </label>
-
-        <input
-          type="text"
-          className="select-channel"
-          value={eventValue}
-          onChange={(e) => setEventValue(e.target.value)}
-          placeholder="3d-09:00"
-        />
+        <div className="schedule-grid">
+          <div className="schedule-card">
+            <label>Delay (Hari)</label>
+            <div className="schedule-input">
+              <input
+                type="number"
+                min="0"
+                value={scheduleDay}
+                onChange={(e) => {
+                  const newDay = Math.max(0, Number(e.target.value) || 0);
+                  setScheduleDay(newDay);
+                  setEventValue(formatEventValue(newDay, scheduleTime));
+                }}
+              />
+              <span>hari</span>
+            </div>
+          </div>
+          <div className="schedule-card">
+            <label>Jam Kirim</label>
+            <input
+              type="time"
+              value={scheduleTime}
+              onChange={(e) => {
+                const newTime = e.target.value || "09:00";
+                setScheduleTime(newTime);
+                setEventValue(formatEventValue(scheduleDay, newTime));
+              }}
+            />
+          </div>
+        </div>
+        <p className="schedule-hint">
+          Format terkirim ke backend: <strong>{eventValue}</strong>
+        </p>
       </div>
 
       <button 
@@ -416,6 +462,12 @@ export default function FollowupSection() {
           align-items: center;
         }
 
+        .select-auto {
+          border: 1px solid #ddd;
+          padding: 6px 10px;
+          border-radius: 8px;
+        }
+
         .btn-emoji,
         .insert-btn {
           padding: 8px 14px;
@@ -461,16 +513,70 @@ export default function FollowupSection() {
         }
 
         .schedule-box {
-          margin-top: 20px;
-          border-top: 1px solid #eee;
-          padding-top: 15px;
+          margin-top: 24px;
+          border-top: 1px solid #eef2ff;
+          padding-top: 18px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
         }
 
-        .select-auto,
-        .select-channel {
-          border: 1px solid #ddd;
-          padding: 6px 10px;
-          border-radius: 8px;
+        .schedule-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 12px;
+        }
+
+        .schedule-card {
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 14px;
+          padding: 14px;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+        }
+
+        .schedule-card label {
+          font-size: 14px;
+          font-weight: 600;
+          color: #0f172a;
+        }
+
+        .schedule-card input {
+          border: 1px solid #d1d5db;
+          border-radius: 10px;
+          padding: 8px 10px;
+          font-size: 14px;
+          width: 100%;
+        }
+
+        .schedule-input {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .schedule-input span {
+          font-size: 13px;
+          color: #6b7280;
+        }
+
+        .schedule-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-weight: 600;
+        }
+
+        .schedule-hint {
+          font-size: 13px;
+          color: #6b7280;
+        }
+
+        .schedule-hint strong {
+          color: #111827;
         }
 
         .save-btn {
