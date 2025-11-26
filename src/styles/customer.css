@@ -8,6 +8,37 @@
   text-decoration: underline;
 }
 
+/* WhatsApp Link */
+.wa-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  background: #e7fbe9;
+  border: 1px solid #25D366;
+  border-radius: 20px;
+  color: #128C7E;
+  font-weight: 600;
+  font-size: 13px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.wa-link:hover {
+  background: #25D366;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+}
+
+.wa-link:hover svg {
+  fill: white;
+}
+
+.wa-link span {
+  font-size: 13px;
+}
+
 .followup-chip-list {
   display: flex;
   flex-wrap: wrap;

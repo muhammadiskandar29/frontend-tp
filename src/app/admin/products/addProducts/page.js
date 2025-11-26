@@ -238,6 +238,9 @@ const generateKode = (text) =>
 
       alert("Produk berhasil dibuat!");
       console.log("SUCCESS:", data);
+      
+      // Redirect ke halaman products
+      router.push("/admin/products");
     } catch (err) {
       console.error("❌ Submit error:", err);
       alert("Terjadi kesalahan saat submit.");

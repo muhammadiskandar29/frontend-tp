@@ -339,15 +339,8 @@ export default function Page() {
       alert("Produk berhasil diupdate!");
       console.log("SUCCESS:", data);
       
-      // Refresh data produk untuk menampilkan data terbaru
-      try {
-        await fetchProductData(false); // false = tidak set loading state
-      } catch (err) {
-        console.error("Error refreshing data:", err);
-      }
-      
-      // Opsi: redirect ke list produk (uncomment jika ingin redirect)
-      // router.push("/admin/products");
+      // Redirect ke halaman products
+      router.push("/admin/products");
     } catch (err) {
       console.error("❌ Submit error:", err);
       alert("Terjadi kesalahan saat submit.");
