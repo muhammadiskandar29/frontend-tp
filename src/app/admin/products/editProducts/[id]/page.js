@@ -304,19 +304,19 @@ export default function Page() {
           harga_asli: String(form.harga_asli || 0),
           tanggal_event: formatDateForBackend(form.tanggal_event),
           kategori: kategoriId,
-          assign: JSON.stringify(form.assign),
-          user_input: JSON.stringify(form.user_input),
-          custom_field: JSON.stringify(payloadCustomField),
-          list_point: JSON.stringify(form.list_point),
-          fb_pixel: JSON.stringify(form.fb_pixel),
-          event_fb_pixel: JSON.stringify(form.event_fb_pixel.map((ev) => ({ event: ev }))),
-          gtm: JSON.stringify(form.gtm),
-          video: JSON.stringify(videoArray),
+          assign: form.assign,
+          user_input: form.user_input,
+          custom_field: payloadCustomField,
+          list_point: form.list_point,
+          fb_pixel: form.fb_pixel,
+          event_fb_pixel: form.event_fb_pixel.map((ev) => ({ event: ev })),
+          gtm: form.gtm,
+          video: videoArray,
           landingpage: form.landingpage,
           status: form.status,
-          // Kirim testimoni dan gambar dengan data existing
-          testimoni: JSON.stringify(testimoniPayload),
-          gambar: JSON.stringify(gambarPayload),
+          // Kirim testimoni dan gambar dengan data existing (sebagai array, bukan string)
+          testimoni: testimoniPayload,
+          gambar: gambarPayload,
         };
       }
 
