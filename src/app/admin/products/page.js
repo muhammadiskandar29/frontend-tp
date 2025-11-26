@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, memo, useCallback } from "react";
 import Layout from "@/components/Layout";
 import { useProducts } from "@/hooks/useProducts";
 import { useRouter } from "next/navigation";
+import DeleteProductModal from "./deleteProductModal";
 import "@/styles/dashboard.css";
 import "@/styles/admin.css";
 
@@ -23,6 +24,21 @@ export default function AdminProductsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 25;
   const router = useRouter();
+
+  // State untuk modal hapus
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
+
+  // Handler untuk buka modal hapus
+  const openDeleteModal = (product) => {
+    setProductToDelete(product);
+    setShowDeleteModal(true);
+  };
+
+  // Handler setelah produk berhasil dihapus
+  const handleProductDeleted = (deletedId) => {
+    setProducts((prev) => prev.filter((p) => p.id !== deletedId));
+  };
 
   const filtered = useMemo(() => {
     const term = debouncedSearch.trim().toLowerCase();
@@ -222,15 +238,7 @@ export default function AdminProductsPage() {
                             </button>
                             <button
                               className="product-table__action-link product-table__action-link--danger"
-                              onClick={async () => {
-                                if (confirm(`Yakin hapus produk "${p.nama}"?`)) {
-                                  try {
-                                    await handleDelete(p.id);
-                                  } catch (err) {
-                                    console.error("Error deleting product:", err);
-                                  }
-                                }
-                              }}
+                              onClick={() => openDeleteModal(p)}
                             >
                               Delete
                             </button>
@@ -289,6 +297,18 @@ export default function AdminProductsPage() {
           )}
         </section>
       </div>
+
+      {/* Modal Hapus Produk */}
+      {showDeleteModal && productToDelete && (
+        <DeleteProductModal
+          product={productToDelete}
+          onClose={() => {
+            setShowDeleteModal(false);
+            setProductToDelete(null);
+          }}
+          onDeleted={handleProductDeleted}
+        />
+      )}
     </Layout>
   );
 }
