@@ -11,8 +11,11 @@ export async function GET(request) {
       return NextResponse.json({ error: "Path is required" }, { status: 400 });
     }
 
+    // Decode path (karena di-encode dengan encodeURIComponent di frontend)
+    const decodedPath = decodeURIComponent(path);
+    
     // Build full URL - backend uses /storage/ prefix for uploaded files
-    let cleanPath = path.startsWith("/") ? path : `/${path}`;
+    let cleanPath = decodedPath.startsWith("/") ? decodedPath : `/${decodedPath}`;
     
     // Jika path dimulai dengan /produk/, tambahkan /storage prefix
     if (cleanPath.startsWith("/produk/")) {
