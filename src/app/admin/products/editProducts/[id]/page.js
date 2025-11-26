@@ -205,7 +205,8 @@ export default function Page() {
       const hasNewTestimoniFile = form.testimoni.some((t) => t.gambar?.type === "file" && t.gambar?.value instanceof File);
       const hasNewFile = hasNewHeaderFile || hasNewGalleryFile || hasNewTestimoniFile;
 
-      const kode = form.kode || generateKode(form.nama);
+      // SELALU generate kode dari nama untuk memastikan format slug yang benar (dengan "-")
+      const kode = generateKode(form.nama);
       const kategoriId = form.kategori ? Number(form.kategori) : null;
 
       // Build base payload (tanpa gambar)
