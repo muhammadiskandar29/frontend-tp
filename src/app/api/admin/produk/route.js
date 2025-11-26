@@ -2,10 +2,15 @@ import { NextResponse } from "next/server";
 
 const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "http://3.105.234.181:8000";
 
+// Set to true to enable WebP conversion (requires backend to accept .webp files)
+const ENABLE_WEBP_CONVERSION = false;
+
 // Dynamic import sharp to handle cases where it might not be available
 let sharpModule = null;
 
 const getSharp = async () => {
+  if (!ENABLE_WEBP_CONVERSION) return false;
+  
   if (sharpModule === null) {
     try {
       sharpModule = (await import("sharp")).default;
@@ -27,7 +32,7 @@ const generateWebpFilename = (originalName) => {
   return `${baseName}.webp`;
 };
 
-// Convert image buffer to WebP (returns null if sharp not available)
+// Convert image buffer to WebP (returns null if sharp not available or disabled)
 const convertToWebP = async (buffer, quality = 75) => {
   const sharp = await getSharp();
   if (!sharp) return null;
