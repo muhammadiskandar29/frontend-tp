@@ -185,18 +185,24 @@ export default function Page() {
         payload.append("kategori", kategoriId);
       }
 
-      console.log("FINAL PAYLOAD:", payload);
+      // Tambahkan _method=PUT untuk Laravel compatibility
+      payload.append("_method", "PUT");
+      
+      console.log("FINAL PAYLOAD for product ID:", productId);
+      // Debug: log semua field di FormData
+      for (let [key, value] of payload.entries()) {
+        console.log(`  ${key}:`, typeof value === 'object' ? value.name || value : value);
+      }
 
       const res = await fetch(
         `/api/admin/produk/${productId}`,
         {
-          method: "PUT",
+          method: "POST", // Gunakan POST dengan _method=PUT untuk Laravel
           headers: {
-            ...(isFormData ? {} : { "Content-Type": "application/json" }),
             Accept: "application/json",
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-          body: isFormData ? payload : JSON.stringify(payload),
+          body: payload,
         }
       );
 
