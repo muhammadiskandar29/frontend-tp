@@ -11,17 +11,23 @@ export async function GET(req) {
     });
   }
 
-  // Decode path
-  const decoded = decodeURIComponent(rawPath);
+  // Bersihkan path
+  let cleanPath = rawPath;
   
-  // Build backend URL - selalu tambahkan /storage prefix untuk semua file upload
-  let storagePath = decoded.startsWith("/") ? decoded : `/${decoded}`;
-  storagePath = `/storage${storagePath}`;
-
-  const backendUrl = `${BACKEND_URL}${storagePath}`;
+  // Hapus leading slash
+  cleanPath = cleanPath.replace(/^\/+/, "");
   
-  console.log("[IMAGE PROXY] Request path:", rawPath);
-  console.log("[IMAGE PROXY] Decoded path:", decoded);
+  // Jika path sudah ada "storage/", hapus dulu
+  cleanPath = cleanPath.replace(/^storage\//, "");
+  
+  // Hapus double slash
+  cleanPath = cleanPath.replace(/\/+/g, "/");
+  
+  // Build final URL: BACKEND_URL/storage/<path>
+  const backendUrl = `${BACKEND_URL}/storage/${cleanPath}`;
+  
+  console.log("[IMAGE PROXY] Input path:", rawPath);
+  console.log("[IMAGE PROXY] Clean path:", cleanPath);
   console.log("[IMAGE PROXY] Backend URL:", backendUrl);
 
   try {
@@ -32,11 +38,15 @@ export async function GET(req) {
       },
     });
 
-    console.log("[IMAGE PROXY] Backend response status:", result.status);
+    console.log("[IMAGE PROXY] Backend status:", result.status);
 
     if (!result.ok) {
-      console.error("[IMAGE PROXY] Backend returned error:", result.status);
-      return new Response(JSON.stringify({ error: "Image not found", url: backendUrl }), {
+      console.error("[IMAGE PROXY] Backend error:", result.status, backendUrl);
+      return new Response(JSON.stringify({ 
+        error: "Image not found", 
+        url: backendUrl,
+        status: result.status 
+      }), {
         status: result.status,
         headers: { "Content-Type": "application/json" },
       });
@@ -46,7 +56,7 @@ export async function GET(req) {
     const contentType = result.headers.get("Content-Type") || "image/jpeg";
     
     return new Response(result.body, {
-      status: result.status,
+      status: 200,
       headers: {
         "Content-Type": contentType,
         "Cache-Control": "public, max-age=31536000, immutable",
@@ -54,8 +64,12 @@ export async function GET(req) {
       },
     });
   } catch (error) {
-    console.error("[IMAGE PROXY] Fetch error:", error);
-    return new Response(JSON.stringify({ error: "Failed to fetch image", message: error.message }), {
+    console.error("[IMAGE PROXY] Fetch error:", error.message);
+    return new Response(JSON.stringify({ 
+      error: "Failed to fetch image", 
+      message: error.message,
+      url: backendUrl 
+    }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });

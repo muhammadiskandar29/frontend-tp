@@ -30,16 +30,24 @@ export default function LandingPage() {
     return (isNaN(numPrice) ? 0 : numPrice).toLocaleString("id-ID");
   };
 
-  // Helper: konversi path relatif ke proxied URL (menghindari mixed content HTTPS/HTTP)
-  const resolveImageUrl = (path) => {
+  /**
+   * Helper: Build image URL dari path backend
+   * Backend mengembalikan path tanpa "storage/" prefix, contoh: "produk/header/xxx.png"
+   * Frontend harus generate: /api/image?path=produk/header/xxx.png
+   * Proxy akan menambahkan /storage/ prefix
+   */
+  const buildImageUrl = (path) => {
     if (!path) return "";
     if (typeof path !== "string") return "";
+    
     // Jika sudah absolute HTTPS URL, return langsung
     if (path.startsWith("https://")) return path;
-    // Jika HTTP atau path relatif, gunakan proxy
+    
+    // Bersihkan path
     let cleanPath = path;
+    
+    // Jika path adalah full URL HTTP, extract pathname saja
     if (path.startsWith("http://")) {
-      // Extract path dari URL
       try {
         const url = new URL(path);
         cleanPath = url.pathname;
@@ -47,9 +55,18 @@ export default function LandingPage() {
         cleanPath = path;
       }
     }
-    // Gunakan proxy API untuk menghindari mixed content
-    const encodedPath = encodeURIComponent(cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`);
-    return `/api/image?path=${encodedPath}`;
+    
+    // Hapus leading slash jika ada (proxy akan handle)
+    cleanPath = cleanPath.replace(/^\/+/, "");
+    
+    // Hapus "storage/" prefix jika sudah ada (proxy akan menambahkan)
+    cleanPath = cleanPath.replace(/^storage\//, "");
+    
+    // Hapus double slash
+    cleanPath = cleanPath.replace(/\/+/g, "/");
+    
+    // Gunakan proxy untuk menghindari mixed content HTTPS/HTTP
+    return `/api/image?path=${cleanPath}`;
   };
 
   const resolveHeaderSource = (header) => {
@@ -62,7 +79,7 @@ export default function LandingPage() {
     } else if (header?.value && typeof header.value === "string") {
       rawPath = header.value;
     }
-    return resolveImageUrl(rawPath);
+    return buildImageUrl(rawPath);
   };
 
   // --- SAFE JSON ---
@@ -556,7 +573,7 @@ if (paymentMethod === "va") {
             <h2 className="gallery-title">Galeri Produk</h2>
             <div className="images" itemProp="image">
               {form.gambar.map((g, i) => {
-                const imgSrc = resolveImageUrl(g.path);
+                const imgSrc = buildImageUrl(g.path);
                 return imgSrc ? (
                   <img 
                     key={i} 
@@ -598,7 +615,7 @@ if (paymentMethod === "va") {
             <h2>Testimoni Pembeli</h2>
             <div itemScope itemType="https://schema.org/Review">
               {form.testimoni.map((t, i) => {
-                const testiImgSrc = resolveImageUrl(t.gambar);
+                const testiImgSrc = buildImageUrl(t.gambar);
                 return (
                   <article key={i} className="testi-item" itemScope itemType="https://schema.org/Review">
                     {testiImgSrc && (
