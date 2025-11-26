@@ -25,17 +25,13 @@ export async function PUT(request, { params }) {
     const token = authHeader.replace("Bearer ", "");
     const contentType = request.headers.get("content-type") || "";
 
-    let backendBody;
-    let backendHeaders = {
-      Accept: "application/json",
-      Authorization: `Bearer ${token}`,
-    };
-
     console.log(`[PRODUK PUT] Product ID: ${id}`);
     console.log(`[PRODUK PUT] Content-Type: ${contentType}`);
 
+    let response;
+
     if (contentType.includes("multipart/form-data")) {
-      // FormData - Laravel membutuhkan POST + _method=PUT
+      // FormData - ada file yang diupload
       const formData = await request.formData();
       
       // Tambahkan _method=PUT untuk Laravel
@@ -51,23 +47,46 @@ export async function PUT(request, { params }) {
         }
       }
 
-      backendBody = formData;
-      // Jangan set Content-Type untuk FormData, biarkan fetch handle boundary
+      // Forward ke backend Laravel menggunakan POST dengan _method=PUT (untuk file upload)
+      response = await fetch(`${BACKEND_URL}/api/admin/produk/${id}`, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
     } else {
-      // JSON body
+      // JSON body - tidak ada file baru, gunakan PUT langsung
       const jsonBody = await request.json();
+      
       console.log(`[PRODUK PUT] JSON body:`, JSON.stringify(jsonBody).substring(0, 500));
-      backendBody = JSON.stringify(jsonBody);
-      backendHeaders["Content-Type"] = "application/json";
-    }
 
-    // Forward ke backend Laravel
-    // Gunakan POST dengan _method=PUT untuk Laravel (handle file upload dengan PUT)
-    const response = await fetch(`${BACKEND_URL}/api/admin/produk/${id}`, {
-      method: "POST",
-      headers: backendHeaders,
-      body: backendBody,
-    });
+      // Coba PUT dulu, jika tidak work, fallback ke POST dengan _method
+      response = await fetch(`${BACKEND_URL}/api/admin/produk/${id}`, {
+        method: "PUT",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(jsonBody),
+      });
+
+      // Jika PUT tidak supported (405), coba POST dengan _method=PUT
+      if (response.status === 405) {
+        console.log(`[PRODUK PUT] PUT not supported, trying POST with _method=PUT`);
+        response = await fetch(`${BACKEND_URL}/api/admin/produk/${id}`, {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ ...jsonBody, _method: "PUT" }),
+        });
+      }
+    }
 
     const data = await response.json().catch(() => ({}));
 
