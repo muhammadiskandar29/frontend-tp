@@ -1,6 +1,54 @@
 import { NextResponse } from "next/server";
+import sharp from "sharp";
+import { writeFile, mkdir } from "fs/promises";
+import path from "path";
+import { existsSync } from "fs";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://3.105.234.181:8000";
+const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "products");
+
+// Generate unique filename
+const generateFilename = (originalName, prefix = "img") => {
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 8);
+  const baseName = originalName
+    .replace(/\.[^/.]+$/, "")
+    .replace(/[^a-zA-Z0-9]/g, "-")
+    .toLowerCase()
+    .substring(0, 30);
+  return `${prefix}-${baseName}-${timestamp}-${random}.webp`;
+};
+
+// Ensure upload directory exists
+const ensureUploadDir = async () => {
+  if (!existsSync(UPLOAD_DIR)) {
+    await mkdir(UPLOAD_DIR, { recursive: true });
+  }
+};
+
+// Convert image to WebP and save
+const processAndSaveImage = async (file, prefix = "img") => {
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  
+  // Convert to WebP with quality 75
+  const webpBuffer = await sharp(buffer)
+    .webp({ quality: 75 })
+    .toBuffer();
+  
+  // Generate filename and save
+  const filename = generateFilename(file.name, prefix);
+  const filePath = path.join(UPLOAD_DIR, filename);
+  
+  await ensureUploadDir();
+  await writeFile(filePath, webpBuffer);
+  
+  const publicUrl = `/uploads/products/${filename}`;
+  
+  console.log(`✅ [WEBP] Converted ${file.name} → ${filename} (${webpBuffer.length} bytes)`);
+  
+  return publicUrl;
+};
 
 export async function GET(request) {
   try {
@@ -71,32 +119,105 @@ export async function POST(request) {
       // Handle FormData (file uploads)
       const incomingFormData = await request.formData();
       
-      // Create new FormData to forward to backend
-      const forwardFormData = new FormData();
+      // Create JSON payload to forward to backend
+      const jsonPayload = {};
+      const processedImages = {};
       
-      console.log("🟢 [POST_PRODUK] FormData entries:");
+      console.log("🟢 [POST_PRODUK] Processing FormData entries:");
+      
       for (const [key, value] of incomingFormData.entries()) {
-        if (value instanceof File) {
-          console.log(`  ${key}: [File] ${value.name} (${value.size} bytes, type: ${value.type})`);
-          // For files, we need to convert to a Blob/File that fetch can handle
-          const arrayBuffer = await value.arrayBuffer();
-          const blob = new Blob([arrayBuffer], { type: value.type });
-          forwardFormData.append(key, blob, value.name);
-        } else {
-          console.log(`  ${key}: ${value}`);
-          forwardFormData.append(key, value);
+        if (value instanceof File && value.size > 0) {
+          // Check if it's an image file
+          const isImage = value.type.startsWith("image/");
+          
+          if (isImage) {
+            console.log(`  🖼️ ${key}: [Image] ${value.name} (${value.size} bytes, type: ${value.type})`);
+            
+            try {
+              // Determine prefix based on field name
+              let prefix = "img";
+              if (key === "header" || key.includes("header")) {
+                prefix = "header";
+              } else if (key.includes("gambar") || key.includes("gallery")) {
+                prefix = "gallery";
+              } else if (key.includes("testimoni")) {
+                prefix = "testimoni";
+              }
+              
+              // Convert to WebP and save locally
+              const publicUrl = await processAndSaveImage(value, prefix);
+              
+              // Store the path for the payload
+              if (key.includes("[") && key.includes("]")) {
+                // Handle array fields like gambar[0][path], testimoni[1][gambar]
+                // Parse the key to extract array name, index, and property
+                const match = key.match(/^([^\[]+)\[(\d+)\]\[([^\]]+)\]$/);
+                if (match) {
+                  const [, arrayName, index, propName] = match;
+                  if (!processedImages[arrayName]) {
+                    processedImages[arrayName] = {};
+                  }
+                  if (!processedImages[arrayName][index]) {
+                    processedImages[arrayName][index] = {};
+                  }
+                  processedImages[arrayName][index][propName] = publicUrl;
+                }
+              } else {
+                // Simple field like "header"
+                jsonPayload[key] = publicUrl;
+              }
+            } catch (imgError) {
+              console.error(`  ❌ Failed to process ${value.name}:`, imgError);
+              // Continue with other files
+            }
+          } else {
+            console.log(`  📁 ${key}: [File] ${value.name} (${value.size} bytes, type: ${value.type}) - Skipped (not an image)`);
+          }
+        } else if (typeof value === "string") {
+          console.log(`  📝 ${key}: ${value.substring(0, 100)}${value.length > 100 ? "..." : ""}`);
+          
+          // Handle array fields
+          if (key.includes("[") && key.includes("]")) {
+            const match = key.match(/^([^\[]+)\[(\d+)\]\[([^\]]+)\]$/);
+            if (match) {
+              const [, arrayName, index, propName] = match;
+              if (!processedImages[arrayName]) {
+                processedImages[arrayName] = {};
+              }
+              if (!processedImages[arrayName][index]) {
+                processedImages[arrayName][index] = {};
+              }
+              processedImages[arrayName][index][propName] = value;
+            }
+          } else {
+            jsonPayload[key] = value;
+          }
         }
       }
+      
+      // Convert processedImages objects to arrays
+      for (const [arrayName, indexedItems] of Object.entries(processedImages)) {
+        const arr = [];
+        const indices = Object.keys(indexedItems).map(Number).sort((a, b) => a - b);
+        for (const idx of indices) {
+          arr.push(indexedItems[idx]);
+        }
+        if (arr.length > 0) {
+          jsonPayload[arrayName] = JSON.stringify(arr);
+        }
+      }
+      
+      console.log("🟢 [POST_PRODUK] Final JSON payload keys:", Object.keys(jsonPayload));
 
-      // Forward FormData to backend
+      // Forward as JSON to backend
       response = await fetch(`${BACKEND_URL}/api/admin/produk`, {
         method: "POST",
         headers: {
+          "Content-Type": "application/json",
           Accept: "application/json",
           Authorization: `Bearer ${token}`,
-          // Don't set Content-Type for FormData, let fetch set it with boundary
         },
-        body: forwardFormData,
+        body: JSON.stringify(jsonPayload),
       });
     } else {
       // Handle JSON
