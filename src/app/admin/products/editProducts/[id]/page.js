@@ -320,15 +320,25 @@ export default function Page() {
         };
       }
 
-      console.log("FINAL PAYLOAD for product ID:", productId);
+      console.log("========== FINAL PAYLOAD ==========");
+      console.log("Product ID:", productId);
       console.log("Has new file:", hasNewFile);
+      console.log("Form testimoni count:", form.testimoni.length);
+      console.log("Form testimoni data:", JSON.stringify(form.testimoni, null, 2));
+      console.log("Generated kode:", kode);
+      
       if (isFormData) {
+        console.log("Sending as FormData:");
         for (let [key, value] of payload.entries()) {
           console.log(`  ${key}:`, value instanceof File ? `[File] ${value.name}` : value);
         }
       } else {
-        console.log(JSON.stringify(payload, null, 2));
+        console.log("Sending as JSON:");
+        console.log("Payload testimoni:", JSON.stringify(payload.testimoni, null, 2));
+        console.log("Payload kode:", payload.kode);
+        console.log("Full payload:", JSON.stringify(payload, null, 2));
       }
+      console.log("====================================");
 
       const res = await fetch(
         `/api/admin/produk/${productId}`,
