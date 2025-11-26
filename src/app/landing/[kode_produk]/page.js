@@ -30,12 +30,30 @@ export default function LandingPage() {
     return (isNaN(numPrice) ? 0 : numPrice).toLocaleString("id-ID");
   };
 
+  const BASE_IMAGE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://onedashboardapi-production.up.railway.app";
+
+  // Helper: konversi path relatif ke absolute URL
+  const resolveImageUrl = (path) => {
+    if (!path) return "";
+    if (typeof path !== "string") return "";
+    // Jika sudah absolute URL, return langsung
+    if (path.startsWith("http://") || path.startsWith("https://")) return path;
+    // Jika path relatif, tambahkan base URL
+    const cleanPath = path.startsWith("/") ? path : `/${path}`;
+    return `${BASE_IMAGE_URL}${cleanPath}`;
+  };
+
   const resolveHeaderSource = (header) => {
     if (!header) return "";
-    if (typeof header === "string") return header;
-    if (header?.path && typeof header.path === "string") return header.path;
-    if (header?.value && typeof header.value === "string") return header.value;
-    return "";
+    let rawPath = "";
+    if (typeof header === "string") {
+      rawPath = header;
+    } else if (header?.path && typeof header.path === "string") {
+      rawPath = header.path;
+    } else if (header?.value && typeof header.value === "string") {
+      rawPath = header.value;
+    }
+    return resolveImageUrl(rawPath);
   };
 
   // --- SAFE JSON ---
@@ -90,12 +108,8 @@ export default function LandingPage() {
     if (!data) return;
 
     const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
-    const headerPath = resolveHeaderSource(data.header);
-    const fullImageUrl = headerPath
-      ? headerPath.startsWith("http")
-        ? headerPath
-        : `http://3.105.234.181:8000${headerPath}`
-      : "";
+    // resolveHeaderSource sudah mengembalikan absolute URL
+    const fullImageUrl = resolveHeaderSource(data.header);
 
     // Update document title
     const title = `${data.nama} - Beli Sekarang | Ternak Properti`;
@@ -532,18 +546,19 @@ if (paymentMethod === "va") {
           <section className="preview-gallery" aria-label="Product gallery">
             <h2 className="gallery-title">Galeri Produk</h2>
             <div className="images" itemProp="image">
-              {form.gambar.map((g, i) =>
-                g.path ? (
+              {form.gambar.map((g, i) => {
+                const imgSrc = resolveImageUrl(g.path);
+                return imgSrc ? (
                   <img 
                     key={i} 
-                    src={g.path} 
+                    src={imgSrc} 
                     alt={g.caption || `${form.nama} - Gambar ${i + 1}`}
                     loading="lazy"
                     width="450"
                     height="300"
                   />
-                ) : null
-              )}
+                ) : null;
+              })}
             </div>
           </section>
         )}
@@ -573,27 +588,30 @@ if (paymentMethod === "va") {
           <section className="preview-testimonials" aria-label="Customer testimonials">
             <h2>Testimoni Pembeli</h2>
             <div itemScope itemType="https://schema.org/Review">
-              {form.testimoni.map((t, i) => (
-                <article key={i} className="testi-item" itemScope itemType="https://schema.org/Review">
-                  {t.gambar && (
-                    <img 
-                      src={t.gambar} 
-                      alt={`Foto ${t.nama}`}
-                      itemProp="author"
-                      loading="lazy"
-                      width="60"
-                      height="60"
-                    />
-                  )}
+              {form.testimoni.map((t, i) => {
+                const testiImgSrc = resolveImageUrl(t.gambar);
+                return (
+                  <article key={i} className="testi-item" itemScope itemType="https://schema.org/Review">
+                    {testiImgSrc && (
+                      <img 
+                        src={testiImgSrc} 
+                        alt={`Foto ${t.nama}`}
+                        itemProp="author"
+                        loading="lazy"
+                        width="60"
+                        height="60"
+                      />
+                    )}
 
-                  <div className="info">
-                    <div className="name" itemProp="author" itemScope itemType="https://schema.org/Person">
-                      <span itemProp="name">{t.nama}</span>
+                    <div className="info">
+                      <div className="name" itemProp="author" itemScope itemType="https://schema.org/Person">
+                        <span itemProp="name">{t.nama}</span>
+                      </div>
+                      <div className="desc" itemProp="reviewBody">{t.deskripsi}</div>
                     </div>
-                    <div className="desc" itemProp="reviewBody">{t.deskripsi}</div>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                );
+              })}
             </div>
           </section>
         )}

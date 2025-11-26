@@ -126,12 +126,12 @@ const generateKode = (text) =>
           payload.append("header", form.header.value);
         }
 
-        // Gallery
+        // Gallery - format: gambar[0][file], gambar[0][caption]
         form.gambar.forEach((g, idx) => {
           if (g.path.type === "file" && g.path.value) {
-            payload.append(`gambar[${idx}][path]`, g.path.value);
+            payload.append(`gambar[${idx}][file]`, g.path.value);
           }
-          payload.append(`gambar[${idx}][caption]`, g.caption);
+          payload.append(`gambar[${idx}][caption]`, g.caption || "");
         });
 
         // Testimoni
