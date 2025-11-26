@@ -40,14 +40,24 @@ export async function POST(request) {
       duration,
     };
 
-    const res = await fetch(`${BACKEND_URL}/api/webinar`, {
+    // Get authorization token from request
+    const authHeader = request.headers.get("authorization");
+    const token = authHeader?.replace("Bearer ", "");
+
+    console.log("🔍 [WEBINAR POST] Creating webinar with payload:", payload);
+    console.log("🔍 [WEBINAR POST] Backend URL:", `${BACKEND_URL}/api/admin/webinar`);
+
+    const res = await fetch(`${BACKEND_URL}/api/admin/webinar`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify(payload),
     });
+
+    console.log("🔍 [WEBINAR POST] Backend response status:", res.status);
 
     const data = await res.json().catch(() => ({}));
 
@@ -99,7 +109,10 @@ export async function GET(request) {
     const authHeader = request.headers.get("authorization");
     const token = authHeader?.replace("Bearer ", "");
 
-    const res = await fetch(`${BACKEND_URL}/api/webinar?produk=${produkId}`, {
+    console.log("🔍 [WEBINAR GET] Fetching webinar for produk:", produkId);
+    console.log("🔍 [WEBINAR GET] Backend URL:", `${BACKEND_URL}/api/admin/webinar/${produkId}`);
+
+    const res = await fetch(`${BACKEND_URL}/api/admin/webinar/${produkId}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -107,6 +120,8 @@ export async function GET(request) {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
     });
+
+    console.log("🔍 [WEBINAR GET] Backend response status:", res.status);
 
     const data = await res.json().catch(() => ({}));
 

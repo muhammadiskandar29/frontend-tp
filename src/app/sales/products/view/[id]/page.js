@@ -6,6 +6,14 @@ import Layout from "@/components/Layout";
 import { getProductById } from "@/lib/products";
 import FollowupSection from "./FollowupSection";
 
+// Helper function untuk build image URL via proxy
+const buildImageUrl = (path) => {
+  if (!path) return "/placeholder-image.png";
+  // Bersihkan path dari prefix yang tidak diperlukan
+  const cleanPath = path.replace(/^\/?(storage\/)?/, "");
+  return `/api/image?path=${encodeURIComponent(cleanPath)}`;
+};
+
 export default function DetailProdukPage({ params }) {
   const resolved = React.use(params);
   const { id } = resolved;
@@ -78,7 +86,7 @@ export default function DetailProdukPage({ params }) {
             {/* HEADER IMAGE */}
             <div className="header-section">
               <img
-                src={`/storage/${product.header}`}
+                src={buildImageUrl(product.header)}
                 className="header-image"
                 alt={product.nama}
               />
@@ -141,7 +149,7 @@ export default function DetailProdukPage({ params }) {
                     {gallery.map((g, i) => (
                       <div key={i} className="gallery-item">
                         <img
-                          src={`/storage/${g.path}`}
+                          src={buildImageUrl(g.path)}
                           alt={g.caption}
                         />
                         <p>{g.caption}</p>
