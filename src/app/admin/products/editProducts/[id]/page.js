@@ -232,26 +232,30 @@ export default function Page() {
           payload.append("header", form.header.value);
         }
 
-        // Gallery - hanya kirim jika ada FILE BARU
-        if (hasNewGalleryFile) {
-          form.gambar.forEach((g, idx) => {
-            if (g.path?.type === "file" && g.path?.value instanceof File) {
-              payload.append(`gambar[${idx}][file]`, g.path.value);
-              payload.append(`gambar[${idx}][caption]`, g.caption || "");
-            }
-          });
-        }
+        // Gallery - kirim semua gambar (baik yang ada file baru maupun tidak)
+        form.gambar.forEach((g, idx) => {
+          if (g.path?.type === "file" && g.path?.value instanceof File) {
+            // Ada file baru - kirim file
+            payload.append(`gambar[${idx}][file]`, g.path.value);
+          } else if (g.path?.type === "url" && g.path.value) {
+            // File existing - kirim path
+            payload.append(`gambar[${idx}][path_existing]`, g.path.value);
+          }
+          payload.append(`gambar[${idx}][caption]`, g.caption || "");
+        });
 
-        // Testimoni - hanya kirim jika ada FILE BARU
-        if (hasNewTestimoniFile) {
-          form.testimoni.forEach((t, idx) => {
-            if (t.gambar?.type === "file" && t.gambar?.value instanceof File) {
-              payload.append(`testimoni[${idx}][gambar]`, t.gambar.value);
-              payload.append(`testimoni[${idx}][nama]`, t.nama || "");
-              payload.append(`testimoni[${idx}][deskripsi]`, t.deskripsi || "");
-            }
-          });
-        }
+        // Testimoni - kirim semua testimoni (baik yang ada file baru maupun tidak)
+        form.testimoni.forEach((t, idx) => {
+          if (t.gambar?.type === "file" && t.gambar?.value instanceof File) {
+            // Ada file baru - kirim file
+            payload.append(`testimoni[${idx}][gambar]`, t.gambar.value);
+          } else if (t.gambar?.type === "url" && t.gambar.value) {
+            // File existing - kirim path
+            payload.append(`testimoni[${idx}][gambar_existing]`, t.gambar.value);
+          }
+          payload.append(`testimoni[${idx}][nama]`, t.nama || "");
+          payload.append(`testimoni[${idx}][deskripsi]`, t.deskripsi || "");
+        });
 
         // Fields teks (selalu kirim)
         payload.append("nama", form.nama);
@@ -276,8 +280,21 @@ export default function Page() {
         }
       } else {
         // ===== TIDAK ADA FILE BARU - GUNAKAN JSON =====
-        // JANGAN kirim field header, gambar, testimoni
-        // Backend akan mempertahankan data yang sudah ada
+        // Tetap kirim testimoni dan gambar dengan path yang sudah ada
+        
+        // Build testimoni array dengan path existing
+        const testimoniPayload = form.testimoni.map((t) => ({
+          gambar: t.gambar?.type === "url" ? t.gambar.value : (t.gambar || null),
+          nama: t.nama || "",
+          deskripsi: t.deskripsi || ""
+        }));
+
+        // Build gambar array dengan path existing
+        const gambarPayload = form.gambar.map((g) => ({
+          path: g.path?.type === "url" ? g.path.value : (g.path || null),
+          caption: g.caption || ""
+        }));
+
         payload = {
           nama: form.nama,
           kode: kode,
@@ -297,7 +314,9 @@ export default function Page() {
           video: JSON.stringify(videoArray),
           landingpage: form.landingpage,
           status: form.status,
-          // TIDAK kirim: header, gambar, testimoni
+          // Kirim testimoni dan gambar dengan data existing
+          testimoni: JSON.stringify(testimoniPayload),
+          gambar: JSON.stringify(gambarPayload),
         };
       }
 
