@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 
 const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "http://3.105.234.181:8000";
 
-// Handle POST dengan _method=PUT (Laravel style)
-export async function POST(request, { params }) {
+// Handle PUT request
+export async function PUT(request, { params }) {
   try {
     const { id } = await params;
     
@@ -23,36 +23,56 @@ export async function POST(request, { params }) {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    
-    // Ambil FormData dari request
-    const formData = await request.formData();
-    
-    // Log untuk debug
-    console.log(`[PRODUK UPDATE] Product ID: ${id}`);
-    console.log(`[PRODUK UPDATE] FormData fields:`);
-    for (let [key, value] of formData.entries()) {
-      if (value instanceof File) {
-        console.log(`  ${key}: [File] ${value.name} (${value.size} bytes)`);
-      } else {
-        console.log(`  ${key}: ${String(value).substring(0, 100)}`);
+    const contentType = request.headers.get("content-type") || "";
+
+    let backendBody;
+    let backendHeaders = {
+      Accept: "application/json",
+      Authorization: `Bearer ${token}`,
+    };
+
+    console.log(`[PRODUK PUT] Product ID: ${id}`);
+    console.log(`[PRODUK PUT] Content-Type: ${contentType}`);
+
+    if (contentType.includes("multipart/form-data")) {
+      // FormData - Laravel membutuhkan POST + _method=PUT
+      const formData = await request.formData();
+      
+      // Tambahkan _method=PUT untuk Laravel
+      formData.append("_method", "PUT");
+      
+      // Log untuk debug
+      console.log(`[PRODUK PUT] FormData fields:`);
+      for (let [key, value] of formData.entries()) {
+        if (value instanceof File) {
+          console.log(`  ${key}: [File] ${value.name} (${value.size} bytes)`);
+        } else {
+          console.log(`  ${key}: ${String(value).substring(0, 100)}`);
+        }
       }
+
+      backendBody = formData;
+      // Jangan set Content-Type untuk FormData, biarkan fetch handle boundary
+    } else {
+      // JSON body
+      const jsonBody = await request.json();
+      console.log(`[PRODUK PUT] JSON body:`, JSON.stringify(jsonBody).substring(0, 500));
+      backendBody = JSON.stringify(jsonBody);
+      backendHeaders["Content-Type"] = "application/json";
     }
 
     // Forward ke backend Laravel
+    // Gunakan POST dengan _method=PUT untuk Laravel (handle file upload dengan PUT)
     const response = await fetch(`${BACKEND_URL}/api/admin/produk/${id}`, {
-      method: "POST", // Laravel: POST dengan _method=PUT
-      headers: {
-        Accept: "application/json",
-        Authorization: `Bearer ${token}`,
-        // Jangan set Content-Type untuk FormData, biarkan fetch handle boundary
-      },
-      body: formData,
+      method: "POST",
+      headers: backendHeaders,
+      body: backendBody,
     });
 
     const data = await response.json().catch(() => ({}));
 
-    console.log(`[PRODUK UPDATE] Backend response:`, response.status);
-    console.log(`[PRODUK UPDATE] Response data:`, JSON.stringify(data).substring(0, 500));
+    console.log(`[PRODUK PUT] Backend response:`, response.status);
+    console.log(`[PRODUK PUT] Response data:`, JSON.stringify(data).substring(0, 500));
 
     if (!response.ok) {
       return NextResponse.json(
@@ -67,7 +87,7 @@ export async function POST(request, { params }) {
 
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error("[PRODUK UPDATE] Error:", error);
+    console.error("[PRODUK PUT] Error:", error);
     return NextResponse.json(
       {
         success: false,
@@ -79,10 +99,9 @@ export async function POST(request, { params }) {
   }
 }
 
-// Fallback untuk PUT request langsung
-export async function PUT(request, { params }) {
-  // Redirect ke POST handler
-  return POST(request, { params });
+// Handle POST dengan _method=PUT (fallback)
+export async function POST(request, { params }) {
+  return PUT(request, { params });
 }
 
 export async function GET(request, { params }) {

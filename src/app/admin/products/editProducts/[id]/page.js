@@ -103,7 +103,8 @@ export default function Page() {
   };
 
   // ============================
-  // SUBMIT - POST ke /api/admin/produk/{id}
+  // SUBMIT - PUT ke /api/admin/produk/{id}
+  // Payload sama persis dengan addProducts/page.js
   // ============================
   const handleSubmit = async () => {
     if (!productId) {
@@ -112,97 +113,133 @@ export default function Page() {
     }
 
     try {
-      // Selalu gunakan FormData untuk edit (karena backend mengharapkan header selalu ada)
-      const payload = new FormData();
-      const isFormData = true;
+      const hasFile =
+        (form.header.type === "file" && form.header.value) ||
+        form.gambar.some((g) => g.path?.type === "file" && g.path?.value) ||
+        form.testimoni.some((t) => t.gambar?.type === "file" && t.gambar?.value);
 
-      // Header - kirim file jika diubah, atau kirim path string jika tidak diubah
-      if (form.header.type === "file" && form.header.value) {
-        // File baru (diubah)
-        payload.append("header", form.header.value);
-      } else if (form.header.type === "url" && form.header.value) {
-        // Path string yang sudah ada (tidak diubah)
-        payload.append("header", form.header.value);
+      let payload;
+      let isFormData = false;
+
+      if (hasFile) {
+        payload = new FormData();
+        isFormData = true;
+
+        // Header
+        if (form.header.type === "file" && form.header.value) {
+          payload.append("header", form.header.value);
+        }
+
+        // Gallery - format: gambar[0][file], gambar[0][caption]
+        form.gambar.forEach((g, idx) => {
+          if (g.path?.type === "file" && g.path?.value) {
+            payload.append(`gambar[${idx}][file]`, g.path.value);
+          }
+          payload.append(`gambar[${idx}][caption]`, g.caption || "");
+        });
+
+        // Testimoni
+        form.testimoni.forEach((t, idx) => {
+          if (t.gambar?.type === "file" && t.gambar?.value) {
+            payload.append(`testimoni[${idx}][gambar]`, t.gambar.value);
+          }
+          payload.append(`testimoni[${idx}][nama]`, t.nama);
+          payload.append(`testimoni[${idx}][deskripsi]`, t.deskripsi);
+        });
+
+        // Fields
+        payload.append("nama", form.nama);
+        payload.append("url", form.url);
+        const kode = form.kode || generateKode(form.nama);
+        payload.append("kode", kode);
+        payload.append("url", "/" + kode);
+        payload.append("deskripsi", form.deskripsi);
+        payload.append("harga_coret", form.harga_coret || 0);
+        payload.append("harga_asli", form.harga_asli || 0);
+        payload.append("tanggal_event", formatDateForBackend(form.tanggal_event));
+        payload.append("assign", JSON.stringify(form.assign));
+        const payloadCustomField = form.custom_field.map((f, idx) => ({
+          nama_field: f.label || f.key,
+          urutan: idx + 1
+        }));
+        payload.append("custom_field", JSON.stringify(payloadCustomField));
+        payload.append("list_point", JSON.stringify(form.list_point));
+        payload.append("fb_pixel", JSON.stringify(form.fb_pixel));
+        payload.append(
+          "event_fb_pixel",
+          JSON.stringify(form.event_fb_pixel.map((ev) => ({ event: ev })))
+        );
+        payload.append("gtm", JSON.stringify(form.gtm));
+        const videoArray = form.video
+          ? form.video.split(",").map(v => v.trim()).filter(v => v)
+          : [];
+        payload.append("video", JSON.stringify(videoArray));
+        payload.append("landingpage", form.landingpage);
+        payload.append("status", form.status);
+        payload.append("user_input", JSON.stringify(form.user_input));
+        const kategoriId = form.kategori ? Number(form.kategori) : null;
+        if (kategoriId) {
+          payload.append("kategori", kategoriId);
+        }
+      } else {
+        const kategoriId = form.kategori ? Number(form.kategori) : null;
+        
+        payload = {
+          ...form,
+          kategori: kategoriId,
+          harga_coret: Number(form.harga_coret) || 0,
+          harga_asli: Number(form.harga_asli) || 0,
+          tanggal_event: formatDateForBackend(form.tanggal_event),
+          assign: JSON.stringify(form.assign),
+          gtm: JSON.stringify(form.gtm),
+          fb_pixel: JSON.stringify(form.fb_pixel),
+          event_fb_pixel: JSON.stringify(
+            form.event_fb_pixel.map((ev) => ({ event: ev }))
+          ),
+          gambar: JSON.stringify(
+            form.gambar.map((g) => ({ path: null, caption: g.caption }))
+          ),
+          testimoni: JSON.stringify(
+            form.testimoni.map((t) => ({
+              gambar: null,
+              nama: t.nama,
+              deskripsi: t.deskripsi,
+            }))
+          ),
+          list_point: JSON.stringify(form.list_point),
+          custom_field: JSON.stringify(
+            form.custom_field.map((f, idx) => ({
+              nama_field: f.label || f.key,
+              urutan: idx + 1
+            }))
+          ),
+          video: JSON.stringify(
+            form.video
+              ? form.video.split(",").map(v => v.trim()).filter(v => v)
+              : []
+          ),
+        };
       }
 
-      // Gallery - kirim file jika diubah, atau kirim path string jika tidak diubah
-      form.gambar.forEach((g, idx) => {
-        if (g.path?.type === "file" && g.path.value) {
-          // File baru (diubah)
-          payload.append(`gambar[${idx}][path]`, g.path.value);
-        } else if (g.path?.type === "url" && g.path.value) {
-          // Path string yang sudah ada (tidak diubah)
-          payload.append(`gambar[${idx}][path]`, g.path.value);
-        }
-        payload.append(`gambar[${idx}][caption]`, g.caption || "");
-      });
-
-      // Testimoni - kirim file jika diubah, atau kirim path string jika tidak diubah
-      form.testimoni.forEach((t, idx) => {
-        if (t.gambar?.type === "file" && t.gambar.value) {
-          // File baru (diubah)
-          payload.append(`testimoni[${idx}][gambar]`, t.gambar.value);
-        } else if (t.gambar?.type === "url" && t.gambar.value) {
-          // Path string yang sudah ada (tidak diubah)
-          payload.append(`testimoni[${idx}][gambar]`, t.gambar.value);
-        }
-        payload.append(`testimoni[${idx}][nama]`, t.nama || "");
-        payload.append(`testimoni[${idx}][deskripsi]`, t.deskripsi || "");
-      });
-
-      // Fields - urutan sama dengan addProducts
-      payload.append("nama", form.nama);
-      const kode = form.kode || generateKode(form.nama);
-      payload.append("kode", kode);
-      payload.append("url", "/" + kode); // pastikan url selalu sinkron dengan kode
-      payload.append("deskripsi", form.deskripsi || "");
-      payload.append("harga_coret", form.harga_coret || 0);
-      payload.append("harga_asli", form.harga_asli || 0);
-      payload.append("tanggal_event", formatDateForBackend(form.tanggal_event));
-      payload.append("assign", JSON.stringify(form.assign));
-      const payloadCustomField = form.custom_field.map((f, idx) => ({
-        nama_field: f.label || f.key,
-        urutan: idx + 1
-      }));
-      payload.append("custom_field", JSON.stringify(payloadCustomField));
-      payload.append("list_point", JSON.stringify(form.list_point));
-      payload.append("fb_pixel", JSON.stringify(form.fb_pixel));
-      payload.append(
-        "event_fb_pixel",
-        JSON.stringify(form.event_fb_pixel.map((ev) => ({ event: ev })))
-      );
-      payload.append("gtm", JSON.stringify(form.gtm));
-      const videoArray = form.video
-        ? form.video.split(",").map(v => v.trim()).filter(v => v)
-        : [];
-      payload.append("video", JSON.stringify(videoArray));
-      payload.append("landingpage", form.landingpage);
-      payload.append("status", form.status);
-      payload.append("user_input", JSON.stringify(form.user_input));
-      // Kirim kategori_id sebagai integer
-      const kategoriId = form.kategori ? Number(form.kategori) : null;
-      if (kategoriId) {
-        payload.append("kategori", kategoriId);
-      }
-
-      // Tambahkan _method=PUT untuk Laravel compatibility
-      payload.append("_method", "PUT");
-      
       console.log("FINAL PAYLOAD for product ID:", productId);
-      // Debug: log semua field di FormData
-      for (let [key, value] of payload.entries()) {
-        console.log(`  ${key}:`, typeof value === 'object' ? value.name || value : value);
+      if (isFormData) {
+        for (let [key, value] of payload.entries()) {
+          console.log(`  ${key}:`, typeof value === 'object' ? value.name || value : value);
+        }
+      } else {
+        console.log(payload);
       }
 
       const res = await fetch(
         `/api/admin/produk/${productId}`,
         {
-          method: "POST", // Gunakan POST dengan _method=PUT untuk Laravel
+          method: "PUT",
           headers: {
+            ...(isFormData ? {} : { "Content-Type": "application/json" }),
             Accept: "application/json",
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-          body: payload,
+          body: isFormData ? payload : JSON.stringify(payload),
         }
       );
 
