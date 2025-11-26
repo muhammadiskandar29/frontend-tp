@@ -11,9 +11,16 @@ export async function GET(request) {
       return NextResponse.json({ error: "Path is required" }, { status: 400 });
     }
 
-    // Build full URL
-    const cleanPath = path.startsWith("/") ? path : `/${path}`;
+    // Build full URL - backend uses /storage/ prefix for uploaded files
+    let cleanPath = path.startsWith("/") ? path : `/${path}`;
+    
+    // Jika path dimulai dengan /produk/, tambahkan /storage prefix
+    if (cleanPath.startsWith("/produk/")) {
+      cleanPath = `/storage${cleanPath}`;
+    }
+    
     const imageUrl = `${BACKEND_URL}${cleanPath}`;
+    console.log("[IMAGE PROXY] Fetching:", imageUrl);
 
     // Fetch image from backend
     const response = await fetch(imageUrl, {
