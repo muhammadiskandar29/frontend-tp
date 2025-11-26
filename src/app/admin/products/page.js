@@ -218,7 +218,23 @@ export default function AdminProductsPage() {
                             <button
                               className="product-table__action-link"
                               onClick={() => {
-                                const kodeProduk = p.kode || (p.url ? p.url.replace(/^\//, '') : null);
+                                // Generate slug dari nama jika kode tidak ada atau tidak valid
+                                const generateSlug = (text) =>
+                                  (text || "")
+                                    .toString()
+                                    .toLowerCase()
+                                    .trim()
+                                    .replace(/[^a-z0-9 -]/g, "")
+                                    .replace(/\s+/g, "-")
+                                    .replace(/-+/g, "-");
+                                
+                                let kodeProduk = p.kode || (p.url ? p.url.replace(/^\//, '') : null);
+                                
+                                // Jika kode mengandung spasi atau karakter tidak valid, generate ulang dari nama
+                                if (!kodeProduk || kodeProduk.includes(' ') || kodeProduk.includes('%20')) {
+                                  kodeProduk = generateSlug(p.nama);
+                                }
+                                
                                 if (kodeProduk) {
                                   window.open(`/landing/${kodeProduk}`, '_blank');
                                 } else {
