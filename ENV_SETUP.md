@@ -15,8 +15,8 @@ NODE_ENV=development
 ### Production
 ```bash
 # .env.production (untuk production)
-BACKEND_URL=https://onedashboardapi-production.up.railway.app
-NEXT_PUBLIC_BACKEND_URL=https://onedashboardapi-production.up.railway.app
+BACKEND_URL=http://3.105.234.181:8000
+NEXT_PUBLIC_BACKEND_URL=http://3.105.234.181:8000
 NODE_ENV=production
 ```
 
@@ -32,7 +32,7 @@ NODE_ENV=production
 
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
-| `BACKEND_URL` | Backend API URL (server-side) | `https://onedashboardapi-production.up.railway.app` | No |
+| `BACKEND_URL` | Backend API URL (server-side) | `http://3.105.234.181:8000` | No |
 | `NEXT_PUBLIC_BACKEND_URL` | Backend API URL (client-side) | Same as BACKEND_URL | No |
 | `API_BASE_PATH` | API base path untuk proxy | `/api` | No |
 | `NODE_ENV` | Environment mode | `development` | No |

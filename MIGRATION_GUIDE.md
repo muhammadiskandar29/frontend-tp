@@ -48,7 +48,7 @@ async rewrites() {
   const backendUrl = 
     process.env.BACKEND_URL || 
     process.env.NEXT_PUBLIC_BACKEND_URL || 
-    "https://onedashboardapi-production.up.railway.app";
+    "http://3.105.234.181:8000";
   
   return [
     {
@@ -81,7 +81,7 @@ npm start
 ### Before (Railway):
 ```bash
 # .env.local
-BACKEND_URL=https://onedashboardapi-production.up.railway.app
+BACKEND_URL=http://3.105.234.181:8000
 ```
 
 ### After (AWS):

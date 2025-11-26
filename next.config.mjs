@@ -60,7 +60,7 @@ const nextConfig = {
     const backendUrl =
       process.env.BACKEND_URL ||
       process.env.NEXT_PUBLIC_BACKEND_URL ||
-      "https://onedashboardapi-production.up.railway.app";
+      "http://3.105.234.181:8000";
 
     return [
       {
