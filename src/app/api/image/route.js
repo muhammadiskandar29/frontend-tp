@@ -14,13 +14,9 @@ export async function GET(req) {
   // Decode path
   const decoded = decodeURIComponent(rawPath);
   
-  // Build backend URL - selalu tambahkan /storage prefix untuk file upload
+  // Build backend URL - selalu tambahkan /storage prefix untuk semua file upload
   let storagePath = decoded.startsWith("/") ? decoded : `/${decoded}`;
-  
-  // Jika path adalah file produk, tambahkan /storage
-  if (storagePath.startsWith("/produk/")) {
-    storagePath = `/storage${storagePath}`;
-  }
+  storagePath = `/storage${storagePath}`;
 
   const backendUrl = `${BACKEND_URL}${storagePath}`;
   
