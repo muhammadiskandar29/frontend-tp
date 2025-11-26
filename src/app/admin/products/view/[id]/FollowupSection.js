@@ -164,22 +164,23 @@ export default function FollowupSection() {
     
     if (tpl) {
       setText(tpl.text || "");
-      setEventValue(tpl.event || "1d-09:00");
+      const eventVal = tpl.event || "1d-09:00";
+      setEventValue(eventVal);
+      // Parse eventValue ke scheduleDay dan scheduleTime
+      const parsed = parseEventValue(eventVal);
+      setScheduleDay(parsed.days);
+      setScheduleTime(parsed.time);
       setAutoSend(tpl.status === "1");
-      console.log("✅ [FOLLOWUP] Template loaded for type", activeType, ":", tpl);
+      console.log("✅ [FOLLOWUP] Template loaded for type", activeType, ":", tpl, "| parsed event:", parsed);
     } else {
       setText("");
       setEventValue("1d-09:00");
+      setScheduleDay(1);
+      setScheduleTime("09:00");
       setAutoSend(false);
       console.log("ℹ️ [FOLLOWUP] No template found for type", activeType);
     }
   }, [activeType, templates]);
-
-  useEffect(() => {
-    const { days, time } = parseEventValue(eventValue);
-    setScheduleDay(days);
-    setScheduleTime(time);
-  }, [eventValue]);
 
   // Save template ke backend & update array lokal
   const handleSave = async () => {

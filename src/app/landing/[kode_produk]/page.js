@@ -94,7 +94,7 @@ export default function LandingPage() {
     const fullImageUrl = headerPath
       ? headerPath.startsWith("http")
         ? headerPath
-        : `https://onedashboardapi-production.up.railway.app${headerPath}`
+        : `http://3.105.234.181:8000${headerPath}`
       : "";
 
     // Update document title

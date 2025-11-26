@@ -4,7 +4,7 @@ const BACKEND_URL =
   process.env.BACKEND_URL ||
   process.env.NEXT_PUBLIC_BACKEND_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
-  "https://onedashboardapi-production.up.railway.app";
+  "http://3.105.234.181:8000";
 
 const REQUIRED_FIELDS = ["produk", "harga", "total_harga", "sumber"];
 

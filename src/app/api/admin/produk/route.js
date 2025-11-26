@@ -2,47 +2,60 @@ import { NextResponse } from "next/server";
 
 const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "http://3.105.234.181:8000";
 
-// Set to true to enable WebP conversion (requires backend to accept .webp files)
-const ENABLE_WEBP_CONVERSION = false;
+// Image compression settings
+const IMAGE_CONFIG = {
+  maxWidth: 1920,      // Max width in pixels
+  maxHeight: 1080,     // Max height in pixels  
+  jpegQuality: 80,     // JPEG quality (1-100)
+  pngCompressionLevel: 8, // PNG compression (0-9)
+};
 
-// Dynamic import sharp to handle cases where it might not be available
+// Dynamic import sharp
 let sharpModule = null;
 
 const getSharp = async () => {
-  if (!ENABLE_WEBP_CONVERSION) return false;
-  
   if (sharpModule === null) {
     try {
       sharpModule = (await import("sharp")).default;
       console.log("✅ Sharp loaded successfully");
     } catch (err) {
-      console.warn("⚠️ Sharp not available, will forward original images:", err.message);
+      console.warn("⚠️ Sharp not available:", err.message);
       sharpModule = false;
     }
   }
   return sharpModule;
 };
 
-// Generate unique filename with .webp extension
-const generateWebpFilename = (originalName) => {
-  const baseName = originalName
-    .replace(/\.[^/.]+$/, "") // Remove original extension
-    .replace(/[^a-zA-Z0-9-_]/g, "-")
-    .toLowerCase();
-  return `${baseName}.webp`;
-};
-
-// Convert image buffer to WebP (returns null if sharp not available or disabled)
-const convertToWebP = async (buffer, quality = 75) => {
+// Compress image while keeping original format
+const compressImage = async (buffer, mimeType, filename) => {
   const sharp = await getSharp();
   if (!sharp) return null;
   
   try {
-    return await sharp(buffer)
-      .webp({ quality })
-      .toBuffer();
+    let sharpInstance = sharp(buffer);
+    
+    // Resize if too large (maintain aspect ratio)
+    sharpInstance = sharpInstance.resize({
+      width: IMAGE_CONFIG.maxWidth,
+      height: IMAGE_CONFIG.maxHeight,
+      fit: "inside",
+      withoutEnlargement: true, // Don't upscale small images
+    });
+    
+    // Compress based on format
+    if (mimeType === "image/jpeg" || mimeType === "image/jpg") {
+      sharpInstance = sharpInstance.jpeg({ quality: IMAGE_CONFIG.jpegQuality });
+    } else if (mimeType === "image/png") {
+      sharpInstance = sharpInstance.png({ compressionLevel: IMAGE_CONFIG.pngCompressionLevel });
+    }
+    
+    const compressedBuffer = await sharpInstance.toBuffer();
+    
+    console.log(`  📦 Compressed: ${buffer.length} → ${compressedBuffer.length} bytes (${Math.round((1 - compressedBuffer.length / buffer.length) * 100)}% reduction)`);
+    
+    return compressedBuffer;
   } catch (err) {
-    console.error("❌ Sharp conversion failed:", err.message);
+    console.error("❌ Compression failed:", err.message);
     return null;
   }
 };
@@ -133,19 +146,17 @@ export async function POST(request) {
             const arrayBuffer = await value.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
             
-            // Try to convert to WebP
-            console.log(`  🔄 Attempting WebP conversion for ${value.name}...`);
-            const webpBuffer = await convertToWebP(buffer, 75);
+            // Try to compress image (keeps original format)
+            console.log(`  🔄 Compressing ${value.name}...`);
+            const compressedBuffer = await compressImage(buffer, value.type, value.name);
             
-            if (webpBuffer) {
-              // Conversion successful - use WebP
-              const webpFilename = generateWebpFilename(value.name);
-              // Use File constructor for proper filename handling
-              const webpFile = new File([webpBuffer], webpFilename, { type: "image/webp" });
-              forwardFormData.append(key, webpFile);
-              console.log(`  ✅ Converted: ${value.name} → ${webpFilename} (${value.size} → ${webpBuffer.length} bytes)`);
+            if (compressedBuffer) {
+              // Compression successful
+              const compressedFile = new File([compressedBuffer], value.name, { type: value.type });
+              forwardFormData.append(key, compressedFile);
+              console.log(`  ✅ Compressed: ${value.name} (${value.size} → ${compressedBuffer.length} bytes)`);
             } else {
-              // Conversion failed or sharp not available - use original
+              // Compression failed - use original
               const file = new File([buffer], value.name, { type: value.type });
               forwardFormData.append(key, file);
               console.log(`  ⚠️ Using original: ${value.name} (${value.size} bytes)`);
