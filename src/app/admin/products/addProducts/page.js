@@ -22,8 +22,8 @@ export default function Page() {
   // ============================
   const generateKode = (text) => {
     return (text || "")
-      .toLowerCase()
-      .trim()
+    .toLowerCase()
+    .trim()
       .replace(/[^a-z0-9\s-]/g, "")
       .replace(/\s+/g, "-");
   };

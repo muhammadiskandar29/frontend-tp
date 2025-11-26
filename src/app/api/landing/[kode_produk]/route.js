@@ -69,20 +69,35 @@ export async function GET(request, { params }) {
       
       if (listData.data && Array.isArray(listData.data)) {
         const slugKode = generateSlug(decodedKode);
+        const decodedLower = decodedKode.toLowerCase();
         
-        // Cari produk yang kode-nya cocok atau nama-nya menghasilkan slug yang sama
+        console.log(`[LANDING] Searching for slug: "${slugKode}" or "${decodedLower}"`);
+        
+        // Cari produk yang cocok dengan berbagai cara
         const foundProduct = listData.data.find((p) => {
           const productSlug = generateSlug(p.nama);
-          const productKode = p.kode ? p.kode.toLowerCase() : "";
-          const productUrl = p.url ? p.url.replace(/^\//, "").toLowerCase() : "";
+          const productKode = p.kode ? p.kode.toLowerCase().trim() : "";
+          const productKodeSlug = generateSlug(p.kode || ""); // Generate slug dari kode juga
+          const productUrl = p.url ? p.url.replace(/^\//, "").toLowerCase().trim() : "";
           
-          return (
+          const matches = (
+            // Match by slug generated from nama
             productSlug === slugKode ||
-            productKode === slugKode ||
+            // Match by url field (paling reliable karena backend simpan dengan benar)
             productUrl === slugKode ||
-            productKode === decodedKode.toLowerCase() ||
-            productUrl === decodedKode.toLowerCase()
+            productUrl === decodedLower ||
+            // Match by kode field (jika ada)
+            productKode === slugKode ||
+            productKode === decodedLower ||
+            // Match by slug generated from kode
+            productKodeSlug === slugKode
           );
+          
+          if (matches) {
+            console.log(`[LANDING] ✅ Match found: "${p.nama}" (url: ${p.url}, kode: ${p.kode})`);
+          }
+          
+          return matches;
         });
 
         if (foundProduct) {
