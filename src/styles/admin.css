@@ -236,7 +236,8 @@ ADMIN USERS PAGE (Scoped Styles)
 .customers-table__head,
 .customers-table__row {
   display: grid;
-  grid-template-columns: 40px minmax(125px,1.1fr) minmax(150px,1.2fr) minmax(120px,.9fr) minmax(90px,.9fr) minmax(120px,1fr) minmax(85px,.7fr) minmax(90px,.8fr);
+  grid-template-columns: 40px minmax(120px, 1.1fr) minmax(140px, 1.2fr) minmax(100px, 0.9fr) minmax(100px, 0.9fr)
+    minmax(130px, 1fr) minmax(85px, 0.7fr) minmax(100px, 0.8fr);
   gap: 0.3rem;
   align-items: center;
   min-width: 800px;
