@@ -20,16 +20,22 @@ export default function Page() {
   const productId = params?.id;
 
   // ============================
-  // SLUGIFY
+  // SLUGIFY - Generate kode dari nama
   // ============================
-  const generateKode = (text) =>
-    (text || "")
-      .toString()
+  const generateKode = (text) => {
+    return (text || "")
       .toLowerCase()
       .trim()
-      .replace(/[^a-z0-9 -]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-");
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-");
+  };
+
+  // Helper: Cek apakah string sudah format slug (huruf kecil, pakai dash, tanpa spasi)
+  const isValidSlug = (text) => {
+    if (!text) return false;
+    // Slug valid: huruf kecil, angka, dash saja, tidak ada spasi
+    return /^[a-z0-9-]+$/.test(text) && !text.includes(" ");
+  };
 
   // ============================
   // FORMAT TANGGAL KE BACKEND
@@ -205,8 +211,9 @@ export default function Page() {
       const hasNewTestimoniFile = form.testimoni.some((t) => t.gambar?.type === "file" && t.gambar?.value instanceof File);
       const hasNewFile = hasNewHeaderFile || hasNewGalleryFile || hasNewTestimoniFile;
 
-      // SELALU generate kode dari nama untuk memastikan format slug yang benar (dengan "-")
-      const kode = generateKode(form.nama);
+      // Gunakan kode dari form jika sudah valid slug, otherwise generate dari nama
+      const kode = isValidSlug(form.kode) ? form.kode : generateKode(form.nama);
+      console.log("🔧 [SUBMIT] Using kode:", kode);
       const kategoriId = form.kategori ? Number(form.kategori) : null;
 
       // Build base payload (tanpa gambar)
@@ -437,8 +444,15 @@ export default function Page() {
         kategoriId = Number(produkData.kategori);
       }
 
-      // Parse existing data - SELALU generate kode dari nama untuk memastikan format benar (pakai "-", tanpa spasi)
-      const kodeGenerated = generateKode(produkData.nama || "produk-baru");
+      // Parse existing data - gunakan kode dari backend jika sudah valid slug, otherwise generate dari nama
+      const backendKode = produkData.kode || "";
+      const kodeGenerated = isValidSlug(backendKode) 
+        ? backendKode  // Kode dari backend sudah valid, pakai langsung
+        : generateKode(produkData.nama || "produk-baru");  // Generate baru jika tidak valid
+      
+      console.log("🔧 [LOAD] Original kode from backend:", backendKode);
+      console.log("🔧 [LOAD] Is valid slug:", isValidSlug(backendKode));
+      console.log("🔧 [LOAD] Final kode used:", kodeGenerated);
       
       // Parse gambar - handle existing images (type: "url")
       const parsedGambar = safeParseJSON(produkData.gambar, []).map(g => {
@@ -534,6 +548,8 @@ export default function Page() {
       
       console.log("✅ [EDIT] Product data loaded:", {
         nama: produkData.nama,
+        kode_from_backend: produkData.kode,
+        kode_generated: kodeGenerated,
         kategori: kategoriId,
         tanggal_event: parsedTanggalEvent,
         list_point: parsedListPoint,
@@ -666,12 +682,15 @@ export default function Page() {
                 placeholder="Masukkan nama produk"
                 onChange={(e) => {
                   const nama = e.target.value;
-                  const kodeGenerated = generateKode(nama);
+                  // Hanya generate kode jika kode masih kosong atau belum valid slug
+                  const shouldGenerateKode = !form.kode || !isValidSlug(form.kode);
+                  const newKode = shouldGenerateKode ? generateKode(nama) : form.kode;
+                  
                   setForm({ 
                     ...form, 
                     nama, 
-                    kode: kodeGenerated,
-                    url: "/" + kodeGenerated
+                    kode: newKode,
+                    url: "/" + newKode
                   });
                 }}
               />

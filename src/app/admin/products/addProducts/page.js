@@ -18,16 +18,21 @@ export default function Page() {
   const router = useRouter();
 
   // ============================
-  // SLUGIFY
+  // SLUGIFY - Generate kode dari nama
   // ============================
-const generateKode = (text) =>
-  (text || "")
-    .toString()
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9 -]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-");
+  const generateKode = (text) => {
+    return (text || "")
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-");
+  };
+
+  // Helper: Cek apakah string sudah format slug (huruf kecil, pakai dash, tanpa spasi)
+  const isValidSlug = (text) => {
+    if (!text) return false;
+    return /^[a-z0-9-]+$/.test(text) && !text.includes(" ");
+  };
 
 
 
@@ -145,8 +150,8 @@ const generateKode = (text) =>
 
         // Fields
         payload.append("nama", form.nama);
-        payload.append("url", form.url);
-        const kode = form.kode || generateKode(form.nama);
+        // Gunakan kode dari form jika sudah valid slug, otherwise generate dari nama
+        const kode = isValidSlug(form.kode) ? form.kode : generateKode(form.nama);
         payload.append("kode", kode);
         payload.append("url", "/" + kode); // pastikan url selalu sinkron
         payload.append("deskripsi", form.deskripsi);
@@ -311,9 +316,11 @@ useEffect(() => {
         : [];
       setUserOptions(userOpts);
 
-      // ✅ generate kode otomatis jika null
-      const kodeGenerated =
-        produkData.kode || generateKode(produkData.nama || "produk-baru");
+      // ✅ generate kode otomatis jika null atau belum valid slug
+      const backendKode = produkData.kode || "";
+      const kodeGenerated = isValidSlug(backendKode) 
+        ? backendKode 
+        : generateKode(produkData.nama || "produk-baru");
 
       // Handle kategori_id: if kategori_rel exists, use its ID; otherwise use produkData.kategori_id
       let kategoriId = null;
@@ -391,12 +398,15 @@ useEffect(() => {
               placeholder="Masukkan nama produk"
               onChange={(e) => {
                 const nama = e.target.value;
-                const kodeGenerated = generateKode(nama);
+                // Hanya generate kode jika kode masih kosong atau belum valid slug
+                const shouldGenerateKode = !form.kode || !isValidSlug(form.kode);
+                const newKode = shouldGenerateKode ? generateKode(nama) : form.kode;
+                
                 setForm({ 
                   ...form, 
                   nama, 
-                  kode: kodeGenerated,
-                  url: "/" + kodeGenerated
+                  kode: newKode,
+                  url: "/" + newKode
                 });
               }}
             />
