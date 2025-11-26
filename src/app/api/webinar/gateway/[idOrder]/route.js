@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   process.env.BACKEND_URL ||
-  "https://onedashboardapi-production.up.railway.app";
+  "http://3.105.234.181:8000";
 
 const normalizeBaseUrl = (url) => {
   if (!url) return "";

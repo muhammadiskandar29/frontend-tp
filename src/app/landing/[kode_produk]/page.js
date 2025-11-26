@@ -30,7 +30,7 @@ export default function LandingPage() {
     return (isNaN(numPrice) ? 0 : numPrice).toLocaleString("id-ID");
   };
 
-  const BASE_IMAGE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://onedashboardapi-production.up.railway.app";
+  const BASE_IMAGE_URL = process.env.NEXT_PUBLIC_BASE_URL || "http://3.105.234.181:8000";
 
   // Helper: konversi path relatif ke absolute URL
   const resolveImageUrl = (path) => {
