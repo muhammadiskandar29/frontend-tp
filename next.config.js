@@ -14,6 +14,9 @@ const nextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
 
+  // External packages for server-side (required for sharp on Vercel)
+  serverExternalPackages: ['sharp'],
+
   // Code splitting optimization
   experimental: {
     optimizeCss: true,
