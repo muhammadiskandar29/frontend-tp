@@ -2,9 +2,9 @@
 import { api } from "./api";
 
 /* =====================================================
-   🔍 GET: Ambil semua produk
+   🔍 GET: Ambil semua produk (exclude yang sudah soft-deleted)
    ===================================================== */
-export async function getProducts() {
+export async function getProducts(includeDeleted = false) {
   try {
     const res = await api("/admin/produk", { method: "GET" });
 
@@ -13,9 +13,15 @@ export async function getProducts() {
     }
 
     // Backend biasanya kirim array, fallback supaya aman
-    const list = Array.isArray(res.data) ? res.data : [];
+    let list = Array.isArray(res.data) ? res.data : [];
 
-    console.log("📦 getProducts() →", list);
+    // Filter out soft-deleted products (status = "0" atau null)
+    // Kecuali includeDeleted = true
+    if (!includeDeleted) {
+      list = list.filter(p => p.status === "1" || p.status === 1);
+    }
+
+    console.log("📦 getProducts() →", list.length, "produk aktif");
 
     return list;
   } catch (err) {
@@ -25,17 +31,18 @@ export async function getProducts() {
 }
 
 /* =====================================================
-   🗑️ DELETE: Hapus produk
+   🗑️ DELETE: Hapus produk (hard delete dengan force=true)
    ===================================================== */
-export async function deleteProduct(id) {
+export async function deleteProduct(id, force = true) {
   try {
-    const res = await api(`/admin/produk/${id}`, { method: "DELETE" });
+    const url = force ? `/admin/produk/${id}?force=true` : `/admin/produk/${id}`;
+    const res = await api(url, { method: "DELETE" });
 
     if (!res?.success) {
       throw new Error(res?.message || "Gagal menghapus produk");
     }
 
-    console.log(`🗑️ deleteProduct(${id}) → success`);
+    console.log(`🗑️ deleteProduct(${id}, force=${force}) → success`);
 
     return true; // biar gampang dipakai di hooks
   } catch (err) {

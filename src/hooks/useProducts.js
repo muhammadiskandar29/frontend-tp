@@ -43,23 +43,21 @@ export function useProducts() {
   }, []);
 
   // =====================================================
-  // 🧹 Hapus produk (ubah status menjadi 0 = Inactive)
+  // 🧹 Hapus produk (hard delete - benar-benar hapus dari database)
   // =====================================================
   const handleDelete = async (id) => {
     try {
-      // Update status menjadi 0 (Inactive) bukan delete
-      await updateProductStatus(id, "0");
+      // Hard delete dengan force=true
+      await deleteProduct(id, true);
 
       // Debug
-      console.log(`🗑️ Produk ${id} diubah menjadi Inactive`);
+      console.log(`🗑️ Produk ${id} berhasil dihapus permanen`);
 
-      // Update status di local state
-      setProducts((prev) => 
-        prev.map((p) => p.id === id ? { ...p, status: "0" } : p)
-      );
+      // Hapus dari local state
+      setProducts((prev) => prev.filter((p) => p.id !== id));
     } catch (err) {
-      console.error("❌ Error updating product status:", err);
-      setError(err?.message || "Gagal mengubah status produk");
+      console.error("❌ Error deleting product:", err);
+      setError(err?.message || "Gagal menghapus produk");
     }
   };
 

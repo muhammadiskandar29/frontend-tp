@@ -191,16 +191,32 @@ export async function DELETE(request, { params }) {
     }
 
     const token = authHeader.replace("Bearer ", "");
+    
+    // Get query params to check for force delete
+    const { searchParams } = new URL(request.url);
+    const forceDelete = searchParams.get("force") === "true";
 
-    const response = await fetch(`${BACKEND_URL}/api/admin/produk/${id}`, {
+    console.log(`[PRODUK DELETE] Product ID: ${id}, Force: ${forceDelete}`);
+
+    // Coba DELETE dengan parameter force untuk hard delete
+    const deleteUrl = forceDelete 
+      ? `${BACKEND_URL}/api/admin/produk/${id}?force=true`
+      : `${BACKEND_URL}/api/admin/produk/${id}`;
+
+    const response = await fetch(deleteUrl, {
       method: "DELETE",
       headers: {
         Accept: "application/json",
         Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       },
+      // Juga kirim force di body untuk backend yang menerima dari body
+      body: JSON.stringify({ force: forceDelete }),
     });
 
     const data = await response.json().catch(() => ({}));
+
+    console.log(`[PRODUK DELETE] Backend response:`, response.status, data);
 
     if (!response.ok) {
       return NextResponse.json(
@@ -212,7 +228,11 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    return NextResponse.json(data, { status: response.status });
+    return NextResponse.json({
+      ...data,
+      success: true,
+      message: data?.message || "Produk berhasil dihapus permanen"
+    }, { status: response.status });
   } catch (error) {
     console.error("[PRODUK DELETE] Error:", error);
     return NextResponse.json(

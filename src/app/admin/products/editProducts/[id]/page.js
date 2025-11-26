@@ -697,8 +697,8 @@ export default function Page() {
                 />
               </div>
             </div>
-            <p className="field-hint" style={{ marginTop: "-8px", fontSize: "12px", color: "#6b7280" }}>
-              💡 Kode dan URL otomatis dihasilkan dari nama produk (spasi → tanda hubung)
+            <p className="field-hint">
+              Kode dan URL otomatis dihasilkan dari nama produk
             </p>
           </div>
         </div>
@@ -723,7 +723,6 @@ export default function Page() {
                       src={buildImageUrl(form.header.value)} 
                       alt="Current header" 
                       className="preview-thumbnail"
-                      style={{ maxWidth: "300px", maxHeight: "200px", objectFit: "cover", borderRadius: "8px" }}
                     />
                     <p className="field-hint">Gambar saat ini</p>
                   </div>
@@ -842,16 +841,13 @@ export default function Page() {
                   <div className="form-field-group">
                     <label className="form-label-small">Upload Gambar</label>
                     {g.path?.type === "url" && g.path.value && (
-                      <div className="file-preview" style={{ marginBottom: "12px" }}>
+                      <div className="file-preview">
                         <img 
                           src={buildImageUrl(g.path.value)} 
                           alt={`Current ${i + 1}`}
                           className="preview-thumbnail"
-                          style={{ maxWidth: "200px", maxHeight: "150px", objectFit: "cover", borderRadius: "8px", border: "2px solid #e5e7eb" }}
                         />
-                        <p className="field-hint" style={{ marginTop: "4px", fontSize: "12px", color: "#6b7280" }}>
-                          ✅ Gambar saat ini (dari server)
-                        </p>
+                        <p className="field-hint">Gambar saat ini</p>
                       </div>
                     )}
                     <input
@@ -863,16 +859,12 @@ export default function Page() {
                       className="file-input"
                     />
                     {g.path?.type === "file" && g.path.value && (
-                      <div className="file-preview" style={{ marginTop: "8px" }}>
+                      <div className="file-preview">
                         <img 
                           src={URL.createObjectURL(g.path.value)} 
                           alt={`Preview ${i + 1}`}
                           className="preview-thumbnail"
-                          style={{ maxWidth: "200px", maxHeight: "150px", objectFit: "cover", borderRadius: "8px", border: "2px solid #3b82f6" }}
                         />
-                        <p className="field-hint" style={{ marginTop: "4px", fontSize: "12px", color: "#3b82f6" }}>
-                          🆕 File baru (akan diupload)
-                        </p>
                       </div>
                     )}
                   </div>
@@ -935,16 +927,13 @@ export default function Page() {
                   <div className="form-field-group">
                     <label className="form-label-small">Upload Foto</label>
                     {t.gambar?.type === "url" && t.gambar.value && (
-                      <div className="file-preview" style={{ marginBottom: "12px" }}>
+                      <div className="file-preview">
                         <img 
                           src={buildImageUrl(t.gambar.value)} 
                           alt={`Current Testimoni ${i + 1}`}
                           className="preview-thumbnail"
-                          style={{ maxWidth: "100px", maxHeight: "100px", objectFit: "cover", borderRadius: "50%", border: "3px solid #e5e7eb" }}
                         />
-                        <p className="field-hint" style={{ marginTop: "4px", fontSize: "12px", color: "#6b7280" }}>
-                          ✅ Foto saat ini (dari server)
-                        </p>
+                        <p className="field-hint">Foto saat ini</p>
                       </div>
                     )}
                     <input
@@ -956,16 +945,12 @@ export default function Page() {
                       className="file-input"
                     />
                     {t.gambar?.type === "file" && t.gambar.value && (
-                      <div className="file-preview" style={{ marginTop: "8px" }}>
+                      <div className="file-preview">
                         <img 
                           src={URL.createObjectURL(t.gambar.value)} 
                           alt={`Testimoni ${i + 1}`}
                           className="preview-thumbnail"
-                          style={{ maxWidth: "100px", maxHeight: "100px", objectFit: "cover", borderRadius: "50%", border: "3px solid #3b82f6" }}
                         />
-                        <p className="field-hint" style={{ marginTop: "4px", fontSize: "12px", color: "#3b82f6" }}>
-                          🆕 File baru (akan diupload)
-                        </p>
                       </div>
                     )}
                   </div>

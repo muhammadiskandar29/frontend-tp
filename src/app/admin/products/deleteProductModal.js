@@ -14,15 +14,20 @@ export default function DeleteProductModal({ product, onClose, onDeleted }) {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`/api/admin/produk/${product.id}`, {
+      
+      // Kirim dengan parameter force=true untuk hard delete
+      const res = await fetch(`/api/admin/produk/${product.id}?force=true`, {
         method: "DELETE",
         headers: {
           Accept: "application/json",
+          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
       });
 
       const data = await res.json();
+
+      console.log("🗑️ Delete response:", data);
 
       if (!res.ok || !data.success) {
         throw new Error(data.message || "Gagal menghapus produk");
