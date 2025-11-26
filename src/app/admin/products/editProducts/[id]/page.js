@@ -414,8 +414,8 @@ export default function Page() {
         kategoriId = Number(produkData.kategori);
       }
 
-      // Parse existing data
-      const kodeGenerated = produkData.kode || generateKode(produkData.nama || "produk-baru");
+      // Parse existing data - SELALU generate kode dari nama untuk memastikan format benar (pakai "-", tanpa spasi)
+      const kodeGenerated = generateKode(produkData.nama || "produk-baru");
       
       // Parse gambar - handle existing images (type: "url")
       const parsedGambar = safeParseJSON(produkData.gambar, []).map(g => {
@@ -484,7 +484,7 @@ export default function Page() {
         // Spread produkData tapi override field yang perlu di-parse
         nama: produkData.nama || "",
         kode: kodeGenerated,
-        url: produkData.url || "/" + kodeGenerated,
+        url: "/" + kodeGenerated, // Selalu generate URL dari kode (bukan dari database)
         deskripsi: produkData.deskripsi || "",
         harga_coret: produkData.harga_coret || "",
         harga_asli: produkData.harga_asli || "",
@@ -838,19 +838,10 @@ export default function Page() {
                         severity="danger"
                         className="p-button-danger p-button-sm"
                         onClick={() => deleteGalleryImage(i)}
-                        tooltip="Hapus dari server"
+                        tooltip="Hapus Gambar"
                         tooltipOptions={{ position: "top" }}
                       />
                     )}
-                    {/* Tombol hapus dari form (lokal) */}
-                    <Button
-                      icon="pi pi-trash"
-                      severity="secondary"
-                      className="p-button-secondary p-button-sm"
-                      onClick={() => removeArray("gambar", i)}
-                      tooltip="Hapus dari form"
-                      tooltipOptions={{ position: "top" }}
-                    />
                   </div>
                 </div>
                 <div className="gallery-item-content">
