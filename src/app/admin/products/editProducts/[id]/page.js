@@ -211,9 +211,13 @@ export default function Page() {
       const hasNewTestimoniFile = form.testimoni.some((t) => t.gambar?.type === "file" && t.gambar?.value instanceof File);
       const hasNewFile = hasNewHeaderFile || hasNewGalleryFile || hasNewTestimoniFile;
 
-      // Gunakan kode dari form jika sudah valid slug, otherwise generate dari nama
-      const kode = isValidSlug(form.kode) ? form.kode : generateKode(form.nama);
-      console.log("🔧 [SUBMIT] Using kode:", kode);
+      // SELALU generate slug dari nama untuk memastikan konsistensi
+      const kode = generateKode(form.nama);
+      console.log("========== 📤 PAYLOAD DEBUG ==========");
+      console.log("🔧 Form nama:", form.nama);
+      console.log("🔧 Form kode (sebelum):", form.kode);
+      console.log("🔧 Kode yang akan dikirim (SLUG):", kode);
+      console.log("🔧 URL yang akan dikirim:", "/" + kode);
       const kategoriId = form.kategori ? Number(form.kategori) : null;
 
       // Build base payload (tanpa gambar)
@@ -362,9 +366,13 @@ export default function Page() {
 
       const data = await res.json();
       
-      // Logging struktur JSON lengkap
-      console.log("Success:", data.success);
-      console.log("Data:", data.data);
+      // Logging perbandingan payload vs response
+      console.log("========== 📥 RESPONSE DEBUG ==========");
+      console.log("✅ Kode yang DIKIRIM frontend:", kode);
+      console.log("❌ Kode yang DISIMPAN backend:", data.data?.kode);
+      console.log("⚠️ Apakah sama?", kode === data.data?.kode ? "YA ✅" : "TIDAK ❌ (Backend override!)");
+      console.log("URL frontend:", "/" + kode);
+      console.log("URL backend:", data.data?.url);
       console.table(data.data);
 
       if (!res.ok) {

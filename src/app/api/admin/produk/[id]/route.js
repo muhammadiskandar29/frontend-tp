@@ -37,7 +37,14 @@ export async function PUT(request, { params }) {
       // Tambahkan _method=PUT untuk Laravel
       formData.append("_method", "PUT");
       
-      // Log untuk debug
+      // Log untuk debug - KHUSUS CEK KODE
+      const kodeValue = formData.get("kode");
+      const urlValue = formData.get("url");
+      console.log(`[PRODUK PUT] ========== KODE DEBUG ==========`);
+      console.log(`[PRODUK PUT] 🔧 KODE yang diterima frontend API: "${kodeValue}"`);
+      console.log(`[PRODUK PUT] 🔧 URL yang diterima frontend API: "${urlValue}"`);
+      console.log(`[PRODUK PUT] 🔧 Kode pakai dash? ${kodeValue?.includes("-") ? "YA ✅" : "TIDAK ❌"}`);
+      
       console.log(`[PRODUK PUT] FormData fields:`);
       for (let [key, value] of formData.entries()) {
         if (value instanceof File) {
@@ -60,6 +67,11 @@ export async function PUT(request, { params }) {
       // JSON body - tidak ada file baru, gunakan PUT langsung
       const jsonBody = await request.json();
       
+      // Log untuk debug - KHUSUS CEK KODE
+      console.log(`[PRODUK PUT] ========== KODE DEBUG ==========`);
+      console.log(`[PRODUK PUT] 🔧 KODE yang diterima frontend API: "${jsonBody.kode}"`);
+      console.log(`[PRODUK PUT] 🔧 URL yang diterima frontend API: "${jsonBody.url}"`);
+      console.log(`[PRODUK PUT] 🔧 Kode pakai dash? ${jsonBody.kode?.includes("-") ? "YA ✅" : "TIDAK ❌"}`);
       console.log(`[PRODUK PUT] JSON body:`, JSON.stringify(jsonBody).substring(0, 500));
 
       // Coba PUT dulu, jika tidak work, fallback ke POST dengan _method
