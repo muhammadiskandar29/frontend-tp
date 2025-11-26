@@ -30,12 +30,6 @@ export default function Page() {
       .replace(/\s+/g, "-");
   };
 
-  // Helper: Cek apakah string sudah format slug (huruf kecil, pakai dash, tanpa spasi)
-  const isValidSlug = (text) => {
-    if (!text) return false;
-    // Slug valid: huruf kecil, angka, dash saja, tidak ada spasi
-    return /^[a-z0-9-]+$/.test(text) && !text.includes(" ");
-  };
 
   // ============================
   // FORMAT TANGGAL KE BACKEND
@@ -244,29 +238,29 @@ export default function Page() {
         }
 
         // Gallery - kirim semua gambar (baik yang ada file baru maupun tidak)
-          form.gambar.forEach((g, idx) => {
-            if (g.path?.type === "file" && g.path?.value instanceof File) {
+        form.gambar.forEach((g, idx) => {
+          if (g.path?.type === "file" && g.path?.value instanceof File) {
             // Ada file baru - kirim file
-              payload.append(`gambar[${idx}][file]`, g.path.value);
+            payload.append(`gambar[${idx}][file]`, g.path.value);
           } else if (g.path?.type === "url" && g.path.value) {
-            // File existing - kirim path
-            payload.append(`gambar[${idx}][path_existing]`, g.path.value);
-            }
+            // File existing - kirim path sebagai string
+            payload.append(`gambar[${idx}][path]`, g.path.value);
+          }
           payload.append(`gambar[${idx}][caption]`, g.caption || "");
-          });
+        });
 
         // Testimoni - kirim semua testimoni (baik yang ada file baru maupun tidak)
-          form.testimoni.forEach((t, idx) => {
-            if (t.gambar?.type === "file" && t.gambar?.value instanceof File) {
+        form.testimoni.forEach((t, idx) => {
+          if (t.gambar?.type === "file" && t.gambar?.value instanceof File) {
             // Ada file baru - kirim file
-              payload.append(`testimoni[${idx}][gambar]`, t.gambar.value);
+            payload.append(`testimoni[${idx}][gambar]`, t.gambar.value);
           } else if (t.gambar?.type === "url" && t.gambar.value) {
-            // File existing - kirim path
-            payload.append(`testimoni[${idx}][gambar_existing]`, t.gambar.value);
+            // File existing - kirim path sebagai string
+            payload.append(`testimoni[${idx}][gambar_path]`, t.gambar.value);
           }
-              payload.append(`testimoni[${idx}][nama]`, t.nama || "");
-              payload.append(`testimoni[${idx}][deskripsi]`, t.deskripsi || "");
-          });
+          payload.append(`testimoni[${idx}][nama]`, t.nama || "");
+          payload.append(`testimoni[${idx}][deskripsi]`, t.deskripsi || "");
+        });
 
         // Fields teks (selalu kirim)
         payload.append("nama", form.nama);
@@ -294,17 +288,39 @@ export default function Page() {
         // Tetap kirim testimoni dan gambar dengan path yang sudah ada
         
         // Build testimoni array dengan path existing
-        const testimoniPayload = form.testimoni.map((t) => ({
-          gambar: t.gambar?.type === "url" ? t.gambar.value : (t.gambar || null),
-          nama: t.nama || "",
-          deskripsi: t.deskripsi || ""
-        }));
+        const testimoniPayload = form.testimoni.map((t) => {
+          // Jika gambar adalah URL existing, ambil valuenya
+          // Jika tidak ada gambar atau file baru tanpa value, kirim null
+          let gambarValue = null;
+          if (t.gambar?.type === "url" && t.gambar.value) {
+            gambarValue = t.gambar.value;
+          } else if (typeof t.gambar === "string") {
+            gambarValue = t.gambar;
+          }
+          
+          return {
+            gambar: gambarValue,
+            nama: t.nama || "",
+            deskripsi: t.deskripsi || ""
+          };
+        });
 
         // Build gambar array dengan path existing
-        const gambarPayload = form.gambar.map((g) => ({
-          path: g.path?.type === "url" ? g.path.value : (g.path || null),
-          caption: g.caption || ""
-        }));
+        const gambarPayload = form.gambar.map((g) => {
+          // Jika path adalah URL existing, ambil valuenya
+          // Jika tidak ada path atau file baru tanpa value, kirim null
+          let pathValue = null;
+          if (g.path?.type === "url" && g.path.value) {
+            pathValue = g.path.value;
+          } else if (typeof g.path === "string") {
+            pathValue = g.path;
+          }
+          
+          return {
+            path: pathValue,
+            caption: g.caption || ""
+          };
+        });
 
         payload = {
           nama: form.nama,
@@ -334,8 +350,24 @@ export default function Page() {
       console.log("========== FINAL PAYLOAD ==========");
       console.log("Product ID:", productId);
       console.log("Has new file:", hasNewFile);
+      console.log("Has new header:", hasNewHeaderFile);
+      console.log("Has new gallery:", hasNewGalleryFile);
+      console.log("Has new testimoni:", hasNewTestimoniFile);
+      console.log("Form gambar count:", form.gambar.length);
+      console.log("Form gambar data:", JSON.stringify(form.gambar.map(g => ({
+        type: g.path?.type,
+        hasFile: g.path?.value instanceof File,
+        value: g.path?.type === "url" ? g.path.value : (g.path?.value ? "[File]" : null),
+        caption: g.caption
+      })), null, 2));
       console.log("Form testimoni count:", form.testimoni.length);
-      console.log("Form testimoni data:", JSON.stringify(form.testimoni, null, 2));
+      console.log("Form testimoni data:", JSON.stringify(form.testimoni.map(t => ({
+        type: t.gambar?.type,
+        hasFile: t.gambar?.value instanceof File,
+        value: t.gambar?.type === "url" ? t.gambar.value : (t.gambar?.value ? "[File]" : null),
+        nama: t.nama,
+        deskripsi: t.deskripsi
+      })), null, 2));
       console.log("Generated kode:", kode);
       
       if (isFormData) {
@@ -345,6 +377,7 @@ export default function Page() {
         }
       } else {
         console.log("Sending as JSON:");
+        console.log("Payload gambar:", JSON.stringify(payload.gambar, null, 2));
         console.log("Payload testimoni:", JSON.stringify(payload.testimoni, null, 2));
         console.log("Payload kode:", payload.kode);
         console.log("Full payload:", JSON.stringify(payload, null, 2));
@@ -452,15 +485,11 @@ export default function Page() {
         kategoriId = Number(produkData.kategori);
       }
 
-      // Parse existing data - gunakan kode dari backend jika sudah valid slug, otherwise generate dari nama
-      const backendKode = produkData.kode || "";
-      const kodeGenerated = isValidSlug(backendKode) 
-        ? backendKode  // Kode dari backend sudah valid, pakai langsung
-        : generateKode(produkData.nama || "produk-baru");  // Generate baru jika tidak valid
+      // SELALU generate kode dari nama dengan dash
+      const kodeGenerated = generateKode(produkData.nama || "produk-baru");
       
-      console.log("🔧 [LOAD] Original kode from backend:", backendKode);
-      console.log("🔧 [LOAD] Is valid slug:", isValidSlug(backendKode));
-      console.log("🔧 [LOAD] Final kode used:", kodeGenerated);
+      console.log("🔧 [LOAD] Nama produk:", produkData.nama);
+      console.log("🔧 [LOAD] Kode generated (dengan dash):", kodeGenerated);
       
       // Parse gambar - handle existing images (type: "url")
       const parsedGambar = safeParseJSON(produkData.gambar, []).map(g => {
@@ -690,15 +719,13 @@ export default function Page() {
                 placeholder="Masukkan nama produk"
                 onChange={(e) => {
                   const nama = e.target.value;
-                  // Hanya generate kode jika kode masih kosong atau belum valid slug
-                  const shouldGenerateKode = !form.kode || !isValidSlug(form.kode);
-                  const newKode = shouldGenerateKode ? generateKode(nama) : form.kode;
-                  
+                  // SELALU generate kode dari nama dengan dash
+                  const kode = generateKode(nama);
                   setForm({ 
                     ...form, 
                     nama, 
-                    kode: newKode,
-                    url: "/" + newKode
+                    kode: kode,
+                    url: "/" + kode
                   });
                 }}
               />

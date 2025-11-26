@@ -28,11 +28,6 @@ export default function Page() {
       .replace(/\s+/g, "-");
   };
 
-  // Helper: Cek apakah string sudah format slug (huruf kecil, pakai dash, tanpa spasi)
-  const isValidSlug = (text) => {
-    if (!text) return false;
-    return /^[a-z0-9-]+$/.test(text) && !text.includes(" ");
-  };
 
 
 
@@ -150,10 +145,10 @@ export default function Page() {
 
         // Fields
         payload.append("nama", form.nama);
-        // Gunakan kode dari form jika sudah valid slug, otherwise generate dari nama
-        const kode = isValidSlug(form.kode) ? form.kode : generateKode(form.nama);
+        // SELALU generate kode dari nama dengan dash
+        const kode = generateKode(form.nama);
         payload.append("kode", kode);
-        payload.append("url", "/" + kode); // pastikan url selalu sinkron
+        payload.append("url", "/" + kode);
         payload.append("deskripsi", form.deskripsi);
         payload.append("harga_coret", form.harga_coret || 0);
         payload.append("harga_asli", form.harga_asli || 0);
@@ -316,11 +311,8 @@ useEffect(() => {
         : [];
       setUserOptions(userOpts);
 
-      // ✅ generate kode otomatis jika null atau belum valid slug
-      const backendKode = produkData.kode || "";
-      const kodeGenerated = isValidSlug(backendKode) 
-        ? backendKode 
-        : generateKode(produkData.nama || "produk-baru");
+      // ✅ SELALU generate kode dari nama dengan dash
+      const kodeGenerated = generateKode(produkData.nama || "produk-baru");
 
       // Handle kategori_id: if kategori_rel exists, use its ID; otherwise use produkData.kategori_id
       let kategoriId = null;
@@ -398,15 +390,13 @@ useEffect(() => {
               placeholder="Masukkan nama produk"
               onChange={(e) => {
                 const nama = e.target.value;
-                // Hanya generate kode jika kode masih kosong atau belum valid slug
-                const shouldGenerateKode = !form.kode || !isValidSlug(form.kode);
-                const newKode = shouldGenerateKode ? generateKode(nama) : form.kode;
-                
+                // SELALU generate kode dari nama dengan dash
+                const kode = generateKode(nama);
                 setForm({ 
                   ...form, 
                   nama, 
-                  kode: newKode,
-                  url: "/" + newKode
+                  kode: kode,
+                  url: "/" + kode
                 });
               }}
             />
