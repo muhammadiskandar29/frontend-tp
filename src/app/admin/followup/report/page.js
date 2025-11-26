@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layout";
 import "@/styles/dashboard.css";
 import "@/styles/admin.css";
-import "@/styles/followup.css";
+import "@/styles/customer.css";
 import { getLogsFollowUp } from "@/lib/logsFollowUp";
 
 function useDebouncedValue(value, delay = 250) {
@@ -18,14 +18,13 @@ function useDebouncedValue(value, delay = 250) {
 
 // Status mapping
 const STATUS_MAP = {
-  pending: { label: "Pending", color: "#f59e0b", bg: "#fef3c7" },
-  terkirim: { label: "Terkirim", color: "#10b981", bg: "#d1fae5" },
-  gagal: { label: "Tidak Terkirim", color: "#ef4444", bg: "#fee2e2" },
+  pending: { label: "Pending", color: "#d97706", bg: "#fef3c7" },
+  terkirim: { label: "Terkirim", color: "#059669", bg: "#d1fae5" },
+  gagal: { label: "Gagal", color: "#dc2626", bg: "#fee2e2" },
 };
 
 // Determine status from log item
 const getLogStatus = (item) => {
-  // Check keterangan first for explicit status
   const keterangan = (item.keterangan || "").toLowerCase();
   
   if (keterangan.includes("terkirim") || keterangan.includes("sukses") || keterangan.includes("success")) {
@@ -36,7 +35,6 @@ const getLogStatus = (item) => {
     return "gagal";
   }
   
-  // Check status field
   if (item.status === "Y" || item.status === "1" || item.status === 1) {
     return "terkirim";
   }
@@ -45,14 +43,14 @@ const getLogStatus = (item) => {
     return "gagal";
   }
   
-  // Check follup_rel status
   if (item.follup_rel?.status === "1") {
     return "terkirim";
   }
   
-  // Default to pending if no clear status
   return "pending";
 };
+
+const COLUMNS = ["#", "Customer", "Event", "Produk", "Status", "Keterangan", "Waktu"];
 
 export default function FollowupReportPage() {
   const [logs, setLogs] = useState([]);
@@ -61,7 +59,7 @@ export default function FollowupReportPage() {
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearch = useDebouncedValue(searchInput);
   const [currentPage, setCurrentPage] = useState(1);
-  const [activeFilter, setActiveFilter] = useState("all"); // all, pending, terkirim, gagal
+  const [activeFilter, setActiveFilter] = useState("all");
   const itemsPerPage = 25;
 
   useEffect(() => {
@@ -75,7 +73,6 @@ export default function FollowupReportPage() {
             customerName: item.customer_rel?.nama || "-",
             customerPhone: item.customer_rel?.wa || "-",
             customerEmail: item.customer_rel?.email || "-",
-            customer: `${item.customer_rel?.nama || "-"} / ${item.customer_rel?.wa || "-"}`,
             keterangan: item.keterangan || "-",
             event: item.follup_rel?.nama || "-",
             type: item.follup_rel?.type || "-",
@@ -97,16 +94,13 @@ export default function FollowupReportPage() {
     loadLogs();
   }, []);
 
-  // Filter by status and search
   const filteredLogs = useMemo(() => {
     let result = logs;
     
-    // Filter by status tab
     if (activeFilter !== "all") {
       result = result.filter((log) => log.status === activeFilter);
     }
     
-    // Filter by search
     if (debouncedSearch.trim()) {
       const term = debouncedSearch.trim().toLowerCase();
       result = result.filter((log) =>
@@ -120,7 +114,6 @@ export default function FollowupReportPage() {
     return result;
   }, [logs, debouncedSearch, activeFilter]);
 
-  // Pagination
   const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
@@ -132,7 +125,6 @@ export default function FollowupReportPage() {
     setCurrentPage(1);
   }, [debouncedSearch, activeFilter]);
 
-  // Count by status
   const countByStatus = useMemo(() => ({
     all: logs.length,
     pending: logs.filter((log) => log.status === "pending").length,
@@ -141,45 +133,39 @@ export default function FollowupReportPage() {
   }), [logs]);
 
   const summaryCards = [
-    {
-      label: "Total Log",
-      value: countByStatus.all,
-      icon: "📑",
-      accent: "accent-indigo",
-    },
-    {
-      label: "Pending",
-      value: countByStatus.pending,
-      icon: "⏳",
-      accent: "accent-amber",
-    },
-    {
-      label: "Terkirim",
-      value: countByStatus.terkirim,
-      icon: "✅",
-      accent: "accent-emerald",
-    },
-    {
-      label: "Tidak Terkirim",
-      value: countByStatus.gagal,
-      icon: "❌",
-      accent: "accent-rose",
-    },
+    { label: "Total Log", value: countByStatus.all, icon: "📑", accent: "accent-indigo" },
+    { label: "Pending", value: countByStatus.pending, icon: "⏳", accent: "accent-amber" },
+    { label: "Terkirim", value: countByStatus.terkirim, icon: "✅", accent: "accent-emerald" },
+    { label: "Gagal", value: countByStatus.gagal, icon: "❌", accent: "accent-rose" },
   ];
 
   const filterTabs = [
     { key: "all", label: "Semua", count: countByStatus.all },
     { key: "pending", label: "Pending", count: countByStatus.pending },
     { key: "terkirim", label: "Terkirim", count: countByStatus.terkirim },
-    { key: "gagal", label: "Tidak Terkirim", count: countByStatus.gagal },
+    { key: "gagal", label: "Gagal", count: countByStatus.gagal },
   ];
 
-  const columns = ["#", "Customer", "Keterangan", "Event", "Produk", "Status", "Waktu"];
+  const formatDate = (dateStr) => {
+    if (!dateStr || dateStr === "-") return "-";
+    try {
+      return new Date(dateStr).toLocaleString("id-ID", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return dateStr;
+    }
+  };
 
   return (
     <Layout title="Report Follow Up | One Dashboard">
-      <div className="dashboard-shell followup-shell">
-        <section className="dashboard-hero followup-hero">
+      <div className="dashboard-shell customers-shell">
+        {/* HERO SECTION */}
+        <section className="dashboard-hero customers-hero">
           <div className="dashboard-hero__copy">
             <p className="dashboard-hero__eyebrow">Follow-up</p>
             <h2 className="dashboard-hero__title">Report Follow Up</h2>
@@ -192,7 +178,7 @@ export default function FollowupReportPage() {
             <div className="customers-search">
               <input
                 type="search"
-                placeholder="Cari customer, event, produk, atau keterangan"
+                placeholder="Cari customer, event, produk..."
                 className="customers-search__input"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
@@ -202,6 +188,7 @@ export default function FollowupReportPage() {
           </div>
         </section>
 
+        {/* SUMMARY CARDS */}
         <section className="dashboard-summary orders-summary">
           {summaryCards.map((card) => (
             <article className="summary-card" key={card.label}>
@@ -216,7 +203,7 @@ export default function FollowupReportPage() {
           ))}
         </section>
 
-        {/* Filter Tabs */}
+        {/* FILTER TABS */}
         <section className="followup-filter-section">
           <div className="followup-filter-tabs">
             {filterTabs.map((tab) => (
@@ -232,94 +219,94 @@ export default function FollowupReportPage() {
           </div>
         </section>
 
-        <section className="panel users-panel">
+        {/* TABLE PANEL */}
+        <section className="panel customers-panel">
           <div className="panel__header">
             <div>
               <p className="panel__eyebrow">Report</p>
-              <h3 className="panel__title">Log follow up {activeFilter !== "all" ? `- ${filterTabs.find(t => t.key === activeFilter)?.label}` : ""}</h3>
+              <h3 className="panel__title">
+                Log Follow Up {activeFilter !== "all" ? `- ${filterTabs.find(t => t.key === activeFilter)?.label}` : ""}
+              </h3>
             </div>
             <span className="panel__meta">
               {filteredLogs.length} log ditampilkan
             </span>
           </div>
 
-          <div className="users-table__wrapper">
-            <div className="users-table">
-              <div className="users-table__head">
-                {columns.map((column) => (
-                  <span key={column}>{column}</span>
+          <div className="customers-table__wrapper">
+            <div className="customers-table">
+              {/* TABLE HEAD */}
+              <div className="customers-table__head">
+                {COLUMNS.map((col) => (
+                  <span key={col}>{col}</span>
                 ))}
               </div>
-              <div className="users-table__body">
+
+              {/* TABLE BODY */}
+              <div className="customers-table__body">
                 {loading ? (
-                  <p className="users-empty">Memuat data...</p>
+                  <div className="customers-empty">
+                    <i className="pi pi-spin pi-spinner" style={{ fontSize: "24px", marginBottom: "12px" }} />
+                    <p>Memuat data log follow up...</p>
+                  </div>
                 ) : error ? (
-                  <p className="users-empty">
-                    Gagal memuat data log follow up
-                  </p>
+                  <div className="customers-empty">
+                    <i className="pi pi-exclamation-triangle" style={{ fontSize: "24px", marginBottom: "12px", color: "#ef4444" }} />
+                    <p>Gagal memuat data log follow up</p>
+                  </div>
                 ) : filteredLogs.length === 0 ? (
-                  <p className="users-empty">
-                    {logs.length
-                      ? "Tidak ada log yang cocok dengan filter."
-                      : "Belum ada data log follow up."}
-                  </p>
+                  <div className="customers-empty">
+                    <i className="pi pi-inbox" style={{ fontSize: "24px", marginBottom: "12px" }} />
+                    <p>{logs.length ? "Tidak ada log yang cocok dengan filter." : "Belum ada data log follow up."}</p>
+                  </div>
                 ) : (
                   paginatedData.map((log, i) => (
-                    <div className="users-table__row" key={log.id}>
-                      <div className="users-table__cell" data-label="#">
+                    <div className="customers-table__row" key={log.id}>
+                      <div className="customers-table__cell" data-label="#">
                         {startIndex + i + 1}
                       </div>
-                      <div className="users-table__cell users-table__cell--profile" data-label="Customer">
-                        <div className="users-meta">
-                          <p className="users-name">{log.customerName}</p>
-                          <p className="users-email">{log.customerPhone}</p>
+                      <div className="customers-table__cell" data-label="Customer">
+                        <div className="customer-info">
+                          <span className="customer-name">{log.customerName}</span>
+                          {log.customerPhone && log.customerPhone !== "-" && (
+                            <a
+                              href={`https://wa.me/${log.customerPhone.replace(/[^0-9]/g, "").replace(/^0/, "62")}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="wa-link"
+                              title={`Chat WhatsApp ${log.customerPhone}`}
+                            >
+                              <svg viewBox="0 0 24 24" width="12" height="12" fill="#25D366">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                              </svg>
+                              <span>{log.customerPhone}</span>
+                            </a>
+                          )}
                         </div>
                       </div>
-                      <div className="users-table__cell" data-label="Keterangan">
-                        <p className="users-contact-line" style={{ 
-                          maxWidth: "250px",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap"
-                        }} title={log.keterangan}>
-                          {log.keterangan}
-                        </p>
+                      <div className="customers-table__cell" data-label="Event">
+                        <span className="cell-text">{log.event}</span>
                       </div>
-                      <div className="users-table__cell" data-label="Event">
-                        <p className="users-contact-line">{log.event}</p>
-                      </div>
-                      <div className="users-table__cell" data-label="Produk">
-                        <p className="users-contact-line" style={{
-                          maxWidth: "150px",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap"
-                        }} title={log.produk}>
+                      <div className="customers-table__cell" data-label="Produk">
+                        <span className="cell-text cell-text--truncate" title={log.produk}>
                           {log.produk}
-                        </p>
+                        </span>
                       </div>
-                      <div className="users-table__cell" data-label="Status">
+                      <div className="customers-table__cell" data-label="Status">
                         <span
-                          className={`followup-status-pill followup-status-pill--${log.status}`}
-                          style={{
-                            background: STATUS_MAP[log.status]?.bg,
-                            color: STATUS_MAP[log.status]?.color,
-                          }}
+                          className={`followup-status-badge followup-status-badge--${log.status}`}
                         >
                           {log.statusLabel}
                         </span>
                       </div>
-                      <div className="users-table__cell" data-label="Waktu">
-                        <span className="users-contact-line users-contact-line--muted">
-                          {log.waktu !== "-"
-                            ? new Date(log.waktu).toLocaleString("id-ID", {
-                                day: "2-digit",
-                                month: "short",
-                                year: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
-                            : "-"}
+                      <div className="customers-table__cell" data-label="Keterangan">
+                        <span className="cell-text cell-text--truncate cell-text--muted" title={log.keterangan}>
+                          {log.keterangan}
+                        </span>
+                      </div>
+                      <div className="customers-table__cell" data-label="Waktu">
+                        <span className="cell-text cell-text--muted">
+                          {formatDate(log.waktu)}
                         </span>
                       </div>
                     </div>
@@ -329,6 +316,7 @@ export default function FollowupReportPage() {
             </div>
           </div>
 
+          {/* PAGINATION */}
           {totalPages > 1 && (
             <div className="customers-pagination">
               <button
@@ -353,7 +341,7 @@ export default function FollowupReportPage() {
         </section>
       </div>
 
-      <style>{`
+      <style jsx>{`
         .followup-filter-section {
           margin-bottom: 20px;
         }
@@ -365,7 +353,7 @@ export default function FollowupReportPage() {
           background: white;
           padding: 12px 16px;
           border-radius: 12px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+          box-shadow: 0 1px 3px rgba(0,0,0,0.08);
         }
         
         .followup-filter-tab {
@@ -378,7 +366,7 @@ export default function FollowupReportPage() {
           border-radius: 8px;
           cursor: pointer;
           font-weight: 500;
-          font-size: 14px;
+          font-size: 13px;
           color: #374151;
           transition: all 0.2s;
         }
@@ -398,12 +386,12 @@ export default function FollowupReportPage() {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          min-width: 24px;
-          height: 24px;
-          padding: 0 8px;
-          background: rgba(0,0,0,0.1);
-          border-radius: 12px;
-          font-size: 12px;
+          min-width: 22px;
+          height: 22px;
+          padding: 0 6px;
+          background: rgba(0,0,0,0.08);
+          border-radius: 11px;
+          font-size: 11px;
           font-weight: 600;
         }
         
@@ -411,28 +399,70 @@ export default function FollowupReportPage() {
           background: rgba(255,255,255,0.2);
         }
         
-        .followup-status-pill {
+        .customer-info {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        
+        .customer-name {
+          font-weight: 600;
+          color: #1f2937;
+          font-size: 13px;
+        }
+        
+        .cell-text {
+          font-size: 13px;
+          color: #374151;
+        }
+        
+        .cell-text--truncate {
+          max-width: 150px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          display: block;
+        }
+        
+        .cell-text--muted {
+          color: #6b7280;
+          font-size: 12px;
+        }
+        
+        .followup-status-badge {
           display: inline-flex;
           align-items: center;
-          padding: 4px 12px;
-          border-radius: 20px;
-          font-size: 12px;
+          padding: 4px 10px;
+          border-radius: 6px;
+          font-size: 11px;
           font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.3px;
         }
         
-        .followup-status-pill--pending {
-          background: #fef3c7 !important;
-          color: #d97706 !important;
+        .followup-status-badge--pending {
+          background: #fef3c7;
+          color: #d97706;
         }
         
-        .followup-status-pill--terkirim {
-          background: #d1fae5 !important;
-          color: #059669 !important;
+        .followup-status-badge--terkirim {
+          background: #d1fae5;
+          color: #059669;
         }
         
-        .followup-status-pill--gagal {
-          background: #fee2e2 !important;
-          color: #dc2626 !important;
+        .followup-status-badge--gagal {
+          background: #fee2e2;
+          color: #dc2626;
+        }
+        
+        .customers-empty {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 48px 24px;
+          color: #6b7280;
+          text-align: center;
         }
         
         .accent-rose {
@@ -443,3 +473,4 @@ export default function FollowupReportPage() {
     </Layout>
   );
 }
+
