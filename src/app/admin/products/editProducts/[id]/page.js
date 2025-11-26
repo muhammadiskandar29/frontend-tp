@@ -103,6 +103,91 @@ export default function Page() {
   };
 
   // ============================
+  // HELPER: Build Image URL via Proxy
+  // ============================
+  const buildImageUrl = (path) => {
+    if (!path) return "";
+    if (typeof path !== "string") return "";
+    // Jika sudah URL lengkap (http/https), return langsung
+    if (path.startsWith("http://") || path.startsWith("https://")) return path;
+    // Jika blob URL (untuk preview file baru)
+    if (path.startsWith("blob:")) return path;
+    // Gunakan proxy untuk path dari backend
+    let cleanPath = path.replace(/^storage\//, "").replace(/^\//, "");
+    return `/api/image?path=${encodeURIComponent(cleanPath)}`;
+  };
+
+  // ============================
+  // DELETE: Hapus Gambar Gallery via API
+  // ============================
+  const deleteGalleryImage = async (index) => {
+    if (!productId) return;
+    
+    const confirmed = window.confirm(`Hapus gambar ke-${index + 1} dari server?`);
+    if (!confirmed) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/admin/produk/${productId}/gambar/${index}`, {
+        method: "DELETE",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+      
+      if (!res.ok || !data.success) {
+        alert(data.message || "Gagal menghapus gambar");
+        return;
+      }
+
+      alert("Gambar berhasil dihapus");
+      // Refresh data produk
+      await fetchProductData(false);
+    } catch (error) {
+      console.error("Delete gallery error:", error);
+      alert("Terjadi kesalahan saat menghapus gambar");
+    }
+  };
+
+  // ============================
+  // DELETE: Hapus Testimoni via API
+  // ============================
+  const deleteTestimoni = async (index) => {
+    if (!productId) return;
+    
+    const confirmed = window.confirm(`Hapus testimoni ke-${index + 1} dari server?`);
+    if (!confirmed) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/admin/produk/${productId}/testimoni/${index}`, {
+        method: "DELETE",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+      
+      if (!res.ok || !data.success) {
+        alert(data.message || "Gagal menghapus testimoni");
+        return;
+      }
+
+      alert("Testimoni berhasil dihapus");
+      // Refresh data produk
+      await fetchProductData(false);
+    } catch (error) {
+      console.error("Delete testimoni error:", error);
+      alert("Terjadi kesalahan saat menghapus testimoni");
+    }
+  };
+
+  // ============================
   // SUBMIT - PUT ke /api/admin/produk/{id}
   // TIDAK kirim field gambar jika tidak ada file baru
   // Backend akan mempertahankan data gambar yang sudah ada
@@ -587,25 +672,20 @@ export default function Page() {
               />
             </div>
 
-            {/* KODE & URL */}
+            {/* KODE & URL - Otomatis dari nama produk */}
             <div className="grid grid-cols-2 gap-4">
               <div className="form-field-group">
                 <label className="form-label">
                   <span className="label-icon">🔗</span>
-                  Kode Produk
+                  Kode Produk (Slug)
                 </label>
                 <InputText
                   className="w-full form-input"
                   value={form.kode || ""}
-                  onChange={(e) => {
-                    const kode = e.target.value;
-                    setForm({
-                      ...form,
-                      kode,
-                      url: "/" + (kode || "produk-baru"),
-                    });
-                  }}
-                  placeholder="Kode otomatis dari nama"
+                  readOnly
+                  disabled
+                  placeholder="Otomatis dari nama produk"
+                  style={{ backgroundColor: "#f3f4f6", cursor: "not-allowed" }}
                 />
               </div>
               <div className="form-field-group">
@@ -616,11 +696,16 @@ export default function Page() {
                 <InputText
                   className="w-full form-input"
                   value={form.url || ""}
-                  onChange={(e) => handleChange("url", e.target.value)}
+                  readOnly
+                  disabled
                   placeholder="/kode-produk"
+                  style={{ backgroundColor: "#f3f4f6", cursor: "not-allowed" }}
                 />
               </div>
             </div>
+            <p className="field-hint" style={{ marginTop: "-8px", fontSize: "12px", color: "#6b7280" }}>
+              💡 Kode dan URL otomatis dihasilkan dari nama produk (spasi → tanda hubung)
+            </p>
           </div>
         </div>
 
@@ -641,9 +726,10 @@ export default function Page() {
                 {form.header?.type === "url" && form.header.value && (
                   <div className="file-preview">
                     <img 
-                      src={form.header.value} 
+                      src={buildImageUrl(form.header.value)} 
                       alt="Current header" 
                       className="preview-thumbnail"
+                      style={{ maxWidth: "300px", maxHeight: "200px", objectFit: "cover", borderRadius: "8px" }}
                     />
                     <p className="field-hint">Gambar saat ini</p>
                   </div>
@@ -744,25 +830,43 @@ export default function Page() {
               <div key={i} className="gallery-item-card">
                 <div className="gallery-item-header">
                   <span className="gallery-item-number">Gambar {i + 1}</span>
-                  <Button
-                    icon="pi pi-trash"
-                    severity="danger"
-                    className="p-button-danger p-button-sm"
-                    onClick={() => removeArray("gambar", i)}
-                    tooltip="Hapus gambar"
-                  />
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    {/* Tombol hapus dari server (jika gambar sudah ada di server) */}
+                    {g.path?.type === "url" && g.path.value && (
+                      <Button
+                        icon="pi pi-server"
+                        severity="danger"
+                        className="p-button-danger p-button-sm"
+                        onClick={() => deleteGalleryImage(i)}
+                        tooltip="Hapus dari server"
+                        tooltipOptions={{ position: "top" }}
+                      />
+                    )}
+                    {/* Tombol hapus dari form (lokal) */}
+                    <Button
+                      icon="pi pi-trash"
+                      severity="secondary"
+                      className="p-button-secondary p-button-sm"
+                      onClick={() => removeArray("gambar", i)}
+                      tooltip="Hapus dari form"
+                      tooltipOptions={{ position: "top" }}
+                    />
+                  </div>
                 </div>
                 <div className="gallery-item-content">
                   <div className="form-field-group">
                     <label className="form-label-small">Upload Gambar</label>
                     {g.path?.type === "url" && g.path.value && (
-                      <div className="file-preview">
+                      <div className="file-preview" style={{ marginBottom: "12px" }}>
                         <img 
-                          src={g.path.value} 
+                          src={buildImageUrl(g.path.value)} 
                           alt={`Current ${i + 1}`}
                           className="preview-thumbnail"
+                          style={{ maxWidth: "200px", maxHeight: "150px", objectFit: "cover", borderRadius: "8px", border: "2px solid #e5e7eb" }}
                         />
-                        <p className="field-hint">Gambar saat ini</p>
+                        <p className="field-hint" style={{ marginTop: "4px", fontSize: "12px", color: "#6b7280" }}>
+                          ✅ Gambar saat ini (dari server)
+                        </p>
                       </div>
                     )}
                     <input
@@ -774,12 +878,16 @@ export default function Page() {
                       className="file-input"
                     />
                     {g.path?.type === "file" && g.path.value && (
-                      <div className="file-preview">
+                      <div className="file-preview" style={{ marginTop: "8px" }}>
                         <img 
                           src={URL.createObjectURL(g.path.value)} 
                           alt={`Preview ${i + 1}`}
                           className="preview-thumbnail"
+                          style={{ maxWidth: "200px", maxHeight: "150px", objectFit: "cover", borderRadius: "8px", border: "2px solid #3b82f6" }}
                         />
+                        <p className="field-hint" style={{ marginTop: "4px", fontSize: "12px", color: "#3b82f6" }}>
+                          🆕 File baru (akan diupload)
+                        </p>
                       </div>
                     )}
                   </div>
@@ -815,25 +923,43 @@ export default function Page() {
               <div key={i} className="testimoni-item-card">
                 <div className="testimoni-item-header">
                   <span className="testimoni-item-number">Testimoni {i + 1}</span>
-                  <Button
-                    icon="pi pi-trash"
-                    severity="danger"
-                    className="p-button-danger p-button-sm"
-                    onClick={() => removeArray("testimoni", i)}
-                    tooltip="Hapus testimoni"
-                  />
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    {/* Tombol hapus dari server (jika testimoni sudah ada di server) */}
+                    {t.gambar?.type === "url" && t.gambar.value && (
+                      <Button
+                        icon="pi pi-server"
+                        severity="danger"
+                        className="p-button-danger p-button-sm"
+                        onClick={() => deleteTestimoni(i)}
+                        tooltip="Hapus dari server"
+                        tooltipOptions={{ position: "top" }}
+                      />
+                    )}
+                    {/* Tombol hapus dari form (lokal) */}
+                    <Button
+                      icon="pi pi-trash"
+                      severity="secondary"
+                      className="p-button-secondary p-button-sm"
+                      onClick={() => removeArray("testimoni", i)}
+                      tooltip="Hapus dari form"
+                      tooltipOptions={{ position: "top" }}
+                    />
+                  </div>
                 </div>
                 <div className="testimoni-item-content">
                   <div className="form-field-group">
                     <label className="form-label-small">Upload Foto</label>
                     {t.gambar?.type === "url" && t.gambar.value && (
-                      <div className="file-preview">
+                      <div className="file-preview" style={{ marginBottom: "12px" }}>
                         <img 
-                          src={t.gambar.value} 
+                          src={buildImageUrl(t.gambar.value)} 
                           alt={`Current Testimoni ${i + 1}`}
                           className="preview-thumbnail"
+                          style={{ maxWidth: "100px", maxHeight: "100px", objectFit: "cover", borderRadius: "50%", border: "3px solid #e5e7eb" }}
                         />
-                        <p className="field-hint">Foto saat ini</p>
+                        <p className="field-hint" style={{ marginTop: "4px", fontSize: "12px", color: "#6b7280" }}>
+                          ✅ Foto saat ini (dari server)
+                        </p>
                       </div>
                     )}
                     <input
@@ -845,12 +971,16 @@ export default function Page() {
                       className="file-input"
                     />
                     {t.gambar?.type === "file" && t.gambar.value && (
-                      <div className="file-preview">
+                      <div className="file-preview" style={{ marginTop: "8px" }}>
                         <img 
                           src={URL.createObjectURL(t.gambar.value)} 
                           alt={`Testimoni ${i + 1}`}
                           className="preview-thumbnail"
+                          style={{ maxWidth: "100px", maxHeight: "100px", objectFit: "cover", borderRadius: "50%", border: "3px solid #3b82f6" }}
                         />
+                        <p className="field-hint" style={{ marginTop: "4px", fontSize: "12px", color: "#3b82f6" }}>
+                          🆕 File baru (akan diupload)
+                        </p>
                       </div>
                     )}
                   </div>

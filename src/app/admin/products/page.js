@@ -173,12 +173,13 @@ export default function AdminProductsPage() {
                         <div className="product-table__image">
                           {p.header ? (
                             <img
-                              src={`https://onedashboardapi-production.up.railway.app/storage/${p.header}`}
+                              src={`/api/image?path=${encodeURIComponent(p.header)}`}
                               alt={p.nama}
                               onError={(e) => {
                                 e.target.style.display = "none";
                                 e.target.nextElementSibling.style.display = "flex";
                               }}
+                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
                             />
                           ) : null}
                           <div
