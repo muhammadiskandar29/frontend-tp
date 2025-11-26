@@ -123,6 +123,26 @@ ADMIN USERS PAGE (Scoped Styles)
   transform: translateY(-1px);
 }
 
+.customers-button--secondary {
+  background: #ffffff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.customers-button--secondary:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  transform: translateY(-1px);
+}
+
+.customers-toolbar-buttons {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .admin-users-summary .summary-card {
   min-height: 110px;
 }

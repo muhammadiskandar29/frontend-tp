@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useCallback, memo } from "react";
+import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import { getCustomers, deleteCustomer } from "@/lib/customer";
 import dynamic from "next/dynamic";
@@ -41,6 +42,7 @@ const CUSTOMERS_COLUMNS = [
 ];
 
 export default function AdminCustomerPage() {
+  const router = useRouter();
   const [customers, setCustomers] = useState([]);
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearch = useDebouncedValue(searchInput);
@@ -194,9 +196,18 @@ export default function AdminCustomerPage() {
               />
               <span className="customers-search__icon pi pi-search" />
             </div>
-            <button className="customers-button customers-button--primary" onClick={() => setShowAdd(true)}>
-              + Tambah Customer
-            </button>
+            <div className="customers-toolbar-buttons">
+              <button 
+                className="customers-button customers-button--secondary" 
+                onClick={() => router.push("/admin/followup/report")}
+              >
+                <i className="pi pi-chart-bar" style={{ marginRight: "6px" }} />
+                Report Follow Up
+              </button>
+              <button className="customers-button customers-button--primary" onClick={() => setShowAdd(true)}>
+                + Tambah Customer
+              </button>
+            </div>
           </div>
         </section>
 

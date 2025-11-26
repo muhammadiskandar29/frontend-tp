@@ -24,6 +24,18 @@ const FOLLOWUP_TABS = [
   { type: 9, label: "Redirect" },
 ];
 
+// Type yang perlu settingan jam/hari manual
+const SCHEDULED_TYPES = [1, 2, 3, 4]; // Follow Up 1-4
+
+// Type yang langsung kirim tanpa delay (instant send - trigger dari backend)
+const INSTANT_SEND_TYPES = [5, 6, 7]; // Register, Processing, Selesai
+
+// Type upselling: H+1 dari tanggal event produk (default, tidak bisa edit)
+const UPSELLING_TYPE = 8;
+
+// Type redirect (instant seperti lainnya)
+const REDIRECT_TYPE = 9;
+
 const AUTOTEXT_OPTIONS = [
   { label: "Pilih Autotext", value: "" },
   { label: "{{nama_customer}}", value: "{{nama_customer}}" },
@@ -174,9 +186,33 @@ export default function FollowupSection() {
       console.log("✅ [FOLLOWUP] Template loaded for type", activeType, ":", tpl, "| parsed event:", parsed);
     } else {
       setText("");
-      setEventValue("1d-09:00");
-      setScheduleDay(1);
-      setScheduleTime("09:00");
+      // Set default value berdasarkan type
+      if (SCHEDULED_TYPES.includes(activeType)) {
+        // Type 1-4: Follow Up dengan jadwal manual
+        setEventValue("1d-09:00");
+        setScheduleDay(1);
+        setScheduleTime("09:00");
+      } else if (INSTANT_SEND_TYPES.includes(activeType)) {
+        // Type 5, 6, 7: Instant send (trigger dari backend)
+        setEventValue("0d-00:00");
+        setScheduleDay(0);
+        setScheduleTime("00:00");
+      } else if (activeType === UPSELLING_TYPE) {
+        // Type 8: Upselling - H+1 dari tanggal event
+        setEventValue("1d-09:00"); // Default H+1 jam 09:00
+        setScheduleDay(1);
+        setScheduleTime("09:00");
+      } else if (activeType === REDIRECT_TYPE) {
+        // Type 9: Redirect - instant
+        setEventValue("0d-00:00");
+        setScheduleDay(0);
+        setScheduleTime("00:00");
+      } else {
+        // Fallback default
+        setEventValue("1d-09:00");
+        setScheduleDay(1);
+        setScheduleTime("09:00");
+      }
       setAutoSend(false);
       console.log("ℹ️ [FOLLOWUP] No template found for type", activeType);
     }
@@ -354,39 +390,89 @@ export default function FollowupSection() {
           />
           Enable Auto Send
         </label>
-        <div className="schedule-grid">
-          <div className="schedule-card">
-            <label>Delay (Hari)</label>
-            <div className="schedule-input">
-              <input
-                type="number"
-                min="0"
-                value={scheduleDay}
-                onChange={(e) => {
-                  const newDay = Math.max(0, Number(e.target.value) || 0);
-                  setScheduleDay(newDay);
-                  setEventValue(formatEventValue(newDay, scheduleTime));
-                }}
-              />
-              <span>hari</span>
+        
+        {/* Type 1-4: Follow Up dengan settingan jam/hari */}
+        {SCHEDULED_TYPES.includes(activeType) && (
+          <>
+            <div className="schedule-grid">
+              <div className="schedule-card">
+                <label>Delay (Hari)</label>
+                <div className="schedule-input">
+                  <input
+                    type="number"
+                    min="0"
+                    value={scheduleDay}
+                    onChange={(e) => {
+                      const newDay = Math.max(0, Number(e.target.value) || 0);
+                      setScheduleDay(newDay);
+                      setEventValue(formatEventValue(newDay, scheduleTime));
+                    }}
+                  />
+                  <span>hari</span>
+                </div>
+              </div>
+              <div className="schedule-card">
+                <label>Jam Kirim</label>
+                <input
+                  type="time"
+                  value={scheduleTime}
+                  onChange={(e) => {
+                    const newTime = e.target.value || "09:00";
+                    setScheduleTime(newTime);
+                    setEventValue(formatEventValue(scheduleDay, newTime));
+                  }}
+                />
+              </div>
             </div>
+            <p className="schedule-hint">
+              Format terkirim ke backend: <strong>{eventValue}</strong>
+            </p>
+          </>
+        )}
+
+        {/* Type 5, 6, 7: Instant Send (trigger dari backend) */}
+        {INSTANT_SEND_TYPES.includes(activeType) && (
+          <div className="instant-send-info">
+            <div className="instant-badge">
+              <i className="pi pi-bolt" />
+              Instant Send
+            </div>
+            <p className="instant-desc">
+              {activeType === 5 && "Pesan akan langsung dikirim saat customer berhasil melakukan pemesanan."}
+              {activeType === 6 && "Pesan akan langsung dikirim setelah customer melakukan pembayaran."}
+              {activeType === 7 && "Pesan akan langsung dikirim saat event/pesanan selesai (terimakasih sudah mengikuti webinar/seminar/workshop)."}
+            </p>
           </div>
-          <div className="schedule-card">
-            <label>Jam Kirim</label>
-            <input
-              type="time"
-              value={scheduleTime}
-              onChange={(e) => {
-                const newTime = e.target.value || "09:00";
-                setScheduleTime(newTime);
-                setEventValue(formatEventValue(scheduleDay, newTime));
-              }}
-            />
+        )}
+
+        {/* Type 8: Upselling - H+1 dari tanggal event */}
+        {activeType === UPSELLING_TYPE && (
+          <div className="instant-send-info upselling-info">
+            <div className="instant-badge upselling-badge">
+              <i className="pi pi-calendar-plus" />
+              H+1 Tanggal Event
+            </div>
+            <p className="instant-desc">
+              Pesan upselling akan otomatis dikirim <strong>1 hari setelah tanggal event produk</strong> sebagai penawaran produk lanjutan.
+            </p>
+            <p className="schedule-hint" style={{ marginTop: "8px" }}>
+              Jadwal dikirim otomatis berdasarkan: <strong>tanggal_event + 1 hari</strong>
+            </p>
           </div>
-        </div>
-        <p className="schedule-hint">
-          Format terkirim ke backend: <strong>{eventValue}</strong>
-        </p>
+        )}
+
+        {/* Type 9: Redirect - Instant */}
+        {activeType === REDIRECT_TYPE && (
+          <div className="instant-send-info redirect-info">
+            <div className="instant-badge redirect-badge">
+              <i className="pi pi-directions" />
+              Redirect Message
+            </div>
+            <p className="instant-desc">
+              Pesan redirect akan dikirim sesuai kondisi tertentu yang di-trigger dari sistem.
+            </p>
+          </div>
+        )}
       </div>
 
       <button 
@@ -578,6 +664,68 @@ export default function FollowupSection() {
 
         .schedule-hint strong {
           color: #111827;
+        }
+
+        .instant-send-info {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+          border: 1px solid #f59e0b;
+          border-radius: 14px;
+          padding: 16px;
+        }
+
+        .instant-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          background: #f59e0b;
+          color: white;
+          padding: 6px 14px;
+          border-radius: 20px;
+          font-weight: 600;
+          font-size: 14px;
+          width: fit-content;
+        }
+
+        .instant-badge i {
+          font-size: 14px;
+        }
+
+        .instant-desc {
+          font-size: 14px;
+          color: #92400e;
+          margin: 0;
+        }
+
+        /* Upselling style */
+        .upselling-info {
+          background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+          border-color: #3b82f6;
+        }
+
+        .upselling-badge {
+          background: #3b82f6;
+        }
+
+        .upselling-info .instant-desc {
+          color: #1e40af;
+        }
+
+        /* Redirect style */
+        .redirect-info {
+          background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+          border-color: #a855f7;
+        }
+
+        .redirect-badge {
+          background: #a855f7;
+        }
+
+        .redirect-info .instant-desc {
+          color: #6b21a8;
+          line-height: 1.5;
         }
 
         .save-btn {

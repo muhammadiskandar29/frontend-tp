@@ -16,6 +16,44 @@ function useDebouncedValue(value, delay = 250) {
   return debounced;
 }
 
+// Status mapping
+const STATUS_MAP = {
+  pending: { label: "Pending", color: "#f59e0b", bg: "#fef3c7" },
+  terkirim: { label: "Terkirim", color: "#10b981", bg: "#d1fae5" },
+  gagal: { label: "Tidak Terkirim", color: "#ef4444", bg: "#fee2e2" },
+};
+
+// Determine status from log item
+const getLogStatus = (item) => {
+  // Check keterangan first for explicit status
+  const keterangan = (item.keterangan || "").toLowerCase();
+  
+  if (keterangan.includes("terkirim") || keterangan.includes("sukses") || keterangan.includes("success")) {
+    return "terkirim";
+  }
+  
+  if (keterangan.includes("gagal") || keterangan.includes("failed") || keterangan.includes("error")) {
+    return "gagal";
+  }
+  
+  // Check status field
+  if (item.status === "Y" || item.status === "1" || item.status === 1) {
+    return "terkirim";
+  }
+  
+  if (item.status === "N" || item.status === "0" || item.status === 0) {
+    return "gagal";
+  }
+  
+  // Check follup_rel status
+  if (item.follup_rel?.status === "1") {
+    return "terkirim";
+  }
+  
+  // Default to pending if no clear status
+  return "pending";
+};
+
 export default function FollowupReportPage() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,22 +61,30 @@ export default function FollowupReportPage() {
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearch = useDebouncedValue(searchInput);
   const [currentPage, setCurrentPage] = useState(1);
+  const [activeFilter, setActiveFilter] = useState("all"); // all, pending, terkirim, gagal
   const itemsPerPage = 25;
 
   useEffect(() => {
     async function loadLogs() {
       try {
         const res = await getLogsFollowUp();
-        const mappedLogs = (res.data || []).map((item) => ({
-          id: item.id,
-          customerName: item.customer_rel?.nama || "-",
-          customerPhone: item.customer_rel?.wa || "-",
-          customer: `${item.customer_rel?.nama || "-"} / ${item.customer_rel?.wa || "-"}`,
-          keterangan: item.keterangan || "-",
-          event: item.follup_rel?.nama || "-",
-          status: item.follup_rel?.status === "1" ? "Terkirim" : "Gagal",
-          waktu: item.follup_rel?.create_at || item.create_at || "-",
-        }));
+        const mappedLogs = (res.data || []).map((item) => {
+          const status = getLogStatus(item);
+          return {
+            id: item.id,
+            customerName: item.customer_rel?.nama || "-",
+            customerPhone: item.customer_rel?.wa || "-",
+            customerEmail: item.customer_rel?.email || "-",
+            customer: `${item.customer_rel?.nama || "-"} / ${item.customer_rel?.wa || "-"}`,
+            keterangan: item.keterangan || "-",
+            event: item.follup_rel?.nama || "-",
+            type: item.follup_rel?.type || "-",
+            status: status,
+            statusLabel: STATUS_MAP[status]?.label || status,
+            waktu: item.create_at || item.follup_rel?.create_at || "-",
+            produk: item.follup_rel?.produk_rel?.nama || "-",
+          };
+        });
         setLogs(mappedLogs);
       } catch (err) {
         console.error("Gagal ambil data log follow up:", err);
@@ -51,16 +97,28 @@ export default function FollowupReportPage() {
     loadLogs();
   }, []);
 
+  // Filter by status and search
   const filteredLogs = useMemo(() => {
-    if (!debouncedSearch.trim()) return logs;
-    const term = debouncedSearch.trim().toLowerCase();
-    return logs.filter((log) =>
-      [log.customerName, log.customerPhone, log.keterangan, log.event]
-        .join(" ")
-        .toLowerCase()
-        .includes(term)
-    );
-  }, [logs, debouncedSearch]);
+    let result = logs;
+    
+    // Filter by status tab
+    if (activeFilter !== "all") {
+      result = result.filter((log) => log.status === activeFilter);
+    }
+    
+    // Filter by search
+    if (debouncedSearch.trim()) {
+      const term = debouncedSearch.trim().toLowerCase();
+      result = result.filter((log) =>
+        [log.customerName, log.customerPhone, log.keterangan, log.event, log.produk]
+          .join(" ")
+          .toLowerCase()
+          .includes(term)
+      );
+    }
+    
+    return result;
+  }, [logs, debouncedSearch, activeFilter]);
 
   // Pagination
   const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
@@ -72,30 +130,51 @@ export default function FollowupReportPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearch]);
+  }, [debouncedSearch, activeFilter]);
+
+  // Count by status
+  const countByStatus = useMemo(() => ({
+    all: logs.length,
+    pending: logs.filter((log) => log.status === "pending").length,
+    terkirim: logs.filter((log) => log.status === "terkirim").length,
+    gagal: logs.filter((log) => log.status === "gagal").length,
+  }), [logs]);
 
   const summaryCards = [
     {
-      label: "Total log",
-      value: logs.length,
+      label: "Total Log",
+      value: countByStatus.all,
       icon: "📑",
       accent: "accent-indigo",
     },
     {
+      label: "Pending",
+      value: countByStatus.pending,
+      icon: "⏳",
+      accent: "accent-amber",
+    },
+    {
       label: "Terkirim",
-      value: logs.filter((log) => log.status === "Terkirim").length,
+      value: countByStatus.terkirim,
       icon: "✅",
       accent: "accent-emerald",
     },
     {
-      label: "Gagal",
-      value: logs.filter((log) => log.status !== "Terkirim").length,
-      icon: "⚠️",
-      accent: "accent-amber",
+      label: "Tidak Terkirim",
+      value: countByStatus.gagal,
+      icon: "❌",
+      accent: "accent-rose",
     },
   ];
 
-  const columns = ["#", "Customer", "Keterangan", "Event", "Status", "Waktu"];
+  const filterTabs = [
+    { key: "all", label: "Semua", count: countByStatus.all },
+    { key: "pending", label: "Pending", count: countByStatus.pending },
+    { key: "terkirim", label: "Terkirim", count: countByStatus.terkirim },
+    { key: "gagal", label: "Tidak Terkirim", count: countByStatus.gagal },
+  ];
+
+  const columns = ["#", "Customer", "Keterangan", "Event", "Produk", "Status", "Waktu"];
 
   return (
     <Layout title="Report Follow Up | One Dashboard">
@@ -113,7 +192,7 @@ export default function FollowupReportPage() {
             <div className="customers-search">
               <input
                 type="search"
-                placeholder="Cari customer, event, atau keterangan"
+                placeholder="Cari customer, event, produk, atau keterangan"
                 className="customers-search__input"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
@@ -137,11 +216,27 @@ export default function FollowupReportPage() {
           ))}
         </section>
 
+        {/* Filter Tabs */}
+        <section className="followup-filter-section">
+          <div className="followup-filter-tabs">
+            {filterTabs.map((tab) => (
+              <button
+                key={tab.key}
+                className={`followup-filter-tab ${activeFilter === tab.key ? "active" : ""}`}
+                onClick={() => setActiveFilter(tab.key)}
+              >
+                {tab.label}
+                <span className="followup-filter-count">{tab.count}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+
         <section className="panel users-panel">
           <div className="panel__header">
             <div>
               <p className="panel__eyebrow">Report</p>
-              <h3 className="panel__title">Log follow up terbaru</h3>
+              <h3 className="panel__title">Log follow up {activeFilter !== "all" ? `- ${filterTabs.find(t => t.key === activeFilter)?.label}` : ""}</h3>
             </div>
             <span className="panel__meta">
               {filteredLogs.length} log ditampilkan
@@ -165,7 +260,7 @@ export default function FollowupReportPage() {
                 ) : filteredLogs.length === 0 ? (
                   <p className="users-empty">
                     {logs.length
-                      ? "Tidak ada log yang cocok."
+                      ? "Tidak ada log yang cocok dengan filter."
                       : "Belum ada data log follow up."}
                   </p>
                 ) : (
@@ -182,26 +277,36 @@ export default function FollowupReportPage() {
                       </div>
                       <div className="users-table__cell" data-label="Keterangan">
                         <p className="users-contact-line" style={{ 
-                          maxWidth: "300px",
+                          maxWidth: "250px",
                           overflow: "hidden",
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap"
-                        }}>
+                        }} title={log.keterangan}>
                           {log.keterangan}
                         </p>
                       </div>
                       <div className="users-table__cell" data-label="Event">
                         <p className="users-contact-line">{log.event}</p>
                       </div>
+                      <div className="users-table__cell" data-label="Produk">
+                        <p className="users-contact-line" style={{
+                          maxWidth: "150px",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap"
+                        }} title={log.produk}>
+                          {log.produk}
+                        </p>
+                      </div>
                       <div className="users-table__cell" data-label="Status">
                         <span
-                          className={`followup-status-pill ${
-                            log.status === "Terkirim"
-                              ? "followup-status-pill--success"
-                              : "followup-status-pill--danger"
-                          }`}
+                          className={`followup-status-pill followup-status-pill--${log.status}`}
+                          style={{
+                            background: STATUS_MAP[log.status]?.bg,
+                            color: STATUS_MAP[log.status]?.color,
+                          }}
                         >
-                          {log.status}
+                          {log.statusLabel}
                         </span>
                       </div>
                       <div className="users-table__cell" data-label="Waktu">
@@ -247,6 +352,94 @@ export default function FollowupReportPage() {
           )}
         </section>
       </div>
+
+      <style>{`
+        .followup-filter-section {
+          margin-bottom: 20px;
+        }
+        
+        .followup-filter-tabs {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+          background: white;
+          padding: 12px 16px;
+          border-radius: 12px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .followup-filter-tab {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 16px;
+          border: 1px solid #e5e7eb;
+          background: #f9fafb;
+          border-radius: 8px;
+          cursor: pointer;
+          font-weight: 500;
+          font-size: 14px;
+          color: #374151;
+          transition: all 0.2s;
+        }
+        
+        .followup-filter-tab:hover {
+          background: #f3f4f6;
+          border-color: #d1d5db;
+        }
+        
+        .followup-filter-tab.active {
+          background: #2563eb;
+          color: white;
+          border-color: #2563eb;
+        }
+        
+        .followup-filter-count {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 24px;
+          height: 24px;
+          padding: 0 8px;
+          background: rgba(0,0,0,0.1);
+          border-radius: 12px;
+          font-size: 12px;
+          font-weight: 600;
+        }
+        
+        .followup-filter-tab.active .followup-filter-count {
+          background: rgba(255,255,255,0.2);
+        }
+        
+        .followup-status-pill {
+          display: inline-flex;
+          align-items: center;
+          padding: 4px 12px;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: 600;
+        }
+        
+        .followup-status-pill--pending {
+          background: #fef3c7 !important;
+          color: #d97706 !important;
+        }
+        
+        .followup-status-pill--terkirim {
+          background: #d1fae5 !important;
+          color: #059669 !important;
+        }
+        
+        .followup-status-pill--gagal {
+          background: #fee2e2 !important;
+          color: #dc2626 !important;
+        }
+        
+        .accent-rose {
+          background: linear-gradient(135deg, #fda4af, #fb7185);
+          color: white;
+        }
+      `}</style>
     </Layout>
   );
 }
