@@ -30,17 +30,26 @@ export default function LandingPage() {
     return (isNaN(numPrice) ? 0 : numPrice).toLocaleString("id-ID");
   };
 
-  const BASE_IMAGE_URL = process.env.NEXT_PUBLIC_BASE_URL || "http://3.105.234.181:8000";
-
-  // Helper: konversi path relatif ke absolute URL
+  // Helper: konversi path relatif ke proxied URL (menghindari mixed content HTTPS/HTTP)
   const resolveImageUrl = (path) => {
     if (!path) return "";
     if (typeof path !== "string") return "";
-    // Jika sudah absolute URL, return langsung
-    if (path.startsWith("http://") || path.startsWith("https://")) return path;
-    // Jika path relatif, tambahkan base URL
-    const cleanPath = path.startsWith("/") ? path : `/${path}`;
-    return `${BASE_IMAGE_URL}${cleanPath}`;
+    // Jika sudah absolute HTTPS URL, return langsung
+    if (path.startsWith("https://")) return path;
+    // Jika HTTP atau path relatif, gunakan proxy
+    let cleanPath = path;
+    if (path.startsWith("http://")) {
+      // Extract path dari URL
+      try {
+        const url = new URL(path);
+        cleanPath = url.pathname;
+      } catch {
+        cleanPath = path;
+      }
+    }
+    // Gunakan proxy API untuk menghindari mixed content
+    const encodedPath = encodeURIComponent(cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`);
+    return `/api/image?path=${encodedPath}`;
   };
 
   const resolveHeaderSource = (header) => {
