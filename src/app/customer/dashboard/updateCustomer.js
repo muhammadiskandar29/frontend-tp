@@ -123,6 +123,7 @@ const SECTION_CONFIG = [
   {
     title: "Keamanan",
     icon: "🔒",
+    isPasswordSection: true, // Flag untuk section password
     fields: [
       {
         name: "password",
@@ -130,7 +131,7 @@ const SECTION_CONFIG = [
         type: "password",
         placeholder: "Masukkan password baru",
         note: "Isi jika ingin mengganti password",
-        required: true,
+        required: false, // Akan di-override berdasarkan requirePassword prop
         fullWidth: true,
       },
     ],
@@ -234,16 +235,18 @@ export default function UpdateCustomerModal({
           )}
         </div>
 
-        {/* Info banner untuk password default */}
-        {requirePassword && (
-          <div className="password-notice">
-            <span className="notice-icon">🔐</span>
-            <div>
-              <strong>Keamanan Akun</strong>
-              <p>Untuk keamanan akun Anda, silakan buat password baru sebelum melanjutkan.</p>
-            </div>
+        {/* Info banner */}
+        <div className="password-notice">
+          <span className="notice-icon">{requirePassword ? "🔐" : "📝"}</span>
+          <div>
+            <strong>{requirePassword ? "Keamanan Akun" : "Lengkapi Data Anda"}</strong>
+            <p>
+              {requirePassword 
+                ? "Untuk keamanan akun Anda, silakan buat password baru sebelum melanjutkan."
+                : "Silakan lengkapi data profil Anda untuk pengalaman yang lebih baik."}
+            </p>
           </div>
-        )}
+        </div>
 
         {/* Error message */}
         {error && (
@@ -253,24 +256,39 @@ export default function UpdateCustomerModal({
         )}
 
         <form className="customer-modal__body" onSubmit={handleSubmit}>
-          {SECTION_CONFIG.map((section) => (
+          {SECTION_CONFIG.map((section) => {
+            // Skip password section jika tidak requirePassword dan section adalah password section
+            // Tapi tetap tampilkan dengan note bahwa opsional
+            
+            return (
             <div className="form-section" key={section.title}>
               <div className="section-header">
                 <h3 className="section-title">
                   <span className="section-icon">{section.icon}</span>
                   {section.title}
+                  {section.isPasswordSection && !requirePassword && (
+                    <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: "normal", marginLeft: "8px" }}>
+                      (Opsional)
+                    </span>
+                  )}
                 </h3>
               </div>
 
               <div className="customer-grid">
                 {section.fields.map((field) => {
                   const value = formData[field.name] ?? "";
+                  
+                  // Override required untuk password field berdasarkan requirePassword prop
+                  const isRequired = field.name === "password" 
+                    ? requirePassword 
+                    : field.required;
+                  
                   const baseProps = {
                     name: field.name,
                     value,
                     onChange: handleChange,
                     placeholder: field.placeholder,
-                    required: field.required,
+                    required: isRequired,
                   };
 
                   if (field.type === "textarea") {
@@ -291,7 +309,7 @@ export default function UpdateCustomerModal({
                           <span className="field-icon">{field.icon}</span>
                         )}
                         {field.label}{" "}
-                        {field.required ? (
+                        {isRequired ? (
                           <span className="required">*</span>
                         ) : null}
                       </span>
@@ -311,14 +329,19 @@ export default function UpdateCustomerModal({
                       )}
 
                       {field.note && (
-                        <p className="field-hint">{field.note}</p>
+                        <p className="field-hint">
+                          {field.name === "password" && !requirePassword 
+                            ? "Kosongkan jika tidak ingin mengganti password"
+                            : field.note}
+                        </p>
                       )}
                     </label>
                   );
                 })}
               </div>
             </div>
-          ))}
+          );
+          })}
 
           <div className="customer-modal__footer">
             {/* Modal tidak bisa ditutup sebelum submit, jadi tidak ada tombol Batal */}

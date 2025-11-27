@@ -12,6 +12,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false); // Untuk update password default
+  const [updateModalReason, setUpdateModalReason] = useState("password"); // "password" atau "incomplete"
   const [sendingOTP, setSendingOTP] = useState(false);
   const [stats, setStats] = useState([
     { id: "total", label: "Total Order", value: 0, icon: "🧾" },
@@ -177,7 +178,7 @@ export default function DashboardPage() {
     }
   }, [router]);
 
-  // Cek password default dan verifikasi
+  // Cek password default, data tidak lengkap, dan verifikasi
   useEffect(() => {
     const session = getCustomerSession();
     
@@ -190,23 +191,56 @@ export default function DashboardPage() {
     loadDashboardData();
 
     if (session.user) {
+      const user = session.user;
+      
       // ===== CEK PASSWORD DEFAULT =====
-      // Password default biasanya: password_default = 1, atau password belum diubah
+      // Password default biasanya: password_default = 1, atau password = "password", atau belum diubah
       const isUsingDefaultPassword = 
-        session.user.password_default === 1 || 
-        session.user.password_default === "1" ||
-        session.user.is_default_password === true ||
-        session.user.is_default_password === 1 ||
-        session.user.is_default_password === "1";
+        user.password_default === 1 || 
+        user.password_default === "1" ||
+        user.is_default_password === true ||
+        user.is_default_password === 1 ||
+        user.is_default_password === "1" ||
+        user.need_change_password === true ||
+        user.need_change_password === 1 ||
+        user.need_change_password === "1";
+
+      // ===== CEK DATA TIDAK LENGKAP =====
+      // Customer harus melengkapi: nama_panggilan, profesi (minimal)
+      const isProfileIncomplete = 
+        !user.nama_panggilan || 
+        user.nama_panggilan.trim() === "" ||
+        !user.profesi || 
+        user.profesi.trim() === "";
+
+      console.log("🔍 [DASHBOARD] Checking user data:", {
+        password_default: user.password_default,
+        is_default_password: user.is_default_password,
+        need_change_password: user.need_change_password,
+        nama_panggilan: user.nama_panggilan,
+        profesi: user.profesi,
+        isUsingDefaultPassword,
+        isProfileIncomplete
+      });
 
       if (isUsingDefaultPassword) {
-        // Langsung tampilkan modal update (tidak bisa skip)
+        // Password default - wajib ganti password
+        console.log("⚠️ [DASHBOARD] Showing update modal - password_default");
+        setUpdateModalReason("password");
+        setShowUpdateModal(true);
+        return;
+      }
+
+      if (isProfileIncomplete) {
+        // Data tidak lengkap - wajib lengkapi profil (password opsional)
+        console.log("⚠️ [DASHBOARD] Showing update modal - profile_incomplete");
+        setUpdateModalReason("incomplete");
         setShowUpdateModal(true);
         return;
       }
 
       // ===== CEK VERIFIKASI OTP =====
-      const verifikasiValue = session.user.verifikasi;
+      const verifikasiValue = user.verifikasi;
       const normalizedVerifikasi = verifikasiValue === "1" ? 1 : verifikasiValue === "0" ? 0 : verifikasiValue;
       const isVerified = normalizedVerifikasi === 1 || normalizedVerifikasi === true;
       
@@ -287,16 +321,18 @@ export default function DashboardPage() {
 
   return (
     <CustomerLayout>
-      {/* Modal Update Password Default - Prioritas pertama */}
+      {/* Modal Update Password Default / Lengkapi Data - Prioritas pertama */}
       {showUpdateModal && (
         <UpdateCustomerModal
           isOpen={showUpdateModal}
           onClose={() => {
-            // Modal tidak bisa ditutup sebelum update password
+            // Modal tidak bisa ditutup sebelum update
           }}
           onSuccess={handleUpdateSuccess}
-          title="Lengkapi Data & Ubah Password"
-          requirePassword={true}
+          title={updateModalReason === "password" 
+            ? "Ubah Password & Lengkapi Data" 
+            : "Lengkapi Data Profil Anda"}
+          requirePassword={updateModalReason === "password"}
         />
       )}
 
