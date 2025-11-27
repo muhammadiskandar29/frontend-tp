@@ -24,7 +24,6 @@ export default function VerifyOrderOTPPage() {
   useEffect(() => {
     const stored = localStorage.getItem("pending_order");
     if (!stored) {
-      toast.error("Data order tidak ditemukan");
       router.replace("/");
       return;
     }
@@ -32,17 +31,7 @@ export default function VerifyOrderOTPPage() {
     try {
       const data = JSON.parse(stored);
       setOrderData(data);
-      console.log("📦 [VERIFY-ORDER] Order data loaded:", data);
-      console.log("📦 [VERIFY-ORDER] Customer ID:", data.customerId);
-      console.log("📦 [VERIFY-ORDER] WA:", data.wa);
-      
-      // Warning jika tidak ada customerId
-      if (!data.customerId) {
-        console.error("❌ [VERIFY-ORDER] Customer ID tidak ada di order data!");
-        setMessage("⚠️ Customer ID tidak ditemukan. Buka Console (F12) untuk lihat response backend.");
-      }
     } catch {
-      toast.error("Data order tidak valid");
       router.replace("/");
     }
   }, [router]);
@@ -120,7 +109,7 @@ export default function VerifyOrderOTPPage() {
     }
 
     if (!orderData?.customerId) {
-      setMessage("Data customer tidak ditemukan. Silakan ulangi order.");
+      setMessage("Sesi telah berakhir. Silakan mulai ulang pemesanan.");
       return;
     }
 
@@ -128,8 +117,6 @@ export default function VerifyOrderOTPPage() {
     setMessage("");
 
     try {
-      console.log("🔐 [VERIFY-ORDER] Verifying OTP for customer:", orderData.customerId);
-
       const response = await fetch("/api/customer/otp/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -140,7 +127,6 @@ export default function VerifyOrderOTPPage() {
       });
 
       const result = await response.json();
-      console.log("📥 [VERIFY-ORDER] OTP response:", result);
 
       if (result.success) {
         setMessage("Verifikasi berhasil! 🎉");
@@ -157,7 +143,6 @@ export default function VerifyOrderOTPPage() {
         setMessage(result.message || "Kode OTP salah atau sudah kadaluarsa.");
       }
     } catch (error) {
-      console.error("❌ [VERIFY-ORDER] Error:", error);
       setMessage("Terjadi kesalahan saat memverifikasi OTP.");
     } finally {
       setLoading(false);
@@ -170,8 +155,6 @@ export default function VerifyOrderOTPPage() {
 
     const { paymentMethod, productName, totalHarga, landingUrl } = orderData;
 
-    console.log("💳 [VERIFY-ORDER] Redirecting to payment:", paymentMethod);
-    console.log("🔙 [VERIFY-ORDER] Landing URL to return:", landingUrl);
 
     switch (paymentMethod) {
       case "ewallet":
@@ -225,8 +208,6 @@ export default function VerifyOrderOTPPage() {
         product_name: productName,
       };
 
-      console.log("📤 [VERIFY-ORDER] Calling Midtrans:", endpoint, payload);
-
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -234,7 +215,6 @@ export default function VerifyOrderOTPPage() {
       });
 
       const json = await response.json();
-      console.log("📥 [VERIFY-ORDER] Midtrans response:", json);
 
       if (json.redirect_url) {
         // Buka Midtrans di tab baru
@@ -246,7 +226,6 @@ export default function VerifyOrderOTPPage() {
         router.push(landingUrl || "/");
       }
     } catch (err) {
-      console.error("❌ [VERIFY-ORDER] Midtrans error:", err);
       toast.error("Terjadi kesalahan saat memproses pembayaran");
       router.push(landingUrl || "/");
     }
@@ -255,7 +234,7 @@ export default function VerifyOrderOTPPage() {
   // Resend OTP
   const handleResend = async () => {
     if (!orderData?.customerId || !orderData?.wa) {
-      setMessage("Data customer tidak ditemukan. Silakan ulangi order.");
+      setMessage("Sesi telah berakhir. Silakan mulai ulang pemesanan.");
       return;
     }
 
@@ -263,8 +242,6 @@ export default function VerifyOrderOTPPage() {
     setMessage("");
 
     try {
-      console.log("📤 [VERIFY-ORDER] Resending OTP...");
-
       const response = await fetch("/api/customer/otp/resend", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -286,7 +263,6 @@ export default function VerifyOrderOTPPage() {
         setMessage(result.message || "Gagal mengirim ulang OTP.");
       }
     } catch (error) {
-      console.error("❌ [VERIFY-ORDER] Resend error:", error);
       setMessage("Terjadi kesalahan saat mengirim ulang OTP.");
     } finally {
       setResending(false);

@@ -13,6 +13,7 @@ export default function LandingPage() {
   const [paymentMethod, setPaymentMethod] = useState(""); // cc | ewallet | va | manual
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false); // Prevent double-click
 
   const sumber = searchParams.get("utm_sumber") || "website";
 
@@ -267,8 +268,65 @@ export default function LandingPage() {
     };
   }, [data]);
 
-  if (loading) return <Loading />;
-  if (!data) return <div className="p-6">Produk tidak ditemukan</div>;
+  if (loading) return <Loading message="Memuat halaman..." />;
+  if (!data) return (
+    <div className="not-found-page">
+      <div className="not-found-content">
+        <span className="not-found-icon">📦</span>
+        <h1>Halaman Tidak Tersedia</h1>
+        <p>Produk yang Anda cari sedang tidak tersedia saat ini.</p>
+        <a href="/" className="not-found-btn">Kembali ke Beranda</a>
+      </div>
+      <style jsx>{`
+        .not-found-page {
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+          padding: 20px;
+        }
+        .not-found-content {
+          text-align: center;
+          background: white;
+          padding: 48px;
+          border-radius: 20px;
+          box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+          max-width: 400px;
+        }
+        .not-found-icon {
+          font-size: 64px;
+          display: block;
+          margin-bottom: 20px;
+        }
+        .not-found-content h1 {
+          font-size: 24px;
+          font-weight: 600;
+          color: #1f2937;
+          margin: 0 0 12px;
+        }
+        .not-found-content p {
+          color: #6b7280;
+          margin: 0 0 24px;
+          font-size: 15px;
+        }
+        .not-found-btn {
+          display: inline-block;
+          padding: 12px 24px;
+          background: linear-gradient(135deg, #3b82f6, #2563eb);
+          color: white;
+          text-decoration: none;
+          border-radius: 10px;
+          font-weight: 500;
+          transition: all 0.2s;
+        }
+        .not-found-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(59,130,246,0.3);
+        }
+      `}</style>
+    </div>
+  );
 
   const form = data;
 
@@ -276,9 +334,14 @@ export default function LandingPage() {
   // 🔥 SUBMIT ORDER → OTP VERIFICATION → PEMBAYARAN
   // ==========================================================
   const handleSubmit = async () => {
-    if (!paymentMethod) return toast.error("Pilih metode pembayaran dulu");
+    // Prevent double-click
+    if (submitting) return;
+    
+    if (!paymentMethod) return toast.error("Silakan pilih metode pembayaran");
     if (!customerForm.nama || !customerForm.email || !customerForm.wa)
-      return toast.error("Lengkapi nama, WA, dan email dahulu");
+      return toast.error("Silakan lengkapi data yang diperlukan");
+
+    setSubmitting(true);
 
     // Payload sesuai format backend requirement
     // Backend mengharapkan harga dan total_harga sebagai STRING
@@ -338,23 +401,6 @@ export default function LandingPage() {
         customerId = rawCustomer;
       }
 
-      console.log("📦 [LANDING] Full order response:", JSON.stringify(order, null, 2));
-      console.log("📦 [LANDING] Order data:", orderResponseData);
-      console.log("📦 [LANDING] Order ID:", orderId);
-      console.log("📦 [LANDING] Raw customer:", rawCustomer);
-      console.log("📦 [LANDING] Customer ID:", customerId);
-
-      // DEBUG: Tampilkan alert dengan data response
-      alert(`DEBUG - Response dari Backend:
-      
-Order ID: ${orderId}
-Customer ID: ${customerId}
-Raw Customer: ${JSON.stringify(rawCustomer)}
-
-Full Response:
-${JSON.stringify(order, null, 2).substring(0, 500)}...
-
-(Cek Console untuk full data)`);
 
       // Simpan data untuk verifikasi OTP + URL landing untuk redirect balik
       const pendingOrder = {
@@ -384,9 +430,8 @@ ${JSON.stringify(order, null, 2).substring(0, 500)}...
       window.location.href = "/verify-order";
 
     } catch (err) {
-      console.error("Submit order error:", err);
-      const errorMessage = err.message || "Gagal menyimpan pesanan";
-      toast.error(errorMessage);
+      toast.error("Terjadi kesalahan. Silakan coba lagi.");
+      setSubmitting(false);
     }
   };
 
@@ -614,143 +659,31 @@ ${JSON.stringify(order, null, 2).substring(0, 500)}...
   </div>
 </section>
 
-{/* Compact Form Styles */}
-<style jsx>{`
-  .compact-form-section {
-    margin: 24px 0;
-  }
-
-  .compact-form-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: #374151;
-    margin-bottom: 12px;
-  }
-
-  .compact-form-card {
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-
-  .compact-field {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .compact-label {
-    font-size: 13px;
-    font-weight: 500;
-    color: #6b7280;
-  }
-
-  .compact-label .required {
-    color: #ef4444;
-  }
-
-  .compact-input {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    font-size: 14px;
-    color: #111827;
-    background: #fff;
-    transition: all 0.2s ease;
-  }
-
-  .compact-input::placeholder {
-    color: #9ca3af;
-  }
-
-  .compact-input:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  }
-
-  .compact-textarea {
-    resize: none;
-    min-height: 60px;
-  }
-
-  .wa-input-wrapper {
-    display: flex;
-    align-items: stretch;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    overflow: hidden;
-    background: #fff;
-  }
-
-  .wa-input-wrapper:focus-within {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  }
-
-  .wa-prefix {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 12px;
-    background: #f9fafb;
-    border-right: 1px solid #e5e7eb;
-    flex-shrink: 0;
-  }
-
-  .wa-prefix .flag {
-    font-size: 16px;
-  }
-
-  .wa-prefix .code {
-    font-size: 14px;
-    color: #374151;
-    font-weight: 500;
-  }
-
-  .wa-input {
-    border: none;
-    border-radius: 0;
-    flex: 1;
-  }
-
-  .wa-input:focus {
-    box-shadow: none;
-  }
-`}</style>
-
-
-
-
-        {/* Custom Field */}
+        {/* Custom Field - Same Compact Style */}
         {form.custom_field?.length > 0 && (
-          <section className="preview-form" aria-label="Additional information">
-            <h2>Lengkapi Data Tambahan:</h2>
+          <section className="compact-form-section" aria-label="Additional information">
+            <h2 className="compact-form-title">Lengkapi Data Tambahan:</h2>
 
-            {form.custom_field.map((f, i) => (
-              <div key={i} className="flex flex-col p-3 border rounded bg-gray-50">
-                <label className="font-medium">{f.nama_field}</label>
-
-                <input
-                  type="text"
-                  placeholder={`Masukkan ${f.nama_field}`}
-                  className="border rounded p-2 mt-1"
-                  onChange={(e) => {
-                    const temp = [...customerForm.custom_value];
-                    temp[i] = {
-                      nama: f.nama_field,
-                      value: e.target.value,
-                    };
-                    setCustomerForm({ ...customerForm, custom_value: temp });
-                  }}
-                />
-              </div>
-            ))}
+            <div className="compact-form-card">
+              {form.custom_field.map((f, i) => (
+                <div key={i} className="compact-field">
+                  <label className="compact-label">{f.nama_field}</label>
+                  <input
+                    type="text"
+                    placeholder={`Masukkan ${f.nama_field}`}
+                    className="compact-input"
+                    onChange={(e) => {
+                      const temp = [...customerForm.custom_value];
+                      temp[i] = {
+                        nama: f.nama_field,
+                        value: e.target.value,
+                      };
+                      setCustomerForm({ ...customerForm, custom_value: temp });
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
           </section>
         )}
 
@@ -853,13 +786,33 @@ ${JSON.stringify(order, null, 2).substring(0, 500)}...
 
         {/* CTA */}
         <button 
-          className="cta-button" 
+          className={`cta-button ${submitting ? 'cta-loading' : ''}`}
           onClick={handleSubmit}
+          disabled={submitting}
           aria-label={`Pesan ${form.nama} sekarang`}
           itemProp="offers"
         >
-          Pesan Sekarang
+          {submitting ? (
+            <>
+              <span className="cta-spinner"></span>
+              Memproses...
+            </>
+          ) : (
+            "Pesan Sekarang"
+          )}
         </button>
+
+        {/* Loading Overlay saat submit */}
+        {submitting && (
+          <div className="submit-overlay">
+            <div className="submit-overlay-content">
+              <div className="submit-spinner">
+                <span></span><span></span><span></span>
+              </div>
+              <p>Memproses pesanan Anda...</p>
+            </div>
+          </div>
+        )}
         </div>
       </article>
   );

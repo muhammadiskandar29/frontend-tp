@@ -210,64 +210,90 @@ export default function LandingTemplate({ form }) {
           </section>
         )}
 
-        {/* INFORMASI DASAR - styling sama dengan landing page */}
-        <section className="preview-form space-y-4 mt-6" aria-label="Order form">
-          <h2 className="font-semibold text-lg">Informasi Dasar</h2>
-
-          {[
-            { label: "Nama", key: "nama", placeholder: "Nama lengkap Anda" },
-            { label: "Nomor WhatsApp", key: "wa", placeholder: "08xxxxxxxxxx" },
-            { label: "Email", key: "email", placeholder: "email@example.com" },
-          ].map((field, i) => (
-            <div 
-              key={i}
-              className="p-4 border border-gray-200 rounded-xl bg-gray-50 shadow-sm"
-            >
-              <br></br>
-              <label className="font-medium text-gray-700">{field.label}</label>
+        {/* INFORMASI DASAR - Compact Form Style */}
+        <section className="compact-form-section" aria-label="Order form">
+          <h2 className="compact-form-title">Lengkapi Data:</h2>
+          
+          <div className="compact-form-card">
+            {/* Nama Lengkap */}
+            <div className="compact-field">
+              <label className="compact-label">
+                Nama Lengkap <span className="required">*</span>
+              </label>
               <input
                 type="text"
-                placeholder={field.placeholder}
-                className="w-full p-3 border border-gray-300 rounded-xl mt-2 focus:border-blue-500 focus:ring focus:ring-blue-200 transition"
+                placeholder="Contoh: Krisdayanti"
+                className="compact-input"
                 disabled
               />
             </div>
-          ))}
 
-          {/* ALAMAT */}
-          <div className="space-y-2 p-4 border border-gray-200 rounded-xl bg-white shadow-sm">
-            <br></br>
-            <label className="block text-sm font-semibold text-gray-700">
-              Alamat
-            </label>
-            <textarea
-              placeholder="Alamat lengkap"
-              className="w-full p-3 border border-gray-300 rounded-xl mt-2 focus:border-blue-500 focus:ring focus:ring-blue-200 transition"
-              rows={3}
-              disabled
-            />
-          </div>
-        </section>
-
-        {/* Custom Field */}
-        {form.custom_field?.length > 0 && (
-          <section className="preview-form space-y-4 mt-5" aria-label="Additional information">
-            <h2 className="font-semibold text-lg">Lengkapi Data Tambahan</h2>
-
-            {form.custom_field.map((f, i) => (
-              <div key={i} className="flex flex-col p-3 border rounded bg-gray-50">
-                <label className="font-medium">
-                  {f.nama_field || f.label}
-                  {f.required ? " *" : ""}
-                </label>
+            {/* No. WhatsApp */}
+            <div className="compact-field">
+              <label className="compact-label">
+                No. WhatsApp <span className="required">*</span>
+              </label>
+              <div className="wa-input-wrapper">
+                <div className="wa-prefix">
+                  <span className="flag">🇮🇩</span>
+                  <span className="code">+62</span>
+                </div>
                 <input
-                  type="text"
-                  placeholder={`Masukkan ${f.nama_field || f.label}`}
-                  className="border rounded p-2 mt-1"
+                  type="tel"
+                  placeholder="812345678"
+                  className="compact-input wa-input"
                   disabled
                 />
               </div>
-            ))}
+            </div>
+
+            {/* Email */}
+            <div className="compact-field">
+              <label className="compact-label">
+                Email <span className="required">*</span>
+              </label>
+              <input
+                type="email"
+                placeholder="email@example.com"
+                className="compact-input"
+                disabled
+              />
+            </div>
+
+            {/* Alamat */}
+            <div className="compact-field">
+              <label className="compact-label">Alamat</label>
+              <textarea
+                placeholder="Alamat lengkap (opsional)"
+                className="compact-input compact-textarea"
+                rows={2}
+                disabled
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Custom Field - Same Compact Style */}
+        {form.custom_field?.length > 0 && (
+          <section className="compact-form-section" aria-label="Additional information">
+            <h2 className="compact-form-title">Lengkapi Data Tambahan:</h2>
+
+            <div className="compact-form-card">
+              {form.custom_field.map((f, i) => (
+                <div key={i} className="compact-field">
+                  <label className="compact-label">
+                    {f.nama_field || f.label}
+                    {f.required && <span className="required"> *</span>}
+                  </label>
+                  <input
+                    type="text"
+                    placeholder={`Masukkan ${f.nama_field || f.label}`}
+                    className="compact-input"
+                    disabled
+                  />
+                </div>
+              ))}
+            </div>
           </section>
         )}
 

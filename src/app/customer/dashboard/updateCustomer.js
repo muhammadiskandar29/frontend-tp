@@ -142,9 +142,11 @@ export default function UpdateCustomerModal({
   onClose,
   onSuccess,
   title = "Lengkapi Data Customer",
+  requirePassword = true, // Password wajib diisi untuk user dengan password default
 }) {
   const [formData, setFormData] = useState(initialFormState);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!isOpen) return;
@@ -185,6 +187,20 @@ export default function UpdateCustomerModal({
     e.preventDefault();
     if (loading) return;
 
+    setError("");
+
+    // Validasi: Password wajib diisi jika requirePassword = true
+    if (requirePassword && (!formData.password || formData.password.length < 6)) {
+      setError("Password baru wajib diisi (minimal 6 karakter)");
+      return;
+    }
+
+    // Validasi: Nama panggilan wajib
+    if (!formData.nama_panggilan?.trim()) {
+      setError("Nama panggilan wajib diisi");
+      return;
+    }
+
     setLoading(true);
     try {
       const payload = {
@@ -200,8 +216,7 @@ export default function UpdateCustomerModal({
       }
       setFormData(initialFormState);
     } catch (error) {
-      console.error("[UPDATE_CUSTOMER] Submit failed:", error);
-      alert(error.message || "Gagal mengupdate customer");
+      setError(error.message || "Gagal menyimpan data. Silakan coba lagi.");
     } finally {
       setLoading(false);
     }
@@ -214,11 +229,28 @@ export default function UpdateCustomerModal({
       <div className="customer-modal">
         <div className="customer-modal__header">
           <h2>{title}</h2>
-          {/* Modal tidak bisa ditutup sebelum submit */}
-          {loading ? (
+          {loading && (
             <span style={{ color: "#6b7280", fontSize: "14px" }}>Menyimpan...</span>
-          ) : null}
+          )}
         </div>
+
+        {/* Info banner untuk password default */}
+        {requirePassword && (
+          <div className="password-notice">
+            <span className="notice-icon">🔐</span>
+            <div>
+              <strong>Keamanan Akun</strong>
+              <p>Untuk keamanan akun Anda, silakan buat password baru sebelum melanjutkan.</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error message */}
+        {error && (
+          <div className="error-banner">
+            <span>⚠️</span> {error}
+          </div>
+        )}
 
         <form className="customer-modal__body" onSubmit={handleSubmit}>
           {SECTION_CONFIG.map((section) => (
@@ -517,6 +549,47 @@ export default function UpdateCustomerModal({
             opacity: 1;
             transform: translateY(0) scale(1);
           }
+        }
+
+        .password-notice {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          padding: 16px 24px;
+          background: linear-gradient(135deg, #fef3c7 0%, #fef9c3 100%);
+          border-bottom: 1px solid #fcd34d;
+        }
+
+        .notice-icon {
+          font-size: 24px;
+          flex-shrink: 0;
+        }
+
+        .password-notice strong {
+          display: block;
+          font-size: 14px;
+          font-weight: 600;
+          color: #92400e;
+          margin-bottom: 4px;
+        }
+
+        .password-notice p {
+          font-size: 13px;
+          color: #a16207;
+          margin: 0;
+          line-height: 1.4;
+        }
+
+        .error-banner {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 12px 24px;
+          background: #fef2f2;
+          border-bottom: 1px solid #fecaca;
+          font-size: 14px;
+          color: #dc2626;
+          font-weight: 500;
         }
 
         /* Responsive */

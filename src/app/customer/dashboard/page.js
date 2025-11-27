@@ -6,10 +6,12 @@ import CustomerLayout from "@/components/customer/CustomerLayout";
 import { getCustomerSession } from "@/lib/customerAuth";
 import { fetchCustomerDashboard } from "@/lib/customerDashboard";
 import OTPVerificationModal from "./otpVerificationModal";
+import UpdateCustomerModal from "./updateCustomer";
 
 export default function DashboardPage() {
   const router = useRouter();
   const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false); // Untuk update password default
   const [sendingOTP, setSendingOTP] = useState(false);
   const [stats, setStats] = useState([
     { id: "total", label: "Total Order", value: 0, icon: "🧾" },
@@ -175,14 +177,11 @@ export default function DashboardPage() {
     }
   }, [router]);
 
-  // Cek apakah user sudah verifikasi dan tampilkan modal setelah 5 detik
+  // Cek password default dan verifikasi
   useEffect(() => {
     const session = getCustomerSession();
-    console.log("🔵 [DASHBOARD] Checking verification status...");
-    console.log("🔵 [DASHBOARD] Session:", session);
     
     if (!session.token) {
-      console.log("⚠️ [DASHBOARD] No token, redirecting to login");
       router.replace("/customer/login");
       return;
     }
@@ -191,36 +190,39 @@ export default function DashboardPage() {
     loadDashboardData();
 
     if (session.user) {
-      // Cek apakah user sudah verifikasi (verifikasi = 1 atau "1" atau true)
+      // ===== CEK PASSWORD DEFAULT =====
+      // Password default biasanya: password_default = 1, atau password belum diubah
+      const isUsingDefaultPassword = 
+        session.user.password_default === 1 || 
+        session.user.password_default === "1" ||
+        session.user.is_default_password === true ||
+        session.user.is_default_password === 1 ||
+        session.user.is_default_password === "1";
+
+      if (isUsingDefaultPassword) {
+        // Langsung tampilkan modal update (tidak bisa skip)
+        setShowUpdateModal(true);
+        return;
+      }
+
+      // ===== CEK VERIFIKASI OTP =====
       const verifikasiValue = session.user.verifikasi;
-      // Normalize: convert string "1" to number 1, "0" to 0, etc.
       const normalizedVerifikasi = verifikasiValue === "1" ? 1 : verifikasiValue === "0" ? 0 : verifikasiValue;
       const isVerified = normalizedVerifikasi === 1 || normalizedVerifikasi === true;
       
-      console.log("🔵 [DASHBOARD] Checking verification:");
-      console.log("🔵 [DASHBOARD] Raw verifikasi value:", verifikasiValue);
-      console.log("🔵 [DASHBOARD] Verifikasi type:", typeof verifikasiValue);
-      console.log("🔵 [DASHBOARD] Normalized verifikasi:", normalizedVerifikasi);
-      console.log("🔵 [DASHBOARD] Is verified:", isVerified);
-      
       if (isVerified) {
-        console.log("✅ [DASHBOARD] User already verified, hiding modal and allowing access");
         setShowVerificationModal(false);
-        // User sudah verifikasi, langsung masuk dashboard tanpa modal
         return;
       } else {
-        console.log("⚠️ [DASHBOARD] User not verified, will show modal after 5 seconds");
-        // Tampilkan modal setelah 5 detik
+        // Tampilkan modal OTP setelah 5 detik
         const modalTimeout = setTimeout(() => {
-          console.log("⚠️ [DASHBOARD] Showing verification modal after 5 seconds");
           setShowVerificationModal(true);
         }, 5000);
 
         return () => clearTimeout(modalTimeout);
       }
     } else {
-      // Jika tidak ada user data, mungkin perlu verifikasi
-      console.log("⚠️ [DASHBOARD] Has token but no user data, will show modal after 5 seconds");
+      // Jika tidak ada user data
       const modalTimeout = setTimeout(() => {
         setShowVerificationModal(true);
       }, 5000);
@@ -231,9 +233,29 @@ export default function DashboardPage() {
 
   // Handler untuk OTP sent callback
   const handleOTPSent = (data) => {
-    console.log("✅ [DASHBOARD] OTP sent successfully:", data);
     setShowVerificationModal(false);
     router.replace("/customer/otp");
+  };
+
+  // Handler untuk update customer success (password changed)
+  const handleUpdateSuccess = (data) => {
+    // Update session dengan data baru
+    const session = getCustomerSession();
+    if (session.user) {
+      const updatedUser = {
+        ...session.user,
+        ...data,
+        password_default: 0,
+        is_default_password: false,
+      };
+      localStorage.setItem("customer_user", JSON.stringify(updatedUser));
+    }
+    
+    setShowUpdateModal(false);
+    toast.success("Data berhasil diperbarui!");
+    
+    // Reload dashboard data
+    loadDashboardData();
   };
 
   const getCountdownLabel = (order) => {
@@ -265,8 +287,21 @@ export default function DashboardPage() {
 
   return (
     <CustomerLayout>
-      {/* Modal Verifikasi OTP */}
-      {showVerificationModal && (() => {
+      {/* Modal Update Password Default - Prioritas pertama */}
+      {showUpdateModal && (
+        <UpdateCustomerModal
+          isOpen={showUpdateModal}
+          onClose={() => {
+            // Modal tidak bisa ditutup sebelum update password
+          }}
+          onSuccess={handleUpdateSuccess}
+          title="Lengkapi Data & Ubah Password"
+          requirePassword={true}
+        />
+      )}
+
+      {/* Modal Verifikasi OTP - Hanya tampil jika tidak ada modal update */}
+      {!showUpdateModal && showVerificationModal && (() => {
         const session = getCustomerSession();
         const customerData = customerInfo || session.user;
         return customerData ? (
@@ -274,10 +309,8 @@ export default function DashboardPage() {
             customerInfo={customerData}
             onClose={() => {
               // Jangan tutup modal dengan klik di luar atau ESC
-              // Modal hanya bisa ditutup setelah OTP berhasil dikirim
             }}
             onOTPSent={(data) => {
-              console.log("✅ [DASHBOARD] OTP sent successfully:", data);
               setShowVerificationModal(false);
               router.replace("/customer/otp");
             }}

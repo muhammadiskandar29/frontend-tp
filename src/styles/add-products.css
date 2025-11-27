@@ -1677,3 +1677,131 @@ body {
 .p-inputswitch .p-inputswitch-slider:before {
   background: #ffffff !important;
 }
+
+/* ==================================
+   COMPACT FORM PREVIEW STYLES
+   (For addProducts form preview)
+   ================================== */
+.compact-form-section-preview {
+  margin: 24px 0;
+  padding: 0 16px;
+}
+
+.compact-form-title-preview {
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 12px;
+}
+
+.compact-form-card-preview {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.compact-field-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.compact-label-preview {
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.required-preview {
+  color: #ef4444;
+}
+
+.compact-input-preview {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #111827;
+  background: #f9fafb;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  cursor: not-allowed;
+}
+
+.compact-input-preview::placeholder {
+  color: #9ca3af;
+}
+
+.compact-textarea-preview {
+  resize: none;
+  min-height: 60px;
+}
+
+.wa-input-wrapper-preview {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f9fafb;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.wa-prefix-preview {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  background: #f3f4f6;
+  border-right: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.wa-prefix-preview .flag {
+  font-size: 16px;
+}
+
+.wa-prefix-preview .code {
+  font-size: 14px;
+  color: #374151;
+  font-weight: 500;
+}
+
+.wa-input-preview {
+  border: none !important;
+  border-radius: 0 !important;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Custom Field Preview in addProducts */
+.custom-field-preview-section {
+  margin: 16px 0;
+  padding: 0 16px;
+}
+
+.custom-field-preview-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 12px;
+}
+
+.custom-field-preview-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
