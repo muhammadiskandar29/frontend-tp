@@ -331,7 +331,7 @@ export default function LandingPage() {
       console.log("📦 [LANDING] Order ID:", orderId);
       console.log("📦 [LANDING] Customer ID:", customerId);
 
-      // Simpan data untuk verifikasi OTP
+      // Simpan data untuk verifikasi OTP + URL landing untuk redirect balik
       const pendingOrder = {
         orderId: orderId,
         customerId: customerId,
@@ -341,6 +341,7 @@ export default function LandingPage() {
         productName: form.nama || form.product_name,
         totalHarga: form.harga_asli || "0",
         paymentMethod: paymentMethod,
+        landingUrl: window.location.pathname, // URL untuk balik setelah payment
       };
 
       console.log("📦 [LANDING] Saving pending order:", pendingOrder);

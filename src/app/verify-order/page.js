@@ -18,7 +18,6 @@ export default function VerifyOrderOTPPage() {
   const [timeLeft, setTimeLeft] = useState(OTP_VALID_DURATION);
   const [timerActive, setTimerActive] = useState(true);
   const [orderData, setOrderData] = useState(null);
-  const [skipOtp, setSkipOtp] = useState(false);
   const inputs = useRef([]);
 
   // Load order data dari localStorage
@@ -34,12 +33,6 @@ export default function VerifyOrderOTPPage() {
       const data = JSON.parse(stored);
       setOrderData(data);
       console.log("📦 [VERIFY-ORDER] Order data:", data);
-      
-      // Jika tidak ada customerId, skip OTP dan langsung ke payment
-      if (!data.customerId) {
-        console.warn("⚠️ [VERIFY-ORDER] No customerId, will allow skip OTP");
-        setSkipOtp(true);
-      }
     } catch {
       toast.error("Data order tidak valid");
       router.replace("/");
@@ -103,13 +96,12 @@ export default function VerifyOrderOTPPage() {
         if (i < 6) newOtp[i] = char;
       });
       setOtp(newOtp);
-      // Focus last filled input or first empty
       const lastIndex = Math.min(pastedData.length, 5);
       inputs.current[lastIndex]?.focus();
     }
   };
 
-  // Verify OTP
+  // Verify OTP - WAJIB sebelum ke payment
   const handleSubmit = async (e) => {
     e.preventDefault();
     const code = otp.join("");
@@ -120,7 +112,7 @@ export default function VerifyOrderOTPPage() {
     }
 
     if (!orderData?.customerId) {
-      setMessage("Data customer tidak ditemukan. Klik 'Lanjut ke Pembayaran' untuk skip.");
+      setMessage("Data customer tidak ditemukan. Silakan ulangi order.");
       return;
     }
 
@@ -164,42 +156,35 @@ export default function VerifyOrderOTPPage() {
     }
   };
 
-  // Skip OTP dan langsung ke payment (fallback)
-  const handleSkipToPayment = () => {
-    toast.success("Melanjutkan ke pembayaran...");
-    localStorage.removeItem("pending_order");
-    redirectToPayment();
-  };
-
   // Redirect ke payment sesuai metode
   const redirectToPayment = () => {
     if (!orderData) return;
 
-    const { paymentMethod, productName, totalHarga, orderId } = orderData;
+    const { paymentMethod, productName, totalHarga, landingUrl } = orderData;
 
     console.log("💳 [VERIFY-ORDER] Redirecting to payment:", paymentMethod);
+    console.log("🔙 [VERIFY-ORDER] Landing URL to return:", landingUrl);
 
     switch (paymentMethod) {
       case "ewallet":
-        // Call Midtrans e-wallet
         callMidtrans("ewallet");
         break;
       case "cc":
-        // Call Midtrans credit card
         callMidtrans("cc");
         break;
       case "va":
-        // Call Midtrans virtual account
         callMidtrans("va");
         break;
       case "manual":
       default:
-        // Redirect ke halaman transfer manual
+        // Manual transfer - buka di tab baru, balik ke landing
         const query = new URLSearchParams({
           product: productName || "",
           harga: totalHarga || "0",
         });
-        router.push(`/payment?${query.toString()}`);
+        window.open(`/payment?${query.toString()}`, "_blank");
+        // Balik ke landing page
+        router.push(landingUrl || "/");
         break;
     }
   };
@@ -208,7 +193,7 @@ export default function VerifyOrderOTPPage() {
   const callMidtrans = async (type) => {
     if (!orderData) return;
 
-    const { nama, email, totalHarga, productName } = orderData;
+    const { nama, email, totalHarga, productName, landingUrl } = orderData;
     const API_BASE = "/api";
 
     let endpoint = "";
@@ -244,24 +229,25 @@ export default function VerifyOrderOTPPage() {
       console.log("📥 [VERIFY-ORDER] Midtrans response:", json);
 
       if (json.redirect_url) {
+        // Buka Midtrans di tab baru
         window.open(json.redirect_url, "_blank");
-        // Redirect ke halaman sukses atau kembali
-        router.push("/");
+        // Balik ke landing page (form akan kosong/fresh)
+        router.push(landingUrl || "/");
       } else {
         toast.error(json.message || "Gagal membuat transaksi");
-        router.push("/");
+        router.push(landingUrl || "/");
       }
     } catch (err) {
       console.error("❌ [VERIFY-ORDER] Midtrans error:", err);
       toast.error("Terjadi kesalahan saat memproses pembayaran");
-      router.push("/");
+      router.push(landingUrl || "/");
     }
   };
 
   // Resend OTP
   const handleResend = async () => {
     if (!orderData?.customerId || !orderData?.wa) {
-      setMessage("Data customer tidak ditemukan.");
+      setMessage("Data customer tidak ditemukan. Silakan ulangi order.");
       return;
     }
 
@@ -326,20 +312,12 @@ export default function VerifyOrderOTPPage() {
           </div>
         )}
 
-        {!skipOtp && (
-          <div className="otp-timer">
-            <span>⏱️</span>
-            <span>
-              OTP berlaku {timeLeft > 0 ? `${formatTimeLeft()}` : "(kedaluwarsa)"}
-            </span>
-          </div>
-        )}
-
-        {skipOtp && (
-          <div className="otp-skip-notice">
-            ⚠️ Verifikasi OTP tidak tersedia. Klik tombol di bawah untuk lanjut ke pembayaran.
-          </div>
-        )}
+        <div className="otp-timer">
+          <span>⏱️</span>
+          <span>
+            OTP berlaku {timeLeft > 0 ? `${formatTimeLeft()}` : "(kedaluwarsa)"}
+          </span>
+        </div>
 
         <form onSubmit={handleSubmit} className="otp-form">
           <div className="otp-input-group" onPaste={handlePaste}>
@@ -368,28 +346,17 @@ export default function VerifyOrderOTPPage() {
           <button 
             type="submit" 
             className="otp-btn" 
-            disabled={loading || timeLeft === 0 || !orderData?.customerId}
+            disabled={loading || timeLeft === 0}
           >
             {loading ? "Memverifikasi..." : "Verifikasi & Lanjut Bayar"}
           </button>
 
-          {/* Tombol Skip jika tidak ada customerId */}
-          {skipOtp && (
-            <button
-              type="button"
-              className="otp-btn otp-btn-skip"
-              onClick={handleSkipToPayment}
-            >
-              Lanjut ke Pembayaran →
-            </button>
-          )}
-
           <p
             className="otp-resend"
-            onClick={!resending && orderData?.customerId ? handleResend : undefined}
+            onClick={!resending ? handleResend : undefined}
             style={{
-              cursor: resending || !orderData?.customerId ? "not-allowed" : "pointer",
-              opacity: resending || !orderData?.customerId ? 0.6 : 1,
+              cursor: resending ? "not-allowed" : "pointer",
+              opacity: resending ? 0.6 : 1,
             }}
           >
             {resending ? "Mengirim ulang..." : "Kirim ulang kode OTP"}
@@ -447,29 +414,7 @@ export default function VerifyOrderOTPPage() {
         .otp-message.error {
           color: #dc2626;
         }
-
-        .otp-btn-skip {
-          background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
-          margin-top: 10px;
-        }
-
-        .otp-btn-skip:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-        }
-
-        .otp-skip-notice {
-          background: #fef3c7;
-          border: 1px solid #fcd34d;
-          color: #92400e;
-          padding: 12px 16px;
-          border-radius: 10px;
-          font-size: 13px;
-          margin: 16px 0;
-          text-align: center;
-        }
       `}</style>
     </div>
   );
 }
-
