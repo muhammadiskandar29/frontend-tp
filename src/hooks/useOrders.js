@@ -55,19 +55,33 @@ export default function useOrders({ mode = "admin" } = {}) {
       try {
         let res;
         if (mode === "admin") {
-          res = await createOrderAdmin({
-            nama: formData.nama || undefined,
-            wa: formData.wa || undefined,
-            email: formData.email || undefined,
-            alamat: formData.alamat || undefined,
-            customer: formData.customer ? Number(formData.customer) : undefined,
+          // Build payload berdasarkan apakah customer existing atau baru
+          const hasExistingCustomer = formData.customer && Number(formData.customer) > 0;
+          
+          const payload = {
+            // Jika customer existing: kirim customer ID saja
+            // Jika customer baru: kirim nama, wa, email, alamat
+            ...(hasExistingCustomer 
+              ? { customer: Number(formData.customer) }
+              : {
+                  nama: formData.nama || "",
+                  wa: formData.wa || "",
+                  email: formData.email || "",
+                  alamat: formData.alamat || "",
+                }
+            ),
             produk: Number(formData.produk),
             harga: Number(formData.harga),
             ongkir: Number(formData.ongkir),
             total_harga: Number(formData.total_harga),
-            sumber: formData.sumber,
+            sumber: formData.sumber || "",
             notif: formData.notif ? 1 : 0,
-          });
+          };
+          
+          console.log("🔧 [CREATE ORDER] Has existing customer:", hasExistingCustomer);
+          console.log("🔧 [CREATE ORDER] Payload:", payload);
+          
+          res = await createOrderAdmin(payload);
         } else {
           res = await createOrderCustomer({
             nama: formData.nama,

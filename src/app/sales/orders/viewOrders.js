@@ -22,8 +22,13 @@ const computeStatusBayar = (order) => {
   return 0; // Unpaid
 };
 
-// Use Next.js proxy to avoid CORS
-const BASE_URL = "/api";
+// Helper function untuk build image URL via proxy
+const buildImageUrl = (path) => {
+  if (!path) return null;
+  // Bersihkan path dari prefix yang tidak diperlukan
+  const cleanPath = path.replace(/^\/?(storage\/)?/, "");
+  return `/api/image?path=${encodeURIComponent(cleanPath)}`;
+};
 
 export default function ViewOrders({ order, onClose }) {
   if (!order) return null;
@@ -37,12 +42,8 @@ export default function ViewOrders({ order, onClose }) {
   const statusBayar = computeStatusBayar(order);
   const statusLabel = STATUS_MAP[statusBayar];
 
-  // 🔧 Tentukan URL gambar
-  const buktiUrl = order.bukti_pembayaran
-    ? order.bukti_pembayaran.startsWith("http")
-      ? order.bukti_pembayaran
-      : `${BASE_URL}/${order.bukti_pembayaran.replace(/^\/+/, "")}`
-    : null;
+  // 🔧 Tentukan URL gambar via proxy
+  const buktiUrl = buildImageUrl(order.bukti_pembayaran);
 
   return (
     <div className="view-modal-overlay">

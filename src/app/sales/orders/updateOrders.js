@@ -73,302 +73,351 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
     }
   };
 
-  const getPaymentStatus = (orderData) => {
-    if (orderData.bukti_pembayaran && orderData.waktu_pembayaran && orderData.metode_bayar) return 1;
-    return Number(orderData.status_pembayaran) || 0;
+  const handleKonfirmasiSubmit = async (e) => {
+    e.preventDefault();
+    setErrorMsg("");
+
+    if (!order?.id) return setErrorMsg("Order ID tidak valid.");
+    if (!bukti?.file) return setErrorMsg("Harap upload bukti pembayaran baru.");
+    if (!metodeBayar) return setErrorMsg("Isi metode pembayaran terlebih dahulu.");
+
+    try {
+      // Format waktu: dd-mm-yyyy HH:mm:ss
+      const now = new Date();
+      const pad = (n) => n.toString().padStart(2, "0");
+      const waktuPembayaran = `${pad(now.getDate())}-${pad(now.getMonth() + 1)}-${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+
+      // Build FormData sesuai API spec
+      const formData = new FormData();
+      formData.append("bukti_pembayaran", bukti.file);
+      formData.append("waktu_pembayaran", waktuPembayaran);
+      formData.append("metode_pembayaran", metodeBayar);
+
+      console.log("🔍 [KONFIRMASI] Sending payment confirmation:", {
+        order_id: order.id,
+        waktu_pembayaran: waktuPembayaran,
+        metode_pembayaran: metodeBayar,
+        bukti_file: bukti.file?.name,
+      });
+
+      const token = localStorage.getItem("token");
+      const url = `${BASE_URL}/admin/order-konfirmasi/${order.id}`;
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+        body: formData,
+      });
+
+      const data = await res.json().catch(() => ({}));
+      
+      console.log("🔍 [KONFIRMASI] Response:", { status: res.status, data });
+
+      if (!res.ok || !data.success) {
+        const errMsg = data?.message || data?.error || "Gagal konfirmasi pembayaran";
+        return setErrorMsg(errMsg);
+      }
+
+      // Response sukses sesuai API spec
+      const konfirmasiOrder = data.data;
+
+      // Update local state dengan data dari backend
+      const finalOrder = {
+        ...order,
+        ...konfirmasiOrder,
+        // Pastikan field-field ini terisi
+        bukti_pembayaran: konfirmasiOrder.bukti_pembayaran || bukti.name,
+        waktu_pembayaran: konfirmasiOrder.waktu_pembayaran || waktuPembayaran,
+        metode_bayar: konfirmasiOrder.metode_bayar || metodeBayar,
+        status_pembayaran: konfirmasiOrder.status_pembayaran || 1,
+        status_order: konfirmasiOrder.status_order || "2",
+      };
+
+      console.log("✅ [KONFIRMASI] Final order data:", finalOrder);
+
+      setUpdatedOrder(finalOrder);
+      setBukti((prev) => ({ 
+        ...prev, 
+        existing: true, 
+        url: konfirmasiOrder.bukti_pembayaran || bukti.name 
+      }));
+      
+      // Update parent component
+      onSave(finalOrder);
+      setShowKonfirmasiModal(false);
+
+      // Tampilkan toast sukses
+      setToast?.({
+        show: true,
+        type: "success",
+        message: data.message || "✅ Pembayaran berhasil dikonfirmasi!",
+      });
+
+      // Tutup modal utama setelah delay
+      setTimeout(() => {
+        setToast?.((prev) => ({ ...prev, show: false }));
+        onClose();
+      }, 1500);
+    } catch (err) {
+      console.error("❌ [KONFIRMASI] Error:", err);
+      setErrorMsg("Terjadi kesalahan saat konfirmasi pembayaran.");
+
+      setToast?.({
+        show: true,
+        type: "error",
+        message: "❌ Gagal mengkonfirmasi pembayaran.",
+      });
+
+      setTimeout(() => {
+        setToast?.((prev) => ({ ...prev, show: false }));
+      }, 2000);
+    }
   };
 
-  const handleKonfirmasiSubmit = async (e) => {
-  e.preventDefault();
-  setErrorMsg("");
+  const handleSubmitUpdate = async (e) => {
+    e.preventDefault();
 
-  if (!order?.id) return setErrorMsg("Order ID tidak valid.");
-  if (!bukti) return setErrorMsg("Harap upload bukti pembayaran.");
-  if (!metodeBayar) return setErrorMsg("Isi metode pembayaran di bagian depan terlebih dahulu.");
+    try {
+      const token = localStorage.getItem("token");
 
-  try {
-    const now = new Date();
-    const pad = (n) => n.toString().padStart(2, "0");
-    const waktuPembayaran = `${pad(now.getDate())}-${pad(now.getMonth() + 1)}-${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+      const res = await fetch(`${BASE_URL}/admin/order/${order.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          ...updatedOrder,
+          metode_bayar: metodeBayar,
+        }),
+      });
 
-    const formData = new FormData();
-    if (!bukti.existing) formData.append("bukti_pembayaran", bukti.file);
-    formData.append("waktu_pembayaran", waktuPembayaran);
-    formData.append("metode_pembayaran", metodeBayar);
+      const json = await res.json();
+      const newOrder = json.data;
 
-    const token = localStorage.getItem("token");
-    const url = `${BASE_URL}/admin/order-konfirmasi/${order.id}`;
-
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData,
-    });
-
-    if (!res.ok) {
-      const text = await res.text();
-      return setErrorMsg("Gagal konfirmasi pembayaran: " + text);
-    }
-
-    const data = await res.json();
-    const konfirmasiOrder = data.data;
-
-    const finalOrder = {
-      ...konfirmasiOrder,
-      bukti_pembayaran: bukti.name || konfirmasiOrder.bukti_pembayaran,
-      waktu_pembayaran: waktuPembayaran,
-      metode_bayar: metodeBayar,
-      status_pembayaran: 1,
-    };
-
-    setUpdatedOrder(finalOrder);
-    setBukti((prev) => ({ ...prev, existing: true, url: finalOrder.bukti_pembayaran }));
-    onSave(finalOrder);
-    setShowKonfirmasiModal(false);
-
-    // ✅ tampilkan toast sukses
-    setToast({
-      show: true,
-      type: "success",
-      message: "✅ Pembayaran berhasil dikonfirmasi!",
-    });
-
-    // ✅ tutup modal utama setelah delay sedikit
-    setTimeout(() => {
-      setToast((prev) => ({ ...prev, show: false }));
+      onSave(newOrder);
       onClose();
-    }, 1000);
-  } catch (err) {
-    console.error(err);
-    setErrorMsg("Terjadi kesalahan saat konfirmasi pembayaran.");
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
-    // optional: tampilkan toast error juga
-    setToast({
-      show: true,
-      type: "error",
-      message: "❌ Gagal mengkonfirmasi pembayaran.",
-    });
-
-    setTimeout(() => {
-      setToast((prev) => ({ ...prev, show: false }));
-    }, 2000);
-  }
-};
-
-
-const handleSubmitUpdate = async (e) => {
-  e.preventDefault();
-
-  try {
-    const token = localStorage.getItem("token");
-
-    const res = await fetch(`${BASE_URL}/admin/order/${order.id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        ...updatedOrder,
-        metode_bayar: metodeBayar,
-      }),
-    });
-
-    const json = await res.json();
-    const newOrder = json.data;   // ⬅️ full data
-
-    onSave(newOrder);             // ⬅️ langsung update parent
-    onClose();
-  } catch (err) {
-    console.error(err);
-  }
-};
-
-
+  // Helper untuk build URL gambar via proxy
+  const buildImageUrl = (path) => {
+    if (!path) return null;
+    const cleanPath = path.replace(/^\/?(storage\/)?/, "");
+    return `/api/image?path=${encodeURIComponent(cleanPath)}`;
+  };
 
   return (
     <>
-      <div className="update-modal-overlay">
-        <div className="update-modal-card" style={{ width: "100%", maxWidth: 900 }}>
+      <div className="update-modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+        <div className="update-modal-card" style={{ width: "min(960px, 95vw)", maxHeight: "90vh", display: "flex", flexDirection: "column" }}>
+          {/* Header */}
           <div className="update-modal-header">
-            <h2>Update Pesanan</h2>
-            <button className="close-btn" onClick={onClose}>
+            <div>
+              <p className="update-modal-eyebrow">Kelola Pesanan</p>
+              <h2>Update Pesanan #{order?.id}</h2>
+            </div>
+            <button className="close-btn" onClick={onClose} type="button" aria-label="Tutup modal">
               ✕
             </button>
           </div>
 
-          <form className="update-modal-body" onSubmit={handleSubmitUpdate}>
-            <div className="update-section">
-              <h4>Informasi Order</h4>
-              <label>
-                Customer
-                <input
-                  type="text"
-                  value={
-                    order.customer_rel?.nama ||
-                    (typeof order.customer === "object" ? order.customer?.nama : String(order.customer || "-")) ||
-                    "-"
-                  }
-                  disabled
-                />
-              </label>
-              <label>
-                Produk
-                <input
-                  type="text"
-                  value={
-                    order.produk_rel?.nama ||
-                    (typeof order.produk === "object" ? order.produk?.nama : String(order.produk || "-")) ||
-                    "-"
-                  }
-                  disabled
-                />
-              </label>
-              <label>
-                Alamat
-                <textarea
-                  name="alamat"
-                  rows="3"
-                  value={updatedOrder.alamat ?? order.alamat ?? ""}
-                  onChange={handleChange}
-                />
-              </label>
-              <label>
-                Sumber Order
-                <input
-                  type="text"
-                  name="sumber"
-                  value={updatedOrder.sumber ?? order.sumber ?? ""}
-                  onChange={handleChange}
-                />
-              </label>
-            </div>
+          {/* Body */}
+          <form className="update-modal-body" onSubmit={handleSubmitUpdate} style={{ overflowY: "auto", flex: 1, padding: "1.5rem" }}>
+            <div className="update-orders-grid">
+              {/* KOLOM KIRI - Informasi Order */}
+              <div className="update-orders-section">
+                <div className="section-header">
+                  <span className="section-icon">📋</span>
+                  <div>
+                    <h4>Informasi Order</h4>
+                    <p>Data pelanggan dan produk</p>
+                  </div>
+                </div>
 
-            <div className="update-section">
-              <h4>Detail Pembayaran</h4>
-              <label>
-                Harga Produk
-                <input
-                  type="number"
-                  name="harga"
-                  value={updatedOrder.harga ?? order.harga ?? ""}
-                  onChange={handleChange}
-                  disabled
-                  style={{ background: "#f3f4f6", cursor: "not-allowed" }}
-                />
-              </label>
-              <label>
-                Ongkir
-                <input
-                  type="number"
-                  name="ongkir"
-                  value={updatedOrder.ongkir ?? order.ongkir ?? ""}
-                  onChange={handleChange}
-                />
-              </label>
-              <label>
-                Total Harga
-                <input
-                  type="number"
-                  name="total_harga"
-                  value={updatedOrder.total_harga ?? order.total_harga ?? ""}
-                  onChange={handleChange}
-                />
-              </label>
+                <div className="info-card">
+                  <div className="info-row">
+                    <span className="info-label">👤 Customer</span>
+                    <span className="info-value">
+                      {order.customer_rel?.nama ||
+                        (typeof order.customer === "object" ? order.customer?.nama : String(order.customer || "-")) ||
+                        "-"}
+                    </span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">📱 WhatsApp</span>
+                    <span className="info-value">{order.customer_rel?.wa || "-"}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">📦 Produk</span>
+                    <span className="info-value">
+                      {order.produk_rel?.nama ||
+                        (typeof order.produk === "object" ? order.produk?.nama : String(order.produk || "-")) ||
+                        "-"}
+                    </span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">📅 Tanggal</span>
+                    <span className="info-value">{order.tanggal || "-"}</span>
+                  </div>
+                </div>
 
-              <label>
-                Metode Pembayaran
-                <input
-                  type="text"
-                  value={metodeBayar}
-                  onChange={(e) => setMetodeBayar(e.target.value)}
-                  placeholder="Masukkan metode bayar"
-                />
-              </label>
+                <label className="form-field">
+                  <span className="field-label">📍 Alamat Pengiriman</span>
+                  <textarea
+                    name="alamat"
+                    rows="3"
+                    className="field-input"
+                    value={updatedOrder.alamat ?? order.alamat ?? ""}
+                    onChange={handleChange}
+                    placeholder="Masukkan alamat lengkap"
+                  />
+                </label>
 
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginTop: 14,
-                }}
-              >
-                <span>
-                  Status Pembayaran:{" "}
-                  {computedStatus() === 1 ? (
-                    <span style={{ color: "green" }}>Paid</span>
-                  ) : (
-                    <span style={{ color: "orange" }}>Unpaid</span>
-                  )}
-                </span>
-
-                {computedStatus() === 0 ? (
-                  <button
-                    type="button"
-                    className="btn-primary"
-                    disabled={!metodeBayar}
-                    onClick={() => setShowKonfirmasiModal(true)}
-                    style={{
-                      opacity: !metodeBayar ? 0.5 : 1,
-                      cursor: !metodeBayar ? "not-allowed" : "pointer",
-                    }}
+                <label className="form-field">
+                  <span className="field-label">🔗 Sumber Order</span>
+                  <select
+                    name="sumber"
+                    className="field-input"
+                    value={updatedOrder.sumber ?? order.sumber ?? ""}
+                    onChange={handleChange}
                   >
-                    Konfirmasi Pembayaran
-                  </button>
-                ) : (
-                  <span style={{ color: "green", fontWeight: 500 }}>
-                    ✅ Pembayaran Terkonfirmasi
-                  </span>
-                )}
+                    <option value="">Pilih sumber</option>
+                    <option value="website">Website</option>
+                    <option value="instagram">Instagram</option>
+                    <option value="tiktok">TikTok</option>
+                    <option value="whatsapp">WhatsApp</option>
+                    <option value="sales">Sales</option>
+                    <option value="event">Event</option>
+                  </select>
+                </label>
               </div>
 
-              {bukti && (
-                <div style={{ marginTop: 10 }}>
-                  <p style={{ fontSize: "0.9rem", color: "#374151" }}>
-                    📎 Bukti Pembayaran (
-                    {order.customer_rel?.nama ||
-                      (typeof order.customer === "object" ? order.customer?.nama : String(order.customer || "-")) ||
-                      "-"}
-                    )
-                  </p>
-                  <img
-                    src={
-                      bukti.url.startsWith("blob:")
-                        ? bukti.url
-                        : `${BASE_URL.replace("/api", "/storage/")}${bukti.url}`
-                    }
-                    alt="Bukti"
-                    style={{
-                      marginTop: 6,
-                      borderRadius: 6,
-                      maxHeight: 180,
-                      border: "1px solid #e5e7eb",
-                    }}
-                  />
+              {/* KOLOM KANAN - Pembayaran */}
+              <div className="update-orders-section">
+                <div className="section-header">
+                  <span className="section-icon">💰</span>
+                  <div>
+                    <h4>Detail Pembayaran</h4>
+                    <p>Informasi harga dan status bayar</p>
+                  </div>
                 </div>
-              )}
+
+                <div className="price-grid">
+                  <label className="form-field">
+                    <span className="field-label">Harga Produk</span>
+                    <div className="field-input-wrapper">
+                      <span className="input-prefix">Rp</span>
+                      <input
+                        type="number"
+                        name="harga"
+                        className="field-input field-input--readonly"
+                        value={updatedOrder.harga ?? order.harga ?? ""}
+                        disabled
+                      />
+                    </div>
+                  </label>
+
+                  <label className="form-field">
+                    <span className="field-label">Ongkir</span>
+                    <div className="field-input-wrapper">
+                      <span className="input-prefix">Rp</span>
+                      <input
+                        type="number"
+                        name="ongkir"
+                        className="field-input"
+                        value={updatedOrder.ongkir ?? order.ongkir ?? ""}
+                        onChange={handleChange}
+                      />
+                    </div>
+                  </label>
+                </div>
+
+                <label className="form-field">
+                  <span className="field-label">Total Harga</span>
+                  <div className="field-input-wrapper">
+                    <span className="input-prefix">Rp</span>
+                    <input
+                      type="number"
+                      name="total_harga"
+                      className="field-input field-input--highlight"
+                      value={updatedOrder.total_harga ?? order.total_harga ?? ""}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </label>
+
+                <label className="form-field">
+                  <span className="field-label">💳 Metode Pembayaran</span>
+                  <input
+                    type="text"
+                    className="field-input"
+                    value={metodeBayar}
+                    onChange={(e) => setMetodeBayar(e.target.value)}
+                    placeholder="Contoh: Transfer BCA, QRIS, dll"
+                  />
+                </label>
+
+                {/* Status Pembayaran Card */}
+                <div className={`payment-status-card ${computedStatus() === 1 ? "paid" : "unpaid"}`}>
+                  <div className="status-info">
+                    <span className="status-label">Status Pembayaran</span>
+                    <span className={`status-badge ${computedStatus() === 1 ? "badge-paid" : "badge-unpaid"}`}>
+                      {computedStatus() === 1 ? "✅ Paid" : "⏳ Unpaid"}
+                    </span>
+                  </div>
+                  
+                  {computedStatus() === 0 ? (
+                    <button
+                      type="button"
+                      className="btn-konfirmasi"
+                      disabled={!metodeBayar}
+                      onClick={() => setShowKonfirmasiModal(true)}
+                    >
+                      <i className="pi pi-check-circle" />
+                      Konfirmasi Pembayaran
+                    </button>
+                  ) : (
+                    <span className="status-confirmed">Pembayaran Terkonfirmasi</span>
+                  )}
+                </div>
+
+                {/* Bukti Pembayaran Preview */}
+                {bukti && (
+                  <div className="bukti-preview">
+                    <span className="field-label">📎 Bukti Pembayaran</span>
+                    <div className="bukti-image-wrapper">
+                      <img
+                        src={bukti.url.startsWith("blob:") ? bukti.url : buildImageUrl(bukti.url)}
+                        alt="Bukti Pembayaran"
+                        className="bukti-image"
+                        onError={(e) => {
+                          e.target.style.display = "none";
+                          console.error("Gagal memuat gambar bukti");
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {errorMsg && (
-              <div
-                style={{
-                  background: "#fee2e2",
-                  color: "#991b1b",
-                  padding: "0.75rem 1rem",
-                  borderRadius: 6,
-                  marginTop: 8,
-                }}
-              >
-                ⚠️ {errorMsg}
-              </div>
+              <div className="update-error">⚠️ {errorMsg}</div>
             )}
 
+            {/* Footer */}
             <div className="update-modal-footer">
               <button type="button" onClick={onClose} className="btn-cancel">
                 Batal
               </button>
               <button type="submit" className="btn-save">
+                <i className="pi pi-save" style={{ marginRight: 6 }} />
                 Simpan Perubahan
               </button>
             </div>
@@ -376,91 +425,330 @@ const handleSubmitUpdate = async (e) => {
         </div>
       </div>
 
+      {/* Inline Styles */}
+      <style jsx>{`
+        .update-modal-eyebrow {
+          font-size: 12px;
+          color: #6b7280;
+          margin: 0 0 4px 0;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .update-orders-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+          gap: 24px;
+          margin-bottom: 20px;
+        }
+
+        .update-orders-section {
+          background: #fff;
+          border: 1px solid #e5e7eb;
+          border-radius: 16px;
+          padding: 20px;
+        }
+
+        .section-header {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          margin-bottom: 20px;
+          padding-bottom: 16px;
+          border-bottom: 1px solid #f3f4f6;
+        }
+
+        .section-icon {
+          font-size: 24px;
+        }
+
+        .section-header h4 {
+          margin: 0;
+          font-size: 16px;
+          font-weight: 600;
+          color: #111827;
+        }
+
+        .section-header p {
+          margin: 4px 0 0;
+          font-size: 13px;
+          color: #6b7280;
+        }
+
+        .info-card {
+          background: #f9fafb;
+          border-radius: 12px;
+          padding: 16px;
+          margin-bottom: 16px;
+        }
+
+        .info-row {
+          display: flex;
+          justify-content: space-between;
+          padding: 8px 0;
+          border-bottom: 1px solid #e5e7eb;
+        }
+
+        .info-row:last-child {
+          border-bottom: none;
+        }
+
+        .info-label {
+          font-size: 13px;
+          color: #6b7280;
+        }
+
+        .info-value {
+          font-size: 14px;
+          font-weight: 500;
+          color: #111827;
+          text-align: right;
+        }
+
+        .form-field {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          margin-bottom: 16px;
+        }
+
+        .field-label {
+          font-size: 13px;
+          font-weight: 500;
+          color: #374151;
+        }
+
+        .field-input {
+          width: 100%;
+          padding: 10px 12px;
+          border: 1px solid #d1d5db;
+          border-radius: 8px;
+          font-size: 14px;
+          transition: all 0.2s;
+        }
+
+        .field-input:focus {
+          outline: none;
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .field-input--readonly {
+          background: #f3f4f6;
+          cursor: not-allowed;
+          color: #6b7280;
+        }
+
+        .field-input--highlight {
+          background: #eef2ff;
+          border-color: #818cf8;
+          font-weight: 600;
+          color: #4338ca;
+        }
+
+        .field-input-wrapper {
+          position: relative;
+          display: flex;
+          align-items: center;
+        }
+
+        .input-prefix {
+          position: absolute;
+          left: 12px;
+          color: #6b7280;
+          font-size: 14px;
+        }
+
+        .field-input-wrapper .field-input {
+          padding-left: 36px;
+        }
+
+        .price-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+        }
+
+        .payment-status-card {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 16px;
+          border-radius: 12px;
+          margin-bottom: 16px;
+        }
+
+        .payment-status-card.paid {
+          background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+          border: 1px solid #6ee7b7;
+        }
+
+        .payment-status-card.unpaid {
+          background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+          border: 1px solid #fcd34d;
+        }
+
+        .status-info {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .status-label {
+          font-size: 12px;
+          color: #6b7280;
+        }
+
+        .status-badge {
+          font-size: 14px;
+          font-weight: 600;
+          padding: 4px 10px;
+          border-radius: 6px;
+        }
+
+        .badge-paid {
+          background: #10b981;
+          color: white;
+        }
+
+        .badge-unpaid {
+          background: #f59e0b;
+          color: white;
+        }
+
+        .btn-konfirmasi {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 10px 16px;
+          background: #3b82f6;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .btn-konfirmasi:hover:not(:disabled) {
+          background: #2563eb;
+        }
+
+        .btn-konfirmasi:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .status-confirmed {
+          font-size: 13px;
+          color: #059669;
+          font-weight: 500;
+        }
+
+        .bukti-preview {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .bukti-image-wrapper {
+          background: #f9fafb;
+          border: 1px solid #e5e7eb;
+          border-radius: 12px;
+          padding: 12px;
+          text-align: center;
+        }
+
+        .bukti-image {
+          max-width: 100%;
+          max-height: 180px;
+          border-radius: 8px;
+          object-fit: contain;
+        }
+
+        .update-error {
+          background: #fee2e2;
+          color: #991b1b;
+          padding: 12px 16px;
+          border-radius: 8px;
+          margin-bottom: 16px;
+        }
+
+        @media (max-width: 768px) {
+          .update-orders-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .price-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .payment-status-card {
+            flex-direction: column;
+            gap: 12px;
+            text-align: center;
+          }
+        }
+      `}</style>
+
       {/* Modal Konfirmasi Pembayaran */}
       {showKonfirmasiModal && (
-        <div className="update-modal-overlay">
-          <div
-            className="update-modal-card"
-            style={{
-              maxWidth: 450,
-              padding: "1.5rem",
-              borderRadius: 10,
-              boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
-            }}
-          >
-            <div
-              className="update-modal-header"
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 16,
-              }}
-            >
-              <h3 style={{ fontSize: "1.1rem", fontWeight: 600 }}>Konfirmasi Pembayaran</h3>
+        <div className="update-modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowKonfirmasiModal(false)}>
+          <div className="konfirmasi-modal">
+            <div className="konfirmasi-header">
+              <div className="konfirmasi-icon">💳</div>
+              <div>
+                <h3>Konfirmasi Pembayaran</h3>
+                <p>Upload bukti pembayaran untuk order #{order?.id}</p>
+              </div>
               <button
-                className="close-btn"
+                className="konfirmasi-close"
                 onClick={() => setShowKonfirmasiModal(false)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  fontSize: 20,
-                  cursor: "pointer",
-                }}
+                type="button"
               >
                 ✕
               </button>
             </div>
 
-            <form
-              onSubmit={handleKonfirmasiSubmit}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 14,
-              }}
-            >
-              <label>
-                <span style={{ fontWeight: 500, fontSize: 14 }}>Upload Bukti Pembayaran</span>
-                <input type="file" accept="image/*" onChange={handleKonfirmasiFileChange} />
-              </label>
-
-              <label>
-                <span style={{ fontWeight: 500, fontSize: 14 }}>Metode Pembayaran</span>
+            <form onSubmit={handleKonfirmasiSubmit} className="konfirmasi-form">
+              <div className="upload-area">
                 <input
-                  type="text"
-                  value={metodeBayar}
-                  disabled
-                  style={{ background: "#f3f4f6", cursor: "not-allowed" }}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleKonfirmasiFileChange}
+                  id="bukti-upload"
+                  className="upload-input"
                 />
-              </label>
+                <label htmlFor="bukti-upload" className="upload-label">
+                  {bukti?.url ? (
+                    <img src={bukti.url} alt="Preview" className="upload-preview" />
+                  ) : (
+                    <>
+                      <span className="upload-icon">📷</span>
+                      <span className="upload-text">Klik untuk upload bukti pembayaran</span>
+                      <span className="upload-hint">PNG, JPG maksimal 5MB</span>
+                    </>
+                  )}
+                </label>
+              </div>
 
-              {bukti?.url && (
-                <img
-                  src={bukti.url}
-                  alt="Preview Bukti"
-                  style={{
-                    borderRadius: 6,
-                    maxHeight: 200,
-                    border: "1px solid #e5e7eb",
-                    marginTop: 6,
-                    objectFit: "contain",
-                  }}
-                />
-              )}
+              <div className="konfirmasi-info">
+                <div className="konfirmasi-info-row">
+                  <span>Metode Pembayaran</span>
+                  <strong>{metodeBayar || "-"}</strong>
+                </div>
+                <div className="konfirmasi-info-row">
+                  <span>Total Bayar</span>
+                  <strong>Rp {Number(updatedOrder.total_harga || order.total_harga || 0).toLocaleString("id-ID")}</strong>
+                </div>
+              </div>
 
               {errorMsg && (
-                <p style={{ color: "red", fontSize: 14, marginTop: 6 }}>{errorMsg}</p>
+                <div className="konfirmasi-error">⚠️ {errorMsg}</div>
               )}
 
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  gap: 8,
-                  marginTop: 10,
-                }}
-              >
+              <div className="konfirmasi-footer">
                 <button
                   type="button"
                   className="btn-cancel"
@@ -468,14 +756,187 @@ const handleSubmitUpdate = async (e) => {
                 >
                   Batal
                 </button>
-                <button type="submit" className="btn-save">
-                  Konfirmasi
+                <button type="submit" className="btn-success">
+                  <i className="pi pi-check" style={{ marginRight: 6 }} />
+                  Konfirmasi Pembayaran
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {/* Konfirmasi Modal Styles */}
+      <style jsx>{`
+        .konfirmasi-modal {
+          background: white;
+          border-radius: 20px;
+          width: min(480px, 95vw);
+          box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+          overflow: hidden;
+        }
+
+        .konfirmasi-header {
+          display: flex;
+          align-items: flex-start;
+          gap: 14px;
+          padding: 20px 24px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+        }
+
+        .konfirmasi-icon {
+          font-size: 32px;
+        }
+
+        .konfirmasi-header h3 {
+          margin: 0;
+          font-size: 18px;
+          font-weight: 600;
+        }
+
+        .konfirmasi-header p {
+          margin: 4px 0 0;
+          font-size: 13px;
+          opacity: 0.9;
+        }
+
+        .konfirmasi-close {
+          margin-left: auto;
+          background: rgba(255,255,255,0.2);
+          border: none;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          color: white;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+          font-size: 16px;
+        }
+
+        .konfirmasi-close:hover {
+          background: rgba(255,255,255,0.3);
+        }
+
+        .konfirmasi-form {
+          padding: 24px;
+        }
+
+        .upload-area {
+          margin-bottom: 20px;
+        }
+
+        .upload-input {
+          display: none;
+        }
+
+        .upload-label {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          min-height: 160px;
+          border: 2px dashed #d1d5db;
+          border-radius: 12px;
+          background: #f9fafb;
+          cursor: pointer;
+          transition: all 0.2s;
+          overflow: hidden;
+        }
+
+        .upload-label:hover {
+          border-color: #3b82f6;
+          background: #eff6ff;
+        }
+
+        .upload-preview {
+          max-width: 100%;
+          max-height: 200px;
+          object-fit: contain;
+        }
+
+        .upload-icon {
+          font-size: 40px;
+          margin-bottom: 8px;
+        }
+
+        .upload-text {
+          font-size: 14px;
+          font-weight: 500;
+          color: #374151;
+        }
+
+        .upload-hint {
+          font-size: 12px;
+          color: #9ca3af;
+          margin-top: 4px;
+        }
+
+        .konfirmasi-info {
+          background: #f9fafb;
+          border-radius: 10px;
+          padding: 14px;
+          margin-bottom: 20px;
+        }
+
+        .konfirmasi-info-row {
+          display: flex;
+          justify-content: space-between;
+          padding: 8px 0;
+          border-bottom: 1px solid #e5e7eb;
+        }
+
+        .konfirmasi-info-row:last-child {
+          border-bottom: none;
+        }
+
+        .konfirmasi-info-row span {
+          font-size: 13px;
+          color: #6b7280;
+        }
+
+        .konfirmasi-info-row strong {
+          font-size: 14px;
+          color: #111827;
+        }
+
+        .konfirmasi-error {
+          background: #fef2f2;
+          border: 1px solid #fecaca;
+          color: #dc2626;
+          padding: 12px;
+          border-radius: 8px;
+          font-size: 13px;
+          margin-bottom: 16px;
+        }
+
+        .konfirmasi-footer {
+          display: flex;
+          gap: 10px;
+          justify-content: flex-end;
+        }
+
+        .btn-success {
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 8px;
+          font-weight: 500;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          transition: all 0.2s;
+        }
+
+        .btn-success:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+      `}</style>
     </>
   );
 }

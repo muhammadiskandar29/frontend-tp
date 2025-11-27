@@ -53,6 +53,8 @@ export default function AddOrders({ onClose, onAdd, setToast }) {
     const res = await api("/admin/produk", { method: "GET" });
     if (res?.success && Array.isArray(res.data)) {
       const filtered = res.data.filter((prod) =>
+        // Filter hanya produk AKTIF (status === "1" atau status === 1)
+        (prod.status === "1" || prod.status === 1) &&
         prod.nama?.toLowerCase().split(" ").some((w) => w.startsWith(keyword.toLowerCase()))
       );
       setProductResults(filtered);

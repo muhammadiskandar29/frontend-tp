@@ -641,51 +641,185 @@ if (paymentMethod === "va") {
             </div>
           </section>
         )}
-{/* INFORMASI DASAR */}
-<section className="preview-form space-y-4 mt-6" aria-label="Order form">
-  <h2 className="font-semibold text-lg">Informasi Dasar</h2>
-
-  {[
-    { label: "Nama", key: "nama", placeholder: "Nama lengkap Anda" },
-    { label: "Nomor WhatsApp", key: "wa", placeholder: "08xxxxxxxxxx" },
-    { label: "Email", key: "email", placeholder: "email@example.com" },
-  ].map((field, i) => (
-    
-    <div 
-      key={i}
-      className="p-4 border border-gray-200 rounded-xl bg-gray-50 shadow-sm"
-    >
-      <br></br>
-      <label className="font-medium text-gray-700">{field.label}</label>
-
+{/* INFORMASI DASAR - Compact Form */}
+<section className="compact-form-section" aria-label="Order form">
+  <h2 className="compact-form-title">Lengkapi Data:</h2>
+  
+  <div className="compact-form-card">
+    {/* Nama Lengkap */}
+    <div className="compact-field">
+      <label className="compact-label">
+        Nama Lengkap <span className="required">*</span>
+      </label>
       <input
         type="text"
-        placeholder={field.placeholder}
-        className="w-full p-3 border border-gray-300 rounded-xl mt-2 focus:border-blue-500 focus:ring focus:ring-blue-200 transition"
-        onChange={(e) =>
-          setCustomerForm({ ...customerForm, [field.key]: e.target.value })
-        }
+        placeholder="Contoh: Krisdayanti"
+        className="compact-input"
+        value={customerForm.nama}
+        onChange={(e) => setCustomerForm({ ...customerForm, nama: e.target.value })}
       />
     </div>
-  ))}
 
-  {/* ALAMAT */}
-  <div className="space-y-2 p-4 border border-gray-200 rounded-xl bg-white shadow-sm">
-    <br></br>
+    {/* No. WhatsApp */}
+    <div className="compact-field">
+      <label className="compact-label">
+        No. WhatsApp <span className="required">*</span>
+      </label>
+      <div className="wa-input-wrapper">
+        <div className="wa-prefix">
+          <span className="flag">🇮🇩</span>
+          <span className="code">+62</span>
+        </div>
+        <input
+          type="tel"
+          placeholder="812345678"
+          className="compact-input wa-input"
+          value={customerForm.wa.replace(/^(\+62|62|0)/, '')}
+          onChange={(e) => {
+            const val = e.target.value.replace(/\D/g, '');
+            setCustomerForm({ ...customerForm, wa: '62' + val });
+          }}
+        />
+      </div>
+    </div>
 
-    <label className="block text-sm font-semibold text-gray-700">
-      Alamat
-    </label>
+    {/* Email */}
+    <div className="compact-field">
+      <label className="compact-label">
+        Email <span className="required">*</span>
+      </label>
+      <input
+        type="email"
+        placeholder="email@example.com"
+        className="compact-input"
+        value={customerForm.email}
+        onChange={(e) => setCustomerForm({ ...customerForm, email: e.target.value })}
+      />
+    </div>
 
-    <textarea
-      placeholder="Alamat lengkap"
-      className="w-full p-3 border border-gray-300 rounded-xl mt-2 focus:border-blue-500 focus:ring focus:ring-blue-200 transition"
-      rows={3}
-      value={customerForm.alamat}
-      onChange={(e) => setCustomerForm({...customerForm, alamat: e.target.value})}
-    />
+    {/* Alamat */}
+    <div className="compact-field">
+      <label className="compact-label">Alamat</label>
+      <textarea
+        placeholder="Alamat lengkap (opsional)"
+        className="compact-input compact-textarea"
+        rows={2}
+        value={customerForm.alamat}
+        onChange={(e) => setCustomerForm({ ...customerForm, alamat: e.target.value })}
+      />
+    </div>
   </div>
 </section>
+
+{/* Compact Form Styles */}
+<style jsx>{`
+  .compact-form-section {
+    margin: 24px 0;
+  }
+
+  .compact-form-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 12px;
+  }
+
+  .compact-form-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .compact-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .compact-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #6b7280;
+  }
+
+  .compact-label .required {
+    color: #ef4444;
+  }
+
+  .compact-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #111827;
+    background: #fff;
+    transition: all 0.2s ease;
+  }
+
+  .compact-input::placeholder {
+    color: #9ca3af;
+  }
+
+  .compact-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .compact-textarea {
+    resize: none;
+    min-height: 60px;
+  }
+
+  .wa-input-wrapper {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  .wa-input-wrapper:focus-within {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .wa-prefix {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 12px;
+    background: #f9fafb;
+    border-right: 1px solid #e5e7eb;
+    flex-shrink: 0;
+  }
+
+  .wa-prefix .flag {
+    font-size: 16px;
+  }
+
+  .wa-prefix .code {
+    font-size: 14px;
+    color: #374151;
+    font-weight: 500;
+  }
+
+  .wa-input {
+    border: none;
+    border-radius: 0;
+    flex: 1;
+  }
+
+  .wa-input:focus {
+    box-shadow: none;
+  }
+`}</style>
 
 
 

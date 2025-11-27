@@ -143,7 +143,7 @@ export default function LinkZoomSection({ productId, productName }) {
 
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const res = await fetch("/api/webinar", {
+      const res = await fetch("/api/admin/webinar", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

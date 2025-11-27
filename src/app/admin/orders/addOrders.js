@@ -54,6 +54,8 @@ export default function AddOrders({ onClose, onAdd, showToast }) {
     const res = await api("/admin/produk", { method: "GET" });
     if (res?.success && Array.isArray(res.data)) {
       const filtered = res.data.filter((prod) =>
+        // Filter hanya produk AKTIF (status === "1" atau status === 1)
+        (prod.status === "1" || prod.status === 1) &&
         prod.nama?.toLowerCase().split(" ").some((w) => w.startsWith(keyword.toLowerCase()))
       );
       setProductResults(filtered);
@@ -146,14 +148,15 @@ export default function AddOrders({ onClose, onAdd, showToast }) {
 
     const res = await createOrder(payload);
 
-    if (res?.success || (res?.warning && res?.data)) {
-      const toastType = res?.warning ? "warning" : "success";
-      const toastMessage =
-        res?.warning
-          ? `✅ Order berhasil dibuat! (${res.warning})`
-          : res?.message || "✅ Order berhasil dibuat!";
-
-      showToast?.(toastMessage, toastType);
+    if (res?.success) {
+      // Sukses tanpa warning
+      showToast?.(res?.message || "✅ Order berhasil dibuat!", "success");
+      onAdd?.(res.data);
+      onClose?.();
+    } else if (res?.warning && res?.data) {
+      // Sukses dengan warning (tetap lanjut, tapi beri tahu)
+      console.warn("⚠️ Order warning:", res.warning);
+      showToast?.("✅ Order berhasil dibuat!", "success");
       onAdd?.(res.data);
       onClose?.();
     } else {
