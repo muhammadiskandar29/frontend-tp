@@ -49,7 +49,8 @@ export default function FollowupLogModal({ customer, onClose }) {
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       
-      // Build request body sesuai dokumentasi API
+      // POST /api/admin/logs-follup
+      // Request: { customer: id_customer, event: integer (optional) }
       const requestBody = {
         customer: customer.id,
       };
@@ -58,6 +59,8 @@ export default function FollowupLogModal({ customer, onClose }) {
       if (selectedEvent) {
         requestBody.event = Number(selectedEvent);
       }
+
+      console.log("📤 [FOLLOWUP LOG] Request:", requestBody);
 
       const res = await fetch("/api/admin/logs-follup", {
         method: "POST",
@@ -71,15 +74,21 @@ export default function FollowupLogModal({ customer, onClose }) {
 
       const data = await res.json().catch(() => ({}));
       
+      console.log("📥 [FOLLOWUP LOG] Response:", {
+        status: res.status,
+        message: data?.message,
+        total: data?.total,
+        dataCount: data?.data?.length || 0
+      });
+      
       // API response: { message, total, data: [...] }
-      // Tidak ada field "success", cek berdasarkan res.ok dan data.data
       if (!res.ok) {
         throw new Error(data?.message || "Gagal memuat log follow up");
       }
 
-      console.log("📥 [FOLLOWUP LOG] API Response:", data);
       setLogs(Array.isArray(data.data) ? data.data : []);
     } catch (err) {
+      console.error("❌ [FOLLOWUP LOG] Error:", err);
       setError(err.message || "Terjadi kesalahan saat memuat data");
       setLogs([]);
     } finally {
