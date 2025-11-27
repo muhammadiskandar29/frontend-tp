@@ -321,12 +321,15 @@ export default function LandingPage() {
         throw new Error(errorMessage);
       }
 
-      // Order berhasil - tampilkan toast sukses
-      toast.success("Kode OTP telah dikirim ke WhatsApp Anda!");
-      
-      // Ambil data dari response
-      const orderId = order?.data?.order?.id;
-      const customerId = order?.data?.order?.customer;
+      // Ambil data dari response - handle berbagai format response
+      const orderData = order?.data?.order || order?.data || {};
+      const orderId = orderData?.id;
+      // Customer bisa di berbagai lokasi: customer, customer_id, atau id_customer
+      const customerId = orderData?.customer || orderData?.customer_id || orderData?.id_customer;
+
+      console.log("📦 [LANDING] Order response data:", orderData);
+      console.log("📦 [LANDING] Order ID:", orderId);
+      console.log("📦 [LANDING] Customer ID:", customerId);
 
       // Simpan data untuk verifikasi OTP
       const pendingOrder = {
@@ -340,8 +343,15 @@ export default function LandingPage() {
         paymentMethod: paymentMethod,
       };
 
-      console.log("📦 Saving pending order:", pendingOrder);
+      console.log("📦 [LANDING] Saving pending order:", pendingOrder);
       localStorage.setItem("pending_order", JSON.stringify(pendingOrder));
+
+      // Tampilkan toast sesuai kondisi
+      if (customerId) {
+        toast.success("Kode OTP telah dikirim ke WhatsApp Anda!");
+      } else {
+        toast.success("Order berhasil! Lanjut ke pembayaran...");
+      }
 
       // Redirect ke halaman verifikasi OTP
       await new Promise((r) => setTimeout(r, 500));
@@ -693,8 +703,8 @@ export default function LandingPage() {
 
         {/* Custom Field */}
         {form.custom_field?.length > 0 && (
-          <section className="preview-form space-y-4 mt-5" aria-label="Additional information">
-            <h2 className="font-semibold text-lg">Lengkapi Data Tambahan</h2>
+          <section className="preview-form" aria-label="Additional information">
+            <h2>Lengkapi Data Tambahan:</h2>
 
             {form.custom_field.map((f, i) => (
               <div key={i} className="flex flex-col p-3 border rounded bg-gray-50">

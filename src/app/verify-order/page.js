@@ -18,6 +18,7 @@ export default function VerifyOrderOTPPage() {
   const [timeLeft, setTimeLeft] = useState(OTP_VALID_DURATION);
   const [timerActive, setTimerActive] = useState(true);
   const [orderData, setOrderData] = useState(null);
+  const [skipOtp, setSkipOtp] = useState(false);
   const inputs = useRef([]);
 
   // Load order data dari localStorage
@@ -33,6 +34,12 @@ export default function VerifyOrderOTPPage() {
       const data = JSON.parse(stored);
       setOrderData(data);
       console.log("📦 [VERIFY-ORDER] Order data:", data);
+      
+      // Jika tidak ada customerId, skip OTP dan langsung ke payment
+      if (!data.customerId) {
+        console.warn("⚠️ [VERIFY-ORDER] No customerId, will allow skip OTP");
+        setSkipOtp(true);
+      }
     } catch {
       toast.error("Data order tidak valid");
       router.replace("/");
@@ -113,7 +120,7 @@ export default function VerifyOrderOTPPage() {
     }
 
     if (!orderData?.customerId) {
-      setMessage("Data customer tidak ditemukan.");
+      setMessage("Data customer tidak ditemukan. Klik 'Lanjut ke Pembayaran' untuk skip.");
       return;
     }
 
@@ -155,6 +162,13 @@ export default function VerifyOrderOTPPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Skip OTP dan langsung ke payment (fallback)
+  const handleSkipToPayment = () => {
+    toast.success("Melanjutkan ke pembayaran...");
+    localStorage.removeItem("pending_order");
+    redirectToPayment();
   };
 
   // Redirect ke payment sesuai metode
@@ -312,12 +326,20 @@ export default function VerifyOrderOTPPage() {
           </div>
         )}
 
-        <div className="otp-timer">
-          <span>⏱️</span>
-          <span>
-            OTP berlaku {timeLeft > 0 ? `${formatTimeLeft()}` : "(kedaluwarsa)"}
-          </span>
-        </div>
+        {!skipOtp && (
+          <div className="otp-timer">
+            <span>⏱️</span>
+            <span>
+              OTP berlaku {timeLeft > 0 ? `${formatTimeLeft()}` : "(kedaluwarsa)"}
+            </span>
+          </div>
+        )}
+
+        {skipOtp && (
+          <div className="otp-skip-notice">
+            ⚠️ Verifikasi OTP tidak tersedia. Klik tombol di bawah untuk lanjut ke pembayaran.
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="otp-form">
           <div className="otp-input-group" onPaste={handlePaste}>
@@ -346,17 +368,28 @@ export default function VerifyOrderOTPPage() {
           <button 
             type="submit" 
             className="otp-btn" 
-            disabled={loading || timeLeft === 0}
+            disabled={loading || timeLeft === 0 || !orderData?.customerId}
           >
             {loading ? "Memverifikasi..." : "Verifikasi & Lanjut Bayar"}
           </button>
 
+          {/* Tombol Skip jika tidak ada customerId */}
+          {skipOtp && (
+            <button
+              type="button"
+              className="otp-btn otp-btn-skip"
+              onClick={handleSkipToPayment}
+            >
+              Lanjut ke Pembayaran →
+            </button>
+          )}
+
           <p
             className="otp-resend"
-            onClick={!resending ? handleResend : undefined}
+            onClick={!resending && orderData?.customerId ? handleResend : undefined}
             style={{
-              cursor: resending ? "not-allowed" : "pointer",
-              opacity: resending ? 0.6 : 1,
+              cursor: resending || !orderData?.customerId ? "not-allowed" : "pointer",
+              opacity: resending || !orderData?.customerId ? 0.6 : 1,
             }}
           >
             {resending ? "Mengirim ulang..." : "Kirim ulang kode OTP"}
@@ -413,6 +446,27 @@ export default function VerifyOrderOTPPage() {
 
         .otp-message.error {
           color: #dc2626;
+        }
+
+        .otp-btn-skip {
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+          margin-top: 10px;
+        }
+
+        .otp-btn-skip:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .otp-skip-notice {
+          background: #fef3c7;
+          border: 1px solid #fcd34d;
+          color: #92400e;
+          padding: 12px 16px;
+          border-radius: 10px;
+          font-size: 13px;
+          margin: 16px 0;
+          text-align: center;
         }
       `}</style>
     </div>
