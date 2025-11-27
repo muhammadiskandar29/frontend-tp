@@ -19,8 +19,8 @@ export async function POST(request) {
       );
     }
 
-    // Forward ke backend
-    const response = await fetch(`${BACKEND_URL}/api/customer/otp/resend`, {
+    // Forward ke backend - endpoint: /api/otp/resend
+    const response = await fetch(`${BACKEND_URL}/api/otp/resend`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
