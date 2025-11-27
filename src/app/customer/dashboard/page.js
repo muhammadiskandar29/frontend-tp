@@ -268,6 +268,31 @@ export default function DashboardPage() {
     }
   }, []);
 
+  // Fetch customer profile langsung dari API untuk mendapatkan data lengkap
+  const fetchCustomerProfile = useCallback(async (token) => {
+    try {
+      const response = await fetch("/api/customer/customer", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const result = await response.json();
+      console.log("📥 [DASHBOARD] Customer profile response:", result);
+
+      if (response.ok && result?.success && result?.data) {
+        return result.data;
+      }
+      return null;
+    } catch (error) {
+      console.error("❌ [DASHBOARD] Failed to fetch customer profile:", error);
+      return null;
+    }
+  }, []);
+
   // Load dashboard data dan cek modal
   useEffect(() => {
     const session = getCustomerSession();
@@ -277,18 +302,38 @@ export default function DashboardPage() {
       return;
     }
 
-    // Load dashboard data, lalu cek modal dengan data terbaru
+    // Load dashboard data dan customer profile, lalu cek modal dengan data terbaru
     const initDashboard = async () => {
-      const freshCustomerData = await loadDashboardData();
+      // Fetch dashboard data
+      const dashboardCustomerData = await loadDashboardData();
       
-      // Gunakan data terbaru dari backend untuk cek modal
-      // Jika tidak ada, fallback ke session.user
-      const userToCheck = freshCustomerData || session.user;
-      checkAndShowModal(userToCheck);
+      // Fetch customer profile langsung untuk mendapatkan data lengkap (termasuk nama_panggilan, profesi)
+      const customerProfile = await fetchCustomerProfile(session.token);
+      
+      console.log("📊 [DASHBOARD] Dashboard customer data:", dashboardCustomerData);
+      console.log("📊 [DASHBOARD] Customer profile data:", customerProfile);
+      
+      // Gabungkan data dari berbagai sumber
+      const mergedCustomerData = {
+        ...session.user,
+        ...dashboardCustomerData,
+        ...customerProfile,
+      };
+      
+      console.log("📊 [DASHBOARD] Merged customer data:", mergedCustomerData);
+      
+      // Update localStorage dengan data lengkap
+      if (mergedCustomerData && (mergedCustomerData.id || mergedCustomerData.nama)) {
+        localStorage.setItem("customer_user", JSON.stringify(mergedCustomerData));
+        console.log("✅ [DASHBOARD] Customer data synced to localStorage");
+      }
+      
+      // Gunakan data yang sudah di-merge untuk cek modal
+      checkAndShowModal(mergedCustomerData);
     };
 
     initDashboard();
-  }, [router, loadDashboardData, checkAndShowModal]);
+  }, [router, loadDashboardData, fetchCustomerProfile, checkAndShowModal]);
 
   // Handler untuk OTP sent callback
   const handleOTPSent = (data) => {
