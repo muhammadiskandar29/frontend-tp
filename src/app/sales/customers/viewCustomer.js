@@ -2,6 +2,20 @@
 
 import "@/styles/customer.css";
 
+// Helper untuk display pendapatan dalam format readable
+const formatPendapatan = (value) => {
+  if (!value) return "-";
+  const mapping = {
+    "<1jt": "< 1 Juta",
+    "1-5jt": "1 - 5 Juta",
+    "5-10jt": "5 - 10 Juta",
+    "10-15jt": "10 - 15 Juta",
+    "15-20jt": "15 - 20 Juta",
+    ">20jt": "> 20 Juta",
+  };
+  return mapping[value] || value;
+};
+
 export default function ViewCustomerModal({ customer, onClose }) {
   return (
     <div className="modal-overlay">
@@ -57,7 +71,7 @@ export default function ViewCustomerModal({ customer, onClose }) {
 
             <div className="form-group">
               <label>Pendapatan per Bulan</label>
-              <input value={customer.pendapatan_bln || "-"} readOnly />
+              <input value={formatPendapatan(customer.pendapatan_bln)} readOnly />
             </div>
 
             <div className="form-group">

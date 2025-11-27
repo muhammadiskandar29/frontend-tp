@@ -79,12 +79,12 @@ const SECTION_CONFIG = [
         placeholder: "Pilih Range Pendapatan",
         options: [
           { value: "", label: "Pilih Range Pendapatan" },
-          { value: "< 1 Juta", label: "< 1 Juta" },
-          { value: "1 - 5 Juta", label: "1 - 5 Juta" },
-          { value: "5 - 10 Juta", label: "5 - 10 Juta" },
-          { value: "10 - 15 Juta", label: "10 - 15 Juta" },
-          { value: "15 - 20 Juta", label: "15 - 20 Juta" },
-          { value: "> 20 Juta", label: "> 20 Juta" },
+          { value: "<1jt", label: "< 1 Juta" },
+          { value: "1-5jt", label: "1 - 5 Juta" },
+          { value: "5-10jt", label: "5 - 10 Juta" },
+          { value: "10-15jt", label: "10 - 15 Juta" },
+          { value: "15-20jt", label: "15 - 20 Juta" },
+          { value: ">20jt", label: "> 20 Juta" },
         ],
       },
       {
@@ -149,6 +149,25 @@ export default function UpdateCustomerModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Mapping untuk konversi value lama ke value baru (untuk backward compatibility)
+  const normalizePendapatan = (value) => {
+    if (!value) return "";
+    // Jika sudah format baru, return langsung
+    const newFormats = ["<1jt", "1-5jt", "5-10jt", "10-15jt", "15-20jt", ">20jt"];
+    if (newFormats.includes(value)) return value;
+    
+    // Konversi format lama ke baru
+    const mapping = {
+      "< 1 Juta": "<1jt",
+      "1 - 5 Juta": "1-5jt",
+      "5 - 10 Juta": "5-10jt",
+      "10 - 15 Juta": "10-15jt",
+      "15 - 20 Juta": "15-20jt",
+      "> 20 Juta": ">20jt",
+    };
+    return mapping[value] || value;
+  };
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -161,7 +180,7 @@ export default function UpdateCustomerModal({
         nama_panggilan: user.nama_panggilan || user.nama || prev.nama_panggilan,
         instagram: user.instagram || prev.instagram,
         profesi: user.profesi || prev.profesi,
-        pendapatan_bln: user.pendapatan_bln || prev.pendapatan_bln,
+        pendapatan_bln: normalizePendapatan(user.pendapatan_bln) || prev.pendapatan_bln,
         industri_pekerjaan:
           user.industri_pekerjaan || prev.industri_pekerjaan,
         jenis_kelamin: user.jenis_kelamin || prev.jenis_kelamin || "l",

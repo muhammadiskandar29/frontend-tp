@@ -60,7 +60,11 @@ export default function FollowupLogModal({ customer, onClose }) {
         requestBody.event = Number(selectedEvent);
       }
 
-      console.log("📤 [FOLLOWUP LOG] Request:", requestBody);
+      console.log("📤 [FOLLOWUP LOG] Request for customer:", {
+        customerId: customer.id,
+        customerName: customer.nama,
+        requestBody
+      });
 
       const res = await fetch("/api/admin/logs-follup", {
         method: "POST",
@@ -97,12 +101,16 @@ export default function FollowupLogModal({ customer, onClose }) {
   };
 
   const customerName = customer?.nama || "";
+  const customerId = customer?.id || "";
 
   return (
     <div className="modal-overlay">
       <div className="modal-card" style={{ maxWidth: "900px", maxHeight: "90vh" }}>
         <div className="modal-header">
-          <h2>📋 Log Follow Up — {customerName}</h2>
+          <div>
+            <h2>Log Follow Up — {customerName}</h2>
+            <p className="modal-subtitle">Customer ID: {customerId}</p>
+          </div>
           <button className="modal-close" onClick={onClose} aria-label="Tutup modal">
             <i className="pi pi-times" />
           </button>
@@ -203,6 +211,23 @@ export default function FollowupLogModal({ customer, onClose }) {
       </div>
 
       <style>{`
+        .modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+        }
+        .modal-header h2 {
+          margin: 0;
+          font-size: 18px;
+          font-weight: 600;
+          color: #1e293b;
+        }
+        .modal-subtitle {
+          margin: 4px 0 0 0;
+          font-size: 13px;
+          color: #64748b;
+          font-weight: 500;
+        }
         .followup-summary {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
