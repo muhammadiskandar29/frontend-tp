@@ -209,49 +209,28 @@ export default function DashboardPage() {
       return () => clearTimeout(modalTimeout);
     }
 
-    // ===== CEK PASSWORD DEFAULT =====
-    const isUsingDefaultPassword = 
-      user.password_default === 1 || 
-      user.password_default === "1" ||
-      user.is_default_password === true ||
-      user.is_default_password === 1 ||
-      user.is_default_password === "1" ||
-      user.need_change_password === true ||
-      user.need_change_password === 1 ||
-      user.need_change_password === "1";
-
-    // ===== CEK DATA BELUM PERNAH DIISI =====
-    const hasNamaPanggilan = user.nama_panggilan && String(user.nama_panggilan).trim() !== "";
-    const hasProfesi = user.profesi && String(user.profesi).trim() !== "";
-    const isProfileNeverFilled = !hasNamaPanggilan || !hasProfesi;
+    // ===== CEK TANGGAL LAHIR =====
+    // Jika tanggal_lahir sudah terisi, berarti user sudah mengisi form updateCustomer
+    // Jika tanggal_lahir kosong/null, tampilkan modal untuk lengkapi data
+    const hasTanggalLahir = user.tanggal_lahir && String(user.tanggal_lahir).trim() !== "";
 
     console.log("🔍 [DASHBOARD] Checking user data:", {
-      password_default: user.password_default,
-      is_default_password: user.is_default_password,
-      need_change_password: user.need_change_password,
+      tanggal_lahir: user.tanggal_lahir,
+      hasTanggalLahir,
       nama_panggilan: user.nama_panggilan,
       profesi: user.profesi,
-      hasNamaPanggilan,
-      hasProfesi,
-      isUsingDefaultPassword,
-      isProfileNeverFilled
+      verifikasi: user.verifikasi
     });
 
-    if (isUsingDefaultPassword) {
-      console.log("⚠️ [DASHBOARD] Showing update modal - password_default");
-      setUpdateModalReason("password");
-      setShowUpdateModal(true);
-      return;
-    }
-
-    if (isProfileNeverFilled) {
-      console.log("⚠️ [DASHBOARD] Showing update modal - profile never filled");
+    // Jika tanggal_lahir kosong, tampilkan modal untuk lengkapi data
+    if (!hasTanggalLahir) {
+      console.log("⚠️ [DASHBOARD] Showing update modal - tanggal_lahir is empty");
       setUpdateModalReason("incomplete");
       setShowUpdateModal(true);
       return;
     }
     
-    console.log("✅ [DASHBOARD] Profile already filled, skipping update modal");
+    console.log("✅ [DASHBOARD] Profile already filled (tanggal_lahir exists), skipping update modal");
 
     // ===== CEK VERIFIKASI OTP =====
     const verifikasiValue = user.verifikasi;
@@ -351,19 +330,16 @@ export default function DashboardPage() {
       const updatedUser = {
         ...session.user,
         ...data,
-        // Pastikan field penting ter-update
+        // Pastikan field penting ter-update dari response API
         nama_panggilan: data?.nama_panggilan || session.user.nama_panggilan,
         profesi: data?.profesi || session.user.profesi,
         instagram: data?.instagram || session.user.instagram,
         pendapatan_bln: data?.pendapatan_bln || session.user.pendapatan_bln,
         industri_pekerjaan: data?.industri_pekerjaan || session.user.industri_pekerjaan,
         jenis_kelamin: data?.jenis_kelamin || session.user.jenis_kelamin,
+        // tanggal_lahir adalah penanda bahwa profile sudah diisi
         tanggal_lahir: data?.tanggal_lahir || session.user.tanggal_lahir,
         alamat: data?.alamat || session.user.alamat,
-        // Reset password default flags
-        password_default: 0,
-        is_default_password: false,
-        need_change_password: false,
       };
       
       console.log("✅ [DASHBOARD] Updated user data:", updatedUser);
