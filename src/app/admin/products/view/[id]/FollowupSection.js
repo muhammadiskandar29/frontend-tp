@@ -38,10 +38,10 @@ const REDIRECT_TYPE = 9;
 
 const AUTOTEXT_OPTIONS = [
   { label: "Pilih Autotext", value: "" },
-  { label: "{{nama_customer}}", value: "{{nama_customer}}" },
+  { label: "{{customer_name}}", value: "{{customer_name}}" },
   { label: "{{product_name}}", value: "{{product_name}}" },
-  { label: "{{price}}", value: "{{price}}" },
-  { label: "{{sales_name}}", value: "{{sales_name}}" },
+  { label: "{{order_date}}", value: "{{order_date}}" },
+  { label: "{{order_total}}", value: "{{order_total}}" },
 ];
 
 // Mapping nama dari response ke type

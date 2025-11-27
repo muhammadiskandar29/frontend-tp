@@ -9,7 +9,7 @@ export async function POST(request) {
     const body = await request.json();
 
     // Validasi field wajib sesuai requirement backend
-    const requiredFields = ['nama', 'wa', 'email', 'produk', 'harga', 'ongkir', 'total_harga', 'metode_bayar', 'sumber'];
+    const requiredFields = ['nama', 'wa', 'email', 'produk', 'harga', 'total_harga', 'metode_bayar', 'sumber'];
     const missingFields = requiredFields.filter(field => !body[field] && body[field] !== 0);
     
     if (missingFields.length > 0) {
@@ -23,131 +23,60 @@ export async function POST(request) {
     }
 
     // Siapkan payload sesuai format backend
-    // Backend mengharapkan harga dan total_harga sebagai STRING, bukan integer
-    // HANYA kirim field yang diperlukan, jangan kirim field tambahan apapun
     const payload = {
       nama: String(body.nama),
       wa: String(body.wa),
       email: String(body.email),
       alamat: body.alamat ? String(body.alamat) : '',
-      produk: parseInt(body.produk, 10), // produk tetap integer
-      harga: String(body.harga), // harga sebagai string (backend requirement)
+      produk: parseInt(body.produk, 10),
+      harga: String(body.harga),
       ongkir: String(body.ongkir || '0'),
-      total_harga: String(body.total_harga), // total_harga sebagai string (backend requirement)
+      total_harga: String(body.total_harga),
       metode_bayar: String(body.metode_bayar),
       sumber: String(body.sumber),
-      custom_value: Array.isArray(body.custom_value) ? body.custom_value : (body.custom_value ? [body.custom_value] : []),
+      custom_value: Array.isArray(body.custom_value) ? body.custom_value : [],
     };
 
-    // Pastikan tidak ada field tambahan yang dikirim
-    // Hapus field yang tidak diperlukan (jika ada)
-    const cleanPayload = {
-      nama: payload.nama,
-      wa: payload.wa,
-      email: payload.email,
-      alamat: payload.alamat,
-      produk: payload.produk,
-      harga: payload.harga,
-      ongkir: payload.ongkir,
-      total_harga: payload.total_harga,
-      metode_bayar: payload.metode_bayar,
-      sumber: payload.sumber,
-      custom_value: payload.custom_value,
-    };
-
-    // Log untuk debugging (hapus di production jika tidak perlu)
-    console.log('📤 Payload yang dikirim ke backend:', JSON.stringify(cleanPayload, null, 2));
+    console.log('📤 [ORDER] Payload:', JSON.stringify(payload, null, 2));
 
     // Validasi produk harus integer
     if (isNaN(payload.produk)) {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'produk harus berupa ID yang valid (integer)',
-        },
-        { status: 400 }
-      );
-    }
-
-    // Validasi harga dan total_harga harus ada (setelah dikonversi ke string)
-    if (!payload.harga || payload.harga === 'undefined' || payload.harga === 'null') {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'harga wajib diisi',
-        },
-        { status: 400 }
-      );
-    }
-
-    if (!payload.total_harga || payload.total_harga === 'undefined' || payload.total_harga === 'null') {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'total_harga wajib diisi',
-        },
+        { success: false, message: 'produk harus berupa ID yang valid (integer)' },
         { status: 400 }
       );
     }
 
     // Proxy ke backend
-    // Gunakan cleanPayload yang sudah dibersihkan dari field tambahan
     const response = await fetch(`${BACKEND_URL}/api/order`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      body: JSON.stringify(cleanPayload),
+      body: JSON.stringify(payload),
     });
 
-    const data = await response.json();
+    console.log('📥 [ORDER] Backend status:', response.status);
 
-    // Handle kasus khusus: Data berhasil masuk tapi backend return 500
-    // Workaround untuk error "Undefined variable $customerId"
+    // Parse response
+    const responseText = await response.text();
+    let data;
+    
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      console.error('❌ [ORDER] Non-JSON response:', responseText.substring(0, 500));
+      return NextResponse.json(
+        { success: false, message: 'Backend error: Response bukan JSON' },
+        { status: 500 }
+      );
+    }
+
+    console.log('📥 [ORDER] Backend response:', JSON.stringify(data, null, 2));
+
+    // Handle error dari backend
     if (!response.ok) {
-      // Jika ada data order di response, berarti data berhasil disimpan
-      if (data?.data?.order?.id || data?.data?.order) {
-        console.warn('⚠️ Backend return error tapi data order berhasil disimpan:', data);
-        return NextResponse.json(
-          {
-            success: true,
-            message: data?.message || 'Order berhasil dibuat',
-            data: data.data,
-            warning: 'Backend mengembalikan error tapi data berhasil disimpan',
-          },
-          { status: 200 }
-        );
-      }
-
-      // Workaround: Jika error "Undefined variable $customerId" tapi data sudah masuk
-      // Anggap sebagai success karena data sudah tersimpan di database
-      if (response.status === 500 && 
-          (data?.message?.includes('customerId') || 
-           data?.error === 'ErrorException' ||
-           data?.message?.includes('Undefined variable'))) {
-        console.warn('⚠️ Backend error tapi data kemungkinan sudah masuk:', data);
-        console.warn('⚠️ Melanjutkan flow payment karena data order sudah tersimpan');
-        
-        // Return success dummy untuk melanjutkan flow
-        // Payment tidak butuh orderId, jadi kita bisa skip
-        return NextResponse.json(
-          {
-            success: true,
-            message: 'Order berhasil dibuat (data sudah tersimpan)',
-            data: {
-              order: {
-                id: null, // Tidak ada orderId dari response, tapi tidak masalah
-                message: 'Order berhasil disimpan meskipun backend mengembalikan error',
-              },
-            },
-            warning: 'Backend mengembalikan error tapi data berhasil disimpan di database',
-          },
-          { status: 200 }
-        );
-      }
-
-      // Jika error lain, return error
       return NextResponse.json(
         {
           success: false,
@@ -158,12 +87,16 @@ export async function POST(request) {
       );
     }
 
-    // Return response dari backend (success case)
-    return NextResponse.json(data, {
-      status: response.status,
+    // Success - return response langsung dari backend
+    // Expected format: { success: true, message: "...", data: { order: {...}, whatsapp_response: {...} } }
+    return NextResponse.json({
+      success: true,
+      message: data?.message || 'Order berhasil dibuat',
+      data: data?.data || data,
     });
+
   } catch (error) {
-    console.error('❌ Order API Proxy Error:', error);
+    console.error('❌ [ORDER] Error:', error);
     return NextResponse.json(
       { 
         success: false, 

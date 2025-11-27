@@ -273,130 +273,7 @@ export default function LandingPage() {
   const form = data;
 
   // ==========================================================
-  // 🔥 PEMBAYARAN MIDTRANS — 3 ENDPOINT FIX SESUAI BACKEND LU
-  // ==========================================================
-  async function payEwallet(payload) {
-    try {
-      const API_BASE = "/api";
-
-      const formData = new FormData();
-      formData.append("name", payload.nama);
-      formData.append("email", payload.email);
-      formData.append("amount", payload.total_harga);
-      formData.append("product_name", payload.product_name);
-
-      const response = await fetch(`${API_BASE}/midtrans/create-snap-ewallet`, {
-        method: "POST",
-        body: formData
-      });
-
-      const text = await response.text();
-      console.log("EWALLET RAW:", text);
-
-      let json;
-      try {
-        json = JSON.parse(text);
-      } catch {
-        console.error("❌ Ewallet balikin HTML:", text);
-        toast.error("Gagal memproses pembayaran e-wallet");
-        return;
-      }
-
-      if (json.redirect_url) {
-        // Buka di tab baru sesuai requirement
-        window.open(json.redirect_url, '_blank');
-      } else {
-        console.error("❌ Ewallet tidak mengembalikan redirect_url:", json);
-        toast.error(json.message || "Gagal membuat transaksi e-wallet");
-      }
-    } catch (err) {
-      console.error("❌ Ewallet error:", err);
-      toast.error("Terjadi kesalahan saat memproses pembayaran e-wallet");
-    }
-  }
-
-  async function payCC(payload) {
-    try {
-      const API_BASE = "/api";
-
-      const response = await fetch(`${API_BASE}/midtrans/create-snap-cc`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: payload.nama,
-          email: payload.email,
-          amount: payload.total_harga,
-          product_name: payload.product_name,
-        }),
-      });
-
-      const text = await response.text();
-      console.log("CC RAW:", text);
-
-      let json;
-      try {
-        json = JSON.parse(text);
-      } catch {
-        console.error("❌ CC balikin HTML:", text);
-        toast.error("Gagal memproses pembayaran credit card");
-        return;
-      }
-
-      if (json.redirect_url) {
-        // Buka di tab baru sesuai requirement
-        window.open(json.redirect_url, '_blank');
-      } else {
-        console.error("❌ CC tidak mengembalikan redirect_url:", json);
-        toast.error(json.message || "Gagal membuat transaksi credit card");
-      }
-    } catch (err) {
-      console.error("❌ CC error:", err);
-      toast.error("Terjadi kesalahan saat memproses pembayaran credit card");
-    }
-  }
-
-  async function payVA(payload) {
-    try {
-      const API_BASE = "/api";
-
-      const response = await fetch(`${API_BASE}/midtrans/create-snap-va`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: payload.nama,
-          email: payload.email,
-          amount: payload.total_harga,
-          product_name: payload.product_name,
-        }),
-      });
-
-      const text = await response.text();
-      console.log("VA RAW:", text);
-
-      let json;
-      try {
-        json = JSON.parse(text);
-      } catch {
-        console.error("❌ VA balikin HTML:", text);
-        toast.error("Gagal memproses pembayaran virtual account");
-        return;
-      }
-
-      if (json.redirect_url) {
-        // Buka di tab baru sesuai requirement
-        window.open(json.redirect_url, '_blank');
-      } else {
-        console.error("❌ VA tidak mengembalikan redirect_url:", json);
-        toast.error(json.message || "Gagal membuat transaksi virtual account");
-      }
-    } catch (err) {
-      console.error("❌ VA error:", err);
-      toast.error("Terjadi kesalahan saat memproses pembayaran virtual account");
-    }
-  }
-
-  // ==========================================================
-  // 🔥 SUBMIT ORDER → LANJUT PEMBAYARAN
+  // 🔥 SUBMIT ORDER → OTP VERIFICATION → PEMBAYARAN
   // ==========================================================
   const handleSubmit = async () => {
     if (!paymentMethod) return toast.error("Pilih metode pembayaran dulu");
@@ -425,10 +302,9 @@ export default function LandingPage() {
 
     try {
       // Hapus product_name dari payload karena tidak diperlukan di /api/order
-      // product_name hanya untuk Midtrans
       const { product_name, ...orderPayload } = payload;
       
-      // simpan order dulu ke DB via API proxy
+      // Simpan order ke DB via API proxy
       const response = await fetch("/api/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -436,52 +312,43 @@ export default function LandingPage() {
       });
 
       const order = await response.json();
-      const orderId = order?.data?.order?.id;
+      
+      console.log("📥 Order response:", order);
 
-      // Handle kasus khusus: Backend error tapi data sudah masuk
-      // Jika ada warning, berarti data sudah tersimpan meskipun ada error
-      if (order?.warning) {
-        console.warn('⚠️', order.warning);
-        toast.success(order?.message || "Pesanan berhasil disimpan");
-        // Lanjut ke payment meskipun tidak ada orderId (tidak diperlukan untuk payment)
-      } else if (!response.ok || order?.success !== true) {
-        // Extract error message from response
+      // Cek apakah order berhasil
+      if (!response.ok || !order?.success) {
         const errorMessage = order?.message || order?.error || "Gagal membuat order";
         throw new Error(errorMessage);
-      } else {
-        // Success normal
-        toast.success(order?.message || "Pesanan berhasil disimpan");
-        if (orderId) {
-          payload.orderId = orderId;
-        }
       }
 
-      await new Promise((r) => setTimeout(r, 300));
+      // Order berhasil - tampilkan toast sukses
+      toast.success("Kode OTP telah dikirim ke WhatsApp Anda!");
+      
+      // Ambil data dari response
+      const orderId = order?.data?.order?.id;
+      const customerId = order?.data?.order?.customer;
 
-      // === lanjut ke pembayaran ===
-if (paymentMethod === "ewallet") {
-  return payEwallet(payload);
-}
+      // Simpan data untuk verifikasi OTP
+      const pendingOrder = {
+        orderId: orderId,
+        customerId: customerId,
+        nama: customerForm.nama,
+        wa: customerForm.wa,
+        email: customerForm.email,
+        productName: form.nama || form.product_name,
+        totalHarga: form.harga_asli || "0",
+        paymentMethod: paymentMethod,
+      };
 
-if (paymentMethod === "cc") {
-  return payCC(payload);
-}
+      console.log("📦 Saving pending order:", pendingOrder);
+      localStorage.setItem("pending_order", JSON.stringify(pendingOrder));
 
-if (paymentMethod === "va") {
-  return payVA(payload);
-}
+      // Redirect ke halaman verifikasi OTP
+      await new Promise((r) => setTimeout(r, 500));
+      window.location.href = "/verify-order";
 
-      // manual transfer
-      if (paymentMethod === "manual") {
-        const query = new URLSearchParams({
-          product: form.nama,
-          harga: form.harga_asli,
-        });
-        window.location.href = `/payment?${query.toString()}`;
-      }
     } catch (err) {
       console.error("Submit order error:", err);
-      // Show the actual error message from the API
       const errorMessage = err.message || "Gagal menyimpan pesanan";
       toast.error(errorMessage);
     }

@@ -1,0 +1,73 @@
+import { NextResponse } from "next/server";
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://3.105.234.181:8000";
+
+export async function POST(request) {
+  try {
+    const authHeader = request.headers.get("authorization");
+    const token = authHeader?.replace("Bearer ", "") || null;
+    
+    const body = await request.json();
+
+    console.log("🟢 [OTP_VERIFY] Request body:", body);
+
+    // Validasi body
+    if (!body.customer_id || !body.otp) {
+      return NextResponse.json(
+        { success: false, message: "customer_id dan otp harus diisi" },
+        { status: 400 }
+      );
+    }
+
+    // Forward ke backend
+    const response = await fetch(`${BACKEND_URL}/api/customer/otp/verify`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({
+        customer_id: parseInt(body.customer_id, 10),
+        otp: String(body.otp),
+      }),
+    });
+
+    console.log("🟢 [OTP_VERIFY] Backend status:", response.status);
+
+    const responseText = await response.text();
+    let data;
+    
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      console.error("❌ [OTP_VERIFY] Non-JSON response:", responseText.substring(0, 500));
+      return NextResponse.json(
+        { success: false, message: "Backend error: Response bukan JSON" },
+        { status: 500 }
+      );
+    }
+
+    console.log("🟢 [OTP_VERIFY] Backend response:", data);
+
+    if (!response.ok) {
+      return NextResponse.json(
+        { success: false, message: data?.message || "Kode OTP salah atau sudah kadaluarsa" },
+        { status: response.status }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: data?.message || "OTP valid, akun telah diverifikasi",
+      data: data?.data || data,
+    });
+  } catch (error) {
+    console.error("❌ [OTP_VERIFY] Error:", error);
+    return NextResponse.json(
+      { success: false, message: error.message || "Terjadi kesalahan saat memverifikasi OTP" },
+      { status: 500 }
+    );
+  }
+}
+

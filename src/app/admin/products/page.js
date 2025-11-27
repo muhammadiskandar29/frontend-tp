@@ -177,6 +177,7 @@ export default function AdminProductsPage() {
                 <span>Status</span>
                 <span>Event Date</span>
                 <span>Created By</span>
+                <span>Assign By</span>
                 <span>Created At</span>
               </div>
               <div className="products-table__body">
@@ -275,6 +276,11 @@ export default function AdminProductsPage() {
                       </div>
                       <div className="products-table__cell" data-label="Created By">
                         {p.user_rel?.nama || "-"}
+                      </div>
+                      <div className="products-table__cell" data-label="Assign By">
+                        {p.assign_rel && p.assign_rel.length > 0
+                          ? p.assign_rel.map((u) => u.nama).join(", ")
+                          : "-"}
                       </div>
                       <div className="products-table__cell" data-label="Created At">
                         {formatDate(p.create_at)}
