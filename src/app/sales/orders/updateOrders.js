@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import "@/styles/pesanan.css";
 
 // Use Next.js proxy to avoid CORS
@@ -26,6 +27,7 @@ const cleanOrderData = (orderData) => {
 };
 
 export default function UpdateOrders({ order, onClose, onSave, setToast }) {
+  const router = useRouter();
   const [updatedOrder, setUpdatedOrder] = useState(order ? cleanOrderData(order) : {});
   const [showKonfirmasiModal, setShowKonfirmasiModal] = useState(false);
   const [bukti, setBukti] = useState(
@@ -35,6 +37,7 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
   );
   const [metodeBayar, setMetodeBayar] = useState(order?.metode_bayar ?? "");
   const [errorMsg, setErrorMsg] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (order) {
@@ -81,6 +84,8 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
     if (!bukti?.file) return setErrorMsg("Harap upload bukti pembayaran baru.");
     if (!metodeBayar) return setErrorMsg("Isi metode pembayaran terlebih dahulu.");
 
+    setSubmitting(true);
+
     try {
       // Format waktu: dd-mm-yyyy HH:mm:ss
       const now = new Date();
@@ -92,13 +97,6 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
       formData.append("bukti_pembayaran", bukti.file);
       formData.append("waktu_pembayaran", waktuPembayaran);
       formData.append("metode_pembayaran", metodeBayar);
-
-      console.log("🔍 [KONFIRMASI] Sending payment confirmation:", {
-        order_id: order.id,
-        waktu_pembayaran: waktuPembayaran,
-        metode_pembayaran: metodeBayar,
-        bukti_file: bukti.file?.name,
-      });
 
       const token = localStorage.getItem("token");
       const url = `${BASE_URL}/admin/order-konfirmasi/${order.id}`;
@@ -113,16 +111,21 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
       });
 
       const data = await res.json().catch(() => ({}));
-      
-      console.log("🔍 [KONFIRMASI] Response:", { status: res.status, data });
 
-      if (!res.ok || !data.success) {
+      // Cek sukses: bisa dari success field, atau dari message yang mengandung "Sukses"
+      const isSuccess = res.ok && (
+        data.success === true || 
+        (data.message && data.message.toLowerCase().includes("sukses"))
+      );
+
+      if (!isSuccess) {
         const errMsg = data?.message || data?.error || "Gagal konfirmasi pembayaran";
+        setSubmitting(false);
         return setErrorMsg(errMsg);
       }
 
       // Response sukses sesuai API spec
-      const konfirmasiOrder = data.data;
+      const konfirmasiOrder = data.data || data;
 
       // Update local state dengan data dari backend
       const finalOrder = {
@@ -132,11 +135,9 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
         bukti_pembayaran: konfirmasiOrder.bukti_pembayaran || bukti.name,
         waktu_pembayaran: konfirmasiOrder.waktu_pembayaran || waktuPembayaran,
         metode_bayar: konfirmasiOrder.metode_bayar || metodeBayar,
-        status_pembayaran: konfirmasiOrder.status_pembayaran || 1,
+        status_pembayaran: konfirmasiOrder.status_pembayaran ?? 1,
         status_order: konfirmasiOrder.status_order || "2",
       };
-
-      console.log("✅ [KONFIRMASI] Final order data:", finalOrder);
 
       setUpdatedOrder(finalOrder);
       setBukti((prev) => ({ 
@@ -153,17 +154,20 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
       setToast?.({
         show: true,
         type: "success",
-        message: data.message || "✅ Pembayaran berhasil dikonfirmasi!",
+        message: "✅ Pembayaran berhasil dikonfirmasi!",
       });
 
-      // Tutup modal utama setelah delay
+      // Tutup modal dan redirect ke halaman orders setelah delay
       setTimeout(() => {
         setToast?.((prev) => ({ ...prev, show: false }));
         onClose();
-      }, 1500);
+        // Redirect ke halaman orders
+        router.push("/sales/orders");
+      }, 1200);
     } catch (err) {
       console.error("❌ [KONFIRMASI] Error:", err);
       setErrorMsg("Terjadi kesalahan saat konfirmasi pembayaran.");
+      setSubmitting(false);
 
       setToast?.({
         show: true,
@@ -753,12 +757,22 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
                   type="button"
                   className="btn-cancel"
                   onClick={() => setShowKonfirmasiModal(false)}
+                  disabled={submitting}
                 >
                   Batal
                 </button>
-                <button type="submit" className="btn-success">
-                  <i className="pi pi-check" style={{ marginRight: 6 }} />
-                  Konfirmasi Pembayaran
+                <button type="submit" className="btn-success" disabled={submitting}>
+                  {submitting ? (
+                    <>
+                      <i className="pi pi-spin pi-spinner" style={{ marginRight: 6 }} />
+                      Memproses...
+                    </>
+                  ) : (
+                    <>
+                      <i className="pi pi-check" style={{ marginRight: 6 }} />
+                      Konfirmasi Pembayaran
+                    </>
+                  )}
                 </button>
               </div>
             </form>

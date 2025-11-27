@@ -1805,3 +1805,73 @@ body {
   flex-direction: column;
   gap: 14px;
 }
+
+/* ===== CREATED BY DISPLAY ===== */
+.created-by-display {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.created-by-display .user-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary) 0%, #e8940f 100%);
+  color: #fff;
+  font-weight: 700;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(241, 161, 36, 0.3);
+  flex-shrink: 0;
+}
+
+.created-by-display .user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.created-by-display .user-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: #1e293b;
+}
+
+.created-by-display .user-email {
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* ===== ASSIGN BY FIELD ENHANCEMENTS ===== */
+.form-field-group .p-multiselect {
+  border-radius: 10px;
+}
+
+.form-field-group .p-multiselect-panel {
+  border-radius: 10px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+.form-field-group .p-multiselect-item {
+  padding: 10px 14px;
+}
+
+.form-field-group .p-multiselect-token {
+  background: linear-gradient(135deg, var(--primary) 0%, #e8940f 100%);
+  color: #fff;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-weight: 500;
+}
+
+.form-field-group .p-multiselect-token-icon {
+  color: #fff;
+}

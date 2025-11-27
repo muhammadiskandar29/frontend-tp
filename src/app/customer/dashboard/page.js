@@ -205,13 +205,14 @@ export default function DashboardPage() {
         user.need_change_password === 1 ||
         user.need_change_password === "1";
 
-      // ===== CEK DATA TIDAK LENGKAP =====
-      // Customer harus melengkapi: nama_panggilan, profesi (minimal)
-      const isProfileIncomplete = 
-        !user.nama_panggilan || 
-        user.nama_panggilan.trim() === "" ||
-        !user.profesi || 
-        user.profesi.trim() === "";
+      // ===== CEK DATA BELUM PERNAH DIISI =====
+      // Modal hanya muncul jika data BELUM PERNAH diisi sama sekali
+      // Jika sudah pernah diisi (ada nilai), tidak perlu tampilkan modal lagi
+      const hasNamaPanggilan = user.nama_panggilan && user.nama_panggilan.trim() !== "";
+      const hasProfesi = user.profesi && user.profesi.trim() !== "";
+      
+      // Profile dianggap sudah diisi jika nama_panggilan DAN profesi sudah ada
+      const isProfileNeverFilled = !hasNamaPanggilan || !hasProfesi;
 
       console.log("🔍 [DASHBOARD] Checking user data:", {
         password_default: user.password_default,
@@ -219,8 +220,10 @@ export default function DashboardPage() {
         need_change_password: user.need_change_password,
         nama_panggilan: user.nama_panggilan,
         profesi: user.profesi,
+        hasNamaPanggilan,
+        hasProfesi,
         isUsingDefaultPassword,
-        isProfileIncomplete
+        isProfileNeverFilled
       });
 
       if (isUsingDefaultPassword) {
@@ -231,13 +234,16 @@ export default function DashboardPage() {
         return;
       }
 
-      if (isProfileIncomplete) {
-        // Data tidak lengkap - wajib lengkapi profil (password opsional)
-        console.log("⚠️ [DASHBOARD] Showing update modal - profile_incomplete");
+      if (isProfileNeverFilled) {
+        // Data belum pernah diisi - wajib lengkapi profil (password opsional)
+        console.log("⚠️ [DASHBOARD] Showing update modal - profile never filled");
         setUpdateModalReason("incomplete");
         setShowUpdateModal(true);
         return;
       }
+      
+      // Jika sudah pernah diisi, tidak tampilkan modal
+      console.log("✅ [DASHBOARD] Profile already filled, skipping update modal");
 
       // ===== CEK VERIFIKASI OTP =====
       const verifikasiValue = user.verifikasi;

@@ -17,21 +17,16 @@ const formatDateTime = (dateStr) => {
   });
 };
 
-const getStatusBadge = (status, keterangan) => {
-  // Cek berdasarkan status atau keterangan
-  const lowerKet = (keterangan || "").toLowerCase();
-  
-  if (status === "Y" || lowerKet.includes("terkirim") || lowerKet === "terkirim") {
+const getStatusBadge = (status) => {
+  // Status dari backend: "1" = terkirim, "0" = gagal, null = pending/belum terkirim
+  if (status === "1" || status === 1 || status === "Y") {
     return { label: "Terkirim", className: "badge-success" };
   }
-  if (status === "N" || lowerKet.includes("tidak terkirim") || lowerKet.includes("gagal")) {
-    return { label: "Tidak Terkirim", className: "badge-danger" };
+  if (status === "0" || status === 0 || status === "N") {
+    return { label: "Gagal", className: "badge-danger" };
   }
-  if (status === "P" || lowerKet.includes("pending")) {
-    return { label: "Pending", className: "badge-warning" };
-  }
-  
-  return { label: keterangan || "Belum Terkirim", className: "badge-secondary" };
+  // null atau undefined = belum terkirim / pending
+  return { label: "Pending", className: "badge-warning" };
 };
 
 export default function FollowupLogModal({ customer, onClose }) {
@@ -76,10 +71,13 @@ export default function FollowupLogModal({ customer, onClose }) {
 
       const data = await res.json().catch(() => ({}));
       
-      if (!res.ok || !data?.success) {
+      // API response: { message, total, data: [...] }
+      // Tidak ada field "success", cek berdasarkan res.ok dan data.data
+      if (!res.ok) {
         throw new Error(data?.message || "Gagal memuat log follow up");
       }
 
+      console.log("📥 [FOLLOWUP LOG] API Response:", data);
       setLogs(Array.isArray(data.data) ? data.data : []);
     } catch (err) {
       setError(err.message || "Terjadi kesalahan saat memuat data");
@@ -116,7 +114,7 @@ export default function FollowupLogModal({ customer, onClose }) {
               <div>
                 <p className="summary-label">Terkirim</p>
                 <p className="summary-value">
-                  {logs.filter(l => l.status === "Y" || (l.keterangan || "").toLowerCase().includes("terkirim")).length}
+                  {logs.filter(l => l.status === "1" || l.status === 1).length}
                 </p>
               </div>
             </div>
@@ -125,7 +123,7 @@ export default function FollowupLogModal({ customer, onClose }) {
               <div>
                 <p className="summary-label">Pending</p>
                 <p className="summary-value">
-                  {logs.filter(l => !l.status || l.status === "P").length}
+                  {logs.filter(l => l.status === null || l.status === undefined).length}
                 </p>
               </div>
             </div>
@@ -159,7 +157,7 @@ export default function FollowupLogModal({ customer, onClose }) {
               </div>
               <div className="log-table-body">
                 {logs.map((log, index) => {
-                  const statusBadge = getStatusBadge(log.status, log.keterangan);
+                  const statusBadge = getStatusBadge(log.status);
                   const eventName = log.follup_rel?.nama || `Follow Up ${log.follup || index + 1}`;
                   const eventPeriod = log.follup_rel?.event || "";
                   

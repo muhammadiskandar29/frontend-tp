@@ -172,7 +172,11 @@ export default function Page() {
         payload.append("video", JSON.stringify(videoArray));        
         payload.append("landingpage", form.landingpage);
         payload.append("status", form.status);
-        payload.append("user_input", JSON.stringify(form.user_input));
+        // user_input adalah ID user yang membuat produk (current user)
+        const userInputId = currentUser?.id || form.user_input;
+        if (userInputId) {
+          payload.append("user_input", userInputId);
+        }
         // Kirim kategori_id sebagai integer
         const kategoriId = form.kategori        ? Number(form.kategori        ) : null;
         if (kategoriId) {
@@ -250,12 +254,24 @@ export default function Page() {
 
 const [kategoriOptions, setKategoriOptions] = useState([]);
 const [userOptions, setUserOptions] = useState([]);
+const [currentUser, setCurrentUser] = useState(null); // User yang sedang login
 
 useEffect(() => {
   async function fetchInitialData() {
     try {
       const token = localStorage.getItem("token");
       const headers = { Authorization: `Bearer ${token}` };
+
+      // Ambil data user yang sedang login
+      const userSession = localStorage.getItem("user");
+      if (userSession) {
+        try {
+          const userData = JSON.parse(userSession);
+          setCurrentUser(userData);
+        } catch (e) {
+          console.error("Error parsing user session:", e);
+        }
+      }
 
       // 1️⃣ Fetch kategori dan filter hanya yang aktif (status === "1")
       const kategoriRes = await fetch(
@@ -329,16 +345,18 @@ useEffect(() => {
         kategoriId = found ? Number(found.id) : null;
       }
 
+      // Set user_input ke current user ID
+      const currentUserId = currentUser?.id || JSON.parse(localStorage.getItem("user") || "{}")?.id;
+      
       setForm((f) => ({
         ...f,
-        ...produkData,
-        kategori: kategoriId,
-        assign: produkData.assign_rel ? produkData.assign_rel.map((u) => u.id) : [],
-        user_input: produkData.user_input_rel ? [produkData.user_input_rel.id] : [],
+        kategori: null,
+        assign: [],
+        user_input: currentUserId ? currentUserId : null, // ID user yang membuat
         custom_field: [],
-        kode: kodeGenerated,
-        url: "/" + kodeGenerated,
-        landingpage: produkData.landingpage || "1", // Default landing page ke "1"
+        kode: "",
+        url: "/",
+        landingpage: "1",
       }));
     } catch (err) {
       console.error("Fetch initial data error:", err);
@@ -878,22 +896,42 @@ useEffect(() => {
           <p className="section-description">Assign user, landing page, dan status produk</p>
         </div>
         <div className="section-content">
-          {/* ASSIGN */}
+          {/* CREATED BY - Read Only */}
+          <div className="form-field-group">
+            <label className="form-label">
+              <span className="label-icon">👤</span>
+              Dibuat Oleh (Created By)
+            </label>
+            <div className="created-by-display">
+              <div className="user-avatar">
+                {(currentUser?.nama || currentUser?.name || "U").charAt(0).toUpperCase()}
+              </div>
+              <div className="user-info">
+                <span className="user-name">{currentUser?.nama || currentUser?.name || "Loading..."}</span>
+                <span className="user-email">{currentUser?.email || "-"}</span>
+              </div>
+            </div>
+            <p className="field-hint">User yang membuat produk ini (otomatis)</p>
+          </div>
+
+          {/* ASSIGN BY - Penanggung Jawab */}
           <div className="form-field-group">
             <label className="form-label">
               <span className="label-icon">👥</span>
-              Assign User
+              Penanggung Jawab (Assign By) <span className="required">*</span>
             </label>
             <MultiSelect
               className="w-full form-input"
               value={form.assign}
               options={userOptions}
               onChange={(e) => handleChange("assign", e.value || [])}
-              placeholder="Pilih user yang di-assign"
+              placeholder="Pilih penanggung jawab produk"
               display="chip"
               showClear
+              filter
+              filterPlaceholder="Cari user..."
             />
-            <p className="field-hint">Pilih user yang akan menangani produk ini</p>
+            <p className="field-hint">Pilih user yang bertanggung jawab menangani produk ini</p>
           </div>
 
           {/* LANDING PAGE */}

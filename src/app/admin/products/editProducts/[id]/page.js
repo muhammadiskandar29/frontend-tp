@@ -279,7 +279,10 @@ export default function Page() {
         payload.append("video", JSON.stringify(videoArray));
         payload.append("landingpage", form.landingpage);
         payload.append("status", form.status);
-        payload.append("user_input", JSON.stringify(form.user_input));
+        // user_input adalah ID user yang membuat produk
+        if (form.user_input) {
+          payload.append("user_input", form.user_input);
+        }
         if (kategoriId) {
           payload.append("kategori", kategoriId);
         }
@@ -428,6 +431,7 @@ export default function Page() {
   const [kategoriOptions, setKategoriOptions] = useState([]);
   const [userOptions, setUserOptions] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [createdByUser, setCreatedByUser] = useState(null); // User yang membuat produk
 
   // Function untuk fetch data produk
   const fetchProductData = async (setLoadingState = false) => {
@@ -568,7 +572,7 @@ export default function Page() {
         id: produkData.id || productId,
         kategori: kategoriId,
         assign: produkData.assign_rel ? produkData.assign_rel.map((u) => u.id) : safeParseJSON(produkData.assign, []),
-        user_input: produkData.user_input_rel ? [produkData.user_input_rel.id] : (produkData.user_input ? [produkData.user_input] : []),
+        user_input: produkData.user_input_rel?.id || produkData.user_input || null,
         custom_field: parsedCustomField,
         list_point: parsedListPoint,
         testimoni: parsedTestimoni,
@@ -583,6 +587,11 @@ export default function Page() {
         video: parsedVideo,
       }));
       
+      // Set user yang membuat produk (created by)
+      if (produkData.user_input_rel) {
+        setCreatedByUser(produkData.user_input_rel);
+      }
+      
       console.log("✅ [EDIT] Product data loaded:", {
         nama: produkData.nama,
         kode_from_backend: produkData.kode,
@@ -592,6 +601,7 @@ export default function Page() {
         list_point: parsedListPoint,
         testimoni: parsedTestimoni.length,
         gambar: parsedGambar.length,
+        created_by: produkData.user_input_rel,
       });
     } catch (err) {
       console.error("Fetch product data error:", err);
@@ -1234,22 +1244,42 @@ export default function Page() {
             <p className="section-description">Assign user, landing page, dan status produk</p>
           </div>
           <div className="section-content">
-            {/* ASSIGN */}
+            {/* CREATED BY - Read Only */}
+            <div className="form-field-group">
+              <label className="form-label">
+                <span className="label-icon">👤</span>
+                Dibuat Oleh (Created By)
+              </label>
+              <div className="created-by-display">
+                <div className="user-avatar">
+                  {(createdByUser?.nama || createdByUser?.name || "U").charAt(0).toUpperCase()}
+                </div>
+                <div className="user-info">
+                  <span className="user-name">{createdByUser?.nama || createdByUser?.name || "User tidak diketahui"}</span>
+                  <span className="user-email">{createdByUser?.email || "-"}</span>
+                </div>
+              </div>
+              <p className="field-hint">User yang membuat produk ini</p>
+            </div>
+
+            {/* ASSIGN BY - Penanggung Jawab */}
             <div className="form-field-group">
               <label className="form-label">
                 <span className="label-icon">👥</span>
-                Assign User
+                Penanggung Jawab (Assign By)
               </label>
               <MultiSelect
                 className="w-full form-input"
                 value={form.assign}
                 options={userOptions}
                 onChange={(e) => handleChange("assign", e.value || [])}
-                placeholder="Pilih user yang di-assign"
+                placeholder="Pilih penanggung jawab produk"
                 display="chip"
                 showClear
+                filter
+                filterPlaceholder="Cari user..."
               />
-              <p className="field-hint">Pilih user yang akan menangani produk ini</p>
+              <p className="field-hint">Pilih user yang bertanggung jawab menangani produk ini</p>
             </div>
 
             {/* LANDING PAGE */}

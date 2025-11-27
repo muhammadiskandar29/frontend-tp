@@ -24,29 +24,18 @@ const STATUS_MAP = {
 };
 
 // Determine status from log item
+// Backend: status = "1" (terkirim), "0" (gagal), null (pending/belum terkirim)
 const getLogStatus = (item) => {
-  const keterangan = (item.keterangan || "").toLowerCase();
-  
-  if (keterangan.includes("terkirim") || keterangan.includes("sukses") || keterangan.includes("success")) {
+  // Cek field status dari log
+  if (item.status === "1" || item.status === 1) {
     return "terkirim";
   }
   
-  if (keterangan.includes("gagal") || keterangan.includes("failed") || keterangan.includes("error")) {
+  if (item.status === "0" || item.status === 0) {
     return "gagal";
   }
   
-  if (item.status === "Y" || item.status === "1" || item.status === 1) {
-    return "terkirim";
-  }
-  
-  if (item.status === "N" || item.status === "0" || item.status === 0) {
-    return "gagal";
-  }
-  
-  if (item.follup_rel?.status === "1") {
-    return "terkirim";
-  }
-  
+  // null atau undefined = pending
   return "pending";
 };
 
@@ -66,8 +55,12 @@ export default function FollowupReportPage() {
     async function loadLogs() {
       try {
         const res = await getLogsFollowUp();
+        console.log("📥 [REPORT] API Response:", res);
+        
         const mappedLogs = (res.data || []).map((item) => {
           const status = getLogStatus(item);
+          console.log("📋 [REPORT] Log item:", item.id, "status:", item.status, "→", status);
+          
           return {
             id: item.id,
             customerName: item.customer_rel?.nama || "-",
@@ -75,16 +68,17 @@ export default function FollowupReportPage() {
             customerEmail: item.customer_rel?.email || "-",
             keterangan: item.keterangan || "-",
             event: item.follup_rel?.nama || "-",
+            eventPeriod: item.follup_rel?.event || "-",
             type: item.follup_rel?.type || "-",
             status: status,
             statusLabel: STATUS_MAP[status]?.label || status,
-            waktu: item.create_at || item.follup_rel?.create_at || "-",
+            waktu: item.create_at || item.update_at || "-",
             produk: item.follup_rel?.produk_rel?.nama || "-",
           };
         });
         setLogs(mappedLogs);
       } catch (err) {
-        console.error("Gagal ambil data log follow up:", err);
+        console.error("❌ Gagal ambil data log follow up:", err);
         setError(err);
       } finally {
         setLoading(false);

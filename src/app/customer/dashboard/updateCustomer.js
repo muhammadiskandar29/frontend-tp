@@ -49,7 +49,6 @@ const initialFormState = {
 const SECTION_CONFIG = [
   {
     title: "Informasi Dasar",
-    icon: "👤",
     fields: [
       {
         name: "nama_panggilan",
@@ -61,43 +60,47 @@ const SECTION_CONFIG = [
         name: "instagram",
         label: "Instagram",
         placeholder: "@username",
-        icon: "📱",
       },
     ],
   },
   {
     title: "Profesi & Pekerjaan",
-    icon: "💼",
     fields: [
       {
         name: "profesi",
         label: "Profesi",
-        placeholder: "Contoh: Software Engineer",
+        placeholder: "Contoh: Programmer, Wiraswasta, dll",
         required: true,
       },
       {
         name: "pendapatan_bln",
-        label: "Pendapatan / Bulan",
-        placeholder: "Contoh: Rp 5.000.000",
-        icon: "💰",
+        label: "Pendapatan per Bulan",
+        type: "select",
+        placeholder: "Pilih Range Pendapatan",
+        options: [
+          { value: "", label: "Pilih Range Pendapatan" },
+          { value: "< 1 Juta", label: "< 1 Juta" },
+          { value: "1 - 5 Juta", label: "1 - 5 Juta" },
+          { value: "5 - 10 Juta", label: "5 - 10 Juta" },
+          { value: "10 - 15 Juta", label: "10 - 15 Juta" },
+          { value: "15 - 20 Juta", label: "15 - 20 Juta" },
+          { value: "> 20 Juta", label: "> 20 Juta" },
+        ],
       },
       {
         name: "industri_pekerjaan",
         label: "Industri Pekerjaan",
-        placeholder: "Contoh: Teknologi Informasi",
-        icon: "🏢",
+        placeholder: "Contoh: Teknologi, Properti, dll",
         fullWidth: true,
       },
     ],
   },
   {
     title: "Data Pribadi",
-    icon: "📋",
     fields: [
       {
         name: "jenis_kelamin",
         label: "Jenis Kelamin",
-        icon: "⚧️",
         type: "select",
         options: [
           { value: "l", label: "Laki-laki" },
@@ -107,13 +110,11 @@ const SECTION_CONFIG = [
       {
         name: "tanggal_lahir",
         label: "Tanggal Lahir",
-        icon: "🎂",
         type: "date",
       },
       {
         name: "alamat",
         label: "Alamat",
-        icon: "📍",
         type: "textarea",
         placeholder: "Tulis alamat lengkap",
         fullWidth: true,
@@ -122,16 +123,15 @@ const SECTION_CONFIG = [
   },
   {
     title: "Keamanan",
-    icon: "🔒",
-    isPasswordSection: true, // Flag untuk section password
+    isPasswordSection: true,
     fields: [
       {
         name: "password",
         label: "Password Baru",
         type: "password",
-        placeholder: "Masukkan password baru",
+        placeholder: "Masukkan password baru (min. 6 karakter)",
         note: "Isi jika ingin mengganti password",
-        required: false, // Akan di-override berdasarkan requirePassword prop
+        required: false,
         fullWidth: true,
       },
     ],
@@ -237,7 +237,6 @@ export default function UpdateCustomerModal({
 
         {/* Info banner */}
         <div className="password-notice">
-          <span className="notice-icon">{requirePassword ? "🔐" : "📝"}</span>
           <div>
             <strong>{requirePassword ? "Keamanan Akun" : "Lengkapi Data Anda"}</strong>
             <p>
@@ -264,7 +263,6 @@ export default function UpdateCustomerModal({
             <div className="form-section" key={section.title}>
               <div className="section-header">
                 <h3 className="section-title">
-                  <span className="section-icon">{section.icon}</span>
                   {section.title}
                   {section.isPasswordSection && !requirePassword && (
                     <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: "normal", marginLeft: "8px" }}>
@@ -305,12 +303,9 @@ export default function UpdateCustomerModal({
                   return (
                     <label className={fieldClass} key={field.name}>
                       <span className="field-label">
-                        {field.icon && (
-                          <span className="field-icon">{field.icon}</span>
-                        )}
-                        {field.label}{" "}
+                        {field.label}
                         {isRequired ? (
-                          <span className="required">*</span>
+                          <span className="required"> *</span>
                         ) : null}
                       </span>
 
@@ -428,10 +423,6 @@ export default function UpdateCustomerModal({
           margin: 0;
         }
 
-        .section-icon {
-          font-size: 1.25rem;
-        }
-
         .customer-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -449,17 +440,11 @@ export default function UpdateCustomerModal({
         }
 
         .field-label {
-          display: flex;
-          align-items: center;
-          gap: 0.375rem;
+          display: block;
           font-size: 0.875rem;
           font-weight: 600;
           color: #374151;
           margin-bottom: 0.25rem;
-        }
-
-        .field-icon {
-          font-size: 1rem;
         }
 
         .required {
@@ -575,17 +560,9 @@ export default function UpdateCustomerModal({
         }
 
         .password-notice {
-          display: flex;
-          align-items: flex-start;
-          gap: 12px;
           padding: 16px 24px;
           background: linear-gradient(135deg, #fef3c7 0%, #fef9c3 100%);
           border-bottom: 1px solid #fcd34d;
-        }
-
-        .notice-icon {
-          font-size: 24px;
-          flex-shrink: 0;
         }
 
         .password-notice strong {
