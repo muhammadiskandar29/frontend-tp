@@ -227,9 +227,19 @@ export default function UpdateCustomerModal({
         ...formData,
       };
 
+      console.log("📤 [UPDATE_CUSTOMER] Sending payload:", payload);
       const result = await updateCustomer(payload);
+      console.log("📥 [UPDATE_CUSTOMER] API Response:", result);
+      
       if (typeof onSuccess === "function") {
-        onSuccess(result?.data);
+        // Kirim data dari API response, atau fallback ke formData jika API tidak return data lengkap
+        const successData = {
+          ...formData,           // Data dari form sebagai fallback
+          ...result?.data,       // Override dengan data dari API jika ada
+          password: undefined,   // Jangan simpan password
+        };
+        console.log("✅ [UPDATE_CUSTOMER] Success data to save:", successData);
+        onSuccess(successData);
       }
       if (typeof onClose === "function") {
         onClose();

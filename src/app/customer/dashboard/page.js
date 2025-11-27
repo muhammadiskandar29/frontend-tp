@@ -156,7 +156,25 @@ export default function DashboardPage() {
       // Tidak perlu fetch produk lagi karena kategori_nama sudah ada di order data
       // Fetch produk dari admin endpoint menyebabkan error 500 karena customer token tidak memiliki akses admin
       
-      setCustomerInfo(data.customer || null);
+      const customerData = data.customer || null;
+      setCustomerInfo(customerData);
+      
+      // ===== SYNC CUSTOMER DATA KE LOCALSTORAGE =====
+      // Update localStorage dengan data customer terbaru dari backend
+      // Ini memastikan field seperti nama_panggilan, profesi, dll ter-update
+      if (customerData) {
+        const existingUser = session.user || {};
+        const updatedUser = {
+          ...existingUser,
+          ...customerData,
+          // Pastikan field penting tidak null jika sudah ada di existingUser
+          nama_panggilan: customerData.nama_panggilan || existingUser.nama_panggilan,
+          profesi: customerData.profesi || existingUser.profesi,
+        };
+        localStorage.setItem("customer_user", JSON.stringify(updatedUser));
+        console.log("✅ [DASHBOARD] Customer data synced to localStorage:", updatedUser);
+      }
+      
       setStats((prev) =>
         prev.map((item) => {
           if (item.id === "total") {
@@ -170,15 +188,87 @@ export default function DashboardPage() {
       );
       setActiveOrders(adaptOrders(data?.orders_aktif || [], {}));
       setPendingOrders(adaptOrders(data?.orders_pending || [], {}, { status: "pending" }));
+      
+      return customerData; // Return untuk digunakan di tempat lain
     } catch (error) {
       console.error("❌ [DASHBOARD] Failed to load data:", error);
       setDashboardError(error.message || "Gagal memuat data dashboard.");
+      return null;
     } finally {
       setDashboardLoading(false);
     }
   }, [router]);
 
-  // Cek password default, data tidak lengkap, dan verifikasi
+  // Helper function untuk cek apakah modal perlu ditampilkan
+  const checkAndShowModal = useCallback((user) => {
+    if (!user) {
+      console.log("⚠️ [DASHBOARD] No user data, showing verification modal");
+      const modalTimeout = setTimeout(() => {
+        setShowVerificationModal(true);
+      }, 5000);
+      return () => clearTimeout(modalTimeout);
+    }
+
+    // ===== CEK PASSWORD DEFAULT =====
+    const isUsingDefaultPassword = 
+      user.password_default === 1 || 
+      user.password_default === "1" ||
+      user.is_default_password === true ||
+      user.is_default_password === 1 ||
+      user.is_default_password === "1" ||
+      user.need_change_password === true ||
+      user.need_change_password === 1 ||
+      user.need_change_password === "1";
+
+    // ===== CEK DATA BELUM PERNAH DIISI =====
+    const hasNamaPanggilan = user.nama_panggilan && String(user.nama_panggilan).trim() !== "";
+    const hasProfesi = user.profesi && String(user.profesi).trim() !== "";
+    const isProfileNeverFilled = !hasNamaPanggilan || !hasProfesi;
+
+    console.log("🔍 [DASHBOARD] Checking user data:", {
+      password_default: user.password_default,
+      is_default_password: user.is_default_password,
+      need_change_password: user.need_change_password,
+      nama_panggilan: user.nama_panggilan,
+      profesi: user.profesi,
+      hasNamaPanggilan,
+      hasProfesi,
+      isUsingDefaultPassword,
+      isProfileNeverFilled
+    });
+
+    if (isUsingDefaultPassword) {
+      console.log("⚠️ [DASHBOARD] Showing update modal - password_default");
+      setUpdateModalReason("password");
+      setShowUpdateModal(true);
+      return;
+    }
+
+    if (isProfileNeverFilled) {
+      console.log("⚠️ [DASHBOARD] Showing update modal - profile never filled");
+      setUpdateModalReason("incomplete");
+      setShowUpdateModal(true);
+      return;
+    }
+    
+    console.log("✅ [DASHBOARD] Profile already filled, skipping update modal");
+
+    // ===== CEK VERIFIKASI OTP =====
+    const verifikasiValue = user.verifikasi;
+    const normalizedVerifikasi = verifikasiValue === "1" ? 1 : verifikasiValue === "0" ? 0 : verifikasiValue;
+    const isVerified = normalizedVerifikasi === 1 || normalizedVerifikasi === true;
+    
+    if (isVerified) {
+      setShowVerificationModal(false);
+    } else {
+      const modalTimeout = setTimeout(() => {
+        setShowVerificationModal(true);
+      }, 5000);
+      return () => clearTimeout(modalTimeout);
+    }
+  }, []);
+
+  // Load dashboard data dan cek modal
   useEffect(() => {
     const session = getCustomerSession();
     
@@ -187,89 +277,18 @@ export default function DashboardPage() {
       return;
     }
 
-    // Load dashboard data dulu
-    loadDashboardData();
-
-    if (session.user) {
-      const user = session.user;
+    // Load dashboard data, lalu cek modal dengan data terbaru
+    const initDashboard = async () => {
+      const freshCustomerData = await loadDashboardData();
       
-      // ===== CEK PASSWORD DEFAULT =====
-      // Password default biasanya: password_default = 1, atau password = "password", atau belum diubah
-      const isUsingDefaultPassword = 
-        user.password_default === 1 || 
-        user.password_default === "1" ||
-        user.is_default_password === true ||
-        user.is_default_password === 1 ||
-        user.is_default_password === "1" ||
-        user.need_change_password === true ||
-        user.need_change_password === 1 ||
-        user.need_change_password === "1";
+      // Gunakan data terbaru dari backend untuk cek modal
+      // Jika tidak ada, fallback ke session.user
+      const userToCheck = freshCustomerData || session.user;
+      checkAndShowModal(userToCheck);
+    };
 
-      // ===== CEK DATA BELUM PERNAH DIISI =====
-      // Modal hanya muncul jika data BELUM PERNAH diisi sama sekali
-      // Jika sudah pernah diisi (ada nilai), tidak perlu tampilkan modal lagi
-      const hasNamaPanggilan = user.nama_panggilan && user.nama_panggilan.trim() !== "";
-      const hasProfesi = user.profesi && user.profesi.trim() !== "";
-      
-      // Profile dianggap sudah diisi jika nama_panggilan DAN profesi sudah ada
-      const isProfileNeverFilled = !hasNamaPanggilan || !hasProfesi;
-
-      console.log("🔍 [DASHBOARD] Checking user data:", {
-        password_default: user.password_default,
-        is_default_password: user.is_default_password,
-        need_change_password: user.need_change_password,
-        nama_panggilan: user.nama_panggilan,
-        profesi: user.profesi,
-        hasNamaPanggilan,
-        hasProfesi,
-        isUsingDefaultPassword,
-        isProfileNeverFilled
-      });
-
-      if (isUsingDefaultPassword) {
-        // Password default - wajib ganti password
-        console.log("⚠️ [DASHBOARD] Showing update modal - password_default");
-        setUpdateModalReason("password");
-        setShowUpdateModal(true);
-        return;
-      }
-
-      if (isProfileNeverFilled) {
-        // Data belum pernah diisi - wajib lengkapi profil (password opsional)
-        console.log("⚠️ [DASHBOARD] Showing update modal - profile never filled");
-        setUpdateModalReason("incomplete");
-        setShowUpdateModal(true);
-        return;
-      }
-      
-      // Jika sudah pernah diisi, tidak tampilkan modal
-      console.log("✅ [DASHBOARD] Profile already filled, skipping update modal");
-
-      // ===== CEK VERIFIKASI OTP =====
-      const verifikasiValue = user.verifikasi;
-      const normalizedVerifikasi = verifikasiValue === "1" ? 1 : verifikasiValue === "0" ? 0 : verifikasiValue;
-      const isVerified = normalizedVerifikasi === 1 || normalizedVerifikasi === true;
-      
-      if (isVerified) {
-        setShowVerificationModal(false);
-        return;
-      } else {
-        // Tampilkan modal OTP setelah 5 detik
-        const modalTimeout = setTimeout(() => {
-          setShowVerificationModal(true);
-        }, 5000);
-
-        return () => clearTimeout(modalTimeout);
-      }
-    } else {
-      // Jika tidak ada user data
-      const modalTimeout = setTimeout(() => {
-        setShowVerificationModal(true);
-      }, 5000);
-
-      return () => clearTimeout(modalTimeout);
-    }
-  }, [router, loadDashboardData]);
+    initDashboard();
+  }, [router, loadDashboardData, checkAndShowModal]);
 
   // Handler untuk OTP sent callback
   const handleOTPSent = (data) => {
@@ -279,15 +298,30 @@ export default function DashboardPage() {
 
   // Handler untuk update customer success (password changed)
   const handleUpdateSuccess = (data) => {
-    // Update session dengan data baru
+    console.log("✅ [DASHBOARD] Update success, data received:", data);
+    
+    // Update session dengan data baru dari response API
     const session = getCustomerSession();
     if (session.user) {
       const updatedUser = {
         ...session.user,
         ...data,
+        // Pastikan field penting ter-update
+        nama_panggilan: data?.nama_panggilan || session.user.nama_panggilan,
+        profesi: data?.profesi || session.user.profesi,
+        instagram: data?.instagram || session.user.instagram,
+        pendapatan_bln: data?.pendapatan_bln || session.user.pendapatan_bln,
+        industri_pekerjaan: data?.industri_pekerjaan || session.user.industri_pekerjaan,
+        jenis_kelamin: data?.jenis_kelamin || session.user.jenis_kelamin,
+        tanggal_lahir: data?.tanggal_lahir || session.user.tanggal_lahir,
+        alamat: data?.alamat || session.user.alamat,
+        // Reset password default flags
         password_default: 0,
         is_default_password: false,
+        need_change_password: false,
       };
+      
+      console.log("✅ [DASHBOARD] Updated user data:", updatedUser);
       localStorage.setItem("customer_user", JSON.stringify(updatedUser));
     }
     
