@@ -344,6 +344,18 @@ export default function LandingPage() {
       console.log("📦 [LANDING] Raw customer:", rawCustomer);
       console.log("📦 [LANDING] Customer ID:", customerId);
 
+      // DEBUG: Tampilkan alert dengan data response
+      alert(`DEBUG - Response dari Backend:
+      
+Order ID: ${orderId}
+Customer ID: ${customerId}
+Raw Customer: ${JSON.stringify(rawCustomer)}
+
+Full Response:
+${JSON.stringify(order, null, 2).substring(0, 500)}...
+
+(Cek Console untuk full data)`);
+
       // Simpan data untuk verifikasi OTP + URL landing untuk redirect balik
       const pendingOrder = {
         orderId: orderId,
