@@ -322,13 +322,26 @@ export default function LandingPage() {
       }
 
       // Ambil data dari response - handle berbagai format response
-      const orderData = order?.data?.order || order?.data || {};
-      const orderId = orderData?.id;
-      // Customer bisa di berbagai lokasi: customer, customer_id, atau id_customer
-      const customerId = orderData?.customer || orderData?.customer_id || orderData?.id_customer;
+      const orderResponseData = order?.data?.order || order?.data || {};
+      const orderId = orderResponseData?.id;
+      
+      // Customer bisa berupa:
+      // - Integer langsung: customer: 5
+      // - Object dengan id: customer: { id: 5, nama: "..." }
+      // - Di field lain: customer_id, id_customer
+      let customerId = null;
+      const rawCustomer = orderResponseData?.customer || orderResponseData?.customer_id || orderResponseData?.id_customer;
+      
+      if (typeof rawCustomer === 'object' && rawCustomer !== null) {
+        customerId = rawCustomer.id || rawCustomer.customer_id;
+      } else if (typeof rawCustomer === 'number' || typeof rawCustomer === 'string') {
+        customerId = rawCustomer;
+      }
 
-      console.log("📦 [LANDING] Order response data:", orderData);
+      console.log("📦 [LANDING] Full order response:", JSON.stringify(order, null, 2));
+      console.log("📦 [LANDING] Order data:", orderResponseData);
       console.log("📦 [LANDING] Order ID:", orderId);
+      console.log("📦 [LANDING] Raw customer:", rawCustomer);
       console.log("📦 [LANDING] Customer ID:", customerId);
 
       // Simpan data untuk verifikasi OTP + URL landing untuk redirect balik

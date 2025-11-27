@@ -32,7 +32,15 @@ export default function VerifyOrderOTPPage() {
     try {
       const data = JSON.parse(stored);
       setOrderData(data);
-      console.log("📦 [VERIFY-ORDER] Order data:", data);
+      console.log("📦 [VERIFY-ORDER] Order data loaded:", data);
+      console.log("📦 [VERIFY-ORDER] Customer ID:", data.customerId);
+      console.log("📦 [VERIFY-ORDER] WA:", data.wa);
+      
+      // Warning jika tidak ada customerId
+      if (!data.customerId) {
+        console.error("❌ [VERIFY-ORDER] Customer ID tidak ada di order data!");
+        setMessage("⚠️ Customer ID tidak ditemukan. Buka Console (F12) untuk lihat response backend.");
+      }
     } catch {
       toast.error("Data order tidak valid");
       router.replace("/");
