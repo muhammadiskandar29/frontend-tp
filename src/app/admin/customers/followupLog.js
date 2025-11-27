@@ -50,9 +50,12 @@ export default function FollowupLogModal({ customer, onClose }) {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       
       // POST /api/admin/logs-follup
-      // Request: { customer: id_customer, event: integer (optional) }
+      // Request: { customer: id_customer (integer), event: integer (optional) }
+      // PENTING: customer harus integer, bukan string
+      const customerId = Number(customer.id);
+      
       const requestBody = {
-        customer: customer.id,
+        customer: customerId,
       };
       
       // Tambahkan event filter jika dipilih
@@ -60,10 +63,10 @@ export default function FollowupLogModal({ customer, onClose }) {
         requestBody.event = Number(selectedEvent);
       }
 
-      console.log("📤 [FOLLOWUP LOG] Request for customer:", {
-        customerId: customer.id,
+      console.log("📤 [FOLLOWUP LOG] Request:", {
+        customerId: customerId,
         customerName: customer.nama,
-        requestBody
+        body: JSON.stringify(requestBody)
       });
 
       const res = await fetch("/api/admin/logs-follup", {
@@ -82,7 +85,8 @@ export default function FollowupLogModal({ customer, onClose }) {
         status: res.status,
         message: data?.message,
         total: data?.total,
-        dataCount: data?.data?.length || 0
+        dataCount: data?.data?.length || 0,
+        data: data?.data
       });
       
       // API response: { message, total, data: [...] }
@@ -90,7 +94,23 @@ export default function FollowupLogModal({ customer, onClose }) {
         throw new Error(data?.message || "Gagal memuat log follow up");
       }
 
-      setLogs(Array.isArray(data.data) ? data.data : []);
+      // Filter data untuk memastikan hanya log milik customer ini yang ditampilkan
+      const logsData = Array.isArray(data.data) ? data.data : [];
+      const filteredLogs = logsData.filter(log => {
+        const logCustomerId = Number(log.customer);
+        const isMatch = logCustomerId === customerId;
+        if (!isMatch) {
+          console.warn("⚠️ [FOLLOWUP LOG] Skipping log not belonging to customer:", {
+            logId: log.id,
+            logCustomerId: log.customer,
+            expectedCustomerId: customerId
+          });
+        }
+        return isMatch;
+      });
+      
+      console.log("✅ [FOLLOWUP LOG] Filtered logs:", filteredLogs.length, "of", logsData.length);
+      setLogs(filteredLogs);
     } catch (err) {
       console.error("❌ [FOLLOWUP LOG] Error:", err);
       setError(err.message || "Terjadi kesalahan saat memuat data");
