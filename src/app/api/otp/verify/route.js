@@ -6,18 +6,6 @@ const BACKEND_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "http://3.105.234.181:8000";
 
-const PUBLIC_OTP_TOKEN =
-  process.env.OTP_PUBLIC_TOKEN ||
-  process.env.LANDING_AUTH_TOKEN ||
-  process.env.OTP_SERVICE_TOKEN ||
-  null;
-
-const baseHeaders = {
-  "Content-Type": "application/json",
-  Accept: "application/json",
-  ...(PUBLIC_OTP_TOKEN ? { Authorization: `Bearer ${PUBLIC_OTP_TOKEN}` } : {}),
-};
-
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -38,7 +26,10 @@ export async function POST(request) {
 
     const response = await fetch(`${BACKEND_URL}/api/otp/verify`, {
       method: "POST",
-      headers: baseHeaders,
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
       body: JSON.stringify(payload),
     });
 
