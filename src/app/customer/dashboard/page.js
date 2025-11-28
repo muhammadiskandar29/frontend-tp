@@ -161,7 +161,7 @@ export default function DashboardPage() {
       
       // ===== SYNC CUSTOMER DATA KE LOCALSTORAGE =====
       // Update localStorage dengan data customer terbaru dari backend
-      // Ini memastikan field seperti nama_panggilan, profesi, tanggal_lahir, verifikasi ter-update
+      // Ini memastikan field seperti nama_panggilan, profesi, verifikasi ter-update
       if (customerData) {
         const existingUser = session.user || {};
         const updatedUser = {
@@ -172,16 +172,12 @@ export default function DashboardPage() {
           profesi: customerData.profesi || existingUser.profesi,
           // Pastikan verifikasi ter-sync dari backend (prioritas utama untuk modal check)
           verifikasi: customerData.verifikasi !== undefined ? customerData.verifikasi : existingUser.verifikasi,
-          // Pastikan tanggal_lahir ter-sync dari backend (ini adalah penanda profile sudah diisi)
-          tanggal_lahir: customerData.tanggal_lahir || existingUser.tanggal_lahir,
         };
         localStorage.setItem("customer_user", JSON.stringify(updatedUser));
         console.log("✅ [DASHBOARD] Customer data synced to localStorage:", updatedUser);
         console.log("✅ [DASHBOARD] Key field for modal check:", {
           verifikasi: updatedUser.verifikasi,
-          isVerified: updatedUser.verifikasi === "1" || updatedUser.verifikasi === 1,
-          tanggal_lahir: updatedUser.tanggal_lahir,
-          hasTanggalLahir: !!updatedUser.tanggal_lahir && String(updatedUser.tanggal_lahir).trim() !== ""
+          isVerified: updatedUser.verifikasi === "1" || updatedUser.verifikasi === 1
         });
       }
       
@@ -219,43 +215,27 @@ export default function DashboardPage() {
       return () => clearTimeout(modalTimeout);
     }
 
-    // ===== CEK VERIFIKASI OTP DULU =====
+    // ===== CEK VERIFIKASI OTP =====
     const verifikasiValue = user.verifikasi;
     const normalizedVerifikasi = verifikasiValue === "1" ? 1 : verifikasiValue === "0" ? 0 : verifikasiValue;
     const isVerified = normalizedVerifikasi === 1 || normalizedVerifikasi === true;
 
     console.log("🔍 [DASHBOARD] Checking user data:", {
       verifikasi: user.verifikasi,
-      isVerified,
-      tanggal_lahir: user.tanggal_lahir,
-      nama_panggilan: user.nama_panggilan,
-      profesi: user.profesi
+      isVerified
     });
 
-    // Jika sudah verifikasi (verifikasi = 1), cek data lengkap
+    // Jika sudah verifikasi (verifikasi = 1), dashboard normal tanpa modal
     if (isVerified) {
-      console.log("✅ [DASHBOARD] User verified (verifikasi = 1)");
-      
-      // Cek apakah data sudah lengkap (tanggal_lahir sebagai penanda)
-      const hasTanggalLahir = user.tanggal_lahir && String(user.tanggal_lahir).trim() !== "";
-      
-      if (hasTanggalLahir) {
-        // Data sudah lengkap, dashboard berhasil ditampilkan tanpa modal
-        console.log("✅ [DASHBOARD] Data sudah lengkap, dashboard berhasil ditampilkan");
-        setShowVerificationModal(false);
-        setShowUpdateModal(false);
-      } else {
-        // Data belum lengkap, tampilkan updateCustomer modal
-        console.log("⚠️ [DASHBOARD] Data belum lengkap, showing update customer modal");
-        setShowVerificationModal(false);
-        setUpdateModalReason("incomplete");
-        setShowUpdateModal(true);
-      }
+      console.log("✅ [DASHBOARD] User verified (verifikasi = 1), dashboard berhasil ditampilkan");
+      setShowVerificationModal(false);
+      setShowUpdateModal(false);
       return;
     }
 
     // Jika belum verifikasi (verifikasi = 0), tampilkan modal OTP dulu
     // Dashboard tetap tampil, tapi muncul otpVerificationModal
+    // Setelah OTP sent, akan muncul updateCustomer.js
     if (!isVerified) {
       console.log("⚠️ [DASHBOARD] User not verified (verifikasi = 0), showing OTP modal");
       setShowUpdateModal(false); // Pastikan update modal tidak muncul dulu
@@ -319,14 +299,12 @@ export default function DashboardPage() {
         ...customerProfile,
         // Pastikan verifikasi dari source terbaru (prioritas utama untuk menentukan apakah modal muncul)
         verifikasi: customerProfile?.verifikasi || dashboardCustomerData?.verifikasi || session.user?.verifikasi,
-        // Pastikan tanggal_lahir dari source terbaru (ini adalah penanda profile sudah diisi)
-        tanggal_lahir: customerProfile?.tanggal_lahir || dashboardCustomerData?.tanggal_lahir || session.user?.tanggal_lahir,
       };
       
       console.log("📊 [DASHBOARD] Merged customer data:", mergedCustomerData);
-      console.log("📊 [DASHBOARD] Key fields for modal check:", {
-        tanggal_lahir: mergedCustomerData.tanggal_lahir,
-        hasTanggalLahir: !!mergedCustomerData.tanggal_lahir && String(mergedCustomerData.tanggal_lahir).trim() !== ""
+      console.log("📊 [DASHBOARD] Key field for modal check:", {
+        verifikasi: mergedCustomerData.verifikasi,
+        isVerified: mergedCustomerData.verifikasi === "1" || mergedCustomerData.verifikasi === 1
       });
       
       // Update localStorage dengan data lengkap
@@ -344,11 +322,14 @@ export default function DashboardPage() {
 
   // Handler untuk OTP sent callback
   const handleOTPSent = (data) => {
-    console.log("📤 [DASHBOARD] OTP sent, redirecting to OTP page");
+    console.log("📤 [DASHBOARD] OTP sent, closing OTP modal and showing update customer modal");
     setShowVerificationModal(false);
-    // Setelah OTP dikirim, redirect ke halaman OTP untuk verifikasi
-    // Setelah OTP verified, user akan kembali ke dashboard dan cek data lengkap
-    router.replace("/customer/otp");
+    // Setelah OTP dikirim, tampilkan updateCustomer modal
+    // User akan mengisi data dulu sebelum redirect ke halaman OTP
+    setTimeout(() => {
+      setShowUpdateModal(true);
+      setUpdateModalReason("incomplete"); // Tampilkan sebagai "Lengkapi Data"
+    }, 300);
   };
 
   // Handler untuk update customer success (password changed)
@@ -370,17 +351,13 @@ export default function DashboardPage() {
         jenis_kelamin: data?.jenis_kelamin || session.user.jenis_kelamin,
         // Pastikan verifikasi ter-update dari response API (prioritas utama)
         verifikasi: data?.verifikasi !== undefined ? data.verifikasi : session.user.verifikasi,
-        // tanggal_lahir adalah penanda bahwa profile sudah diisi
-        tanggal_lahir: data?.tanggal_lahir || session.user.tanggal_lahir,
         alamat: data?.alamat || session.user.alamat,
       };
       
       console.log("✅ [DASHBOARD] Updated user data:", updatedUser);
       console.log("✅ [DASHBOARD] Key field for modal check after update:", {
         verifikasi: updatedUser.verifikasi,
-        isVerified: updatedUser.verifikasi === "1" || updatedUser.verifikasi === 1,
-        tanggal_lahir: updatedUser.tanggal_lahir,
-        hasTanggalLahir: !!updatedUser.tanggal_lahir && String(updatedUser.tanggal_lahir).trim() !== ""
+        isVerified: updatedUser.verifikasi === "1" || updatedUser.verifikasi === 1
       });
       localStorage.setItem("customer_user", JSON.stringify(updatedUser));
     }
@@ -388,28 +365,10 @@ export default function DashboardPage() {
     setShowUpdateModal(false);
     toast.success("Data berhasil diperbarui!");
     
-    // Reload dashboard data untuk sync dengan backend dan cek modal lagi
-    const reloadAndCheck = async () => {
-      const dashboardCustomerData = await loadDashboardData();
-      const customerProfile = await fetchCustomerProfile(session.token);
-      
-      const mergedCustomerData = {
-        ...session.user,
-        ...dashboardCustomerData,
-        ...customerProfile,
-        verifikasi: customerProfile?.verifikasi || dashboardCustomerData?.verifikasi || session.user?.verifikasi,
-        tanggal_lahir: customerProfile?.tanggal_lahir || dashboardCustomerData?.tanggal_lahir || session.user?.tanggal_lahir,
-      };
-      
-      if (mergedCustomerData && (mergedCustomerData.id || mergedCustomerData.nama)) {
-        localStorage.setItem("customer_user", JSON.stringify(mergedCustomerData));
-      }
-      
-      // Cek modal lagi setelah update - jika data sudah lengkap, tidak ada modal
-      checkAndShowModal(mergedCustomerData);
-    };
-    
-    reloadAndCheck();
+    // Setelah data berhasil diupdate, redirect ke halaman OTP untuk verifikasi
+    setTimeout(() => {
+      router.replace("/customer/otp");
+    }, 500);
     
     // Reload dashboard data untuk sync dengan backend
     loadDashboardData();
