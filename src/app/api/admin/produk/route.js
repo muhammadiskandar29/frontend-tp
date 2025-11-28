@@ -2,13 +2,28 @@ import { NextResponse } from "next/server";
 
 const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "http://3.105.234.181:8000";
 
-// Image compression settings
+// Image conversion settings - Convert to WEBP
 const IMAGE_CONFIG = {
-  maxWidth: 1920,      // Max width in pixels
-  maxHeight: 1080,     // Max height in pixels  
-  jpegQuality: 80,     // JPEG quality (1-100)
-  pngCompressionLevel: 8, // PNG compression (0-9)
+  maxWidth: 1600,           // Max width in pixels (as requested)
+  maxHeight: 1600,          // Max height in pixels
+  targetSizeKB: 200,        // Target size in KB
+  initialQuality: 80,        // Initial quality (70-80 as requested)
+  minQuality: 50,           // Minimum quality to try
+  qualityStep: 5,           // Quality reduction step
 };
+
+// Supported image formats
+const SUPPORTED_FORMATS = [
+  "image/jpeg",
+  "image/jpg", 
+  "image/png",
+  "image/gif",
+  "image/webp",
+  "image/bmp",
+  "image/tiff",
+  "image/heic",
+  "image/heif",
+];
 
 // Dynamic import sharp
 let sharpModule = null;
@@ -26,36 +41,58 @@ const getSharp = async () => {
   return sharpModule;
 };
 
-// Compress image while keeping original format
-const compressImage = async (buffer, mimeType, filename) => {
+// Convert image to WebP with compression
+// Iteratively reduces quality if file is still too large
+const convertToWebP = async (buffer, mimeType, filename) => {
   const sharp = await getSharp();
   if (!sharp) return null;
   
   try {
-    let sharpInstance = sharp(buffer);
+    const targetSizeBytes = IMAGE_CONFIG.targetSizeKB * 1024;
+    let quality = IMAGE_CONFIG.initialQuality;
+    let webpBuffer;
+    let attempts = 0;
+    const maxAttempts = 10;
     
-    // Resize if too large (maintain aspect ratio)
-    sharpInstance = sharpInstance.resize({
-      width: IMAGE_CONFIG.maxWidth,
-      height: IMAGE_CONFIG.maxHeight,
-      fit: "inside",
-      withoutEnlargement: true, // Don't upscale small images
-    });
+    do {
+      attempts++;
+      let sharpInstance = sharp(buffer);
+      
+      // Resize if too large (maintain aspect ratio)
+      sharpInstance = sharpInstance.resize({
+        width: IMAGE_CONFIG.maxWidth,
+        height: IMAGE_CONFIG.maxHeight,
+        fit: "inside",
+        withoutEnlargement: true, // Don't upscale small images
+      });
+      
+      // Convert to WebP with current quality
+      webpBuffer = await sharpInstance
+        .webp({ quality })
+        .toBuffer();
+      
+      const sizeKB = (webpBuffer.length / 1024).toFixed(2);
+      console.log(`  🔄 Attempt ${attempts}: Quality ${quality} → ${sizeKB} KB`);
+      
+      // If file is small enough or we've tried enough, stop
+      if (webpBuffer.length <= targetSizeBytes || attempts >= maxAttempts) {
+        break;
+      }
+      
+      // Reduce quality for next attempt
+      quality = Math.max(quality - IMAGE_CONFIG.qualityStep, IMAGE_CONFIG.minQuality);
+      
+    } while (webpBuffer.length > targetSizeBytes && quality >= IMAGE_CONFIG.minQuality && attempts < maxAttempts);
     
-    // Compress based on format
-    if (mimeType === "image/jpeg" || mimeType === "image/jpg") {
-      sharpInstance = sharpInstance.jpeg({ quality: IMAGE_CONFIG.jpegQuality });
-    } else if (mimeType === "image/png") {
-      sharpInstance = sharpInstance.png({ compressionLevel: IMAGE_CONFIG.pngCompressionLevel });
-    }
+    const originalSizeKB = (buffer.length / 1024).toFixed(2);
+    const finalSizeKB = (webpBuffer.length / 1024).toFixed(2);
+    const reduction = Math.round((1 - webpBuffer.length / buffer.length) * 100);
     
-    const compressedBuffer = await sharpInstance.toBuffer();
+    console.log(`  ✅ Converted to WebP: ${originalSizeKB} KB → ${finalSizeKB} KB (${reduction}% reduction, quality: ${quality})`);
     
-    console.log(`  📦 Compressed: ${buffer.length} → ${compressedBuffer.length} bytes (${Math.round((1 - compressedBuffer.length / buffer.length) * 100)}% reduction)`);
-    
-    return compressedBuffer;
+    return webpBuffer;
   } catch (err) {
-    console.error("❌ Compression failed:", err.message);
+    console.error(`❌ WebP conversion failed for ${filename}:`, err.message);
     return null;
   }
 };
@@ -136,36 +173,50 @@ export async function POST(request) {
       
       for (const [key, value] of incomingFormData.entries()) {
         if (value instanceof File && value.size > 0) {
-          // Check if it's an image file
-          const isImage = value.type.startsWith("image/");
+          // Check if it's a supported image file
+          const isImage = SUPPORTED_FORMATS.includes(value.type.toLowerCase()) || 
+                         value.type.startsWith("image/");
           
           if (isImage) {
-            console.log(`  🖼️ ${key}: [Image] ${value.name} (${value.size} bytes, type: ${value.type})`);
+            console.log(`  🖼️ ${key}: [Image] ${value.name} (${(value.size / 1024).toFixed(2)} KB, type: ${value.type})`);
             
             // Get file buffer
             const arrayBuffer = await value.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
             
-            // Try to compress image (keeps original format)
-            console.log(`  🔄 Compressing ${value.name}...`);
-            const compressedBuffer = await compressImage(buffer, value.type, value.name);
+            // Convert to WebP with compression
+            console.log(`  🔄 Converting ${value.name} to WebP...`);
+            const webpBuffer = await convertToWebP(buffer, value.type, value.name);
             
-            if (compressedBuffer) {
-              // Compression successful
-              const compressedFile = new File([compressedBuffer], value.name, { type: value.type });
-              forwardFormData.append(key, compressedFile);
-              console.log(`  ✅ Compressed: ${value.name} (${value.size} → ${compressedBuffer.length} bytes)`);
+            if (webpBuffer) {
+              // Conversion successful - create File directly from buffer
+              // Change filename extension to .webp
+              const webpFilename = value.name.replace(/\.[^/.]+$/, "") + ".webp";
+              // Use Uint8Array for proper File creation
+              const webpFile = new File([new Uint8Array(webpBuffer)], webpFilename, { 
+                type: "image/webp",
+                lastModified: Date.now()
+              });
+              
+              forwardFormData.append(key, webpFile);
+              console.log(`  ✅ Converted to WebP: ${value.name} → ${webpFilename} (${(value.size / 1024).toFixed(2)} KB → ${(webpBuffer.length / 1024).toFixed(2)} KB)`);
             } else {
-              // Compression failed - use original
-              const file = new File([buffer], value.name, { type: value.type });
+              // Conversion failed - use original
+              console.log(`  ⚠️ Conversion failed, using original: ${value.name}`);
+              const file = new File([new Uint8Array(buffer)], value.name, { 
+                type: value.type,
+                lastModified: Date.now()
+              });
               forwardFormData.append(key, file);
-              console.log(`  ⚠️ Using original: ${value.name} (${value.size} bytes)`);
             }
           } else {
             // Non-image file, forward as-is
-            console.log(`  📁 ${key}: [File] ${value.name} (${value.size} bytes) - forwarding as-is`);
+            console.log(`  📁 ${key}: [File] ${value.name} (${(value.size / 1024).toFixed(2)} KB) - forwarding as-is`);
             const arrayBuffer = await value.arrayBuffer();
-            const file = new File([arrayBuffer], value.name, { type: value.type });
+            const file = new File([new Uint8Array(arrayBuffer)], value.name, { 
+              type: value.type,
+              lastModified: Date.now()
+            });
             forwardFormData.append(key, file);
           }
         } else if (typeof value === "string") {
