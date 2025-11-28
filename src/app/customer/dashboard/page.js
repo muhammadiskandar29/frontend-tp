@@ -24,6 +24,7 @@ export default function DashboardPage() {
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [dashboardError, setDashboardError] = useState("");
   const [currentTime, setCurrentTime] = useState(() => Date.now());
+  const [hasModalBeenShown, setHasModalBeenShown] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -212,10 +213,17 @@ export default function DashboardPage() {
 
   // Helper function untuk cek apakah modal perlu ditampilkan
   const checkAndShowModal = useCallback((user) => {
+    // Jika modal sudah pernah ditampilkan, jangan check lagi (biarkan user klik OK dulu)
+    if (hasModalBeenShown && showVerificationModal) {
+      console.log("🔒 [DASHBOARD] Modal already shown, waiting for user action");
+      return;
+    }
+
     if (!user) {
       console.log("⚠️ [DASHBOARD] No user data, showing verification modal");
       const modalTimeout = setTimeout(() => {
         setShowVerificationModal(true);
+        setHasModalBeenShown(true);
       }, 500);
       return () => clearTimeout(modalTimeout);
     }
@@ -236,6 +244,7 @@ export default function DashboardPage() {
       setShowVerificationModal(false);
       setShowUpdateModal(false);
       setUpdateModalReason("password");
+      setHasModalBeenShown(false);
       return;
     }
 
@@ -248,10 +257,11 @@ export default function DashboardPage() {
       setShowUpdateModal(false);
       const modalTimeout = setTimeout(() => {
         setShowVerificationModal(true);
+        setHasModalBeenShown(true);
       }, 500);
       return () => clearTimeout(modalTimeout);
     }
-  }, []);
+  }, [hasModalBeenShown, showVerificationModal]);
 
   // Fetch customer profile langsung dari API untuk mendapatkan data lengkap
   const fetchCustomerProfile = useCallback(async (token) => {
@@ -320,8 +330,10 @@ export default function DashboardPage() {
         console.log("✅ [DASHBOARD] Customer data synced to localStorage");
       }
       
-      // Gunakan data yang sudah di-merge untuk cek modal
-      checkAndShowModal(mergedCustomerData);
+      // Gunakan data yang sudah di-merge untuk cek modal (hanya jika modal belum pernah ditampilkan)
+      if (!hasModalBeenShown) {
+        checkAndShowModal(mergedCustomerData);
+      }
 
       const pendingUpdateModal = localStorage.getItem("customer_show_update_modal");
       const isUserVerified =
@@ -338,12 +350,13 @@ export default function DashboardPage() {
     };
 
     initDashboard();
-  }, [router, loadDashboardData, fetchCustomerProfile, checkAndShowModal]);
+  }, [router, loadDashboardData, fetchCustomerProfile, checkAndShowModal, hasModalBeenShown]);
 
   // Handler untuk OTP sent callback
   const handleOTPSent = () => {
     console.log("📤 [DASHBOARD] OTP sent, redirecting user to OTP page");
     setShowVerificationModal(false);
+    setHasModalBeenShown(false);
     router.replace("/customer/otp");
   };
 
