@@ -144,6 +144,7 @@ export default function CustomerOTPPage() {
         setMessage("Verifikasi berhasil! 🎉");
         setTimerActive(false);
         toast.success("Verifikasi berhasil!");
+        localStorage.setItem("customer_show_update_modal", "1");
         
         // Update user data di localStorage dengan data dari response API
         const session = getCustomerSession();

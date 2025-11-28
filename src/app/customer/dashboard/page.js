@@ -322,6 +322,19 @@ export default function DashboardPage() {
       
       // Gunakan data yang sudah di-merge untuk cek modal
       checkAndShowModal(mergedCustomerData);
+
+      const pendingUpdateModal = localStorage.getItem("customer_show_update_modal");
+      const isUserVerified =
+        mergedCustomerData?.verifikasi === "1" ||
+        mergedCustomerData?.verifikasi === 1 ||
+        mergedCustomerData?.verifikasi === true;
+
+      if (pendingUpdateModal === "1" && isUserVerified) {
+        console.log("🟢 [DASHBOARD] Triggering UpdateCustomer modal after OTP verification");
+        localStorage.removeItem("customer_show_update_modal");
+        setUpdateModalReason("incomplete");
+        setShowUpdateModal(true);
+      }
     };
 
     initDashboard();
@@ -329,12 +342,9 @@ export default function DashboardPage() {
 
   // Handler untuk OTP sent callback
   const handleOTPSent = () => {
-    console.log("📤 [DASHBOARD] OTP sent, showing update customer modal before redirect");
+    console.log("📤 [DASHBOARD] OTP sent, redirecting user to OTP page");
     setShowVerificationModal(false);
-    setTimeout(() => {
-      setShowUpdateModal(true);
-      setUpdateModalReason("incomplete");
-    }, 300);
+    router.replace("/customer/otp");
   };
 
   const handleUpdateSuccess = (data) => {
@@ -359,13 +369,9 @@ export default function DashboardPage() {
       localStorage.setItem("customer_user", JSON.stringify(updatedUser));
     }
 
+    localStorage.removeItem("customer_show_update_modal");
     setShowUpdateModal(false);
     toast.success("Data berhasil diperbarui!");
-
-    setTimeout(() => {
-      router.replace("/customer/otp");
-    }, 500);
-
     loadDashboardData();
   };
 
