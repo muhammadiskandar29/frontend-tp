@@ -161,7 +161,7 @@ export default function DashboardPage() {
       
       // ===== SYNC CUSTOMER DATA KE LOCALSTORAGE =====
       // Update localStorage dengan data customer terbaru dari backend
-      // Ini memastikan field seperti nama_panggilan, profesi, tanggal_lahir ter-update
+      // Ini memastikan field seperti nama_panggilan, profesi, tanggal_lahir, verifikasi ter-update
       if (customerData) {
         const existingUser = session.user || {};
         const updatedUser = {
@@ -170,12 +170,16 @@ export default function DashboardPage() {
           // Pastikan field penting tidak null jika sudah ada di existingUser
           nama_panggilan: customerData.nama_panggilan || existingUser.nama_panggilan,
           profesi: customerData.profesi || existingUser.profesi,
+          // Pastikan verifikasi ter-sync dari backend (prioritas utama untuk modal check)
+          verifikasi: customerData.verifikasi !== undefined ? customerData.verifikasi : existingUser.verifikasi,
           // Pastikan tanggal_lahir ter-sync dari backend (ini adalah penanda profile sudah diisi)
           tanggal_lahir: customerData.tanggal_lahir || existingUser.tanggal_lahir,
         };
         localStorage.setItem("customer_user", JSON.stringify(updatedUser));
         console.log("✅ [DASHBOARD] Customer data synced to localStorage:", updatedUser);
         console.log("✅ [DASHBOARD] Key field for modal check:", {
+          verifikasi: updatedUser.verifikasi,
+          isVerified: updatedUser.verifikasi === "1" || updatedUser.verifikasi === 1,
           tanggal_lahir: updatedUser.tanggal_lahir,
           hasTanggalLahir: !!updatedUser.tanggal_lahir && String(updatedUser.tanggal_lahir).trim() !== ""
         });
@@ -215,38 +219,31 @@ export default function DashboardPage() {
       return () => clearTimeout(modalTimeout);
     }
 
-    // ===== CEK TANGGAL LAHIR =====
-    // tanggal_lahir adalah penanda apakah profile sudah diisi atau belum
-    // Jika tanggal_lahir sudah terisi → Profile sudah diisi → TIDAK tampilkan modal
-    // Jika tanggal_lahir kosong/null → Profile belum diisi → Tampilkan modal
-    const hasTanggalLahir = user.tanggal_lahir && String(user.tanggal_lahir).trim() !== "";
-
-    console.log("🔍 [DASHBOARD] Checking user data:", {
-      tanggal_lahir: user.tanggal_lahir,
-      hasTanggalLahir,
-      nama_panggilan: user.nama_panggilan,
-      profesi: user.profesi,
-      verifikasi: user.verifikasi
-    });
-
-    // Jika tanggal_lahir kosong, tampilkan modal untuk lengkapi data
-    if (!hasTanggalLahir) {
-      console.log("⚠️ [DASHBOARD] Showing update modal - tanggal_lahir is empty");
-      setUpdateModalReason("incomplete");
-      setShowUpdateModal(true);
-      return;
-    }
-    
-    console.log("✅ [DASHBOARD] Profile already filled (tanggal_lahir exists), skipping update modal");
-
-    // ===== CEK VERIFIKASI OTP =====
+    // ===== CEK VERIFIKASI OTP DULU =====
     const verifikasiValue = user.verifikasi;
     const normalizedVerifikasi = verifikasiValue === "1" ? 1 : verifikasiValue === "0" ? 0 : verifikasiValue;
     const isVerified = normalizedVerifikasi === 1 || normalizedVerifikasi === true;
-    
+
+    console.log("🔍 [DASHBOARD] Checking user data:", {
+      verifikasi: user.verifikasi,
+      isVerified,
+      tanggal_lahir: user.tanggal_lahir,
+      nama_panggilan: user.nama_panggilan,
+      profesi: user.profesi
+    });
+
+    // Jika sudah verifikasi (verifikasi = 1), TIDAK tampilkan modal apapun
+    // Sesuai dokumentasi: jika verifikasi = 1, customer sudah verified dan tidak perlu update data
     if (isVerified) {
+      console.log("✅ [DASHBOARD] User verified (verifikasi = 1), skipping all modals");
       setShowVerificationModal(false);
-    } else {
+      setShowUpdateModal(false);
+      return;
+    }
+
+    // Jika belum verifikasi (verifikasi = 0), tampilkan modal OTP
+    if (!isVerified) {
+      console.log("⚠️ [DASHBOARD] User not verified, showing OTP modal");
       const modalTimeout = setTimeout(() => {
         setShowVerificationModal(true);
       }, 5000);
@@ -305,6 +302,8 @@ export default function DashboardPage() {
         ...session.user,
         ...dashboardCustomerData,
         ...customerProfile,
+        // Pastikan verifikasi dari source terbaru (prioritas utama untuk menentukan apakah modal muncul)
+        verifikasi: customerProfile?.verifikasi || dashboardCustomerData?.verifikasi || session.user?.verifikasi,
         // Pastikan tanggal_lahir dari source terbaru (ini adalah penanda profile sudah diisi)
         tanggal_lahir: customerProfile?.tanggal_lahir || dashboardCustomerData?.tanggal_lahir || session.user?.tanggal_lahir,
       };
@@ -351,6 +350,8 @@ export default function DashboardPage() {
         pendapatan_bln: data?.pendapatan_bln || session.user.pendapatan_bln,
         industri_pekerjaan: data?.industri_pekerjaan || session.user.industri_pekerjaan,
         jenis_kelamin: data?.jenis_kelamin || session.user.jenis_kelamin,
+        // Pastikan verifikasi ter-update dari response API (prioritas utama)
+        verifikasi: data?.verifikasi !== undefined ? data.verifikasi : session.user.verifikasi,
         // tanggal_lahir adalah penanda bahwa profile sudah diisi
         tanggal_lahir: data?.tanggal_lahir || session.user.tanggal_lahir,
         alamat: data?.alamat || session.user.alamat,
@@ -358,6 +359,8 @@ export default function DashboardPage() {
       
       console.log("✅ [DASHBOARD] Updated user data:", updatedUser);
       console.log("✅ [DASHBOARD] Key field for modal check after update:", {
+        verifikasi: updatedUser.verifikasi,
+        isVerified: updatedUser.verifikasi === "1" || updatedUser.verifikasi === 1,
         tanggal_lahir: updatedUser.tanggal_lahir,
         hasTanggalLahir: !!updatedUser.tanggal_lahir && String(updatedUser.tanggal_lahir).trim() !== ""
       });

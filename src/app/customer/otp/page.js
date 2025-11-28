@@ -2,9 +2,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
 import "@/styles/otp.css";
-import { getCustomerSession, verifyCustomerOTP, resendCustomerOTP } from "@/lib/customerAuth";
-import UpdateCustomerModal from "@/app/customer/dashboard/updateCustomer";
+import { getCustomerSession } from "@/lib/customerAuth";
 
 const OTP_VALID_DURATION = 5 * 60; // 5 minutes in seconds
 
@@ -18,7 +18,6 @@ export default function CustomerOTPPage() {
   const [wa, setWa] = useState(null);
   const [timeLeft, setTimeLeft] = useState(OTP_VALID_DURATION);
   const [timerActive, setTimerActive] = useState(true);
-  const [showUpdateModal, setShowUpdateModal] = useState(false);
   const inputs = useRef([]);
 
   const resetOtpTimer = () => {
@@ -123,11 +122,29 @@ export default function CustomerOTPPage() {
 
     try {
       console.log("🔵 [OTP] Verifying OTP...");
-      const result = await verifyCustomerOTP(customerId, code);
+      
+      const token = localStorage.getItem("customer_token");
+      const response = await fetch("/api/customer/otp/verify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          customer_id: customerId,
+          otp: code,
+        }),
+      });
+
+      const result = await response.json();
+      console.log("📥 [OTP] Verify response:", result);
       
       if (result.success) {
         setMessage("Verifikasi berhasil! 🎉");
         setTimerActive(false);
+        toast.success("Verifikasi berhasil!");
+        
         // Update user data di localStorage dengan data dari response API
         const session = getCustomerSession();
         if (session.user && result.data) {
@@ -146,8 +163,10 @@ export default function CustomerOTPPage() {
           console.log("✅ [OTP] User data updated (fallback):", session.user);
         }
         
-        // Tampilkan modal updateCustomer setelah verifikasi berhasil
-        setShowUpdateModal(true);
+        // Redirect ke dashboard setelah verifikasi berhasil
+        setTimeout(() => {
+          router.replace("/customer/dashboard");
+        }, 500);
       } else {
         setMessage(result.message || "Kode OTP salah atau sudah kadaluarsa.");
       }
@@ -170,10 +189,35 @@ export default function CustomerOTPPage() {
 
     try {
       console.log("🔵 [OTP] Resending OTP...");
-      const result = await resendCustomerOTP(customerId, wa);
+      
+      // Format nomor WA (pastikan format 62xxxxxxxxxx)
+      let waNumber = wa.trim();
+      if (waNumber.startsWith("0")) {
+        waNumber = "62" + waNumber.substring(1);
+      } else if (!waNumber.startsWith("62")) {
+        waNumber = "62" + waNumber;
+      }
+
+      const token = localStorage.getItem("customer_token");
+      const response = await fetch("/api/customer/otp/resend", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          customer_id: customerId,
+          wa: waNumber,
+        }),
+      });
+
+      const result = await response.json();
+      console.log("📥 [OTP] Resend response:", result);
       
       if (result.success) {
         setMessage("Kode OTP baru telah dikirim ke WhatsApp Anda!");
+        toast.success("OTP terkirim!");
         // Reset OTP input
         setOtp(["", "", "", "", "", ""]);
         if (inputs.current[0]) {
@@ -191,74 +235,119 @@ export default function CustomerOTPPage() {
     }
   };
 
-  const handleUpdateCustomerSuccess = () => {
-    // Setelah update customer berhasil, redirect ke dashboard
-    setTimeout(() => {
-      router.replace("/customer/dashboard");
-    }, 500);
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (pastedData) {
+      const newOtp = [...otp];
+      pastedData.split("").forEach((char, i) => {
+        if (i < 6) newOtp[i] = char;
+      });
+      setOtp(newOtp);
+      const lastIndex = Math.min(pastedData.length, 5);
+      inputs.current[lastIndex]?.focus();
+    }
   };
 
   return (
-    <>
-      <div className="otp-container">
-        <div className="otp-box">
-          <h1 className="otp-title">Verifikasi OTP</h1>
-          <p className="otp-desc">
-            Masukkan 6 digit kode OTP yang telah dikirim ke WhatsApp atau email kamu.
-            <br />
-            <span style={{ fontSize: "0.85rem", color: "#ef4444", marginTop: "0.5rem", display: "block" }}>
-              ⏱️ OTP berlaku selama 5 menit {timeLeft > 0 ? `(tersisa ${formatTimeLeft()})` : "(kedaluwarsa)"}
-            </span>
-          </p>
-
-          <form onSubmit={handleSubmit} className="otp-form">
-            <div className="otp-input-group">
-              {otp.map((digit, i) => (
-                <input
-                  key={i}
-                  type="text"
-                  maxLength="1"
-                  value={digit}
-                  onChange={(e) => handleChange(e, i)}
-                  onKeyDown={(e) => handleKeyDown(e, i)}
-                  ref={(el) => (inputs.current[i] = el)}
-                  className="otp-input"
-                />
-              ))}
-            </div>
-
-            {message && <p className="otp-message">{message}</p>}
-
-            <button type="submit" className="otp-btn" disabled={loading}>
-              {loading ? "Memverifikasi..." : "Verifikasi"}
-            </button>
-
-            {/* 🔸 Kirim ulang kode bukan button lagi */}
-            <p 
-              className="otp-resend" 
-              onClick={handleResend}
-              style={{
-                cursor: resending ? "not-allowed" : "pointer",
-                opacity: resending ? 0.6 : 1,
-              }}
-            >
-              {resending ? "Mengirim ulang..." : "Kirim ulang kode OTP"}
-            </p>
-          </form>
+    <div className="otp-container">
+      <div className="otp-box">
+        <div className="otp-header">
+          <span className="otp-icon">🔐</span>
+          <h1 className="otp-title">Verifikasi</h1>
         </div>
+        
+        <p className="otp-desc">
+          Masukkan 6 digit kode OTP yang telah dikirim ke WhatsApp
+          {wa && (
+            <strong> ({wa.replace(/(\d{2})(\d{3})(\d{4})(\d+)/, "+$1 $2-$3-$4")})</strong>
+          )}
+        </p>
+
+        <div className="otp-timer">
+          <span>⏱️</span>
+          <span>
+            OTP berlaku {timeLeft > 0 ? `${formatTimeLeft()}` : "(kedaluwarsa)"}
+          </span>
+        </div>
+
+        <form onSubmit={handleSubmit} className="otp-form">
+          <div className="otp-input-group" onPaste={handlePaste}>
+            {otp.map((digit, i) => (
+              <input
+                key={i}
+                type="text"
+                inputMode="numeric"
+                maxLength="1"
+                value={digit}
+                onChange={(e) => handleChange(e, i)}
+                onKeyDown={(e) => handleKeyDown(e, i)}
+                ref={(el) => (inputs.current[i] = el)}
+                className="otp-input"
+                autoComplete="off"
+              />
+            ))}
+          </div>
+
+          {message && (
+            <p className={`otp-message ${message.includes("berhasil") ? "success" : "error"}`}>
+              {message}
+            </p>
+          )}
+
+          <button 
+            type="submit" 
+            className="otp-btn" 
+            disabled={loading || timeLeft === 0}
+          >
+            {loading ? "Memverifikasi..." : "Verifikasi"}
+          </button>
+
+          <p
+            className="otp-resend"
+            onClick={!resending ? handleResend : undefined}
+            style={{
+              cursor: resending ? "not-allowed" : "pointer",
+              opacity: resending ? 0.6 : 1,
+            }}
+          >
+            {resending ? "Mengirim ulang..." : "Kirim ulang kode OTP"}
+          </p>
+        </form>
       </div>
 
-      {/* Modal Update Customer */}
-      {showUpdateModal && (
-        <UpdateCustomerModal
-          isOpen={showUpdateModal}
-          onClose={() => {
-            // Jangan tutup modal, harus lengkapi data dulu
-          }}
-          onSuccess={handleUpdateCustomerSuccess}
-          title="Lengkapi Data Customer"
-        />
-      )}
-    </>
+      {/* Extra Styles */}
+      <style jsx>{`
+        .otp-header {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          margin-bottom: 8px;
+        }
+
+        .otp-icon {
+          font-size: 32px;
+        }
+
+        .otp-timer {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          font-size: 14px;
+          color: #ef4444;
+          margin-bottom: 16px;
+        }
+
+        .otp-message.success {
+          color: #16a34a;
+        }
+
+        .otp-message.error {
+          color: #dc2626;
+        }
+      `}</style>
+    </div>
   );
 }
