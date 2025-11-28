@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import FormData from "form-data";
 
 const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "http://3.105.234.181:8000";
 
@@ -167,7 +168,7 @@ export async function POST(request) {
       // Convert images to WebP in frontend before sending to backend
       const incomingFormData = await request.formData();
       
-      // Create new FormData to forward to backend with WebP converted images
+      // Create new FormData using form-data package for better server-side compatibility
       const forwardFormData = new FormData();
       
       console.log("🟢 [POST_PRODUK] Processing FormData entries (converting images to WebP):");
@@ -189,25 +190,35 @@ export async function POST(request) {
             const webpBuffer = await convertToWebP(buffer, value.type, value.name);
             
             if (webpBuffer) {
-              // Conversion successful - create File with WebP format
-              // Keep original filename but change extension to .webp
+              // Conversion successful - append buffer directly to form-data
+              // Change filename: header1.png → header1.webp
               const webpFilename = value.name.replace(/\.[^/.]+$/, "") + ".webp";
-              const webpFile = new File([new Uint8Array(webpBuffer)], webpFilename, { 
-                type: "image/webp",
-                lastModified: value.lastModified || Date.now()
+              
+              // Append buffer directly to form-data (more compatible)
+              forwardFormData.append(key, webpBuffer, {
+                filename: webpFilename,
+                contentType: "image/webp"
               });
               
-              forwardFormData.append(key, webpFile);
-              console.log(`  ✅ Converted to WebP: ${value.name} → ${webpFilename} (${(value.size / 1024).toFixed(2)} KB → ${(webpBuffer.length / 1024).toFixed(2)} KB)`);
+              console.log(`  ✅ Converted: ${value.name} → ${webpFilename} (${(value.size / 1024).toFixed(2)} KB → ${(webpBuffer.length / 1024).toFixed(2)} KB)`);
             } else {
               // Conversion failed - use original
               console.log(`  ⚠️ Conversion failed, using original: ${value.name}`);
-              forwardFormData.append(key, value);
+              const originalBuffer = Buffer.from(arrayBuffer);
+              forwardFormData.append(key, originalBuffer, {
+                filename: value.name,
+                contentType: value.type
+              });
             }
           } else {
             // Non-image file, forward as-is
             console.log(`  📁 ${key}: [File] ${value.name} (${(value.size / 1024).toFixed(2)} KB) - forwarding as-is`);
-            forwardFormData.append(key, value);
+            const arrayBuffer = await value.arrayBuffer();
+            const fileBuffer = Buffer.from(arrayBuffer);
+            forwardFormData.append(key, fileBuffer, {
+              filename: value.name,
+              contentType: value.type
+            });
           }
         } else if (typeof value === "string") {
           console.log(`  📝 ${key}: ${value.substring(0, 100)}${value.length > 100 ? "..." : ""}`);
@@ -217,13 +228,13 @@ export async function POST(request) {
       
       console.log("🟢 [POST_PRODUK] Forwarding FormData to backend (images converted to WebP)...");
 
-      // Forward FormData to backend
+      // Forward FormData to backend with proper headers
       response = await fetch(`${BACKEND_URL}/api/admin/produk`, {
         method: "POST",
         headers: {
+          ...forwardFormData.getHeaders(), // Get proper headers with boundary
           Accept: "application/json",
           Authorization: `Bearer ${token}`,
-          // Don't set Content-Type, let fetch set it with boundary automatically
         },
         body: forwardFormData,
       });

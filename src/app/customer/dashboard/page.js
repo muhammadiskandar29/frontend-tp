@@ -14,6 +14,7 @@ export default function DashboardPage() {
   const [showUpdateModal, setShowUpdateModal] = useState(false); // Untuk update password default
   const [updateModalReason, setUpdateModalReason] = useState("password"); // "password" atau "incomplete"
   const [sendingOTP, setSendingOTP] = useState(false);
+  const [isDashboardLocked, setIsDashboardLocked] = useState(false); // Untuk lock dashboard saat verifikasi = 0
   const [stats, setStats] = useState([
     { id: "total", label: "Total Order", value: 0, icon: "🧾" },
     { id: "active", label: "Order Aktif", value: 0, icon: "✅" },
@@ -32,6 +33,11 @@ export default function DashboardPage() {
 
     return () => clearInterval(interval);
   }, []);
+
+  // Lock dashboard saat modal muncul (verifikasi modal atau update modal)
+  useEffect(() => {
+    setIsDashboardLocked(showVerificationModal || showUpdateModal);
+  }, [showVerificationModal, showUpdateModal]);
 
   const formatCurrency = (value) => {
     if (!value) return "Rp 0";
@@ -233,9 +239,10 @@ export default function DashboardPage() {
       return;
     }
 
-    // Jika belum verifikasi (verifikasi = 0), tampilkan modal OTP dulu
-    // Dashboard tetap tampil, tapi muncul otpVerificationModal
+    // Jika belum verifikasi (verifikasi = 0), tampilkan modal OTP
+    // Dashboard tetap tampil, tapi di-lock dan muncul otpVerificationModal
     // Setelah OTP sent, akan muncul updateCustomer.js
+    // Dashboard akan di-lock otomatis oleh useEffect ketika modal muncul
     if (!isVerified) {
       console.log("⚠️ [DASHBOARD] User not verified (verifikasi = 0), showing OTP modal");
       setShowUpdateModal(false); // Pastikan update modal tidak muncul dulu
@@ -325,6 +332,7 @@ export default function DashboardPage() {
     console.log("📤 [DASHBOARD] OTP sent, closing OTP modal and showing update customer modal");
     setShowVerificationModal(false);
     // Setelah OTP dikirim, tampilkan updateCustomer modal
+    // Dashboard akan tetap locked otomatis oleh useEffect ketika update modal muncul
     // User akan mengisi data dulu sebelum redirect ke halaman OTP
     setTimeout(() => {
       setShowUpdateModal(true);
@@ -434,7 +442,16 @@ export default function DashboardPage() {
         ) : null;
       })()}
 
-      <div className="customer-dashboard">
+      <div 
+        className="customer-dashboard"
+        style={{
+          position: "relative",
+          filter: isDashboardLocked ? "blur(5px)" : "none",
+          pointerEvents: isDashboardLocked ? "none" : "auto",
+          opacity: isDashboardLocked ? 0.6 : 1,
+          transition: "all 0.3s ease",
+        }}
+      >
         <header className="customer-dashboard__hero" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <p className="customer-dashboard__subtitle">Kelola dan akses order Anda di sini</p>
