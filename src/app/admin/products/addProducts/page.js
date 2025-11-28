@@ -227,7 +227,25 @@ export default function Page() {
         }
       );
 
-      const data = await res.json();
+      // Handle response - check if it's JSON first
+      const contentType = res.headers.get("content-type");
+      let data;
+      
+      if (contentType && contentType.includes("application/json")) {
+        try {
+          data = await res.json();
+        } catch (parseError) {
+          const textResponse = await res.text();
+          console.error("❌ Failed to parse JSON response:", textResponse.substring(0, 200));
+          alert("Terjadi kesalahan: Response dari server tidak valid.");
+          return;
+        }
+      } else {
+        const textResponse = await res.text();
+        console.error("❌ Non-JSON response received:", textResponse.substring(0, 200));
+        alert("Terjadi kesalahan: Server mengembalikan response yang tidak valid.");
+        return;
+      }
       
       // Logging struktur JSON lengkap
       console.log("Success:", data.success);
@@ -236,7 +254,7 @@ export default function Page() {
 
       if (!res.ok) {
         console.error("❌ API ERROR:", data);
-        alert("Gagal membuat produk!");
+        alert(data?.message || "Gagal membuat produk!");
         return;
       }
 
@@ -247,7 +265,7 @@ export default function Page() {
       router.push("/admin/products");
     } catch (err) {
       console.error("❌ Submit error:", err);
-      alert("Terjadi kesalahan saat submit.");
+      alert("Terjadi kesalahan saat submit: " + (err.message || "Unknown error"));
     }
   };
 

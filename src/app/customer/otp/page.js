@@ -199,12 +199,20 @@ export default function CustomerOTPPage() {
       }
 
       const token = localStorage.getItem("customer_token");
+      
+      if (!token) {
+        setMessage("Token tidak ditemukan. Silakan login kembali.");
+        toast.error("Token tidak ditemukan. Silakan login kembali.");
+        setResending(false);
+        return;
+      }
+      
       const response = await fetch("/api/customer/otp/resend", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           customer_id: customerId,

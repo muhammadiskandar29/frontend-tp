@@ -215,7 +215,7 @@ export default function DashboardPage() {
       console.log("⚠️ [DASHBOARD] No user data, showing verification modal");
       const modalTimeout = setTimeout(() => {
         setShowVerificationModal(true);
-      }, 5000);
+      }, 500);
       return () => clearTimeout(modalTimeout);
     }
 
@@ -232,21 +232,36 @@ export default function DashboardPage() {
       profesi: user.profesi
     });
 
-    // Jika sudah verifikasi (verifikasi = 1), TIDAK tampilkan modal apapun
-    // Sesuai dokumentasi: jika verifikasi = 1, customer sudah verified dan tidak perlu update data
+    // Jika sudah verifikasi (verifikasi = 1), cek data lengkap
     if (isVerified) {
-      console.log("✅ [DASHBOARD] User verified (verifikasi = 1), skipping all modals");
-      setShowVerificationModal(false);
-      setShowUpdateModal(false);
+      console.log("✅ [DASHBOARD] User verified (verifikasi = 1)");
+      
+      // Cek apakah data sudah lengkap (tanggal_lahir sebagai penanda)
+      const hasTanggalLahir = user.tanggal_lahir && String(user.tanggal_lahir).trim() !== "";
+      
+      if (hasTanggalLahir) {
+        // Data sudah lengkap, dashboard berhasil ditampilkan tanpa modal
+        console.log("✅ [DASHBOARD] Data sudah lengkap, dashboard berhasil ditampilkan");
+        setShowVerificationModal(false);
+        setShowUpdateModal(false);
+      } else {
+        // Data belum lengkap, tampilkan updateCustomer modal
+        console.log("⚠️ [DASHBOARD] Data belum lengkap, showing update customer modal");
+        setShowVerificationModal(false);
+        setUpdateModalReason("incomplete");
+        setShowUpdateModal(true);
+      }
       return;
     }
 
-    // Jika belum verifikasi (verifikasi = 0), tampilkan modal OTP
+    // Jika belum verifikasi (verifikasi = 0), tampilkan modal OTP dulu
+    // Dashboard tetap tampil, tapi muncul otpVerificationModal
     if (!isVerified) {
-      console.log("⚠️ [DASHBOARD] User not verified, showing OTP modal");
+      console.log("⚠️ [DASHBOARD] User not verified (verifikasi = 0), showing OTP modal");
+      setShowUpdateModal(false); // Pastikan update modal tidak muncul dulu
       const modalTimeout = setTimeout(() => {
         setShowVerificationModal(true);
-      }, 5000);
+      }, 500);
       return () => clearTimeout(modalTimeout);
     }
   }, []);
@@ -329,7 +344,10 @@ export default function DashboardPage() {
 
   // Handler untuk OTP sent callback
   const handleOTPSent = (data) => {
+    console.log("📤 [DASHBOARD] OTP sent, redirecting to OTP page");
     setShowVerificationModal(false);
+    // Setelah OTP dikirim, redirect ke halaman OTP untuk verifikasi
+    // Setelah OTP verified, user akan kembali ke dashboard dan cek data lengkap
     router.replace("/customer/otp");
   };
 
@@ -369,6 +387,29 @@ export default function DashboardPage() {
     
     setShowUpdateModal(false);
     toast.success("Data berhasil diperbarui!");
+    
+    // Reload dashboard data untuk sync dengan backend dan cek modal lagi
+    const reloadAndCheck = async () => {
+      const dashboardCustomerData = await loadDashboardData();
+      const customerProfile = await fetchCustomerProfile(session.token);
+      
+      const mergedCustomerData = {
+        ...session.user,
+        ...dashboardCustomerData,
+        ...customerProfile,
+        verifikasi: customerProfile?.verifikasi || dashboardCustomerData?.verifikasi || session.user?.verifikasi,
+        tanggal_lahir: customerProfile?.tanggal_lahir || dashboardCustomerData?.tanggal_lahir || session.user?.tanggal_lahir,
+      };
+      
+      if (mergedCustomerData && (mergedCustomerData.id || mergedCustomerData.nama)) {
+        localStorage.setItem("customer_user", JSON.stringify(mergedCustomerData));
+      }
+      
+      // Cek modal lagi setelah update - jika data sudah lengkap, tidak ada modal
+      checkAndShowModal(mergedCustomerData);
+    };
+    
+    reloadAndCheck();
     
     // Reload dashboard data untuk sync dengan backend
     loadDashboardData();
@@ -418,8 +459,8 @@ export default function DashboardPage() {
         />
       )}
 
-      {/* Modal Verifikasi OTP - Hanya tampil jika tidak ada modal update */}
-      {!showUpdateModal && showVerificationModal && (() => {
+      {/* Modal Verifikasi OTP - Tampil jika verifikasi = 0 */}
+      {showVerificationModal && !showUpdateModal && (() => {
         const session = getCustomerSession();
         const customerData = customerInfo || session.user;
         return customerData ? (
@@ -428,10 +469,7 @@ export default function DashboardPage() {
             onClose={() => {
               // Jangan tutup modal dengan klik di luar atau ESC
             }}
-            onOTPSent={(data) => {
-              setShowVerificationModal(false);
-              router.replace("/customer/otp");
-            }}
+            onOTPSent={handleOTPSent}
             allowClose={false}
           />
         ) : null;

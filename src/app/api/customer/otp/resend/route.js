@@ -10,6 +10,7 @@ export async function POST(request) {
     const body = await request.json();
 
     console.log("🟢 [OTP_RESEND] Request body:", body);
+    console.log("🟢 [OTP_RESEND] Has token:", !!token);
 
     // Validasi body
     if (!body.customer_id || !body.wa) {

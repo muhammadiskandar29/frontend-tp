@@ -268,7 +268,27 @@ export default function AddProducts({ initialData = null, lists = {} }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const json = await res.json();
+      
+      // Handle response - check if it's JSON first
+      const contentType = res.headers.get("content-type");
+      let json;
+      
+      if (contentType && contentType.includes("application/json")) {
+        try {
+          json = await res.json();
+        } catch (parseError) {
+          const textResponse = await res.text();
+          console.error("❌ Failed to parse JSON response:", textResponse.substring(0, 200));
+          alert("Terjadi kesalahan: Response dari server tidak valid.");
+          return;
+        }
+      } else {
+        const textResponse = await res.text();
+        console.error("❌ Non-JSON response received:", textResponse.substring(0, 200));
+        alert("Terjadi kesalahan: Server mengembalikan response yang tidak valid.");
+        return;
+      }
+      
       if (!res.ok) throw new Error(json?.message || "Save failed");
       alert("Produk tersimpan");
       // router.push("/products") // optional

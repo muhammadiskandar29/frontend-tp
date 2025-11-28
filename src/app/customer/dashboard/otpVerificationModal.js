@@ -62,12 +62,12 @@ export default function OTPVerificationModal({ customerInfo, onClose, onOTPSent,
 
       if (data?.success) {
         toast.success(data?.message || "OTP berhasil dikirim ke WhatsApp Anda");
-        // Redirect ke halaman OTP setelah berhasil kirim
+        // Panggil callback onOTPSent untuk handle alur selanjutnya (updateCustomer modal)
         if (onOTPSent) {
           onOTPSent(data);
         }
-        // Redirect ke halaman OTP
-        router.replace("/customer/otp");
+        // Jangan langsung redirect, biarkan dashboard yang handle alurnya
+        // Redirect akan dilakukan setelah updateCustomer modal selesai
       } else {
         throw new Error(data?.message || "Gagal mengirim OTP");
       }

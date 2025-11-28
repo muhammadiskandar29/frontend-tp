@@ -242,9 +242,13 @@ export default function VerifyOrderOTPPage() {
     setMessage("");
 
     try {
+      // Dari landing page - tidak perlu token
       const response = await fetch("/api/customer/otp/resend", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
         body: JSON.stringify({
           customer_id: orderData.customerId,
           wa: orderData.wa,
