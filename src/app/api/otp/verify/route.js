@@ -22,21 +22,21 @@ export async function POST(request) {
   try {
     const body = await request.json();
 
-    console.log("🟢 [PUBLIC_OTP_RESEND] Request body:", body);
+    console.log("🟢 [PUBLIC_OTP_VERIFY] Request body:", body);
 
-    if (!body?.customer_id || !body?.wa) {
+    if (!body?.customer_id || !body?.otp) {
       return NextResponse.json(
-        { success: false, message: "customer_id dan wa harus diisi" },
+        { success: false, message: "customer_id dan otp harus diisi" },
         { status: 400 }
       );
     }
 
     const payload = {
       customer_id: Number(body.customer_id),
-      wa: String(body.wa),
+      otp: String(body.otp),
     };
 
-    const response = await fetch(`${BACKEND_URL}/api/otp/resend`, {
+    const response = await fetch(`${BACKEND_URL}/api/otp/verify`, {
       method: "POST",
       headers: baseHeaders,
       body: JSON.stringify(payload),
@@ -48,7 +48,7 @@ export async function POST(request) {
     try {
       data = JSON.parse(responseText);
     } catch (err) {
-      console.error("❌ [PUBLIC_OTP_RESEND] Non-JSON response:", responseText);
+      console.error("❌ [PUBLIC_OTP_VERIFY] Non-JSON response:", responseText);
       return NextResponse.json(
         { success: false, message: "Backend error: Response bukan JSON" },
         { status: 500 }
@@ -56,11 +56,11 @@ export async function POST(request) {
     }
 
     if (!response.ok) {
-      console.error("❌ [PUBLIC_OTP_RESEND] Backend error:", data);
+      console.error("❌ [PUBLIC_OTP_VERIFY] Backend error:", data);
       return NextResponse.json(
         {
           success: false,
-          message: data?.message || "Gagal mengirim ulang OTP",
+          message: data?.message || "Kode OTP salah atau sudah kadaluarsa",
         },
         { status: response.status }
       );
@@ -68,15 +68,15 @@ export async function POST(request) {
 
     return NextResponse.json({
       success: true,
-      message: data?.message || "OTP berhasil dikirim ke WhatsApp",
+      message: data?.message || "OTP valid, akun telah diverifikasi",
       data: data?.data || data,
     });
   } catch (error) {
-    console.error("❌ [PUBLIC_OTP_RESEND] Error:", error);
+    console.error("❌ [PUBLIC_OTP_VERIFY] Error:", error);
     return NextResponse.json(
       {
         success: false,
-        message: error?.message || "Terjadi kesalahan saat mengirim ulang OTP",
+        message: error?.message || "Terjadi kesalahan saat memverifikasi OTP",
       },
       { status: 500 }
     );

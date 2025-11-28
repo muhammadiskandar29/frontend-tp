@@ -178,25 +178,23 @@ export default function Page() {
           payload.append("user_input", userInputId);
         }
         // Kirim kategori/kategori_id sebagai integer
-        const kategoriId =
+        const kategoriValue =
           form.kategori !== null && form.kategori !== undefined
-            ? Number(form.kategori)
-            : null;
-        if (kategoriId !== null && !Number.isNaN(kategoriId)) {
-          payload.append("kategori", kategoriId);
-          payload.append("kategori_id", kategoriId);
+            ? String(form.kategori)
+            : "";
+        if (kategoriValue) {
+          payload.append("kategori", kategoriValue);
         }
       } else {
         // Kirim kategori/kategori_id sebagai integer
-        const kategoriId =
+        const kategoriValue =
           form.kategori !== null && form.kategori !== undefined
-            ? Number(form.kategori)
-            : null;
+            ? String(form.kategori)
+            : "";
         
         payload = {
           ...form,
-          kategori: !Number.isNaN(kategoriId) ? kategoriId : null,
-          kategori_id: !Number.isNaN(kategoriId) ? kategoriId : null,
+          kategori: kategoriValue || null,
           harga_coret: Number(form.harga_coret) || 0,
           harga_asli: Number(form.harga_asli) || 0,
           tanggal_event: formatDateForBackend(form.tanggal_event),
@@ -318,7 +316,7 @@ useEffect(() => {
       // Create options with ID as value and name as label
       const kategoriOpts = activeCategories.map((k) => ({
         label: `${k.id} - ${k.nama}`,
-        value: k.id
+        value: String(k.id),
       }));
       setKategoriOptions(kategoriOpts);
 
@@ -456,7 +454,7 @@ useEffect(() => {
               value={form.kategori || null}
               options={kategoriOptions}
               onChange={(e) => {
-                handleChange("kategori", e.value ? Number(e.value) : null);
+                handleChange("kategori", e.value ?? null);
               }}
               placeholder="Pilih Kategori"
               showClear

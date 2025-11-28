@@ -1,19 +1,14 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "react-hot-toast";
 import CustomerLayout from "@/components/customer/CustomerLayout";
 import { getCustomerSession } from "@/lib/customerAuth";
 import { fetchCustomerDashboard } from "@/lib/customerDashboard";
 import OTPVerificationModal from "./otpVerificationModal";
-import UpdateCustomerModal from "./updateCustomer";
 
 export default function DashboardPage() {
   const router = useRouter();
   const [showVerificationModal, setShowVerificationModal] = useState(false);
-  const [showUpdateModal, setShowUpdateModal] = useState(false); // Untuk update password default
-  const [updateModalReason, setUpdateModalReason] = useState("password"); // "password" atau "incomplete"
-  const [sendingOTP, setSendingOTP] = useState(false);
   const [isDashboardLocked, setIsDashboardLocked] = useState(false); // Untuk lock dashboard saat verifikasi = 0
   const [stats, setStats] = useState([
     { id: "total", label: "Total Order", value: 0, icon: "🧾" },
@@ -34,10 +29,10 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Lock dashboard saat modal muncul (verifikasi modal atau update modal)
+  // Lock dashboard saat modal verifikasi muncul
   useEffect(() => {
-    setIsDashboardLocked(showVerificationModal || showUpdateModal);
-  }, [showVerificationModal, showUpdateModal]);
+    setIsDashboardLocked(showVerificationModal);
+  }, [showVerificationModal]);
 
   const formatCurrency = (value) => {
     if (!value) return "Rp 0";
@@ -235,7 +230,6 @@ export default function DashboardPage() {
     if (isVerified) {
       console.log("✅ [DASHBOARD] User verified (verifikasi = 1), dashboard berhasil ditampilkan");
       setShowVerificationModal(false);
-      setShowUpdateModal(false);
       return;
     }
 
@@ -245,7 +239,6 @@ export default function DashboardPage() {
     // Dashboard akan di-lock otomatis oleh useEffect ketika modal muncul
     if (!isVerified) {
       console.log("⚠️ [DASHBOARD] User not verified (verifikasi = 0), showing OTP modal");
-      setShowUpdateModal(false); // Pastikan update modal tidak muncul dulu
       const modalTimeout = setTimeout(() => {
         setShowVerificationModal(true);
       }, 500);
@@ -328,58 +321,10 @@ export default function DashboardPage() {
   }, [router, loadDashboardData, fetchCustomerProfile, checkAndShowModal]);
 
   // Handler untuk OTP sent callback
-  const handleOTPSent = (data) => {
-    console.log("📤 [DASHBOARD] OTP sent, closing OTP modal and showing update customer modal");
+  const handleOTPSent = () => {
+    console.log("📤 [DASHBOARD] OTP sent, redirecting to OTP page");
     setShowVerificationModal(false);
-    // Setelah OTP dikirim, tampilkan updateCustomer modal
-    // Dashboard akan tetap locked otomatis oleh useEffect ketika update modal muncul
-    // User akan mengisi data dulu sebelum redirect ke halaman OTP
-    setTimeout(() => {
-      setShowUpdateModal(true);
-      setUpdateModalReason("incomplete"); // Tampilkan sebagai "Lengkapi Data"
-    }, 300);
-  };
-
-  // Handler untuk update customer success (password changed)
-  const handleUpdateSuccess = (data) => {
-    console.log("✅ [DASHBOARD] Update success, data received:", data);
-    
-    // Update session dengan data baru dari response API
-    const session = getCustomerSession();
-    if (session.user) {
-      const updatedUser = {
-        ...session.user,
-        ...data,
-        // Pastikan field penting ter-update dari response API
-        nama_panggilan: data?.nama_panggilan || session.user.nama_panggilan,
-        profesi: data?.profesi || session.user.profesi,
-        instagram: data?.instagram || session.user.instagram,
-        pendapatan_bln: data?.pendapatan_bln || session.user.pendapatan_bln,
-        industri_pekerjaan: data?.industri_pekerjaan || session.user.industri_pekerjaan,
-        jenis_kelamin: data?.jenis_kelamin || session.user.jenis_kelamin,
-        // Pastikan verifikasi ter-update dari response API (prioritas utama)
-        verifikasi: data?.verifikasi !== undefined ? data.verifikasi : session.user.verifikasi,
-        alamat: data?.alamat || session.user.alamat,
-      };
-      
-      console.log("✅ [DASHBOARD] Updated user data:", updatedUser);
-      console.log("✅ [DASHBOARD] Key field for modal check after update:", {
-        verifikasi: updatedUser.verifikasi,
-        isVerified: updatedUser.verifikasi === "1" || updatedUser.verifikasi === 1
-      });
-      localStorage.setItem("customer_user", JSON.stringify(updatedUser));
-    }
-    
-    setShowUpdateModal(false);
-    toast.success("Data berhasil diperbarui!");
-    
-    // Setelah data berhasil diupdate, redirect ke halaman OTP untuk verifikasi
-    setTimeout(() => {
-      router.replace("/customer/otp");
-    }, 500);
-    
-    // Reload dashboard data untuk sync dengan backend
-    loadDashboardData();
+    router.replace("/customer/otp");
   };
 
   const getCountdownLabel = (order) => {
@@ -411,23 +356,8 @@ export default function DashboardPage() {
 
   return (
     <CustomerLayout>
-      {/* Modal Update Password Default / Lengkapi Data - Prioritas pertama */}
-      {showUpdateModal && (
-        <UpdateCustomerModal
-          isOpen={showUpdateModal}
-          onClose={() => {
-            // Modal tidak bisa ditutup sebelum update
-          }}
-          onSuccess={handleUpdateSuccess}
-          title={updateModalReason === "password" 
-            ? "Ubah Password & Lengkapi Data" 
-            : "Lengkapi Data Profil Anda"}
-          requirePassword={updateModalReason === "password"}
-        />
-      )}
-
       {/* Modal Verifikasi OTP - Tampil jika verifikasi = 0 */}
-      {showVerificationModal && !showUpdateModal && (() => {
+      {showVerificationModal && (() => {
         const session = getCustomerSession();
         const customerData = customerInfo || session.user;
         return customerData ? (

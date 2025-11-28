@@ -1,6 +1,18 @@
 import { NextResponse } from "next/server";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://3.105.234.181:8000";
+const BACKEND_URL =
+  process.env.BACKEND_URL ||
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://3.105.234.181:8000";
+
+// Optional service token so public flows (landing/verify-order) can still
+// authenticate to the backend without exposing credentials to the browser.
+const PUBLIC_OTP_TOKEN =
+  process.env.OTP_PUBLIC_TOKEN ||
+  process.env.LANDING_AUTH_TOKEN ||
+  process.env.OTP_SERVICE_TOKEN ||
+  null;
 
 export async function POST(request) {
   try {
@@ -20,13 +32,19 @@ export async function POST(request) {
       );
     }
 
-    // Forward ke backend - endpoint: /api/otp/resend
-    const response = await fetch(`${BACKEND_URL}/api/otp/resend`, {
+    const authHeaders =
+      token
+        ? { Authorization: `Bearer ${token}` }
+        : PUBLIC_OTP_TOKEN
+          ? { Authorization: `Bearer ${PUBLIC_OTP_TOKEN}` }
+          : {};
+
+    const response = await fetch(`${BACKEND_URL}/api/customer/otp/resend`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...authHeaders,
       },
       body: JSON.stringify({
         customer_id: parseInt(body.customer_id, 10),

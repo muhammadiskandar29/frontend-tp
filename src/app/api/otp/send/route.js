@@ -22,7 +22,7 @@ export async function POST(request) {
   try {
     const body = await request.json();
 
-    console.log("🟢 [PUBLIC_OTP_RESEND] Request body:", body);
+    console.log("🟢 [PUBLIC_OTP_SEND] Request body:", body);
 
     if (!body?.customer_id || !body?.wa) {
       return NextResponse.json(
@@ -36,7 +36,7 @@ export async function POST(request) {
       wa: String(body.wa),
     };
 
-    const response = await fetch(`${BACKEND_URL}/api/otp/resend`, {
+    const response = await fetch(`${BACKEND_URL}/api/otp/send`, {
       method: "POST",
       headers: baseHeaders,
       body: JSON.stringify(payload),
@@ -48,7 +48,7 @@ export async function POST(request) {
     try {
       data = JSON.parse(responseText);
     } catch (err) {
-      console.error("❌ [PUBLIC_OTP_RESEND] Non-JSON response:", responseText);
+      console.error("❌ [PUBLIC_OTP_SEND] Non-JSON response:", responseText);
       return NextResponse.json(
         { success: false, message: "Backend error: Response bukan JSON" },
         { status: 500 }
@@ -56,12 +56,9 @@ export async function POST(request) {
     }
 
     if (!response.ok) {
-      console.error("❌ [PUBLIC_OTP_RESEND] Backend error:", data);
+      console.error("❌ [PUBLIC_OTP_SEND] Backend error:", data);
       return NextResponse.json(
-        {
-          success: false,
-          message: data?.message || "Gagal mengirim ulang OTP",
-        },
+        { success: false, message: data?.message || "Gagal mengirim OTP" },
         { status: response.status }
       );
     }
@@ -72,11 +69,11 @@ export async function POST(request) {
       data: data?.data || data,
     });
   } catch (error) {
-    console.error("❌ [PUBLIC_OTP_RESEND] Error:", error);
+    console.error("❌ [PUBLIC_OTP_SEND] Error:", error);
     return NextResponse.json(
       {
         success: false,
-        message: error?.message || "Terjadi kesalahan saat mengirim ulang OTP",
+        message: error?.message || "Terjadi kesalahan saat mengirim OTP",
       },
       { status: 500 }
     );
