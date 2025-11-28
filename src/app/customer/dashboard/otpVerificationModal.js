@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
 
-export default function OTPVerificationModal({ customerInfo, onClose, onOTPSent }) {
+export default function OTPVerificationModal({ customerInfo, onClose, onOTPSent, allowClose = true }) {
   const router = useRouter();
   const [sendingOTP, setSendingOTP] = useState(false);
 
@@ -80,13 +80,15 @@ export default function OTPVerificationModal({ customerInfo, onClose, onOTPSent 
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={allowClose && onClose ? onClose : undefined}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "500px" }}>
         <div className="modal-header">
           <h2>Verifikasi OTP</h2>
-          <button className="modal-close" onClick={onClose}>
-            ✕
-          </button>
+          {allowClose && onClose && (
+            <button className="modal-close" onClick={onClose}>
+              ✕
+            </button>
+          )}
         </div>
 
         <div className="modal-body">

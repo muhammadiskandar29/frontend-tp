@@ -429,6 +429,7 @@ export default function DashboardPage() {
               setShowVerificationModal(false);
               router.replace("/customer/otp");
             }}
+            allowClose={false}
           />
         ) : null;
       })()}

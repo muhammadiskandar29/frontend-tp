@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import "@/styles/cstlogin.css";
 import { loginCustomer, getCustomerSession } from "@/lib/customerAuth";
+import OTPVerificationModal from "@/app/customer/dashboard/otpVerificationModal";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,6 +14,8 @@ export default function LoginPage() {
   const [current, setCurrent] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [showOTPModal, setShowOTPModal] = useState(false);
+  const [customerData, setCustomerData] = useState(null);
 
 // 🔸 Daftar gambar founder
 const founders = [
@@ -138,19 +141,28 @@ try {
     
     // Cek apakah user sudah verifikasi
     // Jika sudah verifikasi (verifikasi = 1), langsung ke dashboard
-    // Jika belum verifikasi (verifikasi = 0), ke halaman OTP
-    // Normalize
+    // Jika belum verifikasi (verifikasi = 0), tampilkan modal OTP
     const verifikasiValue = result.user?.verifikasi;
+    const isVerified = verifikasiValue === "1" || verifikasiValue === 1 || verifikasiValue === true;
 
-    // Null, undefined, 0 = NOT VERIFIED
-    const verified = String(verifikasiValue) === "1";
+    console.log("🔍 [LOGIN] Verification check:", {
+      verifikasiValue,
+      isVerified,
+      user: result.user
+    });
 
-    console.log("User verified:", verified, "verifikasi:", verifikasiValue);
-
-    // Selalu redirect ke dashboard dulu, nanti dashboard akan handle modal OTP
-    setTimeout(() => {
-      router.replace("/customer/dashboard");
-    }, 300);
+    if (isVerified) {
+      // Sudah verifikasi → langsung ke dashboard
+      console.log("✅ [LOGIN] User already verified, redirecting to dashboard");
+      setTimeout(() => {
+        router.replace("/customer/dashboard");
+      }, 300);
+    } else {
+      // Belum verifikasi → tampilkan modal OTP
+      console.log("⚠️ [LOGIN] User not verified, showing OTP modal");
+      setCustomerData(result.user);
+      setShowOTPModal(true);
+    }
 
         
   } else {
@@ -203,14 +215,31 @@ try {
 }
 };
 
-return ( <div className="login-container">
-{/* === LEFT PANEL === */} <div className="login-left"> 
-    <div className="login-box"> 
-        <div className="logo"> 
-            <img src="/assets/logo.png" alt="Logo" className="login-logo" /> 
-     </div>
-      <h3>Welcome Back!</h3>
-      <p>Sign in to your account</p>
+return ( 
+  <>
+    {/* Modal OTP Verification - Tampil jika belum verifikasi */}
+    {showOTPModal && customerData && (
+      <OTPVerificationModal
+        customerInfo={customerData}
+        onClose={() => {
+          // Modal tidak bisa ditutup sebelum kirim OTP
+        }}
+        onOTPSent={(data) => {
+          setShowOTPModal(false);
+          router.replace("/customer/otp");
+        }}
+        allowClose={false}
+      />
+    )}
+
+    <div className="login-container">
+    {/* === LEFT PANEL === */} <div className="login-left"> 
+        <div className="login-box"> 
+            <div className="logo"> 
+                <img src="/assets/logo.png" alt="Logo" className="login-logo" /> 
+         </div>
+          <h3>Welcome Back!</h3>
+          <p>Sign in to your account</p>
 
       <form onSubmit={handleSubmit} autoComplete="off" data-form-type="other">
         <div className="form-group">
@@ -300,5 +329,6 @@ return ( <div className="login-container">
     </div>
   </div>
 </div>
+  </>
 );
 }
