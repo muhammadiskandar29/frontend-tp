@@ -203,7 +203,19 @@ export default function DashboardPage() {
       return customerData; // Return untuk digunakan di tempat lain
     } catch (error) {
       console.error("❌ [DASHBOARD] Failed to load data:", error);
-      setDashboardError(error.message || "Gagal memuat data dashboard.");
+      const message = error?.message || "Gagal memuat data dashboard.";
+      const needsOTP =
+        typeof message === "string" &&
+        message.toLowerCase().includes("belum diverifikasi");
+
+      if (needsOTP) {
+        console.log("⚠️ [DASHBOARD] Backend requires OTP verification, showing OTP modal");
+        setDashboardError("");
+        setShowUpdateModal(false);
+        setShowVerificationModal(true);
+      } else {
+        setDashboardError(message);
+      }
       return null;
     } finally {
       setDashboardLoading(false);
