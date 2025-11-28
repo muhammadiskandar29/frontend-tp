@@ -161,7 +161,7 @@ export default function DashboardPage() {
       
       // ===== SYNC CUSTOMER DATA KE LOCALSTORAGE =====
       // Update localStorage dengan data customer terbaru dari backend
-      // Ini memastikan field seperti nama_panggilan, profesi, dll ter-update
+      // Ini memastikan field seperti nama_panggilan, profesi, tanggal_lahir ter-update
       if (customerData) {
         const existingUser = session.user || {};
         const updatedUser = {
@@ -170,9 +170,15 @@ export default function DashboardPage() {
           // Pastikan field penting tidak null jika sudah ada di existingUser
           nama_panggilan: customerData.nama_panggilan || existingUser.nama_panggilan,
           profesi: customerData.profesi || existingUser.profesi,
+          // Pastikan tanggal_lahir ter-sync dari backend (ini adalah penanda profile sudah diisi)
+          tanggal_lahir: customerData.tanggal_lahir || existingUser.tanggal_lahir,
         };
         localStorage.setItem("customer_user", JSON.stringify(updatedUser));
         console.log("✅ [DASHBOARD] Customer data synced to localStorage:", updatedUser);
+        console.log("✅ [DASHBOARD] Key field for modal check:", {
+          tanggal_lahir: updatedUser.tanggal_lahir,
+          hasTanggalLahir: !!updatedUser.tanggal_lahir && String(updatedUser.tanggal_lahir).trim() !== ""
+        });
       }
       
       setStats((prev) =>
@@ -210,8 +216,9 @@ export default function DashboardPage() {
     }
 
     // ===== CEK TANGGAL LAHIR =====
-    // Jika tanggal_lahir sudah terisi, berarti user sudah mengisi form updateCustomer
-    // Jika tanggal_lahir kosong/null, tampilkan modal untuk lengkapi data
+    // tanggal_lahir adalah penanda apakah profile sudah diisi atau belum
+    // Jika tanggal_lahir sudah terisi → Profile sudah diisi → TIDAK tampilkan modal
+    // Jika tanggal_lahir kosong/null → Profile belum diisi → Tampilkan modal
     const hasTanggalLahir = user.tanggal_lahir && String(user.tanggal_lahir).trim() !== "";
 
     console.log("🔍 [DASHBOARD] Checking user data:", {
@@ -293,13 +300,20 @@ export default function DashboardPage() {
       console.log("📊 [DASHBOARD] Customer profile data:", customerProfile);
       
       // Gabungkan data dari berbagai sumber
+      // Prioritas: customerProfile > dashboardCustomerData > session.user
       const mergedCustomerData = {
         ...session.user,
         ...dashboardCustomerData,
         ...customerProfile,
+        // Pastikan tanggal_lahir dari source terbaru (ini adalah penanda profile sudah diisi)
+        tanggal_lahir: customerProfile?.tanggal_lahir || dashboardCustomerData?.tanggal_lahir || session.user?.tanggal_lahir,
       };
       
       console.log("📊 [DASHBOARD] Merged customer data:", mergedCustomerData);
+      console.log("📊 [DASHBOARD] Key fields for modal check:", {
+        tanggal_lahir: mergedCustomerData.tanggal_lahir,
+        hasTanggalLahir: !!mergedCustomerData.tanggal_lahir && String(mergedCustomerData.tanggal_lahir).trim() !== ""
+      });
       
       // Update localStorage dengan data lengkap
       if (mergedCustomerData && (mergedCustomerData.id || mergedCustomerData.nama)) {
@@ -343,13 +357,17 @@ export default function DashboardPage() {
       };
       
       console.log("✅ [DASHBOARD] Updated user data:", updatedUser);
+      console.log("✅ [DASHBOARD] Key field for modal check after update:", {
+        tanggal_lahir: updatedUser.tanggal_lahir,
+        hasTanggalLahir: !!updatedUser.tanggal_lahir && String(updatedUser.tanggal_lahir).trim() !== ""
+      });
       localStorage.setItem("customer_user", JSON.stringify(updatedUser));
     }
     
     setShowUpdateModal(false);
     toast.success("Data berhasil diperbarui!");
     
-    // Reload dashboard data
+    // Reload dashboard data untuk sync dengan backend
     loadDashboardData();
   };
 
