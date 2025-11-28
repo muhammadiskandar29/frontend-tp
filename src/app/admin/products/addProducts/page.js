@@ -177,19 +177,26 @@ export default function Page() {
         if (userInputId) {
           payload.append("user_input", userInputId);
         }
-        // Kirim kategori_id sebagai integer
-        const kategoriId = form.kategori        ? Number(form.kategori        ) : null;
-        if (kategoriId) {
+        // Kirim kategori/kategori_id sebagai integer
+        const kategoriId =
+          form.kategori !== null && form.kategori !== undefined
+            ? Number(form.kategori)
+            : null;
+        if (kategoriId !== null && !Number.isNaN(kategoriId)) {
           payload.append("kategori", kategoriId);
+          payload.append("kategori_id", kategoriId);
         }
       } else {
-        // Kirim kategori_id sebagai integer
-        const kategoriId = form.kategori        ? Number(form.kategori
-        ) : null;
+        // Kirim kategori/kategori_id sebagai integer
+        const kategoriId =
+          form.kategori !== null && form.kategori !== undefined
+            ? Number(form.kategori)
+            : null;
         
         payload = {
           ...form,
-          kategori: kategoriId, // Kirim kategori_id sebagai integer
+          kategori: !Number.isNaN(kategoriId) ? kategoriId : null,
+          kategori_id: !Number.isNaN(kategoriId) ? kategoriId : null,
           harga_coret: Number(form.harga_coret) || 0,
           harga_asli: Number(form.harga_asli) || 0,
           tanggal_event: formatDateForBackend(form.tanggal_event),
