@@ -14,7 +14,6 @@ export default function DashboardPage() {
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [updateModalReason, setUpdateModalReason] = useState("password");
   const [isDashboardLocked, setIsDashboardLocked] = useState(false); // Untuk lock dashboard saat verifikasi = 0
-  const [forceOTPModal, setForceOTPModal] = useState(false);
   const [stats, setStats] = useState([
     { id: "total", label: "Total Order", value: 0, icon: "🧾" },
     { id: "active", label: "Order Aktif", value: 0, icon: "✅" },
@@ -204,20 +203,7 @@ export default function DashboardPage() {
       return customerData; // Return untuk digunakan di tempat lain
     } catch (error) {
       console.error("❌ [DASHBOARD] Failed to load data:", error);
-      const message = error?.message || "Gagal memuat data dashboard.";
-      const needsOTP =
-        typeof message === "string" &&
-        message.toLowerCase().includes("belum diverifikasi");
-
-      if (needsOTP) {
-        console.log("⚠️ [DASHBOARD] Backend requires OTP verification, forcing OTP modal");
-        setDashboardError("");
-        setShowUpdateModal(false);
-        setForceOTPModal(true);
-        setShowVerificationModal(true);
-      } else {
-        setDashboardError(message);
-      }
+      setDashboardError(error.message || "Gagal memuat data dashboard.");
       return null;
     } finally {
       setDashboardLoading(false);
@@ -226,11 +212,6 @@ export default function DashboardPage() {
 
   // Helper function untuk cek apakah modal perlu ditampilkan
   const checkAndShowModal = useCallback((user) => {
-    if (forceOTPModal) {
-      setShowVerificationModal(true);
-      setShowUpdateModal(false);
-      return;
-    }
     if (!user) {
       console.log("⚠️ [DASHBOARD] No user data, showing verification modal");
       const modalTimeout = setTimeout(() => {
@@ -255,7 +236,6 @@ export default function DashboardPage() {
       setShowVerificationModal(false);
       setShowUpdateModal(false);
       setUpdateModalReason("password");
-      setForceOTPModal(false);
       return;
     }
 
@@ -271,7 +251,7 @@ export default function DashboardPage() {
       }, 500);
       return () => clearTimeout(modalTimeout);
     }
-  }, [forceOTPModal]);
+  }, []);
 
   // Fetch customer profile langsung dari API untuk mendapatkan data lengkap
   const fetchCustomerProfile = useCallback(async (token) => {
@@ -364,7 +344,6 @@ export default function DashboardPage() {
   const handleOTPSent = () => {
     console.log("📤 [DASHBOARD] OTP sent, redirecting user to OTP page");
     setShowVerificationModal(false);
-    setForceOTPModal(false);
     router.replace("/customer/otp");
   };
 
