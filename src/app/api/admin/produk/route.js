@@ -173,7 +173,16 @@ export async function POST(request) {
       
       console.log("🟢 [POST_PRODUK] Processing FormData entries (converting images to WebP):");
       
+      // Collect all entries first (FormData entries can only be iterated once)
+      const allEntries = [];
       for (const [key, value] of incomingFormData.entries()) {
+        allEntries.push({ key, value });
+      }
+      console.log(`  📊 Total FormData entries: ${allEntries.length}`);
+      console.log(`  📋 Entry keys: ${allEntries.map(e => e.key).join(", ")}`);
+      
+      // Process all entries
+      for (const { key, value } of allEntries) {
         if (value instanceof File && value.size > 0) {
           // Check if it's an image file
           const isImage = value.type.startsWith("image/");
@@ -220,13 +229,56 @@ export async function POST(request) {
               contentType: value.type
             });
           }
-        } else if (typeof value === "string") {
-          console.log(`  📝 ${key}: ${value.substring(0, 100)}${value.length > 100 ? "..." : ""}`);
-          forwardFormData.append(key, value);
+        } else {
+          // Handle all non-file values (string, number, etc.)
+          // Convert to string to ensure compatibility
+          const stringValue = String(value);
+          console.log(`  📝 ${key}: ${stringValue.substring(0, 100)}${stringValue.length > 100 ? "..." : ""}`);
+          forwardFormData.append(key, stringValue);
+        }
+      }
+      
+      // Log critical fields to verify they're being forwarded
+      console.log("🟢 [POST_PRODUK] Critical fields check:");
+      const criticalFields = ['kategori', 'assign', 'user_input', 'nama'];
+      const entriesMap = new Map(allEntries.map(e => [e.key, e.value]));
+      
+      for (const field of criticalFields) {
+        if (entriesMap.has(field)) {
+          const value = entriesMap.get(field);
+          const stringValue = typeof value === 'string' ? value : String(value);
+          console.log(`  ✅ ${field}: ${stringValue.substring(0, 100)}${stringValue.length > 100 ? '...' : ''}`);
+        } else {
+          console.log(`  ❌ ${field}: MISSING from incomingFormData`);
         }
       }
       
       console.log("🟢 [POST_PRODUK] Forwarding FormData to backend (images converted to WebP)...");
+      
+      // Final verification: Check if critical fields exist in forwardFormData
+      // Note: form-data package doesn't have .get() method, so we track manually
+      console.log("🟢 [POST_PRODUK] Final payload verification:");
+      const hasKategori = incomingFormData.has('kategori');
+      const hasAssign = incomingFormData.has('assign');
+      const hasUserInput = incomingFormData.has('user_input');
+      console.log(`  kategori: ${hasKategori ? '✅' : '❌ MISSING'}`);
+      console.log(`  assign: ${hasAssign ? '✅' : '❌ MISSING'}`);
+      console.log(`  user_input: ${hasUserInput ? '✅' : '❌ MISSING'}`);
+      
+      if (!hasKategori || !hasAssign || !hasUserInput) {
+        console.error("❌ [POST_PRODUK] CRITICAL: Missing required fields in FormData!");
+        return NextResponse.json(
+          { 
+            success: false, 
+            message: "Missing required fields: " + [
+              !hasKategori && 'kategori',
+              !hasAssign && 'assign',
+              !hasUserInput && 'user_input'
+            ].filter(Boolean).join(', ')
+          },
+          { status: 400 }
+        );
+      }
 
       // Forward FormData to backend with proper headers
       response = await fetch(`${BACKEND_URL}/api/admin/produk`, {
