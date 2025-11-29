@@ -142,6 +142,28 @@ export default function Page() {
         return Number.isNaN(parsed) ? null : parsed;
       })();
 
+      // Validasi required fields
+      if (kategoriId === null) {
+        alert("Kategori wajib dipilih!");
+        setIsSubmitting(false);
+        setSubmitStatus("");
+        return;
+      }
+
+      if (normalizedAssign.length === 0) {
+        alert("Penanggung Jawab (Assign By) wajib dipilih minimal 1 user!");
+        setIsSubmitting(false);
+        setSubmitStatus("");
+        return;
+      }
+
+      if (userInputId === null) {
+        alert("User yang membuat produk tidak ditemukan. Silakan refresh halaman dan coba lagi.");
+        setIsSubmitting(false);
+        setSubmitStatus("");
+        return;
+      }
+
       let payload;
       let isFormData = false;
 
@@ -202,20 +224,20 @@ export default function Page() {
         payload.append("video", JSON.stringify(videoArray));        
         payload.append("landingpage", form.landingpage);
         payload.append("status", form.status);
-        // user_input adalah ID user yang membuat produk (current user)
-        if (userInputId !== null) {
-          payload.append("user_input", String(userInputId));
-        }
-        if (kategoriId !== null) {
-          payload.append("kategori", String(kategoriId));
-        }
+        // user_input adalah ID user yang membuat produk (current user) - harus number
+        // FormData akan convert number ke string, tapi backend bisa parse
+        payload.append("user_input", userInputId);
+        // kategori harus string sesuai dokumentasi: "kategori": "2"
+        payload.append("kategori", String(kategoriId));
       } else {
         payload = {
           ...form,
-          kategori: kategoriId,
+          // kategori harus string sesuai dokumentasi: "kategori": "2"
+          kategori: kategoriId !== null ? String(kategoriId) : null,
           harga_coret: Number(form.harga_coret) || 0,
           harga_asli: Number(form.harga_asli) || 0,
           tanggal_event: formatDateForBackend(form.tanggal_event),
+          // assign harus string JSON array sesuai dokumentasi: "assign": "[1,2,3]"
           assign: JSON.stringify(normalizedAssign),
           gtm: JSON.stringify(form.gtm),
           fb_pixel: JSON.stringify(form.fb_pixel),
@@ -232,6 +254,7 @@ export default function Page() {
               deskripsi: t.deskripsi,
             }))
           ),
+          // user_input harus number sesuai dokumentasi: "user_input": 2
           user_input: userInputId,
         };
       }
