@@ -101,6 +101,69 @@ const generateKode = (text) =>
   };
 
   // ============================
+  // CONVERT & COMPRESS IMAGE TO JPG
+  // ============================
+  const convertImageToJPG = async (file, quality = 0.75, maxWidth = 1600) => {
+    return new Promise((resolve, reject) => {
+      // Check if already JPG/PNG
+      const isJPG = file.type === "image/jpeg" || file.type === "image/jpg";
+      const isPNG = file.type === "image/png";
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
+          
+          // Resize if too large
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          
+          // For PNG or other formats with transparency, fill white background
+          // For JPG, no need to fill (already opaque)
+          if (!isJPG) {
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fillRect(0, 0, width, height);
+          }
+          
+          // Draw image
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Convert to JPG (even if already JPG, we compress it)
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                reject(new Error("Failed to convert/compress image"));
+                return;
+              }
+              // Always use .jpg extension and image/jpeg MIME type
+              const jpgFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+                type: "image/jpeg",
+                lastModified: Date.now(),
+              });
+              resolve(jpgFile);
+            },
+            "image/jpeg",
+            quality
+          );
+        };
+        img.onerror = () => reject(new Error("Failed to load image"));
+        img.src = e.target.result;
+      };
+      reader.onerror = () => reject(new Error("Failed to read file"));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // ============================
   // SUBMIT
   // ============================
   const handleSubmit = async () => {
@@ -117,27 +180,39 @@ const generateKode = (text) =>
         payload = new FormData();
         isFormData = true;
 
-        // Header
-        if (form.header.type === "file" && form.header.value) {
-          payload.append("header", form.header.value);
+        // Process all files: convert to JPG and compress
+        try {
+          // Process Header
+          if (form.header.type === "file" && form.header.value) {
+            const processedHeader = await convertImageToJPG(form.header.value, 0.75, 1600);
+            payload.append("header", processedHeader);
+          }
+
+          // Process Gallery
+          for (let idx = 0; idx < form.gambar.length; idx++) {
+            const g = form.gambar[idx];
+            if (g.path.type === "file" && g.path.value) {
+              const processedGambar = await convertImageToJPG(g.path.value, 0.75, 1600);
+              payload.append(`gambar[${idx}][path]`, processedGambar);
+            }
+            payload.append(`gambar[${idx}][caption]`, g.caption);
+          }
+
+          // Process Testimoni
+          for (let idx = 0; idx < form.testimoni.length; idx++) {
+            const t = form.testimoni[idx];
+            if (t.gambar.type === "file" && t.gambar.value) {
+              const processedTestimoni = await convertImageToJPG(t.gambar.value, 0.75, 1600);
+              payload.append(`testimoni[${idx}][gambar]`, processedTestimoni);
+            }
+            payload.append(`testimoni[${idx}][nama]`, t.nama);
+            payload.append(`testimoni[${idx}][deskripsi]`, t.deskripsi);
+          }
+        } catch (error) {
+          console.error("❌ [SALES_ADD_PRODUK] Error processing images:", error);
+          alert(`Gagal memproses gambar: ${error.message}`);
+          return;
         }
-
-        // Gallery
-        form.gambar.forEach((g, idx) => {
-          if (g.path.type === "file" && g.path.value) {
-            payload.append(`gambar[${idx}][path]`, g.path.value);
-          }
-          payload.append(`gambar[${idx}][caption]`, g.caption);
-        });
-
-        // Testimoni
-        form.testimoni.forEach((t, idx) => {
-          if (t.gambar.type === "file" && t.gambar.value) {
-            payload.append(`testimoni[${idx}][gambar]`, t.gambar.value);
-          }
-          payload.append(`testimoni[${idx}][nama]`, t.nama);
-          payload.append(`testimoni[${idx}][deskripsi]`, t.deskripsi);
-        });
 
         // Fields
         payload.append("nama", form.nama);

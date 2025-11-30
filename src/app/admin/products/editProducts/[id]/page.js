@@ -188,6 +188,69 @@ export default function Page() {
   };
 
   // ============================
+  // CONVERT & COMPRESS IMAGE TO JPG
+  // ============================
+  const convertImageToJPG = async (file, quality = 0.75, maxWidth = 1600) => {
+    return new Promise((resolve, reject) => {
+      // Check if already JPG/PNG
+      const isJPG = file.type === "image/jpeg" || file.type === "image/jpg";
+      const isPNG = file.type === "image/png";
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
+          
+          // Resize if too large
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          
+          // For PNG or other formats with transparency, fill white background
+          // For JPG, no need to fill (already opaque)
+          if (!isJPG) {
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fillRect(0, 0, width, height);
+          }
+          
+          // Draw image
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Convert to JPG (even if already JPG, we compress it)
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                reject(new Error("Failed to convert/compress image"));
+                return;
+              }
+              // Always use .jpg extension and image/jpeg MIME type
+              const jpgFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+                type: "image/jpeg",
+                lastModified: Date.now(),
+              });
+              resolve(jpgFile);
+            },
+            "image/jpeg",
+            quality
+          );
+        };
+        img.onerror = () => reject(new Error("Failed to load image"));
+        img.src = e.target.result;
+      };
+      reader.onerror = () => reject(new Error("Failed to read file"));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // ============================
   // SUBMIT - PUT ke /api/admin/produk/{id}
   // TIDAK kirim field gambar jika tidak ada file baru
   // Backend akan mempertahankan data gambar yang sudah ada
@@ -232,35 +295,47 @@ export default function Page() {
         payload = new FormData();
         isFormData = true;
 
-        // Header - hanya kirim jika ada FILE BARU
-        if (hasNewHeaderFile) {
-          payload.append("header", form.header.value);
+        // Process all files: convert to JPG and compress
+        try {
+          // Process Header - hanya kirim jika ada FILE BARU
+          if (hasNewHeaderFile) {
+            const processedHeader = await convertImageToJPG(form.header.value, 0.75, 1600);
+            payload.append("header", processedHeader);
+          }
+
+          // Process Gallery - kirim semua gambar (baik yang ada file baru maupun tidak)
+          for (let idx = 0; idx < form.gambar.length; idx++) {
+            const g = form.gambar[idx];
+            if (g.path?.type === "file" && g.path?.value instanceof File) {
+              // Ada file baru - convert dan kirim file
+              const processedGambar = await convertImageToJPG(g.path.value, 0.75, 1600);
+              payload.append(`gambar[${idx}][file]`, processedGambar);
+            } else if (g.path?.type === "url" && g.path.value) {
+              // File existing - kirim path sebagai string
+              payload.append(`gambar[${idx}][path]`, g.path.value);
+            }
+            payload.append(`gambar[${idx}][caption]`, g.caption || "");
+          }
+
+          // Process Testimoni - kirim semua testimoni (baik yang ada file baru maupun tidak)
+          for (let idx = 0; idx < form.testimoni.length; idx++) {
+            const t = form.testimoni[idx];
+            if (t.gambar?.type === "file" && t.gambar?.value instanceof File) {
+              // Ada file baru - convert dan kirim file
+              const processedTestimoni = await convertImageToJPG(t.gambar.value, 0.75, 1600);
+              payload.append(`testimoni[${idx}][gambar]`, processedTestimoni);
+            } else if (t.gambar?.type === "url" && t.gambar.value) {
+              // File existing - kirim path sebagai string
+              payload.append(`testimoni[${idx}][gambar_path]`, t.gambar.value);
+            }
+            payload.append(`testimoni[${idx}][nama]`, t.nama || "");
+            payload.append(`testimoni[${idx}][deskripsi]`, t.deskripsi || "");
+          }
+        } catch (error) {
+          console.error("❌ [EDIT_PRODUK] Error processing images:", error);
+          alert(`Gagal memproses gambar: ${error.message}`);
+          return;
         }
-
-        // Gallery - kirim semua gambar (baik yang ada file baru maupun tidak)
-        form.gambar.forEach((g, idx) => {
-          if (g.path?.type === "file" && g.path?.value instanceof File) {
-            // Ada file baru - kirim file
-            payload.append(`gambar[${idx}][file]`, g.path.value);
-          } else if (g.path?.type === "url" && g.path.value) {
-            // File existing - kirim path sebagai string
-            payload.append(`gambar[${idx}][path]`, g.path.value);
-          }
-          payload.append(`gambar[${idx}][caption]`, g.caption || "");
-        });
-
-        // Testimoni - kirim semua testimoni (baik yang ada file baru maupun tidak)
-        form.testimoni.forEach((t, idx) => {
-          if (t.gambar?.type === "file" && t.gambar?.value instanceof File) {
-            // Ada file baru - kirim file
-            payload.append(`testimoni[${idx}][gambar]`, t.gambar.value);
-          } else if (t.gambar?.type === "url" && t.gambar.value) {
-            // File existing - kirim path sebagai string
-            payload.append(`testimoni[${idx}][gambar_path]`, t.gambar.value);
-          }
-          payload.append(`testimoni[${idx}][nama]`, t.nama || "");
-          payload.append(`testimoni[${idx}][deskripsi]`, t.deskripsi || "");
-        });
 
         // Fields teks (selalu kirim)
         payload.append("nama", form.nama);
