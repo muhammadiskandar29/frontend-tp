@@ -54,7 +54,7 @@ export default function Page() {
   // ============================
   const defaultForm = {
   id: null,
-  kategori: "", // disimpan sebagai string
+  kategori: null, // Changed from "" to null to fix validation
   user_input: [],
   nama: "",
   url: "",
@@ -212,12 +212,21 @@ const [isSubmitting, setIsSubmitting] = useState(false);
     setIsSubmitting(true);
     try {
       // Validation - Kategori wajib dipilih
+      // Ensure kategori is converted to valid integer and never null if user selected something
       const kategoriId = form.kategori !== null && form.kategori !== undefined && form.kategori !== ""
         ? (typeof form.kategori === "number" ? form.kategori : Number(form.kategori))
         : null;
 
       if (!kategoriId || kategoriId <= 0 || Number.isNaN(kategoriId)) {
         alert("Kategori wajib dipilih!");
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Double check: kategoriId must be valid integer at this point
+      const finalKategoriId = Number(kategoriId);
+      if (!finalKategoriId || finalKategoriId <= 0 || Number.isNaN(finalKategoriId)) {
+        alert("Kategori tidak valid. Silakan pilih kategori lagi!");
         setIsSubmitting(false);
         return;
       }
@@ -249,7 +258,8 @@ const [isSubmitting, setIsSubmitting] = useState(false);
       }
 
       // Build payload menggunakan function builder
-      const payloadData = buildProductPayload(form, kategoriId, userInputId, normalizedAssign);
+      // Use finalKategoriId to ensure it's always a valid integer
+      const payloadData = buildProductPayload(form, finalKategoriId, userInputId, normalizedAssign);
       
       // 🔥 6. FormData - Selalu gunakan FormData
       const fd = new FormData();
@@ -608,7 +618,7 @@ useEffect(() => {
       
       setForm((f) => ({
         ...f,
-        kategori: null,
+        // Removed kategori: null to prevent overwriting user selection
         assign: [],
         user_input: currentUserId ? currentUserId : null, // ID user yang membuat
         custom_field: [],
@@ -711,7 +721,12 @@ useEffect(() => {
               onChange={(e) => {
                 const selectedValue = e.value;
                 console.log("✅ Kategori dipilih:", selectedValue, "Type:", typeof selectedValue);
-                handleChange("kategori", selectedValue ?? null);
+                // Ensure value is set as string (PrimeReact returns value directly from optionValue)
+                // If null/undefined, set null; otherwise ensure it's a string
+                const finalValue = selectedValue !== null && selectedValue !== undefined 
+                  ? String(selectedValue) 
+                  : null;
+                handleChange("kategori", finalValue);
               }}
               placeholder="Pilih Kategori"
               showClear
