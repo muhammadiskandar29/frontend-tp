@@ -196,30 +196,27 @@ const [isSubmitting, setIsSubmitting] = useState(false);
       // Validate kategori
       // IMPORTANT: Backend menerima kategori sebagai string numerik, contoh: "2"
       // State kategori HARUS hanya string numerik (ID), BUKAN object atau array
-      // Validasi: tidak boleh null, undefined, empty string, object, atau array
+      // Jika tidak valid, set null dan tetap submit (biar backend yang handle error-nya)
       const kategoriId = (() => {
         // Validasi: kategori wajib ada dan tidak boleh kosong
         if (!form.kategori || form.kategori === null || form.kategori === undefined || form.kategori === "") {
-          console.error("❌ [SUBMIT_PRODUK] kategori is missing/empty");
-          console.error("  form.kategori value:", form.kategori);
-          console.error("  form.kategori type:", typeof form.kategori);
-          alert("Kategori wajib dipilih! Silakan pilih kategori sebelum menyimpan produk.");
+          console.warn("⚠️ [SUBMIT_PRODUK] kategori is missing/empty - setting to null");
+          console.warn("  form.kategori value:", form.kategori);
+          console.warn("  form.kategori type:", typeof form.kategori);
           return null;
         }
         
         // CRITICAL: Pastikan kategori BUKAN object atau array
         if (typeof form.kategori === "object" && form.kategori !== null) {
-          console.error("❌ [SUBMIT_PRODUK] kategori is an object, not a string/number!");
-          console.error("  form.kategori:", JSON.stringify(form.kategori));
-          console.error("  This should not happen - kategori should be ID string/number only");
-          alert("Kategori tidak valid! Silakan pilih kategori lagi.");
+          console.warn("⚠️ [SUBMIT_PRODUK] kategori is an object, not a string/number - setting to null");
+          console.warn("  form.kategori:", JSON.stringify(form.kategori));
+          console.warn("  This should not happen - kategori should be ID string/number only");
           return null;
         }
         
         if (Array.isArray(form.kategori)) {
-          console.error("❌ [SUBMIT_PRODUK] kategori is an array, not a string/number!");
-          console.error("  form.kategori:", JSON.stringify(form.kategori));
-          alert("Kategori tidak valid! Silakan pilih kategori lagi.");
+          console.warn("⚠️ [SUBMIT_PRODUK] kategori is an array, not a string/number - setting to null");
+          console.warn("  form.kategori:", JSON.stringify(form.kategori));
           return null;
         }
         
@@ -228,10 +225,9 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         
         // Validasi: harus valid number dan > 0
         if (Number.isNaN(parsed) || parsed <= 0) {
-          console.error("❌ [SUBMIT_PRODUK] kategori is not a valid number:");
-          console.error("  form.kategori:", form.kategori);
-          console.error("  parsed value:", parsed);
-          alert("Kategori tidak valid! Silakan pilih kategori yang benar.");
+          console.warn("⚠️ [SUBMIT_PRODUK] kategori is not a valid number - setting to null");
+          console.warn("  form.kategori:", form.kategori);
+          console.warn("  parsed value:", parsed);
           return null;
         }
         
@@ -241,16 +237,15 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         return parsed;
       })();
 
+      // Jika kategori null, tetap lanjut submit (biar backend yang handle error-nya)
       if (!kategoriId) {
-        alert("Kategori wajib dipilih! Silakan pilih kategori sebelum menyimpan produk.");
-        setIsSubmitting(false);
-        setSubmitStatus("");
-        return;
+        console.warn("⚠️ [SUBMIT_PRODUK] kategori is null - will send null to backend");
       }
 
       // Validate assign
       // IMPORTANT: State assign tetap sebagai array, misalnya: [1, 5, 7]
       // Backend mengharapkan assign sebagai string JSON di FormData: "[1,5,7]"
+      // Jika tidak valid, set null dan tetap submit (biar backend yang handle error-nya)
       const normalizedAssign = Array.isArray(form.assign)
         ? form.assign
             .filter((v) => v !== null && v !== undefined && v !== "")
@@ -258,16 +253,15 @@ const [isSubmitting, setIsSubmitting] = useState(false);
             .filter((num) => !Number.isNaN(num) && num > 0)
         : [];
 
+      // Jika assign kosong, set null dan tetap lanjut submit (biar backend yang handle error-nya)
       if (normalizedAssign.length === 0) {
-        alert("Penanggung Jawab (Assign By) wajib dipilih minimal 1 user!");
-        setIsSubmitting(false);
-        setSubmitStatus("");
-        return;
+        console.warn("⚠️ [SUBMIT_PRODUK] assign is empty - will send null to backend");
+        console.warn("  form.assign:", form.assign);
+      } else {
+        console.log("✅ [SUBMIT_PRODUK] assign validated:");
+        console.log("  assign array:", normalizedAssign);
+        console.log("  assign JSON string:", JSON.stringify(normalizedAssign));
       }
-
-      console.log("✅ [SUBMIT_PRODUK] assign validated:");
-      console.log("  assign array:", normalizedAssign);
-      console.log("  assign JSON string:", JSON.stringify(normalizedAssign));
 
       // Validate user_input
       // IMPORTANT: user_input harus berupa integer (number), bukan string
@@ -327,10 +321,10 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         
         // Validasi: harus ada nilai, tidak null/undefined, dan bukan string kosong
         if (candidate === null || candidate === undefined || candidate === "") {
-          console.error("❌ [SUBMIT_PRODUK] user_input is missing/empty");
-          console.error("  candidate value:", candidate);
-          console.error("  candidate type:", typeof candidate);
-          console.error("  currentUser:", JSON.stringify(currentUser, null, 2));
+          console.warn("⚠️ [SUBMIT_PRODUK] user_input is missing/empty - setting to null");
+          console.warn("  candidate value:", candidate);
+          console.warn("  candidate type:", typeof candidate);
+          console.warn("  currentUser:", JSON.stringify(currentUser, null, 2));
           return null;
         }
         
@@ -340,9 +334,9 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         
         // Validasi: harus valid number dan > 0
         if (Number.isNaN(parsed) || parsed <= 0) {
-          console.error("❌ [SUBMIT_PRODUK] user_input is not a valid number:");
-          console.error("  candidate:", candidate);
-          console.error("  parsed:", parsed);
+          console.warn("⚠️ [SUBMIT_PRODUK] user_input is not a valid number - setting to null");
+          console.warn("  candidate:", candidate);
+          console.warn("  parsed:", parsed);
           return null;
         }
         
@@ -350,11 +344,9 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         return parsed;
       })();
 
+      // Jika user_input null, tetap lanjut submit (biar backend yang handle error-nya)
       if (!userInputId) {
-        alert("User yang membuat produk tidak ditemukan. Silakan refresh halaman dan coba lagi.");
-        setIsSubmitting(false);
-        setSubmitStatus("");
-        return;
+        console.warn("⚠️ [SUBMIT_PRODUK] user_input is null - will send null to backend");
       }
 
       // Validate nama
@@ -411,12 +403,18 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         // Format: formData.append("kategori", String(2)) → terkirim sebagai "2" (string numerik)
         // Hanya kirim ID (string/number), BUKAN object atau array
         // CRITICAL: kategori diambil dari kategori_rel (relasi), tapi untuk create hanya perlu ID
-        const kategoriString = String(kategoriId);
-        payload.append("kategori", kategoriString);
-        console.log("  ✅ kategori appended:");
-        console.log("    kategoriId:", kategoriId, "(type: number)");
-        console.log("    kategoriString:", kategoriString, "(type: string)");
-        console.log("    FormData key: 'kategori', value:", kategoriString);
+        // Jika null, append null sebagai string "null" (biar backend yang handle error-nya)
+        if (kategoriId !== null && kategoriId !== undefined) {
+          const kategoriString = String(kategoriId);
+          payload.append("kategori", kategoriString);
+          console.log("  ✅ kategori appended:");
+          console.log("    kategoriId:", kategoriId, "(type: number)");
+          console.log("    kategoriString:", kategoriString, "(type: string)");
+        } else {
+          payload.append("kategori", "null");
+          console.warn("  ⚠️ kategori is null - appending 'null' as string");
+        }
+        console.log("    FormData key: 'kategori', value:", kategoriId !== null && kategoriId !== undefined ? String(kategoriId) : "null");
         console.log("    ⚠️ IMPORTANT: kategori harus string numerik (ID), bukan object relasi");
 
         // 2. nama (REQUIRED)
@@ -429,12 +427,18 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         // Backend akan parse string "2" menjadi integer 2
         // JANGAN kirim sebagai JSON atau array
         // CRITICAL: user_input diambil dari user yang sedang login (currentUser.id)
-        const userInputString = String(userInputId);
-        payload.append("user_input", userInputString);
-        console.log("  ✅ user_input appended:");
-        console.log("    userInputId:", userInputId, "(type: number)");
-        console.log("    userInputString:", userInputString, "(type: string)");
-        console.log("    FormData key: 'user_input', value:", userInputString);
+        // Jika null, append null sebagai string "null" (biar backend yang handle error-nya)
+        if (userInputId !== null && userInputId !== undefined) {
+          const userInputString = String(userInputId);
+          payload.append("user_input", userInputString);
+          console.log("  ✅ user_input appended:");
+          console.log("    userInputId:", userInputId, "(type: number)");
+          console.log("    userInputString:", userInputString, "(type: string)");
+        } else {
+          payload.append("user_input", "null");
+          console.warn("  ⚠️ user_input is null - appending 'null' as string");
+        }
+        console.log("    FormData key: 'user_input', value:", userInputId !== null && userInputId !== undefined ? String(userInputId) : "null");
         console.log("    ⚠️ IMPORTANT: user_input harus dari currentUser.id (user yang sedang login)");
 
         // 4. assign (REQUIRED)
@@ -442,12 +446,18 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         // Format: formData.append("assign", JSON.stringify([1,5,7])) → terkirim sebagai "[1,5,7]"
         // JANGAN gunakan "assign[]" atau looping append
         // CRITICAL: assign diambil dari relasi user, menggunakan string array
-        const assignString = JSON.stringify(normalizedAssign);
-        payload.append("assign", assignString);
-        console.log("  ✅ assign appended:");
-        console.log("    assign array:", normalizedAssign);
-        console.log("    assignString:", assignString, "(type: string)");
-        console.log("    FormData key: 'assign', value:", assignString);
+        // Jika null atau empty, append null sebagai string "null" (biar backend yang handle error-nya)
+        if (normalizedAssign && normalizedAssign.length > 0) {
+          const assignString = JSON.stringify(normalizedAssign);
+          payload.append("assign", assignString);
+          console.log("  ✅ assign appended:");
+          console.log("    assign array:", normalizedAssign);
+          console.log("    assignString:", assignString, "(type: string)");
+        } else {
+          payload.append("assign", "null");
+          console.warn("  ⚠️ assign is null or empty - appending 'null' as string");
+        }
+        console.log("    FormData key: 'assign', value:", normalizedAssign && normalizedAssign.length > 0 ? JSON.stringify(normalizedAssign) : "null");
         console.log("    ⚠️ IMPORTANT: assign harus string JSON array dari relasi user, contoh: '[1,2,3]'");
 
         // 5. Other required fields
@@ -547,15 +557,15 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         }
 
         // Final verification: Check kategori is still in FormData
+        // Jika null, hanya warning (biar backend yang handle error-nya)
         const kategoriCheck = payload.get("kategori");
         if (!kategoriCheck || kategoriCheck === "null" || kategoriCheck === "") {
-          console.error("❌ [SUBMIT_PRODUK] CRITICAL: kategori missing after file processing!");
-          alert("Terjadi kesalahan: Kategori hilang setelah proses file. Silakan coba lagi.");
-          setIsSubmitting(false);
-          setSubmitStatus("");
-          return;
+          console.warn("⚠️ [SUBMIT_PRODUK] kategori is null or missing after file processing - will send to backend");
+          console.warn("  kategoriCheck:", kategoriCheck);
+          console.warn("  Backend will handle the error");
+        } else {
+          console.log("✅ [SUBMIT_PRODUK] kategori verified in FormData:", kategoriCheck);
         }
-        console.log("✅ [SUBMIT_PRODUK] kategori verified in FormData:", kategoriCheck);
       } else {
         // Use JSON payload (no files)
         console.log("📦 [SUBMIT_PRODUK] Step 3: Building JSON payload...");
@@ -574,15 +584,18 @@ const [isSubmitting, setIsSubmitting] = useState(false);
           // Format: kategori: String(2) → terkirim sebagai "2" (string numerik)
           // Hanya kirim ID (string), BUKAN object atau array
           // CRITICAL: kategori diambil dari kategori_rel (relasi), tapi untuk create hanya perlu ID
-          kategori: String(kategoriId), // MUST be string (ID only, not object)
+          // Jika null, kirim null (biar backend yang handle error-nya)
+          kategori: kategoriId !== null && kategoriId !== undefined ? String(kategoriId) : null,
           // IMPORTANT: assign harus string JSON, bukan array
           // Format: assign: JSON.stringify([1,5,7]) → terkirim sebagai "[1,5,7]"
           // CRITICAL: assign diambil dari relasi user, menggunakan string array
-          assign: JSON.stringify(normalizedAssign),
+          // Jika null atau empty, kirim null (biar backend yang handle error-nya)
+          assign: normalizedAssign && normalizedAssign.length > 0 ? JSON.stringify(normalizedAssign) : null,
           // IMPORTANT: user_input harus integer (number), bukan string
           // Di JSON payload, langsung kirim sebagai number (bukan string)
           // Backend akan menerima sebagai integer
           // CRITICAL: user_input diambil dari user yang sedang login (currentUser.id)
+          // Jika null, kirim null (biar backend yang handle error-nya)
           user_input: userInputId,
           // JSON fields
           custom_field: JSON.stringify(
@@ -638,6 +651,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         console.log("    assign:", assignValue, "(type:", typeof assignValue + ")");
         
         // Verify format matches backend response
+        // Jika null, hanya warning (biar backend yang handle error-nya)
         const kategoriValid = kategoriValue && 
           kategoriValue !== "null" && 
           kategoriValue !== "" && 
@@ -654,36 +668,31 @@ const [isSubmitting, setIsSubmitting] = useState(false);
           String(assignValue).trim() !== "";
         
         if (!kategoriValid) {
-          console.error("❌ [SUBMIT_PRODUK] CRITICAL: kategori missing or invalid in final FormData!");
-          console.error("  kategoriValue:", kategoriValue);
-          console.error("  kategoriValue type:", typeof kategoriValue);
-          alert("Terjadi kesalahan: Kategori tidak ditemukan. Silakan refresh halaman dan coba lagi.");
-          setIsSubmitting(false);
-          setSubmitStatus("");
-          return;
+          console.warn("⚠️ [SUBMIT_PRODUK] kategori is null or invalid in final FormData - will send to backend");
+          console.warn("  kategoriValue:", kategoriValue);
+          console.warn("  kategoriValue type:", typeof kategoriValue);
+          console.warn("  Backend will handle the error");
         }
         
         if (!userInputValid) {
-          console.error("❌ [SUBMIT_PRODUK] CRITICAL: user_input missing or invalid in final FormData!");
-          console.error("  userInputValue:", userInputValue);
-          console.error("  userInputValue type:", typeof userInputValue);
-          alert("Terjadi kesalahan: User input tidak ditemukan. Silakan refresh halaman dan coba lagi.");
-          setIsSubmitting(false);
-          setSubmitStatus("");
-          return;
+          console.warn("⚠️ [SUBMIT_PRODUK] user_input is null or invalid in final FormData - will send to backend");
+          console.warn("  userInputValue:", userInputValue);
+          console.warn("  userInputValue type:", typeof userInputValue);
+          console.warn("  Backend will handle the error");
         }
         
         if (!assignValid) {
-          console.error("❌ [SUBMIT_PRODUK] CRITICAL: assign missing or invalid in final FormData!");
-          console.error("  assignValue:", assignValue);
-          console.error("  assignValue type:", typeof assignValue);
-          alert("Terjadi kesalahan: Assign tidak ditemukan. Silakan refresh halaman dan coba lagi.");
-          setIsSubmitting(false);
-          setSubmitStatus("");
-          return;
+          console.warn("⚠️ [SUBMIT_PRODUK] assign is null or invalid in final FormData - will send to backend");
+          console.warn("  assignValue:", assignValue);
+          console.warn("  assignValue type:", typeof assignValue);
+          console.warn("  Backend will handle the error");
         }
         
-        console.log("✅ [SUBMIT_PRODUK] All critical fields verified in FormData");
+        if (kategoriValid && userInputValid && assignValid) {
+          console.log("✅ [SUBMIT_PRODUK] All critical fields verified in FormData");
+        } else {
+          console.warn("⚠️ [SUBMIT_PRODUK] Some critical fields are null - will send to backend for validation");
+        }
       } else {
         // JSON payload verification
         console.log("  📋 Actual JSON payload values:");
@@ -691,31 +700,30 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         console.log("    user_input:", payload.user_input, "(type:", typeof payload.user_input + ")");
         console.log("    assign:", payload.assign, "(type:", typeof payload.assign + ")");
         
+        // Jika null, hanya warning (biar backend yang handle error-nya)
         if (!payload.kategori || payload.kategori === null || payload.kategori === "") {
-          console.error("❌ [SUBMIT_PRODUK] CRITICAL: kategori missing in JSON payload!");
-          alert("Terjadi kesalahan: Kategori tidak ditemukan. Silakan refresh halaman dan coba lagi.");
-          setIsSubmitting(false);
-          setSubmitStatus("");
-          return;
+          console.warn("⚠️ [SUBMIT_PRODUK] kategori is null or missing in JSON payload - will send to backend");
+          console.warn("  payload.kategori:", payload.kategori);
+          console.warn("  Backend will handle the error");
         }
         
         if (!payload.user_input || payload.user_input === null) {
-          console.error("❌ [SUBMIT_PRODUK] CRITICAL: user_input missing in JSON payload!");
-          alert("Terjadi kesalahan: User input tidak ditemukan. Silakan refresh halaman dan coba lagi.");
-          setIsSubmitting(false);
-          setSubmitStatus("");
-          return;
+          console.warn("⚠️ [SUBMIT_PRODUK] user_input is null or missing in JSON payload - will send to backend");
+          console.warn("  payload.user_input:", payload.user_input);
+          console.warn("  Backend will handle the error");
         }
         
         if (!payload.assign || payload.assign === null || payload.assign === "") {
-          console.error("❌ [SUBMIT_PRODUK] CRITICAL: assign missing in JSON payload!");
-          alert("Terjadi kesalahan: Assign tidak ditemukan. Silakan refresh halaman dan coba lagi.");
-          setIsSubmitting(false);
-          setSubmitStatus("");
-          return;
+          console.warn("⚠️ [SUBMIT_PRODUK] assign is null or missing in JSON payload - will send to backend");
+          console.warn("  payload.assign:", payload.assign);
+          console.warn("  Backend will handle the error");
         }
         
-        console.log("✅ [SUBMIT_PRODUK] All critical fields verified in JSON payload");
+        if (payload.kategori && payload.kategori !== null && payload.user_input && payload.user_input !== null && payload.assign && payload.assign !== null) {
+          console.log("✅ [SUBMIT_PRODUK] All critical fields verified in JSON payload");
+        } else {
+          console.warn("⚠️ [SUBMIT_PRODUK] Some critical fields are null - will send to backend for validation");
+        }
       }
 
       console.log("✅ [SUBMIT_PRODUK] All verifications passed");
