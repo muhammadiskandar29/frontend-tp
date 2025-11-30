@@ -329,13 +329,23 @@ export async function POST(request) {
           
           // Handle null/undefined explicitly
           // form-data package doesn't handle null/undefined well, so we need to convert them
-          if (value === null || value === undefined) {
-            // For null/undefined, convert to empty string to maintain form-data compatibility
-            // But log it so we know it happened
+          // Also handle string "null" which should not be sent
+          if (value === null || value === undefined || (typeof value === "string" && value.trim() === "null")) {
+            // For null/undefined/"null" string, skip critical fields or convert to empty string
+            // Critical fields should never be null/undefined/"null" - they should be validated in frontend
+            if (key === "kategori" || key === "user_input" || key === "assign") {
+              console.error(`  ❌ ${key}: Critical field is null/undefined/"null" - this should not happen!`);
+              console.error(`    Value: ${value}, Type: ${typeof value}`);
+              // Don't append - let backend handle the validation error
+              continue;
+            }
+            // For non-critical fields, convert to empty string
             if (value === null) {
               console.warn(`  ⚠️ ${key}: null value converted to empty string for form-data compatibility`);
-            } else {
+            } else if (value === undefined) {
               console.warn(`  ⚠️ ${key}: undefined value converted to empty string for form-data compatibility`);
+            } else {
+              console.warn(`  ⚠️ ${key}: string "null" value converted to empty string for form-data compatibility`);
             }
             forwardFormData.append(key, "");
           } else {

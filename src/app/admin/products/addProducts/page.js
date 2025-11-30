@@ -395,8 +395,8 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         // Format: formData.append("kategori", String(7)) → terkirim sebagai "7" (string)
         // Backend akan parse string "7" menjadi number 7
         // CRITICAL: kategori diambil dari kategori_rel (relasi), tapi untuk create hanya perlu ID
-        // Jika null, append null sebagai string "null" (biar backend yang handle error-nya)
-        if (kategoriId !== null && kategoriId !== undefined) {
+        // REQUIRED FIELD - must have valid value
+        if (kategoriId !== null && kategoriId !== undefined && kategoriId > 0) {
           const kategoriString = String(kategoriId);
           payload.append("kategori", kategoriString);
           console.log("  ✅ kategori appended:");
@@ -404,10 +404,13 @@ const [isSubmitting, setIsSubmitting] = useState(false);
           console.log("    kategoriString:", kategoriString, "(type: string)");
           console.log("    Note: FormData requires string, backend will parse to number");
         } else {
-          payload.append("kategori", "null");
-          console.warn("  ⚠️ kategori is null - appending 'null' as string");
+          console.error("  ❌ kategori is missing or invalid - cannot proceed");
+          alert("Kategori wajib dipilih!");
+          setIsSubmitting(false);
+          setSubmitStatus("");
+          return;
         }
-        console.log("    FormData key: 'kategori', value:", kategoriId !== null && kategoriId !== undefined ? String(kategoriId) : "null");
+        console.log("    FormData key: 'kategori', value:", String(kategoriId));
         console.log("    ⚠️ IMPORTANT: kategori harus ID (number), dikirim sebagai string di FormData");
 
         // 2. nama (REQUIRED)
@@ -423,18 +426,21 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         // Backend akan parse string "11" menjadi number 11
         // JANGAN kirim sebagai JSON atau array
         // CRITICAL: user_input diambil dari user yang sedang login (currentUser.id)
-        // Jika null, append null sebagai string "null" (biar backend yang handle error-nya)
-        if (userInputId !== null && userInputId !== undefined) {
+        // REQUIRED FIELD - must have valid value
+        if (userInputId !== null && userInputId !== undefined && userInputId > 0) {
           const userInputString = String(userInputId);
           payload.append("user_input", userInputString);
           console.log("  ✅ user_input appended:");
           console.log("    userInputId:", userInputId, "(type: number)");
           console.log("    userInputString:", userInputString, "(type: string)");
         } else {
-          payload.append("user_input", "null");
-          console.warn("  ⚠️ user_input is null - appending 'null' as string");
+          console.error("  ❌ user_input is missing or invalid - cannot proceed");
+          alert("User input tidak ditemukan. Silakan login ulang!");
+          setIsSubmitting(false);
+          setSubmitStatus("");
+          return;
         }
-        console.log("    FormData key: 'user_input', value:", userInputId !== null && userInputId !== undefined ? String(userInputId) : "null");
+        console.log("    FormData key: 'user_input', value:", String(userInputId));
         console.log("    ⚠️ IMPORTANT: user_input harus ID (number), dikirim sebagai string di FormData");
 
         // 4. assign (REQUIRED)
@@ -445,7 +451,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         // Format: formData.append("assign", JSON.stringify([14])) → terkirim sebagai "[14]" (string JSON)
         // JANGAN gunakan "assign[]" atau looping append
         // CRITICAL: assign diambil dari relasi user, menggunakan string array
-        // Jika null atau empty, append null sebagai string "null" (biar backend yang handle error-nya)
+        // REQUIRED FIELD - must have at least one value
         if (normalizedAssign && normalizedAssign.length > 0) {
           const assignString = JSON.stringify(normalizedAssign);
           payload.append("assign", assignString);
@@ -453,10 +459,13 @@ const [isSubmitting, setIsSubmitting] = useState(false);
           console.log("    assign array:", normalizedAssign);
           console.log("    assignString:", assignString, "(type: string)");
         } else {
-          payload.append("assign", "null");
-          console.warn("  ⚠️ assign is null or empty - appending 'null' as string");
+          console.error("  ❌ assign is missing or empty - cannot proceed");
+          alert("Penanggung jawab (Assign) wajib dipilih minimal 1 user!");
+          setIsSubmitting(false);
+          setSubmitStatus("");
+          return;
         }
-        console.log("    FormData key: 'assign', value:", normalizedAssign && normalizedAssign.length > 0 ? JSON.stringify(normalizedAssign) : "null");
+        console.log("    FormData key: 'assign', value:", JSON.stringify(normalizedAssign));
         console.log("    ⚠️ IMPORTANT: assign harus string JSON array dari relasi user, contoh: '[1,2,3]'");
 
         // 5. Other required fields
@@ -568,6 +577,32 @@ const [isSubmitting, setIsSubmitting] = useState(false);
       } else {
         // Use JSON payload (no files)
         console.log("📦 [SUBMIT_PRODUK] Step 3: Building JSON payload...");
+        
+        // Validate required fields before building JSON payload
+        if (!kategoriId || kategoriId <= 0) {
+          console.error("  ❌ kategori is missing or invalid - cannot proceed");
+          alert("Kategori wajib dipilih!");
+          setIsSubmitting(false);
+          setSubmitStatus("");
+          return;
+        }
+        
+        if (!userInputId || userInputId <= 0) {
+          console.error("  ❌ user_input is missing or invalid - cannot proceed");
+          alert("User input tidak ditemukan. Silakan login ulang!");
+          setIsSubmitting(false);
+          setSubmitStatus("");
+          return;
+        }
+        
+        if (!normalizedAssign || normalizedAssign.length === 0) {
+          console.error("  ❌ assign is missing or empty - cannot proceed");
+          alert("Penanggung jawab (Assign) wajib dipilih minimal 1 user!");
+          setIsSubmitting(false);
+          setSubmitStatus("");
+          return;
+        }
+        
         payload = {
           nama: form.nama || "",
           kode: generateKode(form.nama),
@@ -585,17 +620,15 @@ const [isSubmitting, setIsSubmitting] = useState(false);
           // - assign: "[14]" (string JSON array) - string JSON, bukan array
           // CRITICAL: kategori diambil dari kategori_rel (relasi), tapi untuk create hanya perlu ID
           // Di JSON payload, kirim sebagai number (sesuai response GET)
-          kategori: kategoriId !== null && kategoriId !== undefined ? kategoriId : null,
+          kategori: kategoriId,
           // IMPORTANT: assign harus string JSON, bukan array
           // Format: assign: JSON.stringify([1,5,7]) → terkirim sebagai "[1,5,7]"
           // CRITICAL: assign diambil dari relasi user, menggunakan string array
-          // Jika null atau empty, kirim null (biar backend yang handle error-nya)
-          assign: normalizedAssign && normalizedAssign.length > 0 ? JSON.stringify(normalizedAssign) : null,
+          assign: JSON.stringify(normalizedAssign),
           // IMPORTANT: user_input harus integer (number), bukan string
           // Di JSON payload, langsung kirim sebagai number (bukan string)
           // Backend akan menerima sebagai integer (sesuai response GET)
           // CRITICAL: user_input diambil dari user yang sedang login (currentUser.id)
-          // Jika null, kirim null (biar backend yang handle error-nya)
           user_input: userInputId,
           // JSON fields
           custom_field: JSON.stringify(
