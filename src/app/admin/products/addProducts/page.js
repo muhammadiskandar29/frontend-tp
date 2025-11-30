@@ -54,7 +54,7 @@ export default function Page() {
   // ============================
   const defaultForm = {
   id: null,
-  kategori: null, // Integer, bukan array
+  kategori: "", // disimpan sebagai string
   user_input: [],
   nama: "",
   url: "",
@@ -79,6 +79,7 @@ export default function Page() {
 
 
   const [form, setForm] = useState(defaultForm);
+const [isSubmitting, setIsSubmitting] = useState(false);
 
   // ============================
   // HANDLER INPUT
@@ -108,6 +109,8 @@ export default function Page() {
   // SUBMIT
   // ============================
   const handleSubmit = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       const hasFile =
         (form.header.type === "file" && form.header.value) ||
@@ -120,6 +123,8 @@ export default function Page() {
       if (hasFile) {
         payload = new FormData();
         isFormData = true;
+
+        const loggableFields = {};
 
         // Header
         if (form.header.type === "file" && form.header.value) {
@@ -153,7 +158,10 @@ export default function Page() {
         payload.append("harga_coret", form.harga_coret || 0);
         payload.append("harga_asli", form.harga_asli || 0);
         payload.append("tanggal_event", formatDateForBackend(form.tanggal_event));
-        payload.append("assign", JSON.stringify(form.assign));
+        const assignValue = Array.isArray(form.assign)
+          ? form.assign.filter((v) => v !== null && v !== undefined).map((v) => String(v))
+          : [];
+        payload.append("assign", JSON.stringify(assignValue));
         const payloadCustomField = form.custom_field.map((f, idx) => ({
         nama_field: f.label || f.key,
         urutan: idx + 1
@@ -173,27 +181,36 @@ export default function Page() {
         payload.append("landingpage", form.landingpage);
         payload.append("status", form.status);
         // user_input adalah ID user yang membuat produk (current user)
-        const userInputId = currentUser?.id || form.user_input;
-        if (userInputId) {
-          payload.append("user_input", userInputId);
+        const userInputId = currentUser?.id ?? form.user_input ?? "";
+        if (userInputId !== null && userInputId !== undefined && userInputId !== "") {
+          payload.append("user_input", String(userInputId));
         }
-        // Kirim kategori_id sebagai integer
-        const kategoriId = form.kategori        ? Number(form.kategori        ) : null;
-        if (kategoriId) {
-          payload.append("kategori", kategoriId);
+        // Kirim kategori sebagai string angka
+        const kategoriValue =
+          form.kategori !== null && form.kategori !== undefined
+            ? String(form.kategori)
+            : "";
+        if (kategoriValue) {
+          payload.append("kategori", kategoriValue);
         }
       } else {
-        // Kirim kategori_id sebagai integer
-        const kategoriId = form.kategori        ? Number(form.kategori
-        ) : null;
-        
+        // Kirim kategori/kategori_id sebagai integer
+        const kategoriValue =
+          form.kategori !== null && form.kategori !== undefined
+            ? String(form.kategori)
+            : "";
+        const assignValue = Array.isArray(form.assign)
+          ? form.assign.filter((v) => v !== null && v !== undefined).map((v) => String(v))
+          : [];
+        const userInputId = currentUser?.id ?? form.user_input ?? "";
+
         payload = {
           ...form,
-          kategori: kategoriId, // Kirim kategori_id sebagai integer
+          kategori: kategoriValue || null,
           harga_coret: Number(form.harga_coret) || 0,
           harga_asli: Number(form.harga_asli) || 0,
           tanggal_event: formatDateForBackend(form.tanggal_event),
-          assign: JSON.stringify(form.assign),
+          assign: JSON.stringify(assignValue),
           gtm: JSON.stringify(form.gtm),
           fb_pixel: JSON.stringify(form.fb_pixel),
           event_fb_pixel: JSON.stringify(
@@ -209,10 +226,16 @@ export default function Page() {
               deskripsi: t.deskripsi,
             }))
           ),
+          user_input: userInputId !== "" ? String(userInputId) : null,
         };
       }
 
-      console.log("FINAL PAYLOAD:", payload);
+      console.log("🚀 [SUBMIT_PRODUK] Payload summary:", {
+        hasFile,
+        kategori: form.kategori,
+        assign: form.assign,
+        user_input: currentUser?.id ?? form.user_input ?? "",
+      });
 
       const res = await fetch(
         "/api/admin/produk",
@@ -253,7 +276,8 @@ export default function Page() {
       console.table(data.data);
 
       if (!res.ok) {
-        console.error("❌ API ERROR:", data);
+      console.error("❌ API ERROR:", data);
+      console.error("❌ API ERROR detail:", data?.errors);
         alert(data?.message || "Gagal membuat produk!");
         return;
       }
@@ -266,6 +290,9 @@ export default function Page() {
     } catch (err) {
       console.error("❌ Submit error:", err);
       alert("Terjadi kesalahan saat submit: " + (err.message || "Unknown error"));
+    }
+    finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -311,7 +338,7 @@ useEffect(() => {
       // Create options with ID as value and name as label
       const kategoriOpts = activeCategories.map((k) => ({
         label: `${k.id} - ${k.nama}`,
-        value: k.id
+        value: String(k.id),
       }));
       setKategoriOptions(kategoriOpts);
 
@@ -390,7 +417,25 @@ useEffect(() => {
   // ============================
   return (
     <div className="produk-container produk-builder-layout">
-      <div className="produk-form">
+      <div className="produk-form" style={{ position: "relative" }}>
+      {isSubmitting && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "rgba(255,255,255,0.8)",
+            zIndex: 10,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "12px",
+          }}
+        >
+          <div className="spinner" style={{ width: "48px", height: "48px", border: "4px solid #3b82f6", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+          <p style={{ color: "#1f2937", fontWeight: 600 }}>Menyimpan produk, mohon tunggu...</p>
+        </div>
+      )}
       {/* Header Section */}
       <div className="form-header-section">
         <button
@@ -449,7 +494,7 @@ useEffect(() => {
               value={form.kategori || null}
               options={kategoriOptions}
               onChange={(e) => {
-                handleChange("kategori", e.value ? Number(e.value) : null);
+                handleChange("kategori", e.value ?? null);
               }}
               placeholder="Pilih Kategori"
               showClear
@@ -999,8 +1044,11 @@ useEffect(() => {
           icon="pi pi-save"
           className="p-button-primary submit-btn" 
           onClick={handleSubmit}
+          disabled={isSubmitting}
         />
-        <p className="submit-hint">Pastikan semua data sudah lengkap sebelum menyimpan</p>
+        <p className="submit-hint">
+          {isSubmitting ? "Sedang mengunggah data ke server..." : "Pastikan semua data sudah lengkap sebelum menyimpan"}
+        </p>
       </div>
       </div>
       {/* ================= RIGHT: PREVIEW ================= */}
