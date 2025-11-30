@@ -271,23 +271,66 @@ const [isSubmitting, setIsSubmitting] = useState(false);
 
       // Validate user_input
       // IMPORTANT: user_input harus berupa integer (number), bukan string
-      // State disimpan sebagai number, saat append ke FormData dikonversi ke String
+      // user_input diambil dari user yang sedang login (currentUser)
       // Backend response menunjukkan user_input sebagai number: 2
       const userInputId = (() => {
-        // Prioritas: currentUser.id > form.user_input
         console.log("🔍 [SUBMIT_PRODUK] Validating user_input:");
         console.log("  currentUser:", currentUser);
         console.log("  currentUser?.id:", currentUser?.id, "(type:", typeof currentUser?.id + ")");
         console.log("  form.user_input:", form.user_input, "(type:", typeof form.user_input + ")");
         
-        const candidate = currentUser?.id ?? form.user_input;
-        console.log("  candidate:", candidate, "(type:", typeof candidate + ")");
+        // CRITICAL: user_input harus dari user yang sedang login
+        // Prioritas: currentUser.id > form.user_input
+        // Coba berbagai cara untuk mendapatkan ID user
+        let candidate = null;
+        
+        if (currentUser) {
+          // Coba currentUser.id
+          if (currentUser.id !== undefined && currentUser.id !== null) {
+            candidate = currentUser.id;
+            console.log("  ✅ Using currentUser.id:", candidate);
+          }
+          // Fallback: coba currentUser.user_id atau currentUser.userId
+          else if (currentUser.user_id !== undefined && currentUser.user_id !== null) {
+            candidate = currentUser.user_id;
+            console.log("  ✅ Using currentUser.user_id:", candidate);
+          }
+          else if (currentUser.userId !== undefined && currentUser.userId !== null) {
+            candidate = currentUser.userId;
+            console.log("  ✅ Using currentUser.userId:", candidate);
+          }
+        }
+        
+        // Fallback ke form.user_input jika currentUser tidak ada
+        if (!candidate && form.user_input) {
+          candidate = form.user_input;
+          console.log("  ⚠️ Using form.user_input as fallback:", candidate);
+        }
+        
+        // Jika masih tidak ada, coba ambil dari localStorage langsung
+        if (!candidate) {
+          try {
+            const userSession = localStorage.getItem("user");
+            if (userSession) {
+              const userData = JSON.parse(userSession);
+              if (userData?.id) {
+                candidate = userData.id;
+                console.log("  ✅ Using userData.id from localStorage:", candidate);
+              }
+            }
+          } catch (e) {
+            console.error("  ❌ Error parsing user from localStorage:", e);
+          }
+        }
+        
+        console.log("  Final candidate:", candidate, "(type:", typeof candidate + ")");
         
         // Validasi: harus ada nilai, tidak null/undefined, dan bukan string kosong
         if (candidate === null || candidate === undefined || candidate === "") {
           console.error("❌ [SUBMIT_PRODUK] user_input is missing/empty");
           console.error("  candidate value:", candidate);
           console.error("  candidate type:", typeof candidate);
+          console.error("  currentUser:", JSON.stringify(currentUser, null, 2));
           return null;
         }
         
@@ -367,12 +410,14 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         // IMPORTANT: Backend menerima kategori sebagai string numerik, contoh: "2"
         // Format: formData.append("kategori", String(2)) → terkirim sebagai "2" (string numerik)
         // Hanya kirim ID (string/number), BUKAN object atau array
+        // CRITICAL: kategori diambil dari kategori_rel (relasi), tapi untuk create hanya perlu ID
         const kategoriString = String(kategoriId);
         payload.append("kategori", kategoriString);
         console.log("  ✅ kategori appended:");
         console.log("    kategoriId:", kategoriId, "(type: number)");
         console.log("    kategoriString:", kategoriString, "(type: string)");
         console.log("    FormData key: 'kategori', value:", kategoriString);
+        console.log("    ⚠️ IMPORTANT: kategori harus string numerik (ID), bukan object relasi");
 
         // 2. nama (REQUIRED)
         payload.append("nama", form.nama || "");
@@ -383,15 +428,27 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         // Format: formData.append("user_input", String(2)) → terkirim sebagai "2" (string literal)
         // Backend akan parse string "2" menjadi integer 2
         // JANGAN kirim sebagai JSON atau array
-        payload.append("user_input", String(userInputId));
-        console.log("  ✅ user_input:", String(userInputId), "(type: number, sent as string)");
+        // CRITICAL: user_input diambil dari user yang sedang login (currentUser.id)
+        const userInputString = String(userInputId);
+        payload.append("user_input", userInputString);
+        console.log("  ✅ user_input appended:");
+        console.log("    userInputId:", userInputId, "(type: number)");
+        console.log("    userInputString:", userInputString, "(type: string)");
+        console.log("    FormData key: 'user_input', value:", userInputString);
+        console.log("    ⚠️ IMPORTANT: user_input harus dari currentUser.id (user yang sedang login)");
 
         // 4. assign (REQUIRED)
         // IMPORTANT: Backend mengharapkan assign sebagai string JSON, bukan array
         // Format: formData.append("assign", JSON.stringify([1,5,7])) → terkirim sebagai "[1,5,7]"
         // JANGAN gunakan "assign[]" atau looping append
-        payload.append("assign", JSON.stringify(normalizedAssign));
-        console.log("  ✅ assign:", JSON.stringify(normalizedAssign));
+        // CRITICAL: assign diambil dari relasi user, menggunakan string array
+        const assignString = JSON.stringify(normalizedAssign);
+        payload.append("assign", assignString);
+        console.log("  ✅ assign appended:");
+        console.log("    assign array:", normalizedAssign);
+        console.log("    assignString:", assignString, "(type: string)");
+        console.log("    FormData key: 'assign', value:", assignString);
+        console.log("    ⚠️ IMPORTANT: assign harus string JSON array dari relasi user, contoh: '[1,2,3]'");
 
         // 5. Other required fields
         const kode = generateKode(form.nama);
@@ -516,13 +573,16 @@ const [isSubmitting, setIsSubmitting] = useState(false);
           // IMPORTANT: Backend menerima kategori sebagai string numerik, contoh: "2"
           // Format: kategori: String(2) → terkirim sebagai "2" (string numerik)
           // Hanya kirim ID (string), BUKAN object atau array
+          // CRITICAL: kategori diambil dari kategori_rel (relasi), tapi untuk create hanya perlu ID
           kategori: String(kategoriId), // MUST be string (ID only, not object)
           // IMPORTANT: assign harus string JSON, bukan array
           // Format: assign: JSON.stringify([1,5,7]) → terkirim sebagai "[1,5,7]"
+          // CRITICAL: assign diambil dari relasi user, menggunakan string array
           assign: JSON.stringify(normalizedAssign),
           // IMPORTANT: user_input harus integer (number), bukan string
           // Di JSON payload, langsung kirim sebagai number (bukan string)
           // Backend akan menerima sebagai integer
+          // CRITICAL: user_input diambil dari user yang sedang login (currentUser.id)
           user_input: userInputId,
           // JSON fields
           custom_field: JSON.stringify(
@@ -660,6 +720,13 @@ const [isSubmitting, setIsSubmitting] = useState(false);
 
       console.log("✅ [SUBMIT_PRODUK] All verifications passed");
       console.log("🚀 [SUBMIT_PRODUK] Sending payload to backend...");
+      
+      // FINAL SUMMARY: Log all critical fields before sending
+      console.log("📋 [SUBMIT_PRODUK] FINAL SUMMARY - Critical fields:");
+      console.log("  ✅ kategori:", kategoriId, "→", String(kategoriId), "(string)");
+      console.log("  ✅ user_input:", userInputId, "→", String(userInputId), "(string)");
+      console.log("  ✅ assign:", normalizedAssign, "→", JSON.stringify(normalizedAssign), "(string JSON)");
+      console.log("  📝 Note: kategori dari kategori_rel (ID), user_input dari currentUser.id, assign dari relasi user");
 
       // ============================================
       // STEP 6: SEND TO BACKEND
