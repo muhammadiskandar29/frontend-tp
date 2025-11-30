@@ -247,22 +247,34 @@ const [isSubmitting, setIsSubmitting] = useState(false);
       // Validate user_input
       // IMPORTANT: user_input harus berupa integer (number), bukan string
       // State disimpan sebagai number, saat append ke FormData dikonversi ke String
+      // Backend response menunjukkan user_input sebagai number: 2
       const userInputId = (() => {
         // Prioritas: currentUser.id > form.user_input
+        console.log("🔍 [SUBMIT_PRODUK] Validating user_input:");
+        console.log("  currentUser:", currentUser);
+        console.log("  currentUser?.id:", currentUser?.id, "(type:", typeof currentUser?.id + ")");
+        console.log("  form.user_input:", form.user_input, "(type:", typeof form.user_input + ")");
+        
         const candidate = currentUser?.id ?? form.user_input;
+        console.log("  candidate:", candidate, "(type:", typeof candidate + ")");
         
         // Validasi: harus ada nilai, tidak null/undefined, dan bukan string kosong
         if (candidate === null || candidate === undefined || candidate === "") {
           console.error("❌ [SUBMIT_PRODUK] user_input is missing/empty");
+          console.error("  candidate value:", candidate);
+          console.error("  candidate type:", typeof candidate);
           return null;
         }
         
         // Pastikan adalah number (jika sudah number, tetap number; jika string, parse ke number)
         const parsed = typeof candidate === "number" ? candidate : Number(candidate);
+        console.log("  parsed value:", parsed, "(type:", typeof parsed + ")");
         
         // Validasi: harus valid number dan > 0
         if (Number.isNaN(parsed) || parsed <= 0) {
-          console.error("❌ [SUBMIT_PRODUK] user_input is not a valid number:", candidate);
+          console.error("❌ [SUBMIT_PRODUK] user_input is not a valid number:");
+          console.error("  candidate:", candidate);
+          console.error("  parsed:", parsed);
           return null;
         }
         
@@ -487,25 +499,78 @@ const [isSubmitting, setIsSubmitting] = useState(false);
       // STEP 5: FINAL VERIFICATION
       // ============================================
       console.log("🔍 [SUBMIT_PRODUK] Step 5: Final verification...");
+      console.log("🔍 [SUBMIT_PRODUK] Verifying payload format matches backend response:");
+      console.log("  Expected format from backend response:");
+      console.log("    kategori: \"2\" (string numerik)");
+      console.log("    user_input: 2 (number, but sent as string \"2\" in FormData)");
+      console.log("    assign: \"[1,2,3]\" (string JSON array)");
+      
       if (isFormData) {
         const kategoriValue = payload.get("kategori");
         const namaValue = payload.get("nama");
         const userInputValue = payload.get("user_input");
         const assignValue = payload.get("assign");
         
-        console.log("  kategori:", kategoriValue);
-        console.log("  nama:", namaValue);
-        console.log("  user_input:", userInputValue);
-        console.log("  assign:", assignValue);
+        console.log("  📋 Actual FormData values:");
+        console.log("    kategori:", kategoriValue, "(type:", typeof kategoriValue + ")");
+        console.log("    nama:", namaValue, "(type:", typeof namaValue + ")");
+        console.log("    user_input:", userInputValue, "(type:", typeof userInputValue + ")");
+        console.log("    assign:", assignValue, "(type:", typeof assignValue + ")");
         
-        if (!kategoriValue || kategoriValue === "null" || kategoriValue === "") {
-          console.error("❌ [SUBMIT_PRODUK] CRITICAL: kategori missing in final FormData!");
+        // Verify format matches backend response
+        const kategoriValid = kategoriValue && 
+          kategoriValue !== "null" && 
+          kategoriValue !== "" && 
+          String(kategoriValue).trim() !== "";
+        
+        const userInputValid = userInputValue && 
+          userInputValue !== "null" && 
+          userInputValue !== "" && 
+          String(userInputValue).trim() !== "";
+        
+        const assignValid = assignValue && 
+          assignValue !== "null" && 
+          assignValue !== "" && 
+          String(assignValue).trim() !== "";
+        
+        if (!kategoriValid) {
+          console.error("❌ [SUBMIT_PRODUK] CRITICAL: kategori missing or invalid in final FormData!");
+          console.error("  kategoriValue:", kategoriValue);
+          console.error("  kategoriValue type:", typeof kategoriValue);
           alert("Terjadi kesalahan: Kategori tidak ditemukan. Silakan refresh halaman dan coba lagi.");
           setIsSubmitting(false);
           setSubmitStatus("");
           return;
         }
+        
+        if (!userInputValid) {
+          console.error("❌ [SUBMIT_PRODUK] CRITICAL: user_input missing or invalid in final FormData!");
+          console.error("  userInputValue:", userInputValue);
+          console.error("  userInputValue type:", typeof userInputValue);
+          alert("Terjadi kesalahan: User input tidak ditemukan. Silakan refresh halaman dan coba lagi.");
+          setIsSubmitting(false);
+          setSubmitStatus("");
+          return;
+        }
+        
+        if (!assignValid) {
+          console.error("❌ [SUBMIT_PRODUK] CRITICAL: assign missing or invalid in final FormData!");
+          console.error("  assignValue:", assignValue);
+          console.error("  assignValue type:", typeof assignValue);
+          alert("Terjadi kesalahan: Assign tidak ditemukan. Silakan refresh halaman dan coba lagi.");
+          setIsSubmitting(false);
+          setSubmitStatus("");
+          return;
+        }
+        
+        console.log("✅ [SUBMIT_PRODUK] All critical fields verified in FormData");
       } else {
+        // JSON payload verification
+        console.log("  📋 Actual JSON payload values:");
+        console.log("    kategori:", payload.kategori, "(type:", typeof payload.kategori + ")");
+        console.log("    user_input:", payload.user_input, "(type:", typeof payload.user_input + ")");
+        console.log("    assign:", payload.assign, "(type:", typeof payload.assign + ")");
+        
         if (!payload.kategori || payload.kategori === null || payload.kategori === "") {
           console.error("❌ [SUBMIT_PRODUK] CRITICAL: kategori missing in JSON payload!");
           alert("Terjadi kesalahan: Kategori tidak ditemukan. Silakan refresh halaman dan coba lagi.");
@@ -513,6 +578,24 @@ const [isSubmitting, setIsSubmitting] = useState(false);
           setSubmitStatus("");
           return;
         }
+        
+        if (!payload.user_input || payload.user_input === null) {
+          console.error("❌ [SUBMIT_PRODUK] CRITICAL: user_input missing in JSON payload!");
+          alert("Terjadi kesalahan: User input tidak ditemukan. Silakan refresh halaman dan coba lagi.");
+          setIsSubmitting(false);
+          setSubmitStatus("");
+          return;
+        }
+        
+        if (!payload.assign || payload.assign === null || payload.assign === "") {
+          console.error("❌ [SUBMIT_PRODUK] CRITICAL: assign missing in JSON payload!");
+          alert("Terjadi kesalahan: Assign tidak ditemukan. Silakan refresh halaman dan coba lagi.");
+          setIsSubmitting(false);
+          setSubmitStatus("");
+          return;
+        }
+        
+        console.log("✅ [SUBMIT_PRODUK] All critical fields verified in JSON payload");
       }
 
       console.log("✅ [SUBMIT_PRODUK] All verifications passed");

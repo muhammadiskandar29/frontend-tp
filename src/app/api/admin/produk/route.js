@@ -340,9 +340,27 @@ export async function POST(request) {
             forwardFormData.append(key, "");
           } else {
             // For all other types (string, number, boolean), append as-is
-            // form-data will automatically convert to string during transmission
+            // form-data package will automatically convert to string during transmission
             // This preserves the original value without premature String() conversion
-            forwardFormData.append(key, value);
+            
+            // CRITICAL: For kategori, assign, and user_input, ensure they are sent correctly
+            // Based on backend response format:
+            // - kategori: "2" (string numerik)
+            // - assign: "[1,2,3]" (string JSON array)
+            // - user_input: "2" (string, backend will parse to number 2)
+            if (key === "kategori" || key === "assign" || key === "user_input") {
+              // Ensure these critical fields are explicitly converted to string
+              // This guarantees they are sent as string, not as other types
+              const stringValue = String(value);
+              console.log(`  🔑 Critical field ${key}:`);
+              console.log(`    Original value: ${value} (type: ${typeof value})`);
+              console.log(`    String value: "${stringValue}" (type: ${typeof stringValue})`);
+              console.log(`    Appending as string: "${stringValue}"`);
+              forwardFormData.append(key, stringValue);
+            } else {
+              // For other fields, append as-is (form-data will handle conversion)
+              forwardFormData.append(key, value);
+            }
           }
         }
       }
@@ -382,9 +400,27 @@ export async function POST(request) {
       const userInputValue = originalValues.get("user_input");
       
       // Check if values are not empty (for string/number types)
-      const kategoriValid = hasKategori && kategoriValue !== null && kategoriValue !== undefined && kategoriValue !== "";
-      const assignValid = hasAssign && assignValue !== null && assignValue !== undefined && assignValue !== "";
-      const userInputValid = hasUserInput && userInputValue !== null && userInputValue !== undefined && userInputValue !== "";
+      // IMPORTANT: kategori, assign, dan user_input adalah required fields
+      // kategori: harus string numerik seperti "2"
+      // assign: harus string JSON seperti "[1,2,3]"
+      // user_input: harus string numerik seperti "2"
+      const kategoriValid = hasKategori && 
+        kategoriValue !== null && 
+        kategoriValue !== undefined && 
+        kategoriValue !== "" &&
+        String(kategoriValue).trim() !== "";
+      
+      const assignValid = hasAssign && 
+        assignValue !== null && 
+        assignValue !== undefined && 
+        assignValue !== "" &&
+        String(assignValue).trim() !== "";
+      
+      const userInputValid = hasUserInput && 
+        userInputValue !== null && 
+        userInputValue !== undefined && 
+        userInputValue !== "" &&
+        String(userInputValue).trim() !== "";
 
       // Validate required fields with detailed error logging
       const missingFields = [];
