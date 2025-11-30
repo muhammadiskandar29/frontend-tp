@@ -107,15 +107,81 @@ const [isSubmitting, setIsSubmitting] = useState(false);
 
   // ============================
   // BUILD PRODUCT PAYLOAD
+  // Sesuai format GET produk dari backend Laravel
   // ============================
   function buildProductPayload(form, kategoriId, userInputId, normalizedAssign) {
     // Generate kode dari nama jika belum ada
     const kode = form.kode || generateKode(form.nama);
     
+    // 🔥 1. kategori - HARUS string angka, contoh "7"
+    const kategoriStr = String(kategoriId);
+    
+    // 🔥 2. user_input - HARUS string angka, contoh "11"
+    const userInputStr = String(userInputId);
+    
+    // 🔥 3. assign - HARUS string JSON array, contoh "[14]"
+    const assignStr = JSON.stringify(normalizedAssign || []);
+    
+    // 🔥 4. Semua field array HARUS string JSON
+    // list_point - format: [{"nama":"..."}]
+    const listPointArray = (form.list_point || []).map((p) => ({
+      nama: p.nama || "",
+    }));
+    const listPointStr = JSON.stringify(listPointArray);
+    
+    // fb_pixel - string JSON array
+    const fbPixelArray = form.fb_pixel || [];
+    const fbPixelStr = JSON.stringify(fbPixelArray);
+    
+    // event_fb_pixel - format: [{"event":"xxx"}]
+    const eventFbPixelArray = (form.event_fb_pixel || []).map((ev) => ({ 
+      event: ev || "" 
+    }));
+    const eventFbPixelStr = JSON.stringify(eventFbPixelArray);
+    
+    // gtm - string JSON array
+    const gtmArray = form.gtm || [];
+    const gtmStr = JSON.stringify(gtmArray);
+    
+    // video - string JSON array
+    const videoArray = form.video
+      ? form.video.split(",").map((v) => v.trim()).filter((v) => v)
+      : [];
+    const videoStr = JSON.stringify(videoArray);
+    
+    // 🔥 5. gambar - format: [{"path":null,"caption":"..."}]
+    const gambarArray = (form.gambar || []).map((g) => ({
+      path: null, // File akan di-handle terpisah via FormData
+      caption: g.caption || "",
+    }));
+    const gambarStr = JSON.stringify(gambarArray);
+    
+    // 🔥 5. testimoni - format: [{"gambar":null,"nama":"...","deskripsi":"..."}]
+    const testimoniArray = (form.testimoni || []).map((t) => ({
+      gambar: null, // File akan di-handle terpisah via FormData
+      nama: t.nama || "",
+      deskripsi: t.deskripsi || "",
+    }));
+    const testimoniStr = JSON.stringify(testimoniArray);
+    
+    // custom_field - format: [{"nama_field":"...","urutan":1}]
+    const customFieldArray = (form.custom_field || []).map((f, idx) => ({
+      nama_field: f.label || f.key || "",
+      urutan: idx + 1,
+    }));
+    const customFieldStr = JSON.stringify(customFieldArray);
+    
     return {
-      kategori: Number(kategoriId) || 0,
-      user_input: Number(userInputId) || 0,
-      assign: JSON.stringify(normalizedAssign || []),
+      // 🔥 WAJIB: kategori sebagai string angka
+      kategori: kategoriStr,
+      
+      // 🔥 WAJIB: user_input sebagai string angka
+      user_input: userInputStr,
+      
+      // 🔥 WAJIB: assign sebagai string JSON array
+      assign: assignStr,
+      
+      // Field lainnya
       nama: form.nama || "",
       kode: kode,
       url: "/" + kode,
@@ -125,42 +191,16 @@ const [isSubmitting, setIsSubmitting] = useState(false);
       tanggal_event: formatDateForBackend(form.tanggal_event) || "",
       landingpage: Number(form.landingpage) || 1,
       status: Number(form.status) || 1,
-      custom_field: JSON.stringify(
-        (form.custom_field || []).length > 0
-          ? (form.custom_field || []).map((f, idx) => ({
-              nama_field: f.label || f.key || "",
-              urutan: idx + 1,
-            }))
-          : []
-      ),
-      list_point: JSON.stringify(
-        (form.list_point || []).map((p) => ({
-          nama: p.nama || "",
-        }))
-      ),
-      fb_pixel: JSON.stringify(form.fb_pixel || []),
-      event_fb_pixel: JSON.stringify(
-        (form.event_fb_pixel || []).map((ev) => ({ event: ev }))
-      ),
-      gtm: JSON.stringify(form.gtm || []),
-      video: JSON.stringify(
-        form.video
-          ? form.video.split(",").map((v) => v.trim()).filter((v) => v)
-          : []
-      ),
-      gambar: JSON.stringify(
-        (form.gambar || []).map((g) => ({
-          path: g.path?.type === "file" && g.path?.value ? null : null, // Will be handled by file upload
-          caption: g.caption || "",
-        }))
-      ),
-      testimoni: JSON.stringify(
-        (form.testimoni || []).map((t) => ({
-          gambar: null, // Will be handled by file upload
-          nama: t.nama || "",
-          deskripsi: t.deskripsi || "",
-        }))
-      ),
+      
+      // 🔥 WAJIB: Semua field array sebagai string JSON
+      list_point: listPointStr,
+      fb_pixel: fbPixelStr,
+      event_fb_pixel: eventFbPixelStr,
+      gtm: gtmStr,
+      video: videoStr,
+      gambar: gambarStr,
+      testimoni: testimoniStr,
+      custom_field: customFieldStr,
     };
   }
 
@@ -211,57 +251,90 @@ const [isSubmitting, setIsSubmitting] = useState(false);
       // Build payload menggunakan function builder
       const payloadData = buildProductPayload(form, kategoriId, userInputId, normalizedAssign);
       
-      // Selalu gunakan FormData untuk konsistensi
+      // 🔥 6. FormData - Selalu gunakan FormData
       const fd = new FormData();
       
-      // Append semua field dari payload
-      Object.entries(payloadData).forEach(([key, value]) => {
-        fd.append(key, value);
-      });
+      // 🔥 6. Append semua field dengan key yang sama dengan backend
+      // kategori - string angka
+      fd.append("kategori", payloadData.kategori);
+      
+      // user_input - string angka
+      fd.append("user_input", payloadData.user_input);
+      
+      // assign - string JSON array
+      fd.append("assign", payloadData.assign);
+      
+      // Field dasar
+      fd.append("nama", payloadData.nama);
+      fd.append("kode", payloadData.kode);
+      fd.append("url", payloadData.url);
+      fd.append("deskripsi", payloadData.deskripsi);
+      fd.append("harga_coret", String(payloadData.harga_coret));
+      fd.append("harga_asli", String(payloadData.harga_asli));
+      fd.append("tanggal_event", payloadData.tanggal_event);
+      fd.append("landingpage", String(payloadData.landingpage));
+      fd.append("status", String(payloadData.status));
+      
+      // 🔥 4. Semua field array sebagai string JSON
+      fd.append("list_point", payloadData.list_point);
+      fd.append("fb_pixel", payloadData.fb_pixel);
+      fd.append("event_fb_pixel", payloadData.event_fb_pixel);
+      fd.append("gtm", payloadData.gtm);
+      fd.append("video", payloadData.video);
+      fd.append("gambar", payloadData.gambar);
+      fd.append("testimoni", payloadData.testimoni);
+      fd.append("custom_field", payloadData.custom_field);
 
-      // Handle file uploads
-      // Header
+      // Handle file uploads (jika ada)
+      // Header image
       if (form.header?.type === "file" && form.header.value) {
         fd.append("header", form.header.value);
       }
 
-      // Gallery - format: gambar[0][file], gambar[0][caption]
-      // File upload untuk gallery (jika ada file)
+      // Gallery - File upload untuk gallery (jika ada file)
+      // File di-append terpisah dengan format: gambar[0][file]
       form.gambar.forEach((g, idx) => {
         if (g.path?.type === "file" && g.path.value) {
           fd.append(`gambar[${idx}][file]`, g.path.value);
         }
-        // Caption di-append terpisah untuk format backend
-        fd.append(`gambar[${idx}][caption]`, g.caption || "");
       });
 
-      // Testimoni - format: testimoni[0][gambar], testimoni[0][nama], testimoni[0][deskripsi]
-      // File upload untuk testimoni (jika ada file)
+      // Testimoni - File upload untuk testimoni (jika ada file)
+      // File di-append terpisah dengan format: testimoni[0][gambar]
       form.testimoni.forEach((t, idx) => {
         if (t.gambar?.type === "file" && t.gambar.value) {
           fd.append(`testimoni[${idx}][gambar]`, t.gambar.value);
         }
-        // Nama dan deskripsi di-append terpisah untuk format backend
-        fd.append(`testimoni[${idx}][nama]`, t.nama || "");
-        fd.append(`testimoni[${idx}][deskripsi]`, t.deskripsi || "");
       });
 
       console.log("🚀 [SUBMIT_PRODUK] Payload summary:", {
-        kategori: kategoriId,
-        kategoriType: typeof kategoriId,
-        user_input: userInputId,
-        userInputType: typeof userInputId,
-        assign: normalizedAssign,
-        payloadData: payloadData,
+        kategori: payloadData.kategori,
+        kategoriType: typeof payloadData.kategori,
+        user_input: payloadData.user_input,
+        userInputType: typeof payloadData.user_input,
+        assign: payloadData.assign,
+        assignType: typeof payloadData.assign,
+        list_point: payloadData.list_point,
+        gambar: payloadData.gambar,
+        testimoni: payloadData.testimoni,
       });
       
       // Log FormData entries untuk debugging
-      console.log("📤 [FORM_DATA] Entries:");
+      console.log("📤 [FORM_DATA] Critical Fields:");
+      console.log(`  kategori: "${fd.get("kategori")}" (type: ${typeof fd.get("kategori")})`);
+      console.log(`  user_input: "${fd.get("user_input")}" (type: ${typeof fd.get("user_input")})`);
+      console.log(`  assign: ${fd.get("assign")} (type: ${typeof fd.get("assign")})`);
+      console.log(`  list_point: ${fd.get("list_point")} (type: ${typeof fd.get("list_point")})`);
+      console.log(`  gambar: ${fd.get("gambar")?.substring(0, 100)}... (type: ${typeof fd.get("gambar")})`);
+      console.log(`  testimoni: ${fd.get("testimoni")?.substring(0, 100)}... (type: ${typeof fd.get("testimoni")})`);
+      
+      console.log("📤 [FORM_DATA] All Entries:");
       for (const [key, value] of fd.entries()) {
         if (value instanceof File) {
           console.log(`  ${key}: [File] ${value.name} (${value.size} bytes)`);
         } else {
-          console.log(`  ${key}: ${String(value).substring(0, 100)}`);
+          const strValue = String(value);
+          console.log(`  ${key}: ${strValue.length > 100 ? strValue.substring(0, 100) + "..." : strValue} (type: ${typeof value})`);
         }
       }
 
