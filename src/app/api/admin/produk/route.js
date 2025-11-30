@@ -557,39 +557,97 @@ export async function POST(request) {
     }
 
     console.log("🟢 [POST_PRODUK] Backend response data:", JSON.stringify(data, null, 2));
+    console.log("🟢 [POST_PRODUK] Backend response raw text:", responseText);
+    
+    // Try to extract errors from different possible structures
+    let extractedErrors = {};
+    let extractedErrorFields = [];
+    
+    // Method 1: Check if errors exist in data.errors
+    if (data?.errors && typeof data.errors === 'object' && Object.keys(data.errors).length > 0) {
+      extractedErrors = data.errors;
+      extractedErrorFields = Object.keys(data.errors);
+    }
+    // Method 2: Check if errors exist in data.data.errors (some Laravel formats)
+    else if (data?.data?.errors && typeof data.data.errors === 'object') {
+      extractedErrors = data.data.errors;
+      extractedErrorFields = Object.keys(data.data.errors);
+    }
+    // Method 3: Parse from message string (fallback)
+    else if (data?.message) {
+      // Try to extract field names from message like "The kategori field is required. (and 2 more errors)"
+      const message = data.message;
+      const fieldMatches = message.match(/The\s+(\w+)\s+field\s+is\s+required/gi);
+      if (fieldMatches) {
+        fieldMatches.forEach((match) => {
+          const fieldName = match.match(/The\s+(\w+)\s+field/i)?.[1];
+          if (fieldName) {
+            extractedErrorFields.push(fieldName);
+            extractedErrors[fieldName] = [match.replace(/The\s+(\w+)\s+field\s+is\s+required/i, 'Field ini wajib diisi')];
+          }
+        });
+      }
+      
+      // Also check for "and X more errors" to indicate there are more fields
+      const moreErrorsMatch = message.match(/and\s+(\d+)\s+more\s+errors?/i);
+      if (moreErrorsMatch) {
+        const moreCount = parseInt(moreErrorsMatch[1]);
+        console.log(`⚠️ [POST_PRODUK] Ada ${moreCount} error lainnya yang tidak terdeteksi dari message`);
+      }
+    }
+    
+    console.log("🔍 [POST_PRODUK] Extracted errors:", extractedErrors);
+    console.log("🔍 [POST_PRODUK] Extracted error fields:", extractedErrorFields);
 
     if (!response.ok) {
       console.error("❌ [POST_PRODUK] Backend returned error:");
       console.error("  Status:", response.status);
       console.error("  Message:", data?.message);
-      console.error("  Errors:", JSON.stringify(data?.errors, null, 2));
+      console.error("  Errors from data.errors:", JSON.stringify(data?.errors, null, 2));
+      console.error("  Extracted errors:", JSON.stringify(extractedErrors, null, 2));
       console.error("  Full response:", JSON.stringify(data, null, 2));
 
-      // Extract detailed error information
-      const errorFields = data?.errors ? Object.keys(data.errors) : [];
-      const errorDetails = {};
+      // Use extracted errors if available, otherwise try to parse from message
+      const errorFields = extractedErrorFields.length > 0 ? extractedErrorFields : [];
+      const errorDetails = Object.keys(extractedErrors).length > 0 ? extractedErrors : {};
       
-      if (data?.errors && typeof data.errors === 'object') {
-        errorFields.forEach((field) => {
-          const fieldErrors = Array.isArray(data.errors[field]) 
-            ? data.errors[field] 
-            : [data.errors[field]];
-          errorDetails[field] = fieldErrors;
+      // If still no errors found, try to parse from message more aggressively
+      if (errorFields.length === 0 && data?.message) {
+        const message = data.message;
+        // Common Laravel validation error patterns
+        const patterns = [
+          /The\s+(\w+)\s+field\s+is\s+required/gi,
+          /(\w+)\s+field\s+is\s+required/gi,
+          /(\w+)\s+is\s+required/gi,
+        ];
+        
+        patterns.forEach((pattern) => {
+          const matches = message.matchAll(pattern);
+          for (const match of matches) {
+            const fieldName = match[1]?.toLowerCase();
+            if (fieldName && !errorFields.includes(fieldName)) {
+              errorFields.push(fieldName);
+              errorDetails[fieldName] = ["Field ini wajib diisi"];
+            }
+          }
         });
       }
 
       // Build detailed error message
       let detailedMessage = data?.message || "Gagal membuat produk";
       if (errorFields.length > 0) {
-        detailedMessage += `\n\nField yang error: ${errorFields.join(", ")}`;
+        detailedMessage += `\n\n📋 Field yang error (${errorFields.length}):`;
         errorFields.forEach((field) => {
-          const errors = Array.isArray(data.errors[field]) 
-            ? data.errors[field] 
-            : [data.errors[field]];
+          const errors = Array.isArray(errorDetails[field]) 
+            ? errorDetails[field] 
+            : [errorDetails[field] || "Field ini wajib diisi"];
           errors.forEach((err) => {
-            detailedMessage += `\n- ${field}: ${err}`;
+            detailedMessage += `\n  ❌ ${field}: ${err}`;
           });
         });
+      } else {
+        // If we can't extract fields, at least show the message
+        detailedMessage += "\n\n⚠️ Detail error tidak tersedia dari backend. Silakan periksa console untuk informasi lebih lanjut.";
       }
 
       return NextResponse.json(
@@ -597,14 +655,17 @@ export async function POST(request) {
           success: false,
           message: data?.message || "Gagal membuat produk",
           detailedMessage: detailedMessage,
-          errors: data?.errors || errorDetails,
+          errors: errorDetails,
           errorFields: errorFields,
           errorCount: errorFields.length,
           debug: {
             status: response.status,
             backendResponse: data,
+            rawResponseText: responseText.substring(0, 500), // First 500 chars for debugging
             errorFields: errorFields,
             errorDetails: errorDetails,
+            extractedErrors: extractedErrors,
+            extractedErrorFields: extractedErrorFields,
           },
         },
         { status: response.status }

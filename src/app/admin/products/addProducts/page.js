@@ -344,8 +344,11 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         let errorDetails = [];
         
         // Parse validation errors from Laravel
-        if (data?.errors && typeof data.errors === 'object') {
-          const errorFields = Object.keys(data.errors);
+        let errorFields = [];
+        
+        // Method 1: From errors object
+        if (data?.errors && typeof data.errors === 'object' && Object.keys(data.errors).length > 0) {
+          errorFields = Object.keys(data.errors);
           errorDetails.push(`\n\n📋 Field yang error (${errorFields.length}):`);
           
           errorFields.forEach((field) => {
@@ -357,14 +360,56 @@ const [isSubmitting, setIsSubmitting] = useState(false);
               errorDetails.push(`  ❌ ${field}: ${err}`);
             });
           });
+        }
+        // Method 2: From errorFields array (extracted by API route)
+        else if (data?.errorFields && Array.isArray(data.errorFields) && data.errorFields.length > 0) {
+          errorFields = data.errorFields;
+          errorDetails.push(`\n\n📋 Field yang error (${errorFields.length}):`);
           
-          // Show which fields are missing
+          errorFields.forEach((field) => {
+            const fieldErrors = data?.errors?.[field] 
+              ? (Array.isArray(data.errors[field]) ? data.errors[field] : [data.errors[field]])
+              : ["Field ini wajib diisi"];
+            
+            fieldErrors.forEach((err) => {
+              errorDetails.push(`  ❌ ${field}: ${err}`);
+            });
+          });
+        }
+        // Method 3: Parse from message string (fallback)
+        else if (data?.message) {
+          const message = data.message;
+          // Extract field names from Laravel error message pattern
+          // "The kategori field is required. (and 2 more errors)"
+          const fieldPattern = /The\s+(\w+)\s+field\s+is\s+required/gi;
+          const matches = [...message.matchAll(fieldPattern)];
+          
+          if (matches.length > 0) {
+            errorFields = matches.map(m => m[1].toLowerCase());
+            errorDetails.push(`\n\n📋 Field yang error (${errorFields.length}):`);
+            
+            errorFields.forEach((field) => {
+              errorDetails.push(`  ❌ ${field}: Field ini wajib diisi`);
+            });
+            
+            // Check for "and X more errors"
+            const moreErrorsMatch = message.match(/and\s+(\d+)\s+more\s+errors?/i);
+            if (moreErrorsMatch) {
+              const moreCount = parseInt(moreErrorsMatch[1]);
+              errorDetails.push(`\n⚠️ Ada ${moreCount} field lainnya yang juga error (tidak terdeteksi dari message)`);
+            }
+          } else {
+            // If can't parse, show the message as is
+            errorDetails.push(`\n\n⚠️ ${message}`);
+          }
+        }
+        
+        // Show which fields are missing/required
+        if (errorFields.length > 0) {
           const missingFields = errorFields.filter(field => {
-            const errors = data.errors[field];
-            return Array.isArray(errors) && errors.some(e => 
-              e.toLowerCase().includes('required') || 
-              e.toLowerCase().includes('wajib')
-            );
+            // Common required field names
+            const requiredFields = ['kategori', 'user_input', 'assign', 'nama'];
+            return requiredFields.includes(field.toLowerCase());
           });
           
           if (missingFields.length > 0) {
