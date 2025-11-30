@@ -50,8 +50,8 @@ export default function Page() {
   // ============================
   const defaultForm = {
   id: null,
-  kategori: "", // disimpan sebagai string numerik (ID kategori), contoh: "2"
-  user_input: null, // Default null (dihapus fungsi validasinya)
+  kategori: null,
+  user_input: null,
   nama: "",
   url: "",
   kode: "",
@@ -273,7 +273,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         payload = new FormData();
         isFormData = true;
 
-        payload.append("kategori", String(kategoriId));
+        payload.append("kategori", kategoriId);
         payload.append("nama", form.nama);
         payload.append("user_input", String(userInputId));
         payload.append("assign", JSON.stringify(normalizedAssign));
@@ -504,7 +504,7 @@ useEffect(() => {
       
       const kategoriOpts = activeCategories.map((k) => ({
         label: k.nama,
-        value: String(k.id),
+        value: k.id,
       }));
       setKategoriOptions(kategoriOpts);
       setIsLoadingKategori(false);
@@ -597,13 +597,12 @@ useEffect(() => {
             </label>
             <Dropdown
               className="w-full form-input"
-              value={form.kategori || null}
+              value={form.kategori}
               options={kategoriOptions}
               optionLabel="label"
               optionValue="value"
               onChange={(e) => {
-                const newValue = e.value !== null && e.value !== undefined ? String(e.value) : "";
-                handleChange("kategori", newValue);
+                handleChange("kategori", e.value);
               }}
               placeholder={isLoadingKategori ? "Memuat kategori..." : "Pilih Kategori"}
               showClear
