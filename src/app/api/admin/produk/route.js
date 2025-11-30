@@ -1,7 +1,6 @@
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
-import { FormData, File } from "undici";
 
 const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "http://3.105.234.181:8000";
 
@@ -213,7 +212,7 @@ export async function POST(request) {
               // Change filename: header1.png → header1.webp
               const webpFilename = value.name.replace(/\.[^/.]+$/, "") + ".webp";
               
-              // Create File object from buffer for undici FormData
+              // Create File object from buffer (Node.js 18+ global File)
               const webpFile = new File([webpBuffer], webpFilename, { type: "image/webp" });
               forward.append(key, webpFile);
               
