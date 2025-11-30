@@ -352,16 +352,17 @@ export async function POST(request) {
             // - assign: "[5]" (string JSON array) - backend expects string JSON
             if (key === "kategori") {
               const stringValue = String(value);
+              console.log(`  🔑 [KATEGORI] Appending: "${stringValue}" (original: ${value}, type: ${typeof value})`);
               forwardFormData.append(key, stringValue);
             } else if (key === "user_input") {
               const numValue = typeof value === "number" ? value : Number(value);
-              if (!Number.isNaN(numValue)) {
-                forwardFormData.append(key, String(numValue));
-              } else {
-                forwardFormData.append(key, String(value));
-              }
+              const finalValue = !Number.isNaN(numValue) ? String(numValue) : String(value);
+              console.log(`  🔑 [USER_INPUT] Appending: "${finalValue}" (original: ${value}, type: ${typeof value})`);
+              forwardFormData.append(key, finalValue);
             } else if (key === "assign") {
-              forwardFormData.append(key, String(value));
+              const stringValue = String(value);
+              console.log(`  🔑 [ASSIGN] Appending: "${stringValue}" (original: ${value}, type: ${typeof value})`);
+              forwardFormData.append(key, stringValue);
             } else {
               forwardFormData.append(key, value);
             }
@@ -467,6 +468,46 @@ export async function POST(request) {
           console.log(`    Original value: ${originalValue instanceof File ? `[File] ${originalValue.name}` : originalValue}`);
           console.log(`    Original type: ${typeof originalValue}`);
         }
+      }
+
+      // Verify critical fields were processed
+      console.log("\n🟢 [POST_PRODUK] Final verification before sending:");
+      const kategoriValue = originalValues.get("kategori");
+      const userInputValue = originalValues.get("user_input");
+      const assignValue = originalValues.get("assign");
+      const namaValue = originalValues.get("nama");
+      
+      console.log(`  kategori: ${kategoriValue !== undefined ? `✅ "${kategoriValue}" (type: ${typeof kategoriValue})` : "❌ MISSING"}`);
+      console.log(`  user_input: ${userInputValue !== undefined ? `✅ "${userInputValue}" (type: ${typeof userInputValue})` : "❌ MISSING"}`);
+      console.log(`  assign: ${assignValue !== undefined ? `✅ "${assignValue}" (type: ${typeof assignValue})` : "❌ MISSING"}`);
+      console.log(`  nama: ${namaValue !== undefined ? `✅ "${namaValue}"` : "❌ MISSING"}`);
+
+      const wasKategoriProcessed = allEntries.some(e => e.key === "kategori");
+      const wasUserInputProcessed = allEntries.some(e => e.key === "user_input");
+      const wasAssignProcessed = allEntries.some(e => e.key === "assign");
+      const wasNamaProcessed = allEntries.some(e => e.key === "nama");
+
+      console.log(`  kategori processed: ${wasKategoriProcessed ? "✅" : "❌"}`);
+      console.log(`  user_input processed: ${wasUserInputProcessed ? "✅" : "❌"}`);
+      console.log(`  assign processed: ${wasAssignProcessed ? "✅" : "❌"}`);
+      console.log(`  nama processed: ${wasNamaProcessed ? "✅" : "❌"}`);
+
+      if (!wasKategoriProcessed || !wasUserInputProcessed || !wasAssignProcessed || !wasNamaProcessed) {
+        console.error("❌ [POST_PRODUK] CRITICAL: Some required fields were not processed!");
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Missing required fields in FormData",
+            debug: {
+              kategori: wasKategoriProcessed ? "PROCESSED" : "NOT PROCESSED",
+              user_input: wasUserInputProcessed ? "PROCESSED" : "NOT PROCESSED",
+              assign: wasAssignProcessed ? "PROCESSED" : "NOT PROCESSED",
+              nama: wasNamaProcessed ? "PROCESSED" : "NOT PROCESSED",
+              allKeys: allEntries.map(e => e.key),
+            },
+          },
+          { status: 400 }
+        );
       }
 
       // Forward FormData to backend with proper headers
