@@ -54,8 +54,8 @@ export default function Page() {
   // ============================
   const defaultForm = {
   id: null,
-  kategori: "", // disimpan sebagai string
-  user_input: "",
+  kategori: "", // disimpan sebagai string numerik (ID kategori), contoh: "2"
+  user_input: null, // disimpan sebagai number (integer), bukan string
   nama: "",
   url: "",
   kode: "",
@@ -79,7 +79,7 @@ export default function Page() {
 
 
   const [form, setForm] = useState(defaultForm);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState("");
 
   // ============================
@@ -188,17 +188,31 @@ export default function Page() {
       console.log("  form.kategori:", form.kategori, "(type:", typeof form.kategori + ")");
       
       // Validate kategori
+      // IMPORTANT: Backend menerima kategori sebagai string numerik, contoh: "2"
+      // State kategori bisa string atau number, tapi harus valid ID kategori
+      // Validasi: tidak boleh null, undefined, atau empty string
       const kategoriId = (() => {
+        // Validasi: kategori wajib ada dan tidak boleh kosong
         if (!form.kategori || form.kategori === null || form.kategori === undefined || form.kategori === "") {
           console.error("❌ [SUBMIT_PRODUK] kategori is missing/empty");
+          console.error("  form.kategori value:", form.kategori);
+          console.error("  form.kategori type:", typeof form.kategori);
           return null;
         }
-        const parsed = Number(form.kategori);
+        
+        // Parse ke number untuk validasi (bisa dari string atau number)
+        const parsed = typeof form.kategori === "number" ? form.kategori : Number(form.kategori);
+        
+        // Validasi: harus valid number dan > 0
         if (Number.isNaN(parsed) || parsed <= 0) {
           console.error("❌ [SUBMIT_PRODUK] kategori is not a valid number:", form.kategori);
+          console.error("  parsed value:", parsed);
           return null;
         }
-        console.log("✅ [SUBMIT_PRODUK] kategori is valid:", parsed);
+        
+        console.log("✅ [SUBMIT_PRODUK] kategori is valid:");
+        console.log("  original value:", form.kategori, "(type:", typeof form.kategori + ")");
+        console.log("  parsed value:", parsed, "(type: number)");
         return parsed;
       })();
 
@@ -210,6 +224,8 @@ export default function Page() {
       }
 
       // Validate assign
+      // IMPORTANT: State assign tetap sebagai array, misalnya: [1, 5, 7]
+      // Backend mengharapkan assign sebagai string JSON di FormData: "[1,5,7]"
       const normalizedAssign = Array.isArray(form.assign)
         ? form.assign
             .filter((v) => v !== null && v !== undefined && v !== "")
@@ -224,12 +240,34 @@ export default function Page() {
         return;
       }
 
+      console.log("✅ [SUBMIT_PRODUK] assign validated:");
+      console.log("  assign array:", normalizedAssign);
+      console.log("  assign JSON string:", JSON.stringify(normalizedAssign));
+
       // Validate user_input
+      // IMPORTANT: user_input harus berupa integer (number), bukan string
+      // State disimpan sebagai number, saat append ke FormData dikonversi ke String
       const userInputId = (() => {
-        const candidate = currentUser?.id ?? form.user_input ?? "";
-        if (!candidate || candidate === null || candidate === undefined || candidate === "") return null;
-        const parsed = Number(candidate);
-        return Number.isNaN(parsed) || parsed <= 0 ? null : parsed;
+        // Prioritas: currentUser.id > form.user_input
+        const candidate = currentUser?.id ?? form.user_input;
+        
+        // Validasi: harus ada nilai, tidak null/undefined, dan bukan string kosong
+        if (candidate === null || candidate === undefined || candidate === "") {
+          console.error("❌ [SUBMIT_PRODUK] user_input is missing/empty");
+          return null;
+        }
+        
+        // Pastikan adalah number (jika sudah number, tetap number; jika string, parse ke number)
+        const parsed = typeof candidate === "number" ? candidate : Number(candidate);
+        
+        // Validasi: harus valid number dan > 0
+        if (Number.isNaN(parsed) || parsed <= 0) {
+          console.error("❌ [SUBMIT_PRODUK] user_input is not a valid number:", candidate);
+          return null;
+        }
+        
+        console.log("✅ [SUBMIT_PRODUK] user_input is valid:", parsed);
+        return parsed;
       })();
 
       if (!userInputId) {
@@ -281,18 +319,28 @@ export default function Page() {
         console.log("📤 [SUBMIT_PRODUK] Appending required fields to FormData...");
         
         // 1. kategori (REQUIRED - MUST BE FIRST)
+        // IMPORTANT: Backend menerima kategori sebagai string numerik, contoh: "2"
+        // Format: formData.append("kategori", String(2)) → terkirim sebagai "2" (string numerik)
+        // Boleh juga number, tapi FormData harus string
         payload.append("kategori", String(kategoriId));
-        console.log("  ✅ kategori:", String(kategoriId));
+        console.log("  ✅ kategori:", String(kategoriId), "(type: number, sent as string)");
 
         // 2. nama (REQUIRED)
         payload.append("nama", form.nama || "");
         console.log("  ✅ nama:", form.nama || "");
 
         // 3. user_input (REQUIRED)
+        // IMPORTANT: user_input harus integer (number), tapi FormData hanya bisa string
+        // Format: formData.append("user_input", String(2)) → terkirim sebagai "2" (string literal)
+        // Backend akan parse string "2" menjadi integer 2
+        // JANGAN kirim sebagai JSON atau array
         payload.append("user_input", String(userInputId));
-        console.log("  ✅ user_input:", String(userInputId));
+        console.log("  ✅ user_input:", String(userInputId), "(type: number, sent as string)");
 
         // 4. assign (REQUIRED)
+        // IMPORTANT: Backend mengharapkan assign sebagai string JSON, bukan array
+        // Format: formData.append("assign", JSON.stringify([1,5,7])) → terkirim sebagai "[1,5,7]"
+        // JANGAN gunakan "assign[]" atau looping append
         payload.append("assign", JSON.stringify(normalizedAssign));
         console.log("  ✅ assign:", JSON.stringify(normalizedAssign));
 
@@ -309,8 +357,8 @@ export default function Page() {
 
         // 6. JSON fields
         const payloadCustomField = form.custom_field.map((f, idx) => ({
-          nama_field: f.label || f.key,
-          urutan: idx + 1
+        nama_field: f.label || f.key,
+        urutan: idx + 1
         }));
         payload.append("custom_field", JSON.stringify(payloadCustomField));
         payload.append("list_point", JSON.stringify(form.list_point || []));
@@ -321,9 +369,9 @@ export default function Page() {
         );
         payload.append("gtm", JSON.stringify(form.gtm || []));
         const videoArray = form.video
-          ? form.video.split(",").map(v => v.trim()).filter(v => v)
-          : [];
-        payload.append("video", JSON.stringify(videoArray));
+        ? form.video.split(",").map(v => v.trim()).filter(v => v)
+        : [];
+        payload.append("video", JSON.stringify(videoArray));        
 
         console.log("✅ [SUBMIT_PRODUK] All required fields appended to FormData");
 
@@ -394,8 +442,15 @@ export default function Page() {
           landingpage: form.landingpage || "1",
           status: form.status || 1,
           // REQUIRED FIELDS
+          // IMPORTANT: Backend menerima kategori sebagai string numerik, contoh: "2"
+          // Format: kategori: String(2) → terkirim sebagai "2" (string numerik)
           kategori: String(kategoriId), // MUST be string
+          // IMPORTANT: assign harus string JSON, bukan array
+          // Format: assign: JSON.stringify([1,5,7]) → terkirim sebagai "[1,5,7]"
           assign: JSON.stringify(normalizedAssign),
+          // IMPORTANT: user_input harus integer (number), bukan string
+          // Di JSON payload, langsung kirim sebagai number (bukan string)
+          // Backend akan menerima sebagai integer
           user_input: userInputId,
           // JSON fields
           custom_field: JSON.stringify(
@@ -512,7 +567,7 @@ export default function Page() {
       console.log("  message:", data.message);
       if (data.data) {
         console.log("  data:", data.data);
-        console.table(data.data);
+      console.table(data.data);
       }
 
       if (!res.ok) {
@@ -565,7 +620,9 @@ useEffect(() => {
           setCurrentUser(userData);
           setForm((f) => ({
             ...f,
-            user_input: userData?.id ? String(userData.id) : "",
+            // IMPORTANT: user_input disimpan sebagai number (integer), bukan string
+            // Backend mengharapkan integer, jadi state harus number
+            user_input: userData?.id ? Number(userData.id) : null,
           }));
         } catch (e) {
           console.error("Error parsing user session:", e);
@@ -591,7 +648,7 @@ useEffect(() => {
       const activeCategories = Array.isArray(kategoriData.data)
         ? kategoriData.data.filter((k) => k.status === "1")
         : [];
-
+      
       const kategoriOpts = activeCategories.map((k) => ({
         label: `${k.id} - ${k.nama}`,
         value: String(k.id),
@@ -689,11 +746,13 @@ useEffect(() => {
               optionLabel="label"
               optionValue="value"
               onChange={(e) => {
-                // Ensure kategori is properly set - use null if cleared, otherwise use the value
+                // IMPORTANT: kategori disimpan sebagai string numerik (ID kategori)
+                // Backend menerima string numerik, contoh: "2"
+                // Jika cleared (null/undefined), set sebagai empty string untuk validasi
                 const newValue = e.value !== null && e.value !== undefined ? String(e.value) : "";
                 console.log("🔄 [KATEGORI_DROPDOWN] onChange triggered:");
-                console.log("  e.value:", e.value);
-                console.log("  newValue:", newValue);
+                console.log("  e.value:", e.value, "(type:", typeof e.value + ")");
+                console.log("  newValue:", newValue, "(type:", typeof newValue + ")");
                 handleChange("kategori", newValue);
                 console.log("✅ [KATEGORI_DROPDOWN] form.kategori updated to:", newValue);
               }}
