@@ -343,14 +343,13 @@ export async function POST(request) {
             // form-data package will automatically convert to string during transmission
             // This preserves the original value without premature String() conversion
             
-            // CRITICAL: For kategori, assign, and user_input, ensure they are sent correctly
+            // CRITICAL: For kategori only, ensure it is sent correctly
             // Based on backend response format:
             // - kategori: "2" (string numerik)
-            // - assign: "[1,2,3]" (string JSON array)
-            // - user_input: "2" (string, backend will parse to number 2)
-            if (key === "kategori" || key === "assign" || key === "user_input") {
-              // Ensure these critical fields are explicitly converted to string
-              // This guarantees they are sent as string, not as other types
+            // assign and user_input validation removed - will be sent as null
+            if (key === "kategori") {
+              // Ensure kategori is explicitly converted to string
+              // This guarantees it is sent as string, not as other types
               const stringValue = String(value);
               console.log(`  🔑 Critical field ${key}:`);
               console.log(`    Original value: ${value} (type: ${typeof value})`);
@@ -358,7 +357,9 @@ export async function POST(request) {
               console.log(`    Appending as string: "${stringValue}"`);
               forwardFormData.append(key, stringValue);
             } else {
-              // For other fields, append as-is (form-data will handle conversion)
+              // For other fields (including assign and user_input), append as-is
+              // form-data package will handle conversion
+              // assign and user_input will be sent as "null" string if null
               forwardFormData.append(key, value);
             }
           }
@@ -368,7 +369,7 @@ export async function POST(request) {
       // Log critical fields to verify they're being forwarded
       // Use originalValues to check actual values, not modified ones
       console.log("\n🟢 [POST_PRODUK] Critical fields check:");
-      const requiredFields = ["kategori", "assign", "user_input", "nama"];
+      const requiredFields = ["kategori", "nama"]; // assign and user_input validation removed
 
       for (const field of requiredFields) {
         if (originalValues.has(field)) {
@@ -390,39 +391,34 @@ export async function POST(request) {
           console.log(`  ❌ ${field}: MISSING from incomingFormData`);
         }
       }
+      
+      // Log assign and user_input (validation removed, just for info)
+      if (originalValues.has("assign")) {
+        const assignValue = originalValues.get("assign");
+        console.log(`  ⚠️ assign: ${assignValue === null ? "[null]" : String(assignValue)} (validation removed)`);
+      }
+      if (originalValues.has("user_input")) {
+        const userInputValue = originalValues.get("user_input");
+        console.log(`  ⚠️ user_input: ${userInputValue === null ? "[null]" : String(userInputValue)} (validation removed)`);
+      }
 
       // Final verification: Check if critical fields exist and are not empty
+      // assign and user_input validation removed - will be sent as null
       const hasKategori = originalValues.has("kategori");
       const kategoriValue = originalValues.get("kategori");
-      const hasAssign = originalValues.has("assign");
-      const assignValue = originalValues.get("assign");
-      const hasUserInput = originalValues.has("user_input");
-      const userInputValue = originalValues.get("user_input");
       
       // Check if values are not empty (for string/number types)
-      // IMPORTANT: kategori, assign, dan user_input adalah required fields
+      // IMPORTANT: Only kategori is validated now
       // kategori: harus string numerik seperti "2"
-      // assign: harus string JSON seperti "[1,2,3]"
-      // user_input: harus string numerik seperti "2"
+      // assign and user_input validation removed - backend will handle
       const kategoriValid = hasKategori && 
         kategoriValue !== null && 
         kategoriValue !== undefined && 
         kategoriValue !== "" &&
         String(kategoriValue).trim() !== "";
-      
-      const assignValid = hasAssign && 
-        assignValue !== null && 
-        assignValue !== undefined && 
-        assignValue !== "" &&
-        String(assignValue).trim() !== "";
-      
-      const userInputValid = hasUserInput && 
-        userInputValue !== null && 
-        userInputValue !== undefined && 
-        userInputValue !== "" &&
-        String(userInputValue).trim() !== "";
 
       // Validate required fields with detailed error logging
+      // Only validate kategori, assign and user_input validation removed
       const missingFields = [];
       if (!kategoriValid) {
         missingFields.push("kategori");
@@ -431,20 +427,7 @@ export async function POST(request) {
         console.error(`  kategoriValue: ${kategoriValue}`);
         console.error(`  kategoriValue type: ${typeof kategoriValue}`);
       }
-      if (!assignValid) {
-        missingFields.push("assign");
-        console.error("❌ [POST_PRODUK] assign is missing or invalid:");
-        console.error(`  hasAssign: ${hasAssign}`);
-        console.error(`  assignValue: ${assignValue}`);
-        console.error(`  assignValue type: ${typeof assignValue}`);
-      }
-      if (!userInputValid) {
-        missingFields.push("user_input");
-        console.error("❌ [POST_PRODUK] user_input is missing or invalid:");
-        console.error(`  hasUserInput: ${hasUserInput}`);
-        console.error(`  userInputValue: ${userInputValue}`);
-        console.error(`  userInputValue type: ${typeof userInputValue}`);
-      }
+      // assign and user_input validation removed - will be sent as null
 
       if (missingFields.length > 0) {
         console.error("❌ [POST_PRODUK] CRITICAL: Missing or invalid required fields in FormData!");
@@ -518,8 +501,8 @@ export async function POST(request) {
       console.log("  Full body:", JSON.stringify(body, null, 2));
       console.log("  Critical fields check:");
       console.log(`    kategori: ${body.kategori ? `✅ (${body.kategori})` : "❌ MISSING"}`);
-      console.log(`    assign: ${body.assign ? `✅ (${body.assign})` : "❌ MISSING"}`);
-      console.log(`    user_input: ${body.user_input ? `✅ (${body.user_input})` : "❌ MISSING"}`);
+      console.log(`    assign: ${body.assign ? `⚠️ (${body.assign})` : "⚠️ null"} (validation removed)`);
+      console.log(`    user_input: ${body.user_input ? `⚠️ (${body.user_input})` : "⚠️ null"} (validation removed)`);
 
       response = await fetch(`${BACKEND_URL}/api/admin/produk`, {
         method: "POST",
