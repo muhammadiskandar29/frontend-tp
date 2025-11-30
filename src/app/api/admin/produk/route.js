@@ -214,15 +214,22 @@ export async function POST(request) {
       console.log("🟢 [POST_PRODUK] Processing FormData entries (compressing images, keeping original format):");
 
       // Collect all entries first (FormData entries can only be iterated once)
+      // IMPORTANT: Store original values without modification
       const allEntries = [];
       const incomingFields = {};
+      const originalValues = new Map(); // Store original values for forwarding
+      
       for (const [key, value] of incomingFormData.entries()) {
         allEntries.push({ key, value });
-        // Store for detailed logging
+        originalValues.set(key, value); // Store original value
+        
+        // Store for detailed logging (don't modify original)
         if (value instanceof File) {
           incomingFields[key] = `[File] ${value.name} (${value.size} bytes, ${value.type})`;
         } else {
-          incomingFields[key] = String(value).substring(0, 200);
+          // For logging only - preserve original value type
+          const logValue = value === null ? "[null]" : value === undefined ? "[undefined]" : String(value);
+          incomingFields[key] = logValue.substring(0, 200);
         }
       }
       console.log(`  📊 Total FormData entries: ${allEntries.length}`);
@@ -302,57 +309,152 @@ export async function POST(request) {
             });
           }
         } else {
-          // Handle all non-file values (string, number, etc.)
-          const stringValue = value === null || value === undefined ? "" : String(value);
-          console.log(`  📝 ${key}: ${stringValue.substring(0, 100)}${stringValue.length > 100 ? "..." : ""} (type: ${typeof value})`);
-          forwardFormData.append(key, stringValue);
+          // Handle all non-file values (string, number, boolean, etc.)
+          // CRITICAL: Forward original value WITHOUT modification
+          // form-data package automatically converts primitives to string during append
+          // We preserve the original value type and let form-data handle conversion
+          
+          // Log original value for debugging
+          let logValue;
+          if (value === null) {
+            logValue = "[null]";
+          } else if (value === undefined) {
+            logValue = "[undefined]";
+          } else if (typeof value === "string") {
+            logValue = value.substring(0, 100) + (value.length > 100 ? "..." : "");
+          } else {
+            logValue = String(value).substring(0, 100);
+          }
+          console.log(`  📝 ${key}: ${logValue} (type: ${typeof value})`);
+          
+          // Handle null/undefined explicitly
+          // form-data package doesn't handle null/undefined well, so we need to convert them
+          if (value === null || value === undefined) {
+            // For null/undefined, convert to empty string to maintain form-data compatibility
+            // But log it so we know it happened
+            if (value === null) {
+              console.warn(`  ⚠️ ${key}: null value converted to empty string for form-data compatibility`);
+            } else {
+              console.warn(`  ⚠️ ${key}: undefined value converted to empty string for form-data compatibility`);
+            }
+            forwardFormData.append(key, "");
+          } else {
+            // For all other types (string, number, boolean), append as-is
+            // form-data will automatically convert to string during transmission
+            // This preserves the original value without premature String() conversion
+            forwardFormData.append(key, value);
+          }
         }
       }
 
       // Log critical fields to verify they're being forwarded
+      // Use originalValues to check actual values, not modified ones
       console.log("\n🟢 [POST_PRODUK] Critical fields check:");
       const requiredFields = ["kategori", "assign", "user_input", "nama"];
-      const entriesMap = new Map(allEntries.map((e) => [e.key, e.value]));
 
       for (const field of requiredFields) {
-        if (entriesMap.has(field)) {
-          const value = entriesMap.get(field);
-          const stringValue = typeof value === "string" ? value : String(value);
-          console.log(`  ✅ ${field}: ${stringValue.substring(0, 100)}${stringValue.length > 100 ? "..." : ""}`);
+        if (originalValues.has(field)) {
+          const value = originalValues.get(field);
+          // Log original value without modification
+          let logValue;
+          if (value === null) {
+            logValue = "[null]";
+          } else if (value === undefined) {
+            logValue = "[undefined]";
+          } else if (value instanceof File) {
+            logValue = `[File] ${value.name}`;
+          } else {
+            const strValue = String(value);
+            logValue = strValue.substring(0, 100) + (strValue.length > 100 ? "..." : "");
+          }
+          console.log(`  ✅ ${field}: ${logValue} (type: ${typeof value})`);
         } else {
           console.log(`  ❌ ${field}: MISSING from incomingFormData`);
         }
       }
 
-      // Final verification: Check if critical fields exist
-      const hasKategori = entriesMap.has("kategori");
-      const hasAssign = entriesMap.has("assign");
-      const hasUserInput = entriesMap.has("user_input");
+      // Final verification: Check if critical fields exist and are not empty
+      const hasKategori = originalValues.has("kategori");
+      const kategoriValue = originalValues.get("kategori");
+      const hasAssign = originalValues.has("assign");
+      const assignValue = originalValues.get("assign");
+      const hasUserInput = originalValues.has("user_input");
+      const userInputValue = originalValues.get("user_input");
+      
+      // Check if values are not empty (for string/number types)
+      const kategoriValid = hasKategori && kategoriValue !== null && kategoriValue !== undefined && kategoriValue !== "";
+      const assignValid = hasAssign && assignValue !== null && assignValue !== undefined && assignValue !== "";
+      const userInputValid = hasUserInput && userInputValue !== null && userInputValue !== undefined && userInputValue !== "";
 
-      if (!hasKategori || !hasAssign || !hasUserInput) {
-        console.error("❌ [POST_PRODUK] CRITICAL: Missing required fields in FormData!");
+      // Validate required fields with detailed error logging
+      const missingFields = [];
+      if (!kategoriValid) {
+        missingFields.push("kategori");
+        console.error("❌ [POST_PRODUK] kategori is missing or invalid:");
+        console.error(`  hasKategori: ${hasKategori}`);
+        console.error(`  kategoriValue: ${kategoriValue}`);
+        console.error(`  kategoriValue type: ${typeof kategoriValue}`);
+      }
+      if (!assignValid) {
+        missingFields.push("assign");
+        console.error("❌ [POST_PRODUK] assign is missing or invalid:");
+        console.error(`  hasAssign: ${hasAssign}`);
+        console.error(`  assignValue: ${assignValue}`);
+        console.error(`  assignValue type: ${typeof assignValue}`);
+      }
+      if (!userInputValid) {
+        missingFields.push("user_input");
+        console.error("❌ [POST_PRODUK] user_input is missing or invalid:");
+        console.error(`  hasUserInput: ${hasUserInput}`);
+        console.error(`  userInputValue: ${userInputValue}`);
+        console.error(`  userInputValue type: ${typeof userInputValue}`);
+      }
+
+      if (missingFields.length > 0) {
+        console.error("❌ [POST_PRODUK] CRITICAL: Missing or invalid required fields in FormData!");
+        console.error("  Missing fields:", missingFields);
         console.error("  Full incoming fields:", JSON.stringify(incomingFields, null, 2));
+        console.error("  Original values map:", Array.from(originalValues.entries()).map(([k, v]) => ({
+          key: k,
+          value: v instanceof File ? `[File] ${v.name}` : v,
+          type: typeof v
+        })));
+        
         return NextResponse.json(
           {
             success: false,
-            message:
-              "Missing required fields: " +
-              [!hasKategori && "kategori", !hasAssign && "assign", !hasUserInput && "user_input"]
-                .filter(Boolean)
-                .join(", "),
+            message: `Missing or invalid required fields: ${missingFields.join(", ")}`,
             debug: {
               incomingFields: Object.keys(incomingFields),
-              missingFields: [!hasKategori && "kategori", !hasAssign && "assign", !hasUserInput && "user_input"].filter(Boolean),
+              missingFields: missingFields,
+              originalValues: Array.from(originalValues.entries()).map(([k, v]) => ({
+                key: k,
+                hasValue: v !== null && v !== undefined,
+                isFile: v instanceof File,
+                type: typeof v
+              })),
             },
           },
           { status: 400 }
         );
       }
 
-      // Log FormData structure
+      // Log FormData structure and verify all required fields were appended
       console.log("\n🟢 [POST_PRODUK] FormData structure verification:");
-      console.log(`  Total fields in forwardFormData: ${allEntries.length}`);
+      console.log(`  Total entries processed: ${allEntries.length}`);
       console.log(`  FormData boundary: ${forwardFormData.getBoundary()}`);
+      
+      // Verify required fields were processed
+      console.log("\n🟢 [POST_PRODUK] Required fields verification:");
+      for (const field of requiredFields) {
+        const wasProcessed = allEntries.some(e => e.key === field);
+        const originalValue = originalValues.get(field);
+        console.log(`  ${field}: ${wasProcessed ? "✅ Processed" : "❌ NOT PROCESSED"}`);
+        if (wasProcessed) {
+          console.log(`    Original value: ${originalValue instanceof File ? `[File] ${originalValue.name}` : originalValue}`);
+          console.log(`    Original type: ${typeof originalValue}`);
+        }
+      }
 
       // Forward FormData to backend with proper headers
       const headers = {

@@ -77,6 +77,8 @@ export default function Page() {
 
   const [form, setForm] = useState(defaultForm);
   const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState("");
 
   // ============================
   // HANDLER INPUT
@@ -188,6 +190,53 @@ export default function Page() {
   };
 
   // ============================
+  // DELETE: Hapus Data Produk
+  // ============================
+  const deleteProduct = async () => {
+    if (!productId) {
+      alert("Product ID tidak ditemukan!");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Apakah Anda yakin ingin menghapus produk ini? Tindakan ini tidak dapat dibatalkan."
+    );
+    if (!confirmed) return;
+
+    try {
+      setIsSubmitting(true);
+      setSubmitStatus("Menghapus produk...");
+
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/admin/produk/${productId}`, {
+        method: "DELETE",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        alert(data.message || "Gagal menghapus produk");
+        setIsSubmitting(false);
+        setSubmitStatus("");
+        return;
+      }
+
+      alert("Produk berhasil dihapus");
+      // Redirect ke halaman products
+      router.push("/admin/products");
+    } catch (error) {
+      console.error("Delete product error:", error);
+      alert("Terjadi kesalahan saat menghapus produk");
+      setIsSubmitting(false);
+      setSubmitStatus("");
+    }
+  };
+
+  // ============================
   // CONVERT & COMPRESS IMAGE TO JPG
   // ============================
   const convertImageToJPG = async (file, quality = 0.75, maxWidth = 1600) => {
@@ -251,33 +300,99 @@ export default function Page() {
   };
 
   // ============================
-  // SUBMIT - PUT ke /api/admin/produk/{id}
-  // TIDAK kirim field gambar jika tidak ada file baru
-  // Backend akan mempertahankan data gambar yang sudah ada
+  // SUBMIT - POST ke /api/admin/produk/{id}
   // ============================
   const handleSubmit = async () => {
+    if (isSubmitting) {
+      console.log("⚠️ [EDIT_PRODUK] Duplicate submission prevented");
+      return;
+    }
+
     if (!productId) {
       alert("Product ID tidak ditemukan!");
       return;
     }
 
+    setIsSubmitting(true);
+    setSubmitStatus("Menyiapkan data produk...");
+
     try {
-      // Cek apakah ada FILE BARU yang diupload
+      // ============================================
+      // STEP 1: VALIDATE ALL REQUIRED FIELDS FIRST
+      // ============================================
+      console.log("🔍 [EDIT_PRODUK] Step 1: Validating required fields...");
+      console.log("  form.kategori:", form.kategori, "(type:", typeof form.kategori + ")");
+
+      // Validate kategori
+      const kategoriId = (() => {
+        if (!form.kategori || form.kategori === null || form.kategori === undefined || form.kategori === "") {
+          console.error("❌ [EDIT_PRODUK] kategori is missing/empty");
+          return null;
+        }
+        const parsed = Number(form.kategori);
+        if (Number.isNaN(parsed) || parsed <= 0) {
+          console.error("❌ [EDIT_PRODUK] kategori is not a valid number:", form.kategori);
+          return null;
+        }
+        console.log("✅ [EDIT_PRODUK] kategori is valid:", parsed);
+        return parsed;
+      })();
+
+      if (!kategoriId) {
+        alert("Kategori wajib dipilih! Silakan pilih kategori sebelum menyimpan produk.");
+        setIsSubmitting(false);
+        setSubmitStatus("");
+        return;
+      }
+
+      // Validate assign
+      const normalizedAssign = Array.isArray(form.assign)
+        ? form.assign
+            .filter((v) => v !== null && v !== undefined && v !== "")
+            .map((v) => Number(v))
+            .filter((num) => !Number.isNaN(num) && num > 0)
+        : [];
+
+      if (normalizedAssign.length === 0) {
+        alert("Penanggung Jawab (Assign By) wajib dipilih minimal 1 user!");
+        setIsSubmitting(false);
+        setSubmitStatus("");
+        return;
+      }
+
+      // Validate nama
+      if (!form.nama || form.nama.trim() === "") {
+        alert("Nama produk wajib diisi!");
+        setIsSubmitting(false);
+        setSubmitStatus("");
+        return;
+      }
+
+      console.log("✅ [EDIT_PRODUK] All required fields validated");
+      console.log("  kategoriId:", kategoriId);
+      console.log("  assign:", normalizedAssign);
+      console.log("  nama:", form.nama);
+
+      // ============================================
+      // STEP 2: CHECK IF HAS FILES
+      // ============================================
       const hasNewHeaderFile = form.header.type === "file" && form.header.value instanceof File;
       const hasNewGalleryFile = form.gambar.some((g) => g.path?.type === "file" && g.path?.value instanceof File);
       const hasNewTestimoniFile = form.testimoni.some((t) => t.gambar?.type === "file" && t.gambar?.value instanceof File);
       const hasNewFile = hasNewHeaderFile || hasNewGalleryFile || hasNewTestimoniFile;
 
+      console.log("🔍 [EDIT_PRODUK] Step 2: Checking files...");
+      console.log("  hasNewFile:", hasNewFile);
+      console.log("  hasNewHeaderFile:", hasNewHeaderFile);
+      console.log("  hasNewGalleryFile:", hasNewGalleryFile);
+      console.log("  hasNewTestimoniFile:", hasNewTestimoniFile);
+
       // SELALU generate slug dari nama untuk memastikan konsistensi
       const kode = generateKode(form.nama);
-      console.log("========== 📤 PAYLOAD DEBUG ==========");
-      console.log("🔧 Form nama:", form.nama);
-      console.log("🔧 Form kode (sebelum):", form.kode);
-      console.log("🔧 Kode yang akan dikirim (SLUG):", kode);
-      console.log("🔧 URL yang akan dikirim:", "/" + kode);
-      const kategoriId = form.kategori ? Number(form.kategori) : null;
 
-      // Build base payload (tanpa gambar)
+      // ============================================
+      // STEP 3: BUILD PAYLOAD
+      // ============================================
       const payloadCustomField = form.custom_field.map((f, idx) => ({
         nama_field: f.label || f.key,
         urutan: idx + 1
@@ -291,23 +406,72 @@ export default function Page() {
       let isFormData = false;
 
       if (hasNewFile) {
-        // ===== ADA FILE BARU - GUNAKAN FormData =====
+        // Use FormData for file uploads
+        console.log("📦 [EDIT_PRODUK] Step 3: Building FormData payload...");
+        setSubmitStatus("Mengompres & menyiapkan berkas media...");
         payload = new FormData();
         isFormData = true;
 
-        // Process all files: convert to JPG and compress
+        // ===== CRITICAL: Append ALL required fields FIRST, before file processing =====
+        console.log("📤 [EDIT_PRODUK] Appending required fields to FormData...");
+        
+        // 1. kategori (REQUIRED - MUST BE FIRST)
+        payload.append("kategori", String(kategoriId));
+        console.log("  ✅ kategori:", String(kategoriId));
+
+        // 2. nama (REQUIRED)
+        payload.append("nama", form.nama || "");
+        console.log("  ✅ nama:", form.nama || "");
+
+        // 3. user_input (REQUIRED)
+        if (form.user_input) {
+          payload.append("user_input", String(form.user_input));
+          console.log("  ✅ user_input:", String(form.user_input));
+        }
+
+        // 4. assign (REQUIRED)
+        payload.append("assign", JSON.stringify(normalizedAssign));
+        console.log("  ✅ assign:", JSON.stringify(normalizedAssign));
+
+        // 5. Other required fields
+        payload.append("kode", kode);
+        payload.append("url", "/" + kode);
+        payload.append("deskripsi", form.deskripsi || "");
+        payload.append("harga_coret", String(form.harga_coret || 0));
+        payload.append("harga_asli", String(form.harga_asli || 0));
+        payload.append("tanggal_event", formatDateForBackend(form.tanggal_event));
+        payload.append("landingpage", String(form.landingpage || "1"));
+        payload.append("status", String(form.status || 1));
+
+        // 6. JSON fields
+        payload.append("custom_field", JSON.stringify(payloadCustomField));
+        payload.append("list_point", JSON.stringify(form.list_point || []));
+        payload.append("fb_pixel", JSON.stringify(form.fb_pixel || []));
+        payload.append(
+          "event_fb_pixel",
+          JSON.stringify((form.event_fb_pixel || []).map((ev) => ({ event: ev })))
+        );
+        payload.append("gtm", JSON.stringify(form.gtm || []));
+        payload.append("video", JSON.stringify(videoArray));
+
+        console.log("✅ [EDIT_PRODUK] All required fields appended to FormData");
+
+        // ===== STEP 4: PROCESS FILES (after required fields are appended) =====
+        console.log("📁 [EDIT_PRODUK] Step 4: Processing files...");
         try {
-          // Process Header - hanya kirim jika ada FILE BARU
+          // Process Header
           if (hasNewHeaderFile) {
+            setSubmitStatus("Mengonversi header ke JPG...");
             const processedHeader = await convertImageToJPG(form.header.value, 0.75, 1600);
             payload.append("header", processedHeader);
+            console.log("  ✅ header file appended");
           }
 
-          // Process Gallery - kirim semua gambar (baik yang ada file baru maupun tidak)
+          // Process Gallery
           for (let idx = 0; idx < form.gambar.length; idx++) {
             const g = form.gambar[idx];
             if (g.path?.type === "file" && g.path?.value instanceof File) {
-              // Ada file baru - convert dan kirim file
+              setSubmitStatus(`Mengonversi gambar ${idx + 1}/${form.gambar.length} ke JPG...`);
               const processedGambar = await convertImageToJPG(g.path.value, 0.75, 1600);
               payload.append(`gambar[${idx}][file]`, processedGambar);
             } else if (g.path?.type === "url" && g.path.value) {
@@ -316,12 +480,13 @@ export default function Page() {
             }
             payload.append(`gambar[${idx}][caption]`, g.caption || "");
           }
+          console.log(`  ✅ gallery: ${form.gambar.length} items processed`);
 
-          // Process Testimoni - kirim semua testimoni (baik yang ada file baru maupun tidak)
+          // Process Testimoni
           for (let idx = 0; idx < form.testimoni.length; idx++) {
             const t = form.testimoni[idx];
             if (t.gambar?.type === "file" && t.gambar?.value instanceof File) {
-              // Ada file baru - convert dan kirim file
+              setSubmitStatus(`Mengonversi testimoni ${idx + 1}/${form.testimoni.length} ke JPG...`);
               const processedTestimoni = await convertImageToJPG(t.gambar.value, 0.75, 1600);
               payload.append(`testimoni[${idx}][gambar]`, processedTestimoni);
             } else if (t.gambar?.type === "url" && t.gambar.value) {
@@ -331,51 +496,37 @@ export default function Page() {
             payload.append(`testimoni[${idx}][nama]`, t.nama || "");
             payload.append(`testimoni[${idx}][deskripsi]`, t.deskripsi || "");
           }
+          console.log(`  ✅ testimoni: ${form.testimoni.length} items processed`);
         } catch (error) {
           console.error("❌ [EDIT_PRODUK] Error processing images:", error);
           alert(`Gagal memproses gambar: ${error.message}`);
+          setIsSubmitting(false);
+          setSubmitStatus("");
           return;
         }
 
-        // Fields teks (selalu kirim)
-        payload.append("nama", form.nama);
-        payload.append("kode", kode);
-        payload.append("url", "/" + kode);
-        payload.append("deskripsi", form.deskripsi || "");
-        payload.append("harga_coret", String(form.harga_coret || 0));
-        payload.append("harga_asli", String(form.harga_asli || 0));
-        payload.append("tanggal_event", formatDateForBackend(form.tanggal_event));
-        payload.append("assign", JSON.stringify(form.assign));
-        payload.append("custom_field", JSON.stringify(payloadCustomField));
-        payload.append("list_point", JSON.stringify(form.list_point));
-        payload.append("fb_pixel", JSON.stringify(form.fb_pixel));
-        payload.append("event_fb_pixel", JSON.stringify(form.event_fb_pixel.map((ev) => ({ event: ev }))));
-        payload.append("gtm", JSON.stringify(form.gtm));
-        payload.append("video", JSON.stringify(videoArray));
-        payload.append("landingpage", form.landingpage);
-        payload.append("status", form.status);
-        // user_input adalah ID user yang membuat produk
-        if (form.user_input) {
-          payload.append("user_input", form.user_input);
+        // Final verification: Check kategori is still in FormData
+        const kategoriCheck = payload.get("kategori");
+        if (!kategoriCheck || kategoriCheck === "null" || kategoriCheck === "") {
+          console.error("❌ [EDIT_PRODUK] CRITICAL: kategori missing after file processing!");
+          alert("Terjadi kesalahan: Kategori hilang setelah proses file. Silakan coba lagi.");
+          setIsSubmitting(false);
+          setSubmitStatus("");
+          return;
         }
-        if (kategoriId) {
-          payload.append("kategori", kategoriId);
-        }
+        console.log("✅ [EDIT_PRODUK] kategori verified in FormData:", kategoriCheck);
       } else {
-        // ===== TIDAK ADA FILE BARU - GUNAKAN JSON =====
-        // Tetap kirim testimoni dan gambar dengan path yang sudah ada
+        // Use JSON payload (no new files)
+        console.log("📦 [EDIT_PRODUK] Step 3: Building JSON payload...");
         
         // Build testimoni array dengan path existing
         const testimoniPayload = form.testimoni.map((t) => {
-          // Jika gambar adalah URL existing, ambil valuenya
-          // Jika tidak ada gambar atau file baru tanpa value, kirim null
           let gambarValue = null;
           if (t.gambar?.type === "url" && t.gambar.value) {
             gambarValue = t.gambar.value;
           } else if (typeof t.gambar === "string") {
             gambarValue = t.gambar;
           }
-          
           return {
             gambar: gambarValue,
             nama: t.nama || "",
@@ -385,15 +536,12 @@ export default function Page() {
 
         // Build gambar array dengan path existing
         const gambarPayload = form.gambar.map((g) => {
-          // Jika path adalah URL existing, ambil valuenya
-          // Jika tidak ada path atau file baru tanpa value, kirim null
           let pathValue = null;
           if (g.path?.type === "url" && g.path.value) {
             pathValue = g.path.value;
           } else if (typeof g.path === "string") {
             pathValue = g.path;
           }
-          
           return {
             path: pathValue,
             caption: g.caption || ""
@@ -401,71 +549,78 @@ export default function Page() {
         });
 
         payload = {
-          nama: form.nama,
+          nama: form.nama || "",
           kode: kode,
           url: "/" + kode,
           deskripsi: form.deskripsi || "",
-          harga_coret: String(form.harga_coret || 0),
-          harga_asli: String(form.harga_asli || 0),
+          harga_coret: Number(form.harga_coret) || 0,
+          harga_asli: Number(form.harga_asli) || 0,
           tanggal_event: formatDateForBackend(form.tanggal_event),
-          kategori: kategoriId,
-          assign: form.assign,
-          user_input: form.user_input,
-          custom_field: payloadCustomField,
-          list_point: form.list_point,
-          fb_pixel: form.fb_pixel,
-          event_fb_pixel: form.event_fb_pixel.map((ev) => ({ event: ev })),
-          gtm: form.gtm,
-          video: videoArray,
-          landingpage: form.landingpage,
-          status: form.status,
-          // Kirim testimoni dan gambar dengan data existing (sebagai array, bukan string)
-          testimoni: testimoniPayload,
-          gambar: gambarPayload,
+          landingpage: form.landingpage || "1",
+          status: form.status || 1,
+          // REQUIRED FIELDS
+          kategori: String(kategoriId), // MUST be string
+          assign: JSON.stringify(normalizedAssign),
+          user_input: form.user_input || null,
+          // JSON fields
+          custom_field: JSON.stringify(payloadCustomField),
+          list_point: JSON.stringify(form.list_point || []),
+          fb_pixel: JSON.stringify(form.fb_pixel || []),
+          event_fb_pixel: JSON.stringify(
+            (form.event_fb_pixel || []).map((ev) => ({ event: ev }))
+          ),
+          gtm: JSON.stringify(form.gtm || []),
+          video: JSON.stringify(videoArray),
+          testimoni: JSON.stringify(testimoniPayload),
+          gambar: JSON.stringify(gambarPayload),
         };
+        console.log("✅ [EDIT_PRODUK] JSON payload built");
+        console.log("  kategori:", payload.kategori);
       }
 
-      console.log("========== FINAL PAYLOAD ==========");
-      console.log("Product ID:", productId);
-      console.log("Has new file:", hasNewFile);
-      console.log("Has new header:", hasNewHeaderFile);
-      console.log("Has new gallery:", hasNewGalleryFile);
-      console.log("Has new testimoni:", hasNewTestimoniFile);
-      console.log("Form gambar count:", form.gambar.length);
-      console.log("Form gambar data:", JSON.stringify(form.gambar.map(g => ({
-        type: g.path?.type,
-        hasFile: g.path?.value instanceof File,
-        value: g.path?.type === "url" ? g.path.value : (g.path?.value ? "[File]" : null),
-        caption: g.caption
-      })), null, 2));
-      console.log("Form testimoni count:", form.testimoni.length);
-      console.log("Form testimoni data:", JSON.stringify(form.testimoni.map(t => ({
-        type: t.gambar?.type,
-        hasFile: t.gambar?.value instanceof File,
-        value: t.gambar?.type === "url" ? t.gambar.value : (t.gambar?.value ? "[File]" : null),
-        nama: t.nama,
-        deskripsi: t.deskripsi
-      })), null, 2));
-      console.log("Generated kode:", kode);
-      
+      // ============================================
+      // STEP 5: FINAL VERIFICATION
+      // ============================================
+      console.log("🔍 [EDIT_PRODUK] Step 5: Final verification...");
       if (isFormData) {
-        console.log("Sending as FormData:");
-        for (let [key, value] of payload.entries()) {
-          console.log(`  ${key}:`, value instanceof File ? `[File] ${value.name}` : value);
+        const kategoriValue = payload.get("kategori");
+        const namaValue = payload.get("nama");
+        const userInputValue = payload.get("user_input");
+        const assignValue = payload.get("assign");
+        
+        console.log("  kategori:", kategoriValue);
+        console.log("  nama:", namaValue);
+        console.log("  user_input:", userInputValue);
+        console.log("  assign:", assignValue);
+        
+        if (!kategoriValue || kategoriValue === "null" || kategoriValue === "") {
+          console.error("❌ [EDIT_PRODUK] CRITICAL: kategori missing in final FormData!");
+          alert("Terjadi kesalahan: Kategori tidak ditemukan. Silakan refresh halaman dan coba lagi.");
+          setIsSubmitting(false);
+          setSubmitStatus("");
+          return;
         }
       } else {
-        console.log("Sending as JSON:");
-        console.log("Payload gambar:", JSON.stringify(payload.gambar, null, 2));
-        console.log("Payload testimoni:", JSON.stringify(payload.testimoni, null, 2));
-        console.log("Payload kode:", payload.kode);
-        console.log("Full payload:", JSON.stringify(payload, null, 2));
+        if (!payload.kategori || payload.kategori === null || payload.kategori === "") {
+          console.error("❌ [EDIT_PRODUK] CRITICAL: kategori missing in JSON payload!");
+          alert("Terjadi kesalahan: Kategori tidak ditemukan. Silakan refresh halaman dan coba lagi.");
+          setIsSubmitting(false);
+          setSubmitStatus("");
+          return;
+        }
       }
-      console.log("====================================");
 
+      console.log("✅ [EDIT_PRODUK] All verifications passed");
+      console.log("🚀 [EDIT_PRODUK] Sending payload to backend...");
+
+      // ============================================
+      // STEP 6: SEND TO BACKEND (POST method)
+      // ============================================
+      setSubmitStatus("Mengunggah produk ke server...");
       const res = await fetch(
         `/api/admin/produk/${productId}`,
         {
-          method: "PUT",
+          method: "POST",
           headers: {
             ...(isFormData ? {} : { "Content-Type": "application/json" }),
             Accept: "application/json",
@@ -475,31 +630,63 @@ export default function Page() {
         }
       );
 
-      const data = await res.json();
+      // ============================================
+      // STEP 7: HANDLE RESPONSE
+      // ============================================
+      console.log("📥 [EDIT_PRODUK] Step 7: Handling response...");
+      const contentType = res.headers.get("content-type");
+      let data;
       
-      // Logging perbandingan payload vs response
-      console.log("========== 📥 RESPONSE DEBUG ==========");
-      console.log("✅ Kode yang DIKIRIM frontend:", kode);
-      console.log("❌ Kode yang DISIMPAN backend:", data.data?.kode);
-      console.log("⚠️ Apakah sama?", kode === data.data?.kode ? "YA ✅" : "TIDAK ❌ (Backend override!)");
-      console.log("URL frontend:", "/" + kode);
-      console.log("URL backend:", data.data?.url);
-      console.table(data.data);
+      if (contentType && contentType.includes("application/json")) {
+        try {
+          data = await res.json();
+        } catch (parseError) {
+          const textResponse = await res.text();
+          console.error("❌ [EDIT_PRODUK] Failed to parse JSON response:", textResponse.substring(0, 200));
+          alert("Terjadi kesalahan: Response dari server tidak valid.");
+          setIsSubmitting(false);
+          setSubmitStatus("");
+          return;
+        }
+      } else {
+        const textResponse = await res.text();
+        console.error("❌ [EDIT_PRODUK] Non-JSON response received:", textResponse.substring(0, 200));
+        alert("Terjadi kesalahan: Server mengembalikan response yang tidak valid.");
+        setIsSubmitting(false);
+        setSubmitStatus("");
+        return;
+      }
+      
+      console.log("📊 [EDIT_PRODUK] Response received:");
+      console.log("  success:", data.success);
+      console.log("  message:", data.message);
+      if (data.data) {
+        console.log("  data:", data.data);
+        console.table(data.data);
+      }
 
       if (!res.ok) {
-        console.error("❌ API ERROR:", data);
-        alert("Gagal mengupdate produk!");
+        console.error("❌ [EDIT_PRODUK] API ERROR:", data);
+        console.error("❌ [EDIT_PRODUK] API ERROR detail:", data?.errors);
+        alert(data?.message || "Gagal mengupdate produk!");
+        setIsSubmitting(false);
+        setSubmitStatus("");
         return;
       }
 
+      // Success
+      console.log("✅ [EDIT_PRODUK] Product updated successfully:", data);
+      setSubmitStatus("Produk berhasil diupdate, mengalihkan...");
       alert("Produk berhasil diupdate!");
-      console.log("SUCCESS:", data);
       
       // Redirect ke halaman products
       router.push("/admin/products");
     } catch (err) {
-      console.error("❌ Submit error:", err);
-      alert("Terjadi kesalahan saat submit.");
+      console.error("❌ [EDIT_PRODUK] Submit error:", err);
+      alert("Terjadi kesalahan saat submit: " + (err.message || "Unknown error"));
+    } finally {
+      setIsSubmitting(false);
+      setSubmitStatus("");
     }
   };
 
@@ -767,8 +954,18 @@ export default function Page() {
   }
 
   return (
-    <div className="produk-container produk-builder-layout">
-      <div className="produk-form">
+    <>
+      {isSubmitting && (
+        <div className="submit-lock-overlay">
+          <div className="submit-lock-card">
+            <span className="submit-lock-spinner" />
+            <p>{submitStatus || "Menyimpan produk, mohon tunggu..."}</p>
+            <small>Jangan tutup halaman hingga proses selesai.</small>
+          </div>
+        </div>
+      )}
+      <div className="produk-container produk-builder-layout">
+        <div className="produk-form">
         {/* Header Section */}
         <div className="form-header-section">
           <button
@@ -1399,19 +1596,30 @@ export default function Page() {
 
         {/* SUBMIT BUTTON */}
         <div className="submit-section">
-          <Button 
-            label="Update Produk" 
-            icon="pi pi-save"
-            className="p-button-primary submit-btn" 
-            onClick={handleSubmit}
-          />
+          <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+            <Button 
+              label="Update Produk" 
+              icon="pi pi-save"
+              className="p-button-primary submit-btn" 
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+            />
+            <Button 
+              label="Hapus Produk" 
+              icon="pi pi-trash"
+              className="p-button-danger" 
+              onClick={deleteProduct}
+              disabled={isSubmitting}
+            />
+          </div>
           <p className="submit-hint">Pastikan semua data sudah lengkap sebelum mengupdate</p>
         </div>
       </div>
-      {/* ================= RIGHT: PREVIEW ================= */}
-      <div className="builder-preview-card">
-        <LandingTemplate form={form} />
+        {/* ================= RIGHT: PREVIEW ================= */}
+        <div className="builder-preview-card">
+          <LandingTemplate form={form} />
+        </div>
       </div>
-    </div>
+    </>
   );
 }

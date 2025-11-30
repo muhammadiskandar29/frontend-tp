@@ -179,42 +179,22 @@ export default function Page() {
     }
     setIsSubmitting(true);
     setSubmitStatus("Menyiapkan data produk...");
+    
     try {
-      const hasFile =
-        (form.header.type === "file" && form.header.value) ||
-        form.gambar.some((g) => g.path.type === "file" && g.path.value) ||
-        form.testimoni.some((t) => t.gambar.type === "file" && t.gambar.value);
-
-      const normalizedAssign = Array.isArray(form.assign)
-        ? form.assign
-            .filter((v) => v !== null && v !== undefined && v !== "")
-            .map((v) => Number(v))
-            .filter((num) => !Number.isNaN(num))
-        : [];
-
-      const userInputId = (() => {
-        const candidate = currentUser?.id ?? form.user_input ?? "";
-        if (candidate === null || candidate === undefined || candidate === "") return null;
-        const parsed = Number(candidate);
-        return Number.isNaN(parsed) ? null : parsed;
-      })();
-
-      // Validate and extract kategori BEFORE FormData construction
-      console.log("🔍 [SUBMIT_PRODUK] Validating kategori field...");
-      console.log("  form.kategori value:", form.kategori);
-      console.log("  form.kategori type:", typeof form.kategori);
-      console.log("  form.kategori is null:", form.kategori === null);
-      console.log("  form.kategori is undefined:", form.kategori === undefined);
-      console.log("  form.kategori is empty string:", form.kategori === "");
-
+      // ============================================
+      // STEP 1: VALIDATE ALL REQUIRED FIELDS FIRST
+      // ============================================
+      console.log("🔍 [SUBMIT_PRODUK] Step 1: Validating required fields...");
+      console.log("  form.kategori:", form.kategori, "(type:", typeof form.kategori + ")");
+      
+      // Validate kategori
       const kategoriId = (() => {
-        // Check for null, undefined, or empty string
-        if (form.kategori === null || form.kategori === undefined || form.kategori === "") {
-          console.error("❌ [SUBMIT_PRODUK] kategori is null/undefined/empty");
+        if (!form.kategori || form.kategori === null || form.kategori === undefined || form.kategori === "") {
+          console.error("❌ [SUBMIT_PRODUK] kategori is missing/empty");
           return null;
         }
         const parsed = Number(form.kategori);
-        if (Number.isNaN(parsed)) {
+        if (Number.isNaN(parsed) || parsed <= 0) {
           console.error("❌ [SUBMIT_PRODUK] kategori is not a valid number:", form.kategori);
           return null;
         }
@@ -222,28 +202,20 @@ export default function Page() {
         return parsed;
       })();
 
-      // Early validation - throw error if kategori is missing
-      if (kategoriId === null || kategoriId === undefined) {
-        const errorMsg = "Kategori wajib dipilih! Silakan pilih kategori sebelum menyimpan produk.";
-        console.error("❌ [SUBMIT_PRODUK] CRITICAL: kategori is missing!");
-        console.error("  form.kategori:", form.kategori);
-        alert(errorMsg);
+      if (!kategoriId) {
+        alert("Kategori wajib dipilih! Silakan pilih kategori sebelum menyimpan produk.");
         setIsSubmitting(false);
         setSubmitStatus("");
         return;
       }
 
-      // Final validation - ensure kategoriId is a valid number
-      if (Number.isNaN(kategoriId) || kategoriId <= 0) {
-        const errorMsg = "Kategori tidak valid! Silakan pilih kategori yang benar.";
-        console.error("❌ [SUBMIT_PRODUK] CRITICAL: kategoriId is invalid:", kategoriId);
-        alert(errorMsg);
-        setIsSubmitting(false);
-        setSubmitStatus("");
-        return;
-      }
-
-      console.log("✅ [SUBMIT_PRODUK] kategori validation passed. kategoriId:", kategoriId);
+      // Validate assign
+      const normalizedAssign = Array.isArray(form.assign)
+        ? form.assign
+            .filter((v) => v !== null && v !== undefined && v !== "")
+            .map((v) => Number(v))
+            .filter((num) => !Number.isNaN(num) && num > 0)
+        : [];
 
       if (normalizedAssign.length === 0) {
         alert("Penanggung Jawab (Assign By) wajib dipilih minimal 1 user!");
@@ -252,61 +224,144 @@ export default function Page() {
         return;
       }
 
-      if (userInputId === null) {
+      // Validate user_input
+      const userInputId = (() => {
+        const candidate = currentUser?.id ?? form.user_input ?? "";
+        if (!candidate || candidate === null || candidate === undefined || candidate === "") return null;
+        const parsed = Number(candidate);
+        return Number.isNaN(parsed) || parsed <= 0 ? null : parsed;
+      })();
+
+      if (!userInputId) {
         alert("User yang membuat produk tidak ditemukan. Silakan refresh halaman dan coba lagi.");
         setIsSubmitting(false);
         setSubmitStatus("");
         return;
       }
 
+      // Validate nama
+      if (!form.nama || form.nama.trim() === "") {
+        alert("Nama produk wajib diisi!");
+        setIsSubmitting(false);
+        setSubmitStatus("");
+        return;
+      }
+
+      console.log("✅ [SUBMIT_PRODUK] All required fields validated");
+      console.log("  kategoriId:", kategoriId);
+      console.log("  userInputId:", userInputId);
+      console.log("  assign:", normalizedAssign);
+      console.log("  nama:", form.nama);
+
+      // ============================================
+      // STEP 2: CHECK IF HAS FILES
+      // ============================================
+      const hasFile =
+        (form.header.type === "file" && form.header.value) ||
+        form.gambar.some((g) => g.path?.type === "file" && g.path?.value) ||
+        form.testimoni.some((t) => t.gambar?.type === "file" && t.gambar?.value);
+
+      console.log("🔍 [SUBMIT_PRODUK] Step 2: Checking files...");
+      console.log("  hasFile:", hasFile);
+
+      // ============================================
+      // STEP 3: BUILD PAYLOAD
+      // ============================================
       let payload;
       let isFormData = false;
 
       if (hasFile) {
+        // Use FormData for file uploads
+        console.log("📦 [SUBMIT_PRODUK] Step 3: Building FormData payload...");
         setSubmitStatus("Mengompres & menyiapkan berkas media...");
         payload = new FormData();
         isFormData = true;
 
-        // ===== CRITICAL: Append kategori FIRST, before any file processing =====
-        console.log("📤 [SUBMIT_PRODUK] Appending kategori to FormData...");
-        console.log("  kategoriId:", kategoriId);
-        console.log("  kategoriId as string:", String(kategoriId));
+        // ===== CRITICAL: Append ALL required fields FIRST, before file processing =====
+        console.log("📤 [SUBMIT_PRODUK] Appending required fields to FormData...");
         
-        // Ensure kategori is appended with correct field name "kategori"
+        // 1. kategori (REQUIRED - MUST BE FIRST)
         payload.append("kategori", String(kategoriId));
-        console.log("✅ [SUBMIT_PRODUK] kategori appended to FormData successfully");
+        console.log("  ✅ kategori:", String(kategoriId));
 
-        // Process all files: convert to JPG and compress
+        // 2. nama (REQUIRED)
+        payload.append("nama", form.nama || "");
+        console.log("  ✅ nama:", form.nama || "");
+
+        // 3. user_input (REQUIRED)
+        payload.append("user_input", String(userInputId));
+        console.log("  ✅ user_input:", String(userInputId));
+
+        // 4. assign (REQUIRED)
+        payload.append("assign", JSON.stringify(normalizedAssign));
+        console.log("  ✅ assign:", JSON.stringify(normalizedAssign));
+
+        // 5. Other required fields
+        const kode = generateKode(form.nama);
+        payload.append("kode", kode);
+        payload.append("url", "/" + kode);
+        payload.append("deskripsi", form.deskripsi || "");
+        payload.append("harga_coret", String(form.harga_coret || 0));
+        payload.append("harga_asli", String(form.harga_asli || 0));
+        payload.append("tanggal_event", formatDateForBackend(form.tanggal_event));
+        payload.append("landingpage", String(form.landingpage || "1"));
+        payload.append("status", String(form.status || 1));
+
+        // 6. JSON fields
+        const payloadCustomField = form.custom_field.map((f, idx) => ({
+          nama_field: f.label || f.key,
+          urutan: idx + 1
+        }));
+        payload.append("custom_field", JSON.stringify(payloadCustomField));
+        payload.append("list_point", JSON.stringify(form.list_point || []));
+        payload.append("fb_pixel", JSON.stringify(form.fb_pixel || []));
+        payload.append(
+          "event_fb_pixel",
+          JSON.stringify((form.event_fb_pixel || []).map((ev) => ({ event: ev })))
+        );
+        payload.append("gtm", JSON.stringify(form.gtm || []));
+        const videoArray = form.video
+          ? form.video.split(",").map(v => v.trim()).filter(v => v)
+          : [];
+        payload.append("video", JSON.stringify(videoArray));
+
+        console.log("✅ [SUBMIT_PRODUK] All required fields appended to FormData");
+
+        // ===== STEP 4: PROCESS FILES (after required fields are appended) =====
+        console.log("📁 [SUBMIT_PRODUK] Step 4: Processing files...");
         try {
           // Process Header
           if (form.header.type === "file" && form.header.value) {
             setSubmitStatus("Mengonversi header ke JPG...");
             const processedHeader = await convertImageToJPG(form.header.value, 0.75, 1600);
             payload.append("header", processedHeader);
+            console.log("  ✅ header file appended");
           }
 
-          // Process Gallery - format: gambar[0][file], gambar[0][caption]
+          // Process Gallery
           for (let idx = 0; idx < form.gambar.length; idx++) {
             const g = form.gambar[idx];
-            if (g.path.type === "file" && g.path.value) {
+            if (g.path?.type === "file" && g.path?.value) {
               setSubmitStatus(`Mengonversi gambar ${idx + 1}/${form.gambar.length} ke JPG...`);
               const processedGambar = await convertImageToJPG(g.path.value, 0.75, 1600);
               payload.append(`gambar[${idx}][file]`, processedGambar);
             }
             payload.append(`gambar[${idx}][caption]`, g.caption || "");
           }
+          console.log(`  ✅ gallery: ${form.gambar.length} items processed`);
 
           // Process Testimoni
           for (let idx = 0; idx < form.testimoni.length; idx++) {
             const t = form.testimoni[idx];
-            if (t.gambar.type === "file" && t.gambar.value) {
+            if (t.gambar?.type === "file" && t.gambar?.value) {
               setSubmitStatus(`Mengonversi testimoni ${idx + 1}/${form.testimoni.length} ke JPG...`);
               const processedTestimoni = await convertImageToJPG(t.gambar.value, 0.75, 1600);
               payload.append(`testimoni[${idx}][gambar]`, processedTestimoni);
             }
-            payload.append(`testimoni[${idx}][nama]`, t.nama);
-            payload.append(`testimoni[${idx}][deskripsi]`, t.deskripsi);
+            payload.append(`testimoni[${idx}][nama]`, t.nama || "");
+            payload.append(`testimoni[${idx}][deskripsi]`, t.deskripsi || "");
           }
+          console.log(`  ✅ testimoni: ${form.testimoni.length} items processed`);
         } catch (error) {
           console.error("❌ [SUBMIT_PRODUK] Error processing images:", error);
           alert(`Gagal memproses gambar: ${error.message}`);
@@ -315,110 +370,102 @@ export default function Page() {
           return;
         }
 
-        // Fields
-        payload.append("nama", form.nama);
-        // SELALU generate kode dari nama dengan dash
-        const kode = generateKode(form.nama);
-        payload.append("kode", kode);
-        payload.append("url", "/" + kode);
-        payload.append("deskripsi", form.deskripsi);
-        payload.append("harga_coret", form.harga_coret || 0);
-        payload.append("harga_asli", form.harga_asli || 0);
-        payload.append("tanggal_event", formatDateForBackend(form.tanggal_event));
-        payload.append("assign", JSON.stringify(normalizedAssign));
-        const payloadCustomField = form.custom_field.map((f, idx) => ({
-        nama_field: f.label || f.key,
-        urutan: idx + 1
-        }));
-        payload.append("custom_field", JSON.stringify(payloadCustomField));
-        payload.append("list_point", JSON.stringify(form.list_point));
-        payload.append("fb_pixel", JSON.stringify(form.fb_pixel));
-        payload.append(
-          "event_fb_pixel",
-          JSON.stringify(form.event_fb_pixel.map((ev) => ({ event: ev })))
-        );
-        payload.append("gtm", JSON.stringify(form.gtm));
-        const videoArray = form.video
-        ? form.video.split(",").map(v => v.trim()).filter(v => v)
-        : [];
-        payload.append("video", JSON.stringify(videoArray));        
-        payload.append("landingpage", form.landingpage);
-        payload.append("status", form.status);
-        // user_input adalah ID user yang membuat produk (current user) - harus number
-        // FormData akan convert number ke string, tapi backend bisa parse
-        payload.append("user_input", userInputId);
-        // NOTE: kategori sudah di-append di awal FormData construction (line ~237)
+        // Final verification: Check kategori is still in FormData
+        const kategoriCheck = payload.get("kategori");
+        if (!kategoriCheck || kategoriCheck === "null" || kategoriCheck === "") {
+          console.error("❌ [SUBMIT_PRODUK] CRITICAL: kategori missing after file processing!");
+          alert("Terjadi kesalahan: Kategori hilang setelah proses file. Silakan coba lagi.");
+          setIsSubmitting(false);
+          setSubmitStatus("");
+          return;
+        }
+        console.log("✅ [SUBMIT_PRODUK] kategori verified in FormData:", kategoriCheck);
       } else {
+        // Use JSON payload (no files)
+        console.log("📦 [SUBMIT_PRODUK] Step 3: Building JSON payload...");
         payload = {
-          ...form,
-          // kategori harus string sesuai dokumentasi: "kategori": "2"
-          kategori: kategoriId !== null ? String(kategoriId) : null,
+          nama: form.nama || "",
+          kode: generateKode(form.nama),
+          url: "/" + generateKode(form.nama),
+          deskripsi: form.deskripsi || "",
           harga_coret: Number(form.harga_coret) || 0,
           harga_asli: Number(form.harga_asli) || 0,
           tanggal_event: formatDateForBackend(form.tanggal_event),
-          // assign harus string JSON array sesuai dokumentasi: "assign": "[1,2,3]"
+          landingpage: form.landingpage || "1",
+          status: form.status || 1,
+          // REQUIRED FIELDS
+          kategori: String(kategoriId), // MUST be string
           assign: JSON.stringify(normalizedAssign),
-          gtm: JSON.stringify(form.gtm),
-          fb_pixel: JSON.stringify(form.fb_pixel),
+          user_input: userInputId,
+          // JSON fields
+          custom_field: JSON.stringify(
+            form.custom_field.map((f, idx) => ({
+              nama_field: f.label || f.key,
+              urutan: idx + 1
+            }))
+          ),
+          list_point: JSON.stringify(form.list_point || []),
+          fb_pixel: JSON.stringify(form.fb_pixel || []),
           event_fb_pixel: JSON.stringify(
-            form.event_fb_pixel.map((ev) => ({ event: ev }))
+            (form.event_fb_pixel || []).map((ev) => ({ event: ev }))
+          ),
+          gtm: JSON.stringify(form.gtm || []),
+          video: JSON.stringify(
+            form.video ? form.video.split(",").map(v => v.trim()).filter(v => v) : []
           ),
           gambar: JSON.stringify(
-            form.gambar.map((g) => ({ path: null, caption: g.caption }))
+            form.gambar.map((g) => ({ path: null, caption: g.caption || "" }))
           ),
           testimoni: JSON.stringify(
             form.testimoni.map((t) => ({
               gambar: null,
-              nama: t.nama,
-              deskripsi: t.deskripsi,
+              nama: t.nama || "",
+              deskripsi: t.deskripsi || "",
             }))
           ),
-          // user_input harus number sesuai dokumentasi: "user_input": 2
-          user_input: userInputId,
         };
+        console.log("✅ [SUBMIT_PRODUK] JSON payload built");
+        console.log("  kategori:", payload.kategori);
       }
 
-      // Final verification: Ensure kategori is present before sending
-      console.log("🔍 [SUBMIT_PRODUK] Final verification before sending:");
-      console.log("  kategoriId:", kategoriId);
-      console.log("  kategoriId type:", typeof kategoriId);
-      console.log("  kategoriId is valid:", kategoriId !== null && kategoriId !== undefined && !Number.isNaN(kategoriId));
-      
+      // ============================================
+      // STEP 5: FINAL VERIFICATION
+      // ============================================
+      console.log("🔍 [SUBMIT_PRODUK] Step 5: Final verification...");
       if (isFormData) {
-        // Verify kategori exists in FormData
         const kategoriValue = payload.get("kategori");
-        console.log("  kategori in FormData:", kategoriValue);
-        console.log("  kategori in FormData type:", typeof kategoriValue);
+        const namaValue = payload.get("nama");
+        const userInputValue = payload.get("user_input");
+        const assignValue = payload.get("assign");
+        
+        console.log("  kategori:", kategoriValue);
+        console.log("  nama:", namaValue);
+        console.log("  user_input:", userInputValue);
+        console.log("  assign:", assignValue);
         
         if (!kategoriValue || kategoriValue === "null" || kategoriValue === "") {
-          console.error("❌ [SUBMIT_PRODUK] CRITICAL: kategori is missing or invalid in FormData!");
-          alert("Kategori tidak ditemukan dalam data yang akan dikirim. Silakan refresh halaman dan coba lagi.");
+          console.error("❌ [SUBMIT_PRODUK] CRITICAL: kategori missing in final FormData!");
+          alert("Terjadi kesalahan: Kategori tidak ditemukan. Silakan refresh halaman dan coba lagi.");
           setIsSubmitting(false);
           setSubmitStatus("");
           return;
         }
-        console.log("✅ [SUBMIT_PRODUK] kategori verified in FormData:", kategoriValue);
       } else {
-        // Verify kategori exists in JSON payload
         if (!payload.kategori || payload.kategori === null || payload.kategori === "") {
-          console.error("❌ [SUBMIT_PRODUK] CRITICAL: kategori is missing or invalid in JSON payload!");
-          alert("Kategori tidak ditemukan dalam data yang akan dikirim. Silakan refresh halaman dan coba lagi.");
+          console.error("❌ [SUBMIT_PRODUK] CRITICAL: kategori missing in JSON payload!");
+          alert("Terjadi kesalahan: Kategori tidak ditemukan. Silakan refresh halaman dan coba lagi.");
           setIsSubmitting(false);
           setSubmitStatus("");
           return;
         }
-        console.log("✅ [SUBMIT_PRODUK] kategori verified in JSON payload:", payload.kategori);
       }
 
-      console.log("🚀 [SUBMIT_PRODUK] Payload summary:", {
-        hasFile,
-        isFormData,
-        kategori: kategoriId,
-        kategoriString: String(kategoriId),
-        assign: normalizedAssign,
-        user_input: userInputId,
-      });
+      console.log("✅ [SUBMIT_PRODUK] All verifications passed");
+      console.log("🚀 [SUBMIT_PRODUK] Sending payload to backend...");
 
+      // ============================================
+      // STEP 6: SEND TO BACKEND
+      // ============================================
       setSubmitStatus("Mengunggah produk ke server...");
       const res = await fetch(
         "/api/admin/produk",
@@ -433,7 +480,10 @@ export default function Page() {
         }
       );
 
-      // Handle response - check if it's JSON first
+      // ============================================
+      // STEP 7: HANDLE RESPONSE
+      // ============================================
+      console.log("📥 [SUBMIT_PRODUK] Step 7: Handling response...");
       const contentType = res.headers.get("content-type");
       let data;
       
@@ -442,32 +492,42 @@ export default function Page() {
           data = await res.json();
         } catch (parseError) {
           const textResponse = await res.text();
-          console.error("❌ Failed to parse JSON response:", textResponse.substring(0, 200));
+          console.error("❌ [SUBMIT_PRODUK] Failed to parse JSON response:", textResponse.substring(0, 200));
           alert("Terjadi kesalahan: Response dari server tidak valid.");
+          setIsSubmitting(false);
+          setSubmitStatus("");
           return;
         }
       } else {
         const textResponse = await res.text();
-        console.error("❌ Non-JSON response received:", textResponse.substring(0, 200));
+        console.error("❌ [SUBMIT_PRODUK] Non-JSON response received:", textResponse.substring(0, 200));
         alert("Terjadi kesalahan: Server mengembalikan response yang tidak valid.");
+        setIsSubmitting(false);
+        setSubmitStatus("");
         return;
       }
       
-      // Logging struktur JSON lengkap
-      console.log("Success:", data.success);
-      console.log("Data:", data.data);
-      console.table(data.data);
+      console.log("📊 [SUBMIT_PRODUK] Response received:");
+      console.log("  success:", data.success);
+      console.log("  message:", data.message);
+      if (data.data) {
+        console.log("  data:", data.data);
+        console.table(data.data);
+      }
 
       if (!res.ok) {
-      console.error("❌ API ERROR:", data);
-      console.error("❌ API ERROR detail:", data?.errors);
+        console.error("❌ [SUBMIT_PRODUK] API ERROR:", data);
+        console.error("❌ [SUBMIT_PRODUK] API ERROR detail:", data?.errors);
         alert(data?.message || "Gagal membuat produk!");
+        setIsSubmitting(false);
+        setSubmitStatus("");
         return;
       }
 
+      // Success
+      console.log("✅ [SUBMIT_PRODUK] Product created successfully:", data);
       setSubmitStatus("Produk berhasil dibuat, mengalihkan...");
       alert("Produk berhasil dibuat!");
-      console.log("SUCCESS:", data);
       
       // Redirect ke halaman products
       router.push("/admin/products");
