@@ -50,12 +50,12 @@ export default function Page() {
     nama: "",
     kode: "",
     url: "",
-    header: null,
+    header: { type: "file", value: null },
     harga_coret: "",
     harga_asli: "",
     deskripsi: "",
     tanggal_event: "",
-    gambar: [],
+    gambar: [], // [{ path: {type:'file', value:File}, caption }]
     landingpage: "1",
     status: 1,
     assign: [],
@@ -98,6 +98,69 @@ export default function Page() {
     if (field) arr[i][field] = value;
     else arr[i] = value;
     setForm((p) => ({ ...p, [key]: arr }));
+  };
+
+  // ============================
+  // CONVERT & COMPRESS IMAGE TO JPG
+  // ============================
+  const convertImageToJPG = async (file, quality = 0.75, maxWidth = 1600) => {
+    return new Promise((resolve, reject) => {
+      // Check if already JPG/PNG
+      const isJPG = file.type === "image/jpeg" || file.type === "image/jpg";
+      const isPNG = file.type === "image/png";
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
+          
+          // Resize if too large
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          
+          // For PNG or other formats with transparency, fill white background
+          // For JPG, no need to fill (already opaque)
+          if (!isJPG) {
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fillRect(0, 0, width, height);
+          }
+          
+          // Draw image
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Convert to JPG (even if already JPG, we compress it)
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                reject(new Error("Failed to convert/compress image"));
+                return;
+              }
+              // Always use .jpg extension and image/jpeg MIME type
+              const jpgFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+                type: "image/jpeg",
+                lastModified: Date.now(),
+              });
+              resolve(jpgFile);
+            },
+            "image/jpeg",
+            quality
+          );
+        };
+        img.onerror = () => reject(new Error("Failed to load image"));
+        img.src = e.target.result;
+      };
+      reader.onerror = () => reject(new Error("Failed to read file"));
+      reader.readAsDataURL(file);
+    });
   };
 
   // ============================
@@ -271,51 +334,130 @@ export default function Page() {
         return;
       }
 
-      // Prepare payload
-      const kode = generateKode(form.nama);
-      const payload = {
-        kategori: String(kategoriId),
-        nama: form.nama,
-        user_input: userInputId,
-        assign: JSON.stringify(normalizedAssign),
-        kode: kode,
-        url: "/" + kode,
-        deskripsi: form.deskripsi || "",
-        harga_coret: String(form.harga_coret || 0),
-        harga_asli: String(form.harga_asli || 0),
-        tanggal_event: formatDateForBackend(form.tanggal_event),
-        landingpage: form.landingpage || "1",
-        status: form.status || 1,
-        custom_field: JSON.stringify(
+      // Check if there are files to upload
+      const hasFile =
+        (form.header.type === "file" && form.header.value) ||
+        form.gambar.some((g) => g.path?.type === "file" && g.path?.value);
+
+      let payload;
+      let isFormData = false;
+
+      if (hasFile) {
+        setSubmitStatus("Mengompres & menyiapkan berkas media...");
+        payload = new FormData();
+        isFormData = true;
+
+        const kode = generateKode(form.nama);
+        payload.append("kategori", String(kategoriId));
+        payload.append("nama", form.nama);
+        payload.append("user_input", userInputId);
+        payload.append("assign", JSON.stringify(normalizedAssign));
+        payload.append("kode", kode);
+        payload.append("url", "/" + kode);
+        payload.append("deskripsi", form.deskripsi || "");
+        payload.append("harga_coret", String(form.harga_coret || 0));
+        payload.append("harga_asli", String(form.harga_asli || 0));
+        payload.append("tanggal_event", formatDateForBackend(form.tanggal_event));
+        payload.append("landingpage", String(form.landingpage || "1"));
+        payload.append("status", String(form.status || 1));
+        payload.append("custom_field", JSON.stringify(
           (form.custom_field || []).map((f, idx) => ({
             nama_field: f.label || f.key || "",
             urutan: idx + 1,
           }))
-        ),
-        list_point: JSON.stringify(
+        ));
+        payload.append("list_point", JSON.stringify(
           (form.list_point || []).map((p) => ({ nama: p.nama || "" }))
-        ),
-        testimoni: JSON.stringify(
+        ));
+        payload.append("testimoni", JSON.stringify(
           (form.testimoni || []).map((t) => ({
             gambar: null,
             nama: t.nama || "",
             deskripsi: t.deskripsi || "",
           }))
-        ),
-        fb_pixel: JSON.stringify(form.fb_pixel || []),
-        event_fb_pixel: JSON.stringify(
+        ));
+        payload.append("fb_pixel", JSON.stringify(form.fb_pixel || []));
+        payload.append("event_fb_pixel", JSON.stringify(
           (form.event_fb_pixel || []).map((ev) => ({ event: ev }))
-        ),
-        gtm: JSON.stringify(form.gtm || []),
-        video: JSON.stringify(
-          form.video
-            ? form.video.split(",").map((v) => v.trim()).filter((v) => v)
-            : []
-        ),
-        gambar: JSON.stringify(
-          (form.gambar || []).map((g) => ({ path: null, caption: g.caption || "" }))
-        ),
-      };
+        ));
+        payload.append("gtm", JSON.stringify(form.gtm || []));
+        const videoArray = form.video
+          ? form.video.split(",").map((v) => v.trim()).filter((v) => v)
+          : [];
+        payload.append("video", JSON.stringify(videoArray));
+
+        try {
+          // Process header image
+          if (form.header.type === "file" && form.header.value) {
+            setSubmitStatus("Mengonversi header ke JPG...");
+            const processedHeader = await convertImageToJPG(form.header.value, 0.75, 1600);
+            payload.append("header", processedHeader);
+          }
+
+          // Process gallery images
+          for (let idx = 0; idx < (form.gambar || []).length; idx++) {
+            const g = form.gambar[idx];
+            if (g.path?.type === "file" && g.path?.value) {
+              setSubmitStatus(`Mengonversi gambar ${idx + 1}/${form.gambar.length} ke JPG...`);
+              const processedGambar = await convertImageToJPG(g.path.value, 0.75, 1600);
+              payload.append(`gambar[${idx}][file]`, processedGambar);
+            }
+            payload.append(`gambar[${idx}][caption]`, g.caption || "");
+          }
+        } catch (error) {
+          console.error("Error processing images:", error);
+          alert(`Gagal memproses gambar: ${error.message}`);
+          setIsSubmitting(false);
+          setSubmitStatus("");
+          return;
+        }
+      } else {
+        // No files, use JSON payload
+        const kode = generateKode(form.nama);
+        payload = {
+          kategori: String(kategoriId),
+          nama: form.nama,
+          user_input: userInputId,
+          assign: JSON.stringify(normalizedAssign),
+          kode: kode,
+          url: "/" + kode,
+          deskripsi: form.deskripsi || "",
+          harga_coret: String(form.harga_coret || 0),
+          harga_asli: String(form.harga_asli || 0),
+          tanggal_event: formatDateForBackend(form.tanggal_event),
+          landingpage: form.landingpage || "1",
+          status: form.status || 1,
+          custom_field: JSON.stringify(
+            (form.custom_field || []).map((f, idx) => ({
+              nama_field: f.label || f.key || "",
+              urutan: idx + 1,
+            }))
+          ),
+          list_point: JSON.stringify(
+            (form.list_point || []).map((p) => ({ nama: p.nama || "" }))
+          ),
+          testimoni: JSON.stringify(
+            (form.testimoni || []).map((t) => ({
+              gambar: null,
+              nama: t.nama || "",
+              deskripsi: t.deskripsi || "",
+            }))
+          ),
+          fb_pixel: JSON.stringify(form.fb_pixel || []),
+          event_fb_pixel: JSON.stringify(
+            (form.event_fb_pixel || []).map((ev) => ({ event: ev }))
+          ),
+          gtm: JSON.stringify(form.gtm || []),
+          video: JSON.stringify(
+            form.video
+              ? form.video.split(",").map((v) => v.trim()).filter((v) => v)
+              : []
+          ),
+          gambar: JSON.stringify(
+            (form.gambar || []).map((g) => ({ path: null, caption: g.caption || "" }))
+          ),
+        };
+      }
 
       setSubmitStatus("Mengunggah produk ke server...");
 
@@ -323,11 +465,11 @@ export default function Page() {
       const res = await fetch("/api/admin/produk", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          ...(isFormData ? {} : { "Content-Type": "application/json" }),
           Accept: "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(payload),
+        body: isFormData ? payload : JSON.stringify(payload),
         cache: "no-store",
         credentials: "same-origin",
       });
@@ -513,6 +655,32 @@ export default function Page() {
               <p className="section-description">Gambar, deskripsi, dan konten produk</p>
             </div>
             <div className="section-content">
+              {/* HEADER IMAGE */}
+              <div className="form-field-group">
+                <label className="form-label">
+                  <span className="label-icon">🖼️</span>
+                  Header Image
+                </label>
+                <div className="file-upload-card">
+                  <label className="file-upload-label">Upload File</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleChange("header", { type: "file", value: e.target.files[0] })}
+                    className="file-input"
+                  />
+                  {form.header?.type === "file" && form.header.value && (
+                    <div className="file-preview">
+                      <img 
+                        src={URL.createObjectURL(form.header.value)} 
+                        alt="Preview" 
+                        className="preview-thumbnail"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* DESKRIPSI */}
               <div className="form-field-group">
                 <label className="form-label">
@@ -579,7 +747,68 @@ export default function Page() {
             </div>
           </div>
 
-          {/* SECTION 3: List Point */}
+          {/* SECTION 3: Gallery */}
+          <div className="form-section-card">
+            <div className="section-header">
+              <h3 className="section-title">🖼️ Gallery Produk</h3>
+              <p className="section-description">Tambah gambar produk dengan caption</p>
+            </div>
+            <div className="section-content">
+              {form.gambar.map((g, i) => (
+                <div key={i} className="gallery-item-card">
+                  <div className="gallery-item-header">
+                    <span className="gallery-item-number">Gambar {i + 1}</span>
+                    <Button
+                      icon="pi pi-trash"
+                      severity="danger"
+                      className="p-button-danger p-button-sm"
+                      onClick={() => removeArray("gambar", i)}
+                      tooltip="Hapus gambar"
+                    />
+                  </div>
+                  <div className="gallery-item-content">
+                    <div className="form-field-group">
+                      <label className="form-label-small">Upload Gambar</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) =>
+                          updateArrayItem("gambar", i, "path", { type: "file", value: e.target.files[0] })
+                        }
+                        className="file-input"
+                      />
+                      {g.path?.type === "file" && g.path.value && (
+                        <div className="file-preview">
+                          <img 
+                            src={URL.createObjectURL(g.path.value)} 
+                            alt={`Preview ${i + 1}`}
+                            className="preview-thumbnail"
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div className="form-field-group">
+                      <label className="form-label-small">Caption</label>
+                      <InputText
+                        className="w-full form-input"
+                        placeholder="Masukkan caption gambar"
+                        value={g.caption}
+                        onChange={(e) => updateArrayItem("gambar", i, "caption", e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <Button
+                icon="pi pi-plus"
+                label="Tambah Gambar"
+                className="add-item-btn"
+                onClick={() => addArray("gambar", { path: { type: "file", value: null }, caption: "" })}
+              />
+            </div>
+          </div>
+
+          {/* SECTION 4: List Point */}
           <div className="form-section-card">
             <div className="section-header">
               <h3 className="section-title">✅ List Point (Benefit)</h3>
@@ -612,7 +841,7 @@ export default function Page() {
             </div>
           </div>
 
-          {/* SECTION 4: Testimoni */}
+          {/* SECTION 5: Testimoni */}
           <div className="form-section-card">
             <div className="section-header">
               <h3 className="section-title">⭐ Testimoni</h3>
@@ -665,7 +894,7 @@ export default function Page() {
             </div>
           </div>
 
-          {/* SECTION 5: Video */}
+          {/* SECTION 6: Video */}
           <div className="form-section-card">
             <div className="section-header">
               <h3 className="section-title">🎬 Video</h3>
@@ -689,7 +918,7 @@ export default function Page() {
             </div>
           </div>
 
-          {/* SECTION 6: Pengaturan */}
+          {/* SECTION 7: Pengaturan */}
           <div className="form-section-card">
             <div className="section-header">
               <h3 className="section-title">⚙️ Pengaturan</h3>
