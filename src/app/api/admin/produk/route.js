@@ -1,31 +1,29 @@
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
+import FormData from "form-data";
 
 const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "http://3.105.234.181:8000";
 
-// Image conversion settings - Convert to WEBP
+// Image compression settings
 const IMAGE_CONFIG = {
-  maxWidth: 1600,           // Max width in pixels (as requested)
-  maxHeight: 1600,          // Max height in pixels
-  targetSizeKB: 200,        // Target size in KB
-  initialQuality: 80,        // Initial quality (70-80 as requested)
-  minQuality: 50,           // Minimum quality to try
-  qualityStep: 5,           // Quality reduction step
+  maxWidth: 1600,
+  maxHeight: 1600,
+  targetSizeKB: 300,        // Target size in KB
+  initialQuality: 85,       // Initial quality
+  minQuality: 50,          // Minimum quality to try
+  qualityStep: 5,          // Quality reduction step
 };
 
-// Supported image formats
-const SUPPORTED_FORMATS = [
-  "image/jpeg",
-  "image/jpg", 
-  "image/png",
-  "image/gif",
-  "image/webp",
-  "image/bmp",
-  "image/tiff",
-  "image/heic",
-  "image/heif",
-];
+// Allowed file extensions (Laravel requirement)
+const ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png"];
+
+// MIME type mapping
+const MIME_TYPES = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+};
 
 // Dynamic import sharp
 let sharpModule = null;
@@ -43,58 +41,101 @@ const getSharp = async () => {
   return sharpModule;
 };
 
-// Convert image to WebP with compression
-// Iteratively reduces quality if file is still too large
-const convertToWebP = async (buffer, mimeType, filename) => {
+/**
+ * Extract file extension from filename
+ */
+const getFileExtension = (filename) => {
+  const match = filename.match(/\.([^.]+)$/);
+  return match ? match[1].toLowerCase() : null;
+};
+
+/**
+ * Validate file extension
+ */
+const isValidExtension = (extension) => {
+  return extension && ALLOWED_EXTENSIONS.includes(extension.toLowerCase());
+};
+
+/**
+ * Get MIME type from extension
+ */
+const getMimeTypeFromExtension = (extension) => {
+  return MIME_TYPES[extension.toLowerCase()] || "image/jpeg";
+};
+
+/**
+ * Compress image buffer while maintaining original format
+ * Returns compressed buffer or null if compression fails
+ */
+const compressImage = async (buffer, extension, filename) => {
   const sharp = await getSharp();
-  if (!sharp) return null;
-  
+  if (!sharp) {
+    console.log(`  ⚠️ Sharp not available, skipping compression for ${filename}`);
+    return null;
+  }
+
   try {
     const targetSizeBytes = IMAGE_CONFIG.targetSizeKB * 1024;
+    const originalSizeKB = (buffer.length / 1024).toFixed(2);
+    
+    console.log(`  📊 Original size: ${originalSizeKB} KB`);
+    
+    // If already small enough, return original
+    if (buffer.length <= targetSizeBytes) {
+      console.log(`  ✅ File already under ${IMAGE_CONFIG.targetSizeKB}KB, skipping compression`);
+      return buffer;
+    }
+
     let quality = IMAGE_CONFIG.initialQuality;
-    let webpBuffer;
+    let compressedBuffer;
     let attempts = 0;
     const maxAttempts = 10;
-    
+
     do {
       attempts++;
       let sharpInstance = sharp(buffer);
-      
+
       // Resize if too large (maintain aspect ratio)
       sharpInstance = sharpInstance.resize({
         width: IMAGE_CONFIG.maxWidth,
         height: IMAGE_CONFIG.maxHeight,
         fit: "inside",
-        withoutEnlargement: true, // Don't upscale small images
+        withoutEnlargement: true,
       });
-      
-      // Convert to WebP with current quality
-      webpBuffer = await sharpInstance
-        .webp({ quality })
-        .toBuffer();
-      
-      const sizeKB = (webpBuffer.length / 1024).toFixed(2);
+
+      // Compress based on format (keep original format)
+      if (extension === "png") {
+        compressedBuffer = await sharpInstance
+          .png({ quality, compressionLevel: 9 })
+          .toBuffer();
+      } else {
+        // jpg/jpeg
+        compressedBuffer = await sharpInstance
+          .jpeg({ quality, mozjpeg: true })
+          .toBuffer();
+      }
+
+      const sizeKB = (compressedBuffer.length / 1024).toFixed(2);
       console.log(`  🔄 Attempt ${attempts}: Quality ${quality} → ${sizeKB} KB`);
-      
+
       // If file is small enough or we've tried enough, stop
-      if (webpBuffer.length <= targetSizeBytes || attempts >= maxAttempts) {
+      if (compressedBuffer.length <= targetSizeBytes || attempts >= maxAttempts) {
         break;
       }
-      
+
       // Reduce quality for next attempt
       quality = Math.max(quality - IMAGE_CONFIG.qualityStep, IMAGE_CONFIG.minQuality);
-      
-    } while (webpBuffer.length > targetSizeBytes && quality >= IMAGE_CONFIG.minQuality && attempts < maxAttempts);
-    
-    const originalSizeKB = (buffer.length / 1024).toFixed(2);
-    const finalSizeKB = (webpBuffer.length / 1024).toFixed(2);
-    const reduction = Math.round((1 - webpBuffer.length / buffer.length) * 100);
-    
-    console.log(`  ✅ Converted to WebP: ${originalSizeKB} KB → ${finalSizeKB} KB (${reduction}% reduction, quality: ${quality})`);
-    
-    return webpBuffer;
+
+    } while (compressedBuffer.length > targetSizeBytes && quality >= IMAGE_CONFIG.minQuality && attempts < maxAttempts);
+
+    const finalSizeKB = (compressedBuffer.length / 1024).toFixed(2);
+    const reduction = Math.round((1 - compressedBuffer.length / buffer.length) * 100);
+
+    console.log(`  ✅ Compressed: ${originalSizeKB} KB → ${finalSizeKB} KB (${reduction}% reduction, quality: ${quality})`);
+
+    return compressedBuffer;
   } catch (err) {
-    console.error(`❌ WebP conversion failed for ${filename}:`, err.message);
+    console.error(`  ❌ Compression failed for ${filename}:`, err.message);
     return null;
   }
 };
@@ -102,7 +143,7 @@ const convertToWebP = async (buffer, mimeType, filename) => {
 export async function GET(request) {
   try {
     const authHeader = request.headers.get("authorization");
-    
+
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return NextResponse.json(
         { success: false, message: "Token tidak ditemukan" },
@@ -114,7 +155,6 @@ export async function GET(request) {
 
     console.log("🟢 [GET_PRODUK] Fetching products...");
 
-    // Forward ke backend
     const response = await fetch(`${BACKEND_URL}/api/admin/produk`, {
       method: "GET",
       headers: {
@@ -148,7 +188,7 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const authHeader = request.headers.get("authorization");
-    
+
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return NextResponse.json(
         { success: false, message: "Token tidak ditemukan" },
@@ -166,14 +206,13 @@ export async function POST(request) {
 
     if (contentType.includes("multipart/form-data")) {
       // Handle FormData (file uploads)
-      // Convert images to WebP in frontend before sending to backend
       const incomingFormData = await request.formData();
-      
-      // Create new FormData using undici (native Web FormData)
-      const forward = new FormData();
-      
-      console.log("🟢 [POST_PRODUK] Processing FormData entries (converting images to WebP):");
-      
+
+      // Create new FormData using form-data npm package
+      const forwardFormData = new FormData();
+
+      console.log("🟢 [POST_PRODUK] Processing FormData entries (compressing images, keeping original format):");
+
       // Collect all entries first (FormData entries can only be iterated once)
       const allEntries = [];
       const incomingFields = {};
@@ -187,156 +226,162 @@ export async function POST(request) {
         }
       }
       console.log(`  📊 Total FormData entries: ${allEntries.length}`);
-      console.log(`  📋 Entry keys: ${allEntries.map(e => e.key).join(", ")}`);
+      console.log(`  📋 Entry keys: ${allEntries.map((e) => e.key).join(", ")}`);
       console.log("  📦 [DEBUG] All incoming fields:", JSON.stringify(incomingFields, null, 2));
-      
+
       // Process all entries
       for (const { key, value } of allEntries) {
         if (value instanceof File && value.size > 0) {
+          // Get file extension
+          const extension = getFileExtension(value.name);
+          const detectedMime = value.type;
+          const originalSize = value.size;
+
+          console.log(`\n  📁 Processing file: ${key}`);
+          console.log(`    Filename: ${value.name}`);
+          console.log(`    Extension: ${extension || "unknown"}`);
+          console.log(`    Detected MIME: ${detectedMime}`);
+          console.log(`    Original size: ${(originalSize / 1024).toFixed(2)} KB`);
+
+          // Validate extension BEFORE processing
+          if (!isValidExtension(extension)) {
+            console.error(`  ❌ Invalid file extension: ${extension}`);
+            console.error(`    Allowed extensions: ${ALLOWED_EXTENSIONS.join(", ")}`);
+            return NextResponse.json(
+              {
+                success: false,
+                message: `File "${value.name}" has invalid extension. Allowed: ${ALLOWED_EXTENSIONS.join(", ")}`,
+                debug: {
+                  filename: value.name,
+                  extension: extension,
+                  allowedExtensions: ALLOWED_EXTENSIONS,
+                },
+              },
+              { status: 400 }
+            );
+          }
+
           // Check if it's an image file
           const isImage = value.type.startsWith("image/");
-          
+
           if (isImage) {
-            console.log(`  🖼️ ${key}: [Image] ${value.name} (${(value.size / 1024).toFixed(2)} KB, type: ${value.type})`);
-            
             // Get file buffer
             const arrayBuffer = await value.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
-            
-            // Convert to WebP with compression
-            console.log(`  🔄 Converting ${value.name} to WebP...`);
-            const webpBuffer = await convertToWebP(buffer, value.type, value.name);
-            
-            if (webpBuffer) {
-              // Conversion successful - create new File from buffer
-              // Change filename: header1.png → header1.webp
-              const webpFilename = value.name.replace(/\.[^/.]+$/, "") + ".webp";
-              
-              // Create File object from buffer (Node.js 18+ global File)
-              const webpFile = new File([webpBuffer], webpFilename, { type: "image/webp" });
-              forward.append(key, webpFile);
-              
-              console.log(`  ✅ Converted: ${value.name} → ${webpFilename} (${(value.size / 1024).toFixed(2)} KB → ${(webpBuffer.length / 1024).toFixed(2)} KB)`);
-            } else {
-              // Conversion failed - use original file
-              console.log(`  ⚠️ Conversion failed, using original: ${value.name}`);
-              forward.append(key, value);
-            }
+
+            // Compress image (maintains original format)
+            console.log(`  🔄 Compressing ${value.name} (keeping ${extension} format)...`);
+            const compressedBuffer = await compressImage(buffer, extension, value.name);
+
+            // Use compressed buffer if available, otherwise use original
+            const finalBuffer = compressedBuffer || buffer;
+            const finalSize = finalBuffer.length;
+            const finalMimeType = getMimeTypeFromExtension(extension);
+
+            console.log(`  ✅ Final file details:`);
+            console.log(`    Filename: ${value.name} (extension: .${extension})`);
+            console.log(`    MIME type: ${finalMimeType}`);
+            console.log(`    Final size: ${(finalSize / 1024).toFixed(2)} KB`);
+            console.log(`    Size change: ${originalSize > finalSize ? "reduced" : "unchanged"}`);
+
+            // Append to FormData with proper filename, buffer, and content type
+            forwardFormData.append(key, finalBuffer, {
+              filename: value.name, // Keep original filename with original extension
+              contentType: finalMimeType, // MIME type matching extension
+            });
+
+            console.log(`  ✅ Appended to FormData: name="${key}", filename="${value.name}", contentType="${finalMimeType}"`);
           } else {
             // Non-image file, forward as-is
-            console.log(`  📁 ${key}: [File] ${value.name} (${(value.size / 1024).toFixed(2)} KB) - forwarding as-is`);
-            forward.append(key, value);
+            console.log(`  📁 ${key}: [Non-image File] ${value.name} (${(value.size / 1024).toFixed(2)} KB) - forwarding as-is`);
+            const arrayBuffer = await value.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
+            forwardFormData.append(key, buffer, {
+              filename: value.name,
+              contentType: value.type || "application/octet-stream",
+            });
           }
         } else {
           // Handle all non-file values (string, number, etc.)
-          // Convert to string and append directly
           const stringValue = value === null || value === undefined ? "" : String(value);
           console.log(`  📝 ${key}: ${stringValue.substring(0, 100)}${stringValue.length > 100 ? "..." : ""} (type: ${typeof value})`);
-          // Always append, even if empty - backend might need it
-          forward.append(key, stringValue);
+          forwardFormData.append(key, stringValue);
         }
       }
-      
+
       // Log critical fields to verify they're being forwarded
-      console.log("🟢 [POST_PRODUK] Critical fields check:");
-      const requiredFields = ['kategori', 'assign', 'user_input', 'nama'];
-      const entriesMap = new Map(allEntries.map(e => [e.key, e.value]));
-      
+      console.log("\n🟢 [POST_PRODUK] Critical fields check:");
+      const requiredFields = ["kategori", "assign", "user_input", "nama"];
+      const entriesMap = new Map(allEntries.map((e) => [e.key, e.value]));
+
       for (const field of requiredFields) {
         if (entriesMap.has(field)) {
           const value = entriesMap.get(field);
-          const stringValue = typeof value === 'string' ? value : String(value);
-          console.log(`  ✅ ${field}: ${stringValue.substring(0, 100)}${stringValue.length > 100 ? '...' : ''}`);
+          const stringValue = typeof value === "string" ? value : String(value);
+          console.log(`  ✅ ${field}: ${stringValue.substring(0, 100)}${stringValue.length > 100 ? "..." : ""}`);
         } else {
           console.log(`  ❌ ${field}: MISSING from incomingFormData`);
         }
       }
-      
-      console.log("🟢 [POST_PRODUK] Forwarding FormData to backend (images converted to WebP)...");
-      
-      // Final verification: Check if critical fields exist and were forwarded
-      console.log("🟢 [POST_PRODUK] Final payload verification:");
-      const hasKategori = entriesMap.has('kategori');
-      const hasAssign = entriesMap.has('assign');
-      const hasUserInput = entriesMap.has('user_input');
-      
-      // Get actual values for logging
-      const kategoriValue = entriesMap.get('kategori');
-      const assignValue = entriesMap.get('assign');
-      const userInputValue = entriesMap.get('user_input');
-      
-      console.log(`  kategori: ${hasKategori ? '✅' : '❌ MISSING'} ${hasKategori ? `(value: ${String(kategoriValue)})` : ''}`);
-      console.log(`  assign: ${hasAssign ? '✅' : '❌ MISSING'} ${hasAssign ? `(value: ${String(assignValue)})` : ''}`);
-      console.log(`  user_input: ${hasUserInput ? '✅' : '❌ MISSING'} ${hasUserInput ? `(value: ${String(userInputValue)})` : ''}`);
-      
-      // Log all non-file fields that will be sent
-      const textFieldsToSend = {};
-      for (const { key, value } of allEntries) {
-        if (!(value instanceof File)) {
-          textFieldsToSend[key] = String(value).substring(0, 200);
-        }
-      }
-      console.log("  📤 [DEBUG] Text fields to be sent to backend:", JSON.stringify(textFieldsToSend, null, 2));
-      
+
+      // Final verification: Check if critical fields exist
+      const hasKategori = entriesMap.has("kategori");
+      const hasAssign = entriesMap.has("assign");
+      const hasUserInput = entriesMap.has("user_input");
+
       if (!hasKategori || !hasAssign || !hasUserInput) {
         console.error("❌ [POST_PRODUK] CRITICAL: Missing required fields in FormData!");
         console.error("  Full incoming fields:", JSON.stringify(incomingFields, null, 2));
         return NextResponse.json(
-          { 
-            success: false, 
-            message: "Missing required fields: " + [
-              !hasKategori && 'kategori',
-              !hasAssign && 'assign',
-              !hasUserInput && 'user_input'
-            ].filter(Boolean).join(', '),
+          {
+            success: false,
+            message:
+              "Missing required fields: " +
+              [!hasKategori && "kategori", !hasAssign && "assign", !hasUserInput && "user_input"]
+                .filter(Boolean)
+                .join(", "),
             debug: {
               incomingFields: Object.keys(incomingFields),
-              missingFields: [
-                !hasKategori && 'kategori',
-                !hasAssign && 'assign',
-                !hasUserInput && 'user_input'
-              ].filter(Boolean)
-            }
+              missingFields: [!hasKategori && "kategori", !hasAssign && "assign", !hasUserInput && "user_input"].filter(Boolean),
+            },
           },
           { status: 400 }
         );
       }
 
-      // Final verification: Check all keys in forward FormData
-      const finalKeys = [...forward.keys()];
-      console.log("🟢 [POST_PRODUK] Final keys verification:");
-      console.log("  Final keys:", finalKeys);
-      
-      const criticalFields = ['kategori', 'assign', 'user_input', 'nama'];
-      for (const field of criticalFields) {
-        const exists = finalKeys.includes(field);
-        console.log(`  ${field}: ${exists ? '✅' : '❌ MISSING'}`);
-      }
-      
-      // Forward FormData to backend
-      // Don't set Content-Type manually - let undici handle boundary automatically
-      console.log("🟢 [POST_PRODUK] Sending request to backend:");
+      // Log FormData structure
+      console.log("\n🟢 [POST_PRODUK] FormData structure verification:");
+      console.log(`  Total fields in forwardFormData: ${allEntries.length}`);
+      console.log(`  FormData boundary: ${forwardFormData.getBoundary()}`);
+
+      // Forward FormData to backend with proper headers
+      const headers = {
+        ...forwardFormData.getHeaders(), // Get proper headers with boundary
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      };
+
+      console.log("\n🟢 [POST_PRODUK] Sending request to backend:");
       console.log(`  URL: ${BACKEND_URL}/api/admin/produk`);
       console.log(`  Method: POST`);
-      console.log(`  Total fields: ${finalKeys.length}`);
-      
+      console.log(`  Content-Type: ${headers["content-type"]}`);
+      console.log(`  Has Authorization: ${!!headers.Authorization}`);
+
       response = await fetch(`${BACKEND_URL}/api/admin/produk`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: forward,
+        headers,
+        body: forwardFormData, // form-data package handles body correctly
       });
     } else {
       // Handle JSON
       const body = await request.json();
-      
+
       console.log("🟢 [POST_PRODUK] JSON payload received:");
       console.log("  Full body:", JSON.stringify(body, null, 2));
       console.log("  Critical fields check:");
-      console.log(`    kategori: ${body.kategori ? `✅ (${body.kategori})` : '❌ MISSING'}`);
-      console.log(`    assign: ${body.assign ? `✅ (${body.assign})` : '❌ MISSING'}`);
-      console.log(`    user_input: ${body.user_input ? `✅ (${body.user_input})` : '❌ MISSING'}`);
+      console.log(`    kategori: ${body.kategori ? `✅ (${body.kategori})` : "❌ MISSING"}`);
+      console.log(`    assign: ${body.assign ? `✅ (${body.assign})` : "❌ MISSING"}`);
+      console.log(`    user_input: ${body.user_input ? `✅ (${body.user_input})` : "❌ MISSING"}`);
 
       response = await fetch(`${BACKEND_URL}/api/admin/produk`, {
         method: "POST",
@@ -349,13 +394,13 @@ export async function POST(request) {
       });
     }
 
-    console.log("🟢 [POST_PRODUK] Backend response status:", response.status);
+    console.log("\n🟢 [POST_PRODUK] Backend response status:", response.status);
     console.log("🟢 [POST_PRODUK] Backend response headers:", JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2));
 
     // Handle non-JSON responses (e.g., HTML error pages)
     const responseText = await response.text();
     let data;
-    
+
     try {
       data = JSON.parse(responseText);
     } catch {
@@ -363,11 +408,11 @@ export async function POST(request) {
       console.error("  Status:", response.status);
       console.error("  Response text (first 1000 chars):", responseText.substring(0, 1000));
       return NextResponse.json(
-        { 
-          success: false, 
-          message: "Backend error: Response bukan JSON", 
+        {
+          success: false,
+          message: "Backend error: Response bukan JSON",
           raw_response: responseText.substring(0, 200),
-          status: response.status
+          status: response.status,
         },
         { status: response.status || 500 }
       );
@@ -381,16 +426,16 @@ export async function POST(request) {
       console.error("  Message:", data?.message);
       console.error("  Errors:", JSON.stringify(data?.errors, null, 2));
       console.error("  Full response:", JSON.stringify(data, null, 2));
-      
+
       return NextResponse.json(
-        { 
-          success: false, 
-          message: data?.message || "Gagal membuat produk", 
+        {
+          success: false,
+          message: data?.message || "Gagal membuat produk",
           errors: data?.errors,
           debug: {
             status: response.status,
-            backendResponse: data
-          }
+            backendResponse: data,
+          },
         },
         { status: response.status }
       );
@@ -403,18 +448,17 @@ export async function POST(request) {
     console.error("  Error message:", error.message);
     console.error("  Error stack:", error.stack);
     console.error("  Full error object:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
-    
+
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         message: error.message || "Terjadi kesalahan saat membuat produk",
         debug: {
           errorName: error.name,
-          errorMessage: error.message
-        }
+          errorMessage: error.message,
+        },
       },
       { status: 500 }
     );
   }
 }
-
