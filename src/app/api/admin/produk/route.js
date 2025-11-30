@@ -1,3 +1,5 @@
+export const runtime = "nodejs";
+
 import { NextResponse } from "next/server";
 import FormData from "form-data";
 
@@ -232,8 +234,10 @@ export async function POST(request) {
         } else {
           // Handle all non-file values (string, number, etc.)
           // Convert to string to ensure compatibility
-          const stringValue = String(value);
-          console.log(`  📝 ${key}: ${stringValue.substring(0, 100)}${stringValue.length > 100 ? "..." : ""}`);
+          // Important: Even empty strings should be forwarded
+          const stringValue = value === null || value === undefined ? "" : String(value);
+          console.log(`  📝 ${key}: ${stringValue.substring(0, 100)}${stringValue.length > 100 ? "..." : ""} (type: ${typeof value})`);
+          // Always append, even if empty - backend might need it
           forwardFormData.append(key, stringValue);
         }
       }
@@ -255,12 +259,11 @@ export async function POST(request) {
       
       console.log("🟢 [POST_PRODUK] Forwarding FormData to backend (images converted to WebP)...");
       
-      // Final verification: Check if critical fields exist in forwardFormData
-      // Note: form-data package doesn't have .get() method, so we track manually
+      // Final verification: Check if critical fields exist and were forwarded
       console.log("🟢 [POST_PRODUK] Final payload verification:");
-      const hasKategori = incomingFormData.has('kategori');
-      const hasAssign = incomingFormData.has('assign');
-      const hasUserInput = incomingFormData.has('user_input');
+      const hasKategori = entriesMap.has('kategori');
+      const hasAssign = entriesMap.has('assign');
+      const hasUserInput = entriesMap.has('user_input');
       console.log(`  kategori: ${hasKategori ? '✅' : '❌ MISSING'}`);
       console.log(`  assign: ${hasAssign ? '✅' : '❌ MISSING'}`);
       console.log(`  user_input: ${hasUserInput ? '✅' : '❌ MISSING'}`);
