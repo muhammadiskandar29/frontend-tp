@@ -185,18 +185,41 @@ const [isSubmitting, setIsSubmitting] = useState(false);
       // STEP 1: VALIDATE ALL REQUIRED FIELDS FIRST
       // ============================================
       console.log("🔍 [SUBMIT_PRODUK] Step 1: Validating required fields...");
-      console.log("  form.kategori:", form.kategori, "(type:", typeof form.kategori + ")");
+      
+      // CRITICAL: Log kategori sebelum validasi
+      console.log("📋 [SUBMIT_PRODUK] kategori value before validation:");
+      console.log("  form.kategori:", form.kategori);
+      console.log("  form.kategori type:", typeof form.kategori);
+      console.log("  form.kategori is object:", typeof form.kategori === "object" && form.kategori !== null);
+      console.log("  form.kategori is array:", Array.isArray(form.kategori));
       
       // Validate kategori
       // IMPORTANT: Backend menerima kategori sebagai string numerik, contoh: "2"
-      // State kategori bisa string atau number, tapi harus valid ID kategori
-      // Validasi: tidak boleh null, undefined, atau empty string
+      // State kategori HARUS hanya string numerik (ID), BUKAN object atau array
+      // Validasi: tidak boleh null, undefined, empty string, object, atau array
       const kategoriId = (() => {
         // Validasi: kategori wajib ada dan tidak boleh kosong
         if (!form.kategori || form.kategori === null || form.kategori === undefined || form.kategori === "") {
           console.error("❌ [SUBMIT_PRODUK] kategori is missing/empty");
           console.error("  form.kategori value:", form.kategori);
           console.error("  form.kategori type:", typeof form.kategori);
+          alert("Kategori wajib dipilih! Silakan pilih kategori sebelum menyimpan produk.");
+          return null;
+        }
+        
+        // CRITICAL: Pastikan kategori BUKAN object atau array
+        if (typeof form.kategori === "object" && form.kategori !== null) {
+          console.error("❌ [SUBMIT_PRODUK] kategori is an object, not a string/number!");
+          console.error("  form.kategori:", JSON.stringify(form.kategori));
+          console.error("  This should not happen - kategori should be ID string/number only");
+          alert("Kategori tidak valid! Silakan pilih kategori lagi.");
+          return null;
+        }
+        
+        if (Array.isArray(form.kategori)) {
+          console.error("❌ [SUBMIT_PRODUK] kategori is an array, not a string/number!");
+          console.error("  form.kategori:", JSON.stringify(form.kategori));
+          alert("Kategori tidak valid! Silakan pilih kategori lagi.");
           return null;
         }
         
@@ -205,8 +228,10 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         
         // Validasi: harus valid number dan > 0
         if (Number.isNaN(parsed) || parsed <= 0) {
-          console.error("❌ [SUBMIT_PRODUK] kategori is not a valid number:", form.kategori);
+          console.error("❌ [SUBMIT_PRODUK] kategori is not a valid number:");
+          console.error("  form.kategori:", form.kategori);
           console.error("  parsed value:", parsed);
+          alert("Kategori tidak valid! Silakan pilih kategori yang benar.");
           return null;
         }
         
@@ -302,6 +327,14 @@ const [isSubmitting, setIsSubmitting] = useState(false);
       console.log("  userInputId:", userInputId);
       console.log("  assign:", normalizedAssign);
       console.log("  nama:", form.nama);
+      
+      // CRITICAL: Log kategori sebelum submit (as requested)
+      console.log("📋 [SUBMIT_PRODUK] kategori value before submit:");
+      console.log("  kategori:", form.kategori);
+      console.log("  kategori type:", typeof form.kategori);
+      console.log("  kategori is object:", typeof form.kategori === "object" && form.kategori !== null);
+      console.log("  kategori is array:", Array.isArray(form.kategori));
+      console.log("  kategoriId (parsed):", kategoriId);
 
       // ============================================
       // STEP 2: CHECK IF HAS FILES
@@ -333,9 +366,13 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         // 1. kategori (REQUIRED - MUST BE FIRST)
         // IMPORTANT: Backend menerima kategori sebagai string numerik, contoh: "2"
         // Format: formData.append("kategori", String(2)) → terkirim sebagai "2" (string numerik)
-        // Boleh juga number, tapi FormData harus string
-        payload.append("kategori", String(kategoriId));
-        console.log("  ✅ kategori:", String(kategoriId), "(type: number, sent as string)");
+        // Hanya kirim ID (string/number), BUKAN object atau array
+        const kategoriString = String(kategoriId);
+        payload.append("kategori", kategoriString);
+        console.log("  ✅ kategori appended:");
+        console.log("    kategoriId:", kategoriId, "(type: number)");
+        console.log("    kategoriString:", kategoriString, "(type: string)");
+        console.log("    FormData key: 'kategori', value:", kategoriString);
 
         // 2. nama (REQUIRED)
         payload.append("nama", form.nama || "");
@@ -386,6 +423,28 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         payload.append("video", JSON.stringify(videoArray));        
 
         console.log("✅ [SUBMIT_PRODUK] All required fields appended to FormData");
+        
+        // CRITICAL: Log all FormData entries to verify kategori is present
+        console.log("📋 [SUBMIT_PRODUK] FormData entries verification:");
+        for (let pair of payload.entries()) {
+          const [key, value] = pair;
+          if (value instanceof File) {
+            console.log(`  ${key}: [File] ${value.name} (${value.size} bytes)`);
+          } else {
+            console.log(`  ${key}: ${value} (type: ${typeof value})`);
+          }
+        }
+        
+        // Verify kategori is in FormData
+        const kategoriInFormData = payload.get("kategori");
+        console.log("🔍 [SUBMIT_PRODUK] kategori in FormData:", kategoriInFormData);
+        if (!kategoriInFormData || kategoriInFormData === "null" || kategoriInFormData === "") {
+          console.error("❌ [SUBMIT_PRODUK] CRITICAL: kategori not found in FormData after append!");
+          alert("Terjadi kesalahan: Kategori tidak ditemukan dalam FormData. Silakan refresh halaman dan coba lagi.");
+          setIsSubmitting(false);
+          setSubmitStatus("");
+          return;
+        }
 
         // ===== STEP 4: PROCESS FILES (after required fields are appended) =====
         console.log("📁 [SUBMIT_PRODUK] Step 4: Processing files...");
@@ -456,7 +515,8 @@ const [isSubmitting, setIsSubmitting] = useState(false);
           // REQUIRED FIELDS
           // IMPORTANT: Backend menerima kategori sebagai string numerik, contoh: "2"
           // Format: kategori: String(2) → terkirim sebagai "2" (string numerik)
-          kategori: String(kategoriId), // MUST be string
+          // Hanya kirim ID (string), BUKAN object atau array
+          kategori: String(kategoriId), // MUST be string (ID only, not object)
           // IMPORTANT: assign harus string JSON, bukan array
           // Format: assign: JSON.stringify([1,5,7]) → terkirim sebagai "[1,5,7]"
           assign: JSON.stringify(normalizedAssign),
@@ -829,15 +889,54 @@ useEffect(() => {
               optionLabel="label"
               optionValue="value"
               onChange={(e) => {
-                // IMPORTANT: kategori disimpan sebagai string numerik (ID kategori)
-                // Backend menerima string numerik, contoh: "2"
-                // Jika cleared (null/undefined), set sebagai empty string untuk validasi
-                const newValue = e.value !== null && e.value !== undefined ? String(e.value) : "";
+                // CRITICAL: Pastikan hanya ID kategori yang disimpan, BUKAN object
+                // PrimeReact Dropdown dengan optionValue="value" akan mengembalikan e.value sebagai ID
+                // Pastikan kita mengambil e.value (ID), bukan e (object) atau e.option (object)
                 console.log("🔄 [KATEGORI_DROPDOWN] onChange triggered:");
+                console.log("  e:", e);
                 console.log("  e.value:", e.value, "(type:", typeof e.value + ")");
+                console.log("  e.option:", e.option);
+                
+                // CRITICAL: Hanya ambil e.value (ID), bukan object
+                // e.value sudah berisi ID dari optionValue="value"
+                let newValue = "";
+                
+                if (e.value !== null && e.value !== undefined) {
+                  // Pastikan e.value adalah ID (string/number), bukan object
+                  if (typeof e.value === "object") {
+                    console.error("❌ [KATEGORI_DROPDOWN] e.value is an object! This should not happen.");
+                    console.error("  e.value:", JSON.stringify(e.value));
+                    // Try to extract ID from object if it exists
+                    if (e.value.id !== undefined) {
+                      newValue = String(e.value.id);
+                      console.warn("⚠️ [KATEGORI_DROPDOWN] Extracted ID from object:", newValue);
+                    } else if (e.value.value !== undefined) {
+                      newValue = String(e.value.value);
+                      console.warn("⚠️ [KATEGORI_DROPDOWN] Extracted value from object:", newValue);
+                    } else {
+                      console.error("❌ [KATEGORI_DROPDOWN] Cannot extract ID from object");
+                      alert("Kategori tidak valid! Silakan pilih kategori lagi.");
+                      return;
+                    }
+                  } else {
+                    // e.value adalah ID (string/number), langsung konversi ke string
+                    newValue = String(e.value);
+                  }
+                }
+                
                 console.log("  newValue:", newValue, "(type:", typeof newValue + ")");
+                console.log("  newValue is object:", typeof newValue === "object");
+                console.log("  newValue is array:", Array.isArray(newValue));
+                
+                // Pastikan newValue adalah string, bukan object atau array
+                if (typeof newValue === "object" || Array.isArray(newValue)) {
+                  console.error("❌ [KATEGORI_DROPDOWN] newValue is still object/array after conversion!");
+                  alert("Kategori tidak valid! Silakan pilih kategori lagi.");
+                  return;
+                }
+                
                 handleChange("kategori", newValue);
-                console.log("✅ [KATEGORI_DROPDOWN] form.kategori updated to:", newValue);
+                console.log("✅ [KATEGORI_DROPDOWN] form.kategori updated to:", newValue, "(type:", typeof newValue + ")");
               }}
               placeholder="Pilih Kategori"
               showClear
