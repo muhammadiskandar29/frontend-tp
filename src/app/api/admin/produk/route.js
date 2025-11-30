@@ -177,11 +177,19 @@ export async function POST(request) {
       
       // Collect all entries first (FormData entries can only be iterated once)
       const allEntries = [];
+      const incomingFields = {};
       for (const [key, value] of incomingFormData.entries()) {
         allEntries.push({ key, value });
+        // Store for detailed logging
+        if (value instanceof File) {
+          incomingFields[key] = `[File] ${value.name} (${value.size} bytes, ${value.type})`;
+        } else {
+          incomingFields[key] = String(value).substring(0, 200);
+        }
       }
       console.log(`  📊 Total FormData entries: ${allEntries.length}`);
       console.log(`  📋 Entry keys: ${allEntries.map(e => e.key).join(", ")}`);
+      console.log("  📦 [DEBUG] All incoming fields:", JSON.stringify(incomingFields, null, 2));
       
       // Process all entries
       for (const { key, value } of allEntries) {
@@ -264,12 +272,28 @@ export async function POST(request) {
       const hasKategori = entriesMap.has('kategori');
       const hasAssign = entriesMap.has('assign');
       const hasUserInput = entriesMap.has('user_input');
-      console.log(`  kategori: ${hasKategori ? '✅' : '❌ MISSING'}`);
-      console.log(`  assign: ${hasAssign ? '✅' : '❌ MISSING'}`);
-      console.log(`  user_input: ${hasUserInput ? '✅' : '❌ MISSING'}`);
+      
+      // Get actual values for logging
+      const kategoriValue = entriesMap.get('kategori');
+      const assignValue = entriesMap.get('assign');
+      const userInputValue = entriesMap.get('user_input');
+      
+      console.log(`  kategori: ${hasKategori ? '✅' : '❌ MISSING'} ${hasKategori ? `(value: ${String(kategoriValue)})` : ''}`);
+      console.log(`  assign: ${hasAssign ? '✅' : '❌ MISSING'} ${hasAssign ? `(value: ${String(assignValue)})` : ''}`);
+      console.log(`  user_input: ${hasUserInput ? '✅' : '❌ MISSING'} ${hasUserInput ? `(value: ${String(userInputValue)})` : ''}`);
+      
+      // Log all non-file fields that will be sent
+      const textFieldsToSend = {};
+      for (const { key, value } of allEntries) {
+        if (!(value instanceof File)) {
+          textFieldsToSend[key] = String(value).substring(0, 200);
+        }
+      }
+      console.log("  📤 [DEBUG] Text fields to be sent to backend:", JSON.stringify(textFieldsToSend, null, 2));
       
       if (!hasKategori || !hasAssign || !hasUserInput) {
         console.error("❌ [POST_PRODUK] CRITICAL: Missing required fields in FormData!");
+        console.error("  Full incoming fields:", JSON.stringify(incomingFields, null, 2));
         return NextResponse.json(
           { 
             success: false, 
@@ -277,27 +301,48 @@ export async function POST(request) {
               !hasKategori && 'kategori',
               !hasAssign && 'assign',
               !hasUserInput && 'user_input'
-            ].filter(Boolean).join(', ')
+            ].filter(Boolean).join(', '),
+            debug: {
+              incomingFields: Object.keys(incomingFields),
+              missingFields: [
+                !hasKategori && 'kategori',
+                !hasAssign && 'assign',
+                !hasUserInput && 'user_input'
+              ].filter(Boolean)
+            }
           },
           { status: 400 }
         );
       }
 
       // Forward FormData to backend with proper headers
+      const headers = {
+        ...forwardFormData.getHeaders(), // Get proper headers with boundary
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      };
+      
+      console.log("🟢 [POST_PRODUK] Sending request to backend:");
+      console.log(`  URL: ${BACKEND_URL}/api/admin/produk`);
+      console.log(`  Method: POST`);
+      console.log(`  Content-Type: ${headers['content-type'] || 'multipart/form-data'}`);
+      console.log(`  Has Authorization: ${!!headers.Authorization}`);
+      
       response = await fetch(`${BACKEND_URL}/api/admin/produk`, {
         method: "POST",
-        headers: {
-          ...forwardFormData.getHeaders(), // Get proper headers with boundary
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers,
         body: forwardFormData,
       });
     } else {
       // Handle JSON
       const body = await request.json();
       
-      console.log("🟢 [POST_PRODUK] JSON body:", body);
+      console.log("🟢 [POST_PRODUK] JSON payload received:");
+      console.log("  Full body:", JSON.stringify(body, null, 2));
+      console.log("  Critical fields check:");
+      console.log(`    kategori: ${body.kategori ? `✅ (${body.kategori})` : '❌ MISSING'}`);
+      console.log(`    assign: ${body.assign ? `✅ (${body.assign})` : '❌ MISSING'}`);
+      console.log(`    user_input: ${body.user_input ? `✅ (${body.user_input})` : '❌ MISSING'}`);
 
       response = await fetch(`${BACKEND_URL}/api/admin/produk`, {
         method: "POST",
@@ -311,6 +356,7 @@ export async function POST(request) {
     }
 
     console.log("🟢 [POST_PRODUK] Backend response status:", response.status);
+    console.log("🟢 [POST_PRODUK] Backend response headers:", JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2));
 
     // Handle non-JSON responses (e.g., HTML error pages)
     const responseText = await response.text();
@@ -319,31 +365,60 @@ export async function POST(request) {
     try {
       data = JSON.parse(responseText);
     } catch {
-      console.error("❌ [POST_PRODUK] Backend returned non-JSON response:", responseText.substring(0, 500));
+      console.error("❌ [POST_PRODUK] Backend returned non-JSON response:");
+      console.error("  Status:", response.status);
+      console.error("  Response text (first 1000 chars):", responseText.substring(0, 1000));
       return NextResponse.json(
         { 
           success: false, 
           message: "Backend error: Response bukan JSON", 
-          raw_response: responseText.substring(0, 200) 
+          raw_response: responseText.substring(0, 200),
+          status: response.status
         },
         { status: response.status || 500 }
       );
     }
 
-    console.log("🟢 [POST_PRODUK] Backend response:", data);
+    console.log("🟢 [POST_PRODUK] Backend response data:", JSON.stringify(data, null, 2));
 
     if (!response.ok) {
+      console.error("❌ [POST_PRODUK] Backend returned error:");
+      console.error("  Status:", response.status);
+      console.error("  Message:", data?.message);
+      console.error("  Errors:", JSON.stringify(data?.errors, null, 2));
+      console.error("  Full response:", JSON.stringify(data, null, 2));
+      
       return NextResponse.json(
-        { success: false, message: data?.message || "Gagal membuat produk", errors: data?.errors },
+        { 
+          success: false, 
+          message: data?.message || "Gagal membuat produk", 
+          errors: data?.errors,
+          debug: {
+            status: response.status,
+            backendResponse: data
+          }
+        },
         { status: response.status }
       );
     }
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error("❌ [POST_PRODUK] Error:", error);
+    console.error("❌ [POST_PRODUK] Unexpected error occurred:");
+    console.error("  Error name:", error.name);
+    console.error("  Error message:", error.message);
+    console.error("  Error stack:", error.stack);
+    console.error("  Full error object:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+    
     return NextResponse.json(
-      { success: false, message: error.message || "Terjadi kesalahan saat membuat produk" },
+      { 
+        success: false, 
+        message: error.message || "Terjadi kesalahan saat membuat produk",
+        debug: {
+          errorName: error.name,
+          errorMessage: error.message
+        }
+      },
       { status: 500 }
     );
   }
