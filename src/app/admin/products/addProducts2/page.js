@@ -105,10 +105,30 @@ const generateKode = (text) =>
   // ============================
   const handleSubmit = async () => {
     try {
+      // Validation
+      if (!form.nama || form.nama.trim() === "") {
+        alert("Nama produk wajib diisi!");
+        return;
+      }
+
+      // Get kategori ID dari form
+      // form.kategori adalah array, ambil ID dari index pertama
+      const kategoriId = form.kategori && form.kategori.length > 0 
+        ? form.kategori[0] 
+        : null;
+
+      if (!kategoriId) {
+        alert("Kategori wajib dipilih!");
+        return;
+      }
+
+      console.log("📤 Kategori ID yang akan dikirim:", kategoriId);
+      console.log("📤 Tipe kategori ID:", typeof kategoriId);
+
       const hasFile =
-        (form.header.type === "file" && form.header.value) ||
-        form.gambar.some((g) => g.path.type === "file" && g.path.value) ||
-        form.testimoni.some((t) => t.gambar.type === "file" && t.gambar.value);
+        (form.header?.type === "file" && form.header.value) ||
+        form.gambar.some((g) => g.path?.type === "file" && g.path?.value) ||
+        form.testimoni.some((t) => t.gambar?.type === "file" && t.gambar?.value);
 
       let payload;
       let isFormData = false;
@@ -166,50 +186,112 @@ const generateKode = (text) =>
         ? form.video.split(",").map(v => v.trim()).filter(v => v)
         : [];
         payload.append("video", JSON.stringify(videoArray));        
-        payload.append("landingpage", form.landingpage);
-        payload.append("status", form.status);
-        payload.append("user_input", JSON.stringify(form.user_input));
-        const kategoriId = form.kategori && form.kategori.length ? form.kategori[0] : null;
-        payload.append("kategori", kategoriId);
+        payload.append("landingpage", form.landingpage || "1");
+        payload.append("status", form.status || 1);
+        
+        // Get user_input dari current user (otomatis)
+        const userInputId = (() => {
+          try {
+            const userSession = localStorage.getItem("user");
+            if (userSession) {
+              const userData = JSON.parse(userSession);
+              return userData?.id || null;
+            }
+          } catch (e) {
+            console.error("Error parsing user from localStorage:", e);
+          }
+          return null;
+        })();
+        
+        if (!userInputId) {
+          alert("User input tidak ditemukan. Silakan login ulang!");
+          return;
+        }
+        
+        payload.append("user_input", String(userInputId));
+        
+        // Kategori ID - format string sesuai response sukses
+        payload.append("kategori", String(kategoriId));
       } else {
+        // Get user_input dari current user (otomatis)
+        const userInputId = (() => {
+          try {
+            const userSession = localStorage.getItem("user");
+            if (userSession) {
+              const userData = JSON.parse(userSession);
+              return userData?.id || null;
+            }
+          } catch (e) {
+            console.error("Error parsing user from localStorage:", e);
+          }
+          return null;
+        })();
+        
+        if (!userInputId) {
+          alert("User input tidak ditemukan. Silakan login ulang!");
+          return;
+        }
+
+        const kode = form.kode || generateKode(form.nama);
         payload = {
-          ...form,
-          harga_coret: Number(form.harga_coret) || 0,
-          harga_asli: Number(form.harga_asli) || 0,
-          tanggal_event: formatDateForBackend(form.tanggal_event),
-          assign: JSON.stringify(form.assign),
-          gtm: JSON.stringify(form.gtm),
-          fb_pixel: JSON.stringify(form.fb_pixel),
-          event_fb_pixel: JSON.stringify(
-            form.event_fb_pixel.map((ev) => ({ event: ev }))
-          ),
-          gambar: JSON.stringify(
-            form.gambar.map((g) => ({ path: null, caption: g.caption }))
-          ),
+          kategori: String(kategoriId), // String format sesuai response
+          user_input: userInputId, // Number
+          nama: form.nama,
+          kode: kode,
+          url: "/" + kode,
+          deskripsi: form.deskripsi || "",
+          harga_coret: String(form.harga_coret || "0"),
+          harga_asli: String(form.harga_asli || "0"),
+          tanggal_event: formatDateForBackend(form.tanggal_event) || "",
+          landingpage: String(form.landingpage || "1"),
+          status: String(form.status || 1),
+          assign: JSON.stringify(form.assign || []),
+          list_point: JSON.stringify(form.list_point || []),
           testimoni: JSON.stringify(
             form.testimoni.map((t) => ({
               gambar: null,
-              nama: t.nama,
-              deskripsi: t.deskripsi,
+              nama: t.nama || "",
+              deskripsi: t.deskripsi || "",
             }))
+          ),
+          video: JSON.stringify(
+            form.video
+              ? form.video.split(",").map((v) => v.trim()).filter((v) => v)
+              : []
+          ),
+          custom_field: JSON.stringify(
+            form.custom_field.map((f, idx) => ({
+              nama_field: f.label || f.key || "",
+              urutan: idx + 1,
+            }))
+          ),
+          fb_pixel: JSON.stringify(form.fb_pixel || []),
+          event_fb_pixel: JSON.stringify(
+            (form.event_fb_pixel || []).map((ev) => ({ event: ev }))
+          ),
+          gtm: JSON.stringify(form.gtm || []),
+          gambar: JSON.stringify(
+            form.gambar.map((g) => ({ path: null, caption: g.caption || "" }))
           ),
         };
       }
 
-      console.log("FINAL PAYLOAD:", payload);
+      console.log("📤 FINAL PAYLOAD:", isFormData ? "FormData" : payload);
+      if (!isFormData) {
+        console.log("📤 Kategori dalam payload:", payload.kategori);
+        console.log("📤 User Input dalam payload:", payload.user_input);
+      }
 
-      const res = await fetch(
-        "https://onedashboardapi-production.up.railway.app/api/admin/produk",
-        {
-          method: "POST",
-          headers: {
-            ...(isFormData ? {} : { "Content-Type": "application/json" }),
-            Accept: "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          body: isFormData ? payload : JSON.stringify(payload),
-        }
-      );
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/admin/produk", {
+        method: "POST",
+        headers: {
+          ...(isFormData ? {} : { "Content-Type": "application/json" }),
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: isFormData ? payload : JSON.stringify(payload),
+      });
 
       const data = await res.json();
 
@@ -230,58 +312,62 @@ const generateKode = (text) =>
 
 const [kategoriOptions, setKategoriOptions] = useState([]);
 const [userOptions, setUserOptions] = useState([]);
+const [isLoadingKategori, setIsLoadingKategori] = useState(true);
 
 useEffect(() => {
   async function fetchInitialData() {
     try {
       const token = localStorage.getItem("token");
+      if (!token) {
+        setIsLoadingKategori(false);
+        return;
+      }
+
       const headers = { Authorization: `Bearer ${token}` };
 
-      // 1️⃣ Fetch kategori
-      const kategoriRes = await fetch(
-        "https://onedashboardapi-production.up.railway.app/api/admin/kategori-produk",
-        { headers }
-      );
+      // 1️⃣ Fetch kategori dari API proxy
+      const kategoriRes = await fetch("/api/admin/kategori-produk", { headers });
       const kategoriData = await kategoriRes.json();
-      const kategoriOpts = Array.isArray(kategoriData.data)
-        ? kategoriData.data.map((k) => ({ label: k.nama, value: k.id }))
+      
+      console.log("📋 Kategori Data:", kategoriData);
+      
+      // Filter hanya kategori yang aktif (status === "1")
+      const activeCategories = Array.isArray(kategoriData.data)
+        ? kategoriData.data.filter((k) => k.status === "1" || k.status === 1)
         : [];
-      setKategoriOptions(kategoriOpts);
-
-      // 2️⃣ Fetch produk (misal edit mode)
-      const produkRes = await fetch(
-        "https://onedashboardapi-production.up.railway.app/api/admin/produk/1",
-        { headers }
-      );
-      const produkData = await produkRes.json();
-
-      // 3️⃣ Fetch users
-      const usersRes = await fetch(
-        "https://onedashboardapi-production.up.railway.app/api/admin/users",
-        { headers }
-      );
-      const usersJson = await usersRes.json();
-      const userOpts = Array.isArray(usersJson.data)
-        ? usersJson.data.map((u) => ({ label: u.nama || u.name, value: u.id }))
-        : [];
-      setUserOptions(userOpts);
-
-      // ✅ generate kode otomatis jika null
-      const kodeGenerated =
-        produkData.kode || generateKode(produkData.nama || "produk-baru");
-
-      setForm((f) => ({
-        ...f,
-        ...produkData,
-        kategori: produkData.kategori_rel ? [produkData.kategori_rel.id] : [],
-        assign: produkData.assign_rel ? produkData.assign_rel.map((u) => u.id) : [],
-        user_input: produkData.user_input_rel ? [produkData.user_input_rel.id] : [],
-        custom_field: [],
-        kode: kodeGenerated,
-        url: "/" + kodeGenerated,
+      
+      // Map kategori dengan ID sebagai value (sesuai format backend)
+      const kategoriOpts = activeCategories.map((k) => ({
+        label: k.nama,
+        value: k.id, // ID kategori untuk digunakan sebagai value
+        id: k.id,    // Simpan ID juga untuk referensi
       }));
+      
+      console.log("✅ Kategori Options:", kategoriOpts);
+      setKategoriOptions(kategoriOpts);
+      setIsLoadingKategori(false);
+
+      // 2️⃣ Fetch users dari API proxy
+      const usersRes = await fetch("/api/admin/users", { headers });
+      const usersJson = await usersRes.json();
+      
+      console.log("👥 Users Data:", usersJson);
+      
+      // Filter hanya user yang aktif
+      const activeUsers = Array.isArray(usersJson.data)
+        ? usersJson.data.filter((u) => u.status === "1" || u.status === 1)
+        : [];
+      
+      const userOpts = activeUsers.map((u) => ({
+        label: u.nama || u.name,
+        value: u.id,
+      }));
+      
+      console.log("✅ User Options:", userOpts);
+      setUserOptions(userOpts);
     } catch (err) {
-      console.error("Fetch initial data error:", err);
+      console.error("❌ Fetch initial data error:", err);
+      setIsLoadingKategori(false);
     }
   }
 
@@ -316,14 +402,31 @@ useEffect(() => {
 />
       </div>
 <div>
-  <label className="font-semibold">Kategori</label>
-<Dropdown
-  className="w-full"
-  value={form.kategori[0] || null}
-  options={kategoriOptions}
-  onChange={(e) => handleChange("kategori", [e.value])}
-  placeholder="Pilih Kategori"
-/>
+  <label className="font-semibold">
+    Kategori <span className="required">*</span>
+  </label>
+  <Dropdown
+    className="w-full"
+    value={form.kategori && form.kategori.length > 0 ? form.kategori[0] : null}
+    options={kategoriOptions}
+    optionLabel="label"
+    optionValue="value"
+    onChange={(e) => {
+      const selectedId = e.value;
+      console.log("✅ Kategori dipilih - ID:", selectedId, "Type:", typeof selectedId);
+      handleChange("kategori", selectedId ? [selectedId] : []);
+    }}
+    placeholder={isLoadingKategori ? "Memuat kategori..." : "Pilih Kategori"}
+    showClear
+    filter
+    filterPlaceholder="Cari kategori..."
+    disabled={isLoadingKategori}
+  />
+  {kategoriOptions.length === 0 && !isLoadingKategori && (
+    <small style={{ color: "#ef4444" }}>
+      ⚠️ Tidak ada kategori tersedia. Silakan tambahkan kategori terlebih dahulu.
+    </small>
+  )}
 </div>
 
 
