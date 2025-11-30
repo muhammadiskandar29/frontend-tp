@@ -309,9 +309,12 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         console.log("📤 [SUBMIT_PRODUK] Appending required fields to FormData...");
         
         // 1. kategori (REQUIRED - MUST BE FIRST)
-        // IMPORTANT: Backend menerima kategori sebagai string numerik, contoh: "2"
-        // Format: formData.append("kategori", String(2)) → terkirim sebagai "2" (string numerik)
-        // Hanya kirim ID (string/number), BUKAN object atau array
+        // IMPORTANT: Berdasarkan response GET /api/admin/produk/{id}:
+        // - kategori: 7 (number) di response GET
+        // - Di FormData: harus string (karena FormData hanya bisa string)
+        // - Di JSON payload: number (sesuai response GET)
+        // Format: formData.append("kategori", String(7)) → terkirim sebagai "7" (string)
+        // Backend akan parse string "7" menjadi number 7
         // CRITICAL: kategori diambil dari kategori_rel (relasi), tapi untuk create hanya perlu ID
         // Jika null, append null sebagai string "null" (biar backend yang handle error-nya)
         if (kategoriId !== null && kategoriId !== undefined) {
@@ -320,21 +323,25 @@ const [isSubmitting, setIsSubmitting] = useState(false);
           console.log("  ✅ kategori appended:");
           console.log("    kategoriId:", kategoriId, "(type: number)");
           console.log("    kategoriString:", kategoriString, "(type: string)");
+          console.log("    Note: FormData requires string, backend will parse to number");
         } else {
           payload.append("kategori", "null");
           console.warn("  ⚠️ kategori is null - appending 'null' as string");
         }
         console.log("    FormData key: 'kategori', value:", kategoriId !== null && kategoriId !== undefined ? String(kategoriId) : "null");
-        console.log("    ⚠️ IMPORTANT: kategori harus string numerik (ID), bukan object relasi");
+        console.log("    ⚠️ IMPORTANT: kategori harus ID (number), dikirim sebagai string di FormData");
 
         // 2. nama (REQUIRED)
         payload.append("nama", form.nama || "");
         console.log("  ✅ nama:", form.nama || "");
 
         // 3. user_input (REQUIRED)
-        // IMPORTANT: user_input harus integer (number), tapi FormData hanya bisa string
-        // Format: formData.append("user_input", String(2)) → terkirim sebagai "2" (string literal)
-        // Backend akan parse string "2" menjadi integer 2
+        // IMPORTANT: Berdasarkan response GET /api/admin/produk/{id}:
+        // - user_input: 11 (number) di response GET
+        // - Di FormData: harus string (karena FormData hanya bisa string)
+        // - Di JSON payload: number (sesuai response GET)
+        // Format: formData.append("user_input", String(11)) → terkirim sebagai "11" (string)
+        // Backend akan parse string "11" menjadi number 11
         // JANGAN kirim sebagai JSON atau array
         // CRITICAL: user_input diambil dari user yang sedang login (currentUser.id)
         // Jika null, append null sebagai string "null" (biar backend yang handle error-nya)
@@ -349,11 +356,14 @@ const [isSubmitting, setIsSubmitting] = useState(false);
           console.warn("  ⚠️ user_input is null - appending 'null' as string");
         }
         console.log("    FormData key: 'user_input', value:", userInputId !== null && userInputId !== undefined ? String(userInputId) : "null");
-        console.log("    ⚠️ IMPORTANT: user_input harus dari currentUser.id (user yang sedang login)");
+        console.log("    ⚠️ IMPORTANT: user_input harus ID (number), dikirim sebagai string di FormData");
 
         // 4. assign (REQUIRED)
-        // IMPORTANT: Backend mengharapkan assign sebagai string JSON, bukan array
-        // Format: formData.append("assign", JSON.stringify([1,5,7])) → terkirim sebagai "[1,5,7]"
+        // IMPORTANT: Berdasarkan response GET /api/admin/produk/{id}:
+        // - assign: "[14]" (string JSON array) di response GET
+        // - Di FormData: string JSON array "[14]"
+        // - Di JSON payload: string JSON array "[14]"
+        // Format: formData.append("assign", JSON.stringify([14])) → terkirim sebagai "[14]" (string JSON)
         // JANGAN gunakan "assign[]" atau looping append
         // CRITICAL: assign diambil dari relasi user, menggunakan string array
         // Jika null atau empty, append null sebagai string "null" (biar backend yang handle error-nya)
@@ -490,12 +500,13 @@ const [isSubmitting, setIsSubmitting] = useState(false);
           landingpage: form.landingpage || "1",
           status: form.status || 1,
           // REQUIRED FIELDS
-          // IMPORTANT: Backend menerima kategori sebagai string numerik, contoh: "2"
-          // Format: kategori: String(2) → terkirim sebagai "2" (string numerik)
-          // Hanya kirim ID (string), BUKAN object atau array
+          // IMPORTANT: Berdasarkan response GET /api/admin/produk/{id}:
+          // - kategori: 7 (number) - bukan string
+          // - user_input: 11 (number) - bukan string
+          // - assign: "[14]" (string JSON array) - string JSON, bukan array
           // CRITICAL: kategori diambil dari kategori_rel (relasi), tapi untuk create hanya perlu ID
-          // Jika null, kirim null (biar backend yang handle error-nya)
-          kategori: kategoriId !== null && kategoriId !== undefined ? String(kategoriId) : null,
+          // Di JSON payload, kirim sebagai number (sesuai response GET)
+          kategori: kategoriId !== null && kategoriId !== undefined ? kategoriId : null,
           // IMPORTANT: assign harus string JSON, bukan array
           // Format: assign: JSON.stringify([1,5,7]) → terkirim sebagai "[1,5,7]"
           // CRITICAL: assign diambil dari relasi user, menggunakan string array
@@ -503,7 +514,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
           assign: normalizedAssign && normalizedAssign.length > 0 ? JSON.stringify(normalizedAssign) : null,
           // IMPORTANT: user_input harus integer (number), bukan string
           // Di JSON payload, langsung kirim sebagai number (bukan string)
-          // Backend akan menerima sebagai integer
+          // Backend akan menerima sebagai integer (sesuai response GET)
           // CRITICAL: user_input diambil dari user yang sedang login (currentUser.id)
           // Jika null, kirim null (biar backend yang handle error-nya)
           user_input: userInputId,

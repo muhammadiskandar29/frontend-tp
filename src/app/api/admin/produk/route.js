@@ -344,22 +344,25 @@ export async function POST(request) {
             // This preserves the original value without premature String() conversion
             
             // CRITICAL: For kategori only, ensure it is sent correctly
-            // Based on backend response format:
-            // - kategori: "2" (string numerik)
+            // Based on GET /api/admin/produk/{id} response format:
+            // - kategori: 7 (number) in response, but FormData requires string
+            // - user_input: 11 (number) in response, but FormData requires string
+            // - assign: "[14]" (string JSON array) in response
             // assign and user_input validation removed - will be sent as null
             if (key === "kategori") {
               // Ensure kategori is explicitly converted to string
-              // This guarantees it is sent as string, not as other types
+              // Backend will parse string "7" to number 7 (matching GET response format)
               const stringValue = String(value);
               console.log(`  🔑 Critical field ${key}:`);
               console.log(`    Original value: ${value} (type: ${typeof value})`);
               console.log(`    String value: "${stringValue}" (type: ${typeof stringValue})`);
-              console.log(`    Appending as string: "${stringValue}"`);
+              console.log(`    Appending as string: "${stringValue}" (backend will parse to number)`);
               forwardFormData.append(key, stringValue);
             } else {
               // For other fields (including assign and user_input), append as-is
               // form-data package will handle conversion
-              // assign and user_input will be sent as "null" string if null
+              // assign: string JSON array "[14]" (already correct format)
+              // user_input: will be sent as "null" string if null, or "11" if number
               forwardFormData.append(key, value);
             }
           }
