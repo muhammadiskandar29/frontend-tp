@@ -565,14 +565,46 @@ export async function POST(request) {
       console.error("  Errors:", JSON.stringify(data?.errors, null, 2));
       console.error("  Full response:", JSON.stringify(data, null, 2));
 
+      // Extract detailed error information
+      const errorFields = data?.errors ? Object.keys(data.errors) : [];
+      const errorDetails = {};
+      
+      if (data?.errors && typeof data.errors === 'object') {
+        errorFields.forEach((field) => {
+          const fieldErrors = Array.isArray(data.errors[field]) 
+            ? data.errors[field] 
+            : [data.errors[field]];
+          errorDetails[field] = fieldErrors;
+        });
+      }
+
+      // Build detailed error message
+      let detailedMessage = data?.message || "Gagal membuat produk";
+      if (errorFields.length > 0) {
+        detailedMessage += `\n\nField yang error: ${errorFields.join(", ")}`;
+        errorFields.forEach((field) => {
+          const errors = Array.isArray(data.errors[field]) 
+            ? data.errors[field] 
+            : [data.errors[field]];
+          errors.forEach((err) => {
+            detailedMessage += `\n- ${field}: ${err}`;
+          });
+        });
+      }
+
       return NextResponse.json(
         {
           success: false,
           message: data?.message || "Gagal membuat produk",
-          errors: data?.errors,
+          detailedMessage: detailedMessage,
+          errors: data?.errors || errorDetails,
+          errorFields: errorFields,
+          errorCount: errorFields.length,
           debug: {
             status: response.status,
             backendResponse: data,
+            errorFields: errorFields,
+            errorDetails: errorDetails,
           },
         },
         { status: response.status }
