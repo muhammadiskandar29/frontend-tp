@@ -181,27 +181,11 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         return;
       }
 
-      const kategoriId = (() => {
-        if (!form.kategori || form.kategori === null || form.kategori === undefined || form.kategori === "") {
-          return null;
-        }
-        if (typeof form.kategori === "object" && form.kategori !== null) {
-          return null;
-        }
-        if (Array.isArray(form.kategori)) {
-          return null;
-        }
-        const parsed = typeof form.kategori === "number" ? form.kategori : Number(form.kategori);
-        if (Number.isNaN(parsed) || parsed <= 0) {
-          return null;
-        }
-        return parsed;
-      })();
+      const kategoriId = Number(form.kategori);
 
-      if (!kategoriId || kategoriId <= 0) {
+      if (!kategoriId) {
         alert("Kategori wajib dipilih!");
         setIsSubmitting(false);
-        setSubmitStatus("");
         return;
       }
 
