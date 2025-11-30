@@ -199,19 +199,51 @@ export default function Page() {
         return Number.isNaN(parsed) ? null : parsed;
       })();
 
+      // Validate and extract kategori BEFORE FormData construction
+      console.log("🔍 [SUBMIT_PRODUK] Validating kategori field...");
+      console.log("  form.kategori value:", form.kategori);
+      console.log("  form.kategori type:", typeof form.kategori);
+      console.log("  form.kategori is null:", form.kategori === null);
+      console.log("  form.kategori is undefined:", form.kategori === undefined);
+      console.log("  form.kategori is empty string:", form.kategori === "");
+
       const kategoriId = (() => {
-        if (form.kategori === null || form.kategori === undefined || form.kategori === "") return null;
+        // Check for null, undefined, or empty string
+        if (form.kategori === null || form.kategori === undefined || form.kategori === "") {
+          console.error("❌ [SUBMIT_PRODUK] kategori is null/undefined/empty");
+          return null;
+        }
         const parsed = Number(form.kategori);
-        return Number.isNaN(parsed) ? null : parsed;
+        if (Number.isNaN(parsed)) {
+          console.error("❌ [SUBMIT_PRODUK] kategori is not a valid number:", form.kategori);
+          return null;
+        }
+        console.log("✅ [SUBMIT_PRODUK] kategori is valid:", parsed);
+        return parsed;
       })();
 
-      // Validasi required fields
-      if (kategoriId === null) {
-        alert("Kategori wajib dipilih!");
+      // Early validation - throw error if kategori is missing
+      if (kategoriId === null || kategoriId === undefined) {
+        const errorMsg = "Kategori wajib dipilih! Silakan pilih kategori sebelum menyimpan produk.";
+        console.error("❌ [SUBMIT_PRODUK] CRITICAL: kategori is missing!");
+        console.error("  form.kategori:", form.kategori);
+        alert(errorMsg);
         setIsSubmitting(false);
         setSubmitStatus("");
         return;
       }
+
+      // Final validation - ensure kategoriId is a valid number
+      if (Number.isNaN(kategoriId) || kategoriId <= 0) {
+        const errorMsg = "Kategori tidak valid! Silakan pilih kategori yang benar.";
+        console.error("❌ [SUBMIT_PRODUK] CRITICAL: kategoriId is invalid:", kategoriId);
+        alert(errorMsg);
+        setIsSubmitting(false);
+        setSubmitStatus("");
+        return;
+      }
+
+      console.log("✅ [SUBMIT_PRODUK] kategori validation passed. kategoriId:", kategoriId);
 
       if (normalizedAssign.length === 0) {
         alert("Penanggung Jawab (Assign By) wajib dipilih minimal 1 user!");
@@ -234,6 +266,15 @@ export default function Page() {
         setSubmitStatus("Mengompres & menyiapkan berkas media...");
         payload = new FormData();
         isFormData = true;
+
+        // ===== CRITICAL: Append kategori FIRST, before any file processing =====
+        console.log("📤 [SUBMIT_PRODUK] Appending kategori to FormData...");
+        console.log("  kategoriId:", kategoriId);
+        console.log("  kategoriId as string:", String(kategoriId));
+        
+        // Ensure kategori is appended with correct field name "kategori"
+        payload.append("kategori", String(kategoriId));
+        console.log("✅ [SUBMIT_PRODUK] kategori appended to FormData successfully");
 
         // Process all files: convert to JPG and compress
         try {
@@ -306,8 +347,7 @@ export default function Page() {
         // user_input adalah ID user yang membuat produk (current user) - harus number
         // FormData akan convert number ke string, tapi backend bisa parse
         payload.append("user_input", userInputId);
-        // kategori harus string sesuai dokumentasi: "kategori": "2"
-        payload.append("kategori", String(kategoriId));
+        // NOTE: kategori sudah di-append di awal FormData construction (line ~237)
       } else {
         payload = {
           ...form,
@@ -338,9 +378,43 @@ export default function Page() {
         };
       }
 
+      // Final verification: Ensure kategori is present before sending
+      console.log("🔍 [SUBMIT_PRODUK] Final verification before sending:");
+      console.log("  kategoriId:", kategoriId);
+      console.log("  kategoriId type:", typeof kategoriId);
+      console.log("  kategoriId is valid:", kategoriId !== null && kategoriId !== undefined && !Number.isNaN(kategoriId));
+      
+      if (isFormData) {
+        // Verify kategori exists in FormData
+        const kategoriValue = payload.get("kategori");
+        console.log("  kategori in FormData:", kategoriValue);
+        console.log("  kategori in FormData type:", typeof kategoriValue);
+        
+        if (!kategoriValue || kategoriValue === "null" || kategoriValue === "") {
+          console.error("❌ [SUBMIT_PRODUK] CRITICAL: kategori is missing or invalid in FormData!");
+          alert("Kategori tidak ditemukan dalam data yang akan dikirim. Silakan refresh halaman dan coba lagi.");
+          setIsSubmitting(false);
+          setSubmitStatus("");
+          return;
+        }
+        console.log("✅ [SUBMIT_PRODUK] kategori verified in FormData:", kategoriValue);
+      } else {
+        // Verify kategori exists in JSON payload
+        if (!payload.kategori || payload.kategori === null || payload.kategori === "") {
+          console.error("❌ [SUBMIT_PRODUK] CRITICAL: kategori is missing or invalid in JSON payload!");
+          alert("Kategori tidak ditemukan dalam data yang akan dikirim. Silakan refresh halaman dan coba lagi.");
+          setIsSubmitting(false);
+          setSubmitStatus("");
+          return;
+        }
+        console.log("✅ [SUBMIT_PRODUK] kategori verified in JSON payload:", payload.kategori);
+      }
+
       console.log("🚀 [SUBMIT_PRODUK] Payload summary:", {
         hasFile,
+        isFormData,
         kategori: kategoriId,
+        kategoriString: String(kategoriId),
         assign: normalizedAssign,
         user_input: userInputId,
       });
@@ -555,7 +629,13 @@ useEffect(() => {
               optionLabel="label"
               optionValue="value"
               onChange={(e) => {
-                handleChange("kategori", e.value ?? "");
+                // Ensure kategori is properly set - use null if cleared, otherwise use the value
+                const newValue = e.value !== null && e.value !== undefined ? String(e.value) : "";
+                console.log("🔄 [KATEGORI_DROPDOWN] onChange triggered:");
+                console.log("  e.value:", e.value);
+                console.log("  newValue:", newValue);
+                handleChange("kategori", newValue);
+                console.log("✅ [KATEGORI_DROPDOWN] form.kategori updated to:", newValue);
               }}
               placeholder="Pilih Kategori"
               showClear
