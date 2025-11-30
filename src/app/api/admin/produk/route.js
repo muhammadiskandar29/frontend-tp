@@ -1,7 +1,7 @@
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
-import FormData from "form-data";
+import { FormData, File } from "undici";
 
 const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "http://3.105.234.181:8000";
 
@@ -170,8 +170,8 @@ export async function POST(request) {
       // Convert images to WebP in frontend before sending to backend
       const incomingFormData = await request.formData();
       
-      // Create new FormData using form-data package for better server-side compatibility
-      const forwardFormData = new FormData();
+      // Create new FormData using undici (native Web FormData)
+      const forward = new FormData();
       
       console.log("🟢 [POST_PRODUK] Processing FormData entries (converting images to WebP):");
       
@@ -209,53 +209,41 @@ export async function POST(request) {
             const webpBuffer = await convertToWebP(buffer, value.type, value.name);
             
             if (webpBuffer) {
-              // Conversion successful - append buffer directly to form-data
+              // Conversion successful - create new File from buffer
               // Change filename: header1.png → header1.webp
               const webpFilename = value.name.replace(/\.[^/.]+$/, "") + ".webp";
               
-              // Append buffer directly to form-data (more compatible)
-              forwardFormData.append(key, webpBuffer, {
-                filename: webpFilename,
-                contentType: "image/webp"
-              });
+              // Create File object from buffer for undici FormData
+              const webpFile = new File([webpBuffer], webpFilename, { type: "image/webp" });
+              forward.append(key, webpFile);
               
               console.log(`  ✅ Converted: ${value.name} → ${webpFilename} (${(value.size / 1024).toFixed(2)} KB → ${(webpBuffer.length / 1024).toFixed(2)} KB)`);
             } else {
-              // Conversion failed - use original
+              // Conversion failed - use original file
               console.log(`  ⚠️ Conversion failed, using original: ${value.name}`);
-              const originalBuffer = Buffer.from(arrayBuffer);
-              forwardFormData.append(key, originalBuffer, {
-                filename: value.name,
-                contentType: value.type
-              });
+              forward.append(key, value);
             }
           } else {
             // Non-image file, forward as-is
             console.log(`  📁 ${key}: [File] ${value.name} (${(value.size / 1024).toFixed(2)} KB) - forwarding as-is`);
-            const arrayBuffer = await value.arrayBuffer();
-            const fileBuffer = Buffer.from(arrayBuffer);
-            forwardFormData.append(key, fileBuffer, {
-              filename: value.name,
-              contentType: value.type
-            });
+            forward.append(key, value);
           }
         } else {
           // Handle all non-file values (string, number, etc.)
-          // Convert to string to ensure compatibility
-          // Important: Even empty strings should be forwarded
+          // Convert to string and append directly
           const stringValue = value === null || value === undefined ? "" : String(value);
           console.log(`  📝 ${key}: ${stringValue.substring(0, 100)}${stringValue.length > 100 ? "..." : ""} (type: ${typeof value})`);
           // Always append, even if empty - backend might need it
-          forwardFormData.append(key, stringValue);
+          forward.append(key, stringValue);
         }
       }
       
       // Log critical fields to verify they're being forwarded
       console.log("🟢 [POST_PRODUK] Critical fields check:");
-      const criticalFields = ['kategori', 'assign', 'user_input', 'nama'];
+      const requiredFields = ['kategori', 'assign', 'user_input', 'nama'];
       const entriesMap = new Map(allEntries.map(e => [e.key, e.value]));
       
-      for (const field of criticalFields) {
+      for (const field of requiredFields) {
         if (entriesMap.has(field)) {
           const value = entriesMap.get(field);
           const stringValue = typeof value === 'string' ? value : String(value);
@@ -315,23 +303,30 @@ export async function POST(request) {
         );
       }
 
-      // Forward FormData to backend with proper headers
-      const headers = {
-        ...forwardFormData.getHeaders(), // Get proper headers with boundary
-        Accept: "application/json",
-        Authorization: `Bearer ${token}`,
-      };
+      // Final verification: Check all keys in forward FormData
+      const finalKeys = [...forward.keys()];
+      console.log("🟢 [POST_PRODUK] Final keys verification:");
+      console.log("  Final keys:", finalKeys);
       
+      const criticalFields = ['kategori', 'assign', 'user_input', 'nama'];
+      for (const field of criticalFields) {
+        const exists = finalKeys.includes(field);
+        console.log(`  ${field}: ${exists ? '✅' : '❌ MISSING'}`);
+      }
+      
+      // Forward FormData to backend
+      // Don't set Content-Type manually - let undici handle boundary automatically
       console.log("🟢 [POST_PRODUK] Sending request to backend:");
       console.log(`  URL: ${BACKEND_URL}/api/admin/produk`);
       console.log(`  Method: POST`);
-      console.log(`  Content-Type: ${headers['content-type'] || 'multipart/form-data'}`);
-      console.log(`  Has Authorization: ${!!headers.Authorization}`);
+      console.log(`  Total fields: ${finalKeys.length}`);
       
       response = await fetch(`${BACKEND_URL}/api/admin/produk`, {
         method: "POST",
-        headers,
-        body: forwardFormData,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: forward,
       });
     } else {
       // Handle JSON
