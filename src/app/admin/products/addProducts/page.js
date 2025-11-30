@@ -181,11 +181,27 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         return;
       }
 
-      const kategoriId = form.kategori;
+      const kategoriId = (() => {
+        if (!form.kategori || form.kategori === null || form.kategori === undefined) {
+          return null;
+        }
+        if (typeof form.kategori === "object" && form.kategori !== null) {
+          return null;
+        }
+        if (Array.isArray(form.kategori)) {
+          return null;
+        }
+        const parsed = typeof form.kategori === "number" ? form.kategori : Number(form.kategori);
+        if (Number.isNaN(parsed) || parsed <= 0) {
+          return null;
+        }
+        return parsed;
+      })();
 
-      if (!kategoriId) {
+      if (!kategoriId || kategoriId <= 0) {
         alert("Kategori wajib dipilih!");
         setIsSubmitting(false);
+        setSubmitStatus("");
         return;
       }
 
@@ -257,9 +273,9 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         payload = new FormData();
         isFormData = true;
 
-        payload.append("kategori", kategoriId);
+        payload.append("kategori", String(kategoriId));
         payload.append("nama", form.nama);
-        payload.append("user_input", String(userInputId));
+        payload.append("user_input", userInputId);
         payload.append("assign", JSON.stringify(normalizedAssign));
 
         const kode = generateKode(form.nama);
@@ -334,9 +350,9 @@ const [isSubmitting, setIsSubmitting] = useState(false);
           : [];
 
         payload = {
-          kategori: kategori?.toString(),
+          kategori: String(kategoriId),
           nama: form.nama,
-          user_input: Number(userInputId),
+          user_input: userInputId,
           assign: JSON.stringify(normalizedAssign),
           kode: kode,
           url: "/" + kode,
