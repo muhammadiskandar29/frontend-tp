@@ -334,9 +334,9 @@ const [isSubmitting, setIsSubmitting] = useState(false);
           : [];
 
         payload = {
-          kategori: kategoriId,
+          kategori: kategori?.toString(),
           nama: form.nama,
-          user_input: userInputId,
+          user_input: Number(userInputId),
           assign: JSON.stringify(normalizedAssign),
           kode: kode,
           url: "/" + kode,
