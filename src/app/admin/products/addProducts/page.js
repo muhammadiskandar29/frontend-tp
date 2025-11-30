@@ -181,7 +181,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         return;
       }
 
-      const kategoriId = Number(form.kategori);
+      const kategoriId = form.kategori;
 
       if (!kategoriId) {
         alert("Kategori wajib dipilih!");
@@ -584,12 +584,11 @@ useEffect(() => {
               value={form.kategori ?? ""}   // hindari null
               options={kategoriOptions}
               optionLabel="label"
-              optionValue="value"
+              optionValue={(option) => Number(option.value)}
               onChange={(e) => {
-                const val = Number(e.value);
-                console.log("Kategori dipilih:", val);
-                handleChange("kategori", val);
-              }}
+                const val = e.value ? Number(e.value) : null;
+                setForm((p) => ({ ...p, kategori: val }));
+              }}              
               placeholder={isLoadingKategori ? "Memuat kategori..." : "Pilih Kategori"}
               showClear
               filter
