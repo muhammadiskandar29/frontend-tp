@@ -50,8 +50,8 @@ export default function Page() {
   // ============================
   const defaultForm = {
   id: null,
-  kategori: null,
-  user_input: null,
+  kategori: "", // disimpan sebagai string numerik (ID kategori), contoh: "2"
+  user_input: null, // Default null (dihapus fungsi validasinya)
   nama: "",
   url: "",
   kode: "",
@@ -182,7 +182,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
       }
 
       const kategoriId = (() => {
-        if (!form.kategori || form.kategori === null || form.kategori === undefined) {
+        if (!form.kategori || form.kategori === null || form.kategori === undefined || form.kategori === "") {
           return null;
         }
         if (typeof form.kategori === "object" && form.kategori !== null) {
@@ -275,7 +275,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
 
         payload.append("kategori", String(kategoriId));
         payload.append("nama", form.nama);
-        payload.append("user_input", userInputId);
+        payload.append("user_input", String(userInputId));
         payload.append("assign", JSON.stringify(normalizedAssign));
 
         const kode = generateKode(form.nama);
@@ -350,7 +350,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
           : [];
 
         payload = {
-          kategori: String(kategoriId),
+          kategori: kategoriId,
           nama: form.nama,
           user_input: userInputId,
           assign: JSON.stringify(normalizedAssign),
@@ -504,7 +504,7 @@ useEffect(() => {
       
       const kategoriOpts = activeCategories.map((k) => ({
         label: k.nama,
-        value: k.id,
+        value: String(k.id),
       }));
       setKategoriOptions(kategoriOpts);
       setIsLoadingKategori(false);
@@ -597,21 +597,21 @@ useEffect(() => {
             </label>
             <Dropdown
               className="w-full form-input"
-              value={form.kategori ?? ""}   // hindari null
+              value={form.kategori || null}
               options={kategoriOptions}
               optionLabel="label"
-              optionValue={(option) => Number(option.value)}
+              optionValue="value"
               onChange={(e) => {
-                const val = e.value ? Number(e.value) : null;
-                setForm((p) => ({ ...p, kategori: val }));
-              }}              
+                const newValue = e.value !== null && e.value !== undefined ? String(e.value) : "";
+                handleChange("kategori", newValue);
+              }}
               placeholder={isLoadingKategori ? "Memuat kategori..." : "Pilih Kategori"}
               showClear
               filter
               filterPlaceholder="Cari kategori..."
               disabled={isLoadingKategori}
+              loading={isLoadingKategori}
             />
-
             {kategoriOptions.length === 0 && !isLoadingKategori && (
               <small className="field-hint" style={{ color: "#ef4444" }}>
                 ⚠️ Tidak ada kategori tersedia. Silakan tambahkan kategori terlebih dahulu.

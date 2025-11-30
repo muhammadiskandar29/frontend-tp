@@ -329,15 +329,13 @@ export async function POST(request) {
           
           // Handle null/undefined explicitly
           // form-data package doesn't handle null/undefined well, so we need to convert them
-          // Also handle string "null" which should not be sent
-          if (value === null || value === undefined || (typeof value === "string" && value.trim() === "null")) {
-            // For non-critical fields, convert to empty string
+          if (value === null || value === undefined) {
+            // For null/undefined, convert to empty string to maintain form-data compatibility
+            // But log it so we know it happened
             if (value === null) {
               console.warn(`  ⚠️ ${key}: null value converted to empty string for form-data compatibility`);
-            } else if (value === undefined) {
-              console.warn(`  ⚠️ ${key}: undefined value converted to empty string for form-data compatibility`);
             } else {
-              console.warn(`  ⚠️ ${key}: string "null" value converted to empty string for form-data compatibility`);
+              console.warn(`  ⚠️ ${key}: undefined value converted to empty string for form-data compatibility`);
             }
             forwardFormData.append(key, "");
           } else {
@@ -345,83 +343,107 @@ export async function POST(request) {
             // form-data package will automatically convert to string during transmission
             // This preserves the original value without premature String() conversion
             
-            // CRITICAL: Ensure critical fields are sent correctly
+            // CRITICAL: For kategori, assign, and user_input, ensure they are sent correctly
             // Based on backend response format:
-            // - kategori: "7" (string) - backend expects string
-            // - user_input: 11 (number) - backend expects number, but FormData converts to string
-            // - assign: "[5]" (string JSON array) - backend expects string JSON
-            if (key === "kategori") {
+            // - kategori: "2" (string numerik)
+            // - assign: "[1,2,3]" (string JSON array)
+            // - user_input: "2" (string, backend will parse to number 2)
+            if (key === "kategori" || key === "assign" || key === "user_input") {
+              // Ensure these critical fields are explicitly converted to string
+              // This guarantees they are sent as string, not as other types
               const stringValue = String(value);
-              console.log(`  🔑 [KATEGORI] Appending: "${stringValue}" (original: ${value}, type: ${typeof value})`);
-              forwardFormData.append(key, stringValue);
-            } else if (key === "user_input") {
-              const numValue = typeof value === "number" ? value : Number(value);
-              const finalValue = !Number.isNaN(numValue) ? String(numValue) : String(value);
-              console.log(`  🔑 [USER_INPUT] Appending: "${finalValue}" (original: ${value}, type: ${typeof value})`);
-              forwardFormData.append(key, finalValue);
-            } else if (key === "assign") {
-              const stringValue = String(value);
-              console.log(`  🔑 [ASSIGN] Appending: "${stringValue}" (original: ${value}, type: ${typeof value})`);
+              console.log(`  🔑 Critical field ${key}:`);
+              console.log(`    Original value: ${value} (type: ${typeof value})`);
+              console.log(`    String value: "${stringValue}" (type: ${typeof stringValue})`);
+              console.log(`    Appending as string: "${stringValue}"`);
               forwardFormData.append(key, stringValue);
             } else {
+              // For other fields, append as-is (form-data will handle conversion)
               forwardFormData.append(key, value);
             }
           }
         }
       }
 
-      const requiredFields = ["kategori", "user_input", "assign", "nama"];
-      const missingFields = [];
+      // Log critical fields to verify they're being forwarded
+      // Use originalValues to check actual values, not modified ones
+      console.log("\n🟢 [POST_PRODUK] Critical fields check:");
+      const requiredFields = ["kategori", "assign", "user_input", "nama"];
 
       for (const field of requiredFields) {
-        if (!originalValues.has(field)) {
-          missingFields.push(field);
-          console.error(`❌ [POST_PRODUK] ${field}: MISSING from incomingFormData`);
-          continue;
+        if (originalValues.has(field)) {
+          const value = originalValues.get(field);
+          // Log original value without modification
+          let logValue;
+          if (value === null) {
+            logValue = "[null]";
+          } else if (value === undefined) {
+            logValue = "[undefined]";
+          } else if (value instanceof File) {
+            logValue = `[File] ${value.name}`;
+          } else {
+            const strValue = String(value);
+            logValue = strValue.substring(0, 100) + (strValue.length > 100 ? "..." : "");
+          }
+          console.log(`  ✅ ${field}: ${logValue} (type: ${typeof value})`);
+        } else {
+          console.log(`  ❌ ${field}: MISSING from incomingFormData`);
         }
+      }
 
-        const value = originalValues.get(field);
-        
-        if (field === "kategori") {
-          const isValid = value !== null && 
-            value !== undefined && 
-            value !== "" &&
-            String(value).trim() !== "" &&
-            String(value).trim() !== "null";
-          if (!isValid) {
-            missingFields.push(field);
-            console.error(`❌ [POST_PRODUK] ${field} is invalid:`, value, `(type: ${typeof value})`);
-          }
-        } else if (field === "user_input") {
-          const isValid = value !== null && 
-            value !== undefined && 
-            value !== "" &&
-            String(value).trim() !== "" &&
-            String(value).trim() !== "null";
-          if (!isValid) {
-            missingFields.push(field);
-            console.error(`❌ [POST_PRODUK] ${field} is invalid:`, value, `(type: ${typeof value})`);
-          }
-        } else if (field === "assign") {
-          const isValid = value !== null && 
-            value !== undefined && 
-            value !== "" &&
-            String(value).trim() !== "" &&
-            String(value).trim() !== "null" &&
-            String(value).trim() !== "[]";
-          if (!isValid) {
-            missingFields.push(field);
-            console.error(`❌ [POST_PRODUK] ${field} is invalid:`, value, `(type: ${typeof value})`);
-          }
-        } else if (field === "nama") {
-          const isValid = value !== null && 
-            value !== undefined && 
-            String(value).trim() !== "";
-          if (!isValid) {
-            missingFields.push(field);
-            console.error(`❌ [POST_PRODUK] ${field} is invalid:`, value, `(type: ${typeof value})`);
-          }
-        }
+      // Final verification: Check if critical fields exist and are not empty
+      const hasKategori = originalValues.has("kategori");
+      const kategoriValue = originalValues.get("kategori");
+      const hasAssign = originalValues.has("assign");
+      const assignValue = originalValues.get("assign");
+      const hasUserInput = originalValues.has("user_input");
+      const userInputValue = originalValues.get("user_input");
+      
+      // Check if values are not empty (for string/number types)
+      // IMPORTANT: kategori, assign, dan user_input adalah required fields
+      // kategori: harus string numerik seperti "2"
+      // assign: harus string JSON seperti "[1,2,3]"
+      // user_input: harus string numerik seperti "2"
+      const kategoriValid = hasKategori && 
+        kategoriValue !== null && 
+        kategoriValue !== undefined && 
+        kategoriValue !== "" &&
+        String(kategoriValue).trim() !== "";
+      
+      const assignValid = hasAssign && 
+        assignValue !== null && 
+        assignValue !== undefined && 
+        assignValue !== "" &&
+        String(assignValue).trim() !== "";
+      
+      const userInputValid = hasUserInput && 
+        userInputValue !== null && 
+        userInputValue !== undefined && 
+        userInputValue !== "" &&
+        String(userInputValue).trim() !== "";
+
+      // Validate required fields with detailed error logging
+      const missingFields = [];
+      if (!kategoriValid) {
+        missingFields.push("kategori");
+        console.error("❌ [POST_PRODUK] kategori is missing or invalid:");
+        console.error(`  hasKategori: ${hasKategori}`);
+        console.error(`  kategoriValue: ${kategoriValue}`);
+        console.error(`  kategoriValue type: ${typeof kategoriValue}`);
+      }
+      if (!assignValid) {
+        missingFields.push("assign");
+        console.error("❌ [POST_PRODUK] assign is missing or invalid:");
+        console.error(`  hasAssign: ${hasAssign}`);
+        console.error(`  assignValue: ${assignValue}`);
+        console.error(`  assignValue type: ${typeof assignValue}`);
+      }
+      if (!userInputValid) {
+        missingFields.push("user_input");
+        console.error("❌ [POST_PRODUK] user_input is missing or invalid:");
+        console.error(`  hasUserInput: ${hasUserInput}`);
+        console.error(`  userInputValue: ${userInputValue}`);
+        console.error(`  userInputValue type: ${typeof userInputValue}`);
       }
 
       if (missingFields.length > 0) {
@@ -470,46 +492,6 @@ export async function POST(request) {
         }
       }
 
-      // Verify critical fields were processed
-      console.log("\n🟢 [POST_PRODUK] Final verification before sending:");
-      const kategoriValue = originalValues.get("kategori");
-      const userInputValue = originalValues.get("user_input");
-      const assignValue = originalValues.get("assign");
-      const namaValue = originalValues.get("nama");
-      
-      console.log(`  kategori: ${kategoriValue !== undefined ? `✅ "${kategoriValue}" (type: ${typeof kategoriValue})` : "❌ MISSING"}`);
-      console.log(`  user_input: ${userInputValue !== undefined ? `✅ "${userInputValue}" (type: ${typeof userInputValue})` : "❌ MISSING"}`);
-      console.log(`  assign: ${assignValue !== undefined ? `✅ "${assignValue}" (type: ${typeof assignValue})` : "❌ MISSING"}`);
-      console.log(`  nama: ${namaValue !== undefined ? `✅ "${namaValue}"` : "❌ MISSING"}`);
-
-      const wasKategoriProcessed = allEntries.some(e => e.key === "kategori");
-      const wasUserInputProcessed = allEntries.some(e => e.key === "user_input");
-      const wasAssignProcessed = allEntries.some(e => e.key === "assign");
-      const wasNamaProcessed = allEntries.some(e => e.key === "nama");
-
-      console.log(`  kategori processed: ${wasKategoriProcessed ? "✅" : "❌"}`);
-      console.log(`  user_input processed: ${wasUserInputProcessed ? "✅" : "❌"}`);
-      console.log(`  assign processed: ${wasAssignProcessed ? "✅" : "❌"}`);
-      console.log(`  nama processed: ${wasNamaProcessed ? "✅" : "❌"}`);
-
-      if (!wasKategoriProcessed || !wasUserInputProcessed || !wasAssignProcessed || !wasNamaProcessed) {
-        console.error("❌ [POST_PRODUK] CRITICAL: Some required fields were not processed!");
-        return NextResponse.json(
-          {
-            success: false,
-            message: "Missing required fields in FormData",
-            debug: {
-              kategori: wasKategoriProcessed ? "PROCESSED" : "NOT PROCESSED",
-              user_input: wasUserInputProcessed ? "PROCESSED" : "NOT PROCESSED",
-              assign: wasAssignProcessed ? "PROCESSED" : "NOT PROCESSED",
-              nama: wasNamaProcessed ? "PROCESSED" : "NOT PROCESSED",
-              allKeys: allEntries.map(e => e.key),
-            },
-          },
-          { status: 400 }
-        );
-      }
-
       // Forward FormData to backend with proper headers
       const headers = {
         ...forwardFormData.getHeaders(), // Get proper headers with boundary
@@ -532,81 +514,12 @@ export async function POST(request) {
       // Handle JSON
       const body = await request.json();
 
-      const requiredFields = ["kategori", "user_input", "assign", "nama"];
-      const missingFields = [];
-
-      for (const field of requiredFields) {
-        if (!body.hasOwnProperty(field) || body[field] === null || body[field] === undefined) {
-          missingFields.push(field);
-          console.error(`❌ [POST_PRODUK] ${field}: MISSING or null in JSON payload`);
-          continue;
-        }
-
-        const value = body[field];
-        
-        if (field === "kategori") {
-          const isValid = value !== null && 
-            value !== undefined && 
-            value !== "" &&
-            String(value).trim() !== "" &&
-            String(value).trim() !== "null";
-          if (!isValid) {
-            missingFields.push(field);
-            console.error(`❌ [POST_PRODUK] ${field} is invalid:`, value, `(type: ${typeof value})`);
-          }
-        } else if (field === "user_input") {
-          const isValid = value !== null && 
-            value !== undefined && 
-            (typeof value === "number" || (typeof value === "string" && value.trim() !== "" && value.trim() !== "null"));
-          if (!isValid) {
-            missingFields.push(field);
-            console.error(`❌ [POST_PRODUK] ${field} is invalid:`, value, `(type: ${typeof value})`);
-          }
-        } else if (field === "assign") {
-          const isValid = value !== null && 
-            value !== undefined && 
-            value !== "" &&
-            String(value).trim() !== "" &&
-            String(value).trim() !== "null" &&
-            String(value).trim() !== "[]";
-          if (!isValid) {
-            missingFields.push(field);
-            console.error(`❌ [POST_PRODUK] ${field} is invalid:`, value, `(type: ${typeof value})`);
-          }
-        } else if (field === "nama") {
-          const isValid = value !== null && 
-            value !== undefined && 
-            String(value).trim() !== "";
-          if (!isValid) {
-            missingFields.push(field);
-            console.error(`❌ [POST_PRODUK] ${field} is invalid:`, value, `(type: ${typeof value})`);
-          }
-        }
-      }
-
-      if (missingFields.length > 0) {
-        console.error("❌ [POST_PRODUK] CRITICAL: Missing or invalid required fields in JSON payload!");
-        console.error("  Missing fields:", missingFields);
-        console.error("  Full body:", JSON.stringify(body, null, 2));
-        
-        return NextResponse.json(
-          {
-            success: false,
-            message: `Missing or invalid required fields: ${missingFields.join(", ")}`,
-            debug: {
-              missingFields: missingFields,
-              body: body,
-            },
-          },
-          { status: 400 }
-        );
-      }
-
-      console.log("🟢 [POST_PRODUK] JSON payload validated:");
-      console.log(`    kategori: ✅ (${body.kategori})`);
-      console.log(`    user_input: ✅ (${body.user_input})`);
-      console.log(`    assign: ✅ (${body.assign})`);
-      console.log(`    nama: ✅ (${body.nama})`);
+      console.log("🟢 [POST_PRODUK] JSON payload received:");
+      console.log("  Full body:", JSON.stringify(body, null, 2));
+      console.log("  Critical fields check:");
+      console.log(`    kategori: ${body.kategori ? `✅ (${body.kategori})` : "❌ MISSING"}`);
+      console.log(`    assign: ${body.assign ? `✅ (${body.assign})` : "❌ MISSING"}`);
+      console.log(`    user_input: ${body.user_input ? `✅ (${body.user_input})` : "❌ MISSING"}`);
 
       response = await fetch(`${BACKEND_URL}/api/admin/produk`, {
         method: "POST",
