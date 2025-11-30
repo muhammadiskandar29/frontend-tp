@@ -28,6 +28,10 @@ export default function Page() {
       .replace(/\s+/g, "-");
   };
 
+
+
+
+
 // form state
   // ============================
   // FORMAT TANGGAL KE BACKEND
@@ -50,8 +54,8 @@ export default function Page() {
   // ============================
   const defaultForm = {
   id: null,
-  kategori: "", // disimpan sebagai string numerik (ID kategori), contoh: "2"
-  user_input: null, // Default null (dihapus fungsi validasinya)
+  kategori: null, // Integer, bukan array
+  user_input: [],
   nama: "",
   url: "",
   kode: "",
@@ -63,7 +67,7 @@ export default function Page() {
   gambar: [], // [{ path: {type:'file', value:File}, caption }]
   landingpage: "1",
   status: 1,
-  assign: [], // Array of user IDs untuk karyawan yang bertanggung jawab (bisa banyak)
+  assign: [],
   custom_field: [],   // <--- kosong di awal
   list_point: [],   
   testimoni: [],
@@ -75,8 +79,6 @@ export default function Page() {
 
 
   const [form, setForm] = useState(defaultForm);
-const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState("");
 
   // ============================
   // HANDLER INPUT
@@ -103,315 +105,129 @@ const [isSubmitting, setIsSubmitting] = useState(false);
   };
 
   // ============================
-  // CONVERT & COMPRESS IMAGE TO JPG
-  // ============================
-  const convertImageToJPG = async (file, quality = 0.75, maxWidth = 1600) => {
-    return new Promise((resolve, reject) => {
-      // Check if already JPG/PNG
-      const isJPG = file.type === "image/jpeg" || file.type === "image/jpg";
-      const isPNG = file.type === "image/png";
-      
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement("canvas");
-          let width = img.width;
-          let height = img.height;
-          
-          // Resize if too large
-          if (width > maxWidth) {
-            height = (height * maxWidth) / width;
-            width = maxWidth;
-          }
-          
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext("2d");
-          
-          // For PNG or other formats with transparency, fill white background
-          // For JPG, no need to fill (already opaque)
-          if (!isJPG) {
-            ctx.fillStyle = "#FFFFFF";
-            ctx.fillRect(0, 0, width, height);
-          }
-          
-          // Draw image
-          ctx.drawImage(img, 0, 0, width, height);
-          
-          // Convert to JPG (even if already JPG, we compress it)
-          canvas.toBlob(
-            (blob) => {
-              if (!blob) {
-                reject(new Error("Failed to convert/compress image"));
-                return;
-              }
-              // Always use .jpg extension and image/jpeg MIME type
-              const jpgFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
-                type: "image/jpeg",
-                lastModified: Date.now(),
-              });
-              resolve(jpgFile);
-            },
-            "image/jpeg",
-            quality
-          );
-        };
-        img.onerror = () => reject(new Error("Failed to load image"));
-        img.src = e.target.result;
-      };
-      reader.onerror = () => reject(new Error("Failed to read file"));
-      reader.readAsDataURL(file);
-    });
-  };
-
-  // ============================
   // SUBMIT
   // ============================
   const handleSubmit = async () => {
-    if (isSubmitting) return;
-    setIsSubmitting(true);
-    setSubmitStatus("Menyiapkan data produk...");
-    
     try {
-      if (!form.nama || form.nama.trim() === "") {
-        alert("Nama produk wajib diisi!");
-        setIsSubmitting(false);
-        setSubmitStatus("");
-        return;
-      }
-
-      const kategoriId = (() => {
-        if (!form.kategori || form.kategori === null || form.kategori === undefined || form.kategori === "") {
-          return null;
-        }
-        if (typeof form.kategori === "object" && form.kategori !== null) {
-          return null;
-        }
-        if (Array.isArray(form.kategori)) {
-          return null;
-        }
-        const parsed = typeof form.kategori === "number" ? form.kategori : Number(form.kategori);
-        if (Number.isNaN(parsed) || parsed <= 0) {
-          return null;
-        }
-        return parsed;
-      })();
-
-      if (!kategoriId || kategoriId <= 0) {
-        alert("Kategori wajib dipilih!");
-        setIsSubmitting(false);
-        setSubmitStatus("");
-        return;
-      }
-
-      const normalizedAssign = Array.isArray(form.assign)
-        ? form.assign
-            .filter((v) => v !== null && v !== undefined && v !== "")
-            .map((v) => Number(v))
-            .filter((num) => !Number.isNaN(num) && num > 0)
-        : [];
-
-      if (normalizedAssign.length === 0) {
-        alert("Penanggung jawab (Assign) wajib dipilih minimal 1 user!");
-        setIsSubmitting(false);
-        setSubmitStatus("");
-        return;
-      }
-
-      const userInputId = (() => {
-        let candidate = null;
-        if (currentUser) {
-          if (currentUser.id !== undefined && currentUser.id !== null) {
-            candidate = currentUser.id;
-          } else if (currentUser.user_id !== undefined && currentUser.user_id !== null) {
-            candidate = currentUser.user_id;
-          } else if (currentUser.userId !== undefined && currentUser.userId !== null) {
-            candidate = currentUser.userId;
-          }
-        }
-        if (!candidate) {
-          try {
-            const userSession = localStorage.getItem("user");
-            if (userSession) {
-              const userData = JSON.parse(userSession);
-              if (userData?.id) {
-                candidate = userData.id;
-              }
-            }
-          } catch (e) {
-            console.error("Error parsing user from localStorage:", e);
-          }
-        }
-        if (candidate === null || candidate === undefined || candidate === "") {
-          return null;
-        }
-        const parsed = typeof candidate === "number" ? candidate : Number(candidate);
-        if (Number.isNaN(parsed) || parsed <= 0) {
-          return null;
-        }
-        return parsed;
-      })();
-
-      if (!userInputId || userInputId <= 0) {
-        alert("User input tidak ditemukan. Silakan login ulang!");
-        setIsSubmitting(false);
-        setSubmitStatus("");
-        return;
-      }
-
       const hasFile =
         (form.header.type === "file" && form.header.value) ||
-        form.gambar.some((g) => g.path?.type === "file" && g.path?.value) ||
-        form.testimoni.some((t) => t.gambar?.type === "file" && t.gambar?.value);
+        form.gambar.some((g) => g.path.type === "file" && g.path.value) ||
+        form.testimoni.some((t) => t.gambar.type === "file" && t.gambar.value);
 
       let payload;
       let isFormData = false;
 
       if (hasFile) {
-        setSubmitStatus("Mengompres & menyiapkan berkas media...");
         payload = new FormData();
         isFormData = true;
 
-        payload.append("kategori", String(kategoriId));
-        payload.append("nama", form.nama);
-        payload.append("user_input", String(userInputId));
-        payload.append("assign", JSON.stringify(normalizedAssign));
+        // Header
+        if (form.header.type === "file" && form.header.value) {
+          payload.append("header", form.header.value);
+        }
 
+        // Gallery - format: gambar[0][file], gambar[0][caption]
+        form.gambar.forEach((g, idx) => {
+          if (g.path.type === "file" && g.path.value) {
+            payload.append(`gambar[${idx}][file]`, g.path.value);
+          }
+          payload.append(`gambar[${idx}][caption]`, g.caption || "");
+        });
+
+        // Testimoni
+        form.testimoni.forEach((t, idx) => {
+          if (t.gambar.type === "file" && t.gambar.value) {
+            payload.append(`testimoni[${idx}][gambar]`, t.gambar.value);
+          }
+          payload.append(`testimoni[${idx}][nama]`, t.nama);
+          payload.append(`testimoni[${idx}][deskripsi]`, t.deskripsi);
+        });
+
+        // Fields
+        payload.append("nama", form.nama);
+        // SELALU generate kode dari nama dengan dash
         const kode = generateKode(form.nama);
         payload.append("kode", kode);
         payload.append("url", "/" + kode);
-        payload.append("deskripsi", form.deskripsi || "");
-        payload.append("harga_coret", String(form.harga_coret || 0));
-        payload.append("harga_asli", String(form.harga_asli || 0));
+        payload.append("deskripsi", form.deskripsi);
+        payload.append("harga_coret", form.harga_coret || 0);
+        payload.append("harga_asli", form.harga_asli || 0);
         payload.append("tanggal_event", formatDateForBackend(form.tanggal_event));
-        payload.append("landingpage", String(form.landingpage || "1"));
-        payload.append("status", String(form.status || 1));
-
-        const payloadCustomField = (form.custom_field || []).map((f, idx) => ({
-          nama_field: f.label || f.key || "",
-          urutan: idx + 1
+        payload.append("assign", JSON.stringify(form.assign));
+        const payloadCustomField = form.custom_field.map((f, idx) => ({
+        nama_field: f.label || f.key,
+        urutan: idx + 1
         }));
         payload.append("custom_field", JSON.stringify(payloadCustomField));
-        payload.append("list_point", JSON.stringify(form.list_point || []));
-        payload.append("fb_pixel", JSON.stringify(form.fb_pixel || []));
+        payload.append("list_point", JSON.stringify(form.list_point));
+        payload.append("fb_pixel", JSON.stringify(form.fb_pixel));
         payload.append(
           "event_fb_pixel",
-          JSON.stringify((form.event_fb_pixel || []).map((ev) => ({ event: ev })))
+          JSON.stringify(form.event_fb_pixel.map((ev) => ({ event: ev })))
         );
-        payload.append("gtm", JSON.stringify(form.gtm || []));
+        payload.append("gtm", JSON.stringify(form.gtm));
         const videoArray = form.video
-          ? form.video.split(",").map(v => v.trim()).filter(v => v)
-          : [];
-        payload.append("video", JSON.stringify(videoArray));
-
-        try {
-          if (form.header.type === "file" && form.header.value) {
-            setSubmitStatus("Mengonversi header ke JPG...");
-            const processedHeader = await convertImageToJPG(form.header.value, 0.75, 1600);
-            payload.append("header", processedHeader);
-          }
-
-          for (let idx = 0; idx < (form.gambar || []).length; idx++) {
-            const g = form.gambar[idx];
-            if (g.path?.type === "file" && g.path?.value) {
-              setSubmitStatus(`Mengonversi gambar ${idx + 1}/${form.gambar.length} ke JPG...`);
-              const processedGambar = await convertImageToJPG(g.path.value, 0.75, 1600);
-              payload.append(`gambar[${idx}][file]`, processedGambar);
-            }
-            payload.append(`gambar[${idx}][caption]`, g.caption || "");
-          }
-
-          for (let idx = 0; idx < (form.testimoni || []).length; idx++) {
-            const t = form.testimoni[idx];
-            if (t.gambar?.type === "file" && t.gambar?.value) {
-              setSubmitStatus(`Mengonversi testimoni ${idx + 1}/${form.testimoni.length} ke JPG...`);
-              const processedTestimoni = await convertImageToJPG(t.gambar.value, 0.75, 1600);
-              payload.append(`testimoni[${idx}][gambar]`, processedTestimoni);
-            }
-            payload.append(`testimoni[${idx}][nama]`, t.nama || "");
-            payload.append(`testimoni[${idx}][deskripsi]`, t.deskripsi || "");
-          }
-        } catch (error) {
-          console.error("Error processing images:", error);
-          alert(`Gagal memproses gambar: ${error.message}`);
-          setIsSubmitting(false);
-          setSubmitStatus("");
-          return;
+        ? form.video.split(",").map(v => v.trim()).filter(v => v)
+        : [];
+        payload.append("video", JSON.stringify(videoArray));        
+        payload.append("landingpage", form.landingpage);
+        payload.append("status", form.status);
+        // user_input adalah ID user yang membuat produk (current user)
+        const userInputId = currentUser?.id || form.user_input;
+        if (userInputId) {
+          payload.append("user_input", userInputId);
+        }
+        // Kirim kategori_id sebagai integer
+        const kategoriId = form.kategori        ? Number(form.kategori        ) : null;
+        if (kategoriId) {
+          payload.append("kategori", kategoriId);
         }
       } else {
-        const kode = generateKode(form.nama);
-        const payloadCustomField = (form.custom_field || []).map((f, idx) => ({
-          nama_field: f.label || f.key || "",
-          urutan: idx + 1
-        }));
-        const videoArray = form.video
-          ? form.video.split(",").map(v => v.trim()).filter(v => v)
-          : [];
-
+        // Kirim kategori_id sebagai integer
+        const kategoriId = form.kategori        ? Number(form.kategori
+        ) : null;
+        
         payload = {
-          kategori: kategoriId,
-          nama: form.nama,
-          user_input: userInputId,
-          assign: JSON.stringify(normalizedAssign),
-          kode: kode,
-          url: "/" + kode,
-          deskripsi: form.deskripsi || "",
+          ...form,
+          kategori: kategoriId, // Kirim kategori_id sebagai integer
           harga_coret: Number(form.harga_coret) || 0,
           harga_asli: Number(form.harga_asli) || 0,
           tanggal_event: formatDateForBackend(form.tanggal_event),
-          landingpage: form.landingpage || "1",
-          status: form.status || 1,
-          custom_field: JSON.stringify(payloadCustomField),
-          list_point: JSON.stringify(form.list_point || []),
-          fb_pixel: JSON.stringify(form.fb_pixel || []),
+          assign: JSON.stringify(form.assign),
+          gtm: JSON.stringify(form.gtm),
+          fb_pixel: JSON.stringify(form.fb_pixel),
           event_fb_pixel: JSON.stringify(
-            (form.event_fb_pixel || []).map((ev) => ({ event: ev }))
+            form.event_fb_pixel.map((ev) => ({ event: ev }))
           ),
-          gtm: JSON.stringify(form.gtm || []),
-          video: JSON.stringify(videoArray),
           gambar: JSON.stringify(
-            (form.gambar || []).map((g) => ({ path: null, caption: g.caption || "" }))
+            form.gambar.map((g) => ({ path: null, caption: g.caption }))
           ),
           testimoni: JSON.stringify(
-            (form.testimoni || []).map((t) => ({
+            form.testimoni.map((t) => ({
               gambar: null,
-              nama: t.nama || "",
-              deskripsi: t.deskripsi || "",
+              nama: t.nama,
+              deskripsi: t.deskripsi,
             }))
           ),
         };
       }
 
-      setSubmitStatus("Mengunggah produk ke server...");
-      
-      if (isFormData) {
-        console.log("📤 [SUBMIT] Critical fields before submit (FormData):", {
-          kategori: payload.get("kategori"),
-          user_input: payload.get("user_input"),
-          assign: payload.get("assign"),
-        });
-      } else {
-        console.log("📤 [SUBMIT] Critical fields before submit (JSON):", {
-          kategori: payload.kategori,
-          user_input: payload.user_input,
-          assign: payload.assign,
-        });
-      }
-      
-      const token = localStorage.getItem("token");
-      const res = await fetch("/api/admin/produk", {
-        method: "POST",
-        headers: {
-          ...(isFormData ? {} : { "Content-Type": "application/json" }),
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: isFormData ? payload : JSON.stringify(payload),
-        cache: "no-store",
-        credentials: "same-origin",
-      });
-      
+      console.log("FINAL PAYLOAD:", payload);
+
+      const res = await fetch(
+        "/api/admin/produk",
+        {
+          method: "POST",
+          headers: {
+            ...(isFormData ? {} : { "Content-Type": "application/json" }),
+            Accept: "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: isFormData ? payload : JSON.stringify(payload),
+        }
+      );
+
+      // Handle response - check if it's JSON first
       const contentType = res.headers.get("content-type");
       let data;
       
@@ -419,38 +235,37 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         try {
           data = await res.json();
         } catch (parseError) {
-          console.error("Failed to parse JSON response:", parseError);
+          const textResponse = await res.text();
+          console.error("❌ Failed to parse JSON response:", textResponse.substring(0, 200));
           alert("Terjadi kesalahan: Response dari server tidak valid.");
-          setIsSubmitting(false);
-          setSubmitStatus("");
           return;
         }
       } else {
         const textResponse = await res.text();
-        console.error("Non-JSON response received:", textResponse.substring(0, 200));
+        console.error("❌ Non-JSON response received:", textResponse.substring(0, 200));
         alert("Terjadi kesalahan: Server mengembalikan response yang tidak valid.");
-        setIsSubmitting(false);
-        setSubmitStatus("");
         return;
       }
+      
+      // Logging struktur JSON lengkap
+      console.log("Success:", data.success);
+      console.log("Data:", data.data);
+      console.table(data.data);
 
       if (!res.ok) {
-        console.error("API ERROR:", data);
+        console.error("❌ API ERROR:", data);
         alert(data?.message || "Gagal membuat produk!");
-        setIsSubmitting(false);
-        setSubmitStatus("");
         return;
       }
 
-      setSubmitStatus("Produk berhasil dibuat, mengalihkan...");
       alert("Produk berhasil dibuat!");
+      console.log("SUCCESS:", data);
+      
+      // Redirect ke halaman products
       router.push("/admin/products");
     } catch (err) {
-      console.error("Submit error:", err);
+      console.error("❌ Submit error:", err);
       alert("Terjadi kesalahan saat submit: " + (err.message || "Unknown error"));
-    } finally {
-      setIsSubmitting(false);
-      setSubmitStatus("");
     }
   };
 
@@ -458,20 +273,14 @@ const [isSubmitting, setIsSubmitting] = useState(false);
 const [kategoriOptions, setKategoriOptions] = useState([]);
 const [userOptions, setUserOptions] = useState([]);
 const [currentUser, setCurrentUser] = useState(null); // User yang sedang login
-const [isLoadingKategori, setIsLoadingKategori] = useState(true);
 
 useEffect(() => {
   async function fetchInitialData() {
     try {
-      setIsLoadingKategori(true);
       const token = localStorage.getItem("token");
-      if (!token) {
-        setIsLoadingKategori(false);
-        return;
-      }
-
       const headers = { Authorization: `Bearer ${token}` };
 
+      // Ambil data user yang sedang login
       const userSession = localStorage.getItem("user");
       if (userSession) {
         try {
@@ -482,43 +291,93 @@ useEffect(() => {
         }
       }
 
-      const [kategoriRes, usersRes] = await Promise.all([
-        fetch("/api/admin/kategori-produk", { headers }),
-        fetch("/api/admin/users", { headers }),
-      ]);
-
+      // 1️⃣ Fetch kategori dan filter hanya yang aktif (status === "1")
+      const kategoriRes = await fetch(
+        "/api/admin/kategori-produk",
+        { headers }
+      );
       const kategoriData = await kategoriRes.json();
-      const usersJson = await usersRes.json();
-
-      if (!kategoriRes.ok) {
-        throw new Error(kategoriData?.message || "Gagal memuat kategori");
-      }
-
-      if (!usersRes.ok) {
-        throw new Error(usersJson?.message || "Gagal memuat daftar pengguna");
-      }
-
+      
+      // Logging struktur JSON lengkap
+      console.log("Success:", kategoriData.success);
+      console.log("Data:", kategoriData.data);
+      console.table(kategoriData.data);
+      
+      // Filter hanya kategori yang aktif (status === "1")
       const activeCategories = Array.isArray(kategoriData.data)
         ? kategoriData.data.filter((k) => k.status === "1")
         : [];
       
+      // Create options with ID as value and name as label
       const kategoriOpts = activeCategories.map((k) => ({
-        label: k.nama,
-        value: String(k.id),
+        label: `${k.id} - ${k.nama}`,
+        value: k.id
       }));
       setKategoriOptions(kategoriOpts);
-      setIsLoadingKategori(false);
 
+      // 2️⃣ Fetch produk (misal edit mode)
+      const produkRes = await fetch(
+        "/api/admin/produk/1",
+        { headers }
+      );
+      const produkData = await produkRes.json();
+      
+      // Logging struktur JSON lengkap
+      console.log("Success:", produkData.success);
+      console.log("Data:", produkData.data);
+      console.table(produkData.data);
+
+      // 3️⃣ Fetch users - filter hanya status 1
+      const usersRes = await fetch(
+        "/api/admin/users",
+        { headers }
+      );
+      const usersJson = await usersRes.json();
+      
+      // Logging struktur JSON lengkap
+      console.log("Success:", usersJson.success);
+      console.log("Data:", usersJson.data);
+      console.table(usersJson.data);
       const userOpts = Array.isArray(usersJson.data)
         ? usersJson.data
-            .filter((u) => u.status === "1" || u.status === 1)
-            .map((u) => ({ label: u.nama || u.name, value: String(u.id) }))
+            .filter((u) => u.status === "1" || u.status === 1) // Filter hanya status 1
+            .map((u) => ({ label: u.nama || u.name, value: u.id }))
         : [];
       setUserOptions(userOpts);
-      setIsLoadingKategori(false);
+
+      // ✅ SELALU generate kode dari nama dengan dash
+      const kodeGenerated = generateKode(produkData.nama || "produk-baru");
+
+      // Handle kategori_id: if kategori_rel exists, use its ID; otherwise use produkData.kategori_id
+      let kategoriId = null;
+      if (produkData.kategori_rel) {
+        kategoriId = produkData.kategori_rel.id ? Number(produkData.kategori_rel.id) : null;
+      } else if (produkData.kategori
+      ) {
+        kategoriId = Number(produkData.kategori
+        );
+      } else if (produkData.kategori) {
+        // Backward compatibility: if kategori is string (name), try to find ID
+        // This should not happen in new implementation, but handle for old data
+        const found = activeCategories.find(k => k.nama === produkData.kategori);
+        kategoriId = found ? Number(found.id) : null;
+      }
+
+      // Set user_input ke current user ID
+      const currentUserId = currentUser?.id || JSON.parse(localStorage.getItem("user") || "{}")?.id;
+      
+      setForm((f) => ({
+        ...f,
+        kategori: null,
+        assign: [],
+        user_input: currentUserId ? currentUserId : null, // ID user yang membuat
+        custom_field: [],
+        kode: "",
+        url: "/",
+        landingpage: "1",
+      }));
     } catch (err) {
       console.error("Fetch initial data error:", err);
-      setIsLoadingKategori(false);
     }
   }
 
@@ -530,16 +389,6 @@ useEffect(() => {
   // UI
   // ============================
   return (
-    <>
-      {isSubmitting && (
-        <div className="submit-lock-overlay">
-          <div className="submit-lock-card">
-            <span className="submit-lock-spinner" />
-            <p>{submitStatus || "Menyimpan produk, mohon tunggu..."}</p>
-            <small>Jangan tutup halaman hingga proses selesai.</small>
-          </div>
-        </div>
-      )}
     <div className="produk-container produk-builder-layout">
       <div className="produk-form">
       {/* Header Section */}
@@ -599,24 +448,12 @@ useEffect(() => {
               className="w-full form-input"
               value={form.kategori || null}
               options={kategoriOptions}
-              optionLabel="label"
-              optionValue="value"
               onChange={(e) => {
-                const newValue = e.value !== null && e.value !== undefined ? String(e.value) : "";
-                handleChange("kategori", newValue);
+                handleChange("kategori", e.value ? Number(e.value) : null);
               }}
-              placeholder={isLoadingKategori ? "Memuat kategori..." : "Pilih Kategori"}
+              placeholder="Pilih Kategori"
               showClear
-              filter
-              filterPlaceholder="Cari kategori..."
-              disabled={isLoadingKategori}
-              loading={isLoadingKategori}
             />
-            {kategoriOptions.length === 0 && !isLoadingKategori && (
-              <small className="field-hint" style={{ color: "#ef4444" }}>
-                ⚠️ Tidak ada kategori tersedia. Silakan tambahkan kategori terlebih dahulu.
-              </small>
-            )}
           </div>
 
           {/* KODE & URL */}
@@ -1103,14 +940,9 @@ useEffect(() => {
             </label>
             <MultiSelect
               className="w-full form-input"
-              value={form.assign || []}
+              value={form.assign}
               options={userOptions}
-              optionLabel="label"
-              optionValue="value"
-              onChange={(e) => {
-                const selectedIds = e.value || [];
-                handleChange("assign", selectedIds);
-              }}
+              onChange={(e) => handleChange("assign", e.value || [])}
               placeholder="Pilih penanggung jawab produk"
               display="chip"
               showClear
@@ -1163,16 +995,12 @@ useEffect(() => {
       {/* SUBMIT BUTTON */}
       <div className="submit-section">
         <Button 
-          label={isSubmitting ? "Menyimpan..." : "Simpan Produk"}
+          label="Simpan Produk" 
           icon="pi pi-save"
           className="p-button-primary submit-btn" 
           onClick={handleSubmit}
-          disabled={isSubmitting}
-          loading={isSubmitting}
         />
-        <p className="submit-hint">
-          {isSubmitting ? "Sedang mengunggah data ke server..." : "Pastikan semua data sudah lengkap sebelum menyimpan"}
-        </p>
+        <p className="submit-hint">Pastikan semua data sudah lengkap sebelum menyimpan</p>
       </div>
       </div>
       {/* ================= RIGHT: PREVIEW ================= */}
@@ -1180,61 +1008,5 @@ useEffect(() => {
         <LandingTemplate form={form} />
       </div>
     </div>
-    <style jsx>{`
-      .submit-lock-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(15, 23, 42, 0.35);
-        backdrop-filter: blur(4px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-        padding: 16px;
-      }
-
-      .submit-lock-card {
-        width: min(360px, 100%);
-        background: #ffffff;
-        border-radius: 20px;
-        padding: 28px 32px;
-        box-shadow: 0 22px 60px rgba(15, 23, 42, 0.25);
-        text-align: center;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      }
-
-      .submit-lock-spinner {
-        width: 48px;
-        height: 48px;
-        border-radius: 999px;
-        border: 4px solid #e2e8f0;
-        border-top-color: #f97316;
-        animation: submit-lock-spin 0.9s linear infinite;
-        display: inline-block;
-        margin: 0 auto 4px;
-      }
-
-      .submit-lock-card p {
-        margin: 0;
-        font-weight: 600;
-        color: #0f172a;
-      }
-
-      .submit-lock-card small {
-        color: #475569;
-      }
-
-      @keyframes submit-lock-spin {
-        from {
-          transform: rotate(0deg);
-        }
-        to {
-          transform: rotate(360deg);
-        }
-      }
-    `}</style>
-    </>
   );
 }
