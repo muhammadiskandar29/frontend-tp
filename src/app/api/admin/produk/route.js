@@ -343,12 +343,11 @@ export async function POST(request) {
             // form-data package will automatically convert to string during transmission
             // This preserves the original value without premature String() conversion
             
-            // CRITICAL: For kategori only, ensure it is sent correctly
+            // CRITICAL: Ensure critical fields are sent correctly
             // Based on GET /api/admin/produk/{id} response format:
-            // - kategori: 7 (number) in response, but FormData requires string
-            // - user_input: 11 (number) in response, but FormData requires string
-            // - assign: "[14]" (string JSON array) in response
-            // assign and user_input validation removed - will be sent as null
+            // - kategori: 7 (number) in response, but FormData requires string → "7"
+            // - user_input: 11 (number) in response, but FormData requires string → "11"
+            // - assign: "[14]" (string JSON array) in response → "[14]"
             if (key === "kategori") {
               // Ensure kategori is explicitly converted to string
               // Backend will parse string "7" to number 7 (matching GET response format)
@@ -358,11 +357,26 @@ export async function POST(request) {
               console.log(`    String value: "${stringValue}" (type: ${typeof stringValue})`);
               console.log(`    Appending as string: "${stringValue}" (backend will parse to number)`);
               forwardFormData.append(key, stringValue);
+            } else if (key === "user_input") {
+              // Ensure user_input is explicitly converted to string
+              // Backend will parse string "11" to number 11 (matching GET response format)
+              // user_input comes from currentUser.id (logged-in user)
+              const stringValue = String(value);
+              console.log(`  🔑 Critical field ${key}:`);
+              console.log(`    Original value: ${value} (type: ${typeof value})`);
+              console.log(`    String value: "${stringValue}" (type: ${typeof stringValue})`);
+              console.log(`    Appending as string: "${stringValue}" (backend will parse to number)`);
+              forwardFormData.append(key, stringValue);
+            } else if (key === "assign") {
+              // assign is already a string JSON array from frontend: "[1,2,3]"
+              // Just append as-is (form-data will handle it correctly)
+              console.log(`  🔑 Critical field ${key}:`);
+              console.log(`    Value: ${value} (type: ${typeof value})`);
+              console.log(`    Appending as-is (string JSON array)`);
+              forwardFormData.append(key, value);
             } else {
-              // For other fields (including assign and user_input), append as-is
+              // For other fields, append as-is
               // form-data package will handle conversion
-              // assign: string JSON array "[14]" (already correct format)
-              // user_input: will be sent as "null" string if null, or "11" if number
               forwardFormData.append(key, value);
             }
           }
@@ -395,25 +409,26 @@ export async function POST(request) {
         }
       }
       
-      // Log assign and user_input (validation removed, just for info)
+      // Log assign and user_input (for info)
       if (originalValues.has("assign")) {
         const assignValue = originalValues.get("assign");
-        console.log(`  ⚠️ assign: ${assignValue === null ? "[null]" : String(assignValue)} (validation removed)`);
+        console.log(`  ✅ assign: ${assignValue === null || assignValue === "null" ? "[null]" : String(assignValue)} (string JSON array)`);
       }
       if (originalValues.has("user_input")) {
         const userInputValue = originalValues.get("user_input");
-        console.log(`  ⚠️ user_input: ${userInputValue === null ? "[null]" : String(userInputValue)} (validation removed)`);
+        console.log(`  ✅ user_input: ${userInputValue === null || userInputValue === "null" ? "[null]" : String(userInputValue)} (from currentUser.id)`);
       }
 
       // Final verification: Check if critical fields exist and are not empty
-      // assign and user_input validation removed - will be sent as null
+      // assign and user_input are now properly handled (from frontend)
       const hasKategori = originalValues.has("kategori");
       const kategoriValue = originalValues.get("kategori");
       
       // Check if values are not empty (for string/number types)
       // IMPORTANT: Only kategori is validated now
       // kategori: harus string numerik seperti "2"
-      // assign and user_input validation removed - backend will handle
+      // assign: string JSON array "[1,2,3]" (from MultiSelect)
+      // user_input: string "11" (from currentUser.id)
       const kategoriValid = hasKategori && 
         kategoriValue !== null && 
         kategoriValue !== undefined && 
@@ -504,8 +519,8 @@ export async function POST(request) {
       console.log("  Full body:", JSON.stringify(body, null, 2));
       console.log("  Critical fields check:");
       console.log(`    kategori: ${body.kategori ? `✅ (${body.kategori})` : "❌ MISSING"}`);
-      console.log(`    assign: ${body.assign ? `⚠️ (${body.assign})` : "⚠️ null"} (validation removed)`);
-      console.log(`    user_input: ${body.user_input ? `⚠️ (${body.user_input})` : "⚠️ null"} (validation removed)`);
+      console.log(`    assign: ${body.assign ? `✅ (${body.assign})` : "⚠️ null"} (string JSON array from MultiSelect)`);
+      console.log(`    user_input: ${body.user_input ? `✅ (${body.user_input})` : "⚠️ null"} (number from currentUser.id)`);
 
       response = await fetch(`${BACKEND_URL}/api/admin/produk`, {
         method: "POST",
