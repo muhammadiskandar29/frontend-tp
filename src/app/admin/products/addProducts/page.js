@@ -55,7 +55,7 @@ export default function Page() {
   const defaultForm = {
   id: null,
   kategori: "", // disimpan sebagai string numerik (ID kategori), contoh: "2"
-  user_input: null, // disimpan sebagai number (integer), bukan string
+  user_input: null, // Default null (dihapus fungsi validasinya)
   nama: "",
   url: "",
   kode: "",
@@ -67,7 +67,7 @@ export default function Page() {
   gambar: [], // [{ path: {type:'file', value:File}, caption }]
   landingpage: "1",
   status: 1,
-  assign: [],
+  assign: null, // Default null (dihapus fungsi validasinya)
   custom_field: [],   // <--- kosong di awal
   list_point: [],   
   testimoni: [],
@@ -243,111 +243,21 @@ const [isSubmitting, setIsSubmitting] = useState(false);
       }
 
       // Validate assign
-      // IMPORTANT: State assign tetap sebagai array, misalnya: [1, 5, 7]
+      // FUNGSI VALIDASI DIHAPUS - Default null
       // Backend mengharapkan assign sebagai string JSON di FormData: "[1,5,7]"
-      // Jika tidak valid, set null dan tetap submit (biar backend yang handle error-nya)
-      const normalizedAssign = Array.isArray(form.assign)
-        ? form.assign
-            .filter((v) => v !== null && v !== undefined && v !== "")
-            .map((v) => Number(v))
-            .filter((num) => !Number.isNaN(num) && num > 0)
-        : [];
-
-      // Jika assign kosong, set null dan tetap lanjut submit (biar backend yang handle error-nya)
-      if (normalizedAssign.length === 0) {
-        console.warn("⚠️ [SUBMIT_PRODUK] assign is empty - will send null to backend");
-        console.warn("  form.assign:", form.assign);
-      } else {
-        console.log("✅ [SUBMIT_PRODUK] assign validated:");
-        console.log("  assign array:", normalizedAssign);
-        console.log("  assign JSON string:", JSON.stringify(normalizedAssign));
-      }
+      // Set langsung null (biar backend yang handle error-nya)
+      const normalizedAssign = null;
+      console.warn("⚠️ [SUBMIT_PRODUK] assign validation removed - sending null to backend");
+      console.warn("  form.assign:", form.assign);
 
       // Validate user_input
-      // IMPORTANT: user_input harus berupa integer (number), bukan string
+      // FUNGSI VALIDASI DIHAPUS - Default null
       // user_input diambil dari user yang sedang login (currentUser)
-      // Backend response menunjukkan user_input sebagai number: 2
-      const userInputId = (() => {
-        console.log("🔍 [SUBMIT_PRODUK] Validating user_input:");
-        console.log("  currentUser:", currentUser);
-        console.log("  currentUser?.id:", currentUser?.id, "(type:", typeof currentUser?.id + ")");
-        console.log("  form.user_input:", form.user_input, "(type:", typeof form.user_input + ")");
-        
-        // CRITICAL: user_input harus dari user yang sedang login
-        // Prioritas: currentUser.id > form.user_input
-        // Coba berbagai cara untuk mendapatkan ID user
-        let candidate = null;
-        
-        if (currentUser) {
-          // Coba currentUser.id
-          if (currentUser.id !== undefined && currentUser.id !== null) {
-            candidate = currentUser.id;
-            console.log("  ✅ Using currentUser.id:", candidate);
-          }
-          // Fallback: coba currentUser.user_id atau currentUser.userId
-          else if (currentUser.user_id !== undefined && currentUser.user_id !== null) {
-            candidate = currentUser.user_id;
-            console.log("  ✅ Using currentUser.user_id:", candidate);
-          }
-          else if (currentUser.userId !== undefined && currentUser.userId !== null) {
-            candidate = currentUser.userId;
-            console.log("  ✅ Using currentUser.userId:", candidate);
-          }
-        }
-        
-        // Fallback ke form.user_input jika currentUser tidak ada
-        if (!candidate && form.user_input) {
-          candidate = form.user_input;
-          console.log("  ⚠️ Using form.user_input as fallback:", candidate);
-        }
-        
-        // Jika masih tidak ada, coba ambil dari localStorage langsung
-        if (!candidate) {
-          try {
-            const userSession = localStorage.getItem("user");
-            if (userSession) {
-              const userData = JSON.parse(userSession);
-              if (userData?.id) {
-                candidate = userData.id;
-                console.log("  ✅ Using userData.id from localStorage:", candidate);
-              }
-            }
-          } catch (e) {
-            console.error("  ❌ Error parsing user from localStorage:", e);
-          }
-        }
-        
-        console.log("  Final candidate:", candidate, "(type:", typeof candidate + ")");
-        
-        // Validasi: harus ada nilai, tidak null/undefined, dan bukan string kosong
-        if (candidate === null || candidate === undefined || candidate === "") {
-          console.warn("⚠️ [SUBMIT_PRODUK] user_input is missing/empty - setting to null");
-          console.warn("  candidate value:", candidate);
-          console.warn("  candidate type:", typeof candidate);
-          console.warn("  currentUser:", JSON.stringify(currentUser, null, 2));
-          return null;
-        }
-        
-        // Pastikan adalah number (jika sudah number, tetap number; jika string, parse ke number)
-        const parsed = typeof candidate === "number" ? candidate : Number(candidate);
-        console.log("  parsed value:", parsed, "(type:", typeof parsed + ")");
-        
-        // Validasi: harus valid number dan > 0
-        if (Number.isNaN(parsed) || parsed <= 0) {
-          console.warn("⚠️ [SUBMIT_PRODUK] user_input is not a valid number - setting to null");
-          console.warn("  candidate:", candidate);
-          console.warn("  parsed:", parsed);
-          return null;
-        }
-        
-        console.log("✅ [SUBMIT_PRODUK] user_input is valid:", parsed);
-        return parsed;
-      })();
-
-      // Jika user_input null, tetap lanjut submit (biar backend yang handle error-nya)
-      if (!userInputId) {
-        console.warn("⚠️ [SUBMIT_PRODUK] user_input is null - will send null to backend");
-      }
+      // Set langsung null (biar backend yang handle error-nya)
+      const userInputId = null;
+      console.warn("⚠️ [SUBMIT_PRODUK] user_input validation removed - sending null to backend");
+      console.warn("  form.user_input:", form.user_input);
+      console.warn("  currentUser:", currentUser);
 
       // Validate nama
       if (!form.nama || form.nama.trim() === "") {
@@ -731,10 +641,10 @@ const [isSubmitting, setIsSubmitting] = useState(false);
       
       // FINAL SUMMARY: Log all critical fields before sending
       console.log("📋 [SUBMIT_PRODUK] FINAL SUMMARY - Critical fields:");
-      console.log("  ✅ kategori:", kategoriId, "→", String(kategoriId), "(string)");
-      console.log("  ✅ user_input:", userInputId, "→", String(userInputId), "(string)");
-      console.log("  ✅ assign:", normalizedAssign, "→", JSON.stringify(normalizedAssign), "(string JSON)");
-      console.log("  📝 Note: kategori dari kategori_rel (ID), user_input dari currentUser.id, assign dari relasi user");
+      console.log("  ✅ kategori:", kategoriId, "→", kategoriId !== null ? String(kategoriId) : "null", "(string)");
+      console.log("  ⚠️ user_input:", userInputId, "→", "null", "(removed validation)");
+      console.log("  ⚠️ assign:", normalizedAssign, "→", "null", "(removed validation)");
+      console.log("  📝 Note: user_input dan assign validation removed - sending null to backend");
 
       // ============================================
       // STEP 6: SEND TO BACKEND
@@ -836,11 +746,10 @@ useEffect(() => {
         try {
           const userData = JSON.parse(userSession);
           setCurrentUser(userData);
+          // user_input validation removed - keep as null
           setForm((f) => ({
             ...f,
-            // IMPORTANT: user_input disimpan sebagai number (integer), bukan string
-            // Backend mengharapkan integer, jadi state harus number
-            user_input: userData?.id ? Number(userData.id) : null,
+            user_input: null, // Default null (validation removed)
           }));
         } catch (e) {
           console.error("Error parsing user session:", e);
