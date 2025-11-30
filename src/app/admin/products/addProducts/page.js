@@ -581,20 +581,22 @@ useEffect(() => {
             </label>
             <Dropdown
               className="w-full form-input"
-              value={form.kategori}
+              value={form.kategori ?? ""}   // hindari null
               options={kategoriOptions}
               optionLabel="label"
               optionValue="value"
               onChange={(e) => {
-                handleChange("kategori", e.value);
+                const val = Number(e.value);
+                console.log("Kategori dipilih:", val);
+                handleChange("kategori", val);
               }}
               placeholder={isLoadingKategori ? "Memuat kategori..." : "Pilih Kategori"}
               showClear
               filter
               filterPlaceholder="Cari kategori..."
               disabled={isLoadingKategori}
-              loading={isLoadingKategori}
             />
+
             {kategoriOptions.length === 0 && !isLoadingKategori && (
               <small className="field-hint" style={{ color: "#ef4444" }}>
                 ⚠️ Tidak ada kategori tersedia. Silakan tambahkan kategori terlebih dahulu.
