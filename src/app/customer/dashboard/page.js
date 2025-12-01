@@ -220,12 +220,13 @@ export default function DashboardPage() {
     }
 
     if (!user) {
-      console.log("⚠️ [DASHBOARD] No user data, showing verification modal");
-      const modalTimeout = setTimeout(() => {
-        setShowVerificationModal(true);
-        setHasModalBeenShown(true);
-      }, 500);
-      return () => clearTimeout(modalTimeout);
+      console.log("⚠️ [DASHBOARD] No user data, showing verification modal immediately");
+      // Tampilkan modal langsung tanpa delay
+      setShowVerificationModal(true);
+      setHasModalBeenShown(true);
+      // Tampilkan notif
+      toast.error("Akun Anda belum diverifikasi. Silakan verifikasi OTP terlebih dahulu.");
+      return;
     }
 
     // ===== CEK VERIFIKASI OTP =====
@@ -248,18 +249,18 @@ export default function DashboardPage() {
       return;
     }
 
-    // Jika belum verifikasi (verifikasi = 0), tampilkan modal OTP
+    // Jika belum verifikasi (verifikasi = 0), tampilkan modal OTP langsung (lock modal)
     // Dashboard tetap tampil, tapi di-lock dan muncul otpVerificationModal
     // Setelah OTP sent, akan muncul updateCustomer.js
     // Dashboard akan di-lock otomatis oleh useEffect ketika modal muncul
     if (!isVerified) {
-      console.log("⚠️ [DASHBOARD] User not verified (verifikasi = 0), showing OTP modal");
+      console.log("⚠️ [DASHBOARD] User not verified (verifikasi = 0), showing OTP modal immediately");
       setShowUpdateModal(false);
-      const modalTimeout = setTimeout(() => {
-        setShowVerificationModal(true);
-        setHasModalBeenShown(true);
-      }, 500);
-      return () => clearTimeout(modalTimeout);
+      // Tampilkan modal langsung tanpa delay
+      setShowVerificationModal(true);
+      setHasModalBeenShown(true);
+      // Tampilkan notif
+      toast.error("Akun Anda belum diverifikasi. Silakan verifikasi OTP terlebih dahulu.");
     }
   }, [hasModalBeenShown, showVerificationModal]);
 
@@ -330,18 +331,27 @@ export default function DashboardPage() {
         console.log("✅ [DASHBOARD] Customer data synced to localStorage");
       }
       
-      // Gunakan data yang sudah di-merge untuk cek modal (hanya jika modal belum pernah ditampilkan)
-      if (!hasModalBeenShown) {
-        checkAndShowModal(mergedCustomerData);
-      }
-
-      const pendingUpdateModal = localStorage.getItem("customer_show_update_modal");
+      // Cek verifikasi terlebih dahulu sebelum check modal
       const isUserVerified =
         mergedCustomerData?.verifikasi === "1" ||
         mergedCustomerData?.verifikasi === 1 ||
         mergedCustomerData?.verifikasi === true;
+      
+      // Jika sudah verifikasi, pastikan modal tidak muncul
+      if (isUserVerified) {
+        console.log("✅ [DASHBOARD] User verified, ensuring OTP modal is hidden");
+        setShowVerificationModal(false);
+        setHasModalBeenShown(false);
+      } else {
+        // Gunakan data yang sudah di-merge untuk cek modal (hanya jika modal belum pernah ditampilkan)
+        if (!hasModalBeenShown) {
+          checkAndShowModal(mergedCustomerData);
+        }
+      }
 
-    if (pendingUpdateModal === "1" && isUserVerified) {
+      // Check untuk pending update modal (setelah OTP verification)
+      const pendingUpdateModal = localStorage.getItem("customer_show_update_modal");
+      if (pendingUpdateModal === "1" && isUserVerified) {
         console.log("🟢 [DASHBOARD] Triggering UpdateCustomer modal after OTP verification");
         localStorage.removeItem("customer_show_update_modal");
         setUpdateModalReason("incomplete");
@@ -434,10 +444,26 @@ export default function DashboardPage() {
         />
       )}
 
-      {/* Modal Verifikasi OTP - Tampil jika verifikasi = 0 */}
+      {/* Modal Verifikasi OTP - Tampil HANYA jika verifikasi = 0 dan belum verifikasi */}
       {showVerificationModal && !showUpdateModal && (() => {
         const session = getCustomerSession();
         const customerData = customerInfo || session.user;
+        
+        // Double check: pastikan user benar-benar belum verifikasi
+        if (customerData) {
+          const verifikasiValue = customerData.verifikasi;
+          const normalizedVerifikasi = verifikasiValue === "1" ? 1 : verifikasiValue === "0" ? 0 : verifikasiValue;
+          const isVerified = normalizedVerifikasi === 1 || normalizedVerifikasi === true;
+          
+          // Jika sudah verifikasi, jangan tampilkan modal
+          if (isVerified) {
+            console.log("✅ [DASHBOARD] User already verified, hiding OTP modal");
+            setShowVerificationModal(false);
+            setHasModalBeenShown(false);
+            return null;
+          }
+        }
+        
         return customerData ? (
           <OTPVerificationModal
             customerInfo={customerData}

@@ -237,453 +237,524 @@ export default function Page() {
   };
 
   // ============================
-  // CONVERT & COMPRESS IMAGE TO JPG
+  // COMPRESS IMAGE BEFORE UPLOAD
+  // Sama seperti addProducts/page.js
   // ============================
-  const convertImageToJPG = async (file, quality = 0.75, maxWidth = 1600) => {
+  const compressImage = (file, maxWidth = 1600, maxHeight = 1600, quality = 0.75) => {
     return new Promise((resolve, reject) => {
-      // Check if already JPG/PNG
-      const isJPG = file.type === "image/jpeg" || file.type === "image/jpg";
-      const isPNG = file.type === "image/png";
-      
+      if (!file || !file.type.startsWith('image/')) {
+        resolve(file);
+        return;
+      }
+
       const reader = new FileReader();
       reader.onload = (e) => {
         const img = new Image();
         img.onload = () => {
-          const canvas = document.createElement("canvas");
+          const canvas = document.createElement('canvas');
           let width = img.width;
           let height = img.height;
-          
-          // Resize if too large
-          if (width > maxWidth) {
-            height = (height * maxWidth) / width;
-            width = maxWidth;
+
+          // Calculate new dimensions
+          if (width > maxWidth || height > maxHeight) {
+            if (width > height) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            } else {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
           }
-          
+
           canvas.width = width;
           canvas.height = height;
-          const ctx = canvas.getContext("2d");
-          
-          // For PNG or other formats with transparency, fill white background
-          // For JPG, no need to fill (already opaque)
-          if (!isJPG) {
-            ctx.fillStyle = "#FFFFFF";
-            ctx.fillRect(0, 0, width, height);
-          }
-          
-          // Draw image
+
+          const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
-          
-          // Convert to JPG (even if already JPG, we compress it)
+    
+          // Convert to blob with compression
           canvas.toBlob(
             (blob) => {
-              if (!blob) {
-                reject(new Error("Failed to convert/compress image"));
-                return;
+              if (blob) {
+                // Create new File object with compressed data
+                const compressedFile = new File([blob], file.name, {
+                  type: 'image/jpeg',
+                  lastModified: Date.now()
+                });
+                resolve(compressedFile);
+              } else {
+                resolve(file);
               }
-              // Always use .jpg extension and image/jpeg MIME type
-              const jpgFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
-                type: "image/jpeg",
-                lastModified: Date.now(),
-              });
-              resolve(jpgFile);
             },
-            "image/jpeg",
+            'image/jpeg',
             quality
           );
         };
-        img.onerror = () => reject(new Error("Failed to load image"));
+        img.onerror = () => resolve(file);
         img.src = e.target.result;
       };
-      reader.onerror = () => reject(new Error("Failed to read file"));
+      reader.onerror = () => resolve(file);
       reader.readAsDataURL(file);
     });
   };
 
   // ============================
+  // BUILD PRODUCT FORMDATA
+  // Sama persis dengan addProducts/page.js
+  // Sesuai dokumentasi Postman: multipart/form-data dengan file langsung
+  // Array fields sebagai JSON string
+  // ============================
+  async function buildProductFormData(form, kategoriId, normalizedAssign, onProgress = null) {
+    // SELALU generate kode dari nama (auto generate dengan dash)
+    const kode = generateKode(form.nama) || "produk-baru";
+    
+    const formData = new FormData();
+    
+    // ============================
+    // 1. BASIC FIELDS
+    // ============================
+    formData.append("kategori", String(kategoriId));
+    formData.append("nama", form.nama || "");
+    formData.append("kode", kode);
+    formData.append("url", "/" + kode);
+    formData.append("deskripsi", form.deskripsi || "");
+    formData.append("harga_asli", String(form.harga_asli || 0));
+    formData.append("harga_coret", String(form.harga_coret || 0));
+    formData.append("tanggal_event", formatDateForBackend(form.tanggal_event) || "");
+    formData.append("landingpage", String(form.landingpage || 1));
+    formData.append("status", String(form.status || 1));
+    
+    console.log("[FORMDATA] Basic fields:", {
+      kategori: kategoriId,
+      nama: form.nama,
+      kode: kode,
+      url: "/" + kode
+    });
+    
+    // ============================
+    // 2. HEADER IMAGE - File langsung (jika ada file baru)
+    // ============================
+    if (form.header?.type === "file" && form.header.value) {
+      if (onProgress) {
+        onProgress("Mengompresi header image...");
+      }
+      const compressedHeader = await compressImage(form.header.value);
+      formData.append("header", compressedHeader);
+    }
+    // Jika header existing (type === "url"), tidak perlu append
+    
+    // ============================
+    // 3. GAMBAR GALLERY - File langsung
+    // Format: gambar[0][file], gambar[0][caption], gambar[1][file], gambar[1][caption]
+    // ============================
+    const gambarFiles = (form.gambar || []).filter(g => g.path && g.path.type === "file" && g.path.value);
+    if (onProgress && gambarFiles.length > 0) {
+      onProgress(`Mengompresi ${gambarFiles.length} gambar...`);
+    }
+    
+    for (let i = 0; i < (form.gambar || []).length; i++) {
+      const g = form.gambar[i];
+      if (g.path && g.path.type === "file" && g.path.value) {
+        if (onProgress) {
+          onProgress(`Mengompresi gambar ${i + 1}/${gambarFiles.length}...`);
+        }
+        const compressedGambar = await compressImage(g.path.value);
+        formData.append(`gambar[${i}][file]`, compressedGambar);
+        formData.append(`gambar[${i}][caption]`, g.caption || "");
+      } else if (g.path && g.path.type === "url" && g.path.value) {
+        // Existing image - hanya append caption
+        formData.append(`gambar[${i}][caption]`, g.caption || "");
+      }
+    }
+    
+    // ============================
+    // 4. TESTIMONI - File langsung
+    // Format: testimoni[0][gambar], testimoni[0][nama], testimoni[0][deskripsi]
+    // ============================
+    const testimoniFiles = (form.testimoni || []).filter(t => t.gambar && t.gambar.type === "file" && t.gambar.value);
+    if (onProgress && testimoniFiles.length > 0) {
+      onProgress(`Mengompresi ${testimoniFiles.length} testimoni...`);
+    }
+    
+    for (let i = 0; i < (form.testimoni || []).length; i++) {
+      const t = form.testimoni[i];
+      if (t.gambar && t.gambar.type === "file" && t.gambar.value) {
+        if (onProgress) {
+          onProgress(`Mengompresi testimoni ${i + 1}/${testimoniFiles.length}...`);
+        }
+        const compressedTestimoni = await compressImage(t.gambar.value);
+        formData.append(`testimoni[${i}][gambar]`, compressedTestimoni);
+      }
+      formData.append(`testimoni[${i}][nama]`, t.nama || "");
+      formData.append(`testimoni[${i}][deskripsi]`, t.deskripsi || "");
+    }
+    
+    // ============================
+    // 5. ARRAY FIELDS - Sebagai JSON string (sesuai Postman)
+    // ============================
+    // custom_field - JSON string
+    const customFieldArray = (form.custom_field || []).map((f, idx) => ({
+      nama_field: f.label || f.key || "",
+      urutan: idx + 1,
+    }));
+    formData.append("custom_field", JSON.stringify(customFieldArray));
+    
+    // list_point - JSON string
+    const listPointArray = (form.list_point || []).map((p, idx) => ({
+      nama: p.nama || "",
+      urutan: idx + 1,
+    }));
+    formData.append("list_point", JSON.stringify(listPointArray));
+    
+    // assign - JSON string (array of numbers)
+    formData.append("assign", JSON.stringify(normalizedAssign || []));
+    
+    // fb_pixel - JSON string (array of numbers)
+    const fbPixelArray = (form.fb_pixel || []).map(v => Number(v)).filter(n => !Number.isNaN(n));
+    formData.append("fb_pixel", JSON.stringify(fbPixelArray));
+    
+    // event_fb_pixel - JSON string
+    const eventFbPixelArray = (form.event_fb_pixel || []).map((ev) => ({ 
+      event: ev || "" 
+    }));
+    formData.append("event_fb_pixel", JSON.stringify(eventFbPixelArray));
+    
+    // gtm - JSON string (array of numbers)
+    const gtmArray = (form.gtm || []).map(v => Number(v)).filter(n => !Number.isNaN(n));
+    formData.append("gtm", JSON.stringify(gtmArray));
+    
+    // video - JSON string (array of strings)
+    const videoArray = form.video
+      ? form.video.split(",").map((v) => v.trim()).filter((v) => v)
+      : [];
+    formData.append("video", JSON.stringify(videoArray));
+    
+    // Log semua array fields untuk debugging
+    console.log("[FORMDATA] Array fields:", {
+      assign: normalizedAssign,
+      list_point: listPointArray,
+      custom_field: customFieldArray,
+      event_fb_pixel: eventFbPixelArray,
+      fb_pixel: fbPixelArray,
+      gtm: gtmArray,
+      video: videoArray,
+    });
+    
+    return formData;
+  }
+
+  // ============================
   // SUBMIT - POST ke /api/admin/produk/{id}
+  // Sama persis dengan addProducts/page.js tapi endpoint berbeda
   // ============================
   const handleSubmit = async () => {
-    if (isSubmitting) {
-      console.log("⚠️ [EDIT_PRODUK] Duplicate submission prevented");
-      return;
-    }
-
-    if (!productId) {
-      alert("Product ID tidak ditemukan!");
-      return;
-    }
-
+    if (isSubmitting) return;
     setIsSubmitting(true);
-    setSubmitStatus("Menyiapkan data produk...");
 
     try {
-      // ============================================
-      // STEP 1: VALIDATE ALL REQUIRED FIELDS FIRST
-      // ============================================
-      console.log("🔍 [EDIT_PRODUK] Step 1: Validating required fields...");
-      console.log("  form.kategori:", form.kategori, "(type:", typeof form.kategori + ")");
-
-      // Validate kategori
-      const kategoriId = (() => {
-        if (!form.kategori || form.kategori === null || form.kategori === undefined || form.kategori === "") {
-          console.error("❌ [EDIT_PRODUK] kategori is missing/empty");
-          return null;
-        }
-        const parsed = Number(form.kategori);
-        if (Number.isNaN(parsed) || parsed <= 0) {
-          console.error("❌ [EDIT_PRODUK] kategori is not a valid number:", form.kategori);
-          return null;
-        }
-        console.log("✅ [EDIT_PRODUK] kategori is valid:", parsed);
-        return parsed;
-      })();
-
-      if (!kategoriId) {
-        alert("Kategori wajib dipilih! Silakan pilih kategori sebelum menyimpan produk.");
+      if (!productId) {
+        alert("Product ID tidak ditemukan!");
         setIsSubmitting(false);
-        setSubmitStatus("");
         return;
       }
 
-      // Validate assign
+      // 1) kategori validation - ambil ID dari kategori yang dipilih
+      console.log("[VALIDATION] ========== KATEGORI VALIDATION ==========");
+      console.log("form.kategori raw:", form.kategori);
+      console.log("form.kategori type:", typeof form.kategori);
+      
+      let kategoriId = null;
+      if (form.kategori !== null && form.kategori !== undefined && form.kategori !== "") {
+        // form.kategori adalah string ID dari dropdown (contoh: "7")
+        kategoriId = Number(form.kategori);
+        console.log("Kategori ID parsed:", kategoriId);
+      }
+      
+      console.log("[VALIDATION] Kategori check:", {
+        formKategori: form.kategori,
+        kategoriId: kategoriId,
+        type: typeof form.kategori,
+        isValid: !Number.isNaN(kategoriId) && kategoriId > 0
+      });
+      console.log("[VALIDATION] ========================================");
+      
+      if (!kategoriId || Number.isNaN(kategoriId) || kategoriId <= 0) {
+        console.error("[VALIDATION] ❌ KATEGORI INVALID!");
+        alert("Kategori wajib dipilih!");
+        setIsSubmitting(false);
+        return;
+      }
+      
+      console.log("[VALIDATION] ✅ Kategori valid:", kategoriId);
+
+      // 2) assign normalization
       const normalizedAssign = Array.isArray(form.assign)
-        ? form.assign
-            .filter((v) => v !== null && v !== undefined && v !== "")
-            .map((v) => Number(v))
-            .filter((num) => !Number.isNaN(num) && num > 0)
+        ? form.assign.map(a => Number(a)).filter(n => !Number.isNaN(n) && n > 0)
         : [];
-
       if (normalizedAssign.length === 0) {
-        alert("Penanggung Jawab (Assign By) wajib dipilih minimal 1 user!");
+        alert("Pilih minimal 1 penanggung jawab (assign).");
         setIsSubmitting(false);
-        setSubmitStatus("");
         return;
       }
 
-      // Validate nama
-      if (!form.nama || form.nama.trim() === "") {
-        alert("Nama produk wajib diisi!");
-        setIsSubmitting(false);
-        setSubmitStatus("");
-        return;
-      }
-
-      console.log("✅ [EDIT_PRODUK] All required fields validated");
-      console.log("  kategoriId:", kategoriId);
-      console.log("  assign:", normalizedAssign);
-      console.log("  nama:", form.nama);
-
-      // ============================================
-      // STEP 2: CHECK IF HAS FILES
-      // ============================================
-      const hasNewHeaderFile = form.header.type === "file" && form.header.value instanceof File;
-      const hasNewGalleryFile = form.gambar.some((g) => g.path?.type === "file" && g.path?.value instanceof File);
-      const hasNewTestimoniFile = form.testimoni.some((t) => t.gambar?.type === "file" && t.gambar?.value instanceof File);
-      const hasNewFile = hasNewHeaderFile || hasNewGalleryFile || hasNewTestimoniFile;
-
-      console.log("🔍 [EDIT_PRODUK] Step 2: Checking files...");
-      console.log("  hasNewFile:", hasNewFile);
-      console.log("  hasNewHeaderFile:", hasNewHeaderFile);
-      console.log("  hasNewGalleryFile:", hasNewGalleryFile);
-      console.log("  hasNewTestimoniFile:", hasNewTestimoniFile);
-
-      // SELALU generate slug dari nama untuk memastikan konsistensi
-      const kode = generateKode(form.nama);
-
-      // ============================================
-      // STEP 3: BUILD PAYLOAD
-      // ============================================
-      const payloadCustomField = form.custom_field.map((f, idx) => ({
-        nama_field: f.label || f.key,
-        urutan: idx + 1
-      }));
-
-      const videoArray = form.video
-        ? form.video.split(",").map(v => v.trim()).filter(v => v)
-        : [];
-
-      let payload;
-      let isFormData = false;
-
-      if (hasNewFile) {
-        // Use FormData for file uploads
-        console.log("📦 [EDIT_PRODUK] Step 3: Building FormData payload...");
-        setSubmitStatus("Mengompres & menyiapkan berkas media...");
-        payload = new FormData();
-        isFormData = true;
-
-        // ===== CRITICAL: Append ALL required fields FIRST, before file processing =====
-        console.log("📤 [EDIT_PRODUK] Appending required fields to FormData...");
-        
-        // 1. kategori (REQUIRED - MUST BE FIRST)
-        payload.append("kategori", String(kategoriId));
-        console.log("  ✅ kategori:", String(kategoriId));
-
-        // 2. nama (REQUIRED)
-        payload.append("nama", form.nama || "");
-        console.log("  ✅ nama:", form.nama || "");
-
-        // 3. user_input (REQUIRED)
-        if (form.user_input) {
-          payload.append("user_input", String(form.user_input));
-          console.log("  ✅ user_input:", String(form.user_input));
-        }
-
-        // 4. assign (REQUIRED)
-        payload.append("assign", JSON.stringify(normalizedAssign));
-        console.log("  ✅ assign:", JSON.stringify(normalizedAssign));
-
-        // 5. Other required fields
-        payload.append("kode", kode);
-        payload.append("url", "/" + kode);
-        payload.append("deskripsi", form.deskripsi || "");
-        payload.append("harga_coret", String(form.harga_coret || 0));
-        payload.append("harga_asli", String(form.harga_asli || 0));
-        payload.append("tanggal_event", formatDateForBackend(form.tanggal_event));
-        payload.append("landingpage", String(form.landingpage || "1"));
-        payload.append("status", String(form.status || 1));
-
-        // 6. JSON fields
-        payload.append("custom_field", JSON.stringify(payloadCustomField));
-        payload.append("list_point", JSON.stringify(form.list_point || []));
-        payload.append("fb_pixel", JSON.stringify(form.fb_pixel || []));
-        payload.append(
-          "event_fb_pixel",
-          JSON.stringify((form.event_fb_pixel || []).map((ev) => ({ event: ev })))
-        );
-        payload.append("gtm", JSON.stringify(form.gtm || []));
-        payload.append("video", JSON.stringify(videoArray));
-
-        console.log("✅ [EDIT_PRODUK] All required fields appended to FormData");
-
-        // ===== STEP 4: PROCESS FILES (after required fields are appended) =====
-        console.log("📁 [EDIT_PRODUK] Step 4: Processing files...");
-        try {
-          // Process Header
-          if (hasNewHeaderFile) {
-            setSubmitStatus("Mengonversi header ke JPG...");
-            const processedHeader = await convertImageToJPG(form.header.value, 0.75, 1600);
-            payload.append("header", processedHeader);
-            console.log("  ✅ header file appended");
-          }
-
-          // Process Gallery
-          for (let idx = 0; idx < form.gambar.length; idx++) {
-            const g = form.gambar[idx];
-            if (g.path?.type === "file" && g.path?.value instanceof File) {
-              setSubmitStatus(`Mengonversi gambar ${idx + 1}/${form.gambar.length} ke JPG...`);
-              const processedGambar = await convertImageToJPG(g.path.value, 0.75, 1600);
-              payload.append(`gambar[${idx}][file]`, processedGambar);
-            } else if (g.path?.type === "url" && g.path.value) {
-              // File existing - kirim path sebagai string
-              payload.append(`gambar[${idx}][path]`, g.path.value);
-            }
-            payload.append(`gambar[${idx}][caption]`, g.caption || "");
-          }
-          console.log(`  ✅ gallery: ${form.gambar.length} items processed`);
-
-          // Process Testimoni
-          for (let idx = 0; idx < form.testimoni.length; idx++) {
-            const t = form.testimoni[idx];
-            if (t.gambar?.type === "file" && t.gambar?.value instanceof File) {
-              setSubmitStatus(`Mengonversi testimoni ${idx + 1}/${form.testimoni.length} ke JPG...`);
-              const processedTestimoni = await convertImageToJPG(t.gambar.value, 0.75, 1600);
-              payload.append(`testimoni[${idx}][gambar]`, processedTestimoni);
-            } else if (t.gambar?.type === "url" && t.gambar.value) {
-              // File existing - kirim path sebagai string
-              payload.append(`testimoni[${idx}][gambar_path]`, t.gambar.value);
-            }
-            payload.append(`testimoni[${idx}][nama]`, t.nama || "");
-            payload.append(`testimoni[${idx}][deskripsi]`, t.deskripsi || "");
-          }
-          console.log(`  ✅ testimoni: ${form.testimoni.length} items processed`);
-        } catch (error) {
-          console.error("❌ [EDIT_PRODUK] Error processing images:", error);
-          alert(`Gagal memproses gambar: ${error.message}`);
-          setIsSubmitting(false);
-          setSubmitStatus("");
-          return;
-        }
-
-        // Final verification: Check kategori is still in FormData
-        const kategoriCheck = payload.get("kategori");
-        if (!kategoriCheck || kategoriCheck === "null" || kategoriCheck === "") {
-          console.error("❌ [EDIT_PRODUK] CRITICAL: kategori missing after file processing!");
-          alert("Terjadi kesalahan: Kategori hilang setelah proses file. Silakan coba lagi.");
-          setIsSubmitting(false);
-          setSubmitStatus("");
-          return;
-        }
-        console.log("✅ [EDIT_PRODUK] kategori verified in FormData:", kategoriCheck);
-      } else {
-        // Use JSON payload (no new files)
-        console.log("📦 [EDIT_PRODUK] Step 3: Building JSON payload...");
-        
-        // Build testimoni array dengan path existing
-        const testimoniPayload = form.testimoni.map((t) => {
-          let gambarValue = null;
-          if (t.gambar?.type === "url" && t.gambar.value) {
-            gambarValue = t.gambar.value;
-          } else if (typeof t.gambar === "string") {
-            gambarValue = t.gambar;
-          }
-          return {
-            gambar: gambarValue,
-            nama: t.nama || "",
-            deskripsi: t.deskripsi || ""
-          };
-        });
-
-        // Build gambar array dengan path existing
-        const gambarPayload = form.gambar.map((g) => {
-          let pathValue = null;
-          if (g.path?.type === "url" && g.path.value) {
-            pathValue = g.path.value;
-          } else if (typeof g.path === "string") {
-            pathValue = g.path;
-          }
-          return {
-            path: pathValue,
-            caption: g.caption || ""
-          };
-        });
-
-        payload = {
-          nama: form.nama || "",
-          kode: kode,
-          url: "/" + kode,
-          deskripsi: form.deskripsi || "",
-          harga_coret: Number(form.harga_coret) || 0,
-          harga_asli: Number(form.harga_asli) || 0,
-          tanggal_event: formatDateForBackend(form.tanggal_event),
-          landingpage: form.landingpage || "1",
-          status: form.status || 1,
-          // REQUIRED FIELDS
-          kategori: String(kategoriId), // MUST be string
-          assign: JSON.stringify(normalizedAssign),
-          user_input: form.user_input || null,
-          // JSON fields
-          custom_field: JSON.stringify(payloadCustomField),
-          list_point: JSON.stringify(form.list_point || []),
-          fb_pixel: JSON.stringify(form.fb_pixel || []),
-          event_fb_pixel: JSON.stringify(
-            (form.event_fb_pixel || []).map((ev) => ({ event: ev }))
-          ),
-          gtm: JSON.stringify(form.gtm || []),
-          video: JSON.stringify(videoArray),
-          testimoni: JSON.stringify(testimoniPayload),
-          gambar: JSON.stringify(gambarPayload),
-        };
-        console.log("✅ [EDIT_PRODUK] JSON payload built");
-        console.log("  kategori:", payload.kategori);
-      }
-
-      // ============================================
-      // STEP 5: FINAL VERIFICATION
-      // ============================================
-      console.log("🔍 [EDIT_PRODUK] Step 5: Final verification...");
-      if (isFormData) {
-        const kategoriValue = payload.get("kategori");
-        const namaValue = payload.get("nama");
-        const userInputValue = payload.get("user_input");
-        const assignValue = payload.get("assign");
-        
-        console.log("  kategori:", kategoriValue);
-        console.log("  nama:", namaValue);
-        console.log("  user_input:", userInputValue);
-        console.log("  assign:", assignValue);
-        
-        if (!kategoriValue || kategoriValue === "null" || kategoriValue === "") {
-          console.error("❌ [EDIT_PRODUK] CRITICAL: kategori missing in final FormData!");
-          alert("Terjadi kesalahan: Kategori tidak ditemukan. Silakan refresh halaman dan coba lagi.");
-          setIsSubmitting(false);
-          setSubmitStatus("");
-          return;
-        }
-      } else {
-        if (!payload.kategori || payload.kategori === null || payload.kategori === "") {
-          console.error("❌ [EDIT_PRODUK] CRITICAL: kategori missing in JSON payload!");
-          alert("Terjadi kesalahan: Kategori tidak ditemukan. Silakan refresh halaman dan coba lagi.");
-          setIsSubmitting(false);
-          setSubmitStatus("");
-          return;
-        }
-      }
-
-      console.log("✅ [EDIT_PRODUK] All verifications passed");
-      console.log("🚀 [EDIT_PRODUK] Sending payload to backend...");
-
-      // ============================================
-      // STEP 6: SEND TO BACKEND (POST method)
-      // ============================================
-      setSubmitStatus("Mengunggah produk ke server...");
-      const res = await fetch(
-        `/api/admin/produk/${productId}`,
-        {
-          method: "POST",
-          headers: {
-            ...(isFormData ? {} : { "Content-Type": "application/json" }),
-            Accept: "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          body: isFormData ? payload : JSON.stringify(payload),
-        }
+      // Build FormData dengan progress indicator (sama seperti addProducts)
+      setSubmitStatus("Mempersiapkan data...");
+      const formData = await buildProductFormData(
+        form, 
+        kategoriId, 
+        normalizedAssign,
+        (message) => setSubmitStatus(message)
       );
 
-      // ============================================
-      // STEP 7: HANDLE RESPONSE
-      // ============================================
-      console.log("📥 [EDIT_PRODUK] Step 7: Handling response...");
-      const contentType = res.headers.get("content-type");
-      let data;
+      // DEBUG: Log FormData untuk tracking (detail)
+      console.log("[FORMDATA] ========== DETAIL FORMDATA ==========");
+      const formDataEntries = [];
+      const formDataJSON = {};
       
-      if (contentType && contentType.includes("application/json")) {
-        try {
-          data = await res.json();
-        } catch (parseError) {
-          const textResponse = await res.text();
-          console.error("❌ [EDIT_PRODUK] Failed to parse JSON response:", textResponse.substring(0, 200));
-          alert("Terjadi kesalahan: Response dari server tidak valid.");
-          setIsSubmitting(false);
-          setSubmitStatus("");
-          return;
+      for (const [key, value] of formData.entries()) {
+        if (value instanceof File) {
+          formDataEntries.push({ key, type: "File", name: value.name, size: `${(value.size / 1024).toFixed(2)} KB` });
+          formDataJSON[key] = {
+            type: "File",
+            name: value.name,
+            size: `${(value.size / 1024).toFixed(2)} KB`,
+            sizeBytes: value.size,
+            mimeType: value.type
+          };
+          console.log(`  ${key}: [File] ${value.name} (${(value.size / 1024).toFixed(2)} KB)`);
+        } else {
+          const str = String(value);
+          formDataEntries.push({ key, type: "String", value: str.length > 200 ? str.substring(0, 200) + "..." : str });
+          
+          // Try to parse JSON strings for better readability
+          let displayValue = str;
+          try {
+            const parsed = JSON.parse(str);
+            formDataJSON[key] = parsed;
+            displayValue = Array.isArray(parsed) 
+              ? `[Array(${parsed.length})] ${JSON.stringify(parsed).substring(0, 200)}...`
+              : typeof parsed === "object"
+              ? `[Object] ${JSON.stringify(parsed).substring(0, 200)}...`
+              : parsed;
+          } catch {
+            formDataJSON[key] = str.length > 200 ? str.substring(0, 200) + "..." : str;
+          }
+          
+          console.log(`  ${key}: ${displayValue.length > 200 ? displayValue.substring(0, 200) + "..." : displayValue}`);
         }
-      } else {
-        const textResponse = await res.text();
-        console.error("❌ [EDIT_PRODUK] Non-JSON response received:", textResponse.substring(0, 200));
-        alert("Terjadi kesalahan: Server mengembalikan response yang tidak valid.");
-        setIsSubmitting(false);
-        setSubmitStatus("");
-        return;
+      }
+      console.table(formDataEntries);
+      
+      // Tampilkan sebagai JSON yang readable
+      console.log("[FORMDATA] ========== FORMDATA AS JSON ==========");
+      console.log(JSON.stringify(formDataJSON, null, 2));
+      console.log("[FORMDATA] =====================================");
+      
+      // Verify critical fields
+      console.log("[FORMDATA] ========== CRITICAL FIELDS VERIFICATION ==========");
+      const kategoriInFormData = formData.get("kategori");
+      const namaInFormData = formData.get("nama");
+      const assignInFormData = formData.get("assign");
+      const headerInFormData = formData.get("header");
+      
+      console.log({
+        kategori: {
+          value: kategoriInFormData,
+          type: typeof kategoriInFormData,
+          exists: kategoriInFormData !== null,
+          isEmpty: kategoriInFormData === "" || kategoriInFormData === "null" || kategoriInFormData === "undefined"
+        },
+        nama: {
+          value: namaInFormData,
+          type: typeof namaInFormData,
+          exists: namaInFormData !== null,
+          isEmpty: !namaInFormData || namaInFormData === ""
+        },
+        assign: {
+          value: assignInFormData,
+          type: typeof assignInFormData,
+          parsed: assignInFormData ? JSON.parse(assignInFormData) : null
+        },
+        header: {
+          exists: headerInFormData !== null,
+          isFile: headerInFormData instanceof File,
+          name: headerInFormData instanceof File ? headerInFormData.name : null
+        }
+      });
+      
+      // Final check sebelum kirim
+      if (!kategoriInFormData || kategoriInFormData === "" || kategoriInFormData === "null" || kategoriInFormData === "undefined") {
+        console.error("[FORMDATA] ❌ KATEGORI TIDAK ADA DI FORMDATA!");
+        throw new Error("Kategori tidak ditemukan di FormData. Pastikan kategori sudah dipilih.");
       }
       
-      console.log("📊 [EDIT_PRODUK] Response received:");
-      console.log("  success:", data.success);
-      console.log("  message:", data.message);
-      if (data.data) {
-        console.log("  data:", data.data);
-        console.table(data.data);
+      if (!namaInFormData || namaInFormData === "") {
+        console.error("[FORMDATA] ❌ NAMA TIDAK ADA DI FORMDATA!");
+        throw new Error("Nama produk tidak ditemukan di FormData.");
+      }
+      
+      console.log("[FORMDATA] ✅ All critical fields verified");
+      console.log("[FORMDATA] =================================================");
+
+      // ============================
+      // SIMPAN REQUEST DATA KE LOCALSTORAGE DULU
+      // ============================
+      console.log("[LOCALSTORAGE] ========== SAVING REQUEST DATA ==========");
+      const requestDataToSave = {
+        timestamp: new Date().toISOString(),
+        productId: productId,
+        formData: formDataJSON
+      };
+      
+      // Simpan ke localStorage
+      try {
+        localStorage.setItem("last_product_update_request", JSON.stringify(requestDataToSave, null, 2));
+        console.log("[LOCALSTORAGE] ✅ Request data saved to localStorage");
+        console.log("[LOCALSTORAGE] Key: 'last_product_update_request'");
+        console.log("[LOCALSTORAGE] Data preview:", {
+          timestamp: requestDataToSave.timestamp,
+          productId: requestDataToSave.productId,
+          fieldsCount: Object.keys(requestDataToSave.formData).length,
+          fields: Object.keys(requestDataToSave.formData)
+        });
+        console.log("[LOCALSTORAGE] Full data:", JSON.stringify(requestDataToSave, null, 2));
+      } catch (error) {
+        console.error("[LOCALSTORAGE] ❌ Failed to save to localStorage:", error);
+      }
+      console.log("[LOCALSTORAGE] ==========================================");
+
+      // FETCH dengan FormData (sama seperti addProducts, tapi endpoint berbeda)
+      setSubmitStatus("Mengirim data ke server...");
+      
+      // Log request untuk network tracking
+      console.log("[NETWORK] ========== REQUEST FORMDATA ==========");
+      console.log("URL:", `/api/admin/produk/${productId}`);
+      console.log("Method:", "POST");
+      console.log("Content-Type:", "multipart/form-data (auto-set by browser)");
+      const token = localStorage.getItem("token") || "";
+      console.log("Headers:", {
+        "Accept": "application/json",
+        "Authorization": token ? `Bearer ${token.substring(0, 20)}...` : "MISSING"
+      });
+      console.log("FormData entries count:", formDataEntries.length);
+      
+      // Verify data sebelum kirim
+      console.log("[NETWORK] ========== PRE-SEND VERIFICATION ==========");
+      const preKategori = formData.get("kategori");
+      const preNama = formData.get("nama");
+      const preAssign = formData.get("assign");
+      const preHeader = formData.get("header");
+      console.log("Kategori:", preKategori);
+      console.log("Nama:", preNama);
+      console.log("Assign:", preAssign);
+      console.log("Header:", preHeader instanceof File ? `File(${preHeader.name}, ${(preHeader.size / 1024).toFixed(2)} KB)` : "NULL");
+      console.log("[NETWORK] ===========================================");
+      console.log("[NETWORK] ======================================");
+      
+      const res = await fetch(`/api/admin/produk/${productId}`, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`
+          // Jangan set Content-Type, browser akan set otomatis dengan boundary untuk FormData
+        },
+        body: formData
+      });
+      
+      console.log("[NETWORK] ========== RESPONSE RECEIVED ==========");
+      console.log("Response status:", res.status);
+      console.log("Response statusText:", res.statusText);
+      console.log("Response headers:", Object.fromEntries(res.headers.entries()));
+      console.log("[NETWORK] =======================================");
+
+      const contentType = res.headers.get("content-type") || "";
+      let data;
+      if (contentType.includes("application/json")) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        throw new Error("Non-JSON response: " + text.slice(0, 400));
       }
 
       if (!res.ok) {
-        console.error("❌ [EDIT_PRODUK] API ERROR:", data);
-        console.error("❌ [EDIT_PRODUK] API ERROR detail:", data?.errors);
-        alert(data?.message || "Gagal mengupdate produk!");
-        setIsSubmitting(false);
+        console.error("[API ERROR] ========== DETAIL ERROR ==========");
+        console.error("Status:", res.status);
+        console.error("Response:", data);
+        console.error("Full error object:", JSON.stringify(data, null, 2));
+        
+        // Extract detailed error information
+        let errorDetails = "\n\n📋 Detail Error:\n";
+        
+        if (data.errors && typeof data.errors === "object" && Object.keys(data.errors).length > 0) {
+          errorDetails += "Field yang error:\n";
+          for (const [field, messages] of Object.entries(data.errors)) {
+            const msgArray = Array.isArray(messages) ? messages : [messages];
+            errorDetails += `  ❌ ${field}: ${msgArray.join(", ")}\n`;
+          }
+        } else if (data.errorFields && data.errorFields.length > 0) {
+          errorDetails += `Field yang error: ${data.errorFields.join(", ")}\n`;
+        } else {
+          // Parse error dari message jika ada
+          const message = data.message || "";
+          const fieldMatches = message.match(/(\w+)\s+field\s+is\s+required/gi);
+          if (fieldMatches) {
+            errorDetails += "Field yang error (dari message):\n";
+            fieldMatches.forEach(match => {
+              const field = match.match(/(\w+)\s+field/i)?.[1];
+              if (field) {
+                errorDetails += `  ❌ ${field}: wajib diisi\n`;
+              }
+            });
+          }
+        }
+        
+        console.error(errorDetails);
+        
+        // Log debug info jika ada
+        if (data.debug) {
+          console.error("[API ERROR] Debug info:", data.debug);
+        }
+        
+        console.error("[API ERROR] ====================================");
+        
         setSubmitStatus("");
+        const errorMessage = data.detailedMessage || data.message || "Gagal memperbarui produk";
+        
+        // Tampilkan alert dengan detail
+        alert(errorMessage);
+        setIsSubmitting(false);
         return;
       }
 
-      // Success
-      console.log("✅ [EDIT_PRODUK] Product updated successfully:", data);
-      setSubmitStatus("Produk berhasil diupdate, mengalihkan...");
-      alert("Produk berhasil diupdate!");
+      // Handle success response sesuai format backend
+      console.log("[API SUCCESS]", data);
+      setSubmitStatus("");
       
-      // Redirect ke halaman products
-      router.push("/admin/products");
+      if (data.success) {
+        alert(data.message || "Produk berhasil diperbarui!");
+        router.push("/admin/products");
+      } else {
+        alert("Produk berhasil diperbarui!");
+        router.push("/admin/products");
+      }
     } catch (err) {
-      console.error("❌ [EDIT_PRODUK] Submit error:", err);
-      alert("Terjadi kesalahan saat submit: " + (err.message || "Unknown error"));
+      console.error("[SUBMIT ERROR]", err);
+      setSubmitStatus("");
+      
+      // Tampilkan error message yang lebih user-friendly
+      let errorMessage = "Terjadi kesalahan saat submit";
+      
+      if (err.message) {
+        if (err.message.includes("NetworkError") || err.message.includes("Failed to fetch")) {
+          errorMessage = "Gagal terhubung ke server. Pastikan koneksi internet stabil dan coba lagi.";
+        } else if (err.message.includes("upload")) {
+          errorMessage = `Gagal upload file: ${err.message}`;
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
+      alert(errorMessage);
     } finally {
       setIsSubmitting(false);
       setSubmitStatus("");
