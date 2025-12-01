@@ -1,7 +1,6 @@
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
-import FormData from "form-data";
 
 const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "http://3.105.234.181:8000";
 
@@ -436,101 +435,94 @@ export async function POST(request) {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    const contentType = request.headers.get("content-type") || "";
 
-    let response;
+    // Handle JSON request only
+    const reqBody = await request.json();
+    
+    console.log("[ROUTE] ========== INCOMING JSON PAYLOAD ==========");
+    console.log("Payload keys:", Object.keys(reqBody));
+    console.log("Kategori:", reqBody.kategori);
+    console.log("Nama:", reqBody.nama);
+    console.log("Header exists:", !!reqBody.header);
+    console.log("Assign:", reqBody.assign);
+    console.log("[ROUTE] ============================================");
+    
+    // Extract and structure payload
+    const payload = await extractPayload(reqBody);
 
-    // Handle FormData request (sesuai controller Laravel)
-    if (contentType.includes("multipart/form-data")) {
-      // Forward FormData langsung ke backend Laravel
-      const incomingFormData = await request.formData();
-      
-      // Create FormData untuk forward ke backend
-      const forwardFormData = new FormData();
+    // Validate payload
+    const validationErrors = validatePayload(payload);
 
-      // Forward all entries ke backend
-      for (const [key, value] of incomingFormData.entries()) {
-        if (value instanceof File) {
-          // Convert File to Buffer untuk form-data package
-          const arrayBuffer = await value.arrayBuffer();
-          const buffer = Buffer.from(arrayBuffer);
-          forwardFormData.append(key, buffer, {
-            filename: value.name,
-            contentType: value.type,
-          });
-        } else {
-          // Forward string values as-is
-          forwardFormData.append(key, value);
-        }
-      }
-
-      // Forward ke backend Laravel dengan FormData
-      response = await fetch(`${BACKEND_URL}/api/admin/produk`, {
-        method: "POST",
-        headers: {
-          ...forwardFormData.getHeaders(),
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
+    if (validationErrors.length > 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Validation error",
+          errors: validationErrors,
         },
-        body: forwardFormData,
-      });
-
-    } else {
-      // Handle JSON request (untuk backward compatibility)
-      const reqBody = await request.json();
-      
-      // Extract and structure payload
-      const payload = await extractPayload(reqBody);
-
-      // Validate payload
-      const validationErrors = validatePayload(payload);
-
-      if (validationErrors.length > 0) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: "Validation error",
-            errors: validationErrors,
-          },
-          { status: 400 }
-        );
-      }
-
-      // Convert payload untuk backend Laravel
-      const payloadToSend = {
-        ...payload,
-        assign: JSON.stringify(payload.assign || []),
-        list_point: JSON.stringify(payload.list_point || []),
-        custom_field: JSON.stringify(payload.custom_field || []),
-        event_fb_pixel: JSON.stringify(payload.event_fb_pixel || []),
-        fb_pixel: JSON.stringify(payload.fb_pixel || []),
-        gtm: JSON.stringify(payload.gtm || []),
-        video: JSON.stringify(payload.video || []),
-        gambar: JSON.stringify(payload.gambar || []),
-        testimoni: JSON.stringify(payload.testimoni || []),
-      };
-
-      if (payloadToSend.header === null || payloadToSend.header === undefined || payloadToSend.header === "") {
-        delete payloadToSend.header;
-      }
-
-      payloadToSend.kategori = String(payloadToSend.kategori);
-      payloadToSend.user_input = String(payloadToSend.user_input);
-      payloadToSend.landingpage = String(payloadToSend.landingpage || "1");
-      payloadToSend.harga_asli = String(payloadToSend.harga_asli || "0");
-      payloadToSend.harga_coret = String(payloadToSend.harga_coret || "0");
-
-      // Send JSON to backend
-      response = await fetch(`${BACKEND_URL}/api/admin/produk`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payloadToSend),
-      });
+        { status: 400 }
+      );
     }
+
+    // Convert payload untuk backend Laravel
+    const payloadToSend = {
+      ...payload,
+      assign: JSON.stringify(payload.assign || []),
+      list_point: JSON.stringify(payload.list_point || []),
+      custom_field: JSON.stringify(payload.custom_field || []),
+      event_fb_pixel: JSON.stringify(payload.event_fb_pixel || []),
+      fb_pixel: JSON.stringify(payload.fb_pixel || []),
+      gtm: JSON.stringify(payload.gtm || []),
+      video: JSON.stringify(payload.video || []),
+      gambar: JSON.stringify(payload.gambar || []),
+      testimoni: JSON.stringify(payload.testimoni || []),
+    };
+
+    if (payloadToSend.header === null || payloadToSend.header === undefined || payloadToSend.header === "") {
+      delete payloadToSend.header;
+    }
+
+    payloadToSend.kategori = String(payloadToSend.kategori);
+    payloadToSend.user_input = String(payloadToSend.user_input);
+    payloadToSend.landingpage = String(payloadToSend.landingpage || "1");
+    payloadToSend.harga_asli = String(payloadToSend.harga_asli || "0");
+    payloadToSend.harga_coret = String(payloadToSend.harga_coret || "0");
+
+    console.log("[ROUTE] ========== FORWARDING TO BACKEND ==========");
+    console.log("URL:", `${BACKEND_URL}/api/admin/produk`);
+    console.log("Method:", "POST");
+    console.log("Headers:", {
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+      "Authorization": `Bearer ${token.substring(0, 20)}...`
+    });
+    console.log("Payload size:", JSON.stringify(payloadToSend).length, "bytes");
+    console.log("Payload preview:", {
+      kategori: payloadToSend.kategori,
+      nama: payloadToSend.nama,
+      kode: payloadToSend.kode,
+      header: payloadToSend.header ? `${payloadToSend.header.substring(0, 50)}...` : null,
+      gambar: payloadToSend.gambar ? JSON.parse(payloadToSend.gambar).length : 0,
+      testimoni: payloadToSend.testimoni ? JSON.parse(payloadToSend.testimoni).length : 0,
+      assign: payloadToSend.assign,
+      list_point: payloadToSend.list_point,
+    });
+    console.log("Full payload to backend:", payloadToSend);
+    console.log("[ROUTE] ============================================");
+
+    // Send JSON to backend
+    const response = await fetch(`${BACKEND_URL}/api/admin/produk`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payloadToSend),
+    });
+    
+    console.log("[ROUTE] Backend response status:", response.status);
+    console.log("[ROUTE] Backend response headers:", Object.fromEntries(response.headers.entries()));
 
     // Handle response
     const responseText = await response.text();
@@ -551,24 +543,90 @@ export async function POST(request) {
     }
 
     if (!response.ok) {
-      // Extract errors
+      // Extract errors dengan detail
+      console.error("[ROUTE] ========== BACKEND ERROR RESPONSE ==========");
+      console.error("Status:", response.status);
+      console.error("Response data:", JSON.stringify(data, null, 2));
+      console.error("Response text (raw):", responseText.substring(0, 500));
+      
       let extractedErrors = {};
       let extractedErrorFields = [];
 
-      if (data?.errors && typeof data.errors === "object") {
+      // Method 1: Check data.errors
+      if (data?.errors && typeof data.errors === "object" && Object.keys(data.errors).length > 0) {
         extractedErrors = data.errors;
         extractedErrorFields = Object.keys(data.errors);
-      } else if (data?.data?.errors && typeof data.data.errors === "object") {
+        console.error("Errors found in data.errors:", extractedErrors);
+      } 
+      // Method 2: Check data.data.errors
+      else if (data?.data?.errors && typeof data.data.errors === "object") {
         extractedErrors = data.data.errors;
         extractedErrorFields = Object.keys(data.data.errors);
+        console.error("Errors found in data.data.errors:", extractedErrors);
+      }
+      // Method 3: Parse from message
+      else if (data?.message) {
+        console.error("Parsing errors from message:", data.message);
+        const message = data.message;
+        
+        // Extract field names from message like "The kategori field is required. (and 2 more errors)"
+        const fieldPatterns = [
+          /The\s+(\w+)\s+field\s+is\s+required/gi,
+          /(\w+)\s+field\s+is\s+required/gi,
+          /(\w+)\s+is\s+required/gi,
+        ];
+        
+        for (const pattern of fieldPatterns) {
+          const matches = message.matchAll(pattern);
+          for (const match of matches) {
+            const fieldName = match[1]?.toLowerCase();
+            if (fieldName && !extractedErrorFields.includes(fieldName)) {
+              extractedErrorFields.push(fieldName);
+              extractedErrors[fieldName] = ["Field ini wajib diisi"];
+            }
+          }
+        }
+        
+        // Check for "and X more errors"
+        const moreErrorsMatch = message.match(/and\s+(\d+)\s+more\s+errors?/i);
+        if (moreErrorsMatch) {
+          console.error(`⚠️ Ada ${moreErrorsMatch[1]} error lainnya yang tidak terdeteksi`);
+        }
+      }
+      
+      console.error("Extracted errors:", extractedErrors);
+      console.error("Extracted error fields:", extractedErrorFields);
+      console.error("[ROUTE] ============================================");
+
+      // Build detailed error message
+      let detailedMessage = data?.message || "Gagal membuat produk";
+      if (extractedErrorFields.length > 0) {
+        detailedMessage += `\n\n📋 Field yang error (${extractedErrorFields.length}):`;
+        for (const field of extractedErrorFields) {
+          const errors = Array.isArray(extractedErrors[field]) 
+            ? extractedErrors[field] 
+            : [extractedErrors[field] || "Field ini wajib diisi"];
+          errors.forEach((err) => {
+            detailedMessage += `\n  ❌ ${field}: ${err}`;
+          });
+        }
+      } else {
+        detailedMessage += "\n\n⚠️ Detail error tidak tersedia dari backend.";
       }
 
       return NextResponse.json(
         {
           success: false,
           message: data?.message || "Gagal membuat produk",
+          detailedMessage: detailedMessage,
           errors: extractedErrors,
           errorFields: extractedErrorFields,
+          debug: {
+            status: response.status,
+            backendResponse: data,
+            extractedErrors: extractedErrors,
+            extractedErrorFields: extractedErrorFields,
+          }
         },
         { status: response.status }
       );
