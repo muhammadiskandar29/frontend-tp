@@ -563,17 +563,17 @@ export async function POST(request) {
       
       console.log("[ROUTE] ==============================================");
       
-      // Verify data di forwardFormData sebelum kirim
-      console.log("[ROUTE] ========== VERIFYING FORWARDED DATA ==========");
-      const verifyKategori = forwardFormData.get("kategori");
-      const verifyNama = forwardFormData.get("nama");
-      const verifyAssign = forwardFormData.get("assign");
-      const verifyHeader = forwardFormData.get("header");
+      // Verify data di incomingFormData (bukan forwardFormData karena form-data package tidak support .get())
+      console.log("[ROUTE] ========== VERIFYING DATA ==========");
+      const verifyKategori = incomingFormData.get("kategori");
+      const verifyNama = incomingFormData.get("nama");
+      const verifyAssign = incomingFormData.get("assign");
+      const verifyHeader = incomingFormData.get("header");
       
       console.log("Kategori:", verifyKategori ? String(verifyKategori) : "NULL");
       console.log("Nama:", verifyNama ? String(verifyNama) : "NULL");
       console.log("Assign:", verifyAssign ? String(verifyAssign) : "NULL");
-      console.log("Header:", verifyHeader ? `Buffer(${verifyHeader.length} bytes)` : "NULL");
+      console.log("Header:", verifyHeader instanceof File ? `File(${verifyHeader.name}, ${(verifyHeader.size / 1024).toFixed(2)} KB)` : "NULL");
       
       if (!verifyKategori || !verifyNama || !verifyHeader) {
         console.error("[ROUTE] ❌ MISSING CRITICAL FIELDS!");
