@@ -2,7 +2,6 @@ export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
 import FormData from "form-data";
-import { fetch as undiciFetch } from "undici";
 
 const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "http://3.105.234.181:8000";
 
@@ -649,26 +648,67 @@ export async function POST(request) {
           "has-boundary": headers["content-type"]?.includes("boundary")
         });
         
-        // Forward dengan undici fetch yang support form-data package
-        // undici fetch lebih kompatibel dengan form-data package
-        console.log("[ROUTE] Sending request to backend...");
-        response = await undiciFetch(`${BACKEND_URL}/api/admin/produk`, {
-          method: "POST",
-          headers: headers,
-          body: formDataStream, // form-data package akan handle sebagai stream
-        });
+        // Forward dengan axios yang lebih kompatibel dengan form-data package
+        console.log("[ROUTE] Sending request to backend using axios...");
+        
+        // Axios lebih kompatibel dengan form-data package
+        const axiosResponse = await axios.post(
+          `${BACKEND_URL}/api/admin/produk`,
+          formDataStream, // form-data package
+          {
+            headers: {
+              ...formDataHeaders,
+              Accept: "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            maxContentLength: Infinity,
+            maxBodyLength: Infinity,
+          }
+        );
+        
+        // Convert axios response ke format yang compatible dengan kode berikutnya
+        response = {
+          ok: axiosResponse.status >= 200 && axiosResponse.status < 300,
+          status: axiosResponse.status,
+          statusText: axiosResponse.statusText,
+          headers: new Headers(axiosResponse.headers),
+          text: async () => JSON.stringify(axiosResponse.data),
+          json: async () => axiosResponse.data,
+        };
         
         console.log("[ROUTE] ✅ Request sent successfully");
         console.log("[ROUTE] Backend response status:", response.status);
         console.log("[ROUTE] Backend response ok:", response.ok);
-        console.log("[ROUTE] Backend response headers:", Object.fromEntries(response.headers.entries()));
-      } catch (fetchError) {
-        console.error("[ROUTE] ❌ Fetch error:", fetchError);
-        console.error("[ROUTE] Error details:", {
-          message: fetchError.message,
-          stack: fetchError.stack
-        });
-        throw fetchError;
+      } catch (axiosError) {
+        console.error("[ROUTE] ❌ Axios error:", axiosError);
+        
+        // Handle axios error response
+        if (axiosError.response) {
+          // Backend responded with error
+          response = {
+            ok: false,
+            status: axiosError.response.status,
+            statusText: axiosError.response.statusText,
+            headers: new Headers(axiosError.response.headers),
+            json: async () => axiosError.response.data,
+            text: async () => JSON.stringify(axiosError.response.data),
+          };
+        } else if (axiosError.request) {
+          // Request sent but no response
+          console.error("[ROUTE] ❌ No response from backend");
+          return NextResponse.json(
+            {
+              success: false,
+              message: "Tidak ada response dari backend",
+              error: axiosError.message,
+            },
+            { status: 500 }
+          );
+        } else {
+          // Error setting up request
+          console.error("[ROUTE] ❌ Request setup error:", axiosError.message);
+          throw axiosError;
+        }
       }
 
     } else {
@@ -733,11 +773,16 @@ export async function POST(request) {
     }
     
     // Handle response
-    const responseText = await response.text();
-    
     let data;
     try {
-      data = JSON.parse(responseText);
+      // Jika response sudah punya method json(), gunakan itu
+      if (typeof response.json === "function") {
+        data = await response.json();
+      } else {
+        // Fallback: parse dari text
+        const responseText = await response.text();
+        data = JSON.parse(responseText);
+      }
       
       // Log response untuk debugging
       console.log("[ROUTE] Backend response:", {
@@ -758,12 +803,11 @@ export async function POST(request) {
       }
     } catch (parseError) {
       console.error("[ROUTE] ❌ Failed to parse response:", parseError);
-      console.error("[ROUTE] Response text:", responseText.substring(0, 500));
       return NextResponse.json(
         {
           success: false,
           message: "Backend error: Response bukan JSON",
-          raw_response: responseText.substring(0, 200),
+          error: parseError.message,
           status: response.status,
         },
         { status: response.status || 500 }
