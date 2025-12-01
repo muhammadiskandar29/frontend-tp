@@ -502,104 +502,37 @@ export async function POST(request) {
         );
       }
       
-      // Create FormData untuk forward ke backend
+      // Create FormData untuk forward ke backend (menggunakan form-data package)
       const forwardFormData = new FormData();
       
       console.log("[ROUTE] ========== BUILDING FORWARD FORMDATA ==========");
-      let forwardedCount = 0;
-      let fileCount = 0;
-      let stringCount = 0;
-
-      // Forward all entries ke backend
+      
+      // Forward all entries ke backend - SIMPLE APPROACH
       for (const [key, value] of incomingFormData.entries()) {
         if (value instanceof File) {
           // Convert File to Buffer untuk form-data package
-          console.log(`[ROUTE] Processing file: ${key} = ${value.name} (${(value.size / 1024).toFixed(2)} KB)`);
           const arrayBuffer = await value.arrayBuffer();
           const buffer = Buffer.from(arrayBuffer);
           forwardFormData.append(key, buffer, {
             filename: value.name,
-            contentType: value.type,
+            contentType: value.type || "application/octet-stream",
           });
-          fileCount++;
-          forwardedCount++;
-          console.log(`[ROUTE] ✅ File appended: ${key}`);
+          console.log(`[ROUTE] ✅ File: ${key} = ${value.name} (${(value.size / 1024).toFixed(2)} KB)`);
         } else {
-          // Forward string values as-is (termasuk JSON string untuk array fields)
+          // Forward string values as-is
           const strValue = String(value);
           forwardFormData.append(key, strValue);
-          stringCount++;
-          forwardedCount++;
-          console.log(`[ROUTE] ✅ String appended: ${key} = ${strValue.length > 100 ? strValue.substring(0, 100) + "..." : strValue}`);
+          console.log(`[ROUTE] ✅ String: ${key} = ${strValue.length > 50 ? strValue.substring(0, 50) + "..." : strValue}`);
         }
       }
       
-      console.log(`[ROUTE] Total forwarded: ${forwardedCount} (${fileCount} files, ${stringCount} strings)`);
       console.log("[ROUTE] ==============================================");
       
-      // Verify critical fields in forwardFormData
-      console.log("[ROUTE] ========== VERIFYING FORWARDED DATA ==========");
-      const verifyKategori = forwardFormData.get("kategori");
-      const verifyNama = forwardFormData.get("nama");
-      const verifyAssign = forwardFormData.get("assign");
-      const verifyHeader = forwardFormData.get("header");
-      
-      console.log("Kategori in forwardFormData:", verifyKategori ? String(verifyKategori) : "NULL");
-      console.log("Nama in forwardFormData:", verifyNama ? String(verifyNama) : "NULL");
-      console.log("Assign in forwardFormData:", verifyAssign ? String(verifyAssign) : "NULL");
-      console.log("Header in forwardFormData:", verifyHeader ? `Buffer(${verifyHeader.length} bytes)` : "NULL");
-      
-      if (!verifyKategori) {
-        console.error("[ROUTE] ❌ KATEGORI TIDAK ADA DI FORWARD FORMDATA!");
-      }
-      if (!verifyNama) {
-        console.error("[ROUTE] ❌ NAMA TIDAK ADA DI FORWARD FORMDATA!");
-      }
-      if (!verifyHeader) {
-        console.error("[ROUTE] ❌ HEADER TIDAK ADA DI FORWARD FORMDATA!");
-      }
-      console.log("[ROUTE] ==============================================");
-      
-      // Build JSON representation for logging
-      const forwardedJSON = {};
-      for (const [key, value] of incomingFormData.entries()) {
-        if (value instanceof File) {
-          forwardedJSON[key] = {
-            type: "File",
-            name: value.name,
-            size: `${(value.size / 1024).toFixed(2)} KB`,
-            sizeBytes: value.size,
-            mimeType: value.type
-          };
-        } else {
-          const str = String(value);
-          try {
-            const parsed = JSON.parse(str);
-            forwardedJSON[key] = parsed;
-          } catch {
-            forwardedJSON[key] = str.length > 200 ? str.substring(0, 200) + "..." : str;
-          }
-        }
-      }
-      
-      // Tampilkan sebagai JSON yang readable
-      console.log("[ROUTE] ========== FORWARDED FORMDATA AS JSON ==========");
-      console.log(JSON.stringify(forwardedJSON, null, 2));
-      console.log("[ROUTE] ================================================");
-
-      // Get headers for FormData
+      // Get headers untuk FormData
       const formDataHeaders = forwardFormData.getHeaders();
-      console.log("[ROUTE] ========== REQUEST HEADERS ==========");
-      console.log("Content-Type:", formDataHeaders["content-type"]);
-      console.log("Headers:", formDataHeaders);
-      console.log("[ROUTE] ====================================");
-
+      
       // Forward ke backend Laravel dengan FormData
-      console.log("[ROUTE] ========== SENDING TO BACKEND ==========");
-      console.log("URL:", `${BACKEND_URL}/api/admin/produk`);
-      console.log("Method:", "POST");
-      console.log("Token:", token.substring(0, 20) + "...");
-      console.log("[ROUTE] =======================================");
+      console.log("[ROUTE] Sending to:", `${BACKEND_URL}/api/admin/produk`);
       
       response = await fetch(`${BACKEND_URL}/api/admin/produk`, {
         method: "POST",
@@ -611,10 +544,7 @@ export async function POST(request) {
         body: forwardFormData,
       });
       
-      console.log("[ROUTE] ========== BACKEND RESPONSE ==========");
-      console.log("Status:", response.status);
-      console.log("Status Text:", response.statusText);
-      console.log("[ROUTE] ======================================");
+      console.log("[ROUTE] Backend response status:", response.status);
 
     } else {
       // Handle JSON request (untuk backward compatibility)
@@ -679,19 +609,31 @@ export async function POST(request) {
     
     // Handle response
     const responseText = await response.text();
-    console.log("[ROUTE] ========== BACKEND RESPONSE DETAIL ==========");
-    console.log("Status:", response.status);
-    console.log("Status Text:", response.statusText);
-    console.log("Response Headers:", Object.fromEntries(response.headers.entries()));
-    console.log("Response Text Length:", responseText.length);
-    console.log("Response Text Preview:", responseText.substring(0, 500));
-    console.log("[ROUTE] ============================================");
     
     let data;
-
     try {
       data = JSON.parse(responseText);
-    } catch {
+      
+      // Log response untuk debugging
+      console.log("[ROUTE] Backend response:", {
+        status: response.status,
+        success: data?.success,
+        message: data?.message,
+        hasData: !!data?.data
+      });
+      
+      // Jika success dan ada data, pastikan data adalah array
+      if (data?.success && data?.data) {
+        // Jika data bukan array, wrap dalam array
+        if (!Array.isArray(data.data)) {
+          data.data = [data.data];
+          console.log("[ROUTE] ✅ Wrapped data in array");
+        }
+        console.log("[ROUTE] ✅ Data received:", Array.isArray(data.data) ? `Array(${data.data.length})` : "Not array");
+      }
+    } catch (parseError) {
+      console.error("[ROUTE] ❌ Failed to parse response:", parseError);
+      console.error("[ROUTE] Response text:", responseText.substring(0, 500));
       return NextResponse.json(
         {
           success: false,
@@ -796,14 +738,20 @@ export async function POST(request) {
     // Success response - return sesuai format yang diharapkan
     // Backend return: {success: true, message: "...", data: {...}}
     if (data.success && data.data) {
+      // Pastikan data adalah array
+      const responseData = Array.isArray(data.data) ? data.data : [data.data];
+      
+      console.log("[ROUTE] ✅ Returning success response with data array:", responseData.length, "items");
+      
       return NextResponse.json({
         success: true,
         message: data.message || "Produk berhasil dibuat",
-        data: data.data,
+        data: responseData,
       });
     }
 
     // Fallback jika format berbeda
+    console.log("[ROUTE] ⚠️ Returning fallback response");
     return NextResponse.json(data);
 
   } catch (error) {
