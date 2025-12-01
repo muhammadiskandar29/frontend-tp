@@ -5,15 +5,13 @@ import { toast } from "react-hot-toast";
 import CustomerLayout from "@/components/customer/CustomerLayout";
 import { getCustomerSession } from "@/lib/customerAuth";
 import { fetchCustomerDashboard } from "@/lib/customerDashboard";
-import OTPVerificationModal from "./otpVerificationModal";
 import UpdateCustomerModal from "./updateCustomer";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [updateModalReason, setUpdateModalReason] = useState("password");
-  const [isDashboardLocked, setIsDashboardLocked] = useState(false); // Untuk lock dashboard saat verifikasi = 0
+  const [isDashboardLocked, setIsDashboardLocked] = useState(false); // Untuk lock dashboard saat form muncul
   const [stats, setStats] = useState([
     { id: "total", label: "Total Order", value: 0, icon: "🧾" },
     { id: "active", label: "Order Aktif", value: 0, icon: "✅" },
@@ -24,16 +22,9 @@ export default function DashboardPage() {
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [dashboardError, setDashboardError] = useState("");
   const [currentTime, setCurrentTime] = useState(() => Date.now());
-  const [hasModalBeenShown, setHasModalBeenShown] = useState(false);
-  const [sendingOTP, setSendingOTP] = useState(false);
-  const [showOTPForm, setShowOTPForm] = useState(false);
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [otpMessage, setOtpMessage] = useState("");
-  const [otpLoading, setOtpLoading] = useState(false);
-  const [otpResending, setOtpResending] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(5 * 60); // 5 minutes
-  const [timerActive, setTimerActive] = useState(false);
-  const otpInputs = useRef([]);
+  
+  // CATATAN: Semua state dan fungsi terkait OTP sudah dihapus
+  // Validasi hanya menggunakan verifikasi form customer (verifikasi = 1 berarti sudah isi form)
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -43,10 +34,10 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Lock dashboard saat modal verifikasi/update muncul
+  // Lock dashboard saat modal update muncul
   useEffect(() => {
-    setIsDashboardLocked(showVerificationModal || showUpdateModal);
-  }, [showVerificationModal, showUpdateModal]);
+    setIsDashboardLocked(showUpdateModal);
+  }, [showUpdateModal]);
 
   const formatCurrency = (value) => {
     if (!value) return "Rp 0";
@@ -220,23 +211,13 @@ export default function DashboardPage() {
     }
   }, [router]);
 
-  // Helper function untuk cek apakah modal perlu ditampilkan
+  // Helper function untuk cek apakah form customer perlu ditampilkan
   // CATATAN: verifikasi = 1 berarti sudah mengisi form customer (nama_panggilan, profesi, dll)
   // verifikasi = 0 berarti belum mengisi form
-  const checkAndShowModal = useCallback((user) => {
-    // Jika modal sudah pernah ditampilkan, jangan check lagi (biarkan user klik OK dulu)
-    if (hasModalBeenShown && showVerificationModal) {
-      console.log("🔒 [DASHBOARD] Modal already shown, waiting for user action");
-      return;
-    }
-
+  // TIDAK ADA LOGIKA OTP VERIFICATION DI SINI - semua validasi menggunakan verifikasi form customer
+  const checkAndShowCustomerForm = useCallback((user) => {
     if (!user) {
-      console.log("⚠️ [DASHBOARD] No user data, showing verification modal immediately");
-      // Tampilkan modal langsung tanpa delay
-      setShowVerificationModal(true);
-      setHasModalBeenShown(true);
-      // Tampilkan notif
-      toast.error("Akun Anda belum diverifikasi. Silakan verifikasi OTP terlebih dahulu.");
+      console.log("⚠️ [DASHBOARD] No user data");
       return;
     }
 
@@ -253,28 +234,20 @@ export default function DashboardPage() {
       meaning: hasFilledForm ? "Sudah mengisi form customer" : "Belum mengisi form customer"
     });
 
-    // Jika sudah mengisi form (verifikasi = 1), dashboard normal tanpa modal
+    // Jika sudah mengisi form (verifikasi = 1), tidak perlu tampilkan form
     if (hasFilledForm) {
-      console.log("✅ [DASHBOARD] User sudah mengisi form (verifikasi = 1), dashboard berhasil ditampilkan");
-      setShowVerificationModal(false);
+      console.log("✅ [DASHBOARD] User sudah mengisi form (verifikasi = 1), tidak perlu tampilkan form");
       setShowUpdateModal(false);
-      setUpdateModalReason("password");
-      setHasModalBeenShown(false);
       return;
     }
 
-    // Jika belum mengisi form (verifikasi = 0), tampilkan modal OTP dulu untuk verifikasi WA
-    // Setelah OTP verified, akan muncul form customer untuk diisi
+    // Jika belum mengisi form (verifikasi = 0), tampilkan form customer untuk diisi
     if (!hasFilledForm) {
-      console.log("⚠️ [DASHBOARD] User belum mengisi form (verifikasi = 0), showing OTP modal first");
-      setShowUpdateModal(false);
-      // Tampilkan modal OTP langsung tanpa delay
-      setShowVerificationModal(true);
-      setHasModalBeenShown(true);
-      // Tampilkan notif
-      toast.error("Akun Anda belum diverifikasi. Silakan verifikasi OTP terlebih dahulu.");
+      console.log("⚠️ [DASHBOARD] User belum mengisi form (verifikasi = 0), tampilkan form customer");
+      setUpdateModalReason("incomplete");
+      setShowUpdateModal(true);
     }
-  }, [hasModalBeenShown, showVerificationModal]);
+  }, []);
 
   // Fetch customer profile langsung dari API untuk mendapatkan data lengkap
   const fetchCustomerProfile = useCallback(async (token) => {
@@ -361,49 +334,21 @@ export default function DashboardPage() {
       // Jika sudah verifikasi (sudah mengisi form), pastikan modal tidak muncul
       if (isUserVerified) {
         console.log("✅ [DASHBOARD] User sudah mengisi form (verifikasi = 1), tidak perlu tampilkan form lagi");
-        setShowVerificationModal(false);
         setShowUpdateModal(false);
-        setHasModalBeenShown(false);
         // Hapus pending update modal jika ada
         localStorage.removeItem("customer_show_update_modal");
       } else {
-        // Jika belum verifikasi (belum mengisi form), tampilkan form untuk diisi
+        // Jika belum verifikasi (belum mengisi form), tampilkan form customer untuk diisi
         console.log("⚠️ [DASHBOARD] User belum mengisi form (verifikasi = 0), perlu tampilkan form");
         
-        // Cek apakah user sudah verifikasi OTP dulu (untuk OTP modal)
-        // Jika belum verifikasi OTP, tampilkan OTP modal dulu
-        if (!hasModalBeenShown) {
-          checkAndShowModal(mergedCustomerData);
-        }
-        
-        // Check untuk pending update modal (setelah OTP verification)
-        // Form customer harus muncul jika verifikasi = 0 (belum mengisi form)
-        const pendingUpdateModal = localStorage.getItem("customer_show_update_modal");
-        if (pendingUpdateModal === "1") {
-          console.log("🟢 [DASHBOARD] Triggering UpdateCustomer modal - user perlu mengisi form");
-          localStorage.removeItem("customer_show_update_modal");
-          setUpdateModalReason("incomplete");
-          setShowUpdateModal(true);
-        }
+        // Tampilkan form customer langsung (tidak perlu OTP verification)
+        // Semua validasi menggunakan verifikasi form customer saja
+        checkAndShowCustomerForm(mergedCustomerData);
       }
     };
 
     initDashboard();
-  }, [router, loadDashboardData, fetchCustomerProfile, checkAndShowModal, hasModalBeenShown]);
-
-  // Handler untuk OTP sent callback
-  const handleOTPSent = () => {
-    console.log("📤 [DASHBOARD] OTP sent, redirecting user to OTP page");
-    setShowVerificationModal(false);
-    setHasModalBeenShown(false);
-    router.replace("/customer/otp");
-  };
-
-  // Handler untuk redirect langsung ke halaman OTP (tanpa kirim OTP dulu)
-  const handleGoToOTP = () => {
-    console.log("📤 [DASHBOARD] Redirecting to OTP page");
-    router.replace("/customer/otp");
-  };
+  }, [router, loadDashboardData, fetchCustomerProfile, checkAndShowCustomerForm]);
 
   // Handler untuk membuka form customer (UpdateCustomerModal)
   const handleOpenCustomerForm = () => {
@@ -445,8 +390,6 @@ export default function DashboardPage() {
     // Hapus semua modal flags
     localStorage.removeItem("customer_show_update_modal");
     setShowUpdateModal(false);
-    setShowVerificationModal(false);
-    setHasModalBeenShown(false);
     
     toast.success("Data berhasil diperbarui!");
     
@@ -483,275 +426,6 @@ export default function DashboardPage() {
     router.replace("/customer/login");
   };
 
-  // Timer untuk OTP
-  useEffect(() => {
-    if (!timerActive) return;
-
-    const interval = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          setTimerActive(false);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [timerActive]);
-
-  const formatTimeLeft = () => {
-    const minutes = Math.floor(timeLeft / 60).toString().padStart(2, "0");
-    const seconds = Math.floor(timeLeft % 60).toString().padStart(2, "0");
-    return `${minutes}:${seconds}`;
-  };
-
-  // Handler untuk kirim OTP (sama seperti di otpVerificationModal.js)
-  const handleSendOTP = async () => {
-    const session = getCustomerSession();
-    const customerData = customerInfo || session.user;
-
-    if (!customerData) {
-      toast.error("Data customer tidak ditemukan");
-      return;
-    }
-
-    if (!customerData.wa) {
-      toast.error("Nomor WhatsApp tidak ditemukan");
-      return;
-    }
-
-    const token = localStorage.getItem("customer_token");
-    if (!token) {
-      toast.error("Token tidak ditemukan. Silakan login ulang.");
-      return;
-    }
-
-    setSendingOTP(true);
-
-    try {
-      // Format nomor WA (pastikan format 62xxxxxxxxxx)
-      let waNumber = customerData.wa.trim();
-      if (waNumber.startsWith("0")) {
-        waNumber = "62" + waNumber.substring(1);
-      } else if (!waNumber.startsWith("62")) {
-        waNumber = "62" + waNumber;
-      }
-
-      const payload = {
-        customer_id: customerData.id || customerData.customer_id,
-        wa: waNumber,
-      };
-
-      console.log("🟢 [SEND_OTP] Sending OTP request:", payload);
-
-      const response = await fetch("/api/customer/otp/send", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await response.json();
-
-      console.log("🟢 [SEND_OTP] Response:", data);
-
-      if (!response.ok) {
-        throw new Error(data?.message || data?.error || "Gagal mengirim OTP");
-      }
-
-      if (data?.success) {
-        toast.success(data?.message || "OTP berhasil dikirim ke WhatsApp Anda");
-        // Redirect langsung ke halaman OTP
-        console.log("📤 [DASHBOARD] OTP sent successfully, redirecting to /customer/otp");
-        router.replace("/customer/otp");
-      } else {
-        throw new Error(data?.message || "Gagal mengirim OTP");
-      }
-    } catch (error) {
-      console.error("❌ [SEND_OTP] Error:", error);
-      toast.error(error.message || "Gagal mengirim OTP. Coba lagi nanti.");
-    } finally {
-      setSendingOTP(false);
-    }
-  };
-
-  // Handler untuk input OTP
-  const handleOtpChange = (e, index) => {
-    const value = e.target.value.replace(/\D/g, "");
-    if (value) {
-      const newOtp = [...otp];
-      newOtp[index] = value.slice(-1);
-      setOtp(newOtp);
-      if (index < 5) otpInputs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleOtpKeyDown = (e, index) => {
-    if (e.key === "Backspace" && !otp[index] && index > 0) {
-      const newOtp = [...otp];
-      newOtp[index - 1] = "";
-      setOtp(newOtp);
-      otpInputs.current[index - 1]?.focus();
-    }
-  };
-
-  const handleOtpPaste = (e) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
-    if (pastedData) {
-      const newOtp = [...otp];
-      pastedData.split("").forEach((char, i) => {
-        if (i < 6) newOtp[i] = char;
-      });
-      setOtp(newOtp);
-      const lastIndex = Math.min(pastedData.length, 5);
-      otpInputs.current[lastIndex]?.focus();
-    }
-  };
-
-  // Handler untuk verify OTP
-  const handleVerifyOTP = async (e) => {
-    e.preventDefault();
-    const code = otp.join("");
-    if (code.length < 6) {
-      setOtpMessage("Masukkan 6 digit kode OTP.");
-      return;
-    }
-
-    const session = getCustomerSession();
-    const customerData = customerInfo || session.user;
-    if (!customerData || !customerData.id) {
-      setOtpMessage("Data customer tidak ditemukan. Silakan login kembali.");
-      return;
-    }
-
-    setOtpLoading(true);
-    setOtpMessage("");
-
-    try {
-      const token = localStorage.getItem("customer_token");
-      const response = await fetch("/api/customer/otp/verify", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          customer_id: customerData.id || customerData.customer_id,
-          otp: code,
-        }),
-      });
-
-      const result = await response.json();
-      console.log("📥 [OTP] Verify response:", result);
-
-      if (result.success) {
-        setOtpMessage("Verifikasi berhasil! 🎉");
-        setTimerActive(false);
-        toast.success("Verifikasi berhasil!");
-
-        // Update user data di localStorage
-        if (session.user && result.data) {
-          const updatedUser = {
-            ...session.user,
-            verifikasi: result.data.verifikasi || 1,
-            nama: result.data.nama || session.user.nama,
-            customer_id: result.data.customer_id || session.user.id || session.user.customer_id,
-          };
-          localStorage.setItem("customer_user", JSON.stringify(updatedUser));
-          console.log("✅ [OTP] User data updated with verification:", updatedUser);
-        } else if (session.user) {
-          session.user.verifikasi = 1;
-          localStorage.setItem("customer_user", JSON.stringify(session.user));
-        }
-
-        // Refresh dashboard data
-        await loadDashboardData();
-        
-        // Sembunyikan form OTP setelah beberapa detik
-        setTimeout(() => {
-          setShowOTPForm(false);
-          setOtp(["", "", "", "", "", ""]);
-          setOtpMessage("");
-        }, 2000);
-      } else {
-        setOtpMessage(result.message || "Kode OTP salah atau sudah kadaluarsa.");
-      }
-    } catch (error) {
-      console.error("❌ [OTP] Error:", error);
-      setOtpMessage("Terjadi kesalahan saat memverifikasi OTP.");
-    } finally {
-      setOtpLoading(false);
-    }
-  };
-
-  // Handler untuk resend OTP
-  const handleResendOTP = async () => {
-    const session = getCustomerSession();
-    const customerData = customerInfo || session.user;
-
-    if (!customerData || !customerData.wa) {
-      setOtpMessage("Data customer tidak ditemukan. Silakan login kembali.");
-      return;
-    }
-
-    setOtpResending(true);
-    setOtpMessage("");
-
-    try {
-      let waNumber = customerData.wa.trim();
-      if (waNumber.startsWith("0")) {
-        waNumber = "62" + waNumber.substring(1);
-      } else if (!waNumber.startsWith("62")) {
-        waNumber = "62" + waNumber;
-      }
-
-      const token = localStorage.getItem("customer_token");
-      if (!token) {
-        setOtpMessage("Token tidak ditemukan. Silakan login kembali.");
-        setOtpResending(false);
-        return;
-      }
-
-      const response = await fetch("/api/customer/otp/resend", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          customer_id: customerData.id || customerData.customer_id,
-          wa: waNumber,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setOtpMessage("Kode OTP baru telah dikirim ke WhatsApp Anda!");
-        toast.success("OTP terkirim!");
-        setOtp(["", "", "", "", "", ""]);
-        if (otpInputs.current[0]) {
-          otpInputs.current[0].focus();
-        }
-        setTimeLeft(5 * 60);
-        setTimerActive(true);
-      } else {
-        setOtpMessage(result.message || "Gagal mengirim ulang OTP.");
-      }
-    } catch (error) {
-      console.error("❌ [OTP] Error resending:", error);
-      setOtpMessage("Terjadi kesalahan saat mengirim ulang OTP.");
-    } finally {
-      setOtpResending(false);
-    }
-  };
 
   // Cek apakah user sudah verifikasi
   const isUserVerified = () => {
@@ -815,37 +489,8 @@ export default function DashboardPage() {
         />
       )}
 
-      {/* Modal Verifikasi OTP - Tampil HANYA jika verifikasi = 0 dan belum verifikasi */}
-      {showVerificationModal && !showUpdateModal && (() => {
-        const session = getCustomerSession();
-        const customerData = customerInfo || session.user;
-        
-        // Double check: pastikan user benar-benar belum verifikasi
-        if (customerData) {
-          const verifikasiValue = customerData.verifikasi;
-          const normalizedVerifikasi = verifikasiValue === "1" ? 1 : verifikasiValue === "0" ? 0 : verifikasiValue;
-          const isVerified = normalizedVerifikasi === 1 || normalizedVerifikasi === true;
-          
-          // Jika sudah verifikasi, jangan tampilkan modal
-          if (isVerified) {
-            console.log("✅ [DASHBOARD] User already verified, hiding OTP modal");
-            setShowVerificationModal(false);
-            setHasModalBeenShown(false);
-            return null;
-          }
-        }
-        
-        return customerData ? (
-          <OTPVerificationModal
-            customerInfo={customerData}
-            onClose={() => {
-              // Jangan tutup modal dengan klik di luar atau ESC
-            }}
-            onOTPSent={handleOTPSent}
-            allowClose={false}
-          />
-        ) : null;
-      })()}
+      {/* CATATAN: Modal OTP Verification sudah dihapus */}
+      {/* Semua validasi menggunakan verifikasi form customer saja (verifikasi = 1 berarti sudah isi form) */}
 
       <div 
         className="customer-dashboard"
@@ -941,7 +586,7 @@ export default function DashboardPage() {
 
             {/* Tampilkan pesan jika belum mengisi form customer (verifikasi = 0) */}
             {/* CATATAN: verifikasi = 1 berarti sudah mengisi form, verifikasi = 0 berarti belum */}
-            {!dashboardLoading && !isUserVerified() && !showOTPForm && (
+            {!dashboardLoading && !isUserVerified() && (
               <div style={{
                 marginBottom: "16px",
                 padding: "12px 16px",

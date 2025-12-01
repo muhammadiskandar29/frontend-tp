@@ -68,10 +68,15 @@ export async function POST(request) {
     }
 
     // Return response sesuai format requirement
+    // Response: { success, message, data: { customer_id, nama, verifikasi } }
     return NextResponse.json({
       success: true,
       message: data?.message || "OTP valid, akun telah diverifikasi",
-      data: data?.data || data,
+      data: {
+        customer_id: data?.data?.customer_id || data?.customer_id,
+        nama: data?.data?.nama || data?.nama,
+        verifikasi: data?.data?.verifikasi !== undefined ? data.data.verifikasi : (data?.verifikasi !== undefined ? data.verifikasi : 1),
+      },
     });
   } catch (error) {
     console.error("❌ [OTP_VERIFY] Error:", error);

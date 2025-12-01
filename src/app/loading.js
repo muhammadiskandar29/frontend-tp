@@ -15,7 +15,7 @@ export default function Loading({ message = "Memuat..." }) {
         
         {/* Brand Logo or Icon */}
         <div className="loading-brand">
-          <span className="brand-icon">🏠</span>
+          <span className="brand-icon"></span>
         </div>
         
         {/* Loading Text */}
