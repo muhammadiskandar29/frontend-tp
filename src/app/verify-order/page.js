@@ -165,8 +165,7 @@ export default function VerifyOrderOTPPage() {
   const redirectToPayment = () => {
     if (!orderData) return;
 
-    const { paymentMethod, productName, totalHarga, landingUrl } = orderData;
-
+    const { paymentMethod, productName, totalHarga } = orderData;
 
     switch (paymentMethod) {
       case "ewallet":
@@ -180,14 +179,12 @@ export default function VerifyOrderOTPPage() {
         break;
       case "manual":
       default:
-        // Manual transfer - buka di tab baru, balik ke landing
+        // Manual transfer - langsung redirect ke payment page
         const query = new URLSearchParams({
           product: productName || "",
           harga: totalHarga || "0",
         });
-        window.open(`/payment?${query.toString()}`, "_blank");
-        // Balik ke landing page
-        router.push(landingUrl || "/");
+        router.push(`/payment?${query.toString()}`);
         break;
     }
   };
@@ -196,7 +193,7 @@ export default function VerifyOrderOTPPage() {
   const callMidtrans = async (type) => {
     if (!orderData) return;
 
-    const { nama, email, totalHarga, productName, landingUrl } = orderData;
+    const { nama, email, totalHarga, productName } = orderData;
     const API_BASE = "/api";
 
     let endpoint = "";
@@ -229,17 +226,26 @@ export default function VerifyOrderOTPPage() {
       const json = await response.json();
 
       if (json.redirect_url) {
-        // Buka Midtrans di tab baru
-        window.open(json.redirect_url, "_blank");
-        // Balik ke landing page (form akan kosong/fresh)
-        router.push(landingUrl || "/");
+        // Langsung redirect ke Midtrans payment page
+        window.location.href = json.redirect_url;
       } else {
         toast.error(json.message || "Gagal membuat transaksi");
-        router.push(landingUrl || "/");
+        // Jika gagal, redirect ke payment page manual
+        const query = new URLSearchParams({
+          product: productName || "",
+          harga: totalHarga || "0",
+        });
+        router.push(`/payment?${query.toString()}`);
       }
     } catch (err) {
+      console.error("❌ [VERIFY_ORDER] Midtrans error:", err);
       toast.error("Terjadi kesalahan saat memproses pembayaran");
-      router.push(landingUrl || "/");
+      // Jika error, redirect ke payment page manual
+      const query = new URLSearchParams({
+        product: productName || "",
+        harga: totalHarga || "0",
+      });
+      router.push(`/payment?${query.toString()}`);
     }
   };
 
