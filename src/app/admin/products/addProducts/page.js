@@ -485,25 +485,41 @@ const handleSubmit = async () => {
     console.log("URL:", "/api/admin/produk");
     console.log("Method:", "POST");
     console.log("Content-Type:", "multipart/form-data (auto-set by browser)");
+    const token = localStorage.getItem("token") || "";
     console.log("Headers:", {
       "Accept": "application/json",
-      "Authorization": `Bearer ${localStorage.getItem("token") ? "***" : ""}`
+      "Authorization": token ? `Bearer ${token.substring(0, 20)}...` : "MISSING"
     });
     console.log("FormData entries count:", formDataEntries.length);
+    
+    // Verify data sebelum kirim
+    console.log("[NETWORK] ========== PRE-SEND VERIFICATION ==========");
+    const preKategori = formData.get("kategori");
+    const preNama = formData.get("nama");
+    const preAssign = formData.get("assign");
+    const preHeader = formData.get("header");
+    console.log("Kategori:", preKategori);
+    console.log("Nama:", preNama);
+    console.log("Assign:", preAssign);
+    console.log("Header:", preHeader instanceof File ? `File(${preHeader.name}, ${(preHeader.size / 1024).toFixed(2)} KB)` : "NULL");
+    console.log("[NETWORK] ===========================================");
     console.log("[NETWORK] ======================================");
     
     const res = await fetch("/api/admin/produk", {
       method: "POST",
       headers: {
         Accept: "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token") || ""}`
+        Authorization: `Bearer ${token}`
         // Jangan set Content-Type, browser akan set otomatis dengan boundary untuk FormData
       },
       body: formData
     });
     
-    console.log("[NETWORK] Response status:", res.status);
-    console.log("[NETWORK] Response headers:", Object.fromEntries(res.headers.entries()));
+    console.log("[NETWORK] ========== RESPONSE RECEIVED ==========");
+    console.log("Response status:", res.status);
+    console.log("Response statusText:", res.statusText);
+    console.log("Response headers:", Object.fromEntries(res.headers.entries()));
+    console.log("[NETWORK] =======================================");
 
     const contentType = res.headers.get("content-type") || "";
     let data;

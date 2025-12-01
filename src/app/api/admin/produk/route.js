@@ -504,30 +504,63 @@ export async function POST(request) {
       
       // Create FormData untuk forward ke backend
       const forwardFormData = new FormData();
+      
+      console.log("[ROUTE] ========== BUILDING FORWARD FORMDATA ==========");
+      let forwardedCount = 0;
+      let fileCount = 0;
+      let stringCount = 0;
 
       // Forward all entries ke backend
       for (const [key, value] of incomingFormData.entries()) {
         if (value instanceof File) {
           // Convert File to Buffer untuk form-data package
+          console.log(`[ROUTE] Processing file: ${key} = ${value.name} (${(value.size / 1024).toFixed(2)} KB)`);
           const arrayBuffer = await value.arrayBuffer();
           const buffer = Buffer.from(arrayBuffer);
           forwardFormData.append(key, buffer, {
             filename: value.name,
             contentType: value.type,
           });
+          fileCount++;
+          forwardedCount++;
+          console.log(`[ROUTE] ✅ File appended: ${key}`);
         } else {
           // Forward string values as-is (termasuk JSON string untuk array fields)
-          forwardFormData.append(key, value);
+          const strValue = String(value);
+          forwardFormData.append(key, strValue);
+          stringCount++;
+          forwardedCount++;
+          console.log(`[ROUTE] ✅ String appended: ${key} = ${strValue.length > 100 ? strValue.substring(0, 100) + "..." : strValue}`);
         }
       }
       
-      // DEBUG: Log forwarded FormData
-      console.log("[ROUTE] ========== FORWARDING TO BACKEND ==========");
-      console.log("URL:", `${BACKEND_URL}/api/admin/produk`);
-      console.log("Method:", "POST");
-      console.log("Content-Type:", "multipart/form-data");
+      console.log(`[ROUTE] Total forwarded: ${forwardedCount} (${fileCount} files, ${stringCount} strings)`);
+      console.log("[ROUTE] ==============================================");
       
-      // Build JSON representation of forwarded FormData
+      // Verify critical fields in forwardFormData
+      console.log("[ROUTE] ========== VERIFYING FORWARDED DATA ==========");
+      const verifyKategori = forwardFormData.get("kategori");
+      const verifyNama = forwardFormData.get("nama");
+      const verifyAssign = forwardFormData.get("assign");
+      const verifyHeader = forwardFormData.get("header");
+      
+      console.log("Kategori in forwardFormData:", verifyKategori ? String(verifyKategori) : "NULL");
+      console.log("Nama in forwardFormData:", verifyNama ? String(verifyNama) : "NULL");
+      console.log("Assign in forwardFormData:", verifyAssign ? String(verifyAssign) : "NULL");
+      console.log("Header in forwardFormData:", verifyHeader ? `Buffer(${verifyHeader.length} bytes)` : "NULL");
+      
+      if (!verifyKategori) {
+        console.error("[ROUTE] ❌ KATEGORI TIDAK ADA DI FORWARD FORMDATA!");
+      }
+      if (!verifyNama) {
+        console.error("[ROUTE] ❌ NAMA TIDAK ADA DI FORWARD FORMDATA!");
+      }
+      if (!verifyHeader) {
+        console.error("[ROUTE] ❌ HEADER TIDAK ADA DI FORWARD FORMDATA!");
+      }
+      console.log("[ROUTE] ==============================================");
+      
+      // Build JSON representation for logging
       const forwardedJSON = {};
       for (const [key, value] of incomingFormData.entries()) {
         if (value instanceof File) {
@@ -549,26 +582,39 @@ export async function POST(request) {
         }
       }
       
-      console.log("Kategori value:", forwardFormData.get("kategori"));
-      console.log("Nama value:", forwardFormData.get("nama"));
-      console.log("Assign value:", forwardFormData.get("assign"));
-      console.log("Header exists:", forwardFormData.get("header") !== null);
-      
       // Tampilkan sebagai JSON yang readable
       console.log("[ROUTE] ========== FORWARDED FORMDATA AS JSON ==========");
       console.log(JSON.stringify(forwardedJSON, null, 2));
       console.log("[ROUTE] ================================================");
 
+      // Get headers for FormData
+      const formDataHeaders = forwardFormData.getHeaders();
+      console.log("[ROUTE] ========== REQUEST HEADERS ==========");
+      console.log("Content-Type:", formDataHeaders["content-type"]);
+      console.log("Headers:", formDataHeaders);
+      console.log("[ROUTE] ====================================");
+
       // Forward ke backend Laravel dengan FormData
+      console.log("[ROUTE] ========== SENDING TO BACKEND ==========");
+      console.log("URL:", `${BACKEND_URL}/api/admin/produk`);
+      console.log("Method:", "POST");
+      console.log("Token:", token.substring(0, 20) + "...");
+      console.log("[ROUTE] =======================================");
+      
       response = await fetch(`${BACKEND_URL}/api/admin/produk`, {
         method: "POST",
         headers: {
-          ...forwardFormData.getHeaders(),
+          ...formDataHeaders,
           Accept: "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: forwardFormData,
       });
+      
+      console.log("[ROUTE] ========== BACKEND RESPONSE ==========");
+      console.log("Status:", response.status);
+      console.log("Status Text:", response.statusText);
+      console.log("[ROUTE] ======================================");
 
     } else {
       // Handle JSON request (untuk backward compatibility)
@@ -631,11 +677,16 @@ export async function POST(request) {
       });
     }
     
-    console.log("[ROUTE] Backend response status:", response.status);
-    console.log("[ROUTE] Backend response headers:", Object.fromEntries(response.headers.entries()));
-
     // Handle response
     const responseText = await response.text();
+    console.log("[ROUTE] ========== BACKEND RESPONSE DETAIL ==========");
+    console.log("Status:", response.status);
+    console.log("Status Text:", response.statusText);
+    console.log("Response Headers:", Object.fromEntries(response.headers.entries()));
+    console.log("Response Text Length:", responseText.length);
+    console.log("Response Text Preview:", responseText.substring(0, 500));
+    console.log("[ROUTE] ============================================");
+    
     let data;
 
     try {
