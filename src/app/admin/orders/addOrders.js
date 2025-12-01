@@ -133,11 +133,17 @@ export default function AddOrders({ onClose, onAdd, showToast }) {
   };
 
   // === 💾 Submit ===
-  // === 💾 Submit ===
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage("");
+
+    // Validasi alamat (required untuk order)
+    if (!formData.alamat?.trim()) {
+      setMessage("Alamat pengiriman wajib diisi untuk order");
+      setLoading(false);
+      return;
+    }
 
     const payload = {
       ...formData,
@@ -145,6 +151,8 @@ export default function AddOrders({ onClose, onAdd, showToast }) {
       ongkir: String(formData.ongkir ?? "0"),
       total_harga: String(formData.total_harga ?? "0"),
     };
+
+    console.log("📤 [ADD_ORDERS] Payload sebelum kirim:", JSON.stringify(payload, null, 2));
 
     const res = await createOrder(payload);
 
@@ -273,6 +281,24 @@ export default function AddOrders({ onClose, onAdd, showToast }) {
                       Ubah Data Customer
                     </button>
                   </div>
+                )}
+
+                {/* Field alamat selalu ditampilkan (required untuk order) */}
+                {hasSelectedCustomer && (
+                  <label className="orders-field" style={{ marginTop: "12px" }}>
+                    Alamat Pengiriman *
+                    <textarea
+                      name="alamat"
+                      rows={2}
+                      value={formData.alamat}
+                      onChange={handleChange}
+                      placeholder="Alamat lengkap untuk pengiriman order (wajib diisi)"
+                      required
+                    />
+                    <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                      Alamat ini digunakan untuk order, bisa berbeda dengan alamat customer
+                    </small>
+                  </label>
                 )}
 
                 {displayCustomerForm && (

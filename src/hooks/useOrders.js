@@ -59,27 +59,30 @@ export default function useOrders({ mode = "admin" } = {}) {
           const hasExistingCustomer = formData.customer && Number(formData.customer) > 0;
           
           const payload = {
-            // Jika customer existing: kirim customer ID saja
-            // Jika customer baru: kirim nama, wa, email, alamat
+            // Jika customer existing: kirim customer ID
+            // Jika customer baru: kirim nama, wa, email
             ...(hasExistingCustomer 
-              ? { customer: Number(formData.customer) }
+              ? { 
+                  customer: Number(formData.customer)
+                }
               : {
                   nama: formData.nama || "",
                   wa: formData.wa || "",
                   email: formData.email || "",
-                  alamat: formData.alamat || "",
                 }
             ),
+            // Alamat selalu dikirim (required untuk order)
+            alamat: formData.alamat || "",
             produk: Number(formData.produk),
-            harga: Number(formData.harga),
-            ongkir: Number(formData.ongkir),
-            total_harga: Number(formData.total_harga),
+            harga: String(formData.harga || "0"),
+            ongkir: String(formData.ongkir || "0"),
+            total_harga: String(formData.total_harga || "0"),
             sumber: formData.sumber || "",
             notif: formData.notif ? 1 : 0,
           };
           
           console.log("🔧 [CREATE ORDER] Has existing customer:", hasExistingCustomer);
-          console.log("🔧 [CREATE ORDER] Payload:", payload);
+          console.log("🔧 [CREATE ORDER] Payload:", JSON.stringify(payload, null, 2));
           
           res = await createOrderAdmin(payload);
         } else {

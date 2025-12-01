@@ -49,6 +49,11 @@ export async function POST(request) {
     const customerId = body.customer ? toNumber(body.customer) : null;
     const hasExistingCustomer = Boolean(customerId);
 
+    // Validasi: alamat selalu required untuk order (baik customer baru atau existing)
+    if (!body.alamat?.trim()) {
+      errors.push("Alamat wajib diisi untuk order");
+    }
+
     if (!hasExistingCustomer) {
       if (!body.nama?.trim()) errors.push("Nama customer wajib diisi");
       if (!body.wa?.trim()) errors.push("Nomor WA customer wajib diisi");
@@ -61,26 +66,25 @@ export async function POST(request) {
       );
     }
 
+    // Build payload sesuai dokumentasi
     const cleanPayload = {
-      produk,
-      harga: toCurrencyString(body.harga),
-      total_harga: toCurrencyString(body.total_harga),
-      ongkir: toCurrencyString(body.ongkir),
-      sumber: String(body.sumber),
-      notif,
+      produk, // integer
+      harga: toCurrencyString(body.harga), // string
+      ongkir: toCurrencyString(body.ongkir), // string
+      total_harga: toCurrencyString(body.total_harga), // string
+      sumber: String(body.sumber), // string
+      notif, // 1 atau 0
+      alamat: String(body.alamat || "").trim(), // string, selalu dikirim (required untuk order)
     };
 
-    if (!isNil(body.alamat)) {
-      cleanPayload.alamat = String(body.alamat ?? "");
-    }
-
     if (hasExistingCustomer) {
+      // Jika customer sudah ada: kirim customer ID (integer)
       cleanPayload.customer = customerId;
     } else {
+      // Jika customer baru: kirim nama, wa, email (string)
       cleanPayload.nama = String(body.nama).trim();
       cleanPayload.wa = String(body.wa).trim();
       cleanPayload.email = body.email ? String(body.email).trim() : "";
-      cleanPayload.alamat = String(body.alamat || "");
     }
 
     console.log("📤 [ORDER_ADMIN] Payload ke backend:", JSON.stringify(cleanPayload, null, 2));
