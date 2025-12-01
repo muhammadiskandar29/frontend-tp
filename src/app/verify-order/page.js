@@ -118,12 +118,16 @@ export default function VerifyOrderOTPPage() {
     setMessage("");
 
     try {
+      // Ambil token dari localStorage jika ada
+      const token = localStorage.getItem("customer_token");
+      
       // Menggunakan route /api/otp/verify (9.2 Verifikasi OTP Customer)
       const response = await fetch("/api/otp/verify", {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          Accept: "application/json"
+          Accept: "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           customer_id: orderData.customerId,
@@ -251,12 +255,16 @@ export default function VerifyOrderOTPPage() {
     setMessage("");
 
     try {
-      // Menggunakan route /api/otp/resend (public route, tidak perlu token)
+      // Ambil token dari localStorage jika ada
+      const token = localStorage.getItem("customer_token");
+      
+      // Menggunakan route /api/otp/resend
       const response = await fetch("/api/otp/resend", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           customer_id: orderData.customerId,

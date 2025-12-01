@@ -15,6 +15,12 @@ const BACKEND_URL =
  */
 export async function POST(request) {
   try {
+    // Ambil token dari header Authorization
+    const authHeader = request.headers.get("authorization");
+    const token = authHeader?.replace("Bearer ", "") || null;
+    
+    console.log("🟢 [OTP_RESEND] Token received:", token ? "Token ada" : "Token tidak ada");
+
     const body = await request.json();
 
     console.log("🟢 [OTP_RESEND] Request body:", body);
@@ -32,12 +38,13 @@ export async function POST(request) {
       wa: String(body.wa),
     };
 
-    // Forward ke backend
+    // Forward ke backend dengan token
     const response = await fetch(`${BACKEND_URL}/api/otp/resend`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify(payload),
     });

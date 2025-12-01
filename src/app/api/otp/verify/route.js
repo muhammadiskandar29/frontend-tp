@@ -18,6 +18,12 @@ export async function POST(request) {
   console.log("🟢 [OTP_VERIFY] Route handler called");
   
   try {
+    // Ambil token dari header Authorization
+    const authHeader = request.headers.get("authorization");
+    const token = authHeader?.replace("Bearer ", "") || null;
+    
+    console.log("🟢 [OTP_VERIFY] Token received:", token ? "Token ada" : "Token tidak ada");
+
     const body = await request.json();
 
     console.log("🟢 [OTP_VERIFY] Request body:", JSON.stringify(body, null, 2));
@@ -39,12 +45,13 @@ export async function POST(request) {
     console.log("🟢 [OTP_VERIFY] Forwarding to backend:", `${BACKEND_URL}/api/otp/verify`);
     console.log("🟢 [OTP_VERIFY] Payload:", JSON.stringify(payload, null, 2));
 
-    // Forward ke backend Laravel
+    // Forward ke backend Laravel dengan token
     const response = await fetch(`${BACKEND_URL}/api/otp/verify`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify(payload),
     });
