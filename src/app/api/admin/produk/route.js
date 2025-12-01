@@ -207,7 +207,6 @@ const normalizeNumber = (value) => {
 const extractPayload = async (reqBody) => {
   const payload = {
     kategori: normalizeNumber(reqBody.kategori),
-    user_input: normalizeNumber(reqBody.user_input),
     nama: typeof reqBody.nama === "string" ? reqBody.nama.trim() : "",
     kode: typeof reqBody.kode === "string" ? reqBody.kode.trim() : "",
     url: typeof reqBody.url === "string" ? reqBody.url.trim() : "",
@@ -359,10 +358,6 @@ const validatePayload = (payload) => {
     errors.push("assign wajib diisi (array)");
   }
 
-  if (payload.user_input === null || payload.user_input === undefined) {
-    errors.push("user_input wajib diisi (number)");
-  }
-
   if (typeof payload.nama !== "string" || payload.nama.trim() === "") {
     errors.push("nama wajib diisi (string)");
   }
@@ -483,7 +478,7 @@ export async function POST(request) {
     }
 
     payloadToSend.kategori = String(payloadToSend.kategori);
-    payloadToSend.user_input = String(payloadToSend.user_input);
+    // user_input tidak perlu dikirim, backend ambil dari auth()->user()->id
     payloadToSend.landingpage = String(payloadToSend.landingpage || "1");
     payloadToSend.harga_asli = String(payloadToSend.harga_asli || "0");
     payloadToSend.harga_coret = String(payloadToSend.harga_coret || "0");

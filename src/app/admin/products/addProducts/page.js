@@ -66,7 +66,6 @@ export default function Page() {
   const defaultForm = {
   id: null,
   kategori: null, // Changed from "" to null to fix validation
-  user_input: [],
   nama: "",
   url: "",
   kode: "",
@@ -350,18 +349,7 @@ const handleSubmit = async () => {
   setIsSubmitting(true);
 
   try {
-    // 1) currentUser required
-    const userFromStorage = (() => {
-      try { return JSON.parse(localStorage.getItem("user") || "null"); } catch(e){ return null; }
-    })();
-    const effectiveUser = currentUser || userFromStorage;
-    if (!effectiveUser || !effectiveUser.id) {
-      alert("User tidak ditemukan. Silakan login ulang.");
-      setIsSubmitting(false);
-      return;
-    }
-
-    // 2) kategori validation - ambil ID dari kategori yang dipilih
+    // 1) kategori validation - ambil ID dari kategori yang dipilih
     console.log("[VALIDATION] ========== KATEGORI VALIDATION ==========");
     console.log("form.kategori raw:", form.kategori);
     console.log("form.kategori type:", typeof form.kategori);
@@ -700,14 +688,10 @@ useEffect(() => {
         kategoriId = found ? Number(found.id) : null;
       }
 
-      // Set user_input ke current user ID
-      const currentUserId = currentUser?.id || JSON.parse(localStorage.getItem("user") || "{}")?.id;
-      
       setForm((f) => ({
         ...f,
         // Removed kategori: null to prevent overwriting user selection
         assign: [],
-        user_input: currentUserId ? currentUserId : null, // ID user yang membuat
         custom_field: [],
         kode: "",
         url: "/",
@@ -1303,23 +1287,6 @@ useEffect(() => {
         </div>
         <div className="section-content">
           {/* CREATED BY - Read Only */}
-          <div className="form-field-group">
-            <label className="form-label">
-              <span className="label-icon">👤</span>
-              Dibuat Oleh (Created By)
-            </label>
-            <div className="created-by-display">
-              <div className="user-avatar">
-                {(currentUser?.nama || currentUser?.name || "U").charAt(0).toUpperCase()}
-              </div>
-              <div className="user-info">
-                <span className="user-name">{currentUser?.nama || currentUser?.name || "Loading..."}</span>
-                <span className="user-email">{currentUser?.email || "-"}</span>
-              </div>
-            </div>
-            <p className="field-hint">User yang membuat produk ini (otomatis)</p>
-          </div>
-
           {/* ASSIGN BY - Penanggung Jawab */}
           <div className="form-field-group">
             <label className="form-label">
