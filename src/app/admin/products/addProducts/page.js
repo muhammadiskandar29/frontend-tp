@@ -207,318 +207,165 @@ const [isSubmitting, setIsSubmitting] = useState(false);
   // ============================
   // SUBMIT
   // ============================
-  const handleSubmit = async () => {
-    if (isSubmitting) return;
-    setIsSubmitting(true);
-    try {
-      // Validation - Kategori wajib dipilih
-      // Ensure kategori is converted to valid integer and never null if user selected something
-      const kategoriId = form.kategori !== null && form.kategori !== undefined && form.kategori !== ""
-        ? (typeof form.kategori === "number" ? form.kategori : Number(form.kategori))
-        : null;
+  // Ganti fungsi handleSubmit dengan versi ini (paste ke file)
+const handleSubmit = async () => {
+  if (isSubmitting) return;
+  setIsSubmitting(true);
 
-      if (!kategoriId || kategoriId <= 0 || Number.isNaN(kategoriId)) {
-        alert("Kategori wajib dipilih!");
-        setIsSubmitting(false);
-        return;
-      }
-      
-      // Double check: kategoriId must be valid integer at this point
-      const finalKategoriId = Number(kategoriId);
-      if (!finalKategoriId || finalKategoriId <= 0 || Number.isNaN(finalKategoriId)) {
-        alert("Kategori tidak valid. Silakan pilih kategori lagi!");
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Validation - Nama wajib diisi
-      if (!form.nama || form.nama.trim() === "") {
-        alert("Nama produk wajib diisi!");
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Validation - Assign wajib dipilih
-      const normalizedAssign = Array.isArray(form.assign)
-        ? form.assign.filter((v) => v !== null && v !== undefined && v !== "").map((v) => Number(v)).filter((num) => !Number.isNaN(num) && num > 0)
-        : [];
-
-      if (normalizedAssign.length === 0) {
-        alert("Penanggung jawab (Assign) wajib dipilih minimal 1 user!");
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Validation - User input wajib ada
-      const userInputId = currentUser?.id ?? form.user_input ?? null;
-      if (!userInputId || userInputId === "" || userInputId === null || userInputId === undefined) {
-        alert("User input tidak ditemukan. Silakan login ulang!");
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Build payload menggunakan function builder
-      // Use finalKategoriId to ensure it's always a valid integer
-      const payloadData = buildProductPayload(form, finalKategoriId, userInputId, normalizedAssign);
-      
-      // 🔥 6. FormData - Selalu gunakan FormData
-      const fd = new FormData();
-      
-      // 🔥 6. Append semua field dengan key yang sama dengan backend
-      // kategori - string angka
-      fd.append("kategori", payloadData.kategori);
-      
-      // user_input - string angka
-      fd.append("user_input", payloadData.user_input);
-      
-      // assign - string JSON array
-      fd.append("assign", payloadData.assign);
-      
-      // Field dasar
-      fd.append("nama", payloadData.nama);
-      fd.append("kode", payloadData.kode);
-      fd.append("url", payloadData.url);
-      fd.append("deskripsi", payloadData.deskripsi);
-      fd.append("harga_coret", String(payloadData.harga_coret));
-      fd.append("harga_asli", String(payloadData.harga_asli));
-      fd.append("tanggal_event", payloadData.tanggal_event);
-      fd.append("landingpage", String(payloadData.landingpage));
-      fd.append("status", String(payloadData.status));
-      
-      // 🔥 4. Semua field array sebagai string JSON
-      fd.append("list_point", payloadData.list_point);
-      fd.append("fb_pixel", payloadData.fb_pixel);
-      fd.append("event_fb_pixel", payloadData.event_fb_pixel);
-      fd.append("gtm", payloadData.gtm);
-      fd.append("video", payloadData.video);
-      fd.append("gambar", payloadData.gambar);
-      fd.append("testimoni", payloadData.testimoni);
-      fd.append("custom_field", payloadData.custom_field);
-
-      // Handle file uploads (jika ada)
-      // Header image
-      if (form.header?.type === "file" && form.header.value) {
-        fd.append("header", form.header.value);
-      }
-
-      // Gallery - File upload untuk gallery (jika ada file)
-      // File di-append terpisah dengan format: gambar[0][file]
-      form.gambar.forEach((g, idx) => {
-        if (g.path?.type === "file" && g.path.value) {
-          fd.append(`gambar[${idx}][file]`, g.path.value);
-        }
-      });
-
-      // Testimoni - File upload untuk testimoni (jika ada file)
-      // File di-append terpisah dengan format: testimoni[0][gambar]
-      form.testimoni.forEach((t, idx) => {
-        if (t.gambar?.type === "file" && t.gambar.value) {
-          fd.append(`testimoni[${idx}][gambar]`, t.gambar.value);
-        }
-      });
-
-      console.log("🚀 [SUBMIT_PRODUK] Payload summary:", {
-        kategori: payloadData.kategori,
-        kategoriType: typeof payloadData.kategori,
-        user_input: payloadData.user_input,
-        userInputType: typeof payloadData.user_input,
-        assign: payloadData.assign,
-        assignType: typeof payloadData.assign,
-        list_point: payloadData.list_point,
-        gambar: payloadData.gambar,
-        testimoni: payloadData.testimoni,
-      });
-      
-      // Log FormData entries untuk debugging
-      console.log("📤 [FORM_DATA] Critical Fields:");
-      console.log(`  kategori: "${fd.get("kategori")}" (type: ${typeof fd.get("kategori")})`);
-      console.log(`  user_input: "${fd.get("user_input")}" (type: ${typeof fd.get("user_input")})`);
-      console.log(`  assign: ${fd.get("assign")} (type: ${typeof fd.get("assign")})`);
-      console.log(`  list_point: ${fd.get("list_point")} (type: ${typeof fd.get("list_point")})`);
-      console.log(`  gambar: ${fd.get("gambar")?.substring(0, 100)}... (type: ${typeof fd.get("gambar")})`);
-      console.log(`  testimoni: ${fd.get("testimoni")?.substring(0, 100)}... (type: ${typeof fd.get("testimoni")})`);
-      
-      console.log("📤 [FORM_DATA] All Entries:");
-      for (const [key, value] of fd.entries()) {
-        if (value instanceof File) {
-          console.log(`  ${key}: [File] ${value.name} (${value.size} bytes)`);
-        } else {
-          const strValue = String(value);
-          console.log(`  ${key}: ${strValue.length > 100 ? strValue.substring(0, 100) + "..." : strValue} (type: ${typeof value})`);
-        }
-      }
-
-      const res = await fetch(
-        "/api/admin/produk",
-        {
-          method: "POST",
-          headers: {
-            Accept: "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          body: fd, // Selalu gunakan FormData
-        }
-      );
-
-      // Handle response - check if it's JSON first
-      const contentType = res.headers.get("content-type");
-      let data;
-      
-      if (contentType && contentType.includes("application/json")) {
-        try {
-          data = await res.json();
-        } catch (parseError) {
-          const textResponse = await res.text();
-          console.error("❌ Failed to parse JSON response:", textResponse.substring(0, 200));
-          alert("Terjadi kesalahan: Response dari server tidak valid.");
-          setIsSubmitting(false);
-          return;
-        }
-      } else {
-        const textResponse = await res.text();
-        console.error("❌ Non-JSON response received:", textResponse.substring(0, 200));
-        alert("Terjadi kesalahan: Server mengembalikan response yang tidak valid.");
-        setIsSubmitting(false);
-        return;
-      }
-      
-      // Logging struktur JSON lengkap
-      console.log("✅ Success:", data.success);
-      if (data.success) {
-        console.log("📦 Data:", data.data);
-        console.table(data.data);
-      }
-
-      if (!res.ok) {
-        console.error("❌ API ERROR - Status:", res.status);
-        console.error("❌ API ERROR - Message:", data?.message);
-        console.error("❌ API ERROR - Errors Object:", data?.errors);
-        console.error("❌ API ERROR - Full Response:", JSON.stringify(data, null, 2));
-        
-        // Build detailed error message
-        let errorMessage = data?.message || "Gagal membuat produk!";
-        let errorDetails = [];
-        
-        // Parse validation errors from Laravel
-        let errorFields = [];
-        
-        // Method 1: From errors object
-        if (data?.errors && typeof data.errors === 'object' && Object.keys(data.errors).length > 0) {
-          errorFields = Object.keys(data.errors);
-          errorDetails.push(`\n\n📋 Field yang error (${errorFields.length}):`);
-          
-          errorFields.forEach((field) => {
-            const fieldErrors = Array.isArray(data.errors[field]) 
-              ? data.errors[field] 
-              : [data.errors[field]];
-            
-            fieldErrors.forEach((err) => {
-              errorDetails.push(`  ❌ ${field}: ${err}`);
-            });
-          });
-        }
-        // Method 2: From errorFields array (extracted by API route)
-        else if (data?.errorFields && Array.isArray(data.errorFields) && data.errorFields.length > 0) {
-          errorFields = data.errorFields;
-          errorDetails.push(`\n\n📋 Field yang error (${errorFields.length}):`);
-          
-          errorFields.forEach((field) => {
-            const fieldErrors = data?.errors?.[field] 
-              ? (Array.isArray(data.errors[field]) ? data.errors[field] : [data.errors[field]])
-              : ["Field ini wajib diisi"];
-            
-            fieldErrors.forEach((err) => {
-              errorDetails.push(`  ❌ ${field}: ${err}`);
-            });
-          });
-        }
-        // Method 3: Parse from message string (fallback)
-        else if (data?.message) {
-          const message = data.message;
-          // Extract field names from Laravel error message pattern
-          // "The kategori field is required. (and 2 more errors)"
-          const fieldPattern = /The\s+(\w+)\s+field\s+is\s+required/gi;
-          const matches = [...message.matchAll(fieldPattern)];
-          
-          if (matches.length > 0) {
-            errorFields = matches.map(m => m[1].toLowerCase());
-            errorDetails.push(`\n\n📋 Field yang error (${errorFields.length}):`);
-            
-            errorFields.forEach((field) => {
-              errorDetails.push(`  ❌ ${field}: Field ini wajib diisi`);
-            });
-            
-            // Check for "and X more errors"
-            const moreErrorsMatch = message.match(/and\s+(\d+)\s+more\s+errors?/i);
-            if (moreErrorsMatch) {
-              const moreCount = parseInt(moreErrorsMatch[1]);
-              errorDetails.push(`\n⚠️ Ada ${moreCount} field lainnya yang juga error (tidak terdeteksi dari message)`);
-            }
-          } else {
-            // If can't parse, show the message as is
-            errorDetails.push(`\n\n⚠️ ${message}`);
-          }
-        }
-        
-        // Show which fields are missing/required
-        if (errorFields.length > 0) {
-          const missingFields = errorFields.filter(field => {
-            // Common required field names
-            const requiredFields = ['kategori', 'user_input', 'assign', 'nama'];
-            return requiredFields.includes(field.toLowerCase());
-          });
-          
-          if (missingFields.length > 0) {
-            errorDetails.push(`\n⚠️ Field yang kurang/wajib diisi: ${missingFields.join(", ")}`);
-          }
-        }
-        
-        // Show debug info if available
-        if (data?.debug) {
-          console.error("🔍 Debug Info:", data.debug);
-          if (data.debug.backendResponse?.errors) {
-            errorDetails.push(`\n🔍 Backend Validation Errors:`, JSON.stringify(data.debug.backendResponse.errors, null, 2));
-          }
-        }
-        
-        // Combine error message
-        const fullErrorMessage = errorMessage + errorDetails.join("\n");
-        
-        // Show alert with detailed errors
-        alert(fullErrorMessage);
-        
-        // Also log to console for debugging
-        console.error("📝 Detailed Error Summary:", {
-          status: res.status,
-          message: errorMessage,
-          errorFields: data?.errors ? Object.keys(data.errors) : [],
-          missingFields: data?.errors ? Object.keys(data.errors).filter(field => {
-            const errors = data.errors[field];
-            return Array.isArray(errors) && errors.some(e => 
-              e.toLowerCase().includes('required')
-            );
-          }) : [],
-          fullErrors: data?.errors,
-        });
-        
-        setIsSubmitting(false);
-        return;
-      }
-
-      alert("Produk berhasil dibuat!");
-      console.log("SUCCESS:", data);
-      
-      // Redirect ke halaman products
-      router.push("/admin/products");
-    } catch (err) {
-      console.error("❌ Submit error:", err);
-      alert("Terjadi kesalahan saat submit: " + (err.message || "Unknown error"));
-    }
-    finally {
+  try {
+    // 1) currentUser required
+    const userFromStorage = (() => {
+      try { return JSON.parse(localStorage.getItem("user") || "null"); } catch(e){ return null; }
+    })();
+    const effectiveUser = currentUser || userFromStorage;
+    if (!effectiveUser || !effectiveUser.id) {
+      alert("User tidak ditemukan. Silakan login ulang.");
       setIsSubmitting(false);
+      return;
     }
-  };
 
+    // 2) kategori validation
+    const kategoriId = form.kategori !== null && form.kategori !== undefined && form.kategori !== ""
+      ? Number(form.kategori)
+      : null;
+    if (!kategoriId || Number.isNaN(kategoriId) || kategoriId <= 0) {
+      alert("Kategori wajib dipilih!");
+      setIsSubmitting(false);
+      return;
+    }
+
+    // 3) assign normalization
+    const normalizedAssign = Array.isArray(form.assign)
+      ? form.assign.map(a => Number(a)).filter(n => !Number.isNaN(n) && n > 0)
+      : [];
+    if (normalizedAssign.length === 0) {
+      alert("Pilih minimal 1 penanggung jawab (assign).");
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Build payload
+    const payloadData = buildProductPayload(form, kategoriId, effectiveUser.id, normalizedAssign);
+
+    const fd = new FormData();
+
+    // REQUIRED primitives (as string)
+    fd.append("kategori", String(payloadData.kategori));
+    fd.append("user_input", String(payloadData.user_input));
+    fd.append("nama", payloadData.nama);
+    fd.append("kode", payloadData.kode);
+    fd.append("url", payloadData.url);
+    fd.append("deskripsi", payloadData.deskripsi);
+    fd.append("harga_coret", String(payloadData.harga_coret));
+    fd.append("harga_asli", String(payloadData.harga_asli));
+    fd.append("tanggal_event", payloadData.tanggal_event);
+    fd.append("landingpage", String(payloadData.landingpage));
+    fd.append("status", String(payloadData.status));
+
+    // ASSIGN: send both JSON string and array entries
+    fd.append("assign", JSON.stringify(normalizedAssign));
+    normalizedAssign.forEach(a => fd.append("assign[]", String(a)));
+
+    // ARRAYS: JSON string + individual entries where sensible
+    fd.append("list_point", payloadData.list_point);
+    try {
+      const listPointArr = JSON.parse(payloadData.list_point || "[]");
+      listPointArr.forEach((p, i) => fd.append(`list_point[${i}]`, p.nama || ""));
+    } catch(e) { /* ignore parse error */ }
+
+    fd.append("fb_pixel", payloadData.fb_pixel);
+    try {
+      const fbArr = JSON.parse(payloadData.fb_pixel || "[]");
+      fbArr.forEach(v => fd.append("fb_pixel[]", String(v)));
+    } catch(e) {}
+
+    fd.append("gtm", payloadData.gtm);
+    try {
+      const gtmArr = JSON.parse(payloadData.gtm || "[]");
+      gtmArr.forEach(v => fd.append("gtm[]", String(v)));
+    } catch(e){}
+
+    fd.append("video", payloadData.video);
+    try {
+      const vidArr = JSON.parse(payloadData.video || "[]");
+      vidArr.forEach(v => fd.append("video[]", String(v)));
+    } catch(e){}
+
+    fd.append("event_fb_pixel", payloadData.event_fb_pixel);
+    fd.append("custom_field", payloadData.custom_field);
+
+    // gambar/testimoni as JSON string (DB expects string) + append files
+    fd.append("gambar", payloadData.gambar);
+    (form.gambar || []).forEach((g, idx) => {
+      if (g.path && g.path.type === "file" && g.path.value) {
+        fd.append(`gambar[${idx}][file]`, g.path.value);
+      }
+      // also send caption individually for backend that expects it
+      fd.append(`gambar[${idx}][caption]`, g.caption || "");
+    });
+
+    fd.append("testimoni", payloadData.testimoni);
+    (form.testimoni || []).forEach((t, idx) => {
+      if (t.gambar && t.gambar.type === "file" && t.gambar.value) {
+        fd.append(`testimoni[${idx}][gambar]`, t.gambar.value);
+      }
+      fd.append(`testimoni[${idx}][nama]`, t.nama || "");
+      fd.append(`testimoni[${idx}][deskripsi]`, t.deskripsi || "");
+    });
+
+    // header file
+    if (form.header?.type === "file" && form.header.value) {
+      fd.append("header", form.header.value);
+    }
+
+    // DEBUG: dump FormData
+    console.groupCollapsed("[DEBUG] FormData contents");
+    for (const [k, v] of fd.entries()) {
+      if (v instanceof File) {
+        console.log(k, "[File]", v.name, v.size);
+      } else {
+        const s = String(v);
+        console.log(k, s.length > 200 ? s.substring(0,200) + "..." : s);
+      }
+    }
+    console.groupEnd();
+
+    // FETCH
+    const res = await fetch("/api/admin/produk", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token") || ""}`
+      },
+      body: fd
+    });
+
+    const contentType = res.headers.get("content-type") || "";
+    let data;
+    if (contentType.includes("application/json")) {
+      data = await res.json();
+    } else {
+      const text = await res.text();
+      throw new Error("Non-JSON response: " + text.slice(0, 400));
+    }
+
+    if (!res.ok) {
+      console.error("[API ERROR]", res.status, data);
+      alert(data.message || "Gagal membuat produk");
+      setIsSubmitting(false);
+      return;
+    }
+
+    console.log("[API SUCCESS]", data);
+    alert("Produk berhasil dibuat!");
+    router.push("/admin/products");
+  } catch (err) {
+    console.error("[SUBMIT ERROR]", err);
+    alert("Terjadi kesalahan saat submit: " + (err.message || err));
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
 const [kategoriOptions, setKategoriOptions] = useState([]);
 const [userOptions, setUserOptions] = useState([]);
