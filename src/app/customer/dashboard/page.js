@@ -221,6 +221,8 @@ export default function DashboardPage() {
   }, [router]);
 
   // Helper function untuk cek apakah modal perlu ditampilkan
+  // CATATAN: verifikasi = 1 berarti sudah mengisi form customer (nama_panggilan, profesi, dll)
+  // verifikasi = 0 berarti belum mengisi form
   const checkAndShowModal = useCallback((user) => {
     // Jika modal sudah pernah ditampilkan, jangan check lagi (biarkan user klik OK dulu)
     if (hasModalBeenShown && showVerificationModal) {
@@ -238,19 +240,22 @@ export default function DashboardPage() {
       return;
     }
 
-    // ===== CEK VERIFIKASI OTP =====
+    // ===== CEK VERIFIKASI FORM CUSTOMER =====
+    // verifikasi = 1: sudah mengisi form customer → tidak perlu tampilkan form lagi
+    // verifikasi = 0: belum mengisi form → perlu tampilkan form untuk diisi
     const verifikasiValue = user.verifikasi;
     const normalizedVerifikasi = verifikasiValue === "1" ? 1 : verifikasiValue === "0" ? 0 : verifikasiValue;
-    const isVerified = normalizedVerifikasi === 1 || normalizedVerifikasi === true;
+    const hasFilledForm = normalizedVerifikasi === 1 || normalizedVerifikasi === true;
 
     console.log("🔍 [DASHBOARD] Checking user data:", {
       verifikasi: user.verifikasi,
-      isVerified
+      hasFilledForm,
+      meaning: hasFilledForm ? "Sudah mengisi form customer" : "Belum mengisi form customer"
     });
 
-    // Jika sudah verifikasi (verifikasi = 1), dashboard normal tanpa modal
-    if (isVerified) {
-      console.log("✅ [DASHBOARD] User verified (verifikasi = 1), dashboard berhasil ditampilkan");
+    // Jika sudah mengisi form (verifikasi = 1), dashboard normal tanpa modal
+    if (hasFilledForm) {
+      console.log("✅ [DASHBOARD] User sudah mengisi form (verifikasi = 1), dashboard berhasil ditampilkan");
       setShowVerificationModal(false);
       setShowUpdateModal(false);
       setUpdateModalReason("password");
@@ -258,14 +263,12 @@ export default function DashboardPage() {
       return;
     }
 
-    // Jika belum verifikasi (verifikasi = 0), tampilkan modal OTP langsung (lock modal)
-    // Dashboard tetap tampil, tapi di-lock dan muncul otpVerificationModal
-    // Setelah OTP sent, akan muncul updateCustomer.js
-    // Dashboard akan di-lock otomatis oleh useEffect ketika modal muncul
-    if (!isVerified) {
-      console.log("⚠️ [DASHBOARD] User not verified (verifikasi = 0), showing OTP modal immediately");
+    // Jika belum mengisi form (verifikasi = 0), tampilkan modal OTP dulu untuk verifikasi WA
+    // Setelah OTP verified, akan muncul form customer untuk diisi
+    if (!hasFilledForm) {
+      console.log("⚠️ [DASHBOARD] User belum mengisi form (verifikasi = 0), showing OTP modal first");
       setShowUpdateModal(false);
-      // Tampilkan modal langsung tanpa delay
+      // Tampilkan modal OTP langsung tanpa delay
       setShowVerificationModal(true);
       setHasModalBeenShown(true);
       // Tampilkan notif
@@ -341,30 +344,47 @@ export default function DashboardPage() {
       }
       
       // Cek verifikasi terlebih dahulu sebelum check modal
+      // verifikasi = 1 berarti sudah mengisi form customer (nama_panggilan, profesi, dll)
+      // verifikasi = 0 berarti belum mengisi form
+      const verifikasiValue = mergedCustomerData?.verifikasi;
       const isUserVerified =
-        mergedCustomerData?.verifikasi === "1" ||
-        mergedCustomerData?.verifikasi === 1 ||
-        mergedCustomerData?.verifikasi === true;
+        verifikasiValue === "1" ||
+        verifikasiValue === 1 ||
+        verifikasiValue === true;
       
-      // Jika sudah verifikasi, pastikan modal tidak muncul
+      console.log("🔍 [DASHBOARD] Verifikasi check:", {
+        verifikasiValue,
+        isUserVerified,
+        meaning: isUserVerified ? "Sudah mengisi form" : "Belum mengisi form"
+      });
+      
+      // Jika sudah verifikasi (sudah mengisi form), pastikan modal tidak muncul
       if (isUserVerified) {
-        console.log("✅ [DASHBOARD] User verified, ensuring OTP modal is hidden");
+        console.log("✅ [DASHBOARD] User sudah mengisi form (verifikasi = 1), tidak perlu tampilkan form lagi");
         setShowVerificationModal(false);
+        setShowUpdateModal(false);
         setHasModalBeenShown(false);
+        // Hapus pending update modal jika ada
+        localStorage.removeItem("customer_show_update_modal");
       } else {
-        // Gunakan data yang sudah di-merge untuk cek modal (hanya jika modal belum pernah ditampilkan)
+        // Jika belum verifikasi (belum mengisi form), tampilkan form untuk diisi
+        console.log("⚠️ [DASHBOARD] User belum mengisi form (verifikasi = 0), perlu tampilkan form");
+        
+        // Cek apakah user sudah verifikasi OTP dulu (untuk OTP modal)
+        // Jika belum verifikasi OTP, tampilkan OTP modal dulu
         if (!hasModalBeenShown) {
           checkAndShowModal(mergedCustomerData);
         }
-      }
-
-      // Check untuk pending update modal (setelah OTP verification)
-      const pendingUpdateModal = localStorage.getItem("customer_show_update_modal");
-      if (pendingUpdateModal === "1" && isUserVerified) {
-        console.log("🟢 [DASHBOARD] Triggering UpdateCustomer modal after OTP verification");
-        localStorage.removeItem("customer_show_update_modal");
-        setUpdateModalReason("incomplete");
-        setShowUpdateModal(true);
+        
+        // Check untuk pending update modal (setelah OTP verification)
+        // Form customer harus muncul jika verifikasi = 0 (belum mengisi form)
+        const pendingUpdateModal = localStorage.getItem("customer_show_update_modal");
+        if (pendingUpdateModal === "1") {
+          console.log("🟢 [DASHBOARD] Triggering UpdateCustomer modal - user perlu mengisi form");
+          localStorage.removeItem("customer_show_update_modal");
+          setUpdateModalReason("incomplete");
+          setShowUpdateModal(true);
+        }
       }
     };
 
@@ -385,11 +405,22 @@ export default function DashboardPage() {
     router.replace("/customer/otp");
   };
 
+  // Handler untuk membuka form customer (UpdateCustomerModal)
+  const handleOpenCustomerForm = () => {
+    console.log("📤 [DASHBOARD] Opening customer form modal");
+    setShowUpdateModal(true);
+    setUpdateModalReason("incomplete");
+  };
+
   const handleUpdateSuccess = (data) => {
     console.log("✅ [DASHBOARD] Update success, data received:", data);
 
     const session = getCustomerSession();
     if (session.user) {
+      // CRITICAL: Pastikan verifikasi di-update dari response API
+      // Jika response API mengembalikan verifikasi = "1", berarti form sudah berhasil diisi
+      const verifikasiFromResponse = data?.verifikasi !== undefined ? data.verifikasi : "1";
+      
       const updatedUser = {
         ...session.user,
         ...data,
@@ -399,18 +430,30 @@ export default function DashboardPage() {
         pendapatan_bln: data?.pendapatan_bln || session.user.pendapatan_bln,
         industri_pekerjaan: data?.industri_pekerjaan || session.user.industri_pekerjaan,
         jenis_kelamin: data?.jenis_kelamin || session.user.jenis_kelamin,
-        verifikasi: data?.verifikasi !== undefined ? data.verifikasi : session.user.verifikasi,
+        verifikasi: verifikasiFromResponse, // Update verifikasi dari response
         alamat: data?.alamat || session.user.alamat,
       };
 
       console.log("✅ [DASHBOARD] Updated user data:", updatedUser);
+      console.log("✅ [DASHBOARD] Verifikasi updated to:", verifikasiFromResponse);
       localStorage.setItem("customer_user", JSON.stringify(updatedUser));
+      
+      // Update customerInfo state juga
+      setCustomerInfo(updatedUser);
     }
 
+    // Hapus semua modal flags
     localStorage.removeItem("customer_show_update_modal");
     setShowUpdateModal(false);
+    setShowVerificationModal(false);
+    setHasModalBeenShown(false);
+    
     toast.success("Data berhasil diperbarui!");
-    loadDashboardData();
+    
+    // Refresh dashboard data untuk mendapatkan data terbaru termasuk verifikasi
+    loadDashboardData().then(() => {
+      console.log("✅ [DASHBOARD] Dashboard data refreshed after form submission");
+    });
   };
 
   const getCountdownLabel = (order) => {
@@ -896,7 +939,8 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* Tampilkan pesan verifikasi jika belum verifikasi dan belum show OTP form */}
+            {/* Tampilkan pesan jika belum mengisi form customer (verifikasi = 0) */}
+            {/* CATATAN: verifikasi = 1 berarti sudah mengisi form, verifikasi = 0 berarti belum */}
             {!dashboardLoading && !isUserVerified() && !showOTPForm && (
               <div style={{
                 marginBottom: "16px",
@@ -913,10 +957,10 @@ export default function DashboardPage() {
                 flexWrap: "wrap"
               }}>
                 <span>
-                  Akun Anda belum diverifikasi. Silakan verifikasi OTP terlebih dahulu.
+                  Silakan lengkapi data profil Anda terlebih dahulu untuk melihat order.
                 </span>
                 <button
-                  onClick={handleGoToOTP}
+                  onClick={handleOpenCustomerForm}
                   style={{
                     padding: "8px 20px",
                     backgroundColor: "#3b82f6",
@@ -936,7 +980,7 @@ export default function DashboardPage() {
                     e.target.style.backgroundColor = "#3b82f6";
                   }}
                 >
-                  Verifikasi
+                  Lengkapi Data
                 </button>
               </div>
             )}

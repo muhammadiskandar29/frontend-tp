@@ -99,6 +99,7 @@ export default function VerifyOrderOTPPage() {
   };
 
   // Verify OTP - WAJIB sebelum ke payment
+  // Menggunakan route /api/otp/verify
   const handleSubmit = async (e) => {
     e.preventDefault();
     const code = otp.join("");
@@ -117,9 +118,13 @@ export default function VerifyOrderOTPPage() {
     setMessage("");
 
     try {
+      // Menggunakan route /api/otp/verify (9.2 Verifikasi OTP Customer)
       const response = await fetch("/api/otp/verify", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          Accept: "application/json"
+        },
         body: JSON.stringify({
           customer_id: orderData.customerId,
           otp: code,
@@ -127,6 +132,8 @@ export default function VerifyOrderOTPPage() {
       });
 
       const result = await response.json();
+
+      console.log("🟢 [VERIFY_ORDER] OTP Verify response:", result);
 
       if (result.success) {
         setMessage("Verifikasi berhasil! 🎉");
@@ -143,6 +150,7 @@ export default function VerifyOrderOTPPage() {
         setMessage(result.message || "Kode OTP salah atau sudah kadaluarsa.");
       }
     } catch (error) {
+      console.error("❌ [VERIFY_ORDER] OTP Verify error:", error);
       setMessage("Terjadi kesalahan saat memverifikasi OTP.");
     } finally {
       setLoading(false);
@@ -232,6 +240,7 @@ export default function VerifyOrderOTPPage() {
   };
 
   // Resend OTP
+  // Menggunakan route /api/otp/resend (9.3 Re-send OTP Customer)
   const handleResend = async () => {
     if (!orderData?.customerId || !orderData?.wa) {
       setMessage("Sesi telah berakhir. Silakan mulai ulang pemesanan.");
@@ -242,7 +251,7 @@ export default function VerifyOrderOTPPage() {
     setMessage("");
 
     try {
-      // Dari landing page - tidak perlu token
+      // Menggunakan route /api/otp/resend (public route, tidak perlu token)
       const response = await fetch("/api/otp/resend", {
         method: "POST",
         headers: {
@@ -257,6 +266,8 @@ export default function VerifyOrderOTPPage() {
 
       const result = await response.json();
 
+      console.log("🟢 [VERIFY_ORDER] OTP Resend response:", result);
+
       if (result.success) {
         setMessage("Kode OTP baru telah dikirim ke WhatsApp Anda!");
         setOtp(["", "", "", "", "", ""]);
@@ -267,6 +278,7 @@ export default function VerifyOrderOTPPage() {
         setMessage(result.message || "Gagal mengirim ulang OTP.");
       }
     } catch (error) {
+      console.error("❌ [VERIFY_ORDER] OTP Resend error:", error);
       setMessage("Terjadi kesalahan saat mengirim ulang OTP.");
     } finally {
       setResending(false);
