@@ -379,7 +379,7 @@ const generateKode = (text) =>
       }
 
       const token = localStorage.getItem("token");
-      const res = await fetch("/api/admin/produk2", {
+      const res = await fetch("/api/admin/produk", {
         method: "POST",
         headers: {
           ...(isFormData ? {} : { "Content-Type": "application/json" }),

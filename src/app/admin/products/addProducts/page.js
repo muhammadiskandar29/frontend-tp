@@ -230,7 +230,7 @@ const [submitProgress, setSubmitProgress] = useState("");
       const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://3.105.234.181:8000";
 
       // Upload langsung ke backend Laravel
-      const response = await fetch(`${BACKEND_URL}/api/admin/upload`, {
+      const response = await fetch(`${BACKEND_URL}/api/admin/produk`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -494,10 +494,10 @@ const handleSubmit = async () => {
     
     if (data.success && data.data) {
       alert(data.message || "Produk berhasil dibuat!");
-      router.push("/admin/products");
+      router.push("/admin/produk");
     } else {
       alert("Produk berhasil dibuat!");
-      router.push("/admin/products");
+      router.push("/admin/produk");
     }
   } catch (err) {
     console.error("[SUBMIT ERROR]", err);
@@ -660,7 +660,7 @@ useEffect(() => {
       <div className="form-header-section">
         <button
           className="back-to-products-btn"
-          onClick={() => router.push("/admin/products")}
+          onClick={() => router.push("/admin/produk")}
           aria-label="Back to products list"
         >
           <ArrowLeft size={18} />
