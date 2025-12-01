@@ -25,8 +25,8 @@ export default function Page() {
     if (!text) return "";
     
     return text
-      .toLowerCase()
-      .trim()
+    .toLowerCase()
+    .trim()
       // Hapus karakter khusus, hanya simpan huruf, angka, spasi, dan dash
       .replace(/[^a-z0-9\s-]/g, "")
       // Ganti multiple spaces dengan single space
@@ -151,7 +151,7 @@ const [submitProgress, setSubmitProgress] = useState("");
 
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
-
+    
           // Convert to blob with compression
           canvas.toBlob(
             (blob) => {
@@ -342,7 +342,7 @@ const handleSubmit = async () => {
       kategoriId = Number(form.kategori);
       console.log("Kategori ID parsed:", kategoriId);
     }
-    
+
     console.log("[VALIDATION] Kategori check:", {
       formKategori: form.kategori,
       kategoriId: kategoriId,
@@ -457,7 +457,7 @@ const handleSubmit = async () => {
         name: headerInFormData instanceof File ? headerInFormData.name : null
       }
     });
-    
+
     // Final check sebelum kirim
     if (!kategoriInFormData || kategoriInFormData === "" || kategoriInFormData === "null" || kategoriInFormData === "undefined") {
       console.error("[FORMDATA] ❌ KATEGORI TIDAK ADA DI FORMDATA!");
@@ -467,7 +467,7 @@ const handleSubmit = async () => {
     if (!namaInFormData || namaInFormData === "") {
       console.error("[FORMDATA] ❌ NAMA TIDAK ADA DI FORMDATA!");
       throw new Error("Nama produk tidak ditemukan di FormData.");
-    }
+      }
     
     if (!headerInFormData || !(headerInFormData instanceof File)) {
       console.error("[FORMDATA] ❌ HEADER TIDAK ADA DI FORMDATA!");
@@ -476,6 +476,54 @@ const handleSubmit = async () => {
     
     console.log("[FORMDATA] ✅ All critical fields verified");
     console.log("[FORMDATA] =================================================");
+
+    // ============================
+    // SIMPAN REQUEST DATA KE LOCALSTORAGE DULU
+    // ============================
+    console.log("[LOCALSTORAGE] ========== SAVING REQUEST DATA ==========");
+    const requestDataToSave = {
+      timestamp: new Date().toISOString(),
+      formData: {}
+    };
+    
+    // Convert FormData ke object untuk disimpan
+    for (const [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        requestDataToSave.formData[key] = {
+          type: "File",
+          name: value.name,
+          size: value.size,
+          sizeKB: `${(value.size / 1024).toFixed(2)} KB`,
+          mimeType: value.type,
+          lastModified: value.lastModified
+        };
+      } else {
+        const strValue = String(value);
+        // Try to parse JSON strings
+        try {
+          const parsed = JSON.parse(strValue);
+          requestDataToSave.formData[key] = parsed;
+        } catch {
+          requestDataToSave.formData[key] = strValue;
+        }
+      }
+    }
+    
+    // Simpan ke localStorage
+    try {
+      localStorage.setItem("last_product_request", JSON.stringify(requestDataToSave, null, 2));
+      console.log("[LOCALSTORAGE] ✅ Request data saved to localStorage");
+      console.log("[LOCALSTORAGE] Key: 'last_product_request'");
+      console.log("[LOCALSTORAGE] Data preview:", {
+        timestamp: requestDataToSave.timestamp,
+        fieldsCount: Object.keys(requestDataToSave.formData).length,
+        fields: Object.keys(requestDataToSave.formData)
+      });
+      console.log("[LOCALSTORAGE] Full data:", JSON.stringify(requestDataToSave, null, 2));
+    } catch (error) {
+      console.error("[LOCALSTORAGE] ❌ Failed to save to localStorage:", error);
+    }
+    console.log("[LOCALSTORAGE] ==========================================");
 
     // FETCH dengan FormData (sesuai dokumentasi Postman)
     setSubmitProgress("Mengirim data ke server...");
@@ -588,8 +636,8 @@ const handleSubmit = async () => {
       alert(data.message || "Produk berhasil dibuat!");
       router.push("/admin/products");
     } else {
-      alert("Produk berhasil dibuat!");
-      router.push("/admin/products");
+    alert("Produk berhasil dibuat!");
+    router.push("/admin/products");
     }
   } catch (err) {
     console.error("[SUBMIT ERROR]", err);
@@ -707,7 +755,7 @@ useEffect(() => {
         const found = activeCategories.find(k => k.nama === produkData.kategori);
         kategoriId = found ? Number(found.id) : null;
       }
-
+      
       setForm((f) => ({
         ...f,
         // Removed kategori: null to prevent overwriting user selection

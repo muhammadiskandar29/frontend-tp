@@ -502,6 +502,41 @@ export async function POST(request) {
         );
       }
       
+      // ============================
+      // SIMPAN REQUEST DATA KE OBJECT DULU (untuk debugging)
+      // ============================
+      console.log("[ROUTE] ========== SAVING REQUEST DATA ==========");
+      const requestDataToLog = {
+        timestamp: new Date().toISOString(),
+        incomingFormData: {}
+      };
+      
+      // Convert incoming FormData ke object untuk logging
+      for (const [key, value] of incomingFormData.entries()) {
+        if (value instanceof File) {
+          requestDataToLog.incomingFormData[key] = {
+            type: "File",
+            name: value.name,
+            size: value.size,
+            sizeKB: `${(value.size / 1024).toFixed(2)} KB`,
+            mimeType: value.type
+          };
+        } else {
+          const strValue = String(value);
+          try {
+            const parsed = JSON.parse(strValue);
+            requestDataToLog.incomingFormData[key] = parsed;
+          } catch {
+            requestDataToLog.incomingFormData[key] = strValue.length > 200 ? strValue.substring(0, 200) + "..." : strValue;
+          }
+        }
+      }
+      
+      console.log("[ROUTE] Request data object:", JSON.stringify(requestDataToLog, null, 2));
+      console.log("[ROUTE] Fields count:", Object.keys(requestDataToLog.incomingFormData).length);
+      console.log("[ROUTE] Fields:", Object.keys(requestDataToLog.incomingFormData));
+      console.log("[ROUTE] ==========================================");
+      
       // Create FormData untuk forward ke backend (menggunakan form-data package)
       const forwardFormData = new FormData();
       
@@ -526,6 +561,28 @@ export async function POST(request) {
         }
       }
       
+      console.log("[ROUTE] ==============================================");
+      
+      // Verify data di forwardFormData sebelum kirim
+      console.log("[ROUTE] ========== VERIFYING FORWARDED DATA ==========");
+      const verifyKategori = forwardFormData.get("kategori");
+      const verifyNama = forwardFormData.get("nama");
+      const verifyAssign = forwardFormData.get("assign");
+      const verifyHeader = forwardFormData.get("header");
+      
+      console.log("Kategori:", verifyKategori ? String(verifyKategori) : "NULL");
+      console.log("Nama:", verifyNama ? String(verifyNama) : "NULL");
+      console.log("Assign:", verifyAssign ? String(verifyAssign) : "NULL");
+      console.log("Header:", verifyHeader ? `Buffer(${verifyHeader.length} bytes)` : "NULL");
+      
+      if (!verifyKategori || !verifyNama || !verifyHeader) {
+        console.error("[ROUTE] ❌ MISSING CRITICAL FIELDS!");
+        console.error("Kategori:", verifyKategori ? "OK" : "MISSING");
+        console.error("Nama:", verifyNama ? "OK" : "MISSING");
+        console.error("Header:", verifyHeader ? "OK" : "MISSING");
+      } else {
+        console.log("[ROUTE] ✅ All critical fields present");
+      }
       console.log("[ROUTE] ==============================================");
       
       // Get headers untuk FormData

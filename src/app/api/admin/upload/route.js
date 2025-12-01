@@ -35,7 +35,7 @@ export async function POST(request) {
 
     // Get file from form data
     const file = incomingFormData.get("file");
-    
+
     if (!file || !(file instanceof File)) {
       return NextResponse.json(
         { success: false, message: "Tidak ada file yang di-upload" },
@@ -48,8 +48,8 @@ export async function POST(request) {
     
     // Convert File to Buffer untuk form-data package
     const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    
+        const buffer = Buffer.from(arrayBuffer);
+
     forwardFormData.append("file", buffer, {
       filename: file.name,
       contentType: file.type,
@@ -87,8 +87,8 @@ export async function POST(request) {
 
     if (!response.ok) {
       return NextResponse.json(
-        {
-          success: false,
+        { 
+          success: false, 
           message: data?.message || "Upload gagal",
           errors: data?.errors,
         },
