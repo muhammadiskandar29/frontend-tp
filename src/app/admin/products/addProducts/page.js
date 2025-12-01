@@ -179,79 +179,59 @@ const [submitProgress, setSubmitProgress] = useState("");
   };
 
   // ============================
-  // CONVERT FILE TO BASE64
+  // BUILD PRODUCT FORMDATA
+  // Sesuai dokumentasi Postman: multipart/form-data dengan file langsung
+  // Array fields sebagai JSON string
   // ============================
-  const fileToBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-      if (!file) {
-        resolve(null);
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = () => {
-        // reader.result adalah data URL (data:image/jpeg;base64,...)
-        resolve(reader.result);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  };
-
-  // ============================
-  // BUILD PRODUCT JSON PAYLOAD
-  // Convert semua data ke JSON dengan images sebagai base64
-  // ============================
-  async function buildProductPayload(form, kategoriId, normalizedAssign, onProgress = null) {
+  async function buildProductFormData(form, kategoriId, normalizedAssign, onProgress = null) {
     // SELALU generate kode dari nama (auto generate dengan dash)
     const kode = generateKode(form.nama) || "produk-baru";
     
-    const payload = {};
+    const formData = new FormData();
     
     // ============================
     // 1. BASIC FIELDS
     // ============================
-    payload.kategori = Number(kategoriId);
-    // user_input tidak perlu dikirim, backend ambil dari auth()->user()->id
-    payload.nama = form.nama || "";
-    payload.kode = kode;
-    payload.url = "/" + kode;
-    payload.deskripsi = form.deskripsi || "";
-    payload.harga_asli = Number(form.harga_asli || 0);
-    payload.harga_coret = Number(form.harga_coret || 0);
-    payload.tanggal_event = formatDateForBackend(form.tanggal_event) || "";
-    payload.landingpage = Number(form.landingpage || 1);
-    payload.status = Number(form.status || 1);
+    formData.append("kategori", String(kategoriId));
+    formData.append("nama", form.nama || "");
+    formData.append("kode", kode);
+    formData.append("url", "/" + kode);
+    formData.append("deskripsi", form.deskripsi || "");
+    formData.append("harga_asli", String(form.harga_asli || 0));
+    formData.append("harga_coret", String(form.harga_coret || 0));
+    formData.append("tanggal_event", formatDateForBackend(form.tanggal_event) || "");
+    formData.append("landingpage", String(form.landingpage || 1));
+    formData.append("status", String(form.status || 1));
     
-    console.log("[PAYLOAD] Basic fields:", {
-      kategori: payload.kategori,
-      nama: payload.nama,
-      kode: payload.kode,
-      url: payload.url
+    console.log("[FORMDATA] Basic fields:", {
+      kategori: kategoriId,
+      nama: form.nama,
+      kode: kode,
+      url: "/" + kode
     });
     
     // ============================
-    // 2. HEADER IMAGE (REQUIRED) - Convert to base64
+    // 2. HEADER IMAGE (REQUIRED) - File langsung
     // ============================
     if (form.header?.type === "file" && form.header.value) {
       if (onProgress) {
         onProgress("Mengompresi header image...");
       }
       const compressedHeader = await compressImage(form.header.value);
-      const headerBase64 = await fileToBase64(compressedHeader);
-      payload.header = headerBase64;
+      formData.append("header", compressedHeader);
     } else {
       throw new Error("Header image wajib diisi");
     }
     
     // ============================
-    // 3. GAMBAR GALLERY - Convert to base64
+    // 3. GAMBAR GALLERY - File langsung
+    // Format: gambar[0][file], gambar[0][caption], gambar[1][file], gambar[1][caption]
     // ============================
     const gambarFiles = (form.gambar || []).filter(g => g.path && g.path.type === "file" && g.path.value);
     if (onProgress && gambarFiles.length > 0) {
       onProgress(`Mengompresi ${gambarFiles.length} gambar...`);
     }
     
-    payload.gambar = [];
     for (let i = 0; i < (form.gambar || []).length; i++) {
       const g = form.gambar[i];
       if (g.path && g.path.type === "file" && g.path.value) {
@@ -259,86 +239,85 @@ const [submitProgress, setSubmitProgress] = useState("");
           onProgress(`Mengompresi gambar ${i + 1}/${gambarFiles.length}...`);
         }
         const compressedGambar = await compressImage(g.path.value);
-        const gambarBase64 = await fileToBase64(compressedGambar);
-        payload.gambar.push({
-          caption: g.caption || "",
-          path: gambarBase64
-        });
+        formData.append(`gambar[${i}][file]`, compressedGambar);
+        formData.append(`gambar[${i}][caption]`, g.caption || "");
       }
     }
     
     // ============================
-    // 4. TESTIMONI - Convert to base64
+    // 4. TESTIMONI - File langsung
+    // Format: testimoni[0][gambar], testimoni[0][nama], testimoni[0][deskripsi]
     // ============================
     const testimoniFiles = (form.testimoni || []).filter(t => t.gambar && t.gambar.type === "file" && t.gambar.value);
     if (onProgress && testimoniFiles.length > 0) {
       onProgress(`Mengompresi ${testimoniFiles.length} testimoni...`);
     }
     
-    payload.testimoni = [];
     for (let i = 0; i < (form.testimoni || []).length; i++) {
       const t = form.testimoni[i];
-      let gambarBase64 = null;
       if (t.gambar && t.gambar.type === "file" && t.gambar.value) {
         if (onProgress) {
           onProgress(`Mengompresi testimoni ${i + 1}/${testimoniFiles.length}...`);
         }
         const compressedTestimoni = await compressImage(t.gambar.value);
-        gambarBase64 = await fileToBase64(compressedTestimoni);
+        formData.append(`testimoni[${i}][gambar]`, compressedTestimoni);
       }
-      payload.testimoni.push({
-        nama: t.nama || "",
-        deskripsi: t.deskripsi || "",
-        gambar: gambarBase64
-      });
+      formData.append(`testimoni[${i}][nama]`, t.nama || "");
+      formData.append(`testimoni[${i}][deskripsi]`, t.deskripsi || "");
     }
     
     // ============================
-    // 5. ARRAY FIELDS
+    // 5. ARRAY FIELDS - Sebagai JSON string (sesuai Postman)
     // ============================
-    // list_point
-    payload.list_point = (form.list_point || []).map((p, idx) => ({
-      nama: p.nama || "",
-      urutan: idx + 1,
-    }));
-    
-    // custom_field
-    payload.custom_field = (form.custom_field || []).map((f, idx) => ({
+    // custom_field - JSON string
+    const customFieldArray = (form.custom_field || []).map((f, idx) => ({
       nama_field: f.label || f.key || "",
       urutan: idx + 1,
     }));
+    formData.append("custom_field", JSON.stringify(customFieldArray));
     
-    // event_fb_pixel
-    payload.event_fb_pixel = (form.event_fb_pixel || []).map((ev) => ({ 
+    // list_point - JSON string
+    const listPointArray = (form.list_point || []).map((p, idx) => ({
+      nama: p.nama || "",
+      urutan: idx + 1,
+    }));
+    formData.append("list_point", JSON.stringify(listPointArray));
+    
+    // assign - JSON string (array of numbers)
+    formData.append("assign", JSON.stringify(normalizedAssign || []));
+    
+    // fb_pixel - JSON string (array of numbers)
+    const fbPixelArray = (form.fb_pixel || []).map(v => Number(v)).filter(n => !Number.isNaN(n));
+    formData.append("fb_pixel", JSON.stringify(fbPixelArray));
+    
+    // event_fb_pixel - JSON string
+    const eventFbPixelArray = (form.event_fb_pixel || []).map((ev) => ({ 
       event: ev || "" 
     }));
+    formData.append("event_fb_pixel", JSON.stringify(eventFbPixelArray));
     
-    // assign - array of numbers
-    payload.assign = normalizedAssign || [];
+    // gtm - JSON string (array of numbers)
+    const gtmArray = (form.gtm || []).map(v => Number(v)).filter(n => !Number.isNaN(n));
+    formData.append("gtm", JSON.stringify(gtmArray));
     
-    // fb_pixel - array of numbers
-    payload.fb_pixel = (form.fb_pixel || []).map(v => Number(v)).filter(n => !Number.isNaN(n));
-    
-    // gtm - array of numbers
-    payload.gtm = (form.gtm || []).map(v => Number(v)).filter(n => !Number.isNaN(n));
-    
-    // video - array of strings
-    payload.video = form.video
+    // video - JSON string (array of strings)
+    const videoArray = form.video
       ? form.video.split(",").map((v) => v.trim()).filter((v) => v)
       : [];
+    formData.append("video", JSON.stringify(videoArray));
     
     // Log semua array fields untuk debugging
-    console.log("[PAYLOAD] Array fields:", {
-      assign: payload.assign,
-      list_point: payload.list_point,
-      custom_field: payload.custom_field,
-      event_fb_pixel: payload.event_fb_pixel,
-      fb_pixel: payload.fb_pixel,
-      gtm: payload.gtm,
-      video: payload.video,
+    console.log("[FORMDATA] Array fields:", {
+      assign: normalizedAssign,
+      list_point: listPointArray,
+      custom_field: customFieldArray,
+      event_fb_pixel: eventFbPixelArray,
+      fb_pixel: fbPixelArray,
+      gtm: gtmArray,
+      video: videoArray,
     });
     
-    return payload;
+    return formData;
   }
 
   // ============================
@@ -394,108 +373,105 @@ const handleSubmit = async () => {
       return;
     }
 
-    // Build JSON payload dengan progress indicator
+    // Build FormData dengan progress indicator
     setSubmitProgress("Mempersiapkan data...");
-    const payload = await buildProductPayload(
+    const formData = await buildProductFormData(
       form, 
       kategoriId, 
       normalizedAssign,
       (message) => setSubmitProgress(message)
     );
 
-    // DEBUG: Log payload untuk tracking (detail)
-    console.log("[PAYLOAD] ========== DETAIL PAYLOAD ==========");
-    console.log("Payload keys:", Object.keys(payload));
-    console.log("Kategori:", payload.kategori);
-    console.log("Nama:", payload.nama);
-    console.log("Header exists:", !!payload.header);
-    console.log("Header length:", payload.header ? payload.header.length : 0);
-    console.log("Gambar count:", payload.gambar?.length || 0);
-    console.log("Testimoni count:", payload.testimoni?.length || 0);
-    console.log("Assign:", payload.assign);
-    console.log("[PAYLOAD] =====================================");
+    // DEBUG: Log FormData untuk tracking (detail)
+    console.log("[FORMDATA] ========== DETAIL FORMDATA ==========");
+    const formDataEntries = [];
+    for (const [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        formDataEntries.push({ key, type: "File", name: value.name, size: `${(value.size / 1024).toFixed(2)} KB` });
+        console.log(`  ${key}: [File] ${value.name} (${(value.size / 1024).toFixed(2)} KB)`);
+      } else {
+        const str = String(value);
+        formDataEntries.push({ key, type: "String", value: str.length > 200 ? str.substring(0, 200) + "..." : str });
+        console.log(`  ${key}: ${str.length > 200 ? str.substring(0, 200) + "..." : str}`);
+      }
+    }
+    console.table(formDataEntries);
+    console.log("[FORMDATA] =====================================");
     
     // Verify critical fields
-    console.log("[PAYLOAD] ========== CRITICAL FIELDS VERIFICATION ==========");
+    console.log("[FORMDATA] ========== CRITICAL FIELDS VERIFICATION ==========");
+    const kategoriInFormData = formData.get("kategori");
+    const namaInFormData = formData.get("nama");
+    const assignInFormData = formData.get("assign");
+    const headerInFormData = formData.get("header");
+    
     console.log({
       kategori: {
-        value: payload.kategori,
-        type: typeof payload.kategori,
-        exists: payload.kategori !== null && payload.kategori !== undefined,
-        isValid: !Number.isNaN(payload.kategori) && payload.kategori > 0
+        value: kategoriInFormData,
+        type: typeof kategoriInFormData,
+        exists: kategoriInFormData !== null,
+        isEmpty: kategoriInFormData === "" || kategoriInFormData === "null" || kategoriInFormData === "undefined"
       },
       nama: {
-        value: payload.nama,
-        type: typeof payload.nama,
-        exists: payload.nama !== null && payload.nama !== "",
-        isEmpty: !payload.nama || payload.nama === ""
+        value: namaInFormData,
+        type: typeof namaInFormData,
+        exists: namaInFormData !== null,
+        isEmpty: !namaInFormData || namaInFormData === ""
       },
       assign: {
-        value: payload.assign,
-        type: typeof payload.assign,
-        isArray: Array.isArray(payload.assign),
-        length: Array.isArray(payload.assign) ? payload.assign.length : 0
+        value: assignInFormData,
+        type: typeof assignInFormData,
+        parsed: assignInFormData ? JSON.parse(assignInFormData) : null
       },
       header: {
-        exists: payload.header !== null && payload.header !== undefined,
-        isString: typeof payload.header === "string",
-        length: payload.header ? payload.header.length : 0
+        exists: headerInFormData !== null,
+        isFile: headerInFormData instanceof File,
+        name: headerInFormData instanceof File ? headerInFormData.name : null
       }
     });
     
     // Final check sebelum kirim
-    if (!payload.kategori || Number.isNaN(payload.kategori) || payload.kategori <= 0) {
-      console.error("[PAYLOAD] ❌ KATEGORI INVALID!");
-      throw new Error("Kategori tidak valid. Pastikan kategori sudah dipilih.");
+    if (!kategoriInFormData || kategoriInFormData === "" || kategoriInFormData === "null" || kategoriInFormData === "undefined") {
+      console.error("[FORMDATA] ❌ KATEGORI TIDAK ADA DI FORMDATA!");
+      throw new Error("Kategori tidak ditemukan di FormData. Pastikan kategori sudah dipilih.");
     }
     
-    if (!payload.nama || payload.nama === "") {
-      console.error("[PAYLOAD] ❌ NAMA TIDAK ADA!");
-      throw new Error("Nama produk wajib diisi.");
+    if (!namaInFormData || namaInFormData === "") {
+      console.error("[FORMDATA] ❌ NAMA TIDAK ADA DI FORMDATA!");
+      throw new Error("Nama produk tidak ditemukan di FormData.");
     }
     
-    if (!payload.header || payload.header === "") {
-      console.error("[PAYLOAD] ❌ HEADER TIDAK ADA!");
-      throw new Error("Header image wajib diisi.");
+    if (!headerInFormData || !(headerInFormData instanceof File)) {
+      console.error("[FORMDATA] ❌ HEADER TIDAK ADA DI FORMDATA!");
+      throw new Error("Header image tidak ditemukan di FormData.");
     }
     
-    console.log("[PAYLOAD] ✅ All critical fields verified");
-    console.log("[PAYLOAD] =================================================");
+    console.log("[FORMDATA] ✅ All critical fields verified");
+    console.log("[FORMDATA] =================================================");
 
-    // FETCH dengan JSON payload
+    // FETCH dengan FormData (sesuai dokumentasi Postman)
     setSubmitProgress("Mengirim data ke server...");
     
-    // Log payload untuk network tracking
-    console.log("[NETWORK] ========== REQUEST PAYLOAD ==========");
+    // Log request untuk network tracking
+    console.log("[NETWORK] ========== REQUEST FORMDATA ==========");
     console.log("URL:", "/api/admin/produk");
     console.log("Method:", "POST");
+    console.log("Content-Type:", "multipart/form-data (auto-set by browser)");
     console.log("Headers:", {
-      "Content-Type": "application/json",
       "Accept": "application/json",
       "Authorization": `Bearer ${localStorage.getItem("token") ? "***" : ""}`
     });
-    console.log("Payload size:", JSON.stringify(payload).length, "bytes");
-    console.log("Payload preview:", {
-      kategori: payload.kategori,
-      nama: payload.nama,
-      kode: payload.kode,
-      header: payload.header ? `${payload.header.substring(0, 50)}...` : null,
-      gambar: payload.gambar?.length || 0,
-      testimoni: payload.testimoni?.length || 0,
-      assign: payload.assign,
-      list_point: payload.list_point?.length || 0,
-    });
-    console.log("Full payload:", payload);
+    console.log("FormData entries count:", formDataEntries.length);
     console.log("[NETWORK] ======================================");
     
     const res = await fetch("/api/admin/produk", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
         Accept: "application/json",
         Authorization: `Bearer ${localStorage.getItem("token") || ""}`
+        // Jangan set Content-Type, browser akan set otomatis dengan boundary untuk FormData
       },
-      body: JSON.stringify(payload)
+      body: formData
     });
     
     console.log("[NETWORK] Response status:", res.status);

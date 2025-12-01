@@ -1,6 +1,7 @@
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
+import FormData from "form-data";
 
 const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "http://3.105.234.181:8000";
 
@@ -430,91 +431,156 @@ export async function POST(request) {
     }
 
     const token = authHeader.replace("Bearer ", "");
+    const contentType = request.headers.get("content-type") || "";
 
-    // Handle JSON request only
-    const reqBody = await request.json();
-    
-    console.log("[ROUTE] ========== INCOMING JSON PAYLOAD ==========");
-    console.log("Payload keys:", Object.keys(reqBody));
-    console.log("Kategori:", reqBody.kategori);
-    console.log("Nama:", reqBody.nama);
-    console.log("Header exists:", !!reqBody.header);
-    console.log("Assign:", reqBody.assign);
-    console.log("[ROUTE] ============================================");
-    
-    // Extract and structure payload
-    const payload = await extractPayload(reqBody);
+    let response;
 
-    // Validate payload
-    const validationErrors = validatePayload(payload);
+    // Handle FormData request (sesuai dokumentasi Postman)
+    if (contentType.includes("multipart/form-data")) {
+      // Forward FormData langsung ke backend Laravel
+      const incomingFormData = await request.formData();
+      
+      // DEBUG: Log incoming FormData
+      console.log("[ROUTE] ========== INCOMING FORMDATA ==========");
+      const incomingEntries = [];
+      for (const [key, value] of incomingFormData.entries()) {
+        if (value instanceof File) {
+          incomingEntries.push({ key, type: "File", name: value.name, size: `${(value.size / 1024).toFixed(2)} KB` });
+        } else {
+          const str = String(value);
+          incomingEntries.push({ key, type: "String", value: str.length > 100 ? str.substring(0, 100) + "..." : str });
+        }
+      }
+      console.table(incomingEntries);
+      
+      // Verify kategori exists
+      const kategoriValue = incomingFormData.get("kategori");
+      console.log("[ROUTE] Kategori check:", {
+        exists: kategoriValue !== null,
+        value: kategoriValue,
+        type: typeof kategoriValue,
+        stringValue: String(kategoriValue)
+      });
+      
+      if (!kategoriValue || kategoriValue === "" || kategoriValue === "null" || kategoriValue === "undefined") {
+        console.error("[ROUTE] ❌ KATEGORI TIDAK ADA ATAU INVALID!");
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Kategori wajib diisi",
+            errors: { kategori: ["Kategori field is required"] },
+            errorFields: ["kategori"],
+            debug: {
+              kategoriValue: kategoriValue,
+              kategoriType: typeof kategoriValue,
+              allKeys: Array.from(incomingFormData.keys())
+            }
+          },
+          { status: 400 }
+        );
+      }
+      
+      // Create FormData untuk forward ke backend
+      const forwardFormData = new FormData();
 
-    if (validationErrors.length > 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Validation error",
-          errors: validationErrors,
+      // Forward all entries ke backend
+      for (const [key, value] of incomingFormData.entries()) {
+        if (value instanceof File) {
+          // Convert File to Buffer untuk form-data package
+          const arrayBuffer = await value.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+          forwardFormData.append(key, buffer, {
+            filename: value.name,
+            contentType: value.type,
+          });
+        } else {
+          // Forward string values as-is (termasuk JSON string untuk array fields)
+          forwardFormData.append(key, value);
+        }
+      }
+      
+      // DEBUG: Log forwarded FormData
+      console.log("[ROUTE] ========== FORWARDING TO BACKEND ==========");
+      console.log("URL:", `${BACKEND_URL}/api/admin/produk`);
+      console.log("Method:", "POST");
+      console.log("Content-Type:", "multipart/form-data");
+      console.log("Kategori value:", forwardFormData.get("kategori"));
+      console.log("Nama value:", forwardFormData.get("nama"));
+      console.log("Assign value:", forwardFormData.get("assign"));
+      console.log("Header exists:", forwardFormData.get("header") !== null);
+      console.log("[ROUTE] ============================================");
+
+      // Forward ke backend Laravel dengan FormData
+      response = await fetch(`${BACKEND_URL}/api/admin/produk`, {
+        method: "POST",
+        headers: {
+          ...forwardFormData.getHeaders(),
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        { status: 400 }
-      );
+        body: forwardFormData,
+      });
+
+    } else {
+      // Handle JSON request (untuk backward compatibility)
+      const reqBody = await request.json();
+      
+      console.log("[ROUTE] ========== INCOMING JSON PAYLOAD ==========");
+      console.log("Payload keys:", Object.keys(reqBody));
+      console.log("[ROUTE] ============================================");
+      
+      // Extract and structure payload
+      const payload = await extractPayload(reqBody);
+
+      // Validate payload
+      const validationErrors = validatePayload(payload);
+
+      if (validationErrors.length > 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Validation error",
+            errors: validationErrors,
+          },
+          { status: 400 }
+        );
+      }
+
+      // Convert payload untuk backend Laravel
+      const payloadToSend = {
+        ...payload,
+        assign: JSON.stringify(payload.assign || []),
+        list_point: JSON.stringify(payload.list_point || []),
+        custom_field: JSON.stringify(payload.custom_field || []),
+        event_fb_pixel: JSON.stringify(payload.event_fb_pixel || []),
+        fb_pixel: JSON.stringify(payload.fb_pixel || []),
+        gtm: JSON.stringify(payload.gtm || []),
+        video: JSON.stringify(payload.video || []),
+        gambar: JSON.stringify(payload.gambar || []),
+        testimoni: JSON.stringify(payload.testimoni || []),
+      };
+
+      if (payloadToSend.header === null || payloadToSend.header === undefined || payloadToSend.header === "") {
+        delete payloadToSend.header;
+      }
+
+      payloadToSend.kategori = String(payloadToSend.kategori);
+      // user_input tidak perlu dikirim, backend ambil dari auth()->user()->id
+      payloadToSend.landingpage = String(payloadToSend.landingpage || "1");
+      payloadToSend.harga_asli = String(payloadToSend.harga_asli || "0");
+      payloadToSend.harga_coret = String(payloadToSend.harga_coret || "0");
+
+      // Send JSON to backend
+      response = await fetch(`${BACKEND_URL}/api/admin/produk`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payloadToSend),
+      });
     }
-
-    // Convert payload untuk backend Laravel
-    const payloadToSend = {
-      ...payload,
-      assign: JSON.stringify(payload.assign || []),
-      list_point: JSON.stringify(payload.list_point || []),
-      custom_field: JSON.stringify(payload.custom_field || []),
-      event_fb_pixel: JSON.stringify(payload.event_fb_pixel || []),
-      fb_pixel: JSON.stringify(payload.fb_pixel || []),
-      gtm: JSON.stringify(payload.gtm || []),
-      video: JSON.stringify(payload.video || []),
-      gambar: JSON.stringify(payload.gambar || []),
-      testimoni: JSON.stringify(payload.testimoni || []),
-    };
-
-    if (payloadToSend.header === null || payloadToSend.header === undefined || payloadToSend.header === "") {
-      delete payloadToSend.header;
-    }
-
-    payloadToSend.kategori = String(payloadToSend.kategori);
-    // user_input tidak perlu dikirim, backend ambil dari auth()->user()->id
-    payloadToSend.landingpage = String(payloadToSend.landingpage || "1");
-    payloadToSend.harga_asli = String(payloadToSend.harga_asli || "0");
-    payloadToSend.harga_coret = String(payloadToSend.harga_coret || "0");
-
-    console.log("[ROUTE] ========== FORWARDING TO BACKEND ==========");
-    console.log("URL:", `${BACKEND_URL}/api/admin/produk`);
-    console.log("Method:", "POST");
-    console.log("Headers:", {
-      "Content-Type": "application/json",
-      "Accept": "application/json",
-      "Authorization": `Bearer ${token.substring(0, 20)}...`
-    });
-    console.log("Payload size:", JSON.stringify(payloadToSend).length, "bytes");
-    console.log("Payload preview:", {
-      kategori: payloadToSend.kategori,
-      nama: payloadToSend.nama,
-      kode: payloadToSend.kode,
-      header: payloadToSend.header ? `${payloadToSend.header.substring(0, 50)}...` : null,
-      gambar: payloadToSend.gambar ? JSON.parse(payloadToSend.gambar).length : 0,
-      testimoni: payloadToSend.testimoni ? JSON.parse(payloadToSend.testimoni).length : 0,
-      assign: payloadToSend.assign,
-      list_point: payloadToSend.list_point,
-    });
-    console.log("Full payload to backend:", payloadToSend);
-    console.log("[ROUTE] ============================================");
-
-    // Send JSON to backend
-    const response = await fetch(`${BACKEND_URL}/api/admin/produk`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(payloadToSend),
-    });
     
     console.log("[ROUTE] Backend response status:", response.status);
     console.log("[ROUTE] Backend response headers:", Object.fromEntries(response.headers.entries()));
