@@ -227,9 +227,17 @@ const extractPayload = async (reqBody) => {
     header: null,
   };
 
-  // Handle header (base64 string)
+  // Handle header (base64 string dengan prefix data:image atau tanpa prefix)
+  // Hanya tambahkan jika ada dan tidak null
   if (reqBody.header && typeof reqBody.header === "string" && reqBody.header.trim() !== "") {
-    payload.header = reqBody.header;
+    // Jika sudah ada prefix data:image, gunakan langsung
+    // Jika belum, tambahkan prefix
+    let headerValue = reqBody.header.trim();
+    if (!headerValue.startsWith("data:")) {
+      // Jika tanpa prefix, tambahkan prefix default
+      headerValue = `data:image/jpeg;base64,${headerValue}`;
+    }
+    payload.header = headerValue;
   }
 
   // Parse assign (can be string JSON array or already array)
@@ -515,6 +523,32 @@ export async function POST(request) {
       );
     }
 
+    // Hapus header jika null sebelum dikirim ke backend
+    // Backend Laravel mungkin tidak menerima null untuk header
+    const payloadToSend = { ...payload };
+    if (payloadToSend.header === null || payloadToSend.header === undefined || payloadToSend.header === "") {
+      delete payloadToSend.header;
+    }
+
+    // Log payload untuk debugging (tanpa base64 yang panjang)
+    const logPayload = { ...payloadToSend };
+    if (logPayload.header) {
+      logPayload.header = logPayload.header.substring(0, 50) + "... (base64 truncated)";
+    }
+    if (logPayload.gambar) {
+      logPayload.gambar = logPayload.gambar.map(g => ({
+        ...g,
+        path: g.path ? (g.path.substring(0, 50) + "... (base64 truncated)") : null
+      }));
+    }
+    if (logPayload.testimoni) {
+      logPayload.testimoni = logPayload.testimoni.map(t => ({
+        ...t,
+        gambar: t.gambar ? (t.gambar.substring(0, 50) + "... (base64 truncated)") : null
+      }));
+    }
+    console.log("📤 [POST_PRODUK] Sending payload to backend:", JSON.stringify(logPayload, null, 2));
+
     // Send to backend
     const response = await fetch(`${BACKEND_URL}/api/admin/produk`, {
       method: "POST",
@@ -523,7 +557,7 @@ export async function POST(request) {
         Accept: "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(payloadToSend),
     });
 
     // Handle response

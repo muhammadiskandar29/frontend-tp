@@ -116,7 +116,8 @@ const [isSubmitting, setIsSubmitting] = useState(false);
       }
       const reader = new FileReader();
       reader.onload = () => {
-        const base64 = reader.result.split(',')[1]; // Remove data:image/...;base64, prefix
+        // Return base64 tanpa prefix (hanya data base64)
+        const base64 = reader.result.split(',')[1];
         resolve(base64);
       };
       reader.onerror = reject;
@@ -155,12 +156,16 @@ const [isSubmitting, setIsSubmitting] = useState(false);
       : [];
     
     // gambar - format: Array<{ caption: string, path: string }>
-    // Convert files to base64
+    // Convert files to base64 dengan prefix data:image
     const gambarArray = await Promise.all(
       (form.gambar || []).map(async (g) => {
         let path = null;
         if (g.path && g.path.type === "file" && g.path.value) {
-          path = await fileToBase64(g.path.value);
+          const base64WithoutPrefix = await fileToBase64(g.path.value);
+          if (base64WithoutPrefix) {
+            const mimeType = g.path.value.type || "image/jpeg";
+            path = `data:${mimeType};base64,${base64WithoutPrefix}`;
+          }
         }
         return {
           caption: g.caption || "",
@@ -174,7 +179,11 @@ const [isSubmitting, setIsSubmitting] = useState(false);
       (form.testimoni || []).map(async (t) => {
         let gambar = null;
         if (t.gambar && t.gambar.type === "file" && t.gambar.value) {
-          gambar = await fileToBase64(t.gambar.value);
+          const base64WithoutPrefix = await fileToBase64(t.gambar.value);
+          if (base64WithoutPrefix) {
+            const mimeType = t.gambar.value.type || "image/jpeg";
+            gambar = `data:${mimeType};base64,${base64WithoutPrefix}`;
+          }
         }
         return {
           nama: t.nama || "",
@@ -184,13 +193,19 @@ const [isSubmitting, setIsSubmitting] = useState(false);
       })
     );
     
-    // header - convert to base64 if exists
+    // header - convert to base64 if exists (dengan prefix data:image)
     let headerBase64 = null;
     if (form.header?.type === "file" && form.header.value) {
-      headerBase64 = await fileToBase64(form.header.value);
+      const base64WithoutPrefix = await fileToBase64(form.header.value);
+      if (base64WithoutPrefix) {
+        // Deteksi MIME type dari file
+        const mimeType = form.header.value.type || "image/jpeg";
+        headerBase64 = `data:${mimeType};base64,${base64WithoutPrefix}`;
+      }
     }
     
-    return {
+    // Build payload object
+    const payload = {
       // kategori: number
       kategori: Number(kategoriId),
       
@@ -218,10 +233,14 @@ const [isSubmitting, setIsSubmitting] = useState(false);
       video: videoArray,
       gambar: gambarArray,
       testimoni: testimoniArray,
-      
-      // header as base64
-      header: headerBase64,
     };
+    
+    // Hanya tambahkan header jika ada (jangan kirim null)
+    if (headerBase64) {
+      payload.header = headerBase64;
+    }
+    
+    return payload;
   }
 
   // ============================
