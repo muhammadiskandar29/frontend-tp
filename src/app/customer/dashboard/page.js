@@ -25,6 +25,7 @@ export default function DashboardPage() {
   const [dashboardError, setDashboardError] = useState("");
   const [currentTime, setCurrentTime] = useState(() => Date.now());
   const [hasModalBeenShown, setHasModalBeenShown] = useState(false);
+  const [sendingOTP, setSendingOTP] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -425,6 +426,88 @@ export default function DashboardPage() {
     router.replace("/customer/login");
   };
 
+  // Handler untuk kirim OTP (sama seperti di otpVerificationModal.js)
+  const handleSendOTP = async () => {
+    const session = getCustomerSession();
+    const customerData = customerInfo || session.user;
+
+    if (!customerData) {
+      toast.error("Data customer tidak ditemukan");
+      return;
+    }
+
+    if (!customerData.wa) {
+      toast.error("Nomor WhatsApp tidak ditemukan");
+      return;
+    }
+
+    const token = localStorage.getItem("customer_token");
+    if (!token) {
+      toast.error("Token tidak ditemukan. Silakan login ulang.");
+      return;
+    }
+
+    setSendingOTP(true);
+
+    try {
+      // Format nomor WA (pastikan format 62xxxxxxxxxx)
+      let waNumber = customerData.wa.trim();
+      if (waNumber.startsWith("0")) {
+        waNumber = "62" + waNumber.substring(1);
+      } else if (!waNumber.startsWith("62")) {
+        waNumber = "62" + waNumber;
+      }
+
+      const payload = {
+        customer_id: customerData.id || customerData.customer_id,
+        wa: waNumber,
+      };
+
+      console.log("🟢 [SEND_OTP] Sending OTP request:", payload);
+
+      const response = await fetch("/api/customer/otp/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      console.log("🟢 [SEND_OTP] Response:", data);
+
+      if (!response.ok) {
+        throw new Error(data?.message || data?.error || "Gagal mengirim OTP");
+      }
+
+      if (data?.success) {
+        toast.success(data?.message || "OTP berhasil dikirim ke WhatsApp Anda");
+        // Redirect ke halaman OTP
+        router.replace("/customer/otp");
+      } else {
+        throw new Error(data?.message || "Gagal mengirim OTP");
+      }
+    } catch (error) {
+      console.error("❌ [SEND_OTP] Error:", error);
+      toast.error(error.message || "Gagal mengirim OTP. Coba lagi nanti.");
+    } finally {
+      setSendingOTP(false);
+    }
+  };
+
+  // Cek apakah user sudah verifikasi
+  const isUserVerified = () => {
+    const session = getCustomerSession();
+    const customerData = customerInfo || session.user;
+    if (!customerData) return false;
+    
+    const verifikasiValue = customerData.verifikasi;
+    const normalizedVerifikasi = verifikasiValue === "1" ? 1 : verifikasiValue === "0" ? 0 : verifikasiValue;
+    return normalizedVerifikasi === 1 || normalizedVerifikasi === true;
+  };
+
   return (
     <CustomerLayout>
       {/* Modal Update Data Customer */}
@@ -568,9 +651,77 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {!dashboardLoading &&
-              pendingOrders.length === 0 &&
-              activeOrders.length === 0 && (
+            {/* Tampilkan pesan verifikasi jika belum verifikasi */}
+            {!dashboardLoading && !isUserVerified() && (
+              <div className="order-card" style={{ 
+                border: "1px solid #fbbf24", 
+                backgroundColor: "#fffbeb",
+                boxShadow: "0 4px 6px rgba(251, 191, 36, 0.1)"
+              }}>
+                <div className="order-body">
+                  <div style={{ textAlign: "center", padding: "20px" }}>
+                    <div style={{ 
+                      fontSize: "48px", 
+                      marginBottom: "16px",
+                      display: "block"
+                    }}>
+                      🔒
+                    </div>
+                    <h3 style={{ 
+                      marginBottom: "12px", 
+                      color: "#92400e",
+                      fontSize: "18px",
+                      fontWeight: "600"
+                    }}>
+                      Akun Anda belum diverifikasi
+                    </h3>
+                    <p style={{ 
+                      color: "#78350f", 
+                      marginBottom: "24px",
+                      fontSize: "14px",
+                      lineHeight: "1.6"
+                    }}>
+                      Silakan verifikasi OTP terlebih dahulu untuk melihat Orderan Anda.
+                    </p>
+                    <button
+                      onClick={handleSendOTP}
+                      disabled={sendingOTP}
+                      style={{
+                        padding: "12px 32px",
+                        backgroundColor: sendingOTP ? "#9ca3af" : "#3b82f6",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "8px",
+                        cursor: sendingOTP ? "not-allowed" : "pointer",
+                        fontSize: "16px",
+                        fontWeight: "600",
+                        transition: "all 0.3s ease",
+                        boxShadow: sendingOTP ? "none" : "0 4px 6px rgba(59, 130, 246, 0.3)",
+                      }}
+                      onMouseOver={(e) => {
+                        if (!sendingOTP) {
+                          e.target.style.backgroundColor = "#2563eb";
+                          e.target.style.transform = "translateY(-2px)";
+                          e.target.style.boxShadow = "0 6px 12px rgba(59, 130, 246, 0.4)";
+                        }
+                      }}
+                      onMouseOut={(e) => {
+                        if (!sendingOTP) {
+                          e.target.style.backgroundColor = "#3b82f6";
+                          e.target.style.transform = "translateY(0)";
+                          e.target.style.boxShadow = "0 4px 6px rgba(59, 130, 246, 0.3)";
+                        }
+                      }}
+                    >
+                      {sendingOTP ? "Mengirim..." : "Verifikasi"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Tampilkan order list hanya jika sudah verifikasi */}
+            {!dashboardLoading && isUserVerified() && pendingOrders.length === 0 && activeOrders.length === 0 && (
               <div className="order-card">
                 <div className="order-body">
                   <div>
@@ -581,7 +732,7 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {!dashboardLoading &&
+            {!dashboardLoading && isUserVerified() &&
               pendingOrders.map((order) => {
                 const countdownLabel = getCountdownLabel(order);
                 return (
@@ -638,7 +789,7 @@ export default function DashboardPage() {
                 );
               })}
 
-            {!dashboardLoading &&
+            {!dashboardLoading && isUserVerified() &&
               activeOrders.map((order) => (
                 <div key={order.id} className="order-card">
                   <div className="order-card__banner">

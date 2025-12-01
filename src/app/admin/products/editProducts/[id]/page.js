@@ -629,7 +629,7 @@ export default function Page() {
       // Log request untuk network tracking
       console.log("[NETWORK] ========== REQUEST FORMDATA ==========");
       console.log("URL:", `/api/admin/produk/${productId}`);
-      console.log("Method:", "POST");
+      console.log("Method:", "PUT");
       console.log("Content-Type:", "multipart/form-data (auto-set by browser)");
       const token = localStorage.getItem("token") || "";
       console.log("Headers:", {
@@ -652,7 +652,7 @@ export default function Page() {
       console.log("[NETWORK] ======================================");
       
       const res = await fetch(`/api/admin/produk/${productId}`, {
-        method: "POST",
+        method: "PUT",
         headers: {
           Accept: "application/json",
           Authorization: `Bearer ${token}`
