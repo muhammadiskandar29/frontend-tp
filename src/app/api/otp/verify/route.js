@@ -6,12 +6,21 @@ const BACKEND_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "http://3.105.234.181:8000";
 
+/**
+ * 9.2 Verifikasi OTP Customer
+ * POST /api/otp/verify
+ * 
+ * Catatan: OTP Berlaku selama 5 menit
+ * Request: { customer_id, otp }
+ * Response: { success, message, data: { customer_id, nama, verifikasi } }
+ */
 export async function POST(request) {
   try {
     const body = await request.json();
 
-    console.log("🟢 [PUBLIC_OTP_VERIFY] Request body:", body);
+    console.log("🟢 [OTP_VERIFY] Request body:", body);
 
+    // Validasi request body
     if (!body?.customer_id || !body?.otp) {
       return NextResponse.json(
         { success: false, message: "customer_id dan otp harus diisi" },
@@ -24,6 +33,7 @@ export async function POST(request) {
       otp: String(body.otp),
     };
 
+    // Forward ke backend
     const response = await fetch(`${BACKEND_URL}/api/otp/verify`, {
       method: "POST",
       headers: {
@@ -39,7 +49,7 @@ export async function POST(request) {
     try {
       data = JSON.parse(responseText);
     } catch (err) {
-      console.error("❌ [PUBLIC_OTP_VERIFY] Non-JSON response:", responseText);
+      console.error("❌ [OTP_VERIFY] Non-JSON response:", responseText);
       return NextResponse.json(
         { success: false, message: "Backend error: Response bukan JSON" },
         { status: 500 }
@@ -47,7 +57,7 @@ export async function POST(request) {
     }
 
     if (!response.ok) {
-      console.error("❌ [PUBLIC_OTP_VERIFY] Backend error:", data);
+      console.error("❌ [OTP_VERIFY] Backend error:", data);
       return NextResponse.json(
         {
           success: false,
@@ -57,13 +67,14 @@ export async function POST(request) {
       );
     }
 
+    // Return response sesuai format requirement
     return NextResponse.json({
       success: true,
       message: data?.message || "OTP valid, akun telah diverifikasi",
       data: data?.data || data,
     });
   } catch (error) {
-    console.error("❌ [PUBLIC_OTP_VERIFY] Error:", error);
+    console.error("❌ [OTP_VERIFY] Error:", error);
     return NextResponse.json(
       {
         success: false,

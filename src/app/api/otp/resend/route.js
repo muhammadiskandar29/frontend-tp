@@ -6,12 +6,20 @@ const BACKEND_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "http://3.105.234.181:8000";
 
+/**
+ * 9.3 Re-send OTP Customer
+ * POST /api/otp/resend
+ * 
+ * Request: { customer_id, wa }
+ * Response: { success, message, data: { otp_id, customer, otp, wa_response } }
+ */
 export async function POST(request) {
   try {
     const body = await request.json();
 
-    console.log("🟢 [PUBLIC_OTP_RESEND] Request body:", body);
+    console.log("🟢 [OTP_RESEND] Request body:", body);
 
+    // Validasi request body
     if (!body?.customer_id || !body?.wa) {
       return NextResponse.json(
         { success: false, message: "customer_id dan wa harus diisi" },
@@ -24,6 +32,7 @@ export async function POST(request) {
       wa: String(body.wa),
     };
 
+    // Forward ke backend
     const response = await fetch(`${BACKEND_URL}/api/otp/resend`, {
       method: "POST",
       headers: {
@@ -39,7 +48,7 @@ export async function POST(request) {
     try {
       data = JSON.parse(responseText);
     } catch (err) {
-      console.error("❌ [PUBLIC_OTP_RESEND] Non-JSON response:", responseText);
+      console.error("❌ [OTP_RESEND] Non-JSON response:", responseText);
       return NextResponse.json(
         { success: false, message: "Backend error: Response bukan JSON" },
         { status: 500 }
@@ -47,7 +56,7 @@ export async function POST(request) {
     }
 
     if (!response.ok) {
-      console.error("❌ [PUBLIC_OTP_RESEND] Backend error:", data);
+      console.error("❌ [OTP_RESEND] Backend error:", data);
       return NextResponse.json(
         {
           success: false,
@@ -57,13 +66,14 @@ export async function POST(request) {
       );
     }
 
+    // Return response sesuai format requirement
     return NextResponse.json({
       success: true,
       message: data?.message || "OTP berhasil dikirim ke WhatsApp",
       data: data?.data || data,
     });
   } catch (error) {
-    console.error("❌ [PUBLIC_OTP_RESEND] Error:", error);
+    console.error("❌ [OTP_RESEND] Error:", error);
     return NextResponse.json(
       {
         success: false,
