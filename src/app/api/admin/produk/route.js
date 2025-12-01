@@ -1,7 +1,6 @@
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
-import FormData from "form-data";
 
 const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "http://3.105.234.181:8000";
 
@@ -9,13 +8,13 @@ const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_U
 const IMAGE_CONFIG = {
   maxWidth: 1600,
   maxHeight: 1600,
-  targetSizeKB: 300,        // Target size in KB
-  initialQuality: 85,       // Initial quality
-  minQuality: 50,          // Minimum quality to try
-  qualityStep: 5,          // Quality reduction step
+  targetSizeKB: 300,
+  initialQuality: 85,
+  minQuality: 50,
+  qualityStep: 5,
 };
 
-// Allowed file extensions (Laravel requirement)
+// Allowed file extensions
 const ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png"];
 
 // MIME type mapping
@@ -57,15 +56,7 @@ const isValidExtension = (extension) => {
 };
 
 /**
- * Get MIME type from extension
- */
-const getMimeTypeFromExtension = (extension) => {
-  return MIME_TYPES[extension.toLowerCase()] || "image/jpeg";
-};
-
-/**
  * Compress image buffer while maintaining original format
- * Returns compressed buffer or null if compression fails
  */
 const compressImage = async (buffer, extension, filename) => {
   const sharp = await getSharp();
@@ -80,7 +71,6 @@ const compressImage = async (buffer, extension, filename) => {
     
     console.log(`  📊 Original size: ${originalSizeKB} KB`);
     
-    // If already small enough, return original
     if (buffer.length <= targetSizeBytes) {
       console.log(`  ✅ File already under ${IMAGE_CONFIG.targetSizeKB}KB, skipping compression`);
       return buffer;
@@ -95,7 +85,6 @@ const compressImage = async (buffer, extension, filename) => {
       attempts++;
       let sharpInstance = sharp(buffer);
 
-      // Resize if too large (maintain aspect ratio)
       sharpInstance = sharpInstance.resize({
         width: IMAGE_CONFIG.maxWidth,
         height: IMAGE_CONFIG.maxHeight,
@@ -103,13 +92,11 @@ const compressImage = async (buffer, extension, filename) => {
         withoutEnlargement: true,
       });
 
-      // Compress based on format (keep original format)
       if (extension === "png") {
         compressedBuffer = await sharpInstance
           .png({ quality, compressionLevel: 9 })
           .toBuffer();
       } else {
-        // jpg/jpeg
         compressedBuffer = await sharpInstance
           .jpeg({ quality, mozjpeg: true })
           .toBuffer();
@@ -118,12 +105,10 @@ const compressImage = async (buffer, extension, filename) => {
       const sizeKB = (compressedBuffer.length / 1024).toFixed(2);
       console.log(`  🔄 Attempt ${attempts}: Quality ${quality} → ${sizeKB} KB`);
 
-      // If file is small enough or we've tried enough, stop
       if (compressedBuffer.length <= targetSizeBytes || attempts >= maxAttempts) {
         break;
       }
 
-      // Reduce quality for next attempt
       quality = Math.max(quality - IMAGE_CONFIG.qualityStep, IMAGE_CONFIG.minQuality);
 
     } while (compressedBuffer.length > targetSizeBytes && quality >= IMAGE_CONFIG.minQuality && attempts < maxAttempts);
@@ -138,6 +123,246 @@ const compressImage = async (buffer, extension, filename) => {
     console.error(`  ❌ Compression failed for ${filename}:`, err.message);
     return null;
   }
+};
+
+/**
+ * Utility: Convert File to base64 string
+ */
+const convertFileToBase64 = async (file) => {
+  if (!file || !(file instanceof File) || file.size === 0) {
+    return null;
+  }
+
+  try {
+    const extension = getFileExtension(file.name);
+    
+    // Validate extension
+    if (!isValidExtension(extension)) {
+      console.error(`  ❌ Invalid file extension: ${extension}`);
+      throw new Error(`File "${file.name}" has invalid extension. Allowed: ${ALLOWED_EXTENSIONS.join(", ")}`);
+    }
+
+    // Get file buffer
+    const arrayBuffer = await file.arrayBuffer();
+    let buffer = Buffer.from(arrayBuffer);
+
+    // Compress if it's an image
+    if (file.type.startsWith("image/")) {
+      console.log(`  🔄 Compressing ${file.name}...`);
+      const compressedBuffer = await compressImage(buffer, extension, file.name);
+      if (compressedBuffer) {
+        buffer = compressedBuffer;
+      }
+    }
+
+    // Convert to base64
+    const base64 = buffer.toString("base64");
+    const mimeType = file.type || MIME_TYPES[extension] || "image/jpeg";
+    
+    return `data:${mimeType};base64,${base64}`;
+  } catch (error) {
+    console.error(`  ❌ Failed to convert file to base64: ${error.message}`);
+    throw error;
+  }
+};
+
+/**
+ * Utility: Safe JSON parse with fallback
+ */
+const safeParseJSON = (input, fallback = null) => {
+  if (input === null || input === undefined || input === "") {
+    return fallback;
+  }
+
+  if (typeof input === "string") {
+    try {
+      return JSON.parse(input);
+    } catch {
+      return fallback;
+    }
+  }
+
+  if (Array.isArray(input) || typeof input === "object") {
+    return input;
+  }
+
+  return fallback;
+};
+
+/**
+ * Utility: Normalize number value
+ */
+const normalizeNumber = (value) => {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const num = typeof value === "string" ? parseFloat(value) : Number(value);
+  return isNaN(num) ? null : num;
+};
+
+/**
+ * Extract and structure payload from request body
+ */
+const extractPayload = async (reqBody) => {
+  const payload = {
+    kategori: normalizeNumber(reqBody.kategori),
+    user_input: normalizeNumber(reqBody.user_input),
+    nama: typeof reqBody.nama === "string" ? reqBody.nama.trim() : "",
+    url: typeof reqBody.url === "string" ? reqBody.url.trim() : "",
+    deskripsi: typeof reqBody.deskripsi === "string" ? reqBody.deskripsi : "",
+    harga_asli: normalizeNumber(reqBody.harga_asli),
+    harga_coret: normalizeNumber(reqBody.harga_coret),
+    tanggal_event: typeof reqBody.tanggal_event === "string" ? reqBody.tanggal_event : null,
+    landingpage: normalizeNumber(reqBody.landingpage),
+    assign: [],
+    list_point: [],
+    custom_field: [],
+    event_fb_pixel: [],
+    fb_pixel: [],
+    gtm: [],
+    video: [],
+    gambar: [],
+    testimoni: [],
+    header: null,
+  };
+
+  // Handle header (base64 string)
+  if (reqBody.header && typeof reqBody.header === "string" && reqBody.header.trim() !== "") {
+    payload.header = reqBody.header;
+  }
+
+  // Parse assign (can be string JSON array or already array)
+  const assignParsed = safeParseJSON(reqBody.assign, []);
+  payload.assign = Array.isArray(assignParsed) ? assignParsed.map(normalizeNumber).filter(n => n !== null) : [];
+
+  // Parse list_point
+  const listPointParsed = safeParseJSON(reqBody.list_point, []);
+  if (Array.isArray(listPointParsed)) {
+    payload.list_point = listPointParsed
+      .filter(item => item && typeof item === "object")
+      .map(item => ({
+        nama: typeof item.nama === "string" ? item.nama.trim() : "",
+        urutan: normalizeNumber(item.urutan) || 0,
+      }));
+  }
+
+  // Parse custom_field
+  const customFieldParsed = safeParseJSON(reqBody.custom_field, []);
+  if (Array.isArray(customFieldParsed)) {
+    payload.custom_field = customFieldParsed
+      .filter(item => item && typeof item === "object")
+      .map(item => ({
+        nama_field: typeof item.nama_field === "string" ? item.nama_field.trim() : "",
+        urutan: normalizeNumber(item.urutan) || 0,
+      }));
+  }
+
+  // Parse event_fb_pixel
+  const eventFbPixelParsed = safeParseJSON(reqBody.event_fb_pixel, []);
+  if (Array.isArray(eventFbPixelParsed)) {
+    payload.event_fb_pixel = eventFbPixelParsed
+      .filter(item => item && typeof item === "object")
+      .map(item => ({
+        event: typeof item.event === "string" ? item.event.trim() : "",
+      }));
+  }
+
+  // Parse fb_pixel
+  const fbPixelParsed = safeParseJSON(reqBody.fb_pixel, []);
+  payload.fb_pixel = Array.isArray(fbPixelParsed) ? fbPixelParsed.map(normalizeNumber).filter(n => n !== null) : [];
+
+  // Parse gtm
+  const gtmParsed = safeParseJSON(reqBody.gtm, []);
+  payload.gtm = Array.isArray(gtmParsed) ? gtmParsed.map(normalizeNumber).filter(n => n !== null) : [];
+
+  // Parse video (array of strings)
+  const videoParsed = safeParseJSON(reqBody.video, []);
+  payload.video = Array.isArray(videoParsed) 
+    ? videoParsed.filter(v => typeof v === "string" && v.trim() !== "").map(v => v.trim())
+    : [];
+
+  // Handle gambar (can be files or base64 strings)
+  if (reqBody.gambar) {
+    const gambarParsed = safeParseJSON(reqBody.gambar, []);
+    if (Array.isArray(gambarParsed)) {
+      for (const item of gambarParsed) {
+        if (item instanceof File) {
+          // Only convert if it's a File object (FormData)
+          const base64 = await convertFileToBase64(item);
+          if (base64) {
+            payload.gambar.push({
+              caption: typeof item.caption === "string" ? item.caption : "",
+              path: base64,
+            });
+          }
+        } else if (item && typeof item === "object") {
+          // Already base64 string from JSON request, use directly
+          payload.gambar.push({
+            caption: typeof item.caption === "string" ? item.caption.trim() : "",
+            path: typeof item.path === "string" && item.path.trim() !== "" ? item.path : null,
+          });
+        }
+      }
+    }
+  }
+
+  // Handle testimoni (can be files or base64 strings)
+  if (reqBody.testimoni) {
+    const testimoniParsed = safeParseJSON(reqBody.testimoni, []);
+    if (Array.isArray(testimoniParsed)) {
+      for (const item of testimoniParsed) {
+        if (item && typeof item === "object") {
+          let gambarBase64 = null;
+          
+          // If there's a file, convert it (FormData)
+          if (item.gambar instanceof File) {
+            gambarBase64 = await convertFileToBase64(item.gambar);
+          } else if (typeof item.gambar === "string" && item.gambar.trim() !== "") {
+            // Already base64 string from JSON request, use directly
+            gambarBase64 = item.gambar;
+          }
+
+          payload.testimoni.push({
+            nama: typeof item.nama === "string" ? item.nama.trim() : "",
+            deskripsi: typeof item.deskripsi === "string" ? item.deskripsi.trim() : "",
+            gambar: gambarBase64,
+          });
+        }
+      }
+    }
+  }
+
+  return payload;
+};
+
+/**
+ * Validate required fields
+ */
+const validatePayload = (payload) => {
+  const errors = [];
+
+  if (payload.kategori === null || payload.kategori === undefined) {
+    errors.push("kategori wajib diisi (number)");
+  }
+
+  if (!Array.isArray(payload.assign) || payload.assign.length === 0) {
+    errors.push("assign wajib diisi (array)");
+  }
+
+  if (payload.user_input === null || payload.user_input === undefined) {
+    errors.push("user_input wajib diisi (number)");
+  }
+
+  if (typeof payload.nama !== "string" || payload.nama.trim() === "") {
+    errors.push("nama wajib diisi (string)");
+  }
+
+  if (typeof payload.url !== "string" || payload.url.trim() === "") {
+    errors.push("url wajib diisi (string)");
+  }
+
+  return errors;
 };
 
 export async function GET(request) {
@@ -199,352 +424,115 @@ export async function POST(request) {
     const token = authHeader.replace("Bearer ", "");
     const contentType = request.headers.get("content-type") || "";
 
-    console.log("🟢 [POST_PRODUK] Creating product...");
-    console.log("🟢 [POST_PRODUK] Content-Type:", contentType);
+    let reqBody;
 
-    let response;
-
+    // Handle both FormData and JSON requests
     if (contentType.includes("multipart/form-data")) {
-      // Handle FormData (file uploads)
+      // Convert FormData to JSON structure
       const incomingFormData = await request.formData();
+      reqBody = {};
 
-      // Create new FormData using form-data npm package
-      const forwardFormData = new FormData();
-
-      console.log("🟢 [POST_PRODUK] Processing FormData entries (compressing images, keeping original format):");
-
-      // Collect all entries first (FormData entries can only be iterated once)
-      // IMPORTANT: Store original values without modification
-      const allEntries = [];
-      const incomingFields = {};
-      const originalValues = new Map(); // Store original values for forwarding
-      
+      // Collect all entries
       for (const [key, value] of incomingFormData.entries()) {
-        allEntries.push({ key, value });
-        originalValues.set(key, value); // Store original value
+        // Clean key (remove array notation)
+        const cleanKey = key.replace(/\[\]$/, "").replace(/\[.*?\]$/, "");
+        const isArrayKey = key.includes("[]") || key.includes("[");
         
-        // Store for detailed logging (don't modify original)
         if (value instanceof File) {
-          incomingFields[key] = `[File] ${value.name} (${value.size} bytes, ${value.type})`;
+          // For files, collect into arrays
+          if (!reqBody[cleanKey]) {
+            reqBody[cleanKey] = [];
+          }
+          if (!Array.isArray(reqBody[cleanKey])) {
+            reqBody[cleanKey] = [reqBody[cleanKey]];
+          }
+          reqBody[cleanKey].push(value);
         } else {
-          // For logging only - preserve original value type
-          const logValue = value === null ? "[null]" : value === undefined ? "[undefined]" : String(value);
-          incomingFields[key] = logValue.substring(0, 200);
-        }
-      }
-      console.log(`  📊 Total FormData entries: ${allEntries.length}`);
-      console.log(`  📋 Entry keys: ${allEntries.map((e) => e.key).join(", ")}`);
-      console.log("  📦 [DEBUG] All incoming fields:", JSON.stringify(incomingFields, null, 2));
-
-      // Process all entries
-      for (const { key, value } of allEntries) {
-        if (value instanceof File && value.size > 0) {
-          // Get file extension
-          const extension = getFileExtension(value.name);
-          const detectedMime = value.type;
-          const originalSize = value.size;
-
-          console.log(`\n  📁 Processing file: ${key}`);
-          console.log(`    Filename: ${value.name}`);
-          console.log(`    Extension: ${extension || "unknown"}`);
-          console.log(`    Detected MIME: ${detectedMime}`);
-          console.log(`    Original size: ${(originalSize / 1024).toFixed(2)} KB`);
-
-          // Validate extension BEFORE processing
-          if (!isValidExtension(extension)) {
-            console.error(`  ❌ Invalid file extension: ${extension}`);
-            console.error(`    Allowed extensions: ${ALLOWED_EXTENSIONS.join(", ")}`);
-            return NextResponse.json(
-              {
-                success: false,
-                message: `File "${value.name}" has invalid extension. Allowed: ${ALLOWED_EXTENSIONS.join(", ")}`,
-                debug: {
-                  filename: value.name,
-                  extension: extension,
-                  allowedExtensions: ALLOWED_EXTENSIONS,
-                },
-              },
-              { status: 400 }
-            );
-          }
-
-          // Check if it's an image file
-          const isImage = value.type.startsWith("image/");
-
-          if (isImage) {
-            // Get file buffer
-            const arrayBuffer = await value.arrayBuffer();
-            const buffer = Buffer.from(arrayBuffer);
-
-            // Compress image (maintains original format)
-            console.log(`  🔄 Compressing ${value.name} (keeping ${extension} format)...`);
-            const compressedBuffer = await compressImage(buffer, extension, value.name);
-
-            // Use compressed buffer if available, otherwise use original
-            const finalBuffer = compressedBuffer || buffer;
-            const finalSize = finalBuffer.length;
-            const finalMimeType = getMimeTypeFromExtension(extension);
-
-            console.log(`  ✅ Final file details:`);
-            console.log(`    Filename: ${value.name} (extension: .${extension})`);
-            console.log(`    MIME type: ${finalMimeType}`);
-            console.log(`    Final size: ${(finalSize / 1024).toFixed(2)} KB`);
-            console.log(`    Size change: ${originalSize > finalSize ? "reduced" : "unchanged"}`);
-
-            // Append to FormData with proper filename, buffer, and content type
-            forwardFormData.append(key, finalBuffer, {
-              filename: value.name, // Keep original filename with original extension
-              contentType: finalMimeType, // MIME type matching extension
-            });
-
-            console.log(`  ✅ Appended to FormData: name="${key}", filename="${value.name}", contentType="${finalMimeType}"`);
-          } else {
-            // Non-image file, forward as-is
-            console.log(`  📁 ${key}: [Non-image File] ${value.name} (${(value.size / 1024).toFixed(2)} KB) - forwarding as-is`);
-            const arrayBuffer = await value.arrayBuffer();
-            const buffer = Buffer.from(arrayBuffer);
-            forwardFormData.append(key, buffer, {
-              filename: value.name,
-              contentType: value.type || "application/octet-stream",
-            });
-          }
-        } else {
-          // Handle all non-file values (string, number, boolean, etc.)
-          // CRITICAL: Forward original value WITHOUT modification
-          // form-data package automatically converts primitives to string during append
-          // We preserve the original value type and let form-data handle conversion
-          
-          // Log original value for debugging
-          let logValue;
-          if (value === null) {
-            logValue = "[null]";
-          } else if (value === undefined) {
-            logValue = "[undefined]";
-          } else if (typeof value === "string") {
-            logValue = value.substring(0, 100) + (value.length > 100 ? "..." : "");
-          } else {
-            logValue = String(value).substring(0, 100);
-          }
-          console.log(`  📝 ${key}: ${logValue} (type: ${typeof value})`);
-          
-          // Handle null/undefined explicitly
-          // form-data package doesn't handle null/undefined well, so we need to convert them
-          if (value === null || value === undefined) {
-            // For null/undefined, convert to empty string to maintain form-data compatibility
-            // But log it so we know it happened
-            if (value === null) {
-              console.warn(`  ⚠️ ${key}: null value converted to empty string for form-data compatibility`);
-            } else {
-              console.warn(`  ⚠️ ${key}: undefined value converted to empty string for form-data compatibility`);
+          // For non-file values
+          if (isArrayKey || cleanKey !== key) {
+            // Array notation detected
+            if (!reqBody[cleanKey]) {
+              reqBody[cleanKey] = [];
             }
-            forwardFormData.append(key, "");
+            if (!Array.isArray(reqBody[cleanKey])) {
+              reqBody[cleanKey] = [reqBody[cleanKey]];
+            }
+            if (value !== null && value !== undefined && value !== "") {
+              reqBody[cleanKey].push(value);
+            }
           } else {
-            // For all other types (string, number, boolean), append as-is
-            // form-data package will automatically convert to string during transmission
-            // This preserves the original value without premature String() conversion
-            
-            // CRITICAL: For kategori, assign, and user_input, ensure they are sent correctly
-            // Based on backend response format:
-            // - kategori: "2" (string numerik)
-            // - assign: "[1,2,3]" (string JSON array)
-            // - user_input: "2" (string, backend will parse to number 2)
-            if (key === "kategori" || key === "assign" || key === "user_input") {
-              // Ensure these critical fields are explicitly converted to string
-              // This guarantees they are sent as string, not as other types
-              const stringValue = String(value);
-              console.log(`  🔑 Critical field ${key}:`);
-              console.log(`    Original value: ${value} (type: ${typeof value})`);
-              console.log(`    String value: "${stringValue}" (type: ${typeof stringValue})`);
-              console.log(`    Appending as string: "${stringValue}"`);
-              forwardFormData.append(key, stringValue);
+            // Single value
+            if (reqBody[cleanKey] !== undefined) {
+              // Key already exists, convert to array
+              if (!Array.isArray(reqBody[cleanKey])) {
+                reqBody[cleanKey] = [reqBody[cleanKey]];
+              }
+              reqBody[cleanKey].push(value);
             } else {
-              // For other fields, append as-is (form-data will handle conversion)
-              forwardFormData.append(key, value);
+              reqBody[cleanKey] = value;
             }
           }
         }
       }
 
-      // Log critical fields to verify they're being forwarded
-      // Use originalValues to check actual values, not modified ones
-      console.log("\n🟢 [POST_PRODUK] Critical fields check:");
-      const requiredFields = ["kategori", "assign", "user_input", "nama"];
-
-      for (const field of requiredFields) {
-        if (originalValues.has(field)) {
-          const value = originalValues.get(field);
-          // Log original value without modification
-          let logValue;
-          if (value === null) {
-            logValue = "[null]";
-          } else if (value === undefined) {
-            logValue = "[undefined]";
-          } else if (value instanceof File) {
-            logValue = `[File] ${value.name}`;
+      // Special handling for common array fields - ensure they're arrays or parsed JSON
+      const arrayFields = ["assign", "fb_pixel", "gtm", "video", "list_point", "custom_field", "event_fb_pixel", "gambar", "testimoni"];
+      for (const field of arrayFields) {
+        if (reqBody[field] !== undefined && !Array.isArray(reqBody[field])) {
+          // Try to parse as JSON if it's a string
+          const parsed = safeParseJSON(reqBody[field], null);
+          if (parsed !== null && Array.isArray(parsed)) {
+            reqBody[field] = parsed;
+          } else if (reqBody[field] !== null && reqBody[field] !== undefined && reqBody[field] !== "") {
+            reqBody[field] = [reqBody[field]];
           } else {
-            const strValue = String(value);
-            logValue = strValue.substring(0, 100) + (strValue.length > 100 ? "..." : "");
+            reqBody[field] = [];
           }
-          console.log(`  ✅ ${field}: ${logValue} (type: ${typeof value})`);
-        } else {
-          console.log(`  ❌ ${field}: MISSING from incomingFormData`);
+        } else if (reqBody[field] === undefined) {
+          reqBody[field] = [];
         }
       }
 
-      // Final verification: Check if critical fields exist and are not empty
-      const hasKategori = originalValues.has("kategori");
-      const kategoriValue = originalValues.get("kategori");
-      const hasAssign = originalValues.has("assign");
-      const assignValue = originalValues.get("assign");
-      const hasUserInput = originalValues.has("user_input");
-      const userInputValue = originalValues.get("user_input");
-      
-      // Check if values are not empty (for string/number types)
-      // IMPORTANT: kategori, assign, dan user_input adalah required fields
-      // kategori: harus string numerik seperti "2"
-      // assign: harus string JSON seperti "[1,2,3]"
-      // user_input: harus string numerik seperti "2"
-      const kategoriValid = hasKategori && 
-        kategoriValue !== null && 
-        kategoriValue !== undefined && 
-        kategoriValue !== "" &&
-        String(kategoriValue).trim() !== "";
-      
-      const assignValid = hasAssign && 
-        assignValue !== null && 
-        assignValue !== undefined && 
-        assignValue !== "" &&
-        String(assignValue).trim() !== "";
-      
-      const userInputValid = hasUserInput && 
-        userInputValue !== null && 
-        userInputValue !== undefined && 
-        userInputValue !== "" &&
-        String(userInputValue).trim() !== "";
-
-      // Validate required fields with detailed error logging
-      const missingFields = [];
-      if (!kategoriValid) {
-        missingFields.push("kategori");
-        console.error("❌ [POST_PRODUK] kategori is missing or invalid:");
-        console.error(`  hasKategori: ${hasKategori}`);
-        console.error(`  kategoriValue: ${kategoriValue}`);
-        console.error(`  kategoriValue type: ${typeof kategoriValue}`);
-      }
-      if (!assignValid) {
-        missingFields.push("assign");
-        console.error("❌ [POST_PRODUK] assign is missing or invalid:");
-        console.error(`  hasAssign: ${hasAssign}`);
-        console.error(`  assignValue: ${assignValue}`);
-        console.error(`  assignValue type: ${typeof assignValue}`);
-      }
-      if (!userInputValid) {
-        missingFields.push("user_input");
-        console.error("❌ [POST_PRODUK] user_input is missing or invalid:");
-        console.error(`  hasUserInput: ${hasUserInput}`);
-        console.error(`  userInputValue: ${userInputValue}`);
-        console.error(`  userInputValue type: ${typeof userInputValue}`);
-      }
-
-      if (missingFields.length > 0) {
-        console.error("❌ [POST_PRODUK] CRITICAL: Missing or invalid required fields in FormData!");
-        console.error("  Missing fields:", missingFields);
-        console.error("  Full incoming fields:", JSON.stringify(incomingFields, null, 2));
-        console.error("  Original values map:", Array.from(originalValues.entries()).map(([k, v]) => ({
-          key: k,
-          value: v instanceof File ? `[File] ${v.name}` : v,
-          type: typeof v
-        })));
-        
-        return NextResponse.json(
-          {
-            success: false,
-            message: `Missing or invalid required fields: ${missingFields.join(", ")}`,
-            debug: {
-              incomingFields: Object.keys(incomingFields),
-              missingFields: missingFields,
-              originalValues: Array.from(originalValues.entries()).map(([k, v]) => ({
-                key: k,
-                hasValue: v !== null && v !== undefined,
-                isFile: v instanceof File,
-                type: typeof v
-              })),
-            },
-          },
-          { status: 400 }
-        );
-      }
-
-      // Log FormData structure and verify all required fields were appended
-      console.log("\n🟢 [POST_PRODUK] FormData structure verification:");
-      console.log(`  Total entries processed: ${allEntries.length}`);
-      console.log(`  FormData boundary: ${forwardFormData.getBoundary()}`);
-      
-      // Verify required fields were processed
-      console.log("\n🟢 [POST_PRODUK] Required fields verification:");
-      for (const field of requiredFields) {
-        const wasProcessed = allEntries.some(e => e.key === field);
-        const originalValue = originalValues.get(field);
-        console.log(`  ${field}: ${wasProcessed ? "✅ Processed" : "❌ NOT PROCESSED"}`);
-        if (wasProcessed) {
-          console.log(`    Original value: ${originalValue instanceof File ? `[File] ${originalValue.name}` : originalValue}`);
-          console.log(`    Original type: ${typeof originalValue}`);
-        }
-      }
-
-      // Forward FormData to backend with proper headers
-      const headers = {
-        ...forwardFormData.getHeaders(), // Get proper headers with boundary
-        Accept: "application/json",
-        Authorization: `Bearer ${token}`,
-      };
-
-      console.log("\n🟢 [POST_PRODUK] Sending request to backend:");
-      console.log(`  URL: ${BACKEND_URL}/api/admin/produk`);
-      console.log(`  Method: POST`);
-      console.log(`  Content-Type: ${headers["content-type"]}`);
-      console.log(`  Has Authorization: ${!!headers.Authorization}`);
-
-      response = await fetch(`${BACKEND_URL}/api/admin/produk`, {
-        method: "POST",
-        headers,
-        body: forwardFormData, // form-data package handles body correctly
-      });
     } else {
-      // Handle JSON
-      const body = await request.json();
-
-      console.log("🟢 [POST_PRODUK] JSON payload received:");
-      console.log("  Full body:", JSON.stringify(body, null, 2));
-      console.log("  Critical fields check:");
-      console.log(`    kategori: ${body.kategori ? `✅ (${body.kategori})` : "❌ MISSING"}`);
-      console.log(`    assign: ${body.assign ? `✅ (${body.assign})` : "❌ MISSING"}`);
-      console.log(`    user_input: ${body.user_input ? `✅ (${body.user_input})` : "❌ MISSING"}`);
-
-      response = await fetch(`${BACKEND_URL}/api/admin/produk`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(body),
-      });
+      // Handle JSON request
+      reqBody = await request.json();
     }
 
-    console.log("\n🟢 [POST_PRODUK] Backend response status:", response.status);
-    console.log("🟢 [POST_PRODUK] Backend response headers:", JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2));
+    // Extract and structure payload
+    const payload = await extractPayload(reqBody);
 
-    // Handle non-JSON responses (e.g., HTML error pages)
+    // Validate payload
+    const validationErrors = validatePayload(payload);
+
+    if (validationErrors.length > 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Validation error",
+          errors: validationErrors,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Send to backend
+    const response = await fetch(`${BACKEND_URL}/api/admin/produk`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    // Handle response
     const responseText = await response.text();
     let data;
 
     try {
       data = JSON.parse(responseText);
     } catch {
-      console.error("❌ [POST_PRODUK] Backend returned non-JSON response:");
-      console.error("  Status:", response.status);
-      console.error("  Response text (first 1000 chars):", responseText.substring(0, 1000));
       return NextResponse.json(
         {
           success: false,
@@ -556,138 +544,40 @@ export async function POST(request) {
       );
     }
 
-    console.log("🟢 [POST_PRODUK] Backend response data:", JSON.stringify(data, null, 2));
-    console.log("🟢 [POST_PRODUK] Backend response raw text:", responseText);
-    
-    // Try to extract errors from different possible structures
-    let extractedErrors = {};
-    let extractedErrorFields = [];
-    
-    // Method 1: Check if errors exist in data.errors
-    if (data?.errors && typeof data.errors === 'object' && Object.keys(data.errors).length > 0) {
-      extractedErrors = data.errors;
-      extractedErrorFields = Object.keys(data.errors);
-    }
-    // Method 2: Check if errors exist in data.data.errors (some Laravel formats)
-    else if (data?.data?.errors && typeof data.data.errors === 'object') {
-      extractedErrors = data.data.errors;
-      extractedErrorFields = Object.keys(data.data.errors);
-    }
-    // Method 3: Parse from message string (fallback)
-    else if (data?.message) {
-      // Try to extract field names from message like "The kategori field is required. (and 2 more errors)"
-      const message = data.message;
-      const fieldMatches = message.match(/The\s+(\w+)\s+field\s+is\s+required/gi);
-      if (fieldMatches) {
-        fieldMatches.forEach((match) => {
-          const fieldName = match.match(/The\s+(\w+)\s+field/i)?.[1];
-          if (fieldName) {
-            extractedErrorFields.push(fieldName);
-            extractedErrors[fieldName] = [match.replace(/The\s+(\w+)\s+field\s+is\s+required/i, 'Field ini wajib diisi')];
-          }
-        });
-      }
-      
-      // Also check for "and X more errors" to indicate there are more fields
-      const moreErrorsMatch = message.match(/and\s+(\d+)\s+more\s+errors?/i);
-      if (moreErrorsMatch) {
-        const moreCount = parseInt(moreErrorsMatch[1]);
-        console.log(`⚠️ [POST_PRODUK] Ada ${moreCount} error lainnya yang tidak terdeteksi dari message`);
-      }
-    }
-    
-    console.log("🔍 [POST_PRODUK] Extracted errors:", extractedErrors);
-    console.log("🔍 [POST_PRODUK] Extracted error fields:", extractedErrorFields);
-
     if (!response.ok) {
-      console.error("❌ [POST_PRODUK] Backend returned error:");
-      console.error("  Status:", response.status);
-      console.error("  Message:", data?.message);
-      console.error("  Errors from data.errors:", JSON.stringify(data?.errors, null, 2));
-      console.error("  Extracted errors:", JSON.stringify(extractedErrors, null, 2));
-      console.error("  Full response:", JSON.stringify(data, null, 2));
-
-      // Use extracted errors if available, otherwise try to parse from message
-      const errorFields = extractedErrorFields.length > 0 ? extractedErrorFields : [];
-      const errorDetails = Object.keys(extractedErrors).length > 0 ? extractedErrors : {};
       
-      // If still no errors found, try to parse from message more aggressively
-      if (errorFields.length === 0 && data?.message) {
-        const message = data.message;
-        // Common Laravel validation error patterns
-        const patterns = [
-          /The\s+(\w+)\s+field\s+is\s+required/gi,
-          /(\w+)\s+field\s+is\s+required/gi,
-          /(\w+)\s+is\s+required/gi,
-        ];
-        
-        patterns.forEach((pattern) => {
-          const matches = message.matchAll(pattern);
-          for (const match of matches) {
-            const fieldName = match[1]?.toLowerCase();
-            if (fieldName && !errorFields.includes(fieldName)) {
-              errorFields.push(fieldName);
-              errorDetails[fieldName] = ["Field ini wajib diisi"];
-            }
-          }
-        });
-      }
+      // Extract errors
+      let extractedErrors = {};
+      let extractedErrorFields = [];
 
-      // Build detailed error message
-      let detailedMessage = data?.message || "Gagal membuat produk";
-      if (errorFields.length > 0) {
-        detailedMessage += `\n\n📋 Field yang error (${errorFields.length}):`;
-        errorFields.forEach((field) => {
-          const errors = Array.isArray(errorDetails[field]) 
-            ? errorDetails[field] 
-            : [errorDetails[field] || "Field ini wajib diisi"];
-          errors.forEach((err) => {
-            detailedMessage += `\n  ❌ ${field}: ${err}`;
-          });
-        });
-      } else {
-        // If we can't extract fields, at least show the message
-        detailedMessage += "\n\n⚠️ Detail error tidak tersedia dari backend. Silakan periksa console untuk informasi lebih lanjut.";
+      if (data?.errors && typeof data.errors === "object") {
+        extractedErrors = data.errors;
+        extractedErrorFields = Object.keys(data.errors);
+      } else if (data?.data?.errors && typeof data.data.errors === "object") {
+        extractedErrors = data.data.errors;
+        extractedErrorFields = Object.keys(data.data.errors);
       }
 
       return NextResponse.json(
         {
           success: false,
           message: data?.message || "Gagal membuat produk",
-          detailedMessage: detailedMessage,
-          errors: errorDetails,
-          errorFields: errorFields,
-          errorCount: errorFields.length,
-          debug: {
-            status: response.status,
-            backendResponse: data,
-            rawResponseText: responseText.substring(0, 500), // First 500 chars for debugging
-            errorFields: errorFields,
-            errorDetails: errorDetails,
-            extractedErrors: extractedErrors,
-            extractedErrorFields: extractedErrorFields,
-          },
+          errors: extractedErrors,
+          errorFields: extractedErrorFields,
         },
         { status: response.status }
       );
     }
 
+    // Success response
     return NextResponse.json(data);
-  } catch (error) {
-    console.error("❌ [POST_PRODUK] Unexpected error occurred:");
-    console.error("  Error name:", error.name);
-    console.error("  Error message:", error.message);
-    console.error("  Error stack:", error.stack);
-    console.error("  Full error object:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
 
+  } catch (error) {
+    console.error("❌ [POST_PRODUK] Error:", error.message);
     return NextResponse.json(
       {
         success: false,
         message: error.message || "Terjadi kesalahan saat membuat produk",
-        debug: {
-          errorName: error.name,
-          errorMessage: error.message,
-        },
       },
       { status: 500 }
     );

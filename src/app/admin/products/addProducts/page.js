@@ -106,108 +106,127 @@ const [isSubmitting, setIsSubmitting] = useState(false);
   };
 
   // ============================
-  // BUILD PRODUCT PAYLOAD
-  // Sesuai format GET produk dari backend Laravel
+  // CONVERT FILE TO BASE64
   // ============================
-  function buildProductPayload(form, kategoriId, userInputId, normalizedAssign) {
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      if (!file) {
+        resolve(null);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result.split(',')[1]; // Remove data:image/...;base64, prefix
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // ============================
+  // BUILD PRODUCT PAYLOAD
+  // Format JSON sesuai requirement
+  // ============================
+  async function buildProductPayload(form, kategoriId, userInputId, normalizedAssign) {
     // Generate kode dari nama jika belum ada
     const kode = form.kode || generateKode(form.nama);
     
-    // 🔥 1. kategori - HARUS string angka, contoh "7"
-    const kategoriStr = String(kategoriId);
-    
-    // 🔥 2. user_input - HARUS string angka, contoh "11"
-    const userInputStr = String(userInputId);
-    
-    // 🔥 3. assign - HARUS string JSON array, contoh "[14]"
-    const assignStr = JSON.stringify(normalizedAssign || []);
-    
-    // 🔥 4. Semua field array HARUS string JSON
-    // list_point - format: [{"nama":"..."}]
-    const listPointArray = (form.list_point || []).map((p) => ({
+    // list_point - format: Array<{ nama: string, urutan: number }>
+    const listPointArray = (form.list_point || []).map((p, idx) => ({
       nama: p.nama || "",
+      urutan: idx + 1,
     }));
-    const listPointStr = JSON.stringify(listPointArray);
     
-    // fb_pixel - string JSON array
-    const fbPixelArray = form.fb_pixel || [];
-    const fbPixelStr = JSON.stringify(fbPixelArray);
-    
-    // event_fb_pixel - format: [{"event":"xxx"}]
-    const eventFbPixelArray = (form.event_fb_pixel || []).map((ev) => ({ 
-      event: ev || "" 
-    }));
-    const eventFbPixelStr = JSON.stringify(eventFbPixelArray);
-    
-    // gtm - string JSON array
-    const gtmArray = form.gtm || [];
-    const gtmStr = JSON.stringify(gtmArray);
-    
-    // video - string JSON array
-    const videoArray = form.video
-      ? form.video.split(",").map((v) => v.trim()).filter((v) => v)
-      : [];
-    const videoStr = JSON.stringify(videoArray);
-    
-    // 🔥 5. gambar - format: [{"path":null,"caption":"..."}]
-    const gambarArray = (form.gambar || []).map((g) => ({
-      path: null, // File akan di-handle terpisah via FormData
-      caption: g.caption || "",
-    }));
-    const gambarStr = JSON.stringify(gambarArray);
-    
-    // 🔥 5. testimoni - format: [{"gambar":null,"nama":"...","deskripsi":"..."}]
-    const testimoniArray = (form.testimoni || []).map((t) => ({
-      gambar: null, // File akan di-handle terpisah via FormData
-      nama: t.nama || "",
-      deskripsi: t.deskripsi || "",
-    }));
-    const testimoniStr = JSON.stringify(testimoniArray);
-    
-    // custom_field - format: [{"nama_field":"...","urutan":1}]
+    // custom_field - format: Array<{ nama_field: string, urutan: number }>
     const customFieldArray = (form.custom_field || []).map((f, idx) => ({
       nama_field: f.label || f.key || "",
       urutan: idx + 1,
     }));
-    const customFieldStr = JSON.stringify(customFieldArray);
+    
+    // event_fb_pixel - format: Array<{ event: string }>
+    const eventFbPixelArray = (form.event_fb_pixel || []).map((ev) => ({ 
+      event: ev || "" 
+    }));
+    
+    // video - string[]
+    const videoArray = form.video
+      ? form.video.split(",").map((v) => v.trim()).filter((v) => v)
+      : [];
+    
+    // gambar - format: Array<{ caption: string, path: string }>
+    // Convert files to base64
+    const gambarArray = await Promise.all(
+      (form.gambar || []).map(async (g) => {
+        let path = null;
+        if (g.path && g.path.type === "file" && g.path.value) {
+          path = await fileToBase64(g.path.value);
+        }
+        return {
+          caption: g.caption || "",
+          path: path,
+        };
+      })
+    );
+    
+    // testimoni - format: Array<{ nama: string, deskripsi: string, gambar: string }>
+    const testimoniArray = await Promise.all(
+      (form.testimoni || []).map(async (t) => {
+        let gambar = null;
+        if (t.gambar && t.gambar.type === "file" && t.gambar.value) {
+          gambar = await fileToBase64(t.gambar.value);
+        }
+        return {
+          nama: t.nama || "",
+          deskripsi: t.deskripsi || "",
+          gambar: gambar,
+        };
+      })
+    );
+    
+    // header - convert to base64 if exists
+    let headerBase64 = null;
+    if (form.header?.type === "file" && form.header.value) {
+      headerBase64 = await fileToBase64(form.header.value);
+    }
     
     return {
-      // 🔥 WAJIB: kategori sebagai string angka
-      kategori: kategoriStr,
+      // kategori: number
+      kategori: Number(kategoriId),
       
-      // 🔥 WAJIB: user_input sebagai string angka
-      user_input: userInputStr,
+      // user_input: number
+      user_input: Number(userInputId),
       
-      // 🔥 WAJIB: assign sebagai string JSON array
-      assign: assignStr,
+      // assign: number[]
+      assign: normalizedAssign || [],
       
       // Field lainnya
       nama: form.nama || "",
-      kode: kode,
       url: "/" + kode,
       deskripsi: form.deskripsi || "",
-      harga_coret: Number(form.harga_coret) || 0,
       harga_asli: Number(form.harga_asli) || 0,
+      harga_coret: Number(form.harga_coret) || 0,
       tanggal_event: formatDateForBackend(form.tanggal_event) || "",
-      landingpage: Number(form.landingpage) || 1,
-      status: Number(form.status) || 1,
+      landingpage: form.landingpage ? Number(form.landingpage) : null,
       
-      // 🔥 WAJIB: Semua field array sebagai string JSON
-      list_point: listPointStr,
-      fb_pixel: fbPixelStr,
-      event_fb_pixel: eventFbPixelStr,
-      gtm: gtmStr,
-      video: videoStr,
-      gambar: gambarStr,
-      testimoni: testimoniStr,
-      custom_field: customFieldStr,
+      // Arrays
+      list_point: listPointArray,
+      custom_field: customFieldArray,
+      event_fb_pixel: eventFbPixelArray,
+      fb_pixel: (form.fb_pixel || []).map(v => Number(v)).filter(n => !Number.isNaN(n)),
+      gtm: (form.gtm || []).map(v => Number(v)).filter(n => !Number.isNaN(n)),
+      video: videoArray,
+      gambar: gambarArray,
+      testimoni: testimoniArray,
+      
+      // header as base64
+      header: headerBase64,
     };
   }
 
   // ============================
   // SUBMIT
   // ============================
-  // Ganti fungsi handleSubmit dengan versi ini (paste ke file)
 const handleSubmit = async () => {
   if (isSubmitting) return;
   setIsSubmitting(true);
@@ -244,100 +263,21 @@ const handleSubmit = async () => {
       return;
     }
 
-    // Build payload
-    const payloadData = buildProductPayload(form, kategoriId, effectiveUser.id, normalizedAssign);
+    // Build payload (async karena perlu convert file ke base64)
+    const payloadData = await buildProductPayload(form, kategoriId, effectiveUser.id, normalizedAssign);
 
-    const fd = new FormData();
+    // DEBUG: Log payload untuk tracking di network
+    console.log("[PAYLOAD] JSON Request:", JSON.stringify(payloadData, null, 2));
 
-    // REQUIRED primitives (as string)
-    fd.append("kategori", String(payloadData.kategori));
-    fd.append("user_input", String(payloadData.user_input));
-    fd.append("nama", payloadData.nama);
-    fd.append("kode", payloadData.kode);
-    fd.append("url", payloadData.url);
-    fd.append("deskripsi", payloadData.deskripsi);
-    fd.append("harga_coret", String(payloadData.harga_coret));
-    fd.append("harga_asli", String(payloadData.harga_asli));
-    fd.append("tanggal_event", payloadData.tanggal_event);
-    fd.append("landingpage", String(payloadData.landingpage));
-    fd.append("status", String(payloadData.status));
-
-    // ASSIGN: send both JSON string and array entries
-    fd.append("assign", JSON.stringify(normalizedAssign));
-    normalizedAssign.forEach(a => fd.append("assign[]", String(a)));
-
-    // ARRAYS: JSON string + individual entries where sensible
-    fd.append("list_point", payloadData.list_point);
-    try {
-      const listPointArr = JSON.parse(payloadData.list_point || "[]");
-      listPointArr.forEach((p, i) => fd.append(`list_point[${i}]`, p.nama || ""));
-    } catch(e) { /* ignore parse error */ }
-
-    fd.append("fb_pixel", payloadData.fb_pixel);
-    try {
-      const fbArr = JSON.parse(payloadData.fb_pixel || "[]");
-      fbArr.forEach(v => fd.append("fb_pixel[]", String(v)));
-    } catch(e) {}
-
-    fd.append("gtm", payloadData.gtm);
-    try {
-      const gtmArr = JSON.parse(payloadData.gtm || "[]");
-      gtmArr.forEach(v => fd.append("gtm[]", String(v)));
-    } catch(e){}
-
-    fd.append("video", payloadData.video);
-    try {
-      const vidArr = JSON.parse(payloadData.video || "[]");
-      vidArr.forEach(v => fd.append("video[]", String(v)));
-    } catch(e){}
-
-    fd.append("event_fb_pixel", payloadData.event_fb_pixel);
-    fd.append("custom_field", payloadData.custom_field);
-
-    // gambar/testimoni as JSON string (DB expects string) + append files
-    fd.append("gambar", payloadData.gambar);
-    (form.gambar || []).forEach((g, idx) => {
-      if (g.path && g.path.type === "file" && g.path.value) {
-        fd.append(`gambar[${idx}][file]`, g.path.value);
-      }
-      // also send caption individually for backend that expects it
-      fd.append(`gambar[${idx}][caption]`, g.caption || "");
-    });
-
-    fd.append("testimoni", payloadData.testimoni);
-    (form.testimoni || []).forEach((t, idx) => {
-      if (t.gambar && t.gambar.type === "file" && t.gambar.value) {
-        fd.append(`testimoni[${idx}][gambar]`, t.gambar.value);
-      }
-      fd.append(`testimoni[${idx}][nama]`, t.nama || "");
-      fd.append(`testimoni[${idx}][deskripsi]`, t.deskripsi || "");
-    });
-
-    // header file
-    if (form.header?.type === "file" && form.header.value) {
-      fd.append("header", form.header.value);
-    }
-
-    // DEBUG: dump FormData
-    console.groupCollapsed("[DEBUG] FormData contents");
-    for (const [k, v] of fd.entries()) {
-      if (v instanceof File) {
-        console.log(k, "[File]", v.name, v.size);
-      } else {
-        const s = String(v);
-        console.log(k, s.length > 200 ? s.substring(0,200) + "..." : s);
-      }
-    }
-    console.groupEnd();
-
-    // FETCH
+    // FETCH dengan JSON
     const res = await fetch("/api/admin/produk", {
       method: "POST",
       headers: {
+        "Content-Type": "application/json",
         Accept: "application/json",
         Authorization: `Bearer ${localStorage.getItem("token") || ""}`
       },
-      body: fd
+      body: JSON.stringify(payloadData)
     });
 
     const contentType = res.headers.get("content-type") || "";
