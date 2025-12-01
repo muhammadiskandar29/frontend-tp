@@ -385,17 +385,45 @@ const handleSubmit = async () => {
     // DEBUG: Log FormData untuk tracking (detail)
     console.log("[FORMDATA] ========== DETAIL FORMDATA ==========");
     const formDataEntries = [];
+    const formDataJSON = {};
+    
     for (const [key, value] of formData.entries()) {
       if (value instanceof File) {
         formDataEntries.push({ key, type: "File", name: value.name, size: `${(value.size / 1024).toFixed(2)} KB` });
+        formDataJSON[key] = {
+          type: "File",
+          name: value.name,
+          size: `${(value.size / 1024).toFixed(2)} KB`,
+          sizeBytes: value.size,
+          mimeType: value.type
+        };
         console.log(`  ${key}: [File] ${value.name} (${(value.size / 1024).toFixed(2)} KB)`);
       } else {
         const str = String(value);
         formDataEntries.push({ key, type: "String", value: str.length > 200 ? str.substring(0, 200) + "..." : str });
-        console.log(`  ${key}: ${str.length > 200 ? str.substring(0, 200) + "..." : str}`);
+        
+        // Try to parse JSON strings for better readability
+        let displayValue = str;
+        try {
+          const parsed = JSON.parse(str);
+          formDataJSON[key] = parsed;
+          displayValue = Array.isArray(parsed) 
+            ? `[Array(${parsed.length})] ${JSON.stringify(parsed).substring(0, 200)}...`
+            : typeof parsed === "object"
+            ? `[Object] ${JSON.stringify(parsed).substring(0, 200)}...`
+            : parsed;
+        } catch {
+          formDataJSON[key] = str.length > 200 ? str.substring(0, 200) + "..." : str;
+        }
+        
+        console.log(`  ${key}: ${displayValue.length > 200 ? displayValue.substring(0, 200) + "..." : displayValue}`);
       }
     }
     console.table(formDataEntries);
+    
+    // Tampilkan sebagai JSON yang readable
+    console.log("[FORMDATA] ========== FORMDATA AS JSON ==========");
+    console.log(JSON.stringify(formDataJSON, null, 2));
     console.log("[FORMDATA] =====================================");
     
     // Verify critical fields

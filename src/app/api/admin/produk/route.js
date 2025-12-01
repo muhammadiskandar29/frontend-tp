@@ -443,15 +443,37 @@ export async function POST(request) {
       // DEBUG: Log incoming FormData
       console.log("[ROUTE] ========== INCOMING FORMDATA ==========");
       const incomingEntries = [];
+      const incomingJSON = {};
+      
       for (const [key, value] of incomingFormData.entries()) {
         if (value instanceof File) {
           incomingEntries.push({ key, type: "File", name: value.name, size: `${(value.size / 1024).toFixed(2)} KB` });
+          incomingJSON[key] = {
+            type: "File",
+            name: value.name,
+            size: `${(value.size / 1024).toFixed(2)} KB`,
+            sizeBytes: value.size,
+            mimeType: value.type
+          };
         } else {
           const str = String(value);
           incomingEntries.push({ key, type: "String", value: str.length > 100 ? str.substring(0, 100) + "..." : str });
+          
+          // Try to parse JSON strings for better readability
+          try {
+            const parsed = JSON.parse(str);
+            incomingJSON[key] = parsed;
+          } catch {
+            incomingJSON[key] = str.length > 200 ? str.substring(0, 200) + "..." : str;
+          }
         }
       }
       console.table(incomingEntries);
+      
+      // Tampilkan sebagai JSON yang readable
+      console.log("[ROUTE] ========== INCOMING FORMDATA AS JSON ==========");
+      console.log(JSON.stringify(incomingJSON, null, 2));
+      console.log("[ROUTE] ==============================================");
       
       // Verify kategori exists
       const kategoriValue = incomingFormData.get("kategori");
@@ -504,11 +526,38 @@ export async function POST(request) {
       console.log("URL:", `${BACKEND_URL}/api/admin/produk`);
       console.log("Method:", "POST");
       console.log("Content-Type:", "multipart/form-data");
+      
+      // Build JSON representation of forwarded FormData
+      const forwardedJSON = {};
+      for (const [key, value] of incomingFormData.entries()) {
+        if (value instanceof File) {
+          forwardedJSON[key] = {
+            type: "File",
+            name: value.name,
+            size: `${(value.size / 1024).toFixed(2)} KB`,
+            sizeBytes: value.size,
+            mimeType: value.type
+          };
+        } else {
+          const str = String(value);
+          try {
+            const parsed = JSON.parse(str);
+            forwardedJSON[key] = parsed;
+          } catch {
+            forwardedJSON[key] = str.length > 200 ? str.substring(0, 200) + "..." : str;
+          }
+        }
+      }
+      
       console.log("Kategori value:", forwardFormData.get("kategori"));
       console.log("Nama value:", forwardFormData.get("nama"));
       console.log("Assign value:", forwardFormData.get("assign"));
       console.log("Header exists:", forwardFormData.get("header") !== null);
-      console.log("[ROUTE] ============================================");
+      
+      // Tampilkan sebagai JSON yang readable
+      console.log("[ROUTE] ========== FORWARDED FORMDATA AS JSON ==========");
+      console.log(JSON.stringify(forwardedJSON, null, 2));
+      console.log("[ROUTE] ================================================");
 
       // Forward ke backend Laravel dengan FormData
       response = await fetch(`${BACKEND_URL}/api/admin/produk`, {
