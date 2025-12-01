@@ -226,8 +226,8 @@ export default function VerifyOrderOTPPage() {
       const json = await response.json();
 
       if (json.redirect_url) {
-        // Langsung redirect ke Midtrans payment page
-        window.location.href = json.redirect_url;
+        // Buka Midtrans payment page di tab baru
+        window.open(json.redirect_url, "_blank");
       } else {
         toast.error(json.message || "Gagal membuat transaksi");
         // Jika gagal, redirect ke payment page manual
