@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import CustomerLayout from "@/components/customer/CustomerLayout";
@@ -26,6 +26,14 @@ export default function DashboardPage() {
   const [currentTime, setCurrentTime] = useState(() => Date.now());
   const [hasModalBeenShown, setHasModalBeenShown] = useState(false);
   const [sendingOTP, setSendingOTP] = useState(false);
+  const [showOTPForm, setShowOTPForm] = useState(false);
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [otpMessage, setOtpMessage] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpResending, setOtpResending] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(5 * 60); // 5 minutes
+  const [timerActive, setTimerActive] = useState(false);
+  const otpInputs = useRef([]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -426,6 +434,30 @@ export default function DashboardPage() {
     router.replace("/customer/login");
   };
 
+  // Timer untuk OTP
+  useEffect(() => {
+    if (!timerActive) return;
+
+    const interval = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setTimerActive(false);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [timerActive]);
+
+  const formatTimeLeft = () => {
+    const minutes = Math.floor(timeLeft / 60).toString().padStart(2, "0");
+    const seconds = Math.floor(timeLeft % 60).toString().padStart(2, "0");
+    return `${minutes}:${seconds}`;
+  };
+
   // Handler untuk kirim OTP (sama seperti di otpVerificationModal.js)
   const handleSendOTP = async () => {
     const session = getCustomerSession();
@@ -484,8 +516,18 @@ export default function DashboardPage() {
 
       if (data?.success) {
         toast.success(data?.message || "OTP berhasil dikirim ke WhatsApp Anda");
-        // Redirect ke halaman OTP
-        router.replace("/customer/otp");
+        // Tampilkan form OTP di dashboard
+        setShowOTPForm(true);
+        setOtp(["", "", "", "", "", ""]);
+        setOtpMessage("");
+        setTimeLeft(5 * 60);
+        setTimerActive(true);
+        // Focus ke input pertama
+        setTimeout(() => {
+          if (otpInputs.current[0]) {
+            otpInputs.current[0].focus();
+          }
+        }, 100);
       } else {
         throw new Error(data?.message || "Gagal mengirim OTP");
       }
@@ -494,6 +536,180 @@ export default function DashboardPage() {
       toast.error(error.message || "Gagal mengirim OTP. Coba lagi nanti.");
     } finally {
       setSendingOTP(false);
+    }
+  };
+
+  // Handler untuk input OTP
+  const handleOtpChange = (e, index) => {
+    const value = e.target.value.replace(/\D/g, "");
+    if (value) {
+      const newOtp = [...otp];
+      newOtp[index] = value.slice(-1);
+      setOtp(newOtp);
+      if (index < 5) otpInputs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (e, index) => {
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
+      const newOtp = [...otp];
+      newOtp[index - 1] = "";
+      setOtp(newOtp);
+      otpInputs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (pastedData) {
+      const newOtp = [...otp];
+      pastedData.split("").forEach((char, i) => {
+        if (i < 6) newOtp[i] = char;
+      });
+      setOtp(newOtp);
+      const lastIndex = Math.min(pastedData.length, 5);
+      otpInputs.current[lastIndex]?.focus();
+    }
+  };
+
+  // Handler untuk verify OTP
+  const handleVerifyOTP = async (e) => {
+    e.preventDefault();
+    const code = otp.join("");
+    if (code.length < 6) {
+      setOtpMessage("Masukkan 6 digit kode OTP.");
+      return;
+    }
+
+    const session = getCustomerSession();
+    const customerData = customerInfo || session.user;
+    if (!customerData || !customerData.id) {
+      setOtpMessage("Data customer tidak ditemukan. Silakan login kembali.");
+      return;
+    }
+
+    setOtpLoading(true);
+    setOtpMessage("");
+
+    try {
+      const token = localStorage.getItem("customer_token");
+      const response = await fetch("/api/customer/otp/verify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          customer_id: customerData.id || customerData.customer_id,
+          otp: code,
+        }),
+      });
+
+      const result = await response.json();
+      console.log("📥 [OTP] Verify response:", result);
+
+      if (result.success) {
+        setOtpMessage("Verifikasi berhasil! 🎉");
+        setTimerActive(false);
+        toast.success("Verifikasi berhasil!");
+
+        // Update user data di localStorage
+        if (session.user && result.data) {
+          const updatedUser = {
+            ...session.user,
+            verifikasi: result.data.verifikasi || 1,
+            nama: result.data.nama || session.user.nama,
+            customer_id: result.data.customer_id || session.user.id || session.user.customer_id,
+          };
+          localStorage.setItem("customer_user", JSON.stringify(updatedUser));
+          console.log("✅ [OTP] User data updated with verification:", updatedUser);
+        } else if (session.user) {
+          session.user.verifikasi = 1;
+          localStorage.setItem("customer_user", JSON.stringify(session.user));
+        }
+
+        // Refresh dashboard data
+        await loadDashboardData();
+        
+        // Sembunyikan form OTP setelah beberapa detik
+        setTimeout(() => {
+          setShowOTPForm(false);
+          setOtp(["", "", "", "", "", ""]);
+          setOtpMessage("");
+        }, 2000);
+      } else {
+        setOtpMessage(result.message || "Kode OTP salah atau sudah kadaluarsa.");
+      }
+    } catch (error) {
+      console.error("❌ [OTP] Error:", error);
+      setOtpMessage("Terjadi kesalahan saat memverifikasi OTP.");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  // Handler untuk resend OTP
+  const handleResendOTP = async () => {
+    const session = getCustomerSession();
+    const customerData = customerInfo || session.user;
+
+    if (!customerData || !customerData.wa) {
+      setOtpMessage("Data customer tidak ditemukan. Silakan login kembali.");
+      return;
+    }
+
+    setOtpResending(true);
+    setOtpMessage("");
+
+    try {
+      let waNumber = customerData.wa.trim();
+      if (waNumber.startsWith("0")) {
+        waNumber = "62" + waNumber.substring(1);
+      } else if (!waNumber.startsWith("62")) {
+        waNumber = "62" + waNumber;
+      }
+
+      const token = localStorage.getItem("customer_token");
+      if (!token) {
+        setOtpMessage("Token tidak ditemukan. Silakan login kembali.");
+        setOtpResending(false);
+        return;
+      }
+
+      const response = await fetch("/api/customer/otp/resend", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          customer_id: customerData.id || customerData.customer_id,
+          wa: waNumber,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setOtpMessage("Kode OTP baru telah dikirim ke WhatsApp Anda!");
+        toast.success("OTP terkirim!");
+        setOtp(["", "", "", "", "", ""]);
+        if (otpInputs.current[0]) {
+          otpInputs.current[0].focus();
+        }
+        setTimeLeft(5 * 60);
+        setTimerActive(true);
+      } else {
+        setOtpMessage(result.message || "Gagal mengirim ulang OTP.");
+      }
+    } catch (error) {
+      console.error("❌ [OTP] Error resending:", error);
+      setOtpMessage("Terjadi kesalahan saat mengirim ulang OTP.");
+    } finally {
+      setOtpResending(false);
     }
   };
 
@@ -651,72 +867,199 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* Tampilkan pesan verifikasi jika belum verifikasi */}
-            {!dashboardLoading && !isUserVerified() && (
-              <div className="order-card" style={{ 
-                border: "1px solid #fbbf24", 
-                backgroundColor: "#fffbeb",
-                boxShadow: "0 4px 6px rgba(251, 191, 36, 0.1)"
+            {/* Tampilkan pesan verifikasi jika belum verifikasi dan belum show OTP form */}
+            {!dashboardLoading && !isUserVerified() && !showOTPForm && (
+              <div style={{
+                marginBottom: "16px",
+                padding: "12px 16px",
+                borderRadius: "8px",
+                background: "#fff1f0",
+                color: "#a8071a",
+                border: "1px solid #ffa39e",
+                fontSize: "14px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "16px",
+                flexWrap: "wrap"
               }}>
-                <div className="order-body">
-                  <div style={{ textAlign: "center", padding: "20px" }}>
-                    <div style={{ 
-                      fontSize: "48px", 
-                      marginBottom: "16px",
-                      display: "block"
-                    }}>
-                      🔒
-                    </div>
-                    <h3 style={{ 
-                      marginBottom: "12px", 
-                      color: "#92400e",
-                      fontSize: "18px",
-                      fontWeight: "600"
-                    }}>
-                      Akun Anda belum diverifikasi
-                    </h3>
-                    <p style={{ 
-                      color: "#78350f", 
-                      marginBottom: "24px",
-                      fontSize: "14px",
-                      lineHeight: "1.6"
-                    }}>
-                      Silakan verifikasi OTP terlebih dahulu untuk melihat Orderan Anda.
+                <span>
+                  Akun Anda belum diverifikasi. Silakan verifikasi OTP terlebih dahulu.
+                </span>
+                <button
+                  onClick={handleSendOTP}
+                  disabled={sendingOTP}
+                  style={{
+                    padding: "8px 20px",
+                    backgroundColor: sendingOTP ? "#9ca3af" : "#3b82f6",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "6px",
+                    cursor: sendingOTP ? "not-allowed" : "pointer",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    transition: "all 0.3s ease",
+                    whiteSpace: "nowrap"
+                  }}
+                  onMouseOver={(e) => {
+                    if (!sendingOTP) {
+                      e.target.style.backgroundColor = "#2563eb";
+                    }
+                  }}
+                  onMouseOut={(e) => {
+                    if (!sendingOTP) {
+                      e.target.style.backgroundColor = "#3b82f6";
+                    }
+                  }}
+                >
+                  {sendingOTP ? "Mengirim..." : "Verifikasi"}
+                </button>
+              </div>
+            )}
+
+            {/* Form Input OTP */}
+            {!dashboardLoading && !isUserVerified() && showOTPForm && (
+              <div style={{
+                marginBottom: "16px",
+                padding: "20px",
+                borderRadius: "8px",
+                background: "#f0f9ff",
+                border: "1px solid #3b82f6",
+              }}>
+                <div style={{ marginBottom: "16px", textAlign: "center" }}>
+                  <h3 style={{ marginBottom: "8px", color: "#1e40af", fontSize: "18px", fontWeight: "600" }}>
+                    Masukkan Kode OTP
+                  </h3>
+                  <p style={{ color: "#64748b", fontSize: "14px", marginBottom: "8px" }}>
+                    Kode OTP telah dikirim ke WhatsApp Anda
+                    {customerInfo?.wa && (
+                      <strong> ({customerInfo.wa.replace(/(\d{2})(\d{3})(\d{4})(\d+)/, "+$1 $2-$3-$4")})</strong>
+                    )}
+                  </p>
+                  {timerActive && timeLeft > 0 && (
+                    <p style={{ color: "#ef4444", fontSize: "12px" }}>
+                      ⏱️ OTP berlaku {formatTimeLeft()}
                     </p>
+                  )}
+                  {timeLeft === 0 && (
+                    <p style={{ color: "#ef4444", fontSize: "12px" }}>
+                      ⏱️ OTP telah kedaluwarsa
+                    </p>
+                  )}
+                </div>
+
+                <form onSubmit={handleVerifyOTP} onPaste={handleOtpPaste}>
+                  <div style={{
+                    display: "flex",
+                    gap: "8px",
+                    justifyContent: "center",
+                    marginBottom: "16px"
+                  }}>
+                    {otp.map((digit, i) => (
+                      <input
+                        key={i}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength="1"
+                        value={digit}
+                        onChange={(e) => handleOtpChange(e, i)}
+                        onKeyDown={(e) => handleOtpKeyDown(e, i)}
+                        ref={(el) => (otpInputs.current[i] = el)}
+                        style={{
+                          width: "45px",
+                          height: "50px",
+                          textAlign: "center",
+                          fontSize: "20px",
+                          fontWeight: "600",
+                          border: "2px solid #cbd5e1",
+                          borderRadius: "8px",
+                          outline: "none",
+                          transition: "all 0.2s"
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.borderColor = "#3b82f6";
+                          e.target.style.boxShadow = "0 0 0 3px rgba(59, 130, 246, 0.1)";
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = "#cbd5e1";
+                          e.target.style.boxShadow = "none";
+                        }}
+                        autoComplete="off"
+                      />
+                    ))}
+                  </div>
+
+                  {otpMessage && (
+                    <p style={{
+                      textAlign: "center",
+                      marginBottom: "12px",
+                      fontSize: "14px",
+                      color: otpMessage.includes("berhasil") ? "#16a34a" : "#dc2626"
+                    }}>
+                      {otpMessage}
+                    </p>
+                  )}
+
+                  <div style={{ display: "flex", gap: "8px", justifyContent: "center", flexWrap: "wrap" }}>
                     <button
-                      onClick={handleSendOTP}
-                      disabled={sendingOTP}
+                      type="submit"
+                      disabled={otpLoading || timeLeft === 0}
                       style={{
-                        padding: "12px 32px",
-                        backgroundColor: sendingOTP ? "#9ca3af" : "#3b82f6",
+                        padding: "10px 24px",
+                        backgroundColor: (otpLoading || timeLeft === 0) ? "#9ca3af" : "#3b82f6",
                         color: "white",
                         border: "none",
-                        borderRadius: "8px",
-                        cursor: sendingOTP ? "not-allowed" : "pointer",
-                        fontSize: "16px",
+                        borderRadius: "6px",
+                        cursor: (otpLoading || timeLeft === 0) ? "not-allowed" : "pointer",
+                        fontSize: "14px",
                         fontWeight: "600",
-                        transition: "all 0.3s ease",
-                        boxShadow: sendingOTP ? "none" : "0 4px 6px rgba(59, 130, 246, 0.3)",
+                        transition: "all 0.3s ease"
                       }}
                       onMouseOver={(e) => {
-                        if (!sendingOTP) {
+                        if (!otpLoading && timeLeft > 0) {
                           e.target.style.backgroundColor = "#2563eb";
-                          e.target.style.transform = "translateY(-2px)";
-                          e.target.style.boxShadow = "0 6px 12px rgba(59, 130, 246, 0.4)";
                         }
                       }}
                       onMouseOut={(e) => {
-                        if (!sendingOTP) {
+                        if (!otpLoading && timeLeft > 0) {
                           e.target.style.backgroundColor = "#3b82f6";
-                          e.target.style.transform = "translateY(0)";
-                          e.target.style.boxShadow = "0 4px 6px rgba(59, 130, 246, 0.3)";
                         }
                       }}
                     >
-                      {sendingOTP ? "Mengirim..." : "Verifikasi"}
+                      {otpLoading ? "Memverifikasi..." : "Verifikasi"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleResendOTP}
+                      disabled={otpResending}
+                      style={{
+                        padding: "10px 24px",
+                        backgroundColor: "transparent",
+                        color: "#3b82f6",
+                        border: "1px solid #3b82f6",
+                        borderRadius: "6px",
+                        cursor: otpResending ? "not-allowed" : "pointer",
+                        fontSize: "14px",
+                        fontWeight: "600",
+                        transition: "all 0.3s ease",
+                        opacity: otpResending ? 0.6 : 1
+                      }}
+                      onMouseOver={(e) => {
+                        if (!otpResending) {
+                          e.target.style.backgroundColor = "#eff6ff";
+                        }
+                      }}
+                      onMouseOut={(e) => {
+                        if (!otpResending) {
+                          e.target.style.backgroundColor = "transparent";
+                        }
+                      }}
+                    >
+                      {otpResending ? "Mengirim..." : "Kirim Ulang"}
                     </button>
                   </div>
-                </div>
+                </form>
               </div>
             )}
 

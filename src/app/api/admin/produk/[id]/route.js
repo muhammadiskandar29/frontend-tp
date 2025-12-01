@@ -174,17 +174,44 @@ export async function PUT(request, { params }) {
       
       console.log(`[ROUTE_UPDATE_PUT] Total appended: ${appendedCount} fields`);
       console.log(`[ROUTE_UPDATE_PUT] Appended fields:`, appendedFields.map(f => `${f.key} (${f.type})`).join(", "));
+      
+      // CRITICAL: Verify critical fields are in appendedFields
+      const hasKode = appendedFields.some(f => f.key === "kode");
+      const hasNama = appendedFields.some(f => f.key === "nama");
+      const hasKategori = appendedFields.some(f => f.key === "kategori");
+      const hasUrl = appendedFields.some(f => f.key === "url");
+      
+      console.log(`[ROUTE_UPDATE_PUT] ========== CRITICAL FIELDS CHECK ==========`);
+      console.log(`Has kategori:`, hasKategori ? "✅ YES" : "❌ NO");
+      console.log(`Has nama:`, hasNama ? "✅ YES" : "❌ NO");
+      console.log(`Has kode:`, hasKode ? "✅ YES" : "❌ NO");
+      console.log(`Has url:`, hasUrl ? "✅ YES" : "❌ NO");
+      
+      if (!hasKode) {
+        console.error(`[ROUTE_UPDATE_PUT] ❌ KODE FIELD MISSING IN FORWARD FORMDATA!`);
+      }
+      if (!hasNama) {
+        console.error(`[ROUTE_UPDATE_PUT] ❌ NAMA FIELD MISSING IN FORWARD FORMDATA!`);
+      }
+      if (!hasKategori) {
+        console.error(`[ROUTE_UPDATE_PUT] ❌ KATEGORI FIELD MISSING IN FORWARD FORMDATA!`);
+      }
+      console.log(`[ROUTE_UPDATE_PUT] ===========================================`);
       console.log(`[ROUTE_UPDATE_PUT] ==============================================`);
       
       // Verify data di incomingFormData sebelum forward
       console.log(`[ROUTE_UPDATE_PUT] ========== VERIFYING INCOMING DATA (ID: ${id}) ==========`);
       const verifyKategori = incomingFormData.get("kategori");
       const verifyNama = incomingFormData.get("nama");
+      const verifyKode = incomingFormData.get("kode");
+      const verifyUrl = incomingFormData.get("url");
       const verifyAssign = incomingFormData.get("assign");
       const verifyHeader = incomingFormData.get("header");
       
       console.log(`Kategori:`, verifyKategori ? String(verifyKategori) : "NULL");
       console.log(`Nama:`, verifyNama ? String(verifyNama) : "NULL");
+      console.log(`Kode:`, verifyKode ? String(verifyKode) : "NULL");
+      console.log(`URL:`, verifyUrl ? String(verifyUrl) : "NULL");
       console.log(`Assign:`, verifyAssign ? String(verifyAssign) : "NULL");
       console.log(`Header:`, verifyHeader instanceof File ? `File(${verifyHeader.name}, ${(verifyHeader.size / 1024).toFixed(2)} KB)` : "NULL");
       
@@ -210,6 +237,39 @@ export async function PUT(request, { params }) {
       console.log(`[ROUTE_UPDATE_PUT] ✅ All critical fields present in incoming`);
       console.log(`[ROUTE_UPDATE_PUT] ==============================================`);
       
+      // CRITICAL: Verify data di forwardFormData sebelum kirim ke backend
+      console.log(`[ROUTE_UPDATE_PUT] ========== VERIFYING FORWARD FORMDATA (ID: ${id}) ==========`);
+      // Note: form-data package tidak support .get(), jadi kita perlu iterate untuk verify
+      let forwardKode = null;
+      let forwardNama = null;
+      let forwardKategori = null;
+      let forwardUrl = null;
+      
+      // Iterate through forwardFormData to verify critical fields
+      // Note: form-data package tidak punya .entries() yang bisa di-iterate, jadi kita track saat append
+      // Tapi kita sudah append semua dari incomingFormData, jadi seharusnya sudah ada
+      // Untuk memastikan, kita log semua field yang sudah di-append
+      console.log(`[ROUTE_UPDATE_PUT] Fields in forwardFormData (from appendedFields):`);
+      appendedFields.forEach(f => {
+        if (f.key === "kode") forwardKode = f.value;
+        if (f.key === "nama") forwardNama = f.value;
+        if (f.key === "kategori") forwardKategori = f.value;
+        if (f.key === "url") forwardUrl = f.value;
+      });
+      
+      console.log(`Forward Kategori:`, forwardKategori || "NOT FOUND");
+      console.log(`Forward Nama:`, forwardNama || "NOT FOUND");
+      console.log(`Forward Kode:`, forwardKode || "NOT FOUND");
+      console.log(`Forward URL:`, forwardUrl || "NOT FOUND");
+      
+      if (!forwardKategori || !forwardNama) {
+        console.error(`[ROUTE_UPDATE_PUT] ❌ CRITICAL FIELDS MISSING IN FORWARD FORMDATA!`);
+        console.error(`[ROUTE_UPDATE_PUT] This means data will not be sent to backend correctly!`);
+      } else {
+        console.log(`[ROUTE_UPDATE_PUT] ✅ All critical fields present in forwardFormData`);
+      }
+      console.log(`[ROUTE_UPDATE_PUT] ==============================================`);
+      
       // Get headers untuk FormData (PENTING: harus dipanggil sebelum fetch)
       const formDataHeaders = forwardFormData.getHeaders();
       
@@ -220,6 +280,19 @@ export async function PUT(request, { params }) {
       console.log(`Content-Length:`, formDataHeaders["content-length"] || "not set");
       console.log(`Token:`, token.substring(0, 20) + "...");
       console.log(`Total fields to send:`, appendedCount);
+      
+      // CRITICAL: Summary of critical fields being sent
+      console.log(`[ROUTE_UPDATE_PUT] ========== CRITICAL FIELDS SUMMARY ==========`);
+      const summaryKodeValue = appendedFields.find(f => f.key === "kode")?.value;
+      const summaryNamaValue = appendedFields.find(f => f.key === "nama")?.value;
+      const summaryKategoriValue = appendedFields.find(f => f.key === "kategori")?.value;
+      const summaryUrlValue = appendedFields.find(f => f.key === "url")?.value;
+      
+      console.log(`Sending kategori:`, summaryKategoriValue || "NOT FOUND");
+      console.log(`Sending nama:`, summaryNamaValue || "NOT FOUND");
+      console.log(`Sending kode:`, summaryKodeValue || "NOT FOUND");
+      console.log(`Sending url:`, summaryUrlValue || "NOT FOUND");
+      console.log(`[ROUTE_UPDATE_PUT] ==========================================`);
       console.log(`[ROUTE_UPDATE_PUT] ======================================`);
       
       // Forward ke backend Laravel dengan FormData menggunakan axios POST + _method=PUT
@@ -252,6 +325,20 @@ export async function PUT(request, { params }) {
         console.log(`[ROUTE_UPDATE_PUT] ✅ Request sent successfully`);
         console.log(`[ROUTE_UPDATE_PUT] Backend response status:`, response.status);
         console.log(`[ROUTE_UPDATE_PUT] Backend response ok:`, response.ok);
+        
+        // Log response data untuk verify apakah backend menerima data dengan benar
+        try {
+          const responseData = await axiosResponse.data;
+          console.log(`[ROUTE_UPDATE_PUT] ========== BACKEND RESPONSE DATA ==========`);
+          console.log(`Response nama:`, responseData?.data?.nama || responseData?.nama || "NOT FOUND");
+          console.log(`Response kode:`, responseData?.data?.kode || responseData?.kode || "NOT FOUND");
+          console.log(`Response url:`, responseData?.data?.url || responseData?.url || "NOT FOUND");
+          console.log(`Response kategori:`, responseData?.data?.kategori || responseData?.kategori || "NOT FOUND");
+          console.log(`[ROUTE_UPDATE_PUT] Full response data:`, JSON.stringify(responseData, null, 2).substring(0, 1000));
+          console.log(`[ROUTE_UPDATE_PUT] ===========================================`);
+        } catch (logError) {
+          console.error(`[ROUTE_UPDATE_PUT] Error logging response:`, logError);
+        }
       } catch (axiosError) {
         console.error(`[ROUTE_UPDATE_PUT] ❌ Axios error:`, axiosError);
         
