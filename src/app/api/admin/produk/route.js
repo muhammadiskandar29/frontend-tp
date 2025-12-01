@@ -2,6 +2,7 @@ export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
 import FormData from "form-data";
+import { fetch as undiciFetch } from "undici";
 
 const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "http://3.105.234.181:8000";
 
@@ -541,6 +542,8 @@ export async function POST(request) {
       const forwardFormData = new FormData();
       
       console.log("[ROUTE] ========== BUILDING FORWARD FORMDATA ==========");
+      let appendedCount = 0;
+      const appendedFields = [];
       
       // Forward all entries ke backend - SIMPLE APPROACH
       for (const [key, value] of incomingFormData.entries()) {
@@ -548,23 +551,31 @@ export async function POST(request) {
           // Convert File to Buffer untuk form-data package
           const arrayBuffer = await value.arrayBuffer();
           const buffer = Buffer.from(arrayBuffer);
+          
+          // Append dengan options yang benar
           forwardFormData.append(key, buffer, {
             filename: value.name,
             contentType: value.type || "application/octet-stream",
           });
-          console.log(`[ROUTE] ✅ File: ${key} = ${value.name} (${(value.size / 1024).toFixed(2)} KB)`);
+          appendedCount++;
+          appendedFields.push({ key, type: "File", name: value.name, size: buffer.length });
+          console.log(`[ROUTE] ✅ File appended: ${key} = ${value.name} (${(value.size / 1024).toFixed(2)} KB, buffer: ${buffer.length} bytes)`);
         } else {
           // Forward string values as-is
           const strValue = String(value);
           forwardFormData.append(key, strValue);
-          console.log(`[ROUTE] ✅ String: ${key} = ${strValue.length > 50 ? strValue.substring(0, 50) + "..." : strValue}`);
+          appendedCount++;
+          appendedFields.push({ key, type: "String", value: strValue.length > 50 ? strValue.substring(0, 50) + "..." : strValue });
+          console.log(`[ROUTE] ✅ String appended: ${key} = ${strValue.length > 50 ? strValue.substring(0, 50) + "..." : strValue}`);
         }
       }
       
+      console.log(`[ROUTE] Total appended: ${appendedCount} fields`);
+      console.log("[ROUTE] Appended fields:", appendedFields.map(f => `${f.key} (${f.type})`).join(", "));
       console.log("[ROUTE] ==============================================");
       
-      // Verify data di incomingFormData (bukan forwardFormData karena form-data package tidak support .get())
-      console.log("[ROUTE] ========== VERIFYING DATA ==========");
+      // Verify data di incomingFormData sebelum forward
+      console.log("[ROUTE] ========== VERIFYING INCOMING DATA ==========");
       const verifyKategori = incomingFormData.get("kategori");
       const verifyNama = incomingFormData.get("nama");
       const verifyAssign = incomingFormData.get("assign");
@@ -576,32 +587,89 @@ export async function POST(request) {
       console.log("Header:", verifyHeader instanceof File ? `File(${verifyHeader.name}, ${(verifyHeader.size / 1024).toFixed(2)} KB)` : "NULL");
       
       if (!verifyKategori || !verifyNama || !verifyHeader) {
-        console.error("[ROUTE] ❌ MISSING CRITICAL FIELDS!");
-        console.error("Kategori:", verifyKategori ? "OK" : "MISSING");
-        console.error("Nama:", verifyNama ? "OK" : "MISSING");
-        console.error("Header:", verifyHeader ? "OK" : "MISSING");
-      } else {
-        console.log("[ROUTE] ✅ All critical fields present");
+        console.error("[ROUTE] ❌ MISSING CRITICAL FIELDS IN INCOMING!");
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Data tidak lengkap",
+            errors: {
+              kategori: !verifyKategori ? ["Kategori tidak ditemukan"] : [],
+              nama: !verifyNama ? ["Nama tidak ditemukan"] : [],
+              header: !verifyHeader ? ["Header tidak ditemukan"] : [],
+            },
+            debug: {
+              kategori: verifyKategori ? "OK" : "MISSING",
+              nama: verifyNama ? "OK" : "MISSING",
+              header: verifyHeader ? "OK" : "MISSING",
+              allKeys: Array.from(incomingFormData.keys())
+            }
+          },
+          { status: 400 }
+        );
       }
+      console.log("[ROUTE] ✅ All critical fields present in incoming");
       console.log("[ROUTE] ==============================================");
       
-      // Get headers untuk FormData
+      // Get headers untuk FormData (PENTING: harus dipanggil sebelum fetch)
       const formDataHeaders = forwardFormData.getHeaders();
       
-      // Forward ke backend Laravel dengan FormData
-      console.log("[ROUTE] Sending to:", `${BACKEND_URL}/api/admin/produk`);
+      console.log("[ROUTE] ========== REQUEST DETAILS ==========");
+      console.log("URL:", `${BACKEND_URL}/api/admin/produk`);
+      console.log("Method:", "POST");
+      console.log("Content-Type:", formDataHeaders["content-type"]);
+      console.log("Content-Length:", formDataHeaders["content-length"] || "not set");
+      console.log("Token:", token.substring(0, 20) + "...");
+      console.log("Total fields to send:", appendedCount);
+      console.log("[ROUTE] ======================================");
       
-      response = await fetch(`${BACKEND_URL}/api/admin/produk`, {
-        method: "POST",
-        headers: {
-          ...formDataHeaders,
+      // Forward ke backend Laravel dengan FormData
+      // PENTING: form-data package perlu digunakan dengan cara yang benar
+      // Native fetch di Node.js tidak support form-data package langsung
+      // Kita perlu convert ke stream atau menggunakan pendekatan lain
+      
+      try {
+        // Convert form-data ke stream untuk fetch
+        // form-data package memiliki method untuk get stream
+        const formDataStream = forwardFormData;
+        
+        // Get headers - PENTING: jangan override content-type
+        const headers = {
+          ...formDataHeaders, // Ini sudah include content-type dengan boundary
           Accept: "application/json",
           Authorization: `Bearer ${token}`,
-        },
-        body: forwardFormData,
-      });
-      
-      console.log("[ROUTE] Backend response status:", response.status);
+        };
+        
+        // Remove content-length jika ada (biar form-data handle sendiri)
+        delete headers["content-length"];
+        
+        console.log("[ROUTE] Final headers:", {
+          "content-type": headers["content-type"]?.substring(0, 50) + "...",
+          "accept": headers["Accept"],
+          "authorization": headers["Authorization"]?.substring(0, 30) + "...",
+          "has-boundary": headers["content-type"]?.includes("boundary")
+        });
+        
+        // Forward dengan undici fetch yang support form-data package
+        // undici fetch lebih kompatibel dengan form-data package
+        console.log("[ROUTE] Sending request to backend...");
+        response = await undiciFetch(`${BACKEND_URL}/api/admin/produk`, {
+          method: "POST",
+          headers: headers,
+          body: formDataStream, // form-data package akan handle sebagai stream
+        });
+        
+        console.log("[ROUTE] ✅ Request sent successfully");
+        console.log("[ROUTE] Backend response status:", response.status);
+        console.log("[ROUTE] Backend response ok:", response.ok);
+        console.log("[ROUTE] Backend response headers:", Object.fromEntries(response.headers.entries()));
+      } catch (fetchError) {
+        console.error("[ROUTE] ❌ Fetch error:", fetchError);
+        console.error("[ROUTE] Error details:", {
+          message: fetchError.message,
+          stack: fetchError.stack
+        });
+        throw fetchError;
+      }
 
     } else {
       // Handle JSON request (untuk backward compatibility)
