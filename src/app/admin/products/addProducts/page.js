@@ -18,14 +18,25 @@ export default function Page() {
   const router = useRouter();
 
   // ============================
-  // SLUGIFY - Generate kode dari nama
+  // SLUGIFY - Generate kode dari nama dengan dash
+  // Contoh: "webinar ternak properti" -> "webinar-ternak-properti"
   // ============================
   const generateKode = (text) => {
-    return (text || "")
-    .toLowerCase()
-    .trim()
+    if (!text) return "";
+    
+    return text
+      .toLowerCase()
+      .trim()
+      // Hapus karakter khusus, hanya simpan huruf, angka, spasi, dan dash
       .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-");
+      // Ganti multiple spaces dengan single space
+      .replace(/\s+/g, " ")
+      // Ganti spasi dengan dash
+      .replace(/\s/g, "-")
+      // Hapus multiple dash menjadi single dash
+      .replace(/-+/g, "-")
+      // Hapus dash di awal dan akhir
+      .replace(/^-+|-+$/g, "");
   };
 
 
@@ -80,6 +91,7 @@ export default function Page() {
 
   const [form, setForm] = useState(defaultForm);
 const [isSubmitting, setIsSubmitting] = useState(false);
+const [submitProgress, setSubmitProgress] = useState("");
 
   // ============================
   // HANDLER INPUT
@@ -106,32 +118,154 @@ const [isSubmitting, setIsSubmitting] = useState(false);
   };
 
   // ============================
-  // CONVERT FILE TO BASE64
+  // COMPRESS IMAGE BEFORE BASE64
+  // Optimasi: Kompres gambar sebelum konversi untuk mengurangi ukuran
   // ============================
-  const fileToBase64 = (file) => {
+  const compressImage = (file, maxWidth = 1600, maxHeight = 1600, quality = 0.75) => {
     return new Promise((resolve, reject) => {
-      if (!file) {
-        resolve(null);
+      if (!file || !file.type.startsWith('image/')) {
+        resolve(file);
         return;
       }
+
       const reader = new FileReader();
-      reader.onload = () => {
-        // Return base64 tanpa prefix (hanya data base64)
-        const base64 = reader.result.split(',')[1];
-        resolve(base64);
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          // Calculate new dimensions
+          if (width > maxWidth || height > maxHeight) {
+            if (width > height) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            } else {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Convert to blob with compression
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                // Create new File object with compressed data
+                const compressedFile = new File([blob], file.name, {
+                  type: 'image/jpeg',
+                  lastModified: Date.now()
+                });
+                resolve(compressedFile);
+              } else {
+                resolve(file);
+              }
+            },
+            'image/jpeg',
+            quality
+          );
+        };
+        img.onerror = () => resolve(file);
+        img.src = e.target.result;
       };
-      reader.onerror = reject;
+      reader.onerror = () => resolve(file);
       reader.readAsDataURL(file);
     });
   };
 
   // ============================
-  // BUILD PRODUCT PAYLOAD
-  // Format JSON sesuai requirement
+  // CONVERT FILE TO BASE64 (OPTIMIZED)
   // ============================
-  async function buildProductPayload(form, kategoriId, userInputId, normalizedAssign) {
-    // Generate kode dari nama jika belum ada
-    const kode = form.kode || generateKode(form.nama);
+  const fileToBase64 = async (file, compress = true) => {
+    if (!file) {
+      return null;
+    }
+
+    try {
+      // Compress image first if it's an image
+      let fileToConvert = file;
+      if (compress && file.type.startsWith('image/')) {
+        fileToConvert = await compressImage(file);
+      }
+
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          // Return base64 tanpa prefix (hanya data base64)
+          const base64 = reader.result.split(',')[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(fileToConvert);
+      });
+    } catch (error) {
+      console.error('Error converting file to base64:', error);
+      return null;
+    }
+  };
+
+  // ============================
+  // UPLOAD FILE TO BACKEND LARAVEL
+  // Upload file dan dapatkan path dari backend
+  // ============================
+  const uploadFileToBackend = async (file, category = "img", onProgress = null) => {
+    if (!file) return null;
+
+    try {
+      // Compress image first untuk mengurangi ukuran
+      const compressedFile = await compressImage(file);
+      
+      // Upload langsung ke backend Laravel
+      const formData = new FormData();
+      formData.append("file", compressedFile);
+      formData.append("category", category);
+
+      const token = localStorage.getItem("token") || "";
+      const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://3.105.234.181:8000";
+
+      // Upload langsung ke backend Laravel
+      const response = await fetch(`${BACKEND_URL}/api/admin/upload`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Upload gagal");
+      }
+
+      if (result.success && result.data) {
+        // Backend return path seperti: produk/header/filename.jpg atau object dengan path
+        const path = typeof result.data === "string" 
+          ? result.data 
+          : (result.data.path || result.data.filename || result.data);
+        return path;
+      }
+
+      throw new Error(result.message || "Upload gagal - tidak ada path");
+    } catch (error) {
+      console.error("Upload error:", error);
+      throw error;
+    }
+  };
+
+  // ============================
+  // BUILD PRODUCT PAYLOAD
+  // Format JSON sesuai requirement - Upload file dulu, dapatkan path
+  // ============================
+  async function buildProductPayload(form, kategoriId, userInputId, normalizedAssign, onProgress = null) {
+    // SELALU generate kode dari nama (auto generate dengan dash)
+    const kode = generateKode(form.nama) || "produk-baru";
     
     // list_point - format: Array<{ nama: string, urutan: number }>
     const listPointArray = (form.list_point || []).map((p, idx) => ({
@@ -155,89 +289,112 @@ const [isSubmitting, setIsSubmitting] = useState(false);
       ? form.video.split(",").map((v) => v.trim()).filter((v) => v)
       : [];
     
-    // gambar - format: Array<{ caption: string, path: string }>
-    // Convert files to base64 dengan prefix data:image
-    const gambarArray = await Promise.all(
-      (form.gambar || []).map(async (g) => {
-        let path = null;
-        if (g.path && g.path.type === "file" && g.path.value) {
-          const base64WithoutPrefix = await fileToBase64(g.path.value);
-          if (base64WithoutPrefix) {
-            const mimeType = g.path.value.type || "image/jpeg";
-            path = `data:${mimeType};base64,${base64WithoutPrefix}`;
-          }
-        }
-        return {
-          caption: g.caption || "",
-          path: path,
-        };
-      })
-    );
-    
-    // testimoni - format: Array<{ nama: string, deskripsi: string, gambar: string }>
-    const testimoniArray = await Promise.all(
-      (form.testimoni || []).map(async (t) => {
-        let gambar = null;
-        if (t.gambar && t.gambar.type === "file" && t.gambar.value) {
-          const base64WithoutPrefix = await fileToBase64(t.gambar.value);
-          if (base64WithoutPrefix) {
-            const mimeType = t.gambar.value.type || "image/jpeg";
-            gambar = `data:${mimeType};base64,${base64WithoutPrefix}`;
-          }
-        }
-        return {
-          nama: t.nama || "",
-          deskripsi: t.deskripsi || "",
-          gambar: gambar,
-        };
-      })
-    );
-    
-    // header - convert to base64 if exists (dengan prefix data:image)
-    let headerBase64 = null;
+    // Upload header image dulu - category: "header" untuk path produk/header/...
+    let headerPath = null;
     if (form.header?.type === "file" && form.header.value) {
-      const base64WithoutPrefix = await fileToBase64(form.header.value);
-      if (base64WithoutPrefix) {
-        // Deteksi MIME type dari file
-        const mimeType = form.header.value.type || "image/jpeg";
-        headerBase64 = `data:${mimeType};base64,${base64WithoutPrefix}`;
+      if (onProgress) {
+        onProgress("Mengupload header image...");
+      }
+      try {
+        headerPath = await uploadFileToBackend(form.header.value, "header", onProgress);
+      } catch (error) {
+        console.error("Error uploading header:", error);
+        throw new Error(`Gagal upload header: ${error.message}`);
       }
     }
     
-    // Build payload object
+    // Upload gambar gallery - category: "gallery" untuk path produk/gallery/...
+    const gambarFiles = (form.gambar || []).filter(g => g.path && g.path.type === "file" && g.path.value);
+    const gambarArray = await Promise.all(
+      (form.gambar || []).map(async (g, index) => {
+        let path = null;
+        if (g.path && g.path.type === "file" && g.path.value) {
+          if (onProgress) {
+            onProgress(`Mengupload gambar ${index + 1}/${gambarFiles.length}...`);
+          }
+          try {
+            path = await uploadFileToBackend(g.path.value, "gallery", onProgress);
+          } catch (error) {
+            console.error(`Error uploading gambar ${index + 1}:`, error);
+            // Continue dengan path null jika upload gagal
+          }
+        } else if (g.path && g.path.type === "url" && g.path.value) {
+          // Jika sudah ada path (edit mode), gunakan path yang ada
+          path = g.path.value;
+        }
+        // Hanya return jika ada path (filter null)
+        return path ? {
+          caption: g.caption || "",
+          path: path,
+        } : null;
+      })
+    );
+    // Filter null values
+    const validGambarArray = gambarArray.filter(g => g !== null);
+    
+    // Upload testimoni images - category: "testimoni" untuk path produk/testimoni/...
+    const testimoniFiles = (form.testimoni || []).filter(t => t.gambar && t.gambar.type === "file" && t.gambar.value);
+    const testimoniArray = await Promise.all(
+      (form.testimoni || []).map(async (t, index) => {
+        let gambarPath = null;
+        if (t.gambar && t.gambar.type === "file" && t.gambar.value) {
+          if (onProgress) {
+            onProgress(`Mengupload testimoni ${index + 1}/${testimoniFiles.length}...`);
+          }
+          try {
+            gambarPath = await uploadFileToBackend(t.gambar.value, "testimoni", onProgress);
+          } catch (error) {
+            console.error(`Error uploading testimoni ${index + 1}:`, error);
+            // Continue dengan gambarPath null jika upload gagal
+          }
+        } else if (t.gambar && t.gambar.type === "url" && t.gambar.value) {
+          // Jika sudah ada path (edit mode), gunakan path yang ada
+          gambarPath = t.gambar.value;
+        }
+        // Return testimoni dengan atau tanpa gambar
+        return {
+          nama: t.nama || "",
+          deskripsi: t.deskripsi || "",
+          gambar: gambarPath,
+        };
+      })
+    );
+    
+    // Build payload object - sesuai format backend Laravel
     const payload = {
-      // kategori: number
+      // kategori: number (backend expect string, tapi kita kirim number)
       kategori: Number(kategoriId),
       
       // user_input: number
       user_input: Number(userInputId),
       
-      // assign: number[]
+      // assign: number[] (backend expect string JSON, tapi kita kirim array)
       assign: normalizedAssign || [],
       
       // Field lainnya
       nama: form.nama || "",
+      kode: kode, // Kode auto-generate dari nama dengan dash
       url: "/" + kode,
       deskripsi: form.deskripsi || "",
       harga_asli: Number(form.harga_asli) || 0,
       harga_coret: Number(form.harga_coret) || 0,
       tanggal_event: formatDateForBackend(form.tanggal_event) || "",
-      landingpage: form.landingpage ? Number(form.landingpage) : null,
+      landingpage: form.landingpage ? Number(form.landingpage) : 1,
       
-      // Arrays
+      // Arrays - backend expect string JSON, tapi kita kirim array (route.js akan convert)
       list_point: listPointArray,
       custom_field: customFieldArray,
       event_fb_pixel: eventFbPixelArray,
       fb_pixel: (form.fb_pixel || []).map(v => Number(v)).filter(n => !Number.isNaN(n)),
       gtm: (form.gtm || []).map(v => Number(v)).filter(n => !Number.isNaN(n)),
       video: videoArray,
-      gambar: gambarArray,
+      gambar: validGambarArray,
       testimoni: testimoniArray,
     };
     
-    // Hanya tambahkan header jika ada (jangan kirim null)
-    if (headerBase64) {
-      payload.header = headerBase64;
+    // Hanya tambahkan header jika ada path (jangan kirim null)
+    if (headerPath) {
+      payload.header = headerPath;
     }
     
     return payload;
@@ -282,13 +439,23 @@ const handleSubmit = async () => {
       return;
     }
 
-    // Build payload (async karena perlu convert file ke base64)
-    const payloadData = await buildProductPayload(form, kategoriId, effectiveUser.id, normalizedAssign);
+    // Build payload dengan progress indicator
+    setSubmitProgress("Mempersiapkan data...");
+    const payloadData = await buildProductPayload(
+      form, 
+      kategoriId, 
+      effectiveUser.id, 
+      normalizedAssign,
+      (message) => setSubmitProgress(message)
+    );
 
-    // DEBUG: Log payload untuk tracking di network
-    console.log("[PAYLOAD] JSON Request:", JSON.stringify(payloadData, null, 2));
+    // DEBUG: Log payload size untuk tracking
+    const payloadSize = JSON.stringify(payloadData).length;
+    const payloadSizeMB = (payloadSize / (1024 * 1024)).toFixed(2);
+    console.log(`[PAYLOAD] Size: ${payloadSizeMB} MB`);
 
     // FETCH dengan JSON
+    setSubmitProgress("Mengirim data ke server...");
     const res = await fetch("/api/admin/produk", {
       method: "POST",
       headers: {
@@ -310,19 +477,35 @@ const handleSubmit = async () => {
 
     if (!res.ok) {
       console.error("[API ERROR]", res.status, data);
-      alert(data.message || "Gagal membuat produk");
+      setSubmitProgress("");
+      const errorMessage = data.message || data.detailedMessage || "Gagal membuat produk";
+      if (data.errorFields && data.errorFields.length > 0) {
+        alert(`${errorMessage}\n\nField yang error: ${data.errorFields.join(", ")}`);
+      } else {
+        alert(errorMessage);
+      }
       setIsSubmitting(false);
       return;
     }
 
+    // Handle success response sesuai format backend
     console.log("[API SUCCESS]", data);
-    alert("Produk berhasil dibuat!");
-    router.push("/admin/products");
+    setSubmitProgress("");
+    
+    if (data.success && data.data) {
+      alert(data.message || "Produk berhasil dibuat!");
+      router.push("/admin/products");
+    } else {
+      alert("Produk berhasil dibuat!");
+      router.push("/admin/products");
+    }
   } catch (err) {
     console.error("[SUBMIT ERROR]", err);
+    setSubmitProgress("");
     alert("Terjadi kesalahan saat submit: " + (err.message || err));
   } finally {
     setIsSubmitting(false);
+    setSubmitProgress("");
   }
 };
 
@@ -452,17 +635,25 @@ useEffect(() => {
           style={{
             position: "absolute",
             inset: 0,
-            background: "rgba(255,255,255,0.8)",
+            background: "rgba(255,255,255,0.95)",
             zIndex: 10,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            gap: "12px",
+            gap: "16px",
+            backdropFilter: "blur(4px)",
           }}
         >
           <div className="spinner" style={{ width: "48px", height: "48px", border: "4px solid #3b82f6", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
-          <p style={{ color: "#1f2937", fontWeight: 600 }}>Menyimpan produk, mohon tunggu...</p>
+          <div style={{ textAlign: "center" }}>
+            <p style={{ color: "#1f2937", fontWeight: 600, fontSize: "16px", marginBottom: "8px" }}>
+              {submitProgress || "Menyimpan produk, mohon tunggu..."}
+            </p>
+            <p style={{ color: "#6b7280", fontSize: "14px" }}>
+              Proses ini mungkin memakan waktu beberapa saat
+            </p>
+          </div>
         </div>
       )}
       {/* Header Section */}
@@ -500,13 +691,14 @@ useEffect(() => {
               placeholder="Masukkan nama produk"
               onChange={(e) => {
                 const nama = e.target.value;
-                // SELALU generate kode dari nama dengan dash
-                const kode = generateKode(nama);
+                // SELALU auto-generate kode dari nama dengan dash
+                // Contoh: "webinar ternak properti" -> "webinar-ternak-properti"
+                const kode = generateKode(nama) || "";
                 setForm({ 
                   ...form, 
                   nama, 
                   kode: kode,
-                  url: "/" + kode
+                  url: "/" + (kode || "produk-baru")
                 });
               }}
             />
@@ -555,7 +747,7 @@ useEffect(() => {
               </label>
               <InputText
                 className="w-full form-input"
-                value={form.kode || ""}
+                value={form.kode || generateKode(form.nama) || ""}
                 onChange={(e) => {
                   const kode = e.target.value;
                   setForm({
@@ -564,7 +756,8 @@ useEffect(() => {
                     url: "/" + (kode || "produk-baru"),
                   });
                 }}
-                placeholder="Kode otomatis dari nama"
+                placeholder="Kode otomatis dari nama (contoh: webinar-ternak-properti)"
+                title="Kode akan otomatis di-generate dari nama produk dengan format dash"
               />
             </div>
             <div className="form-field-group">
@@ -1092,7 +1285,9 @@ useEffect(() => {
           disabled={isSubmitting}
         />
         <p className="submit-hint">
-          {isSubmitting ? "Sedang mengunggah data ke server..." : "Pastikan semua data sudah lengkap sebelum menyimpan"}
+          {isSubmitting 
+            ? (submitProgress || "Sedang mengunggah data ke server...") 
+            : "Pastikan semua data sudah lengkap sebelum menyimpan"}
         </p>
       </div>
       </div>

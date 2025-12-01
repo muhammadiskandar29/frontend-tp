@@ -101,6 +101,84 @@ const generateKode = (text) =>
   };
 
   // ============================
+  // COMPRESS IMAGE TO JPG (MAX 1MB)
+  // ============================
+  const compressImageToJPG = async (file, maxSizeMB = 1, maxWidth = 1600) => {
+    return new Promise((resolve, reject) => {
+      if (!file || !file.type.startsWith("image/")) {
+        reject(new Error("File bukan gambar"));
+        return;
+      }
+
+      const maxSizeBytes = maxSizeMB * 1024 * 1024; // 1MB in bytes
+      const isJPG = file.type === "image/jpeg" || file.type === "image/jpg";
+      const isPNG = file.type === "image/png";
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
+
+          // Resize if too large
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+
+          // For PNG or other formats with transparency, fill white background
+          if (!isJPG) {
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fillRect(0, 0, width, height);
+          }
+
+          // Draw image
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Try different quality levels to get under 1MB
+          const tryCompress = (quality) => {
+            canvas.toBlob(
+              (blob) => {
+                if (!blob) {
+                  reject(new Error("Failed to convert/compress image"));
+                  return;
+                }
+
+                // If size is acceptable or quality is too low, return
+                if (blob.size <= maxSizeBytes || quality <= 0.3) {
+                  const jpgFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+                    type: "image/jpeg",
+                    lastModified: Date.now(),
+                  });
+                  resolve(jpgFile);
+                } else {
+                  // Try lower quality
+                  tryCompress(quality - 0.1);
+                }
+              },
+              "image/jpeg",
+              quality
+            );
+          };
+
+          // Start with quality 0.85
+          tryCompress(0.85);
+        };
+        img.onerror = () => reject(new Error("Failed to load image"));
+        img.src = e.target.result;
+      };
+      reader.onerror = () => reject(new Error("Failed to read file"));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // ============================
   // SUBMIT
   // ============================
   const handleSubmit = async () => {
@@ -122,6 +200,12 @@ const generateKode = (text) =>
         return;
       }
 
+      // Validate header is required
+      if (!form.header?.value || form.header?.type !== "file") {
+        alert("Header gambar wajib diupload!");
+        return;
+      }
+
       console.log("📤 Kategori ID yang akan dikirim:", kategoriId);
       console.log("📤 Tipe kategori ID:", typeof kategoriId);
 
@@ -137,27 +221,39 @@ const generateKode = (text) =>
         payload = new FormData();
         isFormData = true;
 
-        // Header
-        if (form.header.type === "file" && form.header.value) {
-          payload.append("header", form.header.value);
+        // Process all files: compress to JPG (max 1MB)
+        try {
+          // Process Header
+          if (form.header?.type === "file" && form.header.value) {
+            const compressedHeader = await compressImageToJPG(form.header.value, 1, 1600);
+            payload.append("header", compressedHeader);
+          }
+
+          // Process Gallery
+          for (let idx = 0; idx < form.gambar.length; idx++) {
+            const g = form.gambar[idx];
+            if (g.path?.type === "file" && g.path.value) {
+              const compressedGambar = await compressImageToJPG(g.path.value, 1, 1600);
+              payload.append(`gambar[${idx}][path]`, compressedGambar);
+            }
+            payload.append(`gambar[${idx}][caption]`, g.caption || "");
+          }
+
+          // Process Testimoni
+          for (let idx = 0; idx < form.testimoni.length; idx++) {
+            const t = form.testimoni[idx];
+            if (t.gambar?.type === "file" && t.gambar.value) {
+              const compressedTestimoni = await compressImageToJPG(t.gambar.value, 1, 1600);
+              payload.append(`testimoni[${idx}][gambar]`, compressedTestimoni);
+            }
+            payload.append(`testimoni[${idx}][nama]`, t.nama || "");
+            payload.append(`testimoni[${idx}][deskripsi]`, t.deskripsi || "");
+          }
+        } catch (error) {
+          console.error("❌ Error processing images:", error);
+          alert(`Gagal memproses gambar: ${error.message}`);
+          return;
         }
-
-        // Gallery
-        form.gambar.forEach((g, idx) => {
-          if (g.path.type === "file" && g.path.value) {
-            payload.append(`gambar[${idx}][path]`, g.path.value);
-          }
-          payload.append(`gambar[${idx}][caption]`, g.caption);
-        });
-
-        // Testimoni
-        form.testimoni.forEach((t, idx) => {
-          if (t.gambar.type === "file" && t.gambar.value) {
-            payload.append(`testimoni[${idx}][gambar]`, t.gambar.value);
-          }
-          payload.append(`testimoni[${idx}][nama]`, t.nama);
-          payload.append(`testimoni[${idx}][deskripsi]`, t.deskripsi);
-        });
 
         // Fields
         payload.append("nama", form.nama);
@@ -283,7 +379,7 @@ const generateKode = (text) =>
       }
 
       const token = localStorage.getItem("token");
-      const res = await fetch("/api/admin/produk", {
+      const res = await fetch("/api/admin/produk2", {
         method: "POST",
         headers: {
           ...(isFormData ? {} : { "Content-Type": "application/json" }),

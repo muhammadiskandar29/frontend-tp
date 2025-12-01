@@ -209,6 +209,7 @@ const extractPayload = async (reqBody) => {
     kategori: normalizeNumber(reqBody.kategori),
     user_input: normalizeNumber(reqBody.user_input),
     nama: typeof reqBody.nama === "string" ? reqBody.nama.trim() : "",
+    kode: typeof reqBody.kode === "string" ? reqBody.kode.trim() : "",
     url: typeof reqBody.url === "string" ? reqBody.url.trim() : "",
     deskripsi: typeof reqBody.deskripsi === "string" ? reqBody.deskripsi : "",
     harga_asli: normalizeNumber(reqBody.harga_asli),
@@ -370,6 +371,10 @@ const validatePayload = (payload) => {
     errors.push("url wajib diisi (string)");
   }
 
+  if (typeof payload.kode !== "string" || payload.kode.trim() === "") {
+    errors.push("kode wajib diisi (string)");
+  }
+
   return errors;
 };
 
@@ -523,31 +528,35 @@ export async function POST(request) {
       );
     }
 
+    // Convert payload untuk backend Laravel
+    // Backend expect string JSON untuk array fields
+    const payloadToSend = {
+      ...payload,
+      // Convert arrays to JSON strings (backend Laravel format)
+      assign: JSON.stringify(payload.assign || []),
+      list_point: JSON.stringify(payload.list_point || []),
+      custom_field: JSON.stringify(payload.custom_field || []),
+      event_fb_pixel: JSON.stringify(payload.event_fb_pixel || []),
+      fb_pixel: JSON.stringify(payload.fb_pixel || []),
+      gtm: JSON.stringify(payload.gtm || []),
+      video: JSON.stringify(payload.video || []),
+      gambar: JSON.stringify(payload.gambar || []),
+      testimoni: JSON.stringify(payload.testimoni || []),
+    };
+
     // Hapus header jika null sebelum dikirim ke backend
-    // Backend Laravel mungkin tidak menerima null untuk header
-    const payloadToSend = { ...payload };
     if (payloadToSend.header === null || payloadToSend.header === undefined || payloadToSend.header === "") {
       delete payloadToSend.header;
     }
 
-    // Log payload untuk debugging (tanpa base64 yang panjang)
-    const logPayload = { ...payloadToSend };
-    if (logPayload.header) {
-      logPayload.header = logPayload.header.substring(0, 50) + "... (base64 truncated)";
-    }
-    if (logPayload.gambar) {
-      logPayload.gambar = logPayload.gambar.map(g => ({
-        ...g,
-        path: g.path ? (g.path.substring(0, 50) + "... (base64 truncated)") : null
-      }));
-    }
-    if (logPayload.testimoni) {
-      logPayload.testimoni = logPayload.testimoni.map(t => ({
-        ...t,
-        gambar: t.gambar ? (t.gambar.substring(0, 50) + "... (base64 truncated)") : null
-      }));
-    }
-    console.log("📤 [POST_PRODUK] Sending payload to backend:", JSON.stringify(logPayload, null, 2));
+    // Convert kategori, user_input, landingpage to string (backend expect string)
+    payloadToSend.kategori = String(payloadToSend.kategori);
+    payloadToSend.user_input = String(payloadToSend.user_input);
+    payloadToSend.landingpage = String(payloadToSend.landingpage || "1");
+    payloadToSend.harga_asli = String(payloadToSend.harga_asli || "0");
+    payloadToSend.harga_coret = String(payloadToSend.harga_coret || "0");
+
+    console.log("📤 [POST_PRODUK] Sending payload to backend:", JSON.stringify(payloadToSend, null, 2));
 
     // Send to backend
     const response = await fetch(`${BACKEND_URL}/api/admin/produk`, {
@@ -579,7 +588,6 @@ export async function POST(request) {
     }
 
     if (!response.ok) {
-      
       // Extract errors
       let extractedErrors = {};
       let extractedErrorFields = [];
@@ -603,7 +611,17 @@ export async function POST(request) {
       );
     }
 
-    // Success response
+    // Success response - return sesuai format yang diharapkan
+    // Backend return: {success: true, message: "...", data: {...}}
+    if (data.success && data.data) {
+      return NextResponse.json({
+        success: true,
+        message: data.message || "Produk berhasil dibuat",
+        data: data.data,
+      });
+    }
+
+    // Fallback jika format berbeda
     return NextResponse.json(data);
 
   } catch (error) {
