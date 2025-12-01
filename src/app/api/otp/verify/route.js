@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import crypto from "crypto";
 
 const BACKEND_URL =
   process.env.BACKEND_URL ||
@@ -6,31 +7,15 @@ const BACKEND_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "http://3.105.234.181:8000";
 
-/**
- * 9.2 Verifikasi OTP Customer
- * POST /api/otp/verify
- * 
- * Catatan: OTP Berlaku selama 5 menit
- * Request: { customer_id, otp }
- * Response: { success, message, data: { customer_id, nama, verifikasi } }
- */
+const SECRET_KEY = process.env.SECRET_KEY || "superkeyy023Ad_8!jf983hfFj";
+
 export async function POST(request) {
   console.log("🟢 [OTP_VERIFY] Route handler called");
-  
-  try {
-    // Ambil token dari header Authorization
-    const authHeader = request.headers.get("authorization");
-    const token = authHeader?.replace("Bearer ", "") || null;
-    
-    console.log("🟢 [OTP_VERIFY] Token received:", token ? "Token ada" : "Token tidak ada");
 
+  try {
     const body = await request.json();
 
-    console.log("🟢 [OTP_VERIFY] Request body:", JSON.stringify(body, null, 2));
-
-    // Validasi request body
     if (!body?.customer_id || !body?.otp) {
-      console.error("❌ [OTP_VERIFY] Missing required fields:", { customer_id: body?.customer_id, otp: body?.otp });
       return NextResponse.json(
         { success: false, message: "customer_id dan otp harus diisi" },
         { status: 400 }
@@ -42,30 +27,37 @@ export async function POST(request) {
       otp: String(body.otp),
     };
 
-    console.log("🟢 [OTP_VERIFY] Forwarding to backend:", `${BACKEND_URL}/api/otp/verify`);
-    console.log("🟢 [OTP_VERIFY] Payload:", JSON.stringify(payload, null, 2));
+    // =========================================================
+    // 🔥 Wajib: Generate timestamp & HMAC hash
+    // =========================================================
+    const timestamp = Date.now().toString();
+    const hash = crypto
+      .createHmac("sha256", SECRET_KEY)
+      .update(timestamp)
+      .digest("hex");
+    // =========================================================
 
-    // Forward ke backend Laravel dengan token
+    console.log("🟢 [OTP_VERIFY] Sending request to backend:");
+
     const response = await fetch(`${BACKEND_URL}/api/otp/verify`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+
+        // 🔥 Header wajib
+        "X-API-Timestamp": timestamp,
+        "X-API-Hash": hash,
       },
       body: JSON.stringify(payload),
     });
-
-    console.log("🟢 [OTP_VERIFY] Backend response status:", response.status);
 
     const responseText = await response.text();
     let data;
 
     try {
       data = JSON.parse(responseText);
-      console.log("🟢 [OTP_VERIFY] Backend response data:", JSON.stringify(data, null, 2));
     } catch (err) {
-      console.error("❌ [OTP_VERIFY] Non-JSON response:", responseText);
       return NextResponse.json(
         { success: false, message: "Backend error: Response bukan JSON" },
         { status: 500 }
@@ -73,7 +65,6 @@ export async function POST(request) {
     }
 
     if (!response.ok) {
-      console.error("❌ [OTP_VERIFY] Backend error:", data);
       return NextResponse.json(
         {
           success: false,
@@ -83,26 +74,22 @@ export async function POST(request) {
       );
     }
 
-    // Return response sesuai format requirement
-    // Response: { success, message, data: { customer_id, nama, verifikasi } }
-    const responseData = {
+    return NextResponse.json({
       success: true,
       message: data?.message || "OTP valid, akun telah diverifikasi",
       data: {
-        customer_id: data?.data?.customer_id || data?.customer_id || payload.customer_id,
+        customer_id:
+          data?.data?.customer_id ||
+          data?.customer_id ||
+          payload.customer_id,
         nama: data?.data?.nama || data?.nama || "",
-        verifikasi: data?.data?.verifikasi !== undefined 
-          ? data.data.verifikasi 
-          : (data?.verifikasi !== undefined ? data.verifikasi : 1),
+        verifikasi:
+          data?.data?.verifikasi ??
+          data?.verifikasi ??
+          1,
       },
-    };
-
-    console.log("✅ [OTP_VERIFY] Returning success response:", JSON.stringify(responseData, null, 2));
-    
-    return NextResponse.json(responseData);
+    });
   } catch (error) {
-    console.error("❌ [OTP_VERIFY] Error:", error);
-    console.error("❌ [OTP_VERIFY] Error stack:", error.stack);
     return NextResponse.json(
       {
         success: false,
@@ -112,5 +99,3 @@ export async function POST(request) {
     );
   }
 }
-
-

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import crypto from "crypto";
 
 const BACKEND_URL =
   process.env.BACKEND_URL ||
@@ -6,26 +7,12 @@ const BACKEND_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "http://3.105.234.181:8000";
 
-/**
- * 9.3 Re-send OTP Customer
- * POST /api/otp/resend
- * 
- * Request: { customer_id, wa }
- * Response: { success, message, data: { otp_id, customer, otp, wa_response } }
- */
+const SECRET_KEY = process.env.SECRET_KEY || "superkeyy023Ad_8!jf983hfFj";
+
 export async function POST(request) {
   try {
-    // Ambil token dari header Authorization
-    const authHeader = request.headers.get("authorization");
-    const token = authHeader?.replace("Bearer ", "") || null;
-    
-    console.log("🟢 [OTP_RESEND] Token received:", token ? "Token ada" : "Token tidak ada");
-
     const body = await request.json();
 
-    console.log("🟢 [OTP_RESEND] Request body:", body);
-
-    // Validasi request body
     if (!body?.customer_id || !body?.wa) {
       return NextResponse.json(
         { success: false, message: "customer_id dan wa harus diisi" },
@@ -33,18 +20,25 @@ export async function POST(request) {
       );
     }
 
+    // Generate timestamp & hash
+    const timestamp = Date.now().toString();
+    const hash = crypto
+      .createHmac("sha256", SECRET_KEY)
+      .update(timestamp)
+      .digest("hex");
+
     const payload = {
       customer_id: Number(body.customer_id),
       wa: String(body.wa),
     };
 
-    // Forward ke backend dengan token
     const response = await fetch(`${BACKEND_URL}/api/otp/resend`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        "X-API-Timestamp": timestamp,
+        "X-API-Hash": hash,
       },
       body: JSON.stringify(payload),
     });
@@ -55,7 +49,6 @@ export async function POST(request) {
     try {
       data = JSON.parse(responseText);
     } catch (err) {
-      console.error("❌ [OTP_RESEND] Non-JSON response:", responseText);
       return NextResponse.json(
         { success: false, message: "Backend error: Response bukan JSON" },
         { status: 500 }
@@ -63,7 +56,6 @@ export async function POST(request) {
     }
 
     if (!response.ok) {
-      console.error("❌ [OTP_RESEND] Backend error:", data);
       return NextResponse.json(
         {
           success: false,
@@ -73,14 +65,12 @@ export async function POST(request) {
       );
     }
 
-    // Return response sesuai format requirement
     return NextResponse.json({
       success: true,
       message: data?.message || "OTP berhasil dikirim ke WhatsApp",
       data: data?.data || data,
     });
   } catch (error) {
-    console.error("❌ [OTP_RESEND] Error:", error);
     return NextResponse.json(
       {
         success: false,
@@ -90,5 +80,3 @@ export async function POST(request) {
     );
   }
 }
-
-
