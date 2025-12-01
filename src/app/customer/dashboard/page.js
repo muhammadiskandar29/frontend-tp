@@ -379,6 +379,12 @@ export default function DashboardPage() {
     router.replace("/customer/otp");
   };
 
+  // Handler untuk redirect langsung ke halaman OTP (tanpa kirim OTP dulu)
+  const handleGoToOTP = () => {
+    console.log("📤 [DASHBOARD] Redirecting to OTP page");
+    router.replace("/customer/otp");
+  };
+
   const handleUpdateSuccess = (data) => {
     console.log("✅ [DASHBOARD] Update success, data received:", data);
 
@@ -707,12 +713,44 @@ export default function DashboardPage() {
   // Cek apakah user sudah verifikasi
   const isUserVerified = () => {
     const session = getCustomerSession();
+    // Prioritaskan customerInfo (data terbaru dari API), lalu session.user
     const customerData = customerInfo || session.user;
-    if (!customerData) return false;
+    if (!customerData) {
+      console.log("🔍 [isUserVerified] No customer data found");
+      return false;
+    }
     
     const verifikasiValue = customerData.verifikasi;
-    const normalizedVerifikasi = verifikasiValue === "1" ? 1 : verifikasiValue === "0" ? 0 : verifikasiValue;
-    return normalizedVerifikasi === 1 || normalizedVerifikasi === true;
+    
+    // Normalisasi yang lebih robust: handle string "1"/"0", number 1/0, boolean true/false, dan null/undefined
+    if (verifikasiValue === null || verifikasiValue === undefined) {
+      console.log("🔍 [isUserVerified] Verifikasi value is null/undefined:", { verifikasiValue, customerData });
+      return false;
+    }
+    
+    // Convert ke string dulu untuk konsistensi, lalu bandingkan
+    const verifikasiStr = String(verifikasiValue).trim();
+    const verifikasiNum = Number(verifikasiValue);
+    
+    // Cek berbagai format: "1", 1, true, "true"
+    const isVerified = (
+      verifikasiStr === "1" ||
+      verifikasiNum === 1 ||
+      verifikasiValue === true ||
+      verifikasiStr === "true" ||
+      verifikasiStr === "True"
+    );
+    
+    console.log("🔍 [isUserVerified] Check result:", {
+      verifikasiValue,
+      verifikasiStr,
+      verifikasiNum,
+      isVerified,
+      customerInfo: customerInfo?.verifikasi,
+      sessionUser: session.user?.verifikasi
+    });
+    
+    return isVerified;
   };
 
   return (
@@ -878,32 +916,27 @@ export default function DashboardPage() {
                   Akun Anda belum diverifikasi. Silakan verifikasi OTP terlebih dahulu.
                 </span>
                 <button
-                  onClick={handleSendOTP}
-                  disabled={sendingOTP}
+                  onClick={handleGoToOTP}
                   style={{
                     padding: "8px 20px",
-                    backgroundColor: sendingOTP ? "#9ca3af" : "#3b82f6",
+                    backgroundColor: "#3b82f6",
                     color: "white",
                     border: "none",
                     borderRadius: "6px",
-                    cursor: sendingOTP ? "not-allowed" : "pointer",
+                    cursor: "pointer",
                     fontSize: "14px",
                     fontWeight: "600",
                     transition: "all 0.3s ease",
                     whiteSpace: "nowrap"
                   }}
                   onMouseOver={(e) => {
-                    if (!sendingOTP) {
-                      e.target.style.backgroundColor = "#2563eb";
-                    }
+                    e.target.style.backgroundColor = "#2563eb";
                   }}
                   onMouseOut={(e) => {
-                    if (!sendingOTP) {
-                      e.target.style.backgroundColor = "#3b82f6";
-                    }
+                    e.target.style.backgroundColor = "#3b82f6";
                   }}
                 >
-                  {sendingOTP ? "Mengirim..." : "Verifikasi"}
+                  Verifikasi
                 </button>
               </div>
             )}
