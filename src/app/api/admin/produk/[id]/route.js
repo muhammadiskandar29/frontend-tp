@@ -166,6 +166,12 @@ export async function PUT(request, { params }) {
         }
       }
       
+      // CRITICAL: Tambahkan _method=PUT untuk Laravel (Laravel membutuhkan ini untuk PUT dengan FormData)
+      forwardFormData.append("_method", "PUT");
+      appendedCount++;
+      appendedFields.push({ key: "_method", type: "String", value: "PUT" });
+      console.log(`[ROUTE_UPDATE_PUT] ✅ _method=PUT appended (required by Laravel for FormData PUT requests)`);
+      
       console.log(`[ROUTE_UPDATE_PUT] Total appended: ${appendedCount} fields`);
       console.log(`[ROUTE_UPDATE_PUT] Appended fields:`, appendedFields.map(f => `${f.key} (${f.type})`).join(", "));
       console.log(`[ROUTE_UPDATE_PUT] ==============================================`);
@@ -209,16 +215,17 @@ export async function PUT(request, { params }) {
       
       console.log(`[ROUTE_UPDATE_PUT] ========== REQUEST DETAILS (ID: ${id}) ==========`);
       console.log(`URL:`, `${BACKEND_URL}/api/admin/produk/${id}`);
-      console.log(`Method:`, "PUT");
+      console.log(`Method:`, "POST (with _method=PUT for Laravel FormData support)");
       console.log(`Content-Type:`, formDataHeaders["content-type"]);
       console.log(`Content-Length:`, formDataHeaders["content-length"] || "not set");
       console.log(`Token:`, token.substring(0, 20) + "...");
       console.log(`Total fields to send:`, appendedCount);
       console.log(`[ROUTE_UPDATE_PUT] ======================================`);
       
-      // Forward ke backend Laravel dengan FormData menggunakan axios PUT
+      // Forward ke backend Laravel dengan FormData menggunakan axios POST + _method=PUT
+      // Laravel membutuhkan POST dengan _method=PUT untuk FormData multipart requests
       try {
-        const axiosResponse = await axios.put(
+        const axiosResponse = await axios.post(
           `${BACKEND_URL}/api/admin/produk/${id}`,
           forwardFormData,
           {
