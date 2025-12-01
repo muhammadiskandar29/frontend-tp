@@ -161,6 +161,26 @@ export default function VerifyOrderOTPPage() {
     }
   };
 
+  // Clear data dan redirect ke landing page
+  const clearAndRedirect = (landingUrl) => {
+    // Clear semua state
+    setOtp(["", "", "", "", "", ""]);
+    setMessage("");
+    setLoading(false);
+    setResending(false);
+    setTimeLeft(OTP_VALID_DURATION);
+    setTimerActive(false);
+    setOrderData(null);
+    
+    // Clear localStorage
+    localStorage.removeItem("pending_order");
+    
+    // Redirect ke landing page
+    setTimeout(() => {
+      router.replace(landingUrl);
+    }, 500);
+  };
+
   // Redirect ke payment sesuai metode
   const redirectToPayment = () => {
     if (!orderData) return;
@@ -185,6 +205,10 @@ export default function VerifyOrderOTPPage() {
           harga: totalHarga || "0",
         });
         router.push(`/payment?${query.toString()}`);
+        
+        // Redirect halaman verify-order kembali ke landing page dan kosongkan data
+        const landingUrl = orderData?.landingUrl || "/";
+        clearAndRedirect(landingUrl);
         break;
     }
   };
@@ -228,6 +252,10 @@ export default function VerifyOrderOTPPage() {
       if (json.redirect_url) {
         // Buka Midtrans payment page di tab baru
         window.open(json.redirect_url, "_blank");
+        
+        // Redirect halaman verify-order kembali ke landing page dan kosongkan data
+        const landingUrl = orderData?.landingUrl || "/";
+        clearAndRedirect(landingUrl);
       } else {
         toast.error(json.message || "Gagal membuat transaksi");
         // Jika gagal, redirect ke payment page manual

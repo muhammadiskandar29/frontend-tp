@@ -346,6 +346,7 @@ export default function Page() {
     // ============================
     // 3. GAMBAR GALLERY - File langsung
     // Format: gambar[0][file], gambar[0][caption], gambar[1][file], gambar[1][caption]
+    // Sama persis dengan addProducts, tapi handle existing images juga
     // ============================
     const gambarFiles = (form.gambar || []).filter(g => g.path && g.path.type === "file" && g.path.value);
     if (onProgress && gambarFiles.length > 0) {
@@ -362,7 +363,7 @@ export default function Page() {
         formData.append(`gambar[${i}][file]`, compressedGambar);
         formData.append(`gambar[${i}][caption]`, g.caption || "");
       } else if (g.path && g.path.type === "url" && g.path.value) {
-        // Existing image - hanya append caption
+        // Existing image - tetap append caption untuk update
         formData.append(`gambar[${i}][caption]`, g.caption || "");
       }
     }
@@ -582,7 +583,7 @@ export default function Page() {
         }
       });
       
-      // Final check sebelum kirim
+      // Final check sebelum kirim (sama seperti addProducts, tapi header tidak wajib untuk edit)
       if (!kategoriInFormData || kategoriInFormData === "" || kategoriInFormData === "null" || kategoriInFormData === "undefined") {
         console.error("[FORMDATA] ❌ KATEGORI TIDAK ADA DI FORMDATA!");
         throw new Error("Kategori tidak ditemukan di FormData. Pastikan kategori sudah dipilih.");
@@ -591,6 +592,12 @@ export default function Page() {
       if (!namaInFormData || namaInFormData === "") {
         console.error("[FORMDATA] ❌ NAMA TIDAK ADA DI FORMDATA!");
         throw new Error("Nama produk tidak ditemukan di FormData.");
+      }
+      
+      // Note: Header tidak wajib untuk edit (bisa menggunakan existing image)
+      // Tapi jika ada header file baru, pastikan sudah di-append
+      if (form.header?.type === "file" && form.header.value && !headerInFormData) {
+        console.warn("[FORMDATA] ⚠️ Header file baru tidak ditemukan di FormData, tapi ini OK untuk edit");
       }
       
       console.log("[FORMDATA] ✅ All critical fields verified");
@@ -727,14 +734,24 @@ export default function Page() {
       }
 
       // Handle success response sesuai format backend
-      console.log("[API SUCCESS]", data);
+      console.log("[API SUCCESS] ========== RESPONSE DATA ==========");
+      console.log("[API SUCCESS] Full response:", JSON.stringify(data, null, 2));
+      console.log("[API SUCCESS] Response success:", data.success);
+      console.log("[API SUCCESS] Response message:", data.message);
+      console.log("[API SUCCESS] Response data:", data.data);
+      console.log("[API SUCCESS] ====================================");
+      
       setSubmitStatus("");
       
       if (data.success) {
         alert(data.message || "Produk berhasil diperbarui!");
+        // Refresh data produk untuk memastikan data ter-update
+        await fetchProductData(false);
         router.push("/admin/products");
       } else {
         alert("Produk berhasil diperbarui!");
+        // Refresh data produk untuk memastikan data ter-update
+        await fetchProductData(false);
         router.push("/admin/products");
       }
     } catch (err) {

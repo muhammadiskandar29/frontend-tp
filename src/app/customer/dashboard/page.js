@@ -163,7 +163,6 @@ export default function DashboardPage() {
       // Fetch produk dari admin endpoint menyebabkan error 500 karena customer token tidak memiliki akses admin
       
       const customerData = data.customer || null;
-      setCustomerInfo(customerData);
       
       // ===== SYNC CUSTOMER DATA KE LOCALSTORAGE =====
       // Update localStorage dengan data customer terbaru dari backend
@@ -177,7 +176,11 @@ export default function DashboardPage() {
           nama_panggilan: customerData.nama_panggilan || existingUser.nama_panggilan,
           profesi: customerData.profesi || existingUser.profesi,
           // Pastikan verifikasi ter-sync dari backend (prioritas utama untuk modal check)
-          verifikasi: customerData.verifikasi !== undefined ? customerData.verifikasi : existingUser.verifikasi,
+          // Jika customerData.verifikasi tidak ada, gunakan existingUser.verifikasi
+          // Tapi jika customerData.verifikasi = "1", pastikan digunakan (tidak di-overwrite dengan "0")
+          verifikasi: customerData.verifikasi !== undefined 
+            ? customerData.verifikasi 
+            : (existingUser.verifikasi !== undefined ? existingUser.verifikasi : "0"),
         };
         localStorage.setItem("customer_user", JSON.stringify(updatedUser));
         console.log("✅ [DASHBOARD] Customer data synced to localStorage:", updatedUser);
@@ -185,6 +188,14 @@ export default function DashboardPage() {
           verifikasi: updatedUser.verifikasi,
           isVerified: updatedUser.verifikasi === "1" || updatedUser.verifikasi === 1
         });
+        
+        // Update customerInfo state dengan data yang sudah di-merge
+        // Ini memastikan verifikasi tetap "1" jika sudah di-update sebelumnya
+        setCustomerInfo(updatedUser);
+      } else {
+        // Jika tidak ada customerData dari API, tetap gunakan existing customerInfo
+        // Jangan overwrite dengan null
+        console.log("⚠️ [DASHBOARD] No customer data from API, keeping existing customerInfo");
       }
       
       setStats((prev) =>
@@ -383,8 +394,13 @@ export default function DashboardPage() {
       console.log("✅ [DASHBOARD] Verifikasi updated to:", verifikasiFromResponse);
       localStorage.setItem("customer_user", JSON.stringify(updatedUser));
       
-      // Update customerInfo state juga
+      // Update customerInfo state juga - HARUS dilakukan SEBELUM loadDashboardData
+      // Agar isUserVerified() langsung return true dan pesan tidak muncul
       setCustomerInfo(updatedUser);
+      
+      // Pastikan customerInfo sudah di-update dengan verifikasi = "1"
+      // Ini akan membuat isUserVerified() langsung return true pada render berikutnya
+      console.log("✅ [DASHBOARD] customerInfo state updated with verifikasi =", verifikasiFromResponse);
     }
 
     // Hapus semua modal flags
@@ -394,8 +410,24 @@ export default function DashboardPage() {
     toast.success("Data berhasil diperbarui!");
     
     // Refresh dashboard data untuk mendapatkan data terbaru termasuk verifikasi
+    // Setelah customerInfo sudah di-update dengan verifikasi = "1", 
+    // isUserVerified() akan return true dan pesan "Silakan lengkapi data..." tidak akan muncul lagi
+    // loadDashboardData akan fetch data terbaru dari API, tapi customerInfo sudah di-update
+    // sehingga tidak akan overwrite dengan data lama
     loadDashboardData().then(() => {
       console.log("✅ [DASHBOARD] Dashboard data refreshed after form submission");
+      console.log("✅ [DASHBOARD] isUserVerified() should now return true");
+      
+      // Double check: pastikan customerInfo masih memiliki verifikasi = "1"
+      // Jika loadDashboardData mengembalikan data dengan verifikasi = "1", 
+      // maka customerInfo akan tetap benar
+      const session = getCustomerSession();
+      const currentCustomerInfo = customerInfo || session.user;
+      console.log("✅ [DASHBOARD] Final verifikasi check:", {
+        customerInfo_verifikasi: customerInfo?.verifikasi,
+        sessionUser_verifikasi: session.user?.verifikasi,
+        isUserVerified: isUserVerified()
+      });
     });
   };
 
