@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.BACKEND_URL || 
-  process.env.NEXT_PUBLIC_BACKEND_URL || 
-  'https://onedashboardapi-production.up.railway.app';
+const BACKEND_URL =
+  process.env.BACKEND_URL ||
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://3.105.234.181:8000";
 
 export async function POST(request) {
   try {
@@ -17,21 +19,40 @@ export async function POST(request) {
     }
 
     // Proxy ke backend
+    const payload = {
+      name,
+      email,
+      amount: parseInt(amount, 10),
+      product_name: product_name || 'Product',
+    };
+
+    console.log('🟢 [MIDTRANS_CC] Forwarding to backend:', `${BACKEND_URL}/api/midtrans/create-snap-cc`);
+    console.log('🟢 [MIDTRANS_CC] Payload:', JSON.stringify(payload, null, 2));
+
     const response = await fetch(`${BACKEND_URL}/api/midtrans/create-snap-cc`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      body: JSON.stringify({
-        name,
-        email,
-        amount: parseInt(amount, 10),
-        product_name: product_name || 'Product',
-      }),
+      body: JSON.stringify(payload),
     });
 
-    const data = await response.json();
+    console.log('🟢 [MIDTRANS_CC] Backend response status:', response.status);
+
+    const responseText = await response.text();
+    let data;
+
+    try {
+      data = JSON.parse(responseText);
+      console.log('🟢 [MIDTRANS_CC] Backend response data:', JSON.stringify(data, null, 2));
+    } catch (err) {
+      console.error('❌ [MIDTRANS_CC] Non-JSON response:', responseText);
+      return NextResponse.json(
+        { success: false, message: 'Backend error: Response bukan JSON' },
+        { status: 500 }
+      );
+    }
 
     if (!response.ok) {
       console.error('❌ Midtrans CC Backend Error:', data);
