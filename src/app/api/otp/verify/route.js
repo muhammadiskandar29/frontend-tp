@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import crypto from "crypto";
+import CryptoJS from "crypto-js";
+
+const SECRET_KEY = "superkeyy023Ad_8!jf983hfFj";
 
 const BACKEND_URL =
   process.env.BACKEND_URL ||
@@ -7,59 +9,51 @@ const BACKEND_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "http://3.105.234.181:8000";
 
-const SECRET_KEY = process.env.SECRET_KEY || "superkeyy023Ad_8!jf983hfFj";
-
 export async function POST(request) {
-  console.log("🟢 [OTP_VERIFY] Route handler called");
-
   try {
     const body = await request.json();
+    const { customer_id, otp } = body;
 
-    if (!body?.customer_id || !body?.otp) {
+    if (!customer_id || !otp) {
       return NextResponse.json(
-        { success: false, message: "customer_id dan otp harus diisi" },
+        { success: false, message: "customer_id dan otp wajib dikirim" },
         { status: 400 }
       );
     }
 
-    const payload = {
-      customer_id: Number(body.customer_id),
-      otp: String(body.otp),
-    };
+    // 🔐 Generate timestamp & HMAC SHA256 (harus sama dengan backend)
+    const timestamp = Math.floor(Date.now() / 1000).toString();
+    const hash = CryptoJS.HmacSHA256(timestamp, SECRET_KEY).toString(
+      CryptoJS.enc.Hex
+    );
 
-    // =========================================================
-    // 🔥 Wajib: Generate timestamp & HMAC hash
-    // =========================================================
-    const timestamp = Date.now().toString();
-    const hash = crypto
-      .createHmac("sha256", SECRET_KEY)
-      .update(timestamp)
-      .digest("hex");
-    // =========================================================
+    console.log("🟢 [OTP_VERIFY] Timestamp:", timestamp);
+    console.log("🟢 [OTP_VERIFY] Hash:", hash);
 
-    console.log("🟢 [OTP_VERIFY] Sending request to backend:");
-
+    // Kirim ke backend
     const response = await fetch(`${BACKEND_URL}/api/otp/verify`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
-
-        // 🔥 Header wajib
         "X-API-Timestamp": timestamp,
         "X-API-Hash": hash,
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        customer_id,
+        otp,
+      }),
     });
 
-    const responseText = await response.text();
+    const text = await response.text();
     let data;
 
     try {
-      data = JSON.parse(responseText);
+      data = JSON.parse(text);
     } catch (err) {
+      console.error("❌ Response bukan JSON:", text);
       return NextResponse.json(
-        { success: false, message: "Backend error: Response bukan JSON" },
+        { success: false, message: "Backend error: Invalid JSON" },
         { status: 500 }
       );
     }
@@ -68,7 +62,7 @@ export async function POST(request) {
       return NextResponse.json(
         {
           success: false,
-          message: data?.message || "Kode OTP salah atau sudah kadaluarsa",
+          message: data?.message || "Gagal verifikasi OTP",
         },
         { status: response.status }
       );
@@ -76,25 +70,13 @@ export async function POST(request) {
 
     return NextResponse.json({
       success: true,
-      message: data?.message || "OTP valid, akun telah diverifikasi",
-      data: {
-        customer_id:
-          data?.data?.customer_id ||
-          data?.customer_id ||
-          payload.customer_id,
-        nama: data?.data?.nama || data?.nama || "",
-        verifikasi:
-          data?.data?.verifikasi ??
-          data?.verifikasi ??
-          1,
-      },
+      message: data?.message || "OTP valid",
+      data: data?.data || data,
     });
   } catch (error) {
+    console.error("❌ [OTP_VERIFY] Error:", error);
     return NextResponse.json(
-      {
-        success: false,
-        message: error?.message || "Terjadi kesalahan saat memverifikasi OTP",
-      },
+      { success: false, message: error.message },
       { status: 500 }
     );
   }

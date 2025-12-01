@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import crypto from "crypto";
+import CryptoJS from "crypto-js";
+
+const SECRET_KEY = "superkeyy023Ad_8!jf983hfFj";
 
 const BACKEND_URL =
   process.env.BACKEND_URL ||
@@ -7,30 +9,21 @@ const BACKEND_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "http://3.105.234.181:8000";
 
-const SECRET_KEY = process.env.SECRET_KEY || "superkeyy023Ad_8!jf983hfFj";
-
 export async function POST(request) {
   try {
     const body = await request.json();
 
     if (!body?.customer_id || !body?.wa) {
       return NextResponse.json(
-        { success: false, message: "customer_id dan wa harus diisi" },
+        { success: false, message: "customer_id dan wa wajib dikirim" },
         { status: 400 }
       );
     }
 
-    // Generate timestamp & hash
-    const timestamp = Date.now().toString();
-    const hash = crypto
-      .createHmac("sha256", SECRET_KEY)
-      .update(timestamp)
-      .digest("hex");
-
-    const payload = {
-      customer_id: Number(body.customer_id),
-      wa: String(body.wa),
-    };
+    const timestamp = Math.floor(Date.now() / 1000).toString();
+    const hash = CryptoJS.HmacSHA256(timestamp, SECRET_KEY).toString(
+      CryptoJS.enc.Hex
+    );
 
     const response = await fetch(`${BACKEND_URL}/api/otp/resend`, {
       method: "POST",
@@ -40,42 +33,39 @@ export async function POST(request) {
         "X-API-Timestamp": timestamp,
         "X-API-Hash": hash,
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        customer_id: Number(body.customer_id),
+        wa: String(body.wa),
+      }),
     });
 
-    const responseText = await response.text();
-    let data;
+    const text = await response.text();
+    let data = {};
 
     try {
-      data = JSON.parse(responseText);
+      data = JSON.parse(text);
     } catch (err) {
       return NextResponse.json(
-        { success: false, message: "Backend error: Response bukan JSON" },
+        { success: false, message: "Response backend bukan JSON" },
         { status: 500 }
       );
     }
 
     if (!response.ok) {
       return NextResponse.json(
-        {
-          success: false,
-          message: data?.message || "Gagal mengirim ulang OTP",
-        },
+        { success: false, message: data?.message || "Gagal mengirim ulang OTP" },
         { status: response.status }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: data?.message || "OTP berhasil dikirim ke WhatsApp",
+      message: data?.message || "OTP berhasil dikirim ulang",
       data: data?.data || data,
     });
   } catch (error) {
     return NextResponse.json(
-      {
-        success: false,
-        message: error?.message || "Terjadi kesalahan saat mengirim ulang OTP",
-      },
+      { success: false, message: error.message },
       { status: 500 }
     );
   }
