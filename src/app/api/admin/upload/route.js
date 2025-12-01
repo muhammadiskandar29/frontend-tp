@@ -1,51 +1,11 @@
+export const runtime = "nodejs";
+
 import { NextResponse } from "next/server";
-import sharp from "sharp";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
-import { existsSync } from "fs";
+import FormData from "form-data";
 
-// Upload directory configuration
-const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
+const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "http://3.105.234.181:8000";
 
-// Generate unique filename with category prefix
-const generateFilename = (originalName, category = "img") => {
-  const timestamp = Date.now();
-  const random = Math.random().toString(36).substring(2, 8);
-  const baseName = originalName
-    .replace(/\.[^/.]+$/, "") // Remove extension
-    .replace(/[^a-zA-Z0-9]/g, "-") // Replace non-alphanumeric with dash
-    .toLowerCase()
-    .substring(0, 30); // Limit length
-  return `${category}-${baseName}-${timestamp}-${random}.webp`;
-};
-
-// Ensure upload directory exists
-const ensureUploadDir = async (subDir = "") => {
-  const dir = subDir ? path.join(UPLOAD_DIR, subDir) : UPLOAD_DIR;
-  if (!existsSync(dir)) {
-    await mkdir(dir, { recursive: true });
-  }
-  return dir;
-};
-
-// Convert image to WebP
-const convertToWebP = async (buffer, quality = 75, options = {}) => {
-  let sharpInstance = sharp(buffer);
-
-  // Optional resize
-  if (options.width || options.height) {
-    sharpInstance = sharpInstance.resize({
-      width: options.width,
-      height: options.height,
-      fit: options.fit || "inside",
-      withoutEnlargement: true
-    });
-  }
-
-  return await sharpInstance
-    .webp({ quality })
-    .toBuffer();
-};
+// Proxy upload ke backend Laravel untuk avoid mixed content error
 
 export async function POST(request) {
   try {
@@ -68,141 +28,76 @@ export async function POST(request) {
       );
     }
 
-    const formData = await request.formData();
+    const incomingFormData = await request.formData();
     
     // Get category for organizing uploads (header, gallery, testimoni, etc.)
-    const category = formData.get("category") || "img";
-    const quality = parseInt(formData.get("quality") || "75", 10);
-    const maxWidth = formData.get("max_width") ? parseInt(formData.get("max_width"), 10) : null;
-    const maxHeight = formData.get("max_height") ? parseInt(formData.get("max_height"), 10) : null;
+    const category = incomingFormData.get("category") || "img";
 
-    // Support multiple field names for files
-    const fileFields = ["file", "files", "image", "images", "header", "gambar", "foto"];
-    const filesToProcess = [];
-
-    for (const fieldName of fileFields) {
-      const fieldValue = formData.get(fieldName);
-      const fieldValues = formData.getAll(fieldName);
-
-      if (fieldValue && fieldValue instanceof File) {
-        filesToProcess.push({ file: fieldValue, fieldName });
-      }
-
-      for (const f of fieldValues) {
-        if (f instanceof File && !filesToProcess.some(p => p.file === f)) {
-          filesToProcess.push({ file: f, fieldName });
-        }
-      }
-    }
-
-    if (filesToProcess.length === 0) {
+    // Get file from form data
+    const file = incomingFormData.get("file");
+    
+    if (!file || !(file instanceof File)) {
       return NextResponse.json(
         { success: false, message: "Tidak ada file yang di-upload" },
         { status: 400 }
       );
     }
 
-    // Ensure upload directory exists
-    const uploadDir = await ensureUploadDir(category);
+    // Forward FormData ke backend Laravel
+    const forwardFormData = new FormData();
+    
+    // Convert File to Buffer untuk form-data package
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    
+    forwardFormData.append("file", buffer, {
+      filename: file.name,
+      contentType: file.type,
+    });
+    forwardFormData.append("category", category);
 
-    const uploadedFiles = [];
-    const errors = [];
+    // Forward ke backend Laravel
+    const token = authHeader.replace("Bearer ", "");
+    
+    const response = await fetch(`${BACKEND_URL}/api/admin/upload`, {
+      method: "POST",
+      headers: {
+        ...forwardFormData.getHeaders(),
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: forwardFormData,
+    });
 
-    for (const { file: uploadFile, fieldName } of filesToProcess) {
-      try {
-        // Validate file type (only images)
-        const validTypes = [
-          "image/jpeg", 
-          "image/jpg", 
-          "image/png", 
-          "image/gif", 
-          "image/webp", 
-          "image/bmp", 
-          "image/tiff",
-          "image/svg+xml"
-        ];
-        
-        if (!validTypes.includes(uploadFile.type)) {
-          errors.push({
-            filename: uploadFile.name,
-            field: fieldName,
-            error: `Tipe file tidak didukung: ${uploadFile.type}. Hanya gambar yang diperbolehkan.`
-          });
-          continue;
-        }
+    const responseText = await response.text();
+    let data;
 
-        // Skip SVG conversion (can't convert to WebP)
-        if (uploadFile.type === "image/svg+xml") {
-          errors.push({
-            filename: uploadFile.name,
-            field: fieldName,
-            error: "File SVG tidak dapat dikonversi ke WebP"
-          });
-          continue;
-        }
-
-        // Get file buffer
-        const arrayBuffer = await uploadFile.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-
-        // Convert to WebP
-        console.log(`🖼️ [ADMIN_UPLOAD] Converting ${uploadFile.name} to WebP (quality: ${quality})...`);
-        
-        const webpBuffer = await convertToWebP(buffer, quality, {
-          width: maxWidth,
-          height: maxHeight,
-          fit: "inside"
-        });
-
-        // Generate filename and save
-        const filename = generateFilename(uploadFile.name, category);
-        const filePath = path.join(uploadDir, filename);
-
-        await writeFile(filePath, webpBuffer);
-
-        const publicUrl = category ? `/uploads/${category}/${filename}` : `/uploads/${filename}`;
-        
-        console.log(`✅ [ADMIN_UPLOAD] Saved: ${filename} (${webpBuffer.length} bytes)`);
-
-        uploadedFiles.push({
-          field: fieldName,
-          original_name: uploadFile.name,
-          original_type: uploadFile.type,
-          original_size: uploadFile.size,
-          filename: filename,
-          path: publicUrl,
-          size: webpBuffer.length,
-          mime_type: "image/webp",
-          category: category
-        });
-      } catch (fileError) {
-        console.error(`❌ [ADMIN_UPLOAD] Error processing ${uploadFile.name}:`, fileError);
-        errors.push({
-          filename: uploadFile.name,
-          field: fieldName,
-          error: fileError.message || "Gagal memproses file"
-        });
-      }
-    }
-
-    // Return response
-    if (uploadedFiles.length === 0) {
+    try {
+      data = JSON.parse(responseText);
+    } catch {
       return NextResponse.json(
-        { 
-          success: false, 
-          message: "Semua file gagal di-upload", 
-          errors 
+        {
+          success: false,
+          message: "Backend error: Response bukan JSON",
+          raw_response: responseText.substring(0, 200),
         },
-        { status: 400 }
+        { status: response.status || 500 }
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      message: `${uploadedFiles.length} file berhasil di-upload dan dikonversi ke WebP`,
-      data: uploadedFiles.length === 1 ? uploadedFiles[0] : uploadedFiles,
-      errors: errors.length > 0 ? errors : undefined
-    });
+    if (!response.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: data?.message || "Upload gagal",
+          errors: data?.errors,
+        },
+        { status: response.status }
+      );
+    }
+
+    // Return response dari backend Laravel
+    return NextResponse.json(data);
 
   } catch (error) {
     console.error("❌ [ADMIN_UPLOAD] Error:", error);

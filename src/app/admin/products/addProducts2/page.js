@@ -256,11 +256,12 @@ const generateKode = (text) =>
         }
 
         // Fields
-        payload.append("nama", form.nama);
-        payload.append("url", form.url);
         const kode = form.kode || generateKode(form.nama);
+        const url = form.url || "/" + kode; // Pastikan URL selalu ada, default dari kode
+        
+        payload.append("nama", form.nama);
         payload.append("kode", kode);
-        payload.append("url", "/" + kode); // pastikan url selalu sinkron
+        payload.append("url", url.startsWith("/") ? url : "/" + url); // Pastikan URL dimulai dengan /
         payload.append("deskripsi", form.deskripsi);
         payload.append("harga_coret", form.harga_coret || 0);
         payload.append("harga_asli", form.harga_asli || 0);
@@ -329,12 +330,14 @@ const generateKode = (text) =>
         }
 
         const kode = form.kode || generateKode(form.nama);
+        const url = form.url || "/" + kode; // Pastikan URL selalu ada, default dari kode
+        
         payload = {
           kategori: String(kategoriId), // String format sesuai response
           user_input: userInputId, // Number
           nama: form.nama,
           kode: kode,
-          url: "/" + kode,
+          url: url.startsWith("/") ? url : "/" + url, // Pastikan URL dimulai dengan /
           deskripsi: form.deskripsi || "",
           harga_coret: String(form.harga_coret || "0"),
           harga_asli: String(form.harga_asli || "0"),
@@ -379,7 +382,7 @@ const generateKode = (text) =>
       }
 
       const token = localStorage.getItem("token");
-      const res = await fetch("/api/admin/produk", {
+      const res = await fetch("/api/admin/produk2", {
         method: "POST",
         headers: {
           ...(isFormData ? {} : { "Content-Type": "application/json" }),

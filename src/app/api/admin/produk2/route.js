@@ -266,9 +266,18 @@ const extractPayloadFromFormData = async (formData) => {
     payload.kode = String(entries.kode[0]).trim();
   }
 
-  // Process url
+  // Process url - pastikan selalu ada, default dari kode jika kosong
   if (entries.url && entries.url[0]) {
-    payload.url = String(entries.url[0]).trim();
+    const urlValue = String(entries.url[0]).trim();
+    payload.url = urlValue || (payload.kode ? "/" + payload.kode : "");
+  } else if (payload.kode) {
+    // Jika URL tidak ada tapi kode ada, generate dari kode
+    payload.url = "/" + payload.kode;
+  }
+  
+  // Pastikan URL dimulai dengan /
+  if (payload.url && !payload.url.startsWith("/")) {
+    payload.url = "/" + payload.url;
   }
 
   // Process deskripsi
@@ -451,12 +460,22 @@ const validatePayload = (payload) => {
     errors.push("nama wajib diisi (string)");
   }
 
-  if (typeof payload.url !== "string" || payload.url.trim() === "") {
-    errors.push("url wajib diisi (string)");
-  }
-
   if (typeof payload.kode !== "string" || payload.kode.trim() === "") {
     errors.push("kode wajib diisi (string)");
+  }
+
+  // URL validation - generate dari kode jika kosong
+  if (!payload.url || typeof payload.url !== "string" || payload.url.trim() === "") {
+    if (payload.kode && payload.kode.trim() !== "") {
+      payload.url = "/" + payload.kode.trim();
+    } else {
+      errors.push("url wajib diisi (string)");
+    }
+  } else {
+    // Pastikan URL dimulai dengan /
+    if (!payload.url.startsWith("/")) {
+      payload.url = "/" + payload.url;
+    }
   }
 
   // Header validation - must be provided and must be a valid image
@@ -492,12 +511,22 @@ export async function POST(request) {
       const reqBody = await request.json();
       
       // For JSON, we still need to process it similarly
+      const kode = typeof reqBody.kode === "string" ? reqBody.kode.trim() : "";
+      let url = typeof reqBody.url === "string" ? reqBody.url.trim() : "";
+      
+      // Generate URL dari kode jika kosong
+      if (!url && kode) {
+        url = "/" + kode;
+      } else if (url && !url.startsWith("/")) {
+        url = "/" + url;
+      }
+      
       payload = {
         kategori: normalizeNumber(reqBody.kategori),
         user_input: normalizeNumber(reqBody.user_input),
         nama: typeof reqBody.nama === "string" ? reqBody.nama.trim() : "",
-        kode: typeof reqBody.kode === "string" ? reqBody.kode.trim() : "",
-        url: typeof reqBody.url === "string" ? reqBody.url.trim() : "",
+        kode: kode,
+        url: url,
         deskripsi: typeof reqBody.deskripsi === "string" ? reqBody.deskripsi : "",
         harga_asli: normalizeNumber(reqBody.harga_asli),
         harga_coret: normalizeNumber(reqBody.harga_coret),
