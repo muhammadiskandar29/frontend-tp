@@ -28,6 +28,39 @@ const formatDateTime = (dateStr) => {
   });
 };
 
+// Fungsi untuk menentukan status pesanan (paid/unpaid)
+const getOrderStatus = (order) => {
+  // Cek dari is_paid
+  const isPaidValue = order.is_paid;
+  const statusValue = order.status_pembayaran || order.status;
+  
+  // Normalisasi nilai
+  const isPaid = 
+    isPaidValue === true || 
+    isPaidValue === "1" || 
+    isPaidValue === 1 ||
+    statusValue === "paid" ||
+    statusValue === "1";
+  
+  const isUnpaid = 
+    isPaidValue === false || 
+    isPaidValue === "0" || 
+    isPaidValue === 0 ||
+    statusValue === "pending" ||
+    statusValue === "0" ||
+    statusValue === "unpaid";
+  
+  if (isPaid) {
+    return { label: "Paid", className: "status-paid" };
+  }
+  if (isUnpaid) {
+    return { label: "Unpaid", className: "status-unpaid" };
+  }
+  
+  // Default jika tidak jelas
+  return { label: "Unpaid", className: "status-unpaid" };
+};
+
 export default function HistoryCustomerModal({ customer, onClose }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -69,7 +102,7 @@ export default function HistoryCustomerModal({ customer, onClose }) {
 
   return (
     <div className="modal-overlay">
-      <div className="modal-card" style={{ maxWidth: "720px" }}>
+      <div className="modal-card" style={{ maxWidth: "900px" }}>
         <div className="modal-header">
           <h2>Riwayat Order — {customer?.nama || "-"}</h2>
           <button className="modal-close" onClick={onClose} aria-label="Tutup modal">
@@ -97,25 +130,34 @@ export default function HistoryCustomerModal({ customer, onClose }) {
                 <span>Tanggal</span>
                 <span>Produk</span>
                 <span>Total</span>
+                <span>Status Pesanan</span>
                 <span>Sumber</span>
               </div>
               <div className="history-table__body">
-                {orders.map((order) => (
-                  <div className="history-table__row" key={order.id}>
-                    <div className="history-table__cell" data-label="Tanggal">
-                      {formatDateTime(order.tanggal)}
+                {orders.map((order) => {
+                  const orderStatus = getOrderStatus(order);
+                  return (
+                    <div className="history-table__row" key={order.id}>
+                      <div className="history-table__cell" data-label="Tanggal">
+                        {formatDateTime(order.tanggal)}
+                      </div>
+                      <div className="history-table__cell" data-label="Produk">
+                        {order.produk_rel?.nama || order.produk?.nama || "-"}
+                      </div>
+                      <div className="history-table__cell" data-label="Total">
+                        {formatCurrency(order.total_harga)}
+                      </div>
+                      <div className="history-table__cell" data-label="Status Pesanan">
+                        <span className={`status-badge ${orderStatus.className}`}>
+                          {orderStatus.label}
+                        </span>
+                      </div>
+                      <div className="history-table__cell" data-label="Sumber">
+                        {order.sumber || "-"}
+                      </div>
                     </div>
-                    <div className="history-table__cell" data-label="Produk">
-                      {order.produk_rel?.nama || order.produk?.nama || "-"}
-                    </div>
-                    <div className="history-table__cell" data-label="Total">
-                      {formatCurrency(order.total_harga)}
-                    </div>
-                    <div className="history-table__cell" data-label="Sumber">
-                      {order.sumber || "-"}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -145,7 +187,7 @@ export default function HistoryCustomerModal({ customer, onClose }) {
         .history-table__head,
         .history-table__row {
           display: grid;
-          grid-template-columns: 1.3fr 1fr 0.8fr 0.8fr;
+          grid-template-columns: 1.3fr 1fr 0.8fr 0.9fr 0.8fr;
         }
         .history-table__head {
           background: #f1f5f9;
@@ -201,6 +243,23 @@ export default function HistoryCustomerModal({ customer, onClose }) {
           padding: 8px 16px;
           border-radius: 8px;
           cursor: pointer;
+        }
+        .status-badge {
+          display: inline-flex;
+          align-items: center;
+          padding: 4px 12px;
+          border-radius: 12px;
+          font-size: 0.85rem;
+          font-weight: 600;
+          text-transform: uppercase;
+        }
+        .status-paid {
+          background: #dcfce7;
+          color: #166534;
+        }
+        .status-unpaid {
+          background: #fee2e2;
+          color: #991b1b;
         }
       `}</style>
     </div>
