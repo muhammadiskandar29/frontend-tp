@@ -209,8 +209,80 @@ export default function DashboardPage() {
           return item;
         })
       );
-      setActiveOrders(adaptOrders(data?.orders_aktif || [], {}));
-      setPendingOrders(adaptOrders(data?.orders_pending || [], {}, { status: "pending" }));
+      
+      // Gabungkan semua order dari orders_aktif dan orders_pending
+      // Hapus duplikat berdasarkan ID
+      const allOrdersMap = new Map();
+      
+      // Tambahkan orders_aktif
+      (data?.orders_aktif || []).forEach((order) => {
+        if (order.id) {
+          allOrdersMap.set(order.id, order);
+        }
+      });
+      
+      // Tambahkan orders_pending (jika belum ada di map)
+      (data?.orders_pending || []).forEach((order) => {
+        if (order.id && !allOrdersMap.has(order.id)) {
+          allOrdersMap.set(order.id, order);
+        }
+      });
+      
+      const allOrders = Array.from(allOrdersMap.values());
+      
+      // Pisahkan berdasarkan status pembayaran
+      const paidOrders = [];
+      const unpaidOrders = [];
+      
+      allOrders.forEach((order) => {
+        // Cek apakah order sudah dibayar
+        // Order dianggap sudah dibayar jika:
+        // - is_paid = true, "1", atau 1
+        // - status = "paid" atau "1"
+        // Order dianggap belum dibayar jika:
+        // - is_paid = false, "0", 0, atau null/undefined
+        // - status = "pending" atau "0"
+        const isPaidValue = order.is_paid;
+        const statusValue = order.status;
+        
+        // Normalisasi nilai
+        const isPaid = 
+          isPaidValue === true || 
+          isPaidValue === "1" || 
+          isPaidValue === 1 ||
+          statusValue === "paid" ||
+          statusValue === "1";
+        
+        // Jika tidak jelas, cek apakah ada indikasi belum dibayar
+        const isUnpaid = 
+          isPaidValue === false || 
+          isPaidValue === "0" || 
+          isPaidValue === 0 ||
+          statusValue === "pending" ||
+          statusValue === "0" ||
+          statusValue === 0;
+        
+        // Jika jelas sudah dibayar, masukkan ke paid
+        // Jika jelas belum dibayar, masukkan ke unpaid
+        // Jika tidak jelas, default ke unpaid (lebih aman)
+        if (isPaid) {
+          paidOrders.push(order);
+        } else {
+          unpaidOrders.push(order);
+        }
+      });
+      
+      console.log("📊 [DASHBOARD] Orders breakdown:", {
+        total: allOrders.length,
+        paid: paidOrders.length,
+        unpaid: unpaidOrders.length,
+        orders_aktif_from_api: data?.orders_aktif?.length || 0,
+        orders_pending_from_api: data?.orders_pending?.length || 0,
+        unpaid_orders: unpaidOrders.map(o => ({ id: o.id, title: o.produk_nama, is_paid: o.is_paid, status: o.status }))
+      });
+      
+      setActiveOrders(adaptOrders(paidOrders, {}));
+      setPendingOrders(adaptOrders(unpaidOrders, {}, { status: "pending" }));
       
       return customerData; // Return untuk digunakan di tempat lain
     } catch (error) {
