@@ -7,6 +7,7 @@ import { Users2, FolderOpen, Pause } from "lucide-react";
 import { createUser, deleteUser, getUsers, updateUser } from "@/lib/users";
 import "@/styles/dashboard.css";
 import "@/styles/admin.css";
+import "@/styles/users.css";
 
 // Lazy load modals
 const AddUserModal = dynamic(() => import("./addUsers"), { ssr: false });

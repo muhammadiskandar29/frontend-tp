@@ -167,7 +167,7 @@ export default function AdminKategoriPage() {
           ))}
         </section>
 
-        <section className="panel users-panel">
+        <section className="panel users-panel kategori-panel">
           <div className="panel__header">
             <div>
               <p className="panel__eyebrow">Directory</p>
