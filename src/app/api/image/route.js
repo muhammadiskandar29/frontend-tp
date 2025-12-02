@@ -1,4 +1,4 @@
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_BASE_URL || "http://3.105.234.181:8000";
+import { BACKEND_URL } from "@/config/env";
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);

@@ -144,12 +144,28 @@ export default function VerifyOrderOTPPage() {
         setTimerActive(false);
         toast.success("OTP Verified!");
 
-        // Hapus pending order dari localStorage
-        localStorage.removeItem("pending_order");
+        // Ambil orderData dari localStorage untuk memastikan data masih ada
+        // (karena state mungkin belum ter-update)
+        const storedOrder = localStorage.getItem("pending_order");
+        let currentOrderData = orderData;
+        
+        if (storedOrder) {
+          try {
+            currentOrderData = JSON.parse(storedOrder);
+            console.log("[VERIFY_ORDER] Order data from localStorage:", currentOrderData);
+          } catch (e) {
+            console.error("[VERIFY_ORDER] Error parsing stored order:", e);
+          }
+        }
+
+        // Log orderData untuk debug
+        console.log("[VERIFY_ORDER] Order data before redirect:", currentOrderData);
+        console.log("[VERIFY_ORDER] Payment method:", currentOrderData?.paymentMethod);
 
         // Redirect ke halaman pembayaran sesuai metode
+        // Jangan hapus localStorage dulu, biarkan redirectToPayment yang handle
         await new Promise((r) => setTimeout(r, 500));
-        redirectToPayment();
+        redirectToPayment(currentOrderData);
       } else {
         setMessage(result.message || "Kode OTP salah atau sudah kadaluarsa.");
       }
@@ -182,23 +198,39 @@ export default function VerifyOrderOTPPage() {
   };
 
   // Redirect ke payment sesuai metode
-  const redirectToPayment = () => {
-    if (!orderData) return;
+  const redirectToPayment = (orderDataParam = null) => {
+    // Gunakan parameter jika ada, jika tidak gunakan state
+    const dataToUse = orderDataParam || orderData;
+    
+    if (!dataToUse) {
+      console.error("[VERIFY_ORDER] Order data tidak ditemukan untuk redirect");
+      toast.error("Data order tidak ditemukan. Silakan coba lagi.");
+      return;
+    }
 
-    const { paymentMethod, productName, totalHarga } = orderData;
+    const { paymentMethod, productName, totalHarga } = dataToUse;
+
+    console.log("[VERIFY_ORDER] Redirecting to payment with method:", paymentMethod);
+
+    // Hapus pending order dari localStorage setelah data sudah diambil
+    localStorage.removeItem("pending_order");
 
     switch (paymentMethod) {
       case "ewallet":
-        callMidtrans("ewallet");
+        console.log("[VERIFY_ORDER] Calling Midtrans e-wallet");
+        callMidtrans("ewallet", dataToUse);
         break;
       case "cc":
-        callMidtrans("cc");
+        console.log("[VERIFY_ORDER] Calling Midtrans credit card");
+        callMidtrans("cc", dataToUse);
         break;
       case "va":
-        callMidtrans("va");
+        console.log("[VERIFY_ORDER] Calling Midtrans virtual account");
+        callMidtrans("va", dataToUse);
         break;
       case "manual":
       default:
+        console.log("[VERIFY_ORDER] Redirecting to manual payment page");
         // Manual transfer - langsung redirect ke payment page
         const query = new URLSearchParams({
           product: productName || "",
@@ -207,17 +239,24 @@ export default function VerifyOrderOTPPage() {
         router.push(`/payment?${query.toString()}`);
         
         // Redirect halaman verify-order kembali ke landing page dan kosongkan data
-        const landingUrl = orderData?.landingUrl || "/";
+        const landingUrl = dataToUse?.landingUrl || "/";
         clearAndRedirect(landingUrl);
         break;
     }
   };
 
   // Call Midtrans API
-  const callMidtrans = async (type) => {
-    if (!orderData) return;
+  const callMidtrans = async (type, orderDataParam = null) => {
+    // Gunakan parameter jika ada, jika tidak gunakan state
+    const dataToUse = orderDataParam || orderData;
+    
+    if (!dataToUse) {
+      console.error("[VERIFY_ORDER] Order data tidak ditemukan untuk Midtrans");
+      toast.error("Data order tidak ditemukan. Silakan coba lagi.");
+      return;
+    }
 
-    const { nama, email, totalHarga, productName } = orderData;
+    const { nama, email, totalHarga, productName } = dataToUse;
     const API_BASE = "/api";
 
     let endpoint = "";
@@ -231,7 +270,14 @@ export default function VerifyOrderOTPPage() {
       case "va":
         endpoint = `${API_BASE}/midtrans/create-snap-va`;
         break;
+      default:
+        console.error("[VERIFY_ORDER] Payment type tidak valid:", type);
+        toast.error("Metode pembayaran tidak valid");
+        return;
     }
+
+    console.log("[VERIFY_ORDER] Calling Midtrans endpoint:", endpoint);
+    console.log("[VERIFY_ORDER] Payload:", { name: nama, email, amount: totalHarga, product_name: productName });
 
     try {
       const payload = {
@@ -248,15 +294,18 @@ export default function VerifyOrderOTPPage() {
       });
 
       const json = await response.json();
+      console.log("[VERIFY_ORDER] Midtrans response:", json);
 
       if (json.redirect_url) {
+        console.log("[VERIFY_ORDER] Redirecting to Midtrans:", json.redirect_url);
         // Buka Midtrans payment page di tab baru
         window.open(json.redirect_url, "_blank");
         
         // Redirect halaman verify-order kembali ke landing page dan kosongkan data
-        const landingUrl = orderData?.landingUrl || "/";
+        const landingUrl = dataToUse?.landingUrl || "/";
         clearAndRedirect(landingUrl);
       } else {
+        console.error("[VERIFY_ORDER] Midtrans tidak mengembalikan redirect_url:", json);
         toast.error(json.message || "Gagal membuat transaksi");
         // Jika gagal, redirect ke payment page manual
         const query = new URLSearchParams({

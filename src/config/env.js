@@ -14,12 +14,12 @@ const getEnv = (key, defaultValue = '') => {
   return process.env[key] || process.env[`NEXT_PUBLIC_${key}`] || defaultValue;
 };
 
+// Backend URL - Hardcode sesuai permintaan
+export const BACKEND_URL = 'http://3.105.234.181:8000';
+
 export const config = {
-  // Backend API URL
-  backendUrl: getEnv(
-    'BACKEND_URL',
-    'http://3.105.234.181:8000'
-  ),
+  // Backend API URL - Hardcode ke URL backend yang ditentukan
+  backendUrl: BACKEND_URL,
 
   // API Base Path (untuk Next.js proxy)
   apiBasePath: getEnv('API_BASE_PATH', '/api'),

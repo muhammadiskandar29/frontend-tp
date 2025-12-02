@@ -70,11 +70,8 @@ const nextConfig = {
   },
 
   async rewrites() {
-    // Get backend URL from environment variable
-    const backendUrl =
-      process.env.BACKEND_URL ||
-      process.env.NEXT_PUBLIC_BACKEND_URL ||
-      "http://3.105.234.181:8000";
+    // Backend URL - hardcode sesuai permintaan
+    const backendUrl = "http://3.105.234.181:8000";
 
     return [
       // Biarkan route internal Next (gateway) tetap di-handle oleh Next.js

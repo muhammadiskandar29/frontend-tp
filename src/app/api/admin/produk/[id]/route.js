@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import FormData from "form-data";
 import axios from "axios";
 
-const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "http://3.105.234.181:8000";
+import { BACKEND_URL } from "@/config/env";
 
 // Handle PUT request untuk update produk (sama seperti POST handler tapi dengan PUT method)
 export async function PUT(request, { params }) {
