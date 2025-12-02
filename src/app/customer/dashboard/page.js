@@ -681,8 +681,31 @@ export default function DashboardPage() {
                   <div
                     key={`pending-${order.id}`}
                     className="order-card"
-                    style={{ border: "1px solid rgba(220,38,38,0.25)", boxShadow: "0 12px 30px rgba(220,38,38,0.08)" }}
+                    style={{ 
+                      position: "relative",
+                      border: "1px solid rgba(220,38,38,0.25)", 
+                      boxShadow: "0 12px 30px rgba(220,38,38,0.08)",
+                      opacity: 0.6,
+                      filter: "grayscale(0.5) contrast(0.8)",
+                      pointerEvents: "none",
+                      userSelect: "none"
+                    }}
                   >
+                    {/* Lock Overlay */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: "rgba(0, 0, 0, 0.05)",
+                        borderRadius: "inherit",
+                        zIndex: 1,
+                        pointerEvents: "none"
+                      }}
+                    />
+                    
                     <div className="order-card__banner">
                       <span
                         className="order-badge"
@@ -712,7 +735,7 @@ export default function DashboardPage() {
 
                     <div className="order-footer">
                       <div className="order-schedule">
-                        <span>Waktu Pelaksanaan</span>
+                        <span>Jadwal Seminar</span>
                         <strong>{order.schedule}</strong>
                         {countdownLabel && (
                           <small style={{ color: "#dc2626", fontWeight: 600 }}>
@@ -722,10 +745,50 @@ export default function DashboardPage() {
                       </div>
                       <button
                         className="order-action"
-                        style={{ backgroundColor: "#ef4444", color: "#fff" }}
+                        style={{ 
+                          backgroundColor: "#9ca3af", 
+                          color: "#fff",
+                          cursor: "not-allowed",
+                          opacity: 0.7
+                        }}
+                        disabled
                       >
-                        Bayar Sekarang
+                        {order.actionLabel}
                       </button>
+                    </div>
+
+                    {/* Lock Message */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "50%",
+                        transform: "translate(-50%, -50%)",
+                        backgroundColor: "rgba(255, 255, 255, 0.95)",
+                        padding: "16px 24px",
+                        borderRadius: "12px",
+                        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
+                        zIndex: 2,
+                        textAlign: "center",
+                        border: "2px solid #fbbf24",
+                        pointerEvents: "none"
+                      }}
+                    >
+                      <div style={{ 
+                        fontSize: "32px", 
+                        marginBottom: "8px",
+                        filter: "grayscale(1)"
+                      }}>
+                        🔒
+                      </div>
+                      <p style={{ 
+                        margin: 0, 
+                        color: "#92400e", 
+                        fontWeight: 600,
+                        fontSize: "14px"
+                      }}>
+                        Selesaikan pembayaran untuk mendapatkan akses produk tersebut
+                      </p>
                     </div>
                   </div>
                 );
