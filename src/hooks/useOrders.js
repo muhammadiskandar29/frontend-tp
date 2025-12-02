@@ -24,7 +24,7 @@ export default function useOrders({ mode = "admin" } = {}) {
       const data = await getOrders();
       setOrders(data);
     } catch (err) {
-      console.error("❌ Error fetch orders:", err);
+      console.error("Error fetch orders:", err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -32,7 +32,7 @@ export default function useOrders({ mode = "admin" } = {}) {
   }, [mode]);
 
   /* ======================
-      🔍 Get Order Detail
+      Get Order Detail
   ====================== */
   const fetchOrderById = useCallback(async (id) => {
     setLoading(true);
@@ -47,7 +47,7 @@ export default function useOrders({ mode = "admin" } = {}) {
   }, []);
 
   /* ======================
-      🟢 Create Order
+      Create Order
   ====================== */
   const createOrder = useCallback(
     async (formData) => {
@@ -81,8 +81,8 @@ export default function useOrders({ mode = "admin" } = {}) {
             notif: formData.notif ? 1 : 0,
           };
           
-          console.log("🔧 [CREATE ORDER] Has existing customer:", hasExistingCustomer);
-          console.log("🔧 [CREATE ORDER] Payload:", JSON.stringify(payload, null, 2));
+          console.log("[CREATE ORDER] Has existing customer:", hasExistingCustomer);
+          console.log("[CREATE ORDER] Payload:", JSON.stringify(payload, null, 2));
           
           res = await createOrderAdmin(payload);
         } else {
@@ -113,7 +113,7 @@ export default function useOrders({ mode = "admin" } = {}) {
   );
 
   /* ======================
-      🟡 Update Order (Admin)
+      Update Order (Admin)
   ====================== */
   const updateOrder = useCallback(async (id, data) => {
     if (mode !== "admin") return;

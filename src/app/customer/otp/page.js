@@ -74,7 +74,7 @@ export default function CustomerOTPPage() {
       });
 
       const result = await response.json();
-      console.log("📥 [OTP] Auto-send response:", result);
+      console.log("[OTP] Auto-send response:", result);
       
       if (result.success) {
         setMessage("Kode OTP telah dikirim ke WhatsApp Anda!");
@@ -199,10 +199,10 @@ export default function CustomerOTPPage() {
       });
 
       const result = await response.json();
-      console.log("📥 [OTP] Verify response:", result);
+      console.log("[OTP] Verify response:", result);
       
       if (result.success) {
-        setMessage("Verifikasi berhasil! 🎉");
+        setMessage("Verifikasi berhasil!");
         setTimerActive(false);
         toast.success("Verifikasi berhasil!");
         localStorage.setItem("customer_show_update_modal", "1");
@@ -283,7 +283,7 @@ export default function CustomerOTPPage() {
       });
 
       const result = await response.json();
-      console.log("📥 [OTP] Resend response:", result);
+      console.log("[OTP] Resend response:", result);
       
       if (result.success) {
         setMessage("Kode OTP baru telah dikirim ke WhatsApp Anda!");
@@ -323,7 +323,7 @@ export default function CustomerOTPPage() {
     <div className="otp-container">
       <div className="otp-box">
         <div className="otp-header">
-          <span className="otp-icon">🔐</span>
+          <span className="otp-icon"></span>
           <h1 className="otp-title">Verifikasi</h1>
         </div>
         
@@ -335,7 +335,7 @@ export default function CustomerOTPPage() {
         </p>
 
         <div className="otp-timer">
-          <span>⏱️</span>
+          <span></span>
           <span>
             OTP berlaku {timeLeft > 0 ? `${formatTimeLeft()}` : "(kedaluwarsa)"}
           </span>

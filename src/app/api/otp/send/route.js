@@ -17,7 +17,7 @@ export async function POST(request) {
   try {
     const body = await request.json();
 
-    console.log("🟢 [OTP_SEND] Request body:", body);
+    console.log("[OTP_SEND] Request body:", body);
 
     // Validasi request body
     if (!body?.customer_id || !body?.wa) {
@@ -48,7 +48,7 @@ export async function POST(request) {
     try {
       data = JSON.parse(responseText);
     } catch (err) {
-      console.error("❌ [OTP_SEND] Non-JSON response:", responseText);
+      console.error("[OTP_SEND] Non-JSON response:", responseText);
       return NextResponse.json(
         { success: false, message: "Backend error: Response bukan JSON" },
         { status: 500 }
@@ -56,7 +56,7 @@ export async function POST(request) {
     }
 
     if (!response.ok) {
-      console.error("❌ [OTP_SEND] Backend error:", data);
+      console.error("[OTP_SEND] Backend error:", data);
       return NextResponse.json(
         { success: false, message: data?.message || "Gagal mengirim OTP" },
         { status: response.status }
@@ -70,7 +70,7 @@ export async function POST(request) {
       data: data?.data || data,
     });
   } catch (error) {
-    console.error("❌ [OTP_SEND] Error:", error);
+    console.error("[OTP_SEND] Error:", error);
     return NextResponse.json(
       {
         success: false,

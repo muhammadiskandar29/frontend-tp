@@ -26,8 +26,8 @@ export async function POST(request) {
       product_name: product_name || 'Product',
     };
 
-    console.log('🟢 [MIDTRANS_CC] Forwarding to backend:', `${BACKEND_URL}/api/midtrans/create-snap-cc`);
-    console.log('🟢 [MIDTRANS_CC] Payload:', JSON.stringify(payload, null, 2));
+    console.log('[MIDTRANS_CC] Forwarding to backend:', `${BACKEND_URL}/api/midtrans/create-snap-cc`);
+    console.log('[MIDTRANS_CC] Payload:', JSON.stringify(payload, null, 2));
 
     const response = await fetch(`${BACKEND_URL}/api/midtrans/create-snap-cc`, {
       method: 'POST',
@@ -38,16 +38,16 @@ export async function POST(request) {
       body: JSON.stringify(payload),
     });
 
-    console.log('🟢 [MIDTRANS_CC] Backend response status:', response.status);
+    console.log('[MIDTRANS_CC] Backend response status:', response.status);
 
     const responseText = await response.text();
     let data;
 
     try {
       data = JSON.parse(responseText);
-      console.log('🟢 [MIDTRANS_CC] Backend response data:', JSON.stringify(data, null, 2));
+      console.log('[MIDTRANS_CC] Backend response data:', JSON.stringify(data, null, 2));
     } catch (err) {
-      console.error('❌ [MIDTRANS_CC] Non-JSON response:', responseText);
+      console.error('[MIDTRANS_CC] Non-JSON response:', responseText);
       return NextResponse.json(
         { success: false, message: 'Backend error: Response bukan JSON' },
         { status: 500 }
@@ -55,7 +55,7 @@ export async function POST(request) {
     }
 
     if (!response.ok) {
-      console.error('❌ Midtrans CC Backend Error:', data);
+      console.error('Midtrans CC Backend Error:', data);
       return NextResponse.json(
         {
           success: false,
@@ -71,7 +71,7 @@ export async function POST(request) {
       status: response.status,
     });
   } catch (error) {
-    console.error('❌ Midtrans CC API Proxy Error:', error);
+    console.error('Midtrans CC API Proxy Error:', error);
     return NextResponse.json(
       {
         success: false,

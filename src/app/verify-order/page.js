@@ -137,10 +137,10 @@ export default function VerifyOrderOTPPage() {
 
       const result = await response.json();
 
-      console.log("🟢 [VERIFY_ORDER] OTP Verify response:", result);
+      console.log("[VERIFY_ORDER] OTP Verify response:", result);
 
       if (result.success) {
-        setMessage("Verifikasi berhasil! 🎉");
+        setMessage("Verifikasi berhasil!");
         setTimerActive(false);
         toast.success("OTP Verified!");
 
@@ -154,7 +154,7 @@ export default function VerifyOrderOTPPage() {
         setMessage(result.message || "Kode OTP salah atau sudah kadaluarsa.");
       }
     } catch (error) {
-      console.error("❌ [VERIFY_ORDER] OTP Verify error:", error);
+      console.error("[VERIFY_ORDER] OTP Verify error:", error);
       setMessage("Terjadi kesalahan saat memverifikasi OTP.");
     } finally {
       setLoading(false);
@@ -266,7 +266,7 @@ export default function VerifyOrderOTPPage() {
         router.push(`/payment?${query.toString()}`);
       }
     } catch (err) {
-      console.error("❌ [VERIFY_ORDER] Midtrans error:", err);
+      console.error("[VERIFY_ORDER] Midtrans error:", err);
       toast.error("Terjadi kesalahan saat memproses pembayaran");
       // Jika error, redirect ke payment page manual
       const query = new URLSearchParams({
@@ -308,7 +308,7 @@ export default function VerifyOrderOTPPage() {
 
       const result = await response.json();
 
-      console.log("🟢 [VERIFY_ORDER] OTP Resend response:", result);
+      console.log("[VERIFY_ORDER] OTP Resend response:", result);
 
       if (result.success) {
         setMessage("Kode OTP baru telah dikirim ke WhatsApp Anda!");
@@ -320,7 +320,7 @@ export default function VerifyOrderOTPPage() {
         setMessage(result.message || "Gagal mengirim ulang OTP.");
       }
     } catch (error) {
-      console.error("❌ [VERIFY_ORDER] OTP Resend error:", error);
+      console.error("[VERIFY_ORDER] OTP Resend error:", error);
       setMessage("Terjadi kesalahan saat mengirim ulang OTP.");
     } finally {
       setResending(false);
@@ -331,7 +331,7 @@ export default function VerifyOrderOTPPage() {
     <div className="otp-container">
       <div className="otp-box">
         <div className="otp-header">
-          <span className="otp-icon">🔐</span>
+          <span className="otp-icon"></span>
           <h1 className="otp-title">Verifikasi Pesanan</h1>
         </div>
         
@@ -344,7 +344,7 @@ export default function VerifyOrderOTPPage() {
 
         {orderData?.productName && (
           <div className="otp-product-info">
-            <span>📦</span>
+            <span></span>
             <span>{orderData.productName}</span>
             {orderData.totalHarga && (
               <span className="otp-price">
@@ -355,7 +355,7 @@ export default function VerifyOrderOTPPage() {
         )}
 
         <div className="otp-timer">
-          <span>⏱️</span>
+          <span></span>
           <span>
             OTP berlaku {timeLeft > 0 ? `${formatTimeLeft()}` : "(kedaluwarsa)"}
           </span>

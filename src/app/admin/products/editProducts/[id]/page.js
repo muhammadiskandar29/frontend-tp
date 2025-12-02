@@ -1080,7 +1080,7 @@ export default function Page() {
             {/* NAMA PRODUK */}
             <div className="form-field-group">
               <label className="form-label">
-                <span className="label-icon">📦</span>
+                <span className="label-icon"></span>
                 Nama Produk <span className="required">*</span>
               </label>
               <InputText
@@ -1104,7 +1104,7 @@ export default function Page() {
             {/* KATEGORI */}
             <div className="form-field-group">
               <label className="form-label">
-                <span className="label-icon">🏷️</span>
+                <span className="label-icon"></span>
                 Kategori <span className="required">*</span>
               </label>
               <Dropdown
@@ -1123,7 +1123,7 @@ export default function Page() {
             <div className="grid grid-cols-2 gap-4">
               <div className="form-field-group">
                 <label className="form-label">
-                  <span className="label-icon">🔗</span>
+                  <span className="label-icon"></span>
                   Kode Produk (Slug)
                 </label>
                 <InputText
@@ -1137,7 +1137,7 @@ export default function Page() {
               </div>
               <div className="form-field-group">
                 <label className="form-label">
-                  <span className="label-icon">🌐</span>
+                  <span className="label-icon"></span>
                   URL
                 </label>
                 <InputText
@@ -1159,14 +1159,14 @@ export default function Page() {
         {/* SECTION 2: Media & Konten */}
         <div className="form-section-card">
           <div className="section-header">
-            <h3 className="section-title">🖼️ Media & Konten</h3>
+            <h3 className="section-title">Media & Konten</h3>
             <p className="section-description">Gambar, deskripsi, dan konten produk</p>
           </div>
           <div className="section-content">
             {/* HEADER IMAGE */}
             <div className="form-field-group">
               <label className="form-label">
-                <span className="label-icon">🖼️</span>
+                <span className="label-icon"></span>
                 Header Image
               </label>
               <div className="file-upload-card">
@@ -1202,7 +1202,7 @@ export default function Page() {
             {/* DESKRIPSI */}
             <div className="form-field-group">
               <label className="form-label">
-                <span className="label-icon">📝</span>
+                <span className="label-icon"></span>
                 Deskripsi Produk
               </label>
               <InputTextarea
@@ -1268,7 +1268,7 @@ export default function Page() {
         {/* SECTION 3: Gallery */}
         <div className="form-section-card">
           <div className="section-header">
-            <h3 className="section-title">🖼️ Gallery Produk</h3>
+            <h3 className="section-title">Gallery Produk</h3>
             <p className="section-description">Tambah gambar produk dengan caption</p>
           </div>
           <div className="section-content">
@@ -1345,7 +1345,7 @@ export default function Page() {
         {/* SECTION 4: Testimoni */}
         <div className="form-section-card">
           <div className="section-header">
-            <h3 className="section-title">⭐ Testimoni</h3>
+            <h3 className="section-title">Testimoni</h3>
             <p className="section-description">Tambah testimoni dari pembeli</p>
           </div>
           <div className="section-content">
@@ -1466,7 +1466,7 @@ export default function Page() {
             {/* LIST POINT */}
             <div className="form-field-group">
               <label className="form-label">
-                <span className="label-icon">✅</span>
+                <span className="label-icon"></span>
                 List Point (Benefit)
               </label>
               {form.list_point.map((p, i) => (
@@ -1600,7 +1600,7 @@ export default function Page() {
         {/* SECTION 8: Pengaturan */}
         <div className="form-section-card">
           <div className="section-header">
-            <h3 className="section-title">⚙️ Pengaturan</h3>
+            <h3 className="section-title">Pengaturan</h3>
             <p className="section-description">Assign user, landing page, dan status produk</p>
           </div>
           <div className="section-content">

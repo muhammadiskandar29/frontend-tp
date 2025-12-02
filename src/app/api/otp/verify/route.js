@@ -21,14 +21,14 @@ export async function POST(request) {
       );
     }
 
-    // 🔐 Generate timestamp & HMAC SHA256 (harus sama dengan backend)
+    // Generate timestamp & HMAC SHA256 (harus sama dengan backend)
     const timestamp = Math.floor(Date.now() / 1000).toString();
     const hash = CryptoJS.HmacSHA256(timestamp, SECRET_KEY).toString(
       CryptoJS.enc.Hex
     );
 
-    console.log("🟢 [OTP_VERIFY] Timestamp:", timestamp);
-    console.log("🟢 [OTP_VERIFY] Hash:", hash);
+    console.log("[OTP_VERIFY] Timestamp:", timestamp);
+    console.log("[OTP_VERIFY] Hash:", hash);
 
     // Kirim ke backend
     const response = await fetch(`${BACKEND_URL}/api/otp/verify`, {
@@ -51,7 +51,7 @@ export async function POST(request) {
     try {
       data = JSON.parse(text);
     } catch (err) {
-      console.error("❌ Response bukan JSON:", text);
+      console.error("Response bukan JSON:", text);
       return NextResponse.json(
         { success: false, message: "Backend error: Invalid JSON" },
         { status: 500 }
@@ -74,7 +74,7 @@ export async function POST(request) {
       data: data?.data || data,
     });
   } catch (error) {
-    console.error("❌ [OTP_VERIFY] Error:", error);
+    console.error("[OTP_VERIFY] Error:", error);
     return NextResponse.json(
       { success: false, message: error.message },
       { status: 500 }

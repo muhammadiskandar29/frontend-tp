@@ -33,7 +33,7 @@ export async function POST(request) {
     const token = authHeader.replace("Bearer ", "");
     const body = await request.json();
 
-    console.log("📤 [ORDER_ADMIN] Payload masuk:", JSON.stringify(body, null, 2));
+    console.log("[ORDER_ADMIN] Payload masuk:", JSON.stringify(body, null, 2));
 
     const errors = [];
     REQUIRED_FIELDS.forEach((field) => {
@@ -87,7 +87,7 @@ export async function POST(request) {
       cleanPayload.email = body.email ? String(body.email).trim() : "";
     }
 
-    console.log("📤 [ORDER_ADMIN] Payload ke backend:", JSON.stringify(cleanPayload, null, 2));
+    console.log("[ORDER_ADMIN] Payload ke backend:", JSON.stringify(cleanPayload, null, 2));
 
     const response = await fetch(`${BACKEND_URL}/api/admin/order-admin`, {
       method: "POST",
@@ -101,7 +101,7 @@ export async function POST(request) {
 
     const data = await response.json().catch(() => ({}));
 
-    console.log("📥 [ORDER_ADMIN] Response backend:", JSON.stringify(data, null, 2));
+    console.log("[ORDER_ADMIN] Response backend:", JSON.stringify(data, null, 2));
 
     const isUndefinedFieldError =
       response.status === 500 &&
@@ -109,7 +109,7 @@ export async function POST(request) {
         data?.error === "ErrorException");
 
     if (isUndefinedFieldError) {
-      console.warn("⚠️ [ORDER_ADMIN] Backend kirim error $field, dianggap success dengan warning");
+      console.warn("[ORDER_ADMIN] Backend kirim error $field, dianggap success dengan warning");
       return NextResponse.json({
         success: true,
         message: "Order berhasil dibuat, namun backend mengirim peringatan.",
@@ -131,7 +131,7 @@ export async function POST(request) {
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error("❌ [ORDER_ADMIN] Error:", error);
+    console.error("[ORDER_ADMIN] Error:", error);
     return NextResponse.json(
       { success: false, message: error.message || "Terjadi kesalahan saat membuat order" },
       { status: 500 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import useOrders from "@/hooks/useOrders";
-import { api } from "@/lib/api"; // ✅ supaya handleSearchCustomer & handleSearchProduct ikut pakai api()
+import { api } from "@/lib/api"; // supaya handleSearchCustomer & handleSearchProduct ikut pakai api()
 import "@/styles/pesanan.css";
 
 export default function AddOrders({ onClose, onAdd, showToast }) {
@@ -29,7 +29,7 @@ export default function AddOrders({ onClose, onAdd, showToast }) {
   const [message, setMessage] = useState("");
   const { createOrder } = useOrders();
 
-  // === 🔍 Search Customer pakai api() ===
+  // === Search Customer pakai api() ===
   const handleSearchCustomer = async (keyword) => {
     setCustomerSearch(keyword);
     if (!keyword.trim()) return setCustomerResults([]);
@@ -46,7 +46,7 @@ export default function AddOrders({ onClose, onAdd, showToast }) {
     }
   };
 
-  // === 🔍 Search Produk pakai api() ===
+  // === Search Produk pakai api() ===
   const handleSearchProduct = async (keyword) => {
     setProductSearch(keyword);
     if (!keyword.trim()) return setProductResults([]);
@@ -101,7 +101,7 @@ export default function AddOrders({ onClose, onAdd, showToast }) {
     setShowCustomerForm(true);
   };
 
-  // === 📦 Pilih Produk ===
+  // === Pilih Produk ===
   const handleSelectProduct = (prod) => {
     setFormData((prev) => ({
       ...prev,
@@ -113,7 +113,7 @@ export default function AddOrders({ onClose, onAdd, showToast }) {
     setProductResults([]);
   };
 
-  // === ✏️ Handle Change ===
+  // === Handle Change ===
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
@@ -152,23 +152,23 @@ export default function AddOrders({ onClose, onAdd, showToast }) {
       total_harga: String(formData.total_harga ?? "0"),
     };
 
-    console.log("📤 [ADD_ORDERS] Payload sebelum kirim:", JSON.stringify(payload, null, 2));
+    console.log("[ADD_ORDERS] Payload sebelum kirim:", JSON.stringify(payload, null, 2));
 
     const res = await createOrder(payload);
 
     if (res?.success) {
       // Sukses tanpa warning
-      showToast?.(res?.message || "✅ Order berhasil dibuat!", "success");
+      showToast?.(res?.message || "Order berhasil dibuat!", "success");
       onAdd?.(res.data);
       onClose?.();
     } else if (res?.warning && res?.data) {
       // Sukses dengan warning (tetap lanjut, tapi beri tahu)
-      console.warn("⚠️ Order warning:", res.warning);
-      showToast?.("✅ Order berhasil dibuat!", "success");
+      console.warn("Order warning:", res.warning);
+      showToast?.("Order berhasil dibuat!", "success");
       onAdd?.(res.data);
       onClose?.();
     } else {
-      showToast?.(res?.message || "❌ Gagal membuat order.", "error");
+      showToast?.(res?.message || "Gagal membuat order.", "error");
     }
 
     setLoading(false);

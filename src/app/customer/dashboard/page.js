@@ -13,8 +13,8 @@ export default function DashboardPage() {
   const [updateModalReason, setUpdateModalReason] = useState("password");
   const [isDashboardLocked, setIsDashboardLocked] = useState(false); // Untuk lock dashboard saat form muncul
   const [stats, setStats] = useState([
-    { id: "total", label: "Total Order", value: 0, icon: "🧾" },
-    { id: "active", label: "Order Aktif", value: 0, icon: "✅" },
+    { id: "total", label: "Total Order", value: 0, icon: "" },
+    { id: "active", label: "Order Aktif", value: 0, icon: "" },
   ]);
   const [activeOrders, setActiveOrders] = useState([]);
   const [pendingOrders, setPendingOrders] = useState([]);
@@ -183,8 +183,8 @@ export default function DashboardPage() {
             : (existingUser.verifikasi !== undefined ? existingUser.verifikasi : "0"),
         };
         localStorage.setItem("customer_user", JSON.stringify(updatedUser));
-        console.log("✅ [DASHBOARD] Customer data synced to localStorage:", updatedUser);
-        console.log("✅ [DASHBOARD] Key field for modal check:", {
+        console.log("[DASHBOARD] Customer data synced to localStorage:", updatedUser);
+        console.log("[DASHBOARD] Key field for modal check:", {
           verifikasi: updatedUser.verifikasi,
           isVerified: updatedUser.verifikasi === "1" || updatedUser.verifikasi === 1
         });
@@ -195,7 +195,7 @@ export default function DashboardPage() {
       } else {
         // Jika tidak ada customerData dari API, tetap gunakan existing customerInfo
         // Jangan overwrite dengan null
-        console.log("⚠️ [DASHBOARD] No customer data from API, keeping existing customerInfo");
+        console.log("[DASHBOARD] No customer data from API, keeping existing customerInfo");
       }
       
       setStats((prev) =>
@@ -272,7 +272,7 @@ export default function DashboardPage() {
         }
       });
       
-      console.log("📊 [DASHBOARD] Orders breakdown:", {
+      console.log("[DASHBOARD] Orders breakdown:", {
         total: allOrders.length,
         paid: paidOrders.length,
         unpaid: unpaidOrders.length,
@@ -286,7 +286,7 @@ export default function DashboardPage() {
       
       return customerData; // Return untuk digunakan di tempat lain
     } catch (error) {
-      console.error("❌ [DASHBOARD] Failed to load data:", error);
+      console.error("[DASHBOARD] Failed to load data:", error);
       setDashboardError(error.message || "Gagal memuat data dashboard.");
       return null;
     } finally {
@@ -300,7 +300,7 @@ export default function DashboardPage() {
   // TIDAK ADA LOGIKA OTP VERIFICATION DI SINI - semua validasi menggunakan verifikasi form customer
   const checkAndShowCustomerForm = useCallback((user) => {
     if (!user) {
-      console.log("⚠️ [DASHBOARD] No user data");
+      console.log("[DASHBOARD] No user data");
       return;
     }
 
@@ -311,7 +311,7 @@ export default function DashboardPage() {
     const normalizedVerifikasi = verifikasiValue === "1" ? 1 : verifikasiValue === "0" ? 0 : verifikasiValue;
     const hasFilledForm = normalizedVerifikasi === 1 || normalizedVerifikasi === true;
 
-    console.log("🔍 [DASHBOARD] Checking user data:", {
+    console.log("[DASHBOARD] Checking user data:", {
       verifikasi: user.verifikasi,
       hasFilledForm,
       meaning: hasFilledForm ? "Sudah mengisi form customer" : "Belum mengisi form customer"
@@ -319,14 +319,14 @@ export default function DashboardPage() {
 
     // Jika sudah mengisi form (verifikasi = 1), tidak perlu tampilkan form
     if (hasFilledForm) {
-      console.log("✅ [DASHBOARD] User sudah mengisi form (verifikasi = 1), tidak perlu tampilkan form");
+      console.log("[DASHBOARD] User sudah mengisi form (verifikasi = 1), tidak perlu tampilkan form");
       setShowUpdateModal(false);
       return;
     }
 
     // Jika belum mengisi form (verifikasi = 0), tampilkan form customer untuk diisi
     if (!hasFilledForm) {
-      console.log("⚠️ [DASHBOARD] User belum mengisi form (verifikasi = 0), tampilkan form customer");
+      console.log("[DASHBOARD] User belum mengisi form (verifikasi = 0), tampilkan form customer");
       setUpdateModalReason("incomplete");
       setShowUpdateModal(true);
     }
@@ -345,14 +345,14 @@ export default function DashboardPage() {
       });
 
       const result = await response.json();
-      console.log("📥 [DASHBOARD] Customer profile response:", result);
+      console.log("[DASHBOARD] Customer profile response:", result);
 
       if (response.ok && result?.success && result?.data) {
         return result.data;
       }
       return null;
     } catch (error) {
-      console.error("❌ [DASHBOARD] Failed to fetch customer profile:", error);
+      console.error("[DASHBOARD] Failed to fetch customer profile:", error);
       return null;
     }
   }, []);
@@ -374,8 +374,8 @@ export default function DashboardPage() {
       // Fetch customer profile langsung untuk mendapatkan data lengkap (termasuk nama_panggilan, profesi)
       const customerProfile = await fetchCustomerProfile(session.token);
       
-      console.log("📊 [DASHBOARD] Dashboard customer data:", dashboardCustomerData);
-      console.log("📊 [DASHBOARD] Customer profile data:", customerProfile);
+      console.log("[DASHBOARD] Dashboard customer data:", dashboardCustomerData);
+      console.log("[DASHBOARD] Customer profile data:", customerProfile);
       
       // Gabungkan data dari berbagai sumber
       // Prioritas: customerProfile > dashboardCustomerData > session.user
@@ -387,8 +387,8 @@ export default function DashboardPage() {
         verifikasi: customerProfile?.verifikasi || dashboardCustomerData?.verifikasi || session.user?.verifikasi,
       };
       
-      console.log("📊 [DASHBOARD] Merged customer data:", mergedCustomerData);
-      console.log("📊 [DASHBOARD] Key field for modal check:", {
+      console.log("[DASHBOARD] Merged customer data:", mergedCustomerData);
+      console.log("[DASHBOARD] Key field for modal check:", {
         verifikasi: mergedCustomerData.verifikasi,
         isVerified: mergedCustomerData.verifikasi === "1" || mergedCustomerData.verifikasi === 1
       });
@@ -396,7 +396,7 @@ export default function DashboardPage() {
       // Update localStorage dengan data lengkap
       if (mergedCustomerData && (mergedCustomerData.id || mergedCustomerData.nama)) {
         localStorage.setItem("customer_user", JSON.stringify(mergedCustomerData));
-        console.log("✅ [DASHBOARD] Customer data synced to localStorage");
+        console.log("[DASHBOARD] Customer data synced to localStorage");
       }
       
       // Cek verifikasi terlebih dahulu sebelum check modal
@@ -408,7 +408,7 @@ export default function DashboardPage() {
         verifikasiValue === 1 ||
         verifikasiValue === true;
       
-      console.log("🔍 [DASHBOARD] Verifikasi check:", {
+      console.log("[DASHBOARD] Verifikasi check:", {
         verifikasiValue,
         isUserVerified,
         meaning: isUserVerified ? "Sudah mengisi form" : "Belum mengisi form"
@@ -416,13 +416,13 @@ export default function DashboardPage() {
       
       // Jika sudah verifikasi (sudah mengisi form), pastikan modal tidak muncul
       if (isUserVerified) {
-        console.log("✅ [DASHBOARD] User sudah mengisi form (verifikasi = 1), tidak perlu tampilkan form lagi");
+        console.log("[DASHBOARD] User sudah mengisi form (verifikasi = 1), tidak perlu tampilkan form lagi");
         setShowUpdateModal(false);
         // Hapus pending update modal jika ada
         localStorage.removeItem("customer_show_update_modal");
       } else {
         // Jika belum verifikasi (belum mengisi form), tampilkan form customer untuk diisi
-        console.log("⚠️ [DASHBOARD] User belum mengisi form (verifikasi = 0), perlu tampilkan form");
+        console.log("[DASHBOARD] User belum mengisi form (verifikasi = 0), perlu tampilkan form");
         
         // Tampilkan form customer langsung (tidak perlu OTP verification)
         // Semua validasi menggunakan verifikasi form customer saja
@@ -435,13 +435,13 @@ export default function DashboardPage() {
 
   // Handler untuk membuka form customer (UpdateCustomerModal)
   const handleOpenCustomerForm = () => {
-    console.log("📤 [DASHBOARD] Opening customer form modal");
+    console.log("[DASHBOARD] Opening customer form modal");
     setShowUpdateModal(true);
     setUpdateModalReason("incomplete");
   };
 
   const handleUpdateSuccess = (data) => {
-    console.log("✅ [DASHBOARD] Update success, data received:", data);
+      console.log("[DASHBOARD] Update success, data received:", data);
 
     const session = getCustomerSession();
     if (session.user) {
@@ -462,8 +462,8 @@ export default function DashboardPage() {
         alamat: data?.alamat || session.user.alamat,
       };
 
-      console.log("✅ [DASHBOARD] Updated user data:", updatedUser);
-      console.log("✅ [DASHBOARD] Verifikasi updated to:", verifikasiFromResponse);
+      console.log("[DASHBOARD] Updated user data:", updatedUser);
+      console.log("[DASHBOARD] Verifikasi updated to:", verifikasiFromResponse);
       localStorage.setItem("customer_user", JSON.stringify(updatedUser));
       
       // Update customerInfo state juga - HARUS dilakukan SEBELUM loadDashboardData
@@ -472,7 +472,7 @@ export default function DashboardPage() {
       
       // Pastikan customerInfo sudah di-update dengan verifikasi = "1"
       // Ini akan membuat isUserVerified() langsung return true pada render berikutnya
-      console.log("✅ [DASHBOARD] customerInfo state updated with verifikasi =", verifikasiFromResponse);
+      console.log("[DASHBOARD] customerInfo state updated with verifikasi =", verifikasiFromResponse);
     }
 
     // Hapus semua modal flags
@@ -487,15 +487,15 @@ export default function DashboardPage() {
     // loadDashboardData akan fetch data terbaru dari API, tapi customerInfo sudah di-update
     // sehingga tidak akan overwrite dengan data lama
     loadDashboardData().then(() => {
-      console.log("✅ [DASHBOARD] Dashboard data refreshed after form submission");
-      console.log("✅ [DASHBOARD] isUserVerified() should now return true");
+      console.log("[DASHBOARD] Dashboard data refreshed after form submission");
+      console.log("[DASHBOARD] isUserVerified() should now return true");
       
       // Double check: pastikan customerInfo masih memiliki verifikasi = "1"
       // Jika loadDashboardData mengembalikan data dengan verifikasi = "1", 
       // maka customerInfo akan tetap benar
       const session = getCustomerSession();
       const currentCustomerInfo = customerInfo || session.user;
-      console.log("✅ [DASHBOARD] Final verifikasi check:", {
+      console.log("[DASHBOARD] Final verifikasi check:", {
         customerInfo_verifikasi: customerInfo?.verifikasi,
         sessionUser_verifikasi: session.user?.verifikasi,
         isUserVerified: isUserVerified()
@@ -537,7 +537,7 @@ export default function DashboardPage() {
     // Prioritaskan customerInfo (data terbaru dari API), lalu session.user
     const customerData = customerInfo || session.user;
     if (!customerData) {
-      console.log("🔍 [isUserVerified] No customer data found");
+      console.log("[isUserVerified] No customer data found");
       return false;
     }
     
@@ -545,7 +545,7 @@ export default function DashboardPage() {
     
     // Normalisasi yang lebih robust: handle string "1"/"0", number 1/0, boolean true/false, dan null/undefined
     if (verifikasiValue === null || verifikasiValue === undefined) {
-      console.log("🔍 [isUserVerified] Verifikasi value is null/undefined:", { verifikasiValue, customerData });
+      console.log("[isUserVerified] Verifikasi value is null/undefined:", { verifikasiValue, customerData });
       return false;
     }
     
@@ -562,7 +562,7 @@ export default function DashboardPage() {
       verifikasiStr === "True"
     );
     
-    console.log("🔍 [isUserVerified] Check result:", {
+    console.log("[isUserVerified] Check result:", {
       verifikasiValue,
       verifikasiStr,
       verifikasiNum,
@@ -639,7 +639,7 @@ export default function DashboardPage() {
               e.target.style.boxShadow = "0 2px 8px rgba(220, 53, 69, 0.2)";
             }}
           >
-            🚪 Logout
+            Logout
           </button>
         </header>
 

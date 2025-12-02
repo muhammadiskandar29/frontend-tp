@@ -10,8 +10,8 @@ export async function POST(request) {
     const body = await request.json();
     const backendUrl = getBackendUrl('/login');
     
-    console.log('🔵 [LOGIN_PROXY] Backend URL:', backendUrl);
-    console.log('🔵 [LOGIN_PROXY] Request body:', { email: body.email, password: '***' });
+    console.log('[LOGIN_PROXY] Backend URL:', backendUrl);
+    console.log('[LOGIN_PROXY] Request body:', { email: body.email, password: '***' });
     
     const response = await fetch(backendUrl, {
       method: 'POST',
@@ -28,7 +28,7 @@ export async function POST(request) {
     try {
       data = JSON.parse(responseText);
     } catch (parseError) {
-      console.error('❌ [LOGIN_PROXY] Non-JSON response:', responseText);
+      console.error('[LOGIN_PROXY] Non-JSON response:', responseText);
       return NextResponse.json(
         { 
           success: false, 
@@ -39,14 +39,14 @@ export async function POST(request) {
       );
     }
 
-    console.log('🟢 [LOGIN_PROXY] Response status:', response.status);
-    console.log('🟢 [LOGIN_PROXY] Response data:', data);
+    console.log('[LOGIN_PROXY] Response status:', response.status);
+    console.log('[LOGIN_PROXY] Response data:', data);
 
     return NextResponse.json(data, {
       status: response.status,
     });
   } catch (error) {
-    console.error('❌ [LOGIN_PROXY] Error:', error);
+    console.error('[LOGIN_PROXY] Error:', error);
     return NextResponse.json(
       { 
         success: false, 
