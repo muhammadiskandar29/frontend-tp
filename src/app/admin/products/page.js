@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, memo, useCallback } from "react";
 import Layout from "@/components/Layout";
 import { useProducts } from "@/hooks/useProducts";
 import { useRouter } from "next/navigation";
+import { Package, CheckCircle, Search } from "lucide-react";
 import DeleteProductModal from "./deleteProductModal";
 import "@/styles/dashboard.css";
 import "@/styles/admin.css";
@@ -127,19 +128,19 @@ export default function AdminProductsPage() {
               label: "Total products",
               value: products.length,
               accent: "accent-blue",
-              icon: "",
+              icon: <Package size={22} />,
             },
             {
               label: "Active products",
               value: products.filter((p) => p.status === "1").length,
               accent: "accent-emerald",
-              icon: "",
+              icon: <CheckCircle size={22} />,
             },
             {
               label: "Filtered",
               value: filtered.length,
               accent: "accent-amber",
-              icon: "",
+              icon: <Search size={22} />,
             },
           ].map((card) => (
             <article className="summary-card" key={card.label}>

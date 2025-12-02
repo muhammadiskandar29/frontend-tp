@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useCallback, memo } from "react";
 import Layout from "@/components/Layout";
 import dynamic from "next/dynamic";
+import { FileText, CheckCircle, Settings } from "lucide-react";
 import { getFollowupTemplates } from "@/lib/followup";
 import "@/styles/dashboard.css";
 import "@/styles/admin.css";
@@ -117,19 +118,19 @@ useEffect(() => {
       label: "Total templates",
       value: templates.length,
       accent: "accent-indigo",
-      icon: "",
+      icon: <FileText size={22} />,
     },
     {
       label: "Active templates",
       value: filteredTemplates.length,
       accent: "accent-emerald",
-      icon: "",
+      icon: <CheckCircle size={22} />,
     },
     {
       label: "Pending edits",
       value: templates.filter((t) => t.status !== "1").length,
       accent: "accent-amber",
-      icon: "",
+      icon: <Settings size={22} />,
     },
   ];
 

@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import Layout from "@/components/Layout";
 import dynamic from "next/dynamic";
+import { FolderOpen, Search } from "lucide-react";
 import useKategori from "@/hooks/useKategori";
 import { toast } from "react-hot-toast";
 import "@/styles/dashboard.css";
@@ -147,13 +148,13 @@ export default function AdminKategoriPage() {
               label: "Total categories",
               value: kategori.length,
               accent: "accent-blue",
-              icon: "",
+              icon: <FolderOpen size={22} />,
             },
             {
               label: "Filtered",
               value: filtered.length,
               accent: "accent-amber",
-              icon: "",
+              icon: <Search size={22} />,
             },
           ].map((card) => (
             <article className="summary-card" key={card.label}>

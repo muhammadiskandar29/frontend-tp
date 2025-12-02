@@ -214,12 +214,12 @@ export default function EditUserModal({ user, onClose, onSave }) {
       return;
     }
 
-    // ⚠️ WARNING: Jika email berubah, konfirmasi dulu
+    // WARNING: Jika email berubah, konfirmasi dulu
     const originalEmail = user?.email?.toLowerCase().trim();
     const newEmail = formData.email.toLowerCase().trim();
     if (originalEmail && newEmail && originalEmail !== newEmail) {
       const confirmed = window.confirm(
-        `⚠️ PERINGATAN: Email akan diubah dari "${user.email}" ke "${formData.email}".\n\n` +
+        `PERINGATAN: Email akan diubah dari "${user.email}" ke "${formData.email}".\n\n` +
         `IMPORTANT: Pastikan backend juga mengupdate email di tabel authentication/login.\n\n` +
         `Jika tidak, user tidak bisa login dengan email baru dan harus tetap pakai email lama.\n\n` +
         `Lanjutkan perubahan email?`
@@ -243,7 +243,7 @@ export default function EditUserModal({ user, onClose, onSave }) {
       no_telp: formData.no_telp.trim(),
     };
 
-    console.log("🟡 Payload update user:", payload);
+    console.log("Payload update user:", payload);
 
     try {
       await onSave(payload);
@@ -341,7 +341,7 @@ export default function EditUserModal({ user, onClose, onSave }) {
                         marginBottom: "0.25rem",
                       }}
                     >
-                      ⚠️ Email akan diubah dari "{user?.email}" ke "{formData.email}"
+                      Email akan diubah dari "{user?.email}" ke "{formData.email}"
                     </p>
                     <p
                       style={{

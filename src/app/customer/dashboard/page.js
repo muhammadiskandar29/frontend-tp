@@ -17,7 +17,6 @@ export default function DashboardPage() {
     { id: "active", label: "Order Aktif", value: 0, icon: "" },
   ]);
   const [activeOrders, setActiveOrders] = useState([]);
-  const [pendingOrders, setPendingOrders] = useState([]);
   const [customerInfo, setCustomerInfo] = useState(null);
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [dashboardError, setDashboardError] = useState("");
@@ -121,12 +120,6 @@ export default function DashboardPage() {
       const actionLabel = getActionLabel(kategoriNama);
 
       const startDate = getOrderStartDate(order);
-      const requiresPayment =
-        status === "pending" ||
-        order.status === "pending" ||
-        order.status === "0" ||
-        order.is_paid === false;
-
       return {
         id: order.id,
         type: typeLabel,
@@ -137,7 +130,6 @@ export default function DashboardPage() {
         orderDate: order.tanggal_order || "-",
         schedule,
         actionLabel,
-        requiresPayment,
         startDate,
       };
     });
@@ -230,59 +222,8 @@ export default function DashboardPage() {
       
       const allOrders = Array.from(allOrdersMap.values());
       
-      // Pisahkan berdasarkan status pembayaran
-      const paidOrders = [];
-      const unpaidOrders = [];
-      
-      allOrders.forEach((order) => {
-        // Cek apakah order sudah dibayar
-        // Order dianggap sudah dibayar jika:
-        // - is_paid = true, "1", atau 1
-        // - status = "paid" atau "1"
-        // Order dianggap belum dibayar jika:
-        // - is_paid = false, "0", 0, atau null/undefined
-        // - status = "pending" atau "0"
-        const isPaidValue = order.is_paid;
-        const statusValue = order.status;
-        
-        // Normalisasi nilai
-        const isPaid = 
-          isPaidValue === true || 
-          isPaidValue === "1" || 
-          isPaidValue === 1 ||
-          statusValue === "paid" ||
-          statusValue === "1";
-        
-        // Jika tidak jelas, cek apakah ada indikasi belum dibayar
-        const isUnpaid = 
-          isPaidValue === false || 
-          isPaidValue === "0" || 
-          isPaidValue === 0 ||
-          statusValue === "pending" ||
-          statusValue === "0" ||
-          statusValue === 0;
-        
-        // Jika jelas sudah dibayar, masukkan ke paid
-        // Jika jelas belum dibayar, masukkan ke unpaid
-        // Jika tidak jelas, default ke unpaid (lebih aman)
-        if (isPaid) {
-          paidOrders.push(order);
-        } else {
-          unpaidOrders.push(order);
-        }
-      });
-      
-      console.log("[DASHBOARD] Orders breakdown:", {
-        total: allOrders.length,
-        paid: paidOrders.length,
-        unpaid: unpaidOrders.length,
-        orders_aktif_from_api: data?.orders_aktif?.length || 0,
-        orders_pending_from_api: data?.orders_pending?.length || 0,
-        unpaid_orders: unpaidOrders.map(o => ({ id: o.id, title: o.produk_nama, is_paid: o.is_paid, status: o.status }))
-      });
-      
-      setActiveOrders(adaptOrders(paidOrders, {}));
-      setPendingOrders(adaptOrders(unpaidOrders, {}, { status: "pending" }));
+      // Tampilkan semua order tanpa filter pembayaran
+      setActiveOrders(adaptOrders(allOrders, {}));
       
       return customerData; // Return untuk digunakan di tempat lain
     } catch (error) {
@@ -735,7 +676,7 @@ export default function DashboardPage() {
             )}
 
             {/* Tampilkan order list hanya jika sudah verifikasi */}
-            {!dashboardLoading && isUserVerified() && pendingOrders.length === 0 && activeOrders.length === 0 && (
+            {!dashboardLoading && isUserVerified() && activeOrders.length === 0 && (
               <div className="order-card">
                 <div className="order-body">
                   <div>
@@ -745,126 +686,6 @@ export default function DashboardPage() {
                 </div>
               </div>
             )}
-
-            {!dashboardLoading && isUserVerified() &&
-              pendingOrders.map((order) => {
-                const countdownLabel = getCountdownLabel(order);
-                return (
-                  <div
-                    key={`pending-${order.id}`}
-                    className="order-card"
-                    style={{ 
-                      position: "relative",
-                      border: "1px solid rgba(220,38,38,0.25)", 
-                      boxShadow: "0 12px 30px rgba(220,38,38,0.08)",
-                      opacity: 0.6,
-                      filter: "grayscale(0.5) contrast(0.8)",
-                      pointerEvents: "none",
-                      userSelect: "none"
-                    }}
-                  >
-                    {/* Lock Overlay */}
-                    <div
-                      style={{
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        backgroundColor: "rgba(0, 0, 0, 0.05)",
-                        borderRadius: "inherit",
-                        zIndex: 1,
-                        pointerEvents: "none"
-                      }}
-                    />
-                    
-                    <div className="order-card__banner">
-                      <span
-                        className="order-badge"
-                        style={{ backgroundColor: "#fef3c7", color: "#92400e", border: "1px solid #fcd34d" }}
-                      >
-                        Menunggu Pembayaran
-                      </span>
-                    </div>
-
-                    <div className="order-body">
-                      <div>
-                        <h3>{order.title}</h3>
-                        <p>{order.slug}</p>
-                      </div>
-
-                      <div className="order-meta">
-                        <div>
-                          <p>Total Harga</p>
-                          <strong>{order.total}</strong>
-                        </div>
-                        <div>
-                          <p>Tanggal Order</p>
-                          <strong>{order.orderDate}</strong>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="order-footer">
-                      <div className="order-schedule">
-                        <span>Jadwal Seminar</span>
-                        <strong>{order.schedule}</strong>
-                        {countdownLabel && (
-                          <small style={{ color: "#dc2626", fontWeight: 600 }}>
-                            Sisa waktu: {countdownLabel}
-                          </small>
-                        )}
-                      </div>
-                      <button
-                        className="order-action"
-                        style={{ 
-                          backgroundColor: "#9ca3af", 
-                          color: "#fff",
-                          cursor: "not-allowed",
-                          opacity: 0.7
-                        }}
-                        disabled
-                      >
-                        {order.actionLabel}
-                      </button>
-                    </div>
-
-                    {/* Lock Message */}
-                    <div
-                      style={{
-                        position: "absolute",
-                        top: "50%",
-                        left: "50%",
-                        transform: "translate(-50%, -50%)",
-                        backgroundColor: "rgba(255, 255, 255, 0.95)",
-                        padding: "16px 24px",
-                        borderRadius: "12px",
-                        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
-                        zIndex: 2,
-                        textAlign: "center",
-                        border: "2px solid #fbbf24",
-                        pointerEvents: "none"
-                      }}
-                    >
-                      <div style={{ 
-                        fontSize: "32px", 
-                        marginBottom: "8px",
-                        filter: "grayscale(1)"
-                      }}>
-                        🔒
-                      </div>
-                      <p style={{ 
-                        margin: 0, 
-                        color: "#92400e", 
-                        fontWeight: 600,
-                        fontSize: "14px"
-                      }}>
-                        Selesaikan pembayaran untuk mendapatkan akses produk tersebut
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
 
             {!dashboardLoading && isUserVerified() &&
               activeOrders.map((order) => (

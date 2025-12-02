@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layout";
+import { FileText, Clock, CheckCircle, XCircle } from "lucide-react";
 import "@/styles/dashboard.css";
 import "@/styles/admin.css";
 import "@/styles/customer.css";
@@ -127,11 +128,10 @@ export default function FollowupReportPage() {
   }), [logs]);
 
   const summaryCards = [
-    { label: "Total Log", value: countByStatus.all, icon: "", accent: "accent-indigo" },
-    { label: "Pending", value: countByStatus.pending, icon: "", accent: "accent-amber" },
-    { label: "Terkirim", value: countByStatus.terkirim, icon: "", accent: "accent-emerald" },
-    { label: "Gagal", value: countByStatus.gagal, icon: "", accent: "accent-rose" },
-  ];
+    { label: "Total Log", value: countByStatus.all, icon: <FileText size={22} />, accent: "accent-indigo" },
+    { label: "Pending", value: countByStatus.pending, icon: <Clock size={22} />, accent: "accent-amber" },
+    { label: "Terkirim", value: countByStatus.terkirim, icon: <CheckCircle size={22} />, accent: "accent-emerald" },
+    { label: "Gagal", value: countByStatus.gagal, icon: <XCircle size={22} />, accent: "accent-rose" },
 
   const filterTabs = [
     { key: "all", label: "Semua", count: countByStatus.all },

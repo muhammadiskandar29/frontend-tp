@@ -63,7 +63,7 @@ export default function FollowupLogModal({ customer, onClose }) {
         requestBody.event = Number(selectedEvent);
       }
 
-      console.log("📤 [FOLLOWUP LOG] Request:", {
+      console.log("[FOLLOWUP LOG] Request:", {
         customerId: customerId,
         customerName: customer.nama,
         body: JSON.stringify(requestBody)
@@ -100,7 +100,7 @@ export default function FollowupLogModal({ customer, onClose }) {
         const logCustomerId = Number(log.customer);
         const isMatch = logCustomerId === customerId;
         if (!isMatch) {
-          console.warn("⚠️ [FOLLOWUP LOG] Skipping log not belonging to customer:", {
+          console.warn("[FOLLOWUP LOG] Skipping log not belonging to customer:", {
             logId: log.id,
             logCustomerId: log.customer,
             expectedCustomerId: customerId
@@ -109,10 +109,10 @@ export default function FollowupLogModal({ customer, onClose }) {
         return isMatch;
       });
       
-      console.log("✅ [FOLLOWUP LOG] Filtered logs:", filteredLogs.length, "of", logsData.length);
+      console.log("[FOLLOWUP LOG] Filtered logs:", filteredLogs.length, "of", logsData.length);
       setLogs(filteredLogs);
     } catch (err) {
-      console.error("❌ [FOLLOWUP LOG] Error:", err);
+      console.error("[FOLLOWUP LOG] Error:", err);
       setError(err.message || "Terjadi kesalahan saat memuat data");
       setLogs([]);
     } finally {
@@ -140,14 +140,14 @@ export default function FollowupLogModal({ customer, onClose }) {
           {/* Summary */}
           <div className="followup-summary">
             <div className="summary-item">
-              <span className="summary-icon">📊</span>
+              <span className="summary-icon"></span>
               <div>
                 <p className="summary-label">Total Log</p>
                 <p className="summary-value">{logs.length}</p>
               </div>
             </div>
             <div className="summary-item summary-success">
-              <span className="summary-icon">✅</span>
+              <span className="summary-icon"></span>
               <div>
                 <p className="summary-label">Terkirim</p>
                 <p className="summary-value">
@@ -156,7 +156,7 @@ export default function FollowupLogModal({ customer, onClose }) {
               </div>
             </div>
             <div className="summary-item summary-pending">
-              <span className="summary-icon">⏳</span>
+              <span className="summary-icon"></span>
               <div>
                 <p className="summary-label">Pending</p>
                 <p className="summary-value">
@@ -173,7 +173,7 @@ export default function FollowupLogModal({ customer, onClose }) {
             </div>
           ) : error ? (
             <div className="error-state">
-              <span className="error-icon">⚠️</span>
+              <span className="error-icon"></span>
               <p>{error}</p>
               <button type="button" className="btn-retry" onClick={fetchLogsFollup}>
                 Coba Lagi

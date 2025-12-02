@@ -480,13 +480,13 @@ export default function Page() {
       console.log("[VALIDATION] ========================================");
       
       if (!kategoriId || Number.isNaN(kategoriId) || kategoriId <= 0) {
-        console.error("[VALIDATION] ❌ KATEGORI INVALID!");
+        console.error("[VALIDATION] KATEGORI INVALID!");
         alert("Kategori wajib dipilih!");
         setIsSubmitting(false);
         return;
       }
       
-      console.log("[VALIDATION] ✅ Kategori valid:", kategoriId);
+      console.log("[VALIDATION] Kategori valid:", kategoriId);
 
       // 2) assign normalization
       const normalizedAssign = Array.isArray(form.assign)
@@ -597,10 +597,10 @@ export default function Page() {
       // Note: Header tidak wajib untuk edit (bisa menggunakan existing image)
       // Tapi jika ada header file baru, pastikan sudah di-append
       if (form.header?.type === "file" && form.header.value && !headerInFormData) {
-        console.warn("[FORMDATA] ⚠️ Header file baru tidak ditemukan di FormData, tapi ini OK untuk edit");
+        console.warn("[FORMDATA] Header file baru tidak ditemukan di FormData, tapi ini OK untuk edit");
       }
       
-      console.log("[FORMDATA] ✅ All critical fields verified");
+      console.log("[FORMDATA] All critical fields verified");
       console.log("[FORMDATA] =================================================");
 
       // ============================
@@ -616,7 +616,7 @@ export default function Page() {
       // Simpan ke localStorage
       try {
         localStorage.setItem("last_product_update_request", JSON.stringify(requestDataToSave, null, 2));
-        console.log("[LOCALSTORAGE] ✅ Request data saved to localStorage");
+        console.log("[LOCALSTORAGE] Request data saved to localStorage");
         console.log("[LOCALSTORAGE] Key: 'last_product_update_request'");
         console.log("[LOCALSTORAGE] Data preview:", {
           timestamp: requestDataToSave.timestamp,
@@ -626,7 +626,7 @@ export default function Page() {
         });
         console.log("[LOCALSTORAGE] Full data:", JSON.stringify(requestDataToSave, null, 2));
       } catch (error) {
-        console.error("[LOCALSTORAGE] ❌ Failed to save to localStorage:", error);
+        console.error("[LOCALSTORAGE] Failed to save to localStorage:", error);
       }
       console.log("[LOCALSTORAGE] ==========================================");
 
@@ -690,13 +690,13 @@ export default function Page() {
         console.error("Full error object:", JSON.stringify(data, null, 2));
         
         // Extract detailed error information
-        let errorDetails = "\n\n📋 Detail Error:\n";
+        let errorDetails = "\n\nDetail Error:\n";
         
         if (data.errors && typeof data.errors === "object" && Object.keys(data.errors).length > 0) {
           errorDetails += "Field yang error:\n";
           for (const [field, messages] of Object.entries(data.errors)) {
             const msgArray = Array.isArray(messages) ? messages : [messages];
-            errorDetails += `  ❌ ${field}: ${msgArray.join(", ")}\n`;
+            errorDetails += `  ${field}: ${msgArray.join(", ")}\n`;
           }
         } else if (data.errorFields && data.errorFields.length > 0) {
           errorDetails += `Field yang error: ${data.errorFields.join(", ")}\n`;

@@ -159,7 +159,7 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
       setToast?.({
         show: true,
         type: "success",
-        message: "✅ Pembayaran berhasil dikonfirmasi!",
+        message: "Pembayaran berhasil dikonfirmasi!",
       });
 
       // Tutup modal dan redirect ke halaman orders setelah delay
@@ -170,14 +170,14 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
         router.push("/admin/orders");
       }, 1200);
     } catch (err) {
-      console.error("❌ [KONFIRMASI] Error:", err);
+      console.error("[KONFIRMASI] Error:", err);
       setErrorMsg("Terjadi kesalahan saat konfirmasi pembayaran.");
       setSubmitting(false);
 
       setToast?.({
         show: true,
         type: "error",
-        message: "❌ Gagal mengkonfirmasi pembayaran.",
+        message: "Gagal mengkonfirmasi pembayaran.",
       });
 
       setTimeout(() => {

@@ -70,7 +70,7 @@ export default function AddUserModal({ onClose, onSave }) {
       no_telp: formData.no_telp.trim(),
     };
 
-    console.log("🟢 Payload dikirim ke API:", payload);
+    console.log("Payload dikirim ke API:", payload);
 
     try {
       await onSave(payload);

@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useMemo, useCallback, memo } from "react";
 import Layout from "@/components/Layout";
 import dynamic from "next/dynamic";
+import { ShoppingCart, Clock, CheckCircle, PartyPopper, XCircle } from "lucide-react";
 import "@/styles/dashboard.css";
 import "@/styles/admin.css";
 import { getOrders, updateOrderAdmin } from "@/lib/orders";
@@ -317,31 +318,31 @@ export default function DaftarPesanan() {
               label: "Total orders",
               value: totalOrders,
               accent: "accent-indigo",
-              icon: "",
+              icon: <ShoppingCart size={22} />,
             },
             {
               label: "Unpaid",
               value: unpaidOrders,
               accent: "accent-amber",
-              icon: "",
+              icon: <Clock size={22} />,
             },
             {
               label: "Paid",
               value: paidOrders,
               accent: "accent-emerald",
-              icon: "",
+              icon: <CheckCircle size={22} />,
             },
             {
               label: "Sukses",
               value: suksesOrders,
               accent: "accent-blue",
-              icon: "",
+              icon: <PartyPopper size={22} />,
             },
             {
               label: "Gagal",
               value: gagalOrders,
               accent: "accent-red",
-              icon: "",
+              icon: <XCircle size={22} />,
             },
           ].map((card) => (
             <article className="summary-card" key={card.label}>

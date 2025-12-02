@@ -3,6 +3,7 @@
 import Layout from "@/components/Layout";
 import { useEffect, useMemo, useState, memo, useCallback } from "react";
 import dynamic from "next/dynamic";
+import { Users2, FolderOpen, Pause } from "lucide-react";
 import { createUser, deleteUser, getUsers, updateUser } from "@/lib/users";
 import "@/styles/dashboard.css";
 import "@/styles/admin.css";
@@ -97,19 +98,19 @@ const summaryCards = useMemo(
         label: "Active users",
         value: filteredUsers.length,
         accent: "accent-emerald",
-        icon: "",
+        icon: <Users2 size={22} />,
       },
       {
         label: "Directory size",
         value: users.length,
         accent: "accent-indigo",
-        icon: "",
+        icon: <FolderOpen size={22} />,
       },
       {
         label: "Inactive",
         value: Math.max(users.length - filteredUsers.length, 0),
         accent: "accent-amber",
-        icon: "",
+        icon: <Pause size={22} />,
       },
     ],
     [filteredUsers.length, users.length]

@@ -33,11 +33,11 @@ const buildImageUrl = (path) => {
 export default function ViewOrders({ order, onClose }) {
   if (!order) return null;
 
-  // 🔍 Debug log untuk memastikan datanya benar
-  console.log("🔍 Order Detail:", order);
-  console.log("🖼️ Bukti Pembayaran Path:", order.bukti_pembayaran);
+  // Debug log untuk memastikan datanya benar
+  console.log("Order Detail:", order);
+  console.log("Bukti Pembayaran Path:", order.bukti_pembayaran);
   console.log("🧾 Waktu Pembayaran:", order.waktu_pembayaran);
-  console.log("💰 Status Pembayaran:", order.status_pembayaran);
+  console.log("Status Pembayaran:", order.status_pembayaran);
 
   const statusBayar = computeStatusBayar(order);
   const statusLabel = STATUS_MAP[statusBayar];

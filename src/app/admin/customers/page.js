@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, useCallback, memo } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import { getCustomers, deleteCustomer } from "@/lib/customer";
+import { Users, CheckCircle, Filter } from "lucide-react";
 import dynamic from "next/dynamic";
 import "@/styles/dashboard.css";
 import "@/styles/admin.css";
@@ -217,19 +218,19 @@ export default function AdminCustomerPage() {
               label: "Total customers",
               value: customers.length,
               accent: "accent-emerald",
-              icon: "",
+              icon: <Users size={22} />,
             },
             {
               label: "Verified",
               value: customers.filter((c) => c.verifikasi === "1" || c.verifikasi === true).length,
               accent: "accent-indigo",
-              icon: "",
+              icon: <CheckCircle size={22} />,
             },
             {
               label: "Active (filtered)",
               value: filtered.length,
               accent: "accent-amber",
-              icon: "",
+              icon: <Filter size={22} />,
             },
           ].map((card) => (
             <article className="summary-card" key={card.label}>

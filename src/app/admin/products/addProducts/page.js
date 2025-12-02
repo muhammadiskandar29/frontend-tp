@@ -355,13 +355,13 @@ const handleSubmit = async () => {
     console.log("[VALIDATION] ========================================");
     
     if (!kategoriId || Number.isNaN(kategoriId) || kategoriId <= 0) {
-      console.error("[VALIDATION] ❌ KATEGORI INVALID!");
+      console.error("[VALIDATION] KATEGORI INVALID!");
       alert("Kategori wajib dipilih!");
       setIsSubmitting(false);
       return;
     }
     
-    console.log("[VALIDATION] ✅ Kategori valid:", kategoriId);
+    console.log("[VALIDATION] Kategori valid:", kategoriId);
 
     // 3) assign normalization
     const normalizedAssign = Array.isArray(form.assign)
@@ -474,7 +474,7 @@ const handleSubmit = async () => {
       throw new Error("Header image tidak ditemukan di FormData.");
     }
     
-    console.log("[FORMDATA] ✅ All critical fields verified");
+    console.log("[FORMDATA] All critical fields verified");
     console.log("[FORMDATA] =================================================");
 
     // ============================
@@ -512,7 +512,7 @@ const handleSubmit = async () => {
     // Simpan ke localStorage
     try {
       localStorage.setItem("last_product_request", JSON.stringify(requestDataToSave, null, 2));
-      console.log("[LOCALSTORAGE] ✅ Request data saved to localStorage");
+      console.log("[LOCALSTORAGE] Request data saved to localStorage");
       console.log("[LOCALSTORAGE] Key: 'last_product_request'");
       console.log("[LOCALSTORAGE] Data preview:", {
         timestamp: requestDataToSave.timestamp,
@@ -521,7 +521,7 @@ const handleSubmit = async () => {
       });
       console.log("[LOCALSTORAGE] Full data:", JSON.stringify(requestDataToSave, null, 2));
     } catch (error) {
-      console.error("[LOCALSTORAGE] ❌ Failed to save to localStorage:", error);
+      console.error("[LOCALSTORAGE] Failed to save to localStorage:", error);
     }
     console.log("[LOCALSTORAGE] ==========================================");
 
@@ -585,7 +585,7 @@ const handleSubmit = async () => {
       console.error("Full error object:", JSON.stringify(data, null, 2));
       
       // Extract detailed error information
-      let errorDetails = "\n\n📋 Detail Error:\n";
+      let errorDetails = "\n\nDetail Error:\n";
       
       if (data.errors && typeof data.errors === "object" && Object.keys(data.errors).length > 0) {
         errorDetails += "Field yang error:\n";
