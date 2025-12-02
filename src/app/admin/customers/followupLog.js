@@ -8,9 +8,8 @@ const formatDateTime = (dateStr) => {
   const date = new Date(dateStr.replace(" ", "T"));
   if (Number.isNaN(date.getTime())) return dateStr;
   return date.toLocaleString("id-ID", {
-    weekday: "long",
     year: "numeric",
-    month: "long",
+    month: "short",
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
@@ -125,7 +124,7 @@ export default function FollowupLogModal({ customer, onClose }) {
 
   return (
     <div className="modal-overlay">
-      <div className="modal-card" style={{ maxWidth: "900px", maxHeight: "90vh" }}>
+      <div className="modal-card" style={{ maxWidth: "1000px", width: "95vw", maxHeight: "95vh", display: "flex", flexDirection: "column" }}>
         <div className="modal-header">
           <div>
             <h2>Log Follow Up — {customerName}</h2>
@@ -136,7 +135,7 @@ export default function FollowupLogModal({ customer, onClose }) {
           </button>
         </div>
 
-        <div className="modal-body" style={{ overflowY: "auto", maxHeight: "calc(90vh - 140px)" }}>
+        <div className="modal-body" style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", minHeight: 0 }}>
           {/* Summary */}
           <div className="followup-summary">
             <div className="summary-item">
@@ -187,30 +186,24 @@ export default function FollowupLogModal({ customer, onClose }) {
           ) : (
             <div className="followup-log-table">
               <div className="log-table-header">
-                <span className="col-event">Event Follow Up</span>
+                <span className="col-pesan">Pesan</span>
                 <span className="col-status">Status</span>
-                <span className="col-keterangan">Keterangan</span>
                 <span className="col-date">Tanggal</span>
               </div>
               <div className="log-table-body">
                 {logs.map((log, index) => {
                   const statusBadge = getStatusBadge(log.status);
-                  const eventName = log.follup_rel?.nama || `Follow Up ${log.follup || index + 1}`;
-                  const eventPeriod = log.follup_rel?.event || "";
+                  const pesan = log.keterangan || log.pesan || "-";
                   
                   return (
                     <div key={log.id || index} className="log-table-row">
-                      <div className="col-event">
-                        <span className="event-name">{eventName}</span>
-                        {eventPeriod && <span className="event-period">{eventPeriod}</span>}
+                      <div className="col-pesan">
+                        <div className="pesan-content">{pesan}</div>
                       </div>
                       <div className="col-status">
                         <span className={`status-badge ${statusBadge.className}`}>
                           {statusBadge.label}
                         </span>
-                      </div>
-                      <div className="col-keterangan">
-                        {log.keterangan || "-"}
                       </div>
                       <div className="col-date">
                         {formatDateTime(log.create_at || log.update_at)}
@@ -331,29 +324,51 @@ export default function FollowupLogModal({ customer, onClose }) {
           border: 1px solid #e2e8f0;
           border-radius: 12px;
           overflow: hidden;
+          display: flex;
+          flex-direction: column;
+          flex: 1;
+          min-height: 0;
         }
         .log-table-header {
           display: grid;
-          grid-template-columns: 1.5fr 100px 2fr 150px;
-          gap: 12px;
-          padding: 14px 16px;
+          grid-template-columns: 1fr 120px 180px;
+          gap: 16px;
+          padding: 16px 20px;
           background: #f8fafc;
-          border-bottom: 1px solid #e2e8f0;
+          border-bottom: 2px solid #e2e8f0;
           font-weight: 600;
-          font-size: 13px;
-          color: #475569;
+          font-size: 14px;
+          color: #1e293b;
+          position: sticky;
+          top: 0;
+          z-index: 10;
         }
         .log-table-body {
-          max-height: 400px;
+          flex: 1;
           overflow-y: auto;
+          overflow-x: hidden;
+          min-height: 0;
+        }
+        .log-table-body::-webkit-scrollbar {
+          width: 8px;
+        }
+        .log-table-body::-webkit-scrollbar-track {
+          background: #f1f5f9;
+        }
+        .log-table-body::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 4px;
+        }
+        .log-table-body::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
         }
         .log-table-row {
           display: grid;
-          grid-template-columns: 1.5fr 100px 2fr 150px;
-          gap: 12px;
-          padding: 14px 16px;
+          grid-template-columns: 1fr 120px 180px;
+          gap: 16px;
+          padding: 16px 20px;
           border-bottom: 1px solid #f1f5f9;
-          align-items: center;
+          align-items: flex-start;
           transition: background 0.15s;
         }
         .log-table-row:last-child {
@@ -362,27 +377,23 @@ export default function FollowupLogModal({ customer, onClose }) {
         .log-table-row:hover {
           background: #f8fafc;
         }
-        .col-event {
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
+        .col-pesan {
+          word-wrap: break-word;
+          word-break: break-word;
+          min-width: 0;
         }
-        .event-name {
-          font-weight: 600;
-          color: #1e293b;
+        .pesan-content {
           font-size: 14px;
-        }
-        .event-period {
-          font-size: 12px;
-          color: #64748b;
-        }
-        .col-keterangan {
-          font-size: 13px;
-          color: #475569;
+          color: #1e293b;
+          line-height: 1.6;
+          white-space: pre-wrap;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
         .col-date {
-          font-size: 12px;
+          font-size: 13px;
           color: #64748b;
+          white-space: nowrap;
         }
         .status-badge {
           display: inline-flex;
@@ -415,18 +426,17 @@ export default function FollowupLogModal({ customer, onClose }) {
           }
           .log-table-row {
             grid-template-columns: 1fr;
-            gap: 8px;
+            gap: 12px;
             padding: 16px;
           }
-          .col-event, .col-status, .col-keterangan, .col-date {
+          .col-pesan, .col-status, .col-date {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            gap: 4px;
           }
-          .col-event::before { content: "Event: "; font-weight: 600; color: #64748b; }
-          .col-status::before { content: "Status: "; font-weight: 600; color: #64748b; }
-          .col-keterangan::before { content: "Keterangan: "; font-weight: 600; color: #64748b; }
-          .col-date::before { content: "Tanggal: "; font-weight: 600; color: #64748b; }
+          .col-pesan::before { content: "Pesan: "; font-weight: 600; color: #64748b; font-size: 12px; }
+          .col-status::before { content: "Status: "; font-weight: 600; color: #64748b; font-size: 12px; }
+          .col-date::before { content: "Tanggal: "; font-weight: 600; color: #64748b; font-size: 12px; }
         }
       `}</style>
     </div>
