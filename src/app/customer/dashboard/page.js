@@ -140,7 +140,7 @@ export default function DashboardPage() {
     if (!session.token) {
       setDashboardError("Token tidak ditemukan. Silakan login kembali.");
       setDashboardLoading(false);
-      router.replace("/customer/login");
+      router.replace("/customer");
       return;
     }
 
@@ -303,7 +303,7 @@ export default function DashboardPage() {
     const session = getCustomerSession();
     
     if (!session.token) {
-      router.replace("/customer/login");
+      router.replace("/customer");
       return;
     }
 
@@ -468,7 +468,7 @@ export default function DashboardPage() {
   const handleLogout = () => {
     localStorage.removeItem("customer_token");
     localStorage.removeItem("customer_user");
-    router.replace("/customer/login");
+    router.replace("/customer");
   };
 
 
