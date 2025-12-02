@@ -289,14 +289,14 @@ const handleCloseModals = () => {
             <span className="panel__meta">{filteredUsers.length} active members</span>
           </div>
 
-          <div className="users-table__wrapper">
-            <div className="users-table">
-              <div className="users-table__head">
+          <div className="users-tables__wrapper">
+            <div className="users-tables">
+              <div className="users-tables__head">
                 {TABLE_COLUMNS.map((column) => (
                   <span key={column}>{column}</span>
                 ))}
               </div>
-              <div className="users-table__body">
+              <div className="users-tables__body">
                 {filteredUsers.length > 0 ? (
                   filteredUsers.map((user, index) => {
                     const divisionLabel = DIVISI_MAP[user.divisi] || user.divisi || "-";
@@ -305,27 +305,27 @@ const handleCloseModals = () => {
                     const phoneText = user.no_telp?.trim() || "Phone not provided";
 
                     return (
-                      <div className="users-table__row" key={user.id || `${user.email}-${index}`}>
-                        <div className="users-table__cell" data-label="#">
+                      <div className="users-tables__row" key={user.id || `${user.email}-${index}`}>
+                        <div className="users-tables__cell" data-label="#">
                           {index + 1}
                         </div>
-                        <div className="users-table__cell users-table__cell--profile" data-label="Member">
+                        <div className="users-tables__cell users-tables__cell--strong" data-label="Member">
                           <div className="users-meta">
                             <p className="users-name">{user.nama || "Unnamed user"}</p>
                             <p className="users-email">{user.email || "Email unavailable"}</p>
                           </div>
                         </div>
-                        <div className="users-table__cell users-table__cell--division" data-label="Division">
+                        <div className="users-tables__cell" data-label="Division">
                           <span className={`users-pill ${divisionClass}`}>{divisionLabel}</span>
                         </div>
-                        <div className="users-table__cell users-table__cell--contact" data-label="Contact">
+                        <div className="users-tables__cell" data-label="Contact">
                           <p className="users-contact-line">{phoneText}</p>
                           <p className="users-contact-line">{getAddressPreview(addressText)}</p>
                           <span className="users-contact-line users-contact-line--muted">
                             Joined {formatDate(user.tanggal_join)}
                           </span>
                         </div>
-                        <div className="users-table__cell users-table__cell--timeline" data-label="Timeline">
+                        <div className="users-tables__cell" data-label="Timeline">
                           <div className="users-timeline-item">
                             <span className="users-label">
                               <i className="pi pi-calendar" /> Birth
@@ -333,7 +333,7 @@ const handleCloseModals = () => {
                             <span className="users-value">{formatDate(user.tanggal_lahir)}</span>
                           </div>
                         </div>
-                        <div className="users-table__cell users-table__cell--actions" data-label="Actions">
+                        <div className="users-tables__cell users-tables__cell--actions" data-label="Actions">
                           <button
                             className="users-action-btn users-action-btn--ghost"
                             title="View user"

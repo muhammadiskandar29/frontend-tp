@@ -151,6 +151,80 @@ ADMIN USERS PAGE (Scoped Styles)
   overflow: hidden;
 }
 
+/* === USERS TABLES (Padat, sama struktur dengan customers) === */
+.users-tables__wrapper {
+  width: 100%;
+  overflow-x: visible;
+  padding-bottom: 0.25rem;
+}
+
+.users-tables {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.users-tables__head,
+.users-tables__row {
+  display: grid;
+  grid-template-columns: 40px minmax(180px, 1.2fr) minmax(120px, 1fr) minmax(160px, 1.3fr) minmax(140px, 1.1fr) minmax(100px, 0.9fr);
+  gap: 0.3rem;
+  align-items: center;
+}
+
+.users-tables__head {
+  padding: 0.6rem 0.75rem;
+  color: var(--dash-muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.users-tables__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.users-tables__row {
+  background: var(--dash-surface);
+  border: 1px solid var(--dash-border);
+  border-radius: 1rem;
+  padding: 0.5rem 0.65rem;
+  box-shadow: var(--dash-shadow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.users-tables__row:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 24px 45px rgba(15, 23, 42, 0.14);
+}
+
+.users-tables__cell {
+  font-size: 0.8rem;
+  color: var(--dash-text);
+  min-width: 0;
+  word-break: break-word;
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+}
+
+.users-tables__cell--strong {
+  font-weight: 600;
+  color: var(--dash-text);
+}
+
+.users-tables__cell--actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
 .users-table__wrapper {
   width: 100%;
   overflow-x: auto;
@@ -587,11 +661,13 @@ ADMIN USERS PAGE (Scoped Styles)
     justify-content: center;
   }
 
+  .users-tables__head,
   .users-table__head,
   .customers-table__head {
     display: none;
   }
 
+  .users-tables__row,
   .users-table__row,
   .customers-table__row {
     grid-template-columns: 1fr;
@@ -607,6 +683,7 @@ ADMIN USERS PAGE (Scoped Styles)
     grid-template-columns: 60px 1fr 150px;
   }
 
+  .users-tables__cell,
   .users-table__cell,
   .customers-table__cell {
     display: flex;
@@ -617,6 +694,7 @@ ADMIN USERS PAGE (Scoped Styles)
     overflow: visible;
   }
 
+  .users-tables__cell::before,
   .users-table__cell::before,
   .customers-table__cell::before {
     content: attr(data-label);
@@ -627,11 +705,13 @@ ADMIN USERS PAGE (Scoped Styles)
     letter-spacing: 0.08em;
   }
 
+  .users-tables__cell[data-label="#"]::before,
   .users-table__cell[data-label="#"]::before,
   .customers-table__cell[data-label="#"]::before {
     content: "#";
   }
 
+  .users-tables__cell--actions,
   .users-table__cell--actions,
   .customers-table__cell--actions {
     justify-content: flex-start;
