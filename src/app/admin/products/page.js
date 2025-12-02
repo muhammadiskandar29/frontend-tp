@@ -127,19 +127,19 @@ export default function AdminProductsPage() {
               label: "Total products",
               value: products.length,
               accent: "accent-blue",
-              icon: "📦",
+              icon: "",
             },
             {
               label: "Active products",
               value: products.filter((p) => p.status === "1").length,
               accent: "accent-emerald",
-              icon: "✅",
+              icon: "",
             },
             {
               label: "Filtered",
               value: filtered.length,
               accent: "accent-amber",
-              icon: "🔍",
+              icon: "",
             },
           ].map((card) => (
             <article className="summary-card" key={card.label}>
@@ -163,7 +163,7 @@ export default function AdminProductsPage() {
 
           {error && (
             <div className="customers-error">
-              <p>⚠️ {error}</p>
+              <p>{error}</p>
             </div>
           )}
 

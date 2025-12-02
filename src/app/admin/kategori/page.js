@@ -147,13 +147,13 @@ export default function AdminKategoriPage() {
               label: "Total categories",
               value: kategori.length,
               accent: "accent-blue",
-              icon: "📁",
+              icon: "",
             },
             {
               label: "Filtered",
               value: filtered.length,
               accent: "accent-amber",
-              icon: "🔍",
+              icon: "",
             },
           ].map((card) => (
             <article className="summary-card" key={card.label}>

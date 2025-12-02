@@ -87,7 +87,7 @@ export default function DaftarPesanan() {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
-        console.warn("⚠️ No token found");
+        console.warn("No token found");
         setNeedsRefresh(false);
         return;
       }
@@ -102,12 +102,12 @@ export default function DaftarPesanan() {
             Authorization: `Bearer ${token}`,
           },
         }).then(res => res.json()).catch(err => {
-          console.error("❌ Error fetching produk:", err);
+          console.error("Error fetching produk:", err);
           return { success: false, data: [] };
         }),
         // Ambil orders
         getOrders().catch(err => {
-          console.error("❌ Error fetching orders:", err);
+          console.error("Error fetching orders:", err);
           return [];
         })
       ]);
@@ -140,7 +140,7 @@ export default function DaftarPesanan() {
       setOrders(finalOrders);
       setNeedsRefresh(false);
     } catch (err) {
-      console.error("❌ Error load data:", err);
+      console.error("Error load data:", err);
       showToast("Gagal memuat data", "error");
       setNeedsRefresh(false);
     }
@@ -317,31 +317,31 @@ export default function DaftarPesanan() {
               label: "Total orders",
               value: totalOrders,
               accent: "accent-indigo",
-              icon: "📦",
+              icon: "",
             },
             {
               label: "Unpaid",
               value: unpaidOrders,
               accent: "accent-amber",
-              icon: "⏳",
+              icon: "",
             },
             {
               label: "Paid",
               value: paidOrders,
               accent: "accent-emerald",
-              icon: "✅",
+              icon: "",
             },
             {
               label: "Sukses",
               value: suksesOrders,
               accent: "accent-blue",
-              icon: "🎉",
+              icon: "",
             },
             {
               label: "Gagal",
               value: gagalOrders,
               accent: "accent-red",
-              icon: "❌",
+              icon: "",
             },
           ].map((card) => (
             <article className="summary-card" key={card.label}>

@@ -117,19 +117,19 @@ useEffect(() => {
       label: "Total templates",
       value: templates.length,
       accent: "accent-indigo",
-      icon: "📄",
+      icon: "",
     },
     {
       label: "Active templates",
       value: filteredTemplates.length,
       accent: "accent-emerald",
-      icon: "✅",
+      icon: "",
     },
     {
       label: "Pending edits",
       value: templates.filter((t) => t.status !== "1").length,
       accent: "accent-amber",
-      icon: "⚙️",
+      icon: "",
     },
   ];
 

@@ -148,10 +148,10 @@ export default function AdminCustomerPage() {
   const handleConfirmDelete = async () => {
     try {
       await deleteCustomer(selectedCustomer.id);
-      requestRefresh("🚫 Customer berhasil dihapus!", "warning");
+      requestRefresh("Customer berhasil dihapus!", "warning");
     } catch (err) {
       console.error("Error deleting customer:", err);
-      showToast("❌ Gagal menghapus customer", "error");
+      showToast("Gagal menghapus customer", "error");
     } finally {
       setShowDelete(false);
       setSelectedCustomer(null);
@@ -217,19 +217,19 @@ export default function AdminCustomerPage() {
               label: "Total customers",
               value: customers.length,
               accent: "accent-emerald",
-              icon: "🧑‍🤝‍🧑",
+              icon: "",
             },
             {
               label: "Verified",
               value: customers.filter((c) => c.verifikasi === "1" || c.verifikasi === true).length,
               accent: "accent-indigo",
-              icon: "✅",
+              icon: "",
             },
             {
               label: "Active (filtered)",
               value: filtered.length,
               accent: "accent-amber",
-              icon: "📘",
+              icon: "",
             },
           ].map((card) => (
             <article className="summary-card" key={card.label}>

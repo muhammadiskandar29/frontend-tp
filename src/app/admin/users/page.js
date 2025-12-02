@@ -97,19 +97,19 @@ const summaryCards = useMemo(
         label: "Active users",
         value: filteredUsers.length,
         accent: "accent-emerald",
-        icon: "👥",
+        icon: "",
       },
       {
         label: "Directory size",
         value: users.length,
         accent: "accent-indigo",
-        icon: "📁",
+        icon: "",
       },
       {
         label: "Inactive",
         value: Math.max(users.length - filteredUsers.length, 0),
         accent: "accent-amber",
-        icon: "⏸️",
+        icon: "",
       },
     ],
     [filteredUsers.length, users.length]
@@ -127,19 +127,19 @@ const summaryCards = useMemo(
 
   const handleSaveAdd = async (newUser) => {
     try {
-      console.log("🟢 [CREATE_USER] Creating user with payload:", newUser);
+      console.log("[CREATE_USER] Creating user with payload:", newUser);
       const result = await createUser(newUser);
-      console.log("🟢 [CREATE_USER] Create result:", result);
+      console.log("[CREATE_USER] Create result:", result);
       
       if (!result.success) {
         throw new Error(result.message || "Gagal menambahkan user");
       }
       
       await refreshUsers();
-      showToast("✅ User berhasil ditambahkan!");
+      showToast("User berhasil ditambahkan!");
     } catch (err) {
-      console.error("❌ [CREATE_USER] Error creating user:", err);
-      console.error("❌ [CREATE_USER] Error details:", {
+      console.error("[CREATE_USER] Error creating user:", err);
+      console.error("[CREATE_USER] Error details:", {
         message: err.message,
         status: err.status,
         data: err.data,
@@ -157,7 +157,7 @@ const summaryCards = useMemo(
     if (!selectedUser) return;
 
     try {
-      console.log("🟡 [UPDATE_USER] Updating user:", {
+      console.log("[UPDATE_USER] Updating user:", {
         id: selectedUser.id,
         oldEmail: selectedUser.email,
         newEmail: updatedData.email,
@@ -166,7 +166,7 @@ const summaryCards = useMemo(
       
       const result = await updateUser(selectedUser.id, updatedData);
       
-      console.log("🟢 [UPDATE_USER] Update result:", result);
+      console.log("[UPDATE_USER] Update result:", result);
       
       // ⚠️ PERINGATAN: Jika email berubah, backend harus update email di tabel authentication juga
       if (selectedUser.email !== updatedData.email) {
@@ -179,12 +179,12 @@ const summaryCards = useMemo(
         setShowEmailWarning(true);
         
         showToast(
-          `⚠️ Email berubah! User harus login dengan email lama sampai backend di-fix.`,
+          `Email berubah! User harus login dengan email lama sampai backend di-fix.`,
           "warning"
         );
         
         // Log untuk debugging
-        console.warn("⚠️ [EMAIL_CHANGE] Email changed but backend must update authentication table:", {
+        console.warn("[EMAIL_CHANGE] Email changed but backend must update authentication table:", {
           userId: selectedUser.id,
           oldEmail: selectedUser.email,
           newEmail: updatedData.email,
@@ -197,7 +197,7 @@ const summaryCards = useMemo(
       
       await refreshUsers();
     } catch (err) {
-      console.error("❌ [UPDATE_USER] Error updating user:", err);
+      console.error("[UPDATE_USER] Error updating user:", err);
       showToast("Gagal menyimpan perubahan", "error");
     } finally {
       setShowEdit(false);
@@ -211,10 +211,10 @@ const summaryCards = useMemo(
     try {
       await deleteUser(selectedUser.id);
       await refreshUsers();
-      showToast("🚫 User berhasil dinonaktifkan!", "warning");
+      showToast("User berhasil dinonaktifkan!", "warning");
     } catch (err) {
       console.error("Error deleting user:", err);
-      showToast("❌ Gagal menonaktifkan user", "error");
+      showToast("Gagal menonaktifkan user", "error");
     } finally {
       setShowDelete(false);
       setSelectedUser(null);

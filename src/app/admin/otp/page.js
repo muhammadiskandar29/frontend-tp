@@ -39,27 +39,27 @@ export default function CustomerOTPPage() {
   useEffect(() => {
     const session = getCustomerSession();
     if (!session.user || !session.user.id) {
-      console.error("❌ [OTP] No user data, redirecting to login");
+      console.error("[OTP] No user data, redirecting to login");
       router.replace("/customer/login");
       return;
     }
     
     // Cek apakah user sudah verifikasi
     const isVerified = session.user.verifikasi === 1 || session.user.verifikasi === "1";
-    console.log("🔵 [OTP] User verification status:", isVerified);
-    console.log("🔵 [OTP] User verifikasi value:", session.user.verifikasi);
+    console.log("[OTP] User verification status:", isVerified);
+    console.log("[OTP] User verifikasi value:", session.user.verifikasi);
     
     // Jika sudah verifikasi, langsung ke dashboard
     if (isVerified) {
-      console.log("✅ [OTP] User already verified, redirecting to dashboard");
+      console.log("[OTP] User already verified, redirecting to dashboard");
       router.replace("/customer/dashboard");
       return;
     }
     
     setCustomerId(session.user.id);
     setWa(session.user.wa || session.user.phone);
-    console.log("🔵 [OTP] Customer ID:", session.user.id);
-    console.log("🔵 [OTP] WA:", session.user.wa || session.user.phone);
+    console.log("[OTP] Customer ID:", session.user.id);
+    console.log("[OTP] WA:", session.user.wa || session.user.phone);
     resetOtpTimer();
   }, [router]);
 
@@ -122,11 +122,11 @@ export default function CustomerOTPPage() {
     setMessage("");
 
     try {
-      console.log("🔵 [OTP] Verifying OTP...");
+      console.log("[OTP] Verifying OTP...");
       const result = await verifyCustomerOTP(customerId, code);
       
       if (result.success) {
-        setMessage("Verifikasi berhasil! 🎉");
+        setMessage("Verifikasi berhasil!");
         setTimerActive(false);
         // Update user data di localStorage dengan data dari response API
         const session = getCustomerSession();
@@ -138,12 +138,12 @@ export default function CustomerOTPPage() {
             customer_id: result.data.customer_id || session.user.id || session.user.customer_id,
           };
           localStorage.setItem("customer_user", JSON.stringify(updatedUser));
-          console.log("✅ [OTP] User data updated with verification:", updatedUser);
+          console.log("[OTP] User data updated with verification:", updatedUser);
         } else if (session.user) {
           // Fallback jika tidak ada data dari response
           session.user.verifikasi = 1;
           localStorage.setItem("customer_user", JSON.stringify(session.user));
-          console.log("✅ [OTP] User data updated (fallback):", session.user);
+          console.log("[OTP] User data updated (fallback):", session.user);
         }
         
         // Tampilkan modal updateCustomer setelah verifikasi berhasil
@@ -152,7 +152,7 @@ export default function CustomerOTPPage() {
         setMessage(result.message || "Kode OTP salah atau sudah kadaluarsa.");
       }
     } catch (error) {
-      console.error("❌ [OTP] Error:", error);
+      console.error("[OTP] Error:", error);
       setMessage("Terjadi kesalahan saat memverifikasi OTP.");
     } finally {
       setLoading(false);
@@ -169,7 +169,7 @@ export default function CustomerOTPPage() {
     setMessage("");
 
     try {
-      console.log("🔵 [OTP] Resending OTP...");
+      console.log("[OTP] Resending OTP...");
       const result = await resendCustomerOTP(customerId, wa);
       
       if (result.success) {
@@ -184,7 +184,7 @@ export default function CustomerOTPPage() {
         setMessage(result.message || "Gagal mengirim ulang OTP.");
       }
     } catch (error) {
-      console.error("❌ [OTP] Error resending:", error);
+      console.error("[OTP] Error resending:", error);
       setMessage("Terjadi kesalahan saat mengirim ulang OTP.");
     } finally {
       setResending(false);
@@ -207,7 +207,7 @@ export default function CustomerOTPPage() {
             Masukkan 6 digit kode OTP yang telah dikirim ke WhatsApp atau email kamu.
             <br />
             <span style={{ fontSize: "0.85rem", color: "#ef4444", marginTop: "0.5rem", display: "block" }}>
-              ⏱️ OTP berlaku selama 5 menit {timeLeft > 0 ? `(tersisa ${formatTimeLeft()})` : "(kedaluwarsa)"}
+              OTP berlaku selama 5 menit {timeLeft > 0 ? `(tersisa ${formatTimeLeft()})` : "(kedaluwarsa)"}
             </span>
           </p>
 

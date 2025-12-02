@@ -59,7 +59,7 @@ export default function FollowupReportPage() {
         
         const mappedLogs = (res.data || []).map((item) => {
           const status = getLogStatus(item);
-          console.log("📋 [REPORT] Log item:", item.id, "status:", item.status, "→", status);
+          console.log("[REPORT] Log item:", item.id, "status:", item.status, "→", status);
           
           return {
             id: item.id,
@@ -78,7 +78,7 @@ export default function FollowupReportPage() {
         });
         setLogs(mappedLogs);
       } catch (err) {
-        console.error("❌ Gagal ambil data log follow up:", err);
+        console.error("Gagal ambil data log follow up:", err);
         setError(err);
       } finally {
         setLoading(false);
@@ -127,10 +127,10 @@ export default function FollowupReportPage() {
   }), [logs]);
 
   const summaryCards = [
-    { label: "Total Log", value: countByStatus.all, icon: "📑", accent: "accent-indigo" },
-    { label: "Pending", value: countByStatus.pending, icon: "⏳", accent: "accent-amber" },
-    { label: "Terkirim", value: countByStatus.terkirim, icon: "✅", accent: "accent-emerald" },
-    { label: "Gagal", value: countByStatus.gagal, icon: "❌", accent: "accent-rose" },
+    { label: "Total Log", value: countByStatus.all, icon: "", accent: "accent-indigo" },
+    { label: "Pending", value: countByStatus.pending, icon: "", accent: "accent-amber" },
+    { label: "Terkirim", value: countByStatus.terkirim, icon: "", accent: "accent-emerald" },
+    { label: "Gagal", value: countByStatus.gagal, icon: "", accent: "accent-rose" },
   ];
 
   const filterTabs = [
