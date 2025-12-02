@@ -184,34 +184,53 @@ export default function FollowupLogModal({ customer, onClose }) {
               <p>Belum ada log follow up untuk customer ini.</p>
             </div>
           ) : (
-            <div className="followup-log-table">
-              <div className="log-table-header">
-                <span className="col-pesan">Pesan</span>
-                <span className="col-status">Status</span>
-                <span className="col-date">Tanggal</span>
-              </div>
-              <div className="log-table-body">
-                {logs.map((log, index) => {
-                  const statusBadge = getStatusBadge(log.status);
-                  const pesan = log.keterangan || log.pesan || "-";
-                  
-                  return (
-                    <div key={log.id || index} className="log-table-row">
-                      <div className="col-pesan">
-                        <div className="pesan-content">{pesan}</div>
+            <div className="followup-log-list">
+              {logs.map((log, index) => {
+                const statusBadge = getStatusBadge(log.status);
+                const pesan = log.keterangan || log.pesan || "-";
+                const typeFollowup = log.follup || log.type || log.follup_rel?.id || "-";
+                const nomorWA = customer?.wa || log.wa || "-";
+                const namaCustomer = customer?.nama || log.customer_rel?.nama || "-";
+                const response = log.response || log.wa_response || "-";
+                
+                return (
+                  <div key={log.id || index} className="log-card">
+                    <div className="log-card-header">
+                      <div className="log-info-line">
+                        <span className="info-label">Kirim WA follow up type {typeFollowup} ke</span>
+                        <span className="info-value">{nomorWA}</span>
+                        {namaCustomer && <span className="info-customer">({namaCustomer})</span>}
                       </div>
-                      <div className="col-status">
+                    </div>
+                    
+                    <div className="log-card-body">
+                      <div className="log-detail-row">
+                        <span className="detail-label">Status:</span>
                         <span className={`status-badge ${statusBadge.className}`}>
                           {statusBadge.label}
                         </span>
                       </div>
-                      <div className="col-date">
-                        {formatDateTime(log.create_at || log.update_at)}
+                      
+                      <div className="log-detail-row">
+                        <span className="detail-label">Pesan:</span>
+                        <div className="pesan-content">{pesan}</div>
+                      </div>
+                      
+                      {response && response !== "-" && (
+                        <div className="log-detail-row">
+                          <span className="detail-label">Response:</span>
+                          <span className="response-value">{response}</span>
+                        </div>
+                      )}
+                      
+                      <div className="log-detail-row">
+                        <span className="detail-label">Tanggal:</span>
+                        <span className="date-value">{formatDateTime(log.create_at || log.update_at)}</span>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -320,80 +339,105 @@ export default function FollowupLogModal({ customer, onClose }) {
           background: #2563eb;
         }
 
-        .followup-log-table {
-          border: 1px solid #e2e8f0;
-          border-radius: 12px;
-          overflow: hidden;
-          display: flex;
-          flex-direction: column;
-          flex: 1;
-          min-height: 0;
-        }
-        .log-table-header {
-          display: grid;
-          grid-template-columns: 1fr 120px 180px;
-          gap: 16px;
-          padding: 16px 20px;
-          background: #f8fafc;
-          border-bottom: 2px solid #e2e8f0;
-          font-weight: 600;
-          font-size: 14px;
-          color: #1e293b;
-          position: sticky;
-          top: 0;
-          z-index: 10;
-        }
-        .log-table-body {
+        .followup-log-list {
           flex: 1;
           overflow-y: auto;
           overflow-x: hidden;
           min-height: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          padding-right: 8px;
         }
-        .log-table-body::-webkit-scrollbar {
+        .followup-log-list::-webkit-scrollbar {
           width: 8px;
         }
-        .log-table-body::-webkit-scrollbar-track {
+        .followup-log-list::-webkit-scrollbar-track {
           background: #f1f5f9;
         }
-        .log-table-body::-webkit-scrollbar-thumb {
+        .followup-log-list::-webkit-scrollbar-thumb {
           background: #cbd5e1;
           border-radius: 4px;
         }
-        .log-table-body::-webkit-scrollbar-thumb:hover {
+        .followup-log-list::-webkit-scrollbar-thumb:hover {
           background: #94a3b8;
         }
-        .log-table-row {
-          display: grid;
-          grid-template-columns: 1fr 120px 180px;
-          gap: 16px;
-          padding: 16px 20px;
+        .log-card {
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          padding: 20px;
+          transition: all 0.2s;
+        }
+        .log-card:hover {
+          border-color: #cbd5e1;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        .log-card-header {
+          margin-bottom: 16px;
+          padding-bottom: 12px;
           border-bottom: 1px solid #f1f5f9;
+        }
+        .log-info-line {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+          font-size: 14px;
+          color: #475569;
+        }
+        .info-label {
+          font-weight: 500;
+          color: #64748b;
+        }
+        .info-value {
+          font-weight: 600;
+          color: #1e293b;
+        }
+        .info-customer {
+          color: #3b82f6;
+          font-weight: 500;
+        }
+        .log-card-body {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .log-detail-row {
+          display: flex;
           align-items: flex-start;
-          transition: background 0.15s;
+          gap: 12px;
         }
-        .log-table-row:last-child {
-          border-bottom: none;
-        }
-        .log-table-row:hover {
-          background: #f8fafc;
-        }
-        .col-pesan {
-          word-wrap: break-word;
-          word-break: break-word;
-          min-width: 0;
+        .detail-label {
+          font-weight: 600;
+          color: #475569;
+          font-size: 14px;
+          min-width: 80px;
+          flex-shrink: 0;
         }
         .pesan-content {
+          flex: 1;
           font-size: 14px;
           color: #1e293b;
-          line-height: 1.6;
+          line-height: 1.7;
           white-space: pre-wrap;
           word-wrap: break-word;
           overflow-wrap: break-word;
+          background: #f8fafc;
+          padding: 12px 16px;
+          border-radius: 8px;
+          border: 1px solid #e2e8f0;
         }
-        .col-date {
+        .response-value {
+          flex: 1;
+          font-size: 14px;
+          color: #059669;
+          font-weight: 500;
+        }
+        .date-value {
+          flex: 1;
           font-size: 13px;
           color: #64748b;
-          white-space: nowrap;
         }
         .status-badge {
           display: inline-flex;
@@ -421,24 +465,26 @@ export default function FollowupLogModal({ customer, onClose }) {
         }
 
         @media (max-width: 768px) {
-          .log-table-header {
-            display: none;
-          }
-          .log-table-row {
-            grid-template-columns: 1fr;
-            gap: 12px;
+          .log-card {
             padding: 16px;
           }
-          .col-pesan, .col-status, .col-date {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
+          .log-info-line {
+            font-size: 13px;
           }
-          .col-pesan::before { content: "Pesan: "; font-weight: 600; color: #64748b; font-size: 12px; }
-          .col-status::before { content: "Status: "; font-weight: 600; color: #64748b; font-size: 12px; }
-          .col-date::before { content: "Tanggal: "; font-weight: 600; color: #64748b; font-size: 12px; }
+          .log-detail-row {
+            flex-direction: column;
+            gap: 6px;
+          }
+          .detail-label {
+            min-width: auto;
+          }
+          .pesan-content {
+            font-size: 13px;
+            padding: 10px 12px;
+          }
         }
       `}</style>
     </div>
   );
 }
+

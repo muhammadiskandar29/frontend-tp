@@ -269,23 +269,6 @@ ADMIN USERS PAGE (Scoped Styles)
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  max-height: 550px;
-  overflow-y: auto;
-  overflow-x: visible;
-  padding-right: 0.4rem;
-}
-
-.customers-table__body::-webkit-scrollbar {
-  width: 6px;
-}
-
-.customers-table__body::-webkit-scrollbar-thumb {
-  background: var(--dash-border);
-  border-radius: 999px;
-}
-
-.customers-table__body::-webkit-scrollbar-track {
-  background: transparent;
 }
 
 .users-table__row {
