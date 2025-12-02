@@ -132,6 +132,7 @@ export default function FollowupReportPage() {
     { label: "Pending", value: countByStatus.pending, icon: <Clock size={22} />, accent: "accent-amber" },
     { label: "Terkirim", value: countByStatus.terkirim, icon: <CheckCircle size={22} />, accent: "accent-emerald" },
     { label: "Gagal", value: countByStatus.gagal, icon: <XCircle size={22} />, accent: "accent-rose" },
+  ];
 
   const filterTabs = [
     { key: "all", label: "Semua", count: countByStatus.all },

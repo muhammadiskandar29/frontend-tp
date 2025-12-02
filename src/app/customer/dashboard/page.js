@@ -82,7 +82,7 @@ export default function DashboardPage() {
     );
   };
 
-  const adaptOrders = (orders = [], produkMap = {}, { status } = {}) =>
+  const adaptOrders = (orders = [], produkMap = {}) =>
     orders.map((order) => {
       // Ambil kategori dari produk yang di-fetch (lebih akurat)
       const produkData = produkMap[order.produk];
