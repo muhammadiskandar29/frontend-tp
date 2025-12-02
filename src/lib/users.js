@@ -9,11 +9,17 @@ import { API_ENDPOINTS } from "@/config/api";
 /**
  * GET /api/admin/users
  * Tampil Data User
+ * Response: { success: true, data: Array }
  * @returns {Promise<Array>} Array of users
  */
 export async function getUsers() {
   const res = await api(API_ENDPOINTS.admin.users, { method: "GET" });
-  return res.data || [];
+  // Handle response sesuai dokumentasi: { success: true, data: [...] }
+  if (res.success && Array.isArray(res.data)) {
+    return res.data;
+  }
+  // Fallback untuk kompatibilitas
+  return res.data || res || [];
 }
 
 /**

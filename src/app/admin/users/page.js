@@ -16,10 +16,12 @@ const ViewUserModal = dynamic(() => import("./viewUsers"), { ssr: false });
 const EmailSyncWarningModal = dynamic(() => import("./emailSyncWarning"), { ssr: false });
 
 const DIVISI_MAP = {
-  1: "Admin",
-  2: "Sales",
-  3: "Multimedia",
+  1: "Admin Super",
+  2: "Owner",
+  3: "Sales",
   4: "Finance",
+  5: "HR",
+  11: "Trainer",
 };
 
 const LEVEL_MAP = {
@@ -40,6 +42,14 @@ const DEFAULT_TOAST = { show: false, message: "", type: "success" };
 
 const formatDate = (value) => {
   if (!value) return "-";
+  
+  // Handle format dd-mm-yyyy dari backend
+  if (/^\d{2}-\d{2}-\d{4}$/.test(value)) {
+    const [day, month, year] = value.split("-");
+    return `${day}/${month}/${year}`;
+  }
+  
+  // Handle format lain (ISO, dll)
   const normalized = value.toString().replace(/-/g, "/");
   const parsed = new Date(normalized);
   if (Number.isNaN(parsed.getTime())) return value;

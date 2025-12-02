@@ -192,25 +192,50 @@ export default function EditUserModal({ user, onClose, onSave }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.nama || !formData.email || !formData.divisi || !formData.level) {
-      showToast("Semua field wajib diisi!", "warning");
+    // Validasi field wajib sesuai dokumentasi
+    if (!formData.nama || !formData.nama.trim()) {
+      showToast("Nama wajib diisi!", "warning");
       return;
     }
 
-    // validasi email format dan domain
+    if (!formData.email || !formData.email.trim()) {
+      showToast("Email wajib diisi!", "warning");
+      return;
+    }
+
+    // Validasi email format dan domain
     if (!validateEmail(formData.email.trim())) {
       showToast(emailError || "Email tidak valid!", "error");
       return;
     }
 
-    if (!formData.no_telp || formData.no_telp.trim().length < 10) {
-      showToast("Nomor telepon minimal 10 digit!", "error");
+    if (!formData.tanggal_lahir) {
+      showToast("Tanggal lahir wajib diisi!", "warning");
       return;
     }
 
-    // Validasi tanggal wajib diisi (sesuai requirement API)
-    if (!formData.tanggal_lahir || !formData.tanggal_join) {
-      showToast("Tanggal lahir dan tanggal join wajib diisi!", "warning");
+    if (!formData.tanggal_join) {
+      showToast("Tanggal join wajib diisi!", "warning");
+      return;
+    }
+
+    if (!formData.alamat || !formData.alamat.trim()) {
+      showToast("Alamat wajib diisi!", "warning");
+      return;
+    }
+
+    if (!formData.divisi) {
+      showToast("Divisi wajib dipilih!", "warning");
+      return;
+    }
+
+    if (!formData.level) {
+      showToast("Level wajib dipilih!", "warning");
+      return;
+    }
+
+    if (!formData.no_telp || formData.no_telp.trim().length < 10) {
+      showToast("Nomor telepon minimal 10 digit!", "error");
       return;
     }
 
@@ -231,15 +256,15 @@ export default function EditUserModal({ user, onClose, onSave }) {
     }
 
     // Build payload sesuai requirement API PUT /api/admin/users/{id}
-    // Format: semua field required, tanggal format dd-mm-yyyy, divisi & level string
+    // Format: semua field required, tanggal format dd-mm-yyyy, divisi & level integer
     const payload = {
       nama: formData.nama.trim(),
       email: formData.email.trim(),
       tanggal_lahir: toBackendFormat(formData.tanggal_lahir), // Format: dd-mm-yyyy
       tanggal_join: toBackendFormat(formData.tanggal_join), // Format: dd-mm-yyyy
-      alamat: formData.alamat.trim() || "",
-      divisi: formData.divisi.toString(), // String sesuai requirement backend
-      level: formData.level.toString(), // String sesuai requirement backend
+      alamat: formData.alamat.trim(),
+      divisi: parseInt(formData.divisi, 10), // Integer sesuai dokumentasi
+      level: parseInt(formData.level, 10), // Integer sesuai dokumentasi
       no_telp: formData.no_telp.trim(),
     };
 
@@ -414,10 +439,12 @@ export default function EditUserModal({ user, onClose, onSave }) {
                 <label>Divisi</label>
                 <select name="divisi" value={formData.divisi} onChange={handleChange}>
                   <option value="">Pilih Divisi</option>
-                  <option value="1">Admin</option>
-                  <option value="2">Sales</option>
-                  <option value="3">Multimedia</option>
+                  <option value="1">Admin Super</option>
+                  <option value="2">Owner</option>
+                  <option value="3">Sales</option>
                   <option value="4">Finance</option>
+                  <option value="5">HR</option>
+                  <option value="11">Trainer</option>
                 </select>
               </div>
 
