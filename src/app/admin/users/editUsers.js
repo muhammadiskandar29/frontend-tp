@@ -263,8 +263,8 @@ export default function EditUserModal({ user, onClose, onSave }) {
       tanggal_lahir: toBackendFormat(formData.tanggal_lahir), // Format: dd-mm-yyyy
       tanggal_join: toBackendFormat(formData.tanggal_join), // Format: dd-mm-yyyy
       alamat: formData.alamat.trim(),
-      divisi: parseInt(formData.divisi, 10), // Integer sesuai dokumentasi
-      level: parseInt(formData.level, 10), // Integer sesuai dokumentasi
+      divisi: String(formData.divisi), // String sesuai backend
+      level: String(formData.level), // String sesuai backend
       no_telp: formData.no_telp.trim(),
     };
 

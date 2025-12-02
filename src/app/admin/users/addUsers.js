@@ -95,8 +95,8 @@ export default function AddUserModal({ onClose, onSave }) {
       tanggal_lahir: normalizeTanggal(formData.tanggal_lahir),
       tanggal_join: normalizeTanggal(formData.tanggal_join),
       alamat: formData.alamat.trim(),
-      divisi: parseInt(formData.divisi, 10), // Integer sesuai dokumentasi
-      level: parseInt(formData.level, 10), // Integer sesuai dokumentasi
+      divisi: String(formData.divisi), // String sesuai backend
+      level: String(formData.level), // String sesuai backend
       no_telp: formData.no_telp.trim(),
     };
 
