@@ -8,7 +8,7 @@ import { getBackendUrl } from '@/config/api';
 export async function POST(request) {
   try {
     const body = await request.json();
-    const backendUrl = getBackendUrl('/login');
+    const backendUrl = getBackendUrl('/api/login');
     
     const response = await fetch(backendUrl, {
       method: 'POST',
