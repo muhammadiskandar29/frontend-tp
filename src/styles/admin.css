@@ -205,6 +205,21 @@ ADMIN USERS PAGE (Scoped Styles)
   min-width: 0;
 }
 
+/* === KATEGORI TABLE (3 columns: #, Nama Kategori, Actions) === */
+.users-panel .users-table__head,
+.users-panel .users-table__row {
+  grid-template-columns: 60px 1fr 150px;
+  gap: 1rem;
+  align-items: center;
+}
+
+.users-panel .users-table__cell--actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 /* === CUSTOMERS TABLE (Same format as Orders Table) === */
 .customers-table__wrapper {
   width: 100%;
@@ -540,6 +555,12 @@ ADMIN USERS PAGE (Scoped Styles)
     grid-template-columns: 44px minmax(200px, 1.5fr) minmax(110px, 0.7fr) minmax(180px, 1.1fr) minmax(120px, 0.75fr) minmax(120px, 0.65fr);
   }
 
+  /* Kategori table tetap 3 kolom */
+  .users-panel .users-table__head,
+  .users-panel .users-table__row {
+    grid-template-columns: 60px 1fr 150px;
+  }
+
   .customers-table__head,
   .customers-table__row {
     grid-template-columns: 50px minmax(140px, 1.1fr) minmax(180px, 1.3fr) repeat(3, minmax(140px, 1fr)) minmax(120px, 0.8fr)
@@ -573,6 +594,15 @@ ADMIN USERS PAGE (Scoped Styles)
   .customers-table__row {
     grid-template-columns: 1fr;
     gap: 0.75rem;
+  }
+
+  /* Kategori table tetap 3 kolom di tablet */
+  .users-panel .users-table__head {
+    display: grid;
+  }
+
+  .users-panel .users-table__row {
+    grid-template-columns: 60px 1fr 150px;
   }
 
   .users-table__cell,
@@ -823,23 +853,6 @@ ADMIN USERS PAGE (Scoped Styles)
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  max-height: 550px;
-  overflow-y: auto;
-  overflow-x: visible;
-  padding-right: 0.4rem;
-}
-
-.orders-table__body::-webkit-scrollbar {
-  width: 6px;
-}
-
-.orders-table__body::-webkit-scrollbar-thumb {
-  background: var(--dash-border);
-  border-radius: 999px;
-}
-
-.orders-table__body::-webkit-scrollbar-track {
-  background: transparent;
 }
 
 .orders-table__row {
