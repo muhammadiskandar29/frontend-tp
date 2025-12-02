@@ -18,7 +18,7 @@ export const config = {
   // Backend API URL
   backendUrl: getEnv(
     'BACKEND_URL',
-    'https://onedashboardapi-production.up.railway.app'
+    'http://3.105.234.181:8000'
   ),
 
   // API Base Path (untuk Next.js proxy)
