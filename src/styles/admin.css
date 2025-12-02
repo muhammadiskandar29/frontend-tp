@@ -23,7 +23,94 @@ ADMIN USERS PAGE (Scoped Styles)
 --shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
 }
 
-/* === CUSTOMERS LAYOUT === */
+/* === USERS LAYOUT (align with dashboard shell) === */
+.admin-users-shell {
+  gap: 2rem;
+}
+
+.admin-users-hero {
+  gap: 1.5rem;
+}
+
+.users-toolbar,
+.customers-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.users-search,
+.customers-search {
+  position: relative;
+  flex: 1 1 320px;
+  max-width: 460px;
+}
+
+.users-search__input,
+.customers-search__input {
+  width: 100%;
+  border: 1px solid var(--dash-border);
+  border-radius: 1rem;
+  background: var(--dash-surface);
+  color: var(--dash-text);
+  padding: 0.8rem 2.6rem 0.8rem 1rem;
+  font-size: 0.95rem;
+  transition: border 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.users-search__input::placeholder {
+  color: var(--dash-muted);
+}
+
+.users-search__input:focus {
+  outline: none;
+  border-color: var(--accent-indigo);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  background: #fff;
+}
+
+.users-search__icon,
+.customers-search__icon {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--dash-muted);
+  font-size: 0.95rem;
+}
+
+.users-button,
+.customers-button {
+  border: none;
+  border-radius: 999px;
+  padding: 0.85rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.users-button:focus-visible,
+.customers-button:focus-visible {
+  outline: 2px solid var(--accent-indigo);
+  outline-offset: 2px;
+}
+
+.users-button--primary {
+  background: #f1a124;
+  color: #fff;
+  box-shadow: 0 12px 25px rgba(241, 161, 36, 0.25);
+}
+
+.users-button--primary:hover {
+  background: #df9620;
+  transform: translateY(-1px);
+}
 
 .customers-button--primary {
   background: #f1a124;
@@ -56,15 +143,31 @@ ADMIN USERS PAGE (Scoped Styles)
   flex-wrap: wrap;
 }
 
-/* === KATEGORI PANEL (uses users-table but with different layout) === */
-.kategori-panel {
+.admin-users-summary .summary-card {
+  min-height: 110px;
+}
+
+.users-panel {
   overflow: hidden;
 }
 
-.kategori-panel .users-table__wrapper {
+.users-table__wrapper {
   width: 100%;
-  overflow-x: visible;
+  overflow-x: auto;
   padding-bottom: 0.25rem;
+}
+
+.users-table__wrapper::-webkit-scrollbar {
+  height: 6px;
+}
+
+.users-table__wrapper::-webkit-scrollbar-thumb {
+  background: var(--dash-border);
+  border-radius: 999px;
+}
+
+.users-table__wrapper::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .customers-table__wrapper {
@@ -86,24 +189,31 @@ ADMIN USERS PAGE (Scoped Styles)
   background: transparent;
 }
 
+.users-table,
 .customers-table {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  width: 100%;
-  min-width: fit-content;
+  gap: 0.75rem;
+}
+
+.users-table__head,
+.users-table__row {
+  display: grid;
+  grid-template-columns: 48px minmax(220px, 1.6fr) minmax(110px, 0.75fr) minmax(200px, 1.2fr) minmax(120px, 0.75fr) minmax(120px, 0.65fr);
+  gap: 0.4rem;
+  align-items: stretch;
+  min-width: 0;
 }
 
 /* === KATEGORI TABLE (3 columns: #, Nama Kategori, Actions) === */
-/* Kategori menggunakan users-table, tapi dengan layout 3 kolom */
-.kategori-panel .users-table__head,
-.kategori-panel .users-table__row {
+.users-panel .users-table__head,
+.users-panel .users-table__row {
   grid-template-columns: 60px 1fr 150px;
   gap: 1rem;
   align-items: center;
 }
 
-.kategori-panel .users-table__cell--actions {
+.users-panel .users-table__cell--actions {
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
@@ -149,6 +259,14 @@ ADMIN USERS PAGE (Scoped Styles)
 }
 
 
+.users-table__head {
+  padding: 0.85rem 1rem;
+  color: var(--dash-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 .customers-table__head {
   padding: 0.6rem 0.75rem;
   color: var(--dash-muted);
@@ -157,6 +275,11 @@ ADMIN USERS PAGE (Scoped Styles)
   text-transform: uppercase;
 }
 
+.users-table__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
 
 .customers-table__body {
   display: flex;
@@ -164,6 +287,15 @@ ADMIN USERS PAGE (Scoped Styles)
   gap: 0.5rem;
 }
 
+
+.users-table__row {
+  background: var(--dash-surface);
+  border: 1px solid var(--dash-border);
+  border-radius: 1.25rem;
+  padding: 0.75rem 0.85rem;
+  box-shadow: var(--dash-shadow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
 
 .customers-table__row {
   background: var(--dash-surface);
@@ -174,9 +306,20 @@ ADMIN USERS PAGE (Scoped Styles)
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+.users-table__row:hover,
 .customers-table__row:hover {
   transform: translateY(-2px);
   box-shadow: 0 24px 45px rgba(15, 23, 42, 0.14);
+}
+
+.users-table__cell {
+  font-size: 0.9rem;
+  color: var(--dash-text);
+  min-width: 0;
+  word-break: break-word;
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .customers-table__cell {
@@ -190,9 +333,133 @@ ADMIN USERS PAGE (Scoped Styles)
   line-height: 1.4;
 }
 
+.users-table__cell--strong,
 .customers-table__cell--strong {
   font-weight: 600;
   color: var(--dash-text);
+}
+
+/* Same as orders-table__cell--strong */
+
+.users-table__cell--profile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.users-table__cell--division {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.users-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.users-name {
+  font-weight: 600;
+  color: var(--dash-text);
+  font-size: 1rem;
+}
+
+.users-email {
+  font-size: 0.82rem;
+  color: var(--dash-muted-strong);
+}
+
+.users-tags {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.users-level-chip {
+  background: rgba(241, 161, 36, 0.15);
+  color: #b45309;
+  border-radius: 999px;
+  padding: 0.18rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.users-table__cell--contact {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  color: var(--dash-muted-strong);
+  line-height: 1.4;
+}
+
+.users-contact-line {
+  font-size: 0.85rem;
+}
+
+.users-contact-line--muted {
+  color: var(--dash-muted);
+}
+
+.users-table__cell--timeline {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.users-timeline-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.users-label {
+  font-size: 0.78rem;
+  color: var(--dash-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.users-label i {
+  font-size: 0.8rem;
+}
+
+.users-value {
+  font-weight: 600;
+  color: var(--dash-text);
+}
+
+.users-pill {
+  border-radius: 999px;
+  padding: 0.25rem 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border: 1px solid transparent;
+}
+
+.users-pill--gold {
+  background: rgba(241, 161, 36, 0.15);
+  color: #b45309;
+  border-color: rgba(241, 161, 36, 0.35);
+}
+
+.users-pill--muted {
+  background: rgba(148, 163, 184, 0.2);
+  color: #475569;
+  border-color: rgba(148, 163, 184, 0.35);
+}
+
+.users-table__cell--actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  flex-wrap: wrap;
 }
 
 .customers-table__cell--actions {
@@ -200,6 +467,20 @@ ADMIN USERS PAGE (Scoped Styles)
   justify-content: flex-end;
   gap: 0.3rem;
   flex-wrap: wrap;
+}
+
+.users-action-btn {
+  border: 1px solid transparent;
+  border-radius: 0.65rem;
+  padding: 0.35rem 0.55rem;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease, border 0.2s ease;
+  gap: 0.25rem;
+  min-height: 34px;
 }
 
 .customers-action-btn {
@@ -224,33 +505,44 @@ ADMIN USERS PAGE (Scoped Styles)
   transform: translateY(-1px);
 }
 
+.users-action-btn:focus-visible,
 .customers-action-btn:focus-visible {
   outline: 2px solid var(--accent-indigo);
   outline-offset: 2px;
 }
 
+.users-action-btn__label {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.users-action-btn--ghost,
 .customers-action-btn--ghost {
   background: #eef2ff;
   color: #4338ca;
   border-color: #c7d2fe;
 }
 
+.users-action-btn--ghost:hover,
 .customers-action-btn--ghost:hover {
   background: #c7d2fe;
   transform: translateY(-1px);
 }
 
+.users-action-btn--danger,
 .customers-action-btn--danger {
   background: #fee2e2;
   color: #b91c1c;
   border-color: #fecdd3;
 }
 
+.users-action-btn--danger:hover,
 .customers-action-btn--danger:hover {
   background: #fecaca;
   transform: translateY(-1px);
 }
 
+.users-empty,
 .customers-empty {
   text-align: center;
   color: var(--dash-muted-strong);
@@ -260,9 +552,14 @@ ADMIN USERS PAGE (Scoped Styles)
 }
 
 @media (max-width: 1200px) {
+  .users-table__head,
+  .users-table__row {
+    grid-template-columns: 44px minmax(200px, 1.5fr) minmax(110px, 0.7fr) minmax(180px, 1.1fr) minmax(120px, 0.75fr) minmax(120px, 0.65fr);
+  }
+
   /* Kategori table tetap 3 kolom */
-  .kategori-panel .users-table__head,
-  .kategori-panel .users-table__row {
+  .users-panel .users-table__head,
+  .users-panel .users-table__row {
     grid-template-columns: 60px 1fr 150px;
   }
 
@@ -271,37 +568,46 @@ ADMIN USERS PAGE (Scoped Styles)
     grid-template-columns: 50px minmax(140px, 1.1fr) minmax(180px, 1.3fr) repeat(3, minmax(140px, 1fr)) minmax(120px, 0.8fr)
       minmax(110px, 0.7fr);
   }
+
+  .users-action-btn__label {
+    display: none;
+  }
 }
 
 @media (max-width: 900px) {
+  .users-toolbar,
   .customers-toolbar {
     flex-direction: column;
     align-items: stretch;
   }
 
+  .users-button,
   .customers-button {
     width: 100%;
     justify-content: center;
   }
 
+  .users-table__head,
   .customers-table__head {
     display: none;
   }
 
+  .users-table__row,
   .customers-table__row {
     grid-template-columns: 1fr;
     gap: 0.75rem;
   }
 
   /* Kategori table tetap 3 kolom di tablet */
-  .kategori-panel .users-table__head {
+  .users-panel .users-table__head {
     display: grid;
   }
 
-  .kategori-panel .users-table__row {
+  .users-panel .users-table__row {
     grid-template-columns: 60px 1fr 150px;
   }
 
+  .users-table__cell,
   .customers-table__cell {
     display: flex;
     justify-content: space-between;
@@ -311,6 +617,7 @@ ADMIN USERS PAGE (Scoped Styles)
     overflow: visible;
   }
 
+  .users-table__cell::before,
   .customers-table__cell::before {
     content: attr(data-label);
     font-size: 0.85rem;
@@ -320,13 +627,28 @@ ADMIN USERS PAGE (Scoped Styles)
     letter-spacing: 0.08em;
   }
 
+  .users-table__cell[data-label="#"]::before,
   .customers-table__cell[data-label="#"]::before {
     content: "#";
   }
 
+  .users-table__cell--actions,
   .customers-table__cell--actions {
     justify-content: flex-start;
     gap: 0.5rem;
+  }
+
+  .users-table__cell--profile {
+    gap: 0.4rem;
+  }
+
+  .users-table__cell--division {
+    justify-content: space-between;
+  }
+
+  .users-table__cell--timeline {
+    flex-direction: column;
+    gap: 0.75rem;
   }
 }
 
