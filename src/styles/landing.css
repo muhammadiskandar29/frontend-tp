@@ -75,8 +75,13 @@ body {
 .promo-text strong {
   font-size: 0.95rem;
   display: block;
-  margin-top: 4px;
+  margin-bottom: 4px;
   font-weight: 700;
+}
+
+.promo-text span {
+  font-size: 0.9rem;
+  display: block;
 }
 
 /* Title - Compact Typography */
@@ -806,21 +811,6 @@ body {
     padding: 20px;
   }
 
-  .top-orange-section {
-    margin: -25px -20px 24px -20px;
-    padding: 16px;
-  }
-
-  .payment-options {
-    flex-direction: column;
-  }
-
-  .payment-option {
-    width: 100%;
-    min-width: auto;
-  }
-}
-
   .special-offer-title {
     font-size: 1.1rem;
   }
@@ -842,6 +832,20 @@ body {
   .special-offer-benefits li {
     font-size: 0.8rem;
     padding: 10px 12px;
+  }
+
+  .top-orange-section {
+    margin: -25px -20px 24px -20px;
+    padding: 16px;
+  }
+
+  .payment-options {
+    flex-direction: column;
+  }
+
+  .payment-option {
+    width: 100%;
+    min-width: auto;
   }
 
   .cta-button {

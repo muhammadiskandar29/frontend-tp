@@ -448,9 +448,9 @@ export default function LandingPage() {
           <div className="top-orange-section">
             {/* Judul Promo */}
             <div className="promo-text" role="banner">
-              <h1>Tawaran Terbatas!</h1>
+              <strong>Tawaran Terbatas!</strong>
               <br />
-              <h2>Isi Form Hari Ini Untuk Mendapatkan Akses Group Exclusive!</h2>
+              <span>Isi Form Hari Ini Untuk Mendapatkan Akses Group Exclusive!</span>
             </div>
 
             {/* Nama Produk */}
