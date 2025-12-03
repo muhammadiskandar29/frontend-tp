@@ -802,11 +802,34 @@ export default function Page() {
       );
       const produkResponse = await produkRes.json();
       
+      console.log("🔍 [EDIT PRODUCT] Response:", produkResponse);
+      console.log("🔍 [EDIT PRODUCT] Response.data:", produkResponse.data);
+      console.log("🔍 [EDIT PRODUCT] Is array:", Array.isArray(produkResponse.data));
+      
       if (!produkRes.ok || !produkResponse.success) {
         throw new Error(produkResponse.message || "Gagal memuat data produk");
       }
 
-      const produkData = produkResponse.data || produkResponse;
+      // Handle response yang bisa berupa array atau object
+      let produkData = null;
+      if (Array.isArray(produkResponse.data)) {
+        // Jika array, ambil elemen pertama
+        produkData = produkResponse.data.length > 0 ? produkResponse.data[0] : null;
+      } else if (produkResponse.data && typeof produkResponse.data === "object") {
+        // Jika object langsung
+        produkData = produkResponse.data;
+      } else {
+        // Fallback ke produkResponse jika struktur berbeda
+        produkData = produkResponse;
+      }
+
+      if (!produkData) {
+        throw new Error("Data produk tidak ditemukan");
+      }
+
+      console.log("✅ [EDIT PRODUCT] Produk data loaded:", produkData);
+      console.log("✅ [EDIT PRODUCT] Nama:", produkData.nama);
+      console.log("✅ [EDIT PRODUCT] Kategori:", produkData.kategori, produkData.kategori_rel);
 
       // Helper function untuk parse JSON fields
       const safeParseJSON = (value, fallback = []) => {
@@ -907,9 +930,9 @@ export default function Page() {
         }
       }
 
-      setForm((f) => ({
-        ...f,
-        // Spread produkData tapi override field yang perlu di-parse
+      const updatedForm = {
+        ...defaultForm, // Start with default form
+        // Override with actual data
         nama: produkData.nama || "",
         kode: kodeGenerated,
         url: "/" + kodeGenerated, // Selalu generate URL dari kode (bukan dari database)
@@ -921,7 +944,9 @@ export default function Page() {
         landingpage: produkData.landingpage || "1",
         id: produkData.id || productId,
         kategori: kategoriId,
-        assign: produkData.assign_rel ? produkData.assign_rel.map((u) => u.id) : safeParseJSON(produkData.assign, []),
+        assign: produkData.assign_rel 
+          ? produkData.assign_rel.map((u) => u.id) 
+          : safeParseJSON(produkData.assign, []).map(a => typeof a === "number" ? a : Number(a)).filter(a => !isNaN(a)),
         user_input: produkData.user_input_rel?.id || produkData.user_input || null,
         custom_field: parsedCustomField,
         list_point: parsedListPoint,
@@ -935,7 +960,10 @@ export default function Page() {
         gambar: parsedGambar,
         header: headerImage,
         video: parsedVideo,
-      }));
+      };
+      
+      console.log("🔧 [EDIT] Setting form with data:", updatedForm);
+      setForm(updatedForm);
       
       // Set user yang membuat produk (created by)
       if (produkData.user_input_rel) {
@@ -953,10 +981,22 @@ export default function Page() {
         gambar: parsedGambar.length,
         created_by: produkData.user_input_rel,
       });
+      
+      console.log("✅ [EDIT] Form state after setForm:", {
+        nama: form.nama,
+        kategori: form.kategori,
+        harga_asli: form.harga_asli,
+        harga_coret: form.harga_coret,
+      });
     } catch (err) {
-      console.error("Fetch product data error:", err);
+      console.error("❌ [EDIT PRODUCT] Fetch product data error:", err);
+      console.error("❌ [EDIT PRODUCT] Error details:", {
+        message: err.message,
+        stack: err.stack,
+        productId: productId
+      });
       if (setLoadingState) {
-        alert("Gagal memuat data produk!");
+        alert(`Gagal memuat data produk: ${err.message || "Unknown error"}`);
       }
     } finally {
       if (setLoadingState) setLoading(false);
