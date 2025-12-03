@@ -472,16 +472,15 @@ export default function LandingPage() {
           <div className="top-orange-section">
             {/* Judul Promo */}
             <div className="promo-text" role="banner">
-              <strong>Tawaran Terbatas!</strong>
-              <br />
-              <span>Isi Form Hari Ini Untuk Mendapatkan Akses Group Exclusive!</span>
+              <h1 className="promo-title-h1">Tawaran Terbatas!</h1>
+              <h2 className="promo-title-h2">Isi Form Hari Ini Untuk Mendapatkan Akses Group Exclusive!</h2>
             </div>
 
             {/* Nama Produk */}
             <h1 className="preview-title" itemProp="name">{form.nama}</h1>
           </div>
 
-          {/* Header - Outside orange section, with 10% overlap */}
+          {/* Header - Outside orange section, with 50% overlap */}
           <div className="header-wrapper header-overlap">
             {headerSrc ? (
               <img 
@@ -744,21 +743,18 @@ export default function LandingPage() {
                                 itemProp="author"
                                 loading="lazy"
                               />
-                              <span className="testi-verified">★</span>
                             </div>
                           ) : (
                             <div className="testi-avatar-wrapper">
                               <div className="testi-avatar-placeholder">
                                 {t.nama?.charAt(0)?.toUpperCase() || "U"}
                               </div>
-                              <span className="testi-verified">★</span>
                             </div>
                           )}
                           <div className="testi-info">
                             <div className="testi-name" itemProp="author" itemScope itemType="https://schema.org/Person">
                               <span itemProp="name">{t.nama}</span>
                             </div>
-                            <div className="testi-time">2 years ago</div>
                           </div>
                         </div>
                         <div className="testi-stars">
