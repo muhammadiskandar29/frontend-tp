@@ -12,7 +12,7 @@ function handleUnauthorized() {
   localStorage.removeItem("customer_token");
   localStorage.removeItem("customer_user");
   toast.error("Sesi berakhir. Silakan login kembali.");
-  window.location.href = "/customer/login";
+  window.location.href = "/customer";
 }
 
 export async function customerFetch(endpoint, options = {}) {

@@ -44,7 +44,7 @@ export const API_ENDPOINTS = {
 
   // Customer
   customer: {
-    login: '/customer/login',
+    login: '/customer',
     register: '/customer/register',
     profile: '/customer',
     dashboard: '/customer/dashboard',

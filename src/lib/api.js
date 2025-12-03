@@ -90,7 +90,7 @@ const handleResponse = async (res, endpoint, options = {}) => {
       localStorage.removeItem("customer_token");
       setTimeout(() => {
         const loginPath = options.useCustomerToken 
-          ? "/customer/login" 
+          ? "/customer" 
           : "/login";
         window.location.href = loginPath;
       }, 1000);

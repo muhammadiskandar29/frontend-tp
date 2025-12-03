@@ -29,7 +29,7 @@ export default function WebinarGatewayPage() {
 
     const session = getCustomerSession();
     if (!session.token) {
-      router.replace("/customer/login");
+      router.replace("/customer");
       return;
     }
 

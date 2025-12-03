@@ -92,7 +92,7 @@ export default function CustomerOTPPage() {
     const session = getCustomerSession();
     if (!session.user || !session.user.id) {
       console.error("❌ [OTP] No user data, redirecting to login");
-      router.replace("/customer/login");
+      router.replace("/customer");
       return;
     }
     

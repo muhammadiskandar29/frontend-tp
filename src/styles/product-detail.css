@@ -218,13 +218,35 @@ PRODUCT DETAIL PAGE STYLES
   display: block;
 }
 
+.price-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0.5rem 0;
+}
+
 .price-coret {
   text-decoration: line-through;
   color: #9ca3af;
   font-size: 1.25rem;
   font-weight: 500;
-  margin-top: 0.25rem;
   display: block;
+  order: 1;
+}
+
+.price {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #10b981;
+  display: block;
+  order: 2;
+}
+
+.product-code {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.5rem;
+  font-weight: 500;
 }
 
 /* ===================== */
@@ -326,6 +348,138 @@ PRODUCT DETAIL PAGE STYLES
   color: #6b7280;
   font-weight: 500;
   line-height: 1.4;
+}
+
+/* ===================== */
+/*      LIST POINT      */
+/* ===================== */
+.list-point-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.list-point-list li {
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  background: #f0f9ff;
+  border-left: 4px solid #3b82f6;
+  border-radius: 6px;
+  color: #1e40af;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.list-point-list li:last-child {
+  margin-bottom: 0;
+}
+
+/* ===================== */
+/*      TESTIMONI       */
+/* ===================== */
+.testimoni-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.testimoni-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: #fef3c7;
+  border-radius: 12px;
+  border-left: 4px solid #f59e0b;
+}
+
+.testimoni-image {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.testimoni-content {
+  flex: 1;
+}
+
+.testimoni-content h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.testimoni-content p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #78350f;
+  line-height: 1.6;
+}
+
+/* ===================== */
+/*        VIDEO         */
+/* ===================== */
+.video-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.video-item {
+  padding: 0.75rem 1rem;
+  background: #f3f4f6;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.video-item a {
+  color: #2563eb;
+  text-decoration: none;
+  font-size: 0.9rem;
+  word-break: break-all;
+  transition: color 0.2s ease;
+}
+
+.video-item a:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+/* ===================== */
+/*     CUSTOM FIELD     */
+/* ===================== */
+.custom-field-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.custom-field-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.field-label {
+  font-weight: 600;
+  color: #6b7280;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+  min-width: 120px;
+}
+
+.field-value {
+  color: #111827;
+  font-size: 0.95rem;
+  text-align: right;
+  word-break: break-word;
 }
 
 /* ===================== */

@@ -70,7 +70,7 @@ export default function CustomerLayout({ children }) {
       
       // Delay sedikit sebelum redirect agar console log bisa dilihat
       setTimeout(() => {
-        router.replace("/customer/login");
+        router.replace("/customer");
       }, 2000); // Delay lebih lama untuk debugging
       return;
     }
@@ -88,7 +88,7 @@ export default function CustomerLayout({ children }) {
   const handleLogout = () => {
     localStorage.removeItem("customer_token");
     localStorage.removeItem("customer_user");
-    router.replace("/customer/login");
+    router.replace("/customer");
   };
 
   if (!isAuthorized) {
