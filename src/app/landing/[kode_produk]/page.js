@@ -6,6 +6,29 @@ import { toast } from "react-hot-toast";
 import Loading from "@/app/loading";
 import "@/styles/landing.css";
 
+// FAQ Component
+function FAQItem({ question, answer }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="faq-item">
+      <button 
+        className="faq-question" 
+        onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
+      >
+        <span>{question}</span>
+        <span className="faq-icon">{isOpen ? "−" : "+"}</span>
+      </button>
+      {isOpen && (
+        <div className="faq-answer">
+          <p>{answer}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function LandingPage() {
   const { kode_produk } = useParams();
   const searchParams = useSearchParams();
@@ -455,23 +478,23 @@ export default function LandingPage() {
 
             {/* Nama Produk */}
             <h1 className="preview-title" itemProp="name">{form.nama}</h1>
+          </div>
 
-            {/* Header */}
-            <div className="header-wrapper">
-              {headerSrc ? (
-                <img 
-                  src={headerSrc} 
-                  alt={`${form.nama} - Header Image`}
-                  className="preview-header-img"
-                  itemProp="image"
-                  loading="eager"
-                  width="900"
-                  height="500"
-                />
-              ) : (
-                <div className="preview-header-img" style={{ background: "#e5e7eb" }} aria-label="Product header placeholder" />
-              )}
-            </div>
+          {/* Header - Outside orange section, with 10% overlap */}
+          <div className="header-wrapper header-overlap">
+            {headerSrc ? (
+              <img 
+                src={headerSrc} 
+                alt={`${form.nama} - Header Image`}
+                className="preview-header-img"
+                itemProp="image"
+                loading="eager"
+                width="900"
+                height="500"
+              />
+            ) : (
+              <div className="preview-header-img" style={{ background: "#e5e7eb" }} aria-label="Product header placeholder" />
+            )}
           </div>
           
           {/* Deskripsi */}
@@ -824,75 +847,110 @@ export default function LandingPage() {
           </section>
         )}
 
-        {/* Payment - Horizontal Layout */}
-<section className="payment-section" aria-label="Payment methods">
-  <h2 className="payment-title">Metode Pembayaran</h2>
-  <div className="payment-options">
-    {/* E-Payment */}
-    <label className="payment-option">
-      <input
-        type="radio"
-        name="payment"
-        value="ewallet"
-        onChange={(e) => setPaymentMethod(e.target.value)}
-      />
-      <span className="payment-label">E-Payment</span>
-      <div className="payment-icons-inline">
-        <img className="pay-icon" src="/assets/qris.svg" alt="QRIS" />
-        <img className="pay-icon" src="/assets/dana.png" alt="DANA" />
-        <img className="pay-icon" src="/assets/ovo.png" alt="OVO" />
-        <img className="pay-icon" src="/assets/link.png" alt="LinkAja" />
-      </div>
-    </label>
+        {/* Payment - Vertical Layout, Horizontal Items */}
+        <section className="payment-section" aria-label="Payment methods">
+          <h2 className="payment-title">Metode Pembayaran</h2>
+          <div className="payment-options-vertical">
+            {/* E-Payment */}
+            <label className="payment-option-row">
+              <input
+                type="radio"
+                name="payment"
+                value="ewallet"
+                onChange={(e) => setPaymentMethod(e.target.value)}
+              />
+              <span className="payment-label">E-Payment</span>
+              <div className="payment-icons-inline">
+                <img className="pay-icon" src="/assets/qris.svg" alt="QRIS" />
+                <img className="pay-icon" src="/assets/dana.png" alt="DANA" />
+                <img className="pay-icon" src="/assets/ovo.png" alt="OVO" />
+                <img className="pay-icon" src="/assets/link.png" alt="LinkAja" />
+              </div>
+            </label>
 
-    {/* Credit */}
-    <label className="payment-option">
-      <input
-        type="radio"
-        name="payment"
-        value="cc"
-        onChange={(e) => setPaymentMethod(e.target.value)}
-      />
-      <span className="payment-label">Credit / Debit Card</span>
-      <div className="payment-icons-inline">
-        <img className="pay-icon" src="/assets/visa.svg" alt="Visa" />
-        <img className="pay-icon" src="/assets/master.png" alt="Mastercard" />
-        <img className="pay-icon" src="/assets/jcb.png" alt="JCB" />
-      </div>
-    </label>
+            {/* Credit */}
+            <label className="payment-option-row">
+              <input
+                type="radio"
+                name="payment"
+                value="cc"
+                onChange={(e) => setPaymentMethod(e.target.value)}
+              />
+              <span className="payment-label">Credit / Debit Card</span>
+              <div className="payment-icons-inline">
+                <img className="pay-icon" src="/assets/visa.svg" alt="Visa" />
+                <img className="pay-icon" src="/assets/master.png" alt="Mastercard" />
+                <img className="pay-icon" src="/assets/jcb.png" alt="JCB" />
+              </div>
+            </label>
 
-    {/* Virtual Account */}
-    <label className="payment-option">
-      <input
-        type="radio"
-        name="payment"
-        value="va"
-        onChange={(e) => setPaymentMethod(e.target.value)}
-      />
-      <span className="payment-label">Virtual Account</span>
-      <div className="payment-icons-inline">
-        <img className="pay-icon" src="/assets/bca.png" alt="BCA" />
-        <img className="pay-icon" src="/assets/mandiri.png" alt="Mandiri" />
-        <img className="pay-icon" src="/assets/bni.png" alt="BNI" />
-        <img className="pay-icon" src="/assets/permata.svg" alt="Permata" />
-      </div>
-    </label>
+            {/* Virtual Account */}
+            <label className="payment-option-row">
+              <input
+                type="radio"
+                name="payment"
+                value="va"
+                onChange={(e) => setPaymentMethod(e.target.value)}
+              />
+              <span className="payment-label">Virtual Account</span>
+              <div className="payment-icons-inline">
+                <img className="pay-icon" src="/assets/bca.png" alt="BCA" />
+                <img className="pay-icon" src="/assets/mandiri.png" alt="Mandiri" />
+                <img className="pay-icon" src="/assets/bni.png" alt="BNI" />
+                <img className="pay-icon" src="/assets/permata.svg" alt="Permata" />
+              </div>
+            </label>
 
-    {/* Manual Transfer */}
-    <label className="payment-option">
-      <input
-        type="radio"
-        name="payment"
-        value="manual"
-        onChange={(e) => setPaymentMethod(e.target.value)}
-      />
-      <span className="payment-label">Bank Transfer (Manual)</span>
-      <div className="payment-icons-inline">
-        <img className="pay-icon" src="/assets/bca.png" alt="BCA" />
-      </div>
-    </label>
-  </div>
-</section>
+            {/* Manual Transfer */}
+            <label className="payment-option-row">
+              <input
+                type="radio"
+                name="payment"
+                value="manual"
+                onChange={(e) => setPaymentMethod(e.target.value)}
+              />
+              <span className="payment-label">Bank Transfer (Manual)</span>
+              <div className="payment-icons-inline">
+                <img className="pay-icon" src="/assets/bca.png" alt="BCA" />
+              </div>
+            </label>
+          </div>
+        </section>
+
+        {/* FAQ Section */}
+        <section className="faq-section" aria-label="Frequently Asked Questions">
+          <h2 className="faq-title">Pertanyaan yang Sering Diajukan</h2>
+          <div className="faq-container">
+            <FAQItem 
+              question="Apa yang akan saya dapatkan dari Ebook ini?" 
+              answer="Dengan membeli Ebook ini, Anda akan mendapatkan panduan lengkap dan praktis yang dapat diakses kapan saja. Ebook ini berisi materi yang telah disusun secara sistematis untuk membantu Anda memahami topik secara mendalam."
+            />
+            <FAQItem 
+              question="Bagaimana cara mengakses Webinar setelah pembayaran?" 
+              answer="Setelah pembayaran Anda dikonfirmasi, Anda akan menerima email berisi link akses Webinar dan detail meeting. Link tersebut dapat digunakan untuk bergabung pada waktu yang telah ditentukan. Pastikan Anda sudah menyiapkan koneksi internet yang stabil."
+            />
+            <FAQItem 
+              question="Apa saja yang akan dibahas dalam Seminar ini?" 
+              answer="Seminar ini akan membahas berbagai topik penting mulai dari dasar-dasar hingga strategi lanjutan. Anda akan mendapatkan insight langsung dari para ahli, kesempatan networking, dan materi yang dapat langsung diterapkan."
+            />
+            <FAQItem 
+              question="Apakah Buku ini tersedia dalam format digital?" 
+              answer="Ya, Buku ini tersedia dalam format digital yang dapat diakses melalui platform kami. Setelah pembayaran, Anda akan mendapatkan akses untuk mengunduh atau membaca langsung melalui aplikasi yang telah kami sediakan."
+            />
+            <FAQItem 
+              question="Berapa lama akses Ecourse ini berlaku?" 
+              answer="Akses Ecourse ini berlaku seumur hidup. Setelah pembayaran dikonfirmasi, Anda dapat mengakses semua materi kapan saja dan mempelajarinya sesuai dengan kecepatan Anda sendiri."
+            />
+            <FAQItem 
+              question="Apa yang membedakan Workshop ini dengan yang lain?" 
+              answer="Workshop ini dirancang dengan pendekatan praktis dan interaktif. Anda akan mendapatkan hands-on experience, feedback langsung dari mentor, dan kesempatan untuk berdiskusi dengan peserta lain. Materi disusun berdasarkan pengalaman nyata di lapangan."
+            />
+            <FAQItem 
+              question="Bagaimana sistem Private Mentoring ini berjalan?" 
+              answer="Private Mentoring memberikan Anda akses eksklusif untuk konsultasi langsung dengan mentor berpengalaman. Anda akan mendapatkan sesi one-on-one yang disesuaikan dengan kebutuhan dan tujuan Anda, dengan jadwal yang fleksibel."
+            />
+          </div>
+        </section>
 
         {/* CTA */}
         <button 
