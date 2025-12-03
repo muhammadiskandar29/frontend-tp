@@ -810,7 +810,7 @@ useEffect(() => {
       <div className="form-header-section">
         <button
           className="back-to-products-btn"
-          onClick={() => router.push("/admin/produk")}
+          onClick={() => router.push("/admin/products")}
           aria-label="Back to products list"
         >
           <ArrowLeft size={18} />
