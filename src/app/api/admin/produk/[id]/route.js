@@ -335,15 +335,49 @@ export async function PUT(request, { params }) {
       // Forward ke backend Laravel dengan FormData menggunakan axios POST + _method=PUT
       // Laravel membutuhkan POST dengan _method=PUT untuk FormData multipart requests
       try {
+        // CRITICAL: Log final FormData before sending
+        console.log(`[ROUTE_UPDATE_PUT] ========== FINAL FORMDATA BEFORE SENDING ==========`);
+        console.log(`[ROUTE_UPDATE_PUT] Total fields to send: ${appendedCount}`);
+        console.log(`[ROUTE_UPDATE_PUT] Critical fields check:`);
+        const criticalFields = ['nama', 'kode', 'url', 'kategori', 'harga_asli', 'harga_coret', 'deskripsi', 'video', 'assign', '_method'];
+        for (const field of criticalFields) {
+          // form-data package tidak support .get(), jadi kita cek dari appendedFields
+          const fieldEntry = appendedFields.find(f => f.key === field);
+          if (fieldEntry) {
+            const strValue = String(fieldEntry.value || '');
+            console.log(`[ROUTE_UPDATE_PUT]   ${field}: ${strValue.length > 200 ? strValue.substring(0, 200) + "..." : strValue}`);
+          } else {
+            console.log(`[ROUTE_UPDATE_PUT]   ${field}: NULL (MISSING!)`);
+          }
+        }
+        console.log(`[ROUTE_UPDATE_PUT] ===========================================`);
+        
+        // Forward dengan axios yang lebih kompatibel dengan form-data package
+        // SAMA PERSIS dengan route POST, hanya endpoint dan _method yang berbeda
+        console.log("[ROUTE_UPDATE_PUT] Sending request to backend using axios...");
+        
+        // Get headers - PENTING: jangan override content-type
+        const headers = {
+          ...formDataHeaders, // Ini sudah include content-type dengan boundary
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        };
+        
+        // Remove content-length jika ada (biar form-data handle sendiri) - SAMA dengan route POST
+        delete headers["content-length"];
+        
+        console.log("[ROUTE_UPDATE_PUT] Final headers:", {
+          "content-type": headers["content-type"]?.substring(0, 50) + "...",
+          "accept": headers["Accept"],
+          "authorization": headers["Authorization"]?.substring(0, 30) + "...",
+          "has-boundary": headers["content-type"]?.includes("boundary")
+        });
+        
         const axiosResponse = await axios.post(
           `${BACKEND_URL}/api/admin/produk/${id}`,
-          forwardFormData,
+          forwardFormData, // form-data package
           {
-            headers: {
-              ...formDataHeaders,
-              Accept: "application/json",
-              Authorization: `Bearer ${token}`,
-            },
+            headers: headers,
             maxContentLength: Infinity,
             maxBodyLength: Infinity,
           }
