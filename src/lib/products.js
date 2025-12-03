@@ -82,8 +82,15 @@ export async function getProductById(id) {
       throw new Error(res?.message || "Gagal mengambil detail produk");
     }
 
-    // Backend kirim object → pastikan object valid
-    const detail = typeof res.data === "object" && res.data !== null ? res.data : null;
+    // Backend bisa kirim array atau object
+    let detail = null;
+    if (Array.isArray(res.data)) {
+      // Jika array, ambil elemen pertama
+      detail = res.data.length > 0 ? res.data[0] : null;
+    } else if (typeof res.data === "object" && res.data !== null) {
+      // Jika object langsung
+      detail = res.data;
+    }
 
     console.log("🔍 getProductById →", detail);
 

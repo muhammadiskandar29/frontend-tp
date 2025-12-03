@@ -11,9 +11,21 @@ import "@/styles/product-detail.css";
 
 // Helper function untuk build image URL via proxy
 const buildImageUrl = (path) => {
-  if (!path) return "/placeholder-image.png";
+  if (!path) return null;
+  
+  // Jika path sudah full URL, return langsung
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+  
   // Bersihkan path dari prefix yang tidak diperlukan
-  const cleanPath = path.replace(/^\/?(storage\/)?/, "");
+  let cleanPath = path.replace(/^\/?(storage\/)?/, "");
+  
+  // Pastikan path tidak kosong
+  if (!cleanPath || cleanPath.trim() === "") {
+    return null;
+  }
+  
   return `/api/image?path=${encodeURIComponent(cleanPath)}`;
 };
 
@@ -53,7 +65,16 @@ export default function DetailProdukPage({ params }) {
       try {
         const data = await getProductById(id);
         console.log("📦 [VIEW PRODUCT] Fetched data:", data);
+        console.log("📦 [VIEW PRODUCT] Data type:", Array.isArray(data) ? "array" : typeof data);
         console.log("📦 [VIEW PRODUCT] Nama produk:", data?.nama);
+        console.log("📦 [VIEW PRODUCT] Header:", data?.header);
+        console.log("📦 [VIEW PRODUCT] Gambar:", data?.gambar);
+        
+        if (!data) {
+          console.error("❌ [VIEW PRODUCT] No data received");
+          return;
+        }
+        
         setProduct(data);
       } catch (err) {
         console.error("❌ Error fetching detail:", err);
@@ -133,11 +154,20 @@ export default function DetailProdukPage({ params }) {
           <>
             {/* HEADER IMAGE */}
             <div className="header-section">
-              <img
-                src={buildImageUrl(product.header)}
-                className="header-image"
-                alt={product.nama}
-              />
+              {product.header ? (
+                <img
+                  src={buildImageUrl(product.header)}
+                  className="header-image"
+                  alt={product.nama || "Product header"}
+                  onError={(e) => {
+                    e.target.src = "/placeholder-image.png";
+                  }}
+                />
+              ) : (
+                <div className="header-image-placeholder">
+                  <span>No Image</span>
+                </div>
+              )}
 
               <div className="header-info">
                 <h1>{product.nama || "-"}</h1>
@@ -240,15 +270,27 @@ export default function DetailProdukPage({ params }) {
                   <p>Tidak ada gambar gallery</p>
                 ) : (
                   <div className="gallery-list">
-                    {gallery.map((g, i) => (
-                      <div key={i} className="gallery-item">
-                        <img
-                          src={buildImageUrl(g.path)}
-                          alt={g.caption || `Gallery ${i + 1}`}
-                        />
-                        {g.caption && <p>{g.caption}</p>}
-                      </div>
-                    ))}
+                    {gallery.map((g, i) => {
+                      const imageUrl = buildImageUrl(g.path);
+                      return (
+                        <div key={i} className="gallery-item">
+                          {imageUrl ? (
+                            <img
+                              src={imageUrl}
+                              alt={g.caption || `Gallery ${i + 1}`}
+                              onError={(e) => {
+                                e.target.src = "/placeholder-image.png";
+                              }}
+                            />
+                          ) : (
+                            <div className="gallery-placeholder">
+                              <span>No Image</span>
+                            </div>
+                          )}
+                          {g.caption && <p>{g.caption}</p>}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -271,21 +313,31 @@ export default function DetailProdukPage({ params }) {
               <div className="detail-card">
                 <h2>Testimoni</h2>
                 <div className="testimoni-list">
-                  {testimoni.map((testi, i) => (
-                    <div key={i} className="testimoni-item">
-                      {testi.gambar && (
-                        <img
-                          src={buildImageUrl(testi.gambar)}
-                          alt={testi.nama || `Testimoni ${i + 1}`}
-                          className="testimoni-image"
-                        />
-                      )}
-                      <div className="testimoni-content">
-                        {testi.nama && <h4>{testi.nama}</h4>}
-                        {testi.deskripsi && <p>{testi.deskripsi}</p>}
+                  {testimoni.map((testi, i) => {
+                    const imageUrl = buildImageUrl(testi.gambar);
+                    return (
+                      <div key={i} className="testimoni-item">
+                        {imageUrl ? (
+                          <img
+                            src={imageUrl}
+                            alt={testi.nama || `Testimoni ${i + 1}`}
+                            className="testimoni-image"
+                            onError={(e) => {
+                              e.target.src = "/placeholder-image.png";
+                            }}
+                          />
+                        ) : (
+                          <div className="testimoni-image-placeholder">
+                            <span>No Image</span>
+                          </div>
+                        )}
+                        <div className="testimoni-content">
+                          {testi.nama && <h4>{testi.nama}</h4>}
+                          {testi.deskripsi && <p>{testi.deskripsi}</p>}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
