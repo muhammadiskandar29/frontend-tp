@@ -141,6 +141,13 @@ export async function PUT(request, { params }) {
       let appendedCount = 0;
       const appendedFields = [];
       
+      // CRITICAL: Tambahkan _method=PUT PERTAMA untuk Laravel (Laravel membutuhkan ini untuk PUT dengan FormData)
+      // Harus ditambahkan SEBELUM field lain untuk memastikan Laravel memproses sebagai PUT
+      forwardFormData.append("_method", "PUT");
+      appendedCount++;
+      appendedFields.push({ key: "_method", type: "String", value: "PUT" });
+      console.log(`[ROUTE_UPDATE_PUT] ✅ _method=PUT appended FIRST (required by Laravel for FormData PUT requests)`);
+      
       // Forward all entries ke backend - SIMPLE APPROACH
       // IMPORTANT: Collect all entries first to ensure we don't miss any
       const allEntries = [];
@@ -172,15 +179,12 @@ export async function PUT(request, { params }) {
           forwardFormData.append(key, strValue);
           appendedCount++;
           appendedFields.push({ key, type: "String", value: strValue.length > 50 ? strValue.substring(0, 50) + "..." : strValue });
-          console.log(`[ROUTE_UPDATE_PUT] ✅ String appended: ${key} = ${strValue.length > 50 ? strValue.substring(0, 50) + "..." : strValue}`);
+          // Log critical fields for debugging
+          if (['nama', 'kode', 'url', 'kategori', 'harga_asli', 'harga_coret', 'deskripsi', 'video', 'assign'].includes(key)) {
+            console.log(`[ROUTE_UPDATE_PUT] ✅ CRITICAL FIELD: ${key} = ${strValue.length > 200 ? strValue.substring(0, 200) + "..." : strValue}`);
+          }
         }
       }
-      
-      // CRITICAL: Tambahkan _method=PUT untuk Laravel (Laravel membutuhkan ini untuk PUT dengan FormData)
-      forwardFormData.append("_method", "PUT");
-      appendedCount++;
-      appendedFields.push({ key: "_method", type: "String", value: "PUT" });
-      console.log(`[ROUTE_UPDATE_PUT] ✅ _method=PUT appended (required by Laravel for FormData PUT requests)`);
       
       console.log(`[ROUTE_UPDATE_PUT] Total appended: ${appendedCount} fields`);
       console.log(`[ROUTE_UPDATE_PUT] Appended fields:`, appendedFields.map(f => `${f.key} (${f.type})`).join(", "));
@@ -352,6 +356,18 @@ export async function PUT(request, { params }) {
         }
         console.log(`[ROUTE_UPDATE_PUT] ===========================================`);
         
+        // CRITICAL: Verify _method=PUT is in appendedFields before sending
+        const hasMethod = appendedFields.some(f => f.key === "_method" && f.value === "PUT");
+        if (!hasMethod) {
+          console.error(`[ROUTE_UPDATE_PUT] ❌ CRITICAL: _method=PUT NOT FOUND IN appendedFields!`);
+          console.error(`[ROUTE_UPDATE_PUT] Appended fields:`, appendedFields.map(f => `${f.key}=${f.value}`).join(", "));
+          // Force append _method=PUT again
+          forwardFormData.append("_method", "PUT");
+          console.log(`[ROUTE_UPDATE_PUT] ✅ _method=PUT force-appended again`);
+        } else {
+          console.log(`[ROUTE_UPDATE_PUT] ✅ Verified: _method=PUT is in appendedFields`);
+        }
+        
         // Forward dengan axios yang lebih kompatibel dengan form-data package
         // SAMA PERSIS dengan route POST, hanya endpoint dan _method yang berbeda
         console.log("[ROUTE_UPDATE_PUT] Sending request to backend using axios...");
@@ -372,6 +388,10 @@ export async function PUT(request, { params }) {
           "authorization": headers["Authorization"]?.substring(0, 30) + "...",
           "has-boundary": headers["content-type"]?.includes("boundary")
         });
+        
+        // CRITICAL: Log that we're sending _method=PUT
+        console.log("[ROUTE_UPDATE_PUT] ⚠️ CRITICAL: Sending with _method=PUT in FormData");
+        console.log("[ROUTE_UPDATE_PUT] ⚠️ Backend MUST process this as PUT request");
         
         const axiosResponse = await axios.post(
           `${BACKEND_URL}/api/admin/produk/${id}`,
