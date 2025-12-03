@@ -372,6 +372,9 @@ export async function PUT(request, { params }) {
         // SAMA PERSIS dengan route POST, hanya endpoint dan _method yang berbeda
         console.log("[ROUTE_UPDATE_PUT] Sending request to backend using axios...");
         
+        // Convert form-data ke stream untuk fetch (SAMA dengan route POST)
+        const formDataStream = forwardFormData;
+        
         // Get headers - PENTING: jangan override content-type
         const headers = {
           ...formDataHeaders, // Ini sudah include content-type dengan boundary
@@ -393,11 +396,24 @@ export async function PUT(request, { params }) {
         console.log("[ROUTE_UPDATE_PUT] ⚠️ CRITICAL: Sending with _method=PUT in FormData");
         console.log("[ROUTE_UPDATE_PUT] ⚠️ Backend MUST process this as PUT request");
         
+        // CRITICAL: Verify FormData has data before sending
+        console.log("[ROUTE_UPDATE_PUT] ⚠️ VERIFYING FORMDATA BEFORE SEND:");
+        console.log("[ROUTE_UPDATE_PUT]   Total appended fields:", appendedCount);
+        console.log("[ROUTE_UPDATE_PUT]   FormData type:", typeof formDataStream);
+        console.log("[ROUTE_UPDATE_PUT]   FormData constructor:", formDataStream?.constructor?.name);
+        console.log("[ROUTE_UPDATE_PUT]   Has getHeaders:", typeof formDataStream?.getHeaders === "function");
+        console.log("[ROUTE_UPDATE_PUT]   Content-Type header:", formDataHeaders["content-type"]?.substring(0, 100));
+        
+        // Axios lebih kompatibel dengan form-data package (SAMA PERSIS dengan route POST)
         const axiosResponse = await axios.post(
           `${BACKEND_URL}/api/admin/produk/${id}`,
-          forwardFormData, // form-data package
+          formDataStream, // form-data package (SAMA dengan route POST)
           {
-            headers: headers,
+            headers: {
+              ...formDataHeaders,
+              Accept: "application/json",
+              Authorization: `Bearer ${token}`,
+            },
             maxContentLength: Infinity,
             maxBodyLength: Infinity,
           }

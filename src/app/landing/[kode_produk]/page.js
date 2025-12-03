@@ -478,39 +478,158 @@ export default function LandingPage() {
             </div>
           )}
 
-        {/* List Point */}
-        {form.list_point?.length > 0 && (
-          <section className="preview-points" aria-label="Product benefits">
-            <h2>Benefit yang akan Anda dapatkan:</h2>
-            <ul itemProp="featureList">
-              {form.list_point.map((p, i) => (
-                <li key={i} itemProp="itemListElement">{p.nama}</li>
-              ))}
-            </ul>
-          </section>
-        )}
+        {/* Profil Pembicara Workshop - 6 Speakers */}
+        <section className="speaker-profile-section" aria-label="Speaker profile">
+          <h2 className="speaker-profile-title">Profil Pembicara Workshop</h2>
+          <div className="speakers-grid">
+            {/* Speaker 1: Dimas Dwi Ananto */}
+            <div className="speaker-card">
+              <div className="speaker-image-wrapper">
+                <img 
+                  src="/assets/Dimas Dwi Ananto.png" 
+                  alt="Dimas Dwi Ananto"
+                  className="speaker-image"
+                />
+              </div>
+              <div className="speaker-info">
+                <div className="speaker-name">Dimas Dwi Ananto</div>
+                <div className="speaker-title">Praktisi Lelang Properti</div>
+                <div className="speaker-bio">
+                  Praktisi lelang properti berpengalaman dengan <strong>track record</strong> mengakuisisi properti dengan harga murah dan menjualnya kembali dengan keuntungan tinggi. Spesialisasi dalam strategi investasi properti tanpa KPR.
+                </div>
+              </div>
+            </div>
 
-        {/* Intro Harga & Harga - Combined */}
-        {(form.harga_coret || form.harga_asli) && (
-          <div className="price-section" itemScope itemType="https://schema.org/Offer">
-            <div className="price-intro">
-              Dengan semua manfaat di atas, kamu bisa mendapatkannya hanya dengan:
+            {/* Speaker 2: Salvian Kumara */}
+            <div className="speaker-card">
+              <div className="speaker-image-wrapper">
+                <img 
+                  src="/assets/Salvian Kumara.png" 
+                  alt="Salvian Kumara"
+                  className="speaker-image"
+                />
+              </div>
+              <div className="speaker-info">
+                <div className="speaker-name">Salvian Kumara</div>
+                <div className="speaker-title">Expert Real Estate Investment</div>
+                <div className="speaker-bio">
+                  Expert di bidang real estate investment dengan pengalaman lebih dari 10 tahun. Fokus pada <strong>analisis pasar properti</strong> dan strategi investasi jangka panjang yang menguntungkan.
+                </div>
+              </div>
             </div>
-            <div className="preview-price">
-              {form.harga_coret && (
-                <span className="old" aria-label="Harga lama">
-                  Rp {formatPrice(form.harga_coret)}
-                </span>
-              )}
-              {form.harga_asli && (
-                <span className="new" itemProp="price" content={form.harga_asli}>
-                  Rp {formatPrice(form.harga_asli)}
-                </span>
-              )}
+
+            {/* Speaker 3: Rhesa Yogaswara */}
+            <div className="speaker-card">
+              <div className="speaker-image-wrapper">
+                <img 
+                  src="/assets/Rhesa Yogaswara.png" 
+                  alt="Rhesa Yogaswara"
+                  className="speaker-image"
+                />
+              </div>
+              <div className="speaker-info">
+                <div className="speaker-name">Rhesa Yogaswara</div>
+                <div className="speaker-title">Property Consultant & Trainer</div>
+                <div className="speaker-bio">
+                  Property consultant dan trainer yang telah membantu ratusan investor dalam <strong>membangun portofolio properti</strong>. Spesialis dalam riset pasar dan identifikasi peluang investasi.
+                </div>
+              </div>
             </div>
+
+            {/* Speaker 4: Stephanus P H A S */}
+            <div className="speaker-card">
+              <div className="speaker-image-wrapper">
+                <img 
+                  src="/assets/Stephanus P H A S.png" 
+                  alt="Stephanus P H A S"
+                  className="speaker-image"
+                />
+              </div>
+              <div className="speaker-info">
+                <div className="speaker-name">Stephanus P H A S</div>
+                <div className="speaker-title">Business Development Specialist</div>
+                <div className="speaker-bio">
+                  Business development specialist dengan expertise dalam <strong>strategi pertumbuhan bisnis</strong> dan pengembangan pasar. Berpengalaman dalam transformasi organisasi dan ekspansi bisnis.
+                </div>
+              </div>
+            </div>
+
+            {/* Speaker 5: Theo Ariandyen */}
+            <div className="speaker-card">
+              <div className="speaker-image-wrapper">
+                <img 
+                  src="/assets/Theo Ariandyen.png" 
+                  alt="Theo Ariandyen"
+                  className="speaker-image"
+                />
+              </div>
+              <div className="speaker-info">
+                <div className="speaker-name">Theo Ariandyen</div>
+                <div className="speaker-title">Investment Strategist</div>
+                <div className="speaker-bio">
+                  Investment strategist yang fokus pada <strong>investasi properti strategis</strong> dan manajemen portofolio. Membantu investor dalam membuat keputusan investasi yang tepat berdasarkan analisis mendalam.
+                </div>
+              </div>
+            </div>
+
+            {/* Speaker 6: Erzon Djazai */}
+            <div className="speaker-card">
+              <div className="speaker-image-wrapper">
+                <img 
+                  src="/assets/Erzon Djazai.png" 
+                  alt="Erzon Djazai"
+                  className="speaker-image"
+                />
+              </div>
+              <div className="speaker-info">
+                <div className="speaker-name">Erzon Djazai</div>
+                <div className="speaker-title">Property Investment Advisor</div>
+                <div className="speaker-bio">
+                  Property investment advisor dengan pengalaman luas dalam <strong>mengidentifikasi peluang investasi properti</strong> dan memberikan konsultasi strategis untuk investor pemula maupun berpengalaman.
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Special Offer Card - Combined Benefit & Price */}
+        {(form.list_point?.length > 0 || form.harga_coret || form.harga_asli) && (
+          <section className="special-offer-card" aria-label="Special offer" itemScope itemType="https://schema.org/Offer">
+            <h2 className="special-offer-title">Special Offer!</h2>
+            
+            {/* Price Section */}
+            {(form.harga_coret || form.harga_asli) && (
+              <div className="special-offer-price">
+                {form.harga_coret && (
+                  <span className="price-old" aria-label="Harga lama">
+                    Rp {formatPrice(form.harga_coret)}
+                  </span>
+                )}
+                {form.harga_asli && (
+                  <span className="price-new" itemProp="price" content={form.harga_asli}>
+                    Rp {formatPrice(form.harga_asli)}
+                  </span>
+                )}
+              </div>
+            )}
+            
+            {/* Benefit List */}
+            {form.list_point?.length > 0 && (
+              <div className="special-offer-benefits">
+                <ul itemProp="featureList">
+                  {form.list_point.map((p, i) => (
+                    <li key={i} itemProp="itemListElement">
+                      <span className="benefit-check">✓</span>
+                      {p.nama}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
             <meta itemProp="priceCurrency" content="IDR" />
             <meta itemProp="availability" content="https://schema.org/InStock" />
-          </div>
+          </section>
         )}
 
 
