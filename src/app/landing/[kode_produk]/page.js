@@ -444,31 +444,34 @@ export default function LandingPage() {
     <article className="landing-wrapper" itemScope itemType="https://schema.org/Product">
         <div className="produk-preview">
           
-          {/* Judul Promo */}
-          <div className="promo-text" role="banner">
-            <h1>Tawaran Terbatas!</h1>
-            <br />
-            <h2>Isi Form Hari Ini Untuk Mendapatkan Akses Group Exclusive!</h2>
-          </div>
+          {/* Top Section with Orange Background */}
+          <div className="top-orange-section">
+            {/* Judul Promo */}
+            <div className="promo-text" role="banner">
+              <h1>Tawaran Terbatas!</h1>
+              <br />
+              <h2>Isi Form Hari Ini Untuk Mendapatkan Akses Group Exclusive!</h2>
+            </div>
 
-          {/* Nama Produk */}
-          <h1 className="preview-title" itemProp="name">{form.nama}</h1>
+            {/* Nama Produk */}
+            <h1 className="preview-title" itemProp="name">{form.nama}</h1>
 
-          {/* Header */}
-          <div className="header-wrapper">
-            {headerSrc ? (
-              <img 
-                src={headerSrc} 
-                alt={`${form.nama} - Header Image`}
-                className="preview-header-img"
-                itemProp="image"
-                loading="eager"
-                width="900"
-                height="500"
-              />
-            ) : (
-              <div className="preview-header-img" style={{ background: "#e5e7eb" }} aria-label="Product header placeholder" />
-            )}
+            {/* Header */}
+            <div className="header-wrapper">
+              {headerSrc ? (
+                <img 
+                  src={headerSrc} 
+                  alt={`${form.nama} - Header Image`}
+                  className="preview-header-img"
+                  itemProp="image"
+                  loading="eager"
+                  width="900"
+                  height="500"
+                />
+              ) : (
+                <div className="preview-header-img" style={{ background: "#e5e7eb" }} aria-label="Product header placeholder" />
+              )}
+            </div>
           </div>
           
           {/* Deskripsi */}
@@ -684,12 +687,12 @@ export default function LandingPage() {
           </section>
         )}
 
-        {/* Testimoni */}
+        {/* Testimoni - Only 3 items with stars */}
         {form.testimoni?.length > 0 && (
           <section className="preview-testimonials" aria-label="Customer testimonials">
             <h2>Testimoni Pembeli</h2>
-            <div itemScope itemType="https://schema.org/Review">
-              {form.testimoni.map((t, i) => {
+            <div className="testimonials-grid" itemScope itemType="https://schema.org/Review">
+              {form.testimoni.slice(0, 3).map((t, i) => {
                 const testiImgSrc = buildImageUrl(t.gambar);
                 return (
                   <article key={i} className="testi-item" itemScope itemType="https://schema.org/Review">
@@ -707,6 +710,13 @@ export default function LandingPage() {
                     <div className="info">
                       <div className="name" itemProp="author" itemScope itemType="https://schema.org/Person">
                         <span itemProp="name">{t.nama}</span>
+                      </div>
+                      <div className="testi-stars">
+                        <span className="star">★</span>
+                        <span className="star">★</span>
+                        <span className="star">★</span>
+                        <span className="star">★</span>
+                        <span className="star">★</span>
                       </div>
                       <div className="desc" itemProp="reviewBody">{t.deskripsi}</div>
                     </div>
@@ -814,101 +824,74 @@ export default function LandingPage() {
           </section>
         )}
 
-        {/* Payment */}
+        {/* Payment - Horizontal Layout */}
 <section className="payment-section" aria-label="Payment methods">
   <h2 className="payment-title">Metode Pembayaran</h2>
-
-  {/* E-Payment */}
-  <label className="payment-card">
-<input
-  type="radio"
-  name="payment"
-  value="ewallet"
-  onChange={(e) => setPaymentMethod(e.target.value)}
-/>
-
-
-    <div className="payment-content">
-      <div className="payment-header">
-        <span>E-Payment</span>
-        <span className="arrow">›</span>
+  <div className="payment-options">
+    {/* E-Payment */}
+    <label className="payment-option">
+      <input
+        type="radio"
+        name="payment"
+        value="ewallet"
+        onChange={(e) => setPaymentMethod(e.target.value)}
+      />
+      <span className="payment-label">E-Payment</span>
+      <div className="payment-icons-inline">
+        <img className="pay-icon" src="/assets/qris.svg" alt="QRIS" />
+        <img className="pay-icon" src="/assets/dana.png" alt="DANA" />
+        <img className="pay-icon" src="/assets/ovo.png" alt="OVO" />
+        <img className="pay-icon" src="/assets/link.png" alt="LinkAja" />
       </div>
+    </label>
 
-      <div className="payment-icons">
-        <img className="pay-icon" src="/assets/qris.svg" />
-        <img className="pay-icon" src="/assets/dana.png" />
-        <img className="pay-icon" src="/assets/ovo.png" />
-        <img className="pay-icon" src="/assets/link.png" />
+    {/* Credit */}
+    <label className="payment-option">
+      <input
+        type="radio"
+        name="payment"
+        value="cc"
+        onChange={(e) => setPaymentMethod(e.target.value)}
+      />
+      <span className="payment-label">Credit / Debit Card</span>
+      <div className="payment-icons-inline">
+        <img className="pay-icon" src="/assets/visa.svg" alt="Visa" />
+        <img className="pay-icon" src="/assets/master.png" alt="Mastercard" />
+        <img className="pay-icon" src="/assets/jcb.png" alt="JCB" />
       </div>
-    </div>
-  </label>
+    </label>
 
-  {/* Credit */}
-  <label className="payment-card">
-<input
-  type="radio"
-  name="payment"
-  value="cc"
-  onChange={(e) => setPaymentMethod(e.target.value)}
-/>
-
-    <div className="payment-content">
-      <div className="payment-header">
-        <span>Credit / Debit Card</span>
-        <span className="arrow">›</span>
+    {/* Virtual Account */}
+    <label className="payment-option">
+      <input
+        type="radio"
+        name="payment"
+        value="va"
+        onChange={(e) => setPaymentMethod(e.target.value)}
+      />
+      <span className="payment-label">Virtual Account</span>
+      <div className="payment-icons-inline">
+        <img className="pay-icon" src="/assets/bca.png" alt="BCA" />
+        <img className="pay-icon" src="/assets/mandiri.png" alt="Mandiri" />
+        <img className="pay-icon" src="/assets/bni.png" alt="BNI" />
+        <img className="pay-icon" src="/assets/permata.svg" alt="Permata" />
       </div>
+    </label>
 
-      <div className="payment-icons">
-        <img className="pay-icon" src="/assets/visa.svg" />
-        <img className="pay-icon" src="/assets/master.png" />
-        <img className="pay-icon" src="/assets/jcb.png" />
+    {/* Manual Transfer */}
+    <label className="payment-option">
+      <input
+        type="radio"
+        name="payment"
+        value="manual"
+        onChange={(e) => setPaymentMethod(e.target.value)}
+      />
+      <span className="payment-label">Bank Transfer (Manual)</span>
+      <div className="payment-icons-inline">
+        <img className="pay-icon" src="/assets/bca.png" alt="BCA" />
       </div>
-    </div>
-  </label>
-
-  {/* Virtual Account */}
-  <label className="payment-card">
-<input
-  type="radio"
-  name="payment"
-  value="va"
-  onChange={(e) => setPaymentMethod(e.target.value)}
-/>
-
-    <div className="payment-content">
-      <div className="payment-header">
-        <span>Virtual Account</span>
-        <span className="arrow">⌄</span>
-      </div>
-
-      <div className="payment-icons">
-        <img className="pay-icon" src="/assets/bca.png" />
-        <img className="pay-icon" src="/assets/mandiri.png" />
-        <img className="pay-icon" src="/assets/bni.png" />
-        <img className="pay-icon" src="/assets/permata.svg" />
-      </div>
-    </div>
-  </label>
-
-  {/* Manual Transfer */}
-  <label className="payment-card">
-<input
-  type="radio"
-  name="payment"
-  value="manual"
-  onChange={(e) => setPaymentMethod(e.target.value)}
-/>
-
-    <div className="payment-content">
-      <div className="payment-header">
-        <span>Bank Transfer (Manual)</span>
-        <span className="arrow">›</span>
-      </div>
-
-      <img className="pay-icon" src="/assets/bca.png" />
-      <p className="payment-note">Klik untuk masuk ke halaman konfirmasi bayar</p>
-    </div>
-  </label>
+    </label>
+  </div>
 </section>
 
         {/* CTA */}
