@@ -372,12 +372,6 @@ export default function WebinarGatewayPage() {
                   <span className="info-label">Meeting ID</span>
                   <span className="info-value">{webinarData.meetingNumber}</span>
                 </div>
-                {webinarData.password && (
-                  <div className="info-item">
-                    <span className="info-label">Password</span>
-                    <span className="info-value">{webinarData.password}</span>
-                  </div>
-                )}
                 {webinarData.webinar?.start_time && (
                   <div className="info-item">
                     <span className="info-label">Waktu Mulai</span>
