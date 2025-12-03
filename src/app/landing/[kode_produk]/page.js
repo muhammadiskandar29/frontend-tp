@@ -446,9 +446,9 @@ export default function LandingPage() {
           
           {/* Judul Promo */}
           <div className="promo-text" role="banner">
-            <strong>Tawaran Terbatas!</strong>
+            <h1>Tawaran Terbatas!</h1>
             <br />
-            <span>Isi Form Hari Ini Untuk Mendapatkan Akses Group Exclusive!</span>
+            <h2>Isi Form Hari Ini Untuk Mendapatkan Akses Group Exclusive!</h2>
           </div>
 
           {/* Nama Produk */}
@@ -480,7 +480,14 @@ export default function LandingPage() {
 
         {/* Profil Pembicara Workshop - 6 Speakers */}
         <section className="speaker-profile-section" aria-label="Speaker profile">
-          <h2 className="speaker-profile-title">Profil Pembicara Workshop</h2>
+          <div className="speaker-banner-image">
+            <img 
+              src="/assets/talent ternak properti.png" 
+              alt="Talent Ternak Properti"
+              className="talent-banner-img"
+            />
+          </div>
+          <h2 className="speaker-profile-title">Profil Pembicara</h2>
           <div className="speakers-grid">
             {/* Speaker 1: Dimas Dwi Ananto */}
             <div className="speaker-card">
@@ -616,6 +623,7 @@ export default function LandingPage() {
             {/* Benefit List */}
             {form.list_point?.length > 0 && (
               <div className="special-offer-benefits">
+                <h3>Benefit yang akan Anda dapatkan:</h3>
                 <ul itemProp="featureList">
                   {form.list_point.map((p, i) => (
                     <li key={i} itemProp="itemListElement">
