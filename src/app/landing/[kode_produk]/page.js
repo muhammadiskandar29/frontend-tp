@@ -37,6 +37,7 @@ export default function LandingPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false); // Prevent double-click
+  const [testimoniIndex, setTestimoniIndex] = useState(0); // For testimoni carousel
 
   const sumber = searchParams.get("utm_sumber") || "website";
 
@@ -710,42 +711,78 @@ export default function LandingPage() {
           </section>
         )}
 
-        {/* Testimoni - Only 3 items with stars */}
+        {/* Testimoni - Horizontal Carousel */}
         {form.testimoni?.length > 0 && (
           <section className="preview-testimonials" aria-label="Customer testimonials">
             <h2>Testimoni Pembeli</h2>
-            <div className="testimonials-grid" itemScope itemType="https://schema.org/Review">
-              {form.testimoni.slice(0, 3).map((t, i) => {
-                const testiImgSrc = buildImageUrl(t.gambar);
-                return (
-                  <article key={i} className="testi-item" itemScope itemType="https://schema.org/Review">
-                    {testiImgSrc && (
-                      <img 
-                        src={testiImgSrc} 
-                        alt={`Foto ${t.nama}`}
-                        itemProp="author"
-                        loading="lazy"
-                        width="60"
-                        height="60"
-                      />
-                    )}
-
-                    <div className="info">
-                      <div className="name" itemProp="author" itemScope itemType="https://schema.org/Person">
-                        <span itemProp="name">{t.nama}</span>
-                      </div>
-                      <div className="testi-stars">
-                        <span className="star">★</span>
-                        <span className="star">★</span>
-                        <span className="star">★</span>
-                        <span className="star">★</span>
-                        <span className="star">★</span>
-                      </div>
-                      <div className="desc" itemProp="reviewBody">{t.deskripsi}</div>
-                    </div>
-                  </article>
-                );
-              })}
+            <div className="testimonials-carousel-wrapper">
+              {testimoniIndex > 0 && (
+                <button 
+                  className="testimoni-nav-btn testimoni-nav-prev"
+                  onClick={() => setTestimoniIndex(Math.max(0, testimoniIndex - 1))}
+                  aria-label="Previous testimonials"
+                >
+                  ‹
+                </button>
+              )}
+              <div className="testimonials-carousel" itemScope itemType="https://schema.org/Review">
+                <div 
+                  className="testimonials-track"
+                  style={{ transform: `translateX(-${testimoniIndex * (100 / 3)}%)` }}
+                >
+                  {form.testimoni.map((t, i) => {
+                    const testiImgSrc = buildImageUrl(t.gambar);
+                    return (
+                      <article key={i} className="testi-card" itemScope itemType="https://schema.org/Review">
+                        <div className="testi-header">
+                          {testiImgSrc ? (
+                            <div className="testi-avatar-wrapper">
+                              <img 
+                                src={testiImgSrc} 
+                                alt={`Foto ${t.nama}`}
+                                className="testi-avatar"
+                                itemProp="author"
+                                loading="lazy"
+                              />
+                              <span className="testi-verified">★</span>
+                            </div>
+                          ) : (
+                            <div className="testi-avatar-wrapper">
+                              <div className="testi-avatar-placeholder">
+                                {t.nama?.charAt(0)?.toUpperCase() || "U"}
+                              </div>
+                              <span className="testi-verified">★</span>
+                            </div>
+                          )}
+                          <div className="testi-info">
+                            <div className="testi-name" itemProp="author" itemScope itemType="https://schema.org/Person">
+                              <span itemProp="name">{t.nama}</span>
+                            </div>
+                            <div className="testi-time">2 years ago</div>
+                          </div>
+                        </div>
+                        <div className="testi-stars">
+                          <span className="star">★</span>
+                          <span className="star">★</span>
+                          <span className="star">★</span>
+                          <span className="star">★</span>
+                          <span className="star">★</span>
+                        </div>
+                        <div className="testi-desc" itemProp="reviewBody">{t.deskripsi}</div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </div>
+              {testimoniIndex < Math.floor((form.testimoni.length - 3) / 3) && form.testimoni.length > 3 && (
+                <button 
+                  className="testimoni-nav-btn testimoni-nav-next"
+                  onClick={() => setTestimoniIndex(Math.min(Math.floor((form.testimoni.length - 3) / 3), testimoniIndex + 1))}
+                  aria-label="Next testimonials"
+                >
+                  ›
+                </button>
+              )}
             </div>
           </section>
         )}
@@ -917,8 +954,25 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* FAQ Section */}
-        <section className="faq-section" aria-label="Frequently Asked Questions">
+        {/* CTA */}
+        <button 
+          className={`cta-button ${submitting ? 'cta-loading' : ''}`}
+          onClick={handleSubmit}
+          disabled={submitting}
+          aria-label={`Pesan ${form.nama} sekarang`}
+          itemProp="offers"
+        >
+          {submitting ? (
+            <>
+              <span className="cta-spinner"></span>
+              Memproses...
+            </>
+          ) : (
+            "Pesan Sekarang"
+          )}
+        </button>
+{/* FAQ Section */}
+<section className="faq-section" aria-label="Frequently Asked Questions">
           <h2 className="faq-title">Pertanyaan yang Sering Diajukan</h2>
           <div className="faq-container">
             <FAQItem 
@@ -951,25 +1005,7 @@ export default function LandingPage() {
             />
           </div>
         </section>
-
-        {/* CTA */}
-        <button 
-          className={`cta-button ${submitting ? 'cta-loading' : ''}`}
-          onClick={handleSubmit}
-          disabled={submitting}
-          aria-label={`Pesan ${form.nama} sekarang`}
-          itemProp="offers"
-        >
-          {submitting ? (
-            <>
-              <span className="cta-spinner"></span>
-              Memproses...
-            </>
-          ) : (
-            "Pesan Sekarang"
-          )}
-        </button>
-
+        
         {/* Loading Overlay saat submit */}
         {submitting && (
           <div className="submit-overlay">

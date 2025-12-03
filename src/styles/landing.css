@@ -67,31 +67,33 @@ body {
   z-index: 2;
 }
 
-/* Promo Banner - Compact */
+/* Promo Banner - Polos Hitam */
 .promo-text {
-  background: white;
-  padding: 14px 18px;
-  color: #ff7e00;
+  background: transparent;
+  padding: 0;
+  color: #000000;
   text-align: center;
-  border-radius: 8px;
+  border-radius: 0;
   margin-bottom: 20px;
   font-size: 0.9rem;
   font-weight: 600;
   line-height: 1.6;
   letter-spacing: 0.2px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: none;
 }
 
 .promo-text strong {
-  font-size: 0.95rem;
+  font-size: 1.1rem;
   display: block;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
   font-weight: 700;
+  color: #000000;
 }
 
 .promo-text span {
   font-size: 0.9rem;
   display: block;
+  color: #000000;
 }
 
 /* Title - Compact Typography */
@@ -105,20 +107,29 @@ body {
   letter-spacing: -0.3px;
 }
 
-/* Header Image - Compact Frame */
+/* Header Image - 70% Width, Centered, No Border */
 .header-wrapper {
   width: 100%;
-  border-radius: 8px;
-  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   margin: 16px 0;
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--border);
+  border: none;
+  box-shadow: none;
+}
+
+.header-wrapper.header-overlap {
+  margin-top: -40px;
+  position: relative;
+  z-index: 2;
 }
 
 .preview-header-img {
-  width: 100%;
+  width: 70%;
   height: auto;
   display: block;
+  border: none;
+  box-shadow: none;
 }
 
 /* PRICE SECTION - Compact */
@@ -426,81 +437,178 @@ body {
 .preview-testimonials {
   margin-top: 24px;
   padding: 16px;
-  background: var(--bg-light);
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
+  background: transparent;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
 }
 
 .preview-testimonials h2,
 .preview-testimonials h3 {
   font-size: 16px;
   font-weight: 600;
-  margin-bottom: 12px;
+  margin-bottom: 20px;
   color: #374151;
   text-align: left;
 }
 
-.testi-item {
+/* Testimonials Carousel */
+.testimonials-carousel-wrapper {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+.testimonials-carousel {
+  width: 100%;
+  overflow: hidden;
+}
+
+.testimonials-track {
   display: flex;
-  gap: 12px;
-  margin-bottom: 12px;
-  padding: 14px;
-  border-radius: 8px;
+  transition: transform 0.3s ease;
+  gap: 16px;
+}
+
+.testi-card {
+  flex: 0 0 calc(33.333% - 11px);
+  min-width: calc(33.333% - 11px);
+  padding: 20px;
+  border-radius: 12px;
   background: white;
   border: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
   transition: box-shadow 0.3s ease;
 }
 
-.testi-item:hover {
-  box-shadow: var(--shadow-md);
+.testi-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.testi-item:last-child {
-  margin-bottom: 0;
+.testi-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
-.testi-item img {
-  width: 50px;
-  height: 50px;
+.testi-avatar-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.testi-avatar {
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   object-fit: cover;
-  flex-shrink: 0;
   border: 2px solid var(--border);
 }
 
-.testi-item .info {
-  flex: 1;
+.testi-avatar-placeholder {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 18px;
+  border: 2px solid var(--border);
 }
 
-.testi-item .name {
+.testi-verified {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 20px;
+  height: 20px;
+  background: #ff7e00;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 12px;
+  border: 2px solid white;
+  font-weight: 700;
+}
+
+.testi-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.testi-name {
   font-weight: 600;
-  font-size: 14px;
+  font-size: 15px;
   color: var(--text);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+
+.testi-time {
+  font-size: 12px;
+  color: var(--text-light);
 }
 
 .testi-stars {
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  display: flex;
+  gap: 2px;
 }
 
 .testi-stars .star {
   color: #fbbf24;
-  font-size: 16px;
-  margin-right: 2px;
+  font-size: 18px;
+  line-height: 1;
 }
 
-.testi-item .desc {
-  color: var(--text-secondary);
-  line-height: 1.5;
-  font-size: 13px;
+.testi-desc {
+  color: var(--text);
+  line-height: 1.6;
+  font-size: 14px;
+  flex: 1;
 }
 
-.testimonials-grid {
+/* Navigation Buttons */
+.testimoni-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: white;
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 24px;
+  color: var(--text);
+  z-index: 10;
+  transition: all 0.2s ease;
+}
+
+.testimoni-nav-btn:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.testimoni-nav-prev {
+  left: -20px;
+}
+
+.testimoni-nav-next {
+  right: -20px;
 }
 
 /* FORM - Compact Design */
@@ -588,6 +696,8 @@ body {
   cursor: pointer;
   transition: all 0.2s ease;
   width: 100%;
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .payment-option-row:hover {
@@ -607,8 +717,10 @@ body {
   font-weight: 600;
   font-size: 0.95rem;
   color: var(--text);
-  flex: 1;
+  flex: 0 0 auto;
   text-align: left;
+  min-width: 0;
+  margin-right: auto;
 }
 
 .payment-icons-inline {
@@ -616,12 +728,14 @@ body {
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .payment-icons-inline .pay-icon {
   width: 32px;
   height: 24px;
   object-fit: contain;
+  flex-shrink: 0;
 }
 
 /* FAQ Section */
@@ -823,9 +937,18 @@ body {
     padding: 14px;
   }
 
-  .testi-item {
-    flex-direction: row;
-    text-align: left;
+  .testi-card {
+    flex: 0 0 calc(50% - 8px);
+    min-width: calc(50% - 8px);
+    padding: 16px;
+  }
+
+  .testimoni-nav-prev {
+    left: -10px;
+  }
+
+  .testimoni-nav-next {
+    right: -10px;
   }
 
   .preview-gallery .images {
@@ -928,6 +1051,48 @@ body {
 
   .header-wrapper.header-overlap {
     margin-top: -32px;
+  }
+
+  .preview-header-img {
+    width: 70%;
+  }
+
+  .payment-option-row {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+
+  .payment-label {
+    font-size: 0.85rem;
+  }
+
+  .payment-icons-inline .pay-icon {
+    width: 28px;
+    height: 20px;
+  }
+
+  .testi-card {
+    flex: 0 0 100%;
+    min-width: 100%;
+    padding: 14px;
+  }
+
+  .testimonials-track {
+    gap: 12px;
+  }
+
+  .testimoni-nav-prev {
+    left: 0;
+  }
+
+  .testimoni-nav-next {
+    right: 0;
+  }
+
+  .testimoni-nav-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
   }
 
   .faq-section {
