@@ -106,6 +106,35 @@
   border-left: 4px solid #f59e0b;
 }
 
+.webinar-info-yellow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding: 1.2rem;
+  background: #fef3c7;
+  border-radius: 8px;
+  border-left: 4px solid #f59e0b;
+}
+
+.webinar-info-yellow .info-item {
+  background: #ffffff;
+  border: 1px solid #fcd34d;
+  padding: 0.7rem 0.8rem;
+  border-radius: 6px;
+}
+
+.webinar-info-yellow .info-label {
+  font-size: 0.85rem;
+  color: #92400e;
+  font-weight: 600;
+}
+
+.webinar-info-yellow .info-value {
+  font-size: 0.9rem;
+  color: #78350f;
+  font-weight: 600;
+}
+
 .instructions-title {
   font-size: 0.9rem;
   font-weight: 600;

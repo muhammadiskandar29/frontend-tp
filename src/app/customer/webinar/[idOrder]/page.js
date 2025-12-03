@@ -363,7 +363,7 @@ export default function WebinarGatewayPage() {
                 }
               </h2>
 
-              <div className="webinar-info">
+              <div className="webinar-instructions webinar-info-yellow">
                 <div className="info-item">
                   <span className="info-label">Nama Peserta</span>
                   <span className="info-value">{webinarData.userName}</span>
@@ -399,16 +399,6 @@ export default function WebinarGatewayPage() {
                     <span className="info-value">{webinarData.webinar.duration} menit</span>
                   </div>
                 )}
-              </div>
-
-              <div className="webinar-instructions">
-                <h3 className="instructions-title">Panduan Bergabung</h3>
-                <ul className="instructions-list">
-                  <li>Pastikan kamera dan mikrofon Anda sudah siap</li>
-                  <li>Gunakan koneksi internet yang stabil</li>
-                  <li>Bergabung tepat waktu sesuai jadwal</li>
-                  <li>Hubungi host jika mengalami kendala teknis</li>
-                </ul>
               </div>
 
               <button className="join-meeting-btn" onClick={handleJoinMeeting}>
