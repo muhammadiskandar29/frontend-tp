@@ -142,7 +142,17 @@ export async function PUT(request, { params }) {
       const appendedFields = [];
       
       // Forward all entries ke backend - SIMPLE APPROACH
+      // IMPORTANT: Collect all entries first to ensure we don't miss any
+      const allEntries = [];
       for (const [key, value] of incomingFormData.entries()) {
+        allEntries.push({ key, value });
+      }
+      
+      console.log(`[ROUTE_UPDATE_PUT] Total entries to forward: ${allEntries.length}`);
+      console.log(`[ROUTE_UPDATE_PUT] Entry keys:`, allEntries.map(e => e.key).join(", "));
+      
+      // Forward all entries in order
+      for (const { key, value } of allEntries) {
         if (value instanceof File) {
           // Convert File to Buffer untuk form-data package
           const arrayBuffer = await value.arrayBuffer();
@@ -157,7 +167,7 @@ export async function PUT(request, { params }) {
           appendedFields.push({ key, type: "File", name: value.name, size: buffer.length });
           console.log(`[ROUTE_UPDATE_PUT] ✅ File appended: ${key} = ${value.name} (${(value.size / 1024).toFixed(2)} KB, buffer: ${buffer.length} bytes)`);
         } else {
-          // Forward string values as-is
+          // Forward string values as-is - CRITICAL: Always send, even if empty
           const strValue = String(value);
           forwardFormData.append(key, strValue);
           appendedCount++;
@@ -207,6 +217,7 @@ export async function PUT(request, { params }) {
       const verifyUrl = incomingFormData.get("url");
       const verifyAssign = incomingFormData.get("assign");
       const verifyHeader = incomingFormData.get("header");
+      const verifyVideo = incomingFormData.get("video");
       
       console.log(`Kategori:`, verifyKategori ? String(verifyKategori) : "NULL");
       console.log(`Nama:`, verifyNama ? String(verifyNama) : "NULL");
@@ -214,6 +225,18 @@ export async function PUT(request, { params }) {
       console.log(`URL:`, verifyUrl ? String(verifyUrl) : "NULL");
       console.log(`Assign:`, verifyAssign ? String(verifyAssign) : "NULL");
       console.log(`Header:`, verifyHeader instanceof File ? `File(${verifyHeader.name}, ${(verifyHeader.size / 1024).toFixed(2)} KB)` : "NULL");
+      console.log(`Video:`, verifyVideo ? String(verifyVideo) : "NULL");
+      
+      // Parse video untuk logging
+      if (verifyVideo) {
+        try {
+          const videoParsed = JSON.parse(String(verifyVideo));
+          console.log(`Video (parsed):`, videoParsed);
+          console.log(`Video count:`, Array.isArray(videoParsed) ? videoParsed.length : "Not an array");
+        } catch (e) {
+          console.log(`Video (parse error):`, e.message);
+        }
+      }
       
       if (!verifyKategori || !verifyNama) {
         console.error(`[ROUTE_UPDATE_PUT] ❌ MISSING CRITICAL FIELDS IN INCOMING!`);
@@ -292,6 +315,20 @@ export async function PUT(request, { params }) {
       console.log(`Sending nama:`, summaryNamaValue || "NOT FOUND");
       console.log(`Sending kode:`, summaryKodeValue || "NOT FOUND");
       console.log(`Sending url:`, summaryUrlValue || "NOT FOUND");
+      
+      // Log video field
+      const summaryVideoValue = appendedFields.find(f => f.key === "video")?.value;
+      console.log(`Sending video:`, summaryVideoValue || "NOT FOUND");
+      if (summaryVideoValue) {
+        try {
+          const videoParsed = JSON.parse(String(summaryVideoValue));
+          console.log(`Video (parsed):`, videoParsed);
+          console.log(`Video count:`, Array.isArray(videoParsed) ? videoParsed.length : "Not an array");
+        } catch (e) {
+          console.log(`Video (parse error):`, e.message);
+        }
+      }
+      
       console.log(`[ROUTE_UPDATE_PUT] ==========================================`);
       console.log(`[ROUTE_UPDATE_PUT] ======================================`);
       
@@ -330,11 +367,25 @@ export async function PUT(request, { params }) {
         try {
           const responseData = await axiosResponse.data;
           console.log(`[ROUTE_UPDATE_PUT] ========== BACKEND RESPONSE DATA ==========`);
+          console.log(`Response success:`, responseData?.success);
+          console.log(`Response message:`, responseData?.message);
           console.log(`Response nama:`, responseData?.data?.nama || responseData?.nama || "NOT FOUND");
           console.log(`Response kode:`, responseData?.data?.kode || responseData?.kode || "NOT FOUND");
           console.log(`Response url:`, responseData?.data?.url || responseData?.url || "NOT FOUND");
           console.log(`Response kategori:`, responseData?.data?.kategori || responseData?.kategori || "NOT FOUND");
-          console.log(`[ROUTE_UPDATE_PUT] Full response data:`, JSON.stringify(responseData, null, 2).substring(0, 1000));
+          console.log(`Response video:`, responseData?.data?.video || responseData?.video || "NOT FOUND");
+          console.log(`Response harga_asli:`, responseData?.data?.harga_asli || responseData?.harga_asli || "NOT FOUND");
+          console.log(`Response harga_coret:`, responseData?.data?.harga_coret || responseData?.harga_coret || "NOT FOUND");
+          console.log(`Response deskripsi:`, responseData?.data?.deskripsi ? (responseData.data.deskripsi.substring(0, 100) + "...") : "NOT FOUND");
+          
+          // Compare sent vs received
+          console.log(`[ROUTE_UPDATE_PUT] ========== DATA COMPARISON ==========`);
+          console.log(`Sent nama:`, summaryNamaValue, `| Received:`, responseData?.data?.nama || responseData?.nama);
+          console.log(`Sent kode:`, summaryKodeValue, `| Received:`, responseData?.data?.kode || responseData?.kode);
+          console.log(`Sent video:`, summaryVideoValue, `| Received:`, responseData?.data?.video || responseData?.video);
+          console.log(`[ROUTE_UPDATE_PUT] ======================================`);
+          
+          console.log(`[ROUTE_UPDATE_PUT] Full response data:`, JSON.stringify(responseData, null, 2).substring(0, 2000));
           console.log(`[ROUTE_UPDATE_PUT] ===========================================`);
         } catch (logError) {
           console.error(`[ROUTE_UPDATE_PUT] Error logging response:`, logError);

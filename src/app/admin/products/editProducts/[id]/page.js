@@ -428,7 +428,17 @@ export default function Page() {
     const videoArray = form.video
       ? form.video.split(",").map((v) => v.trim()).filter((v) => v)
       : [];
-    formData.append("video", JSON.stringify(videoArray));
+    
+    // Pastikan video selalu dikirim, bahkan jika kosong (untuk clear video)
+    const videoJsonString = JSON.stringify(videoArray);
+    formData.append("video", videoJsonString);
+    
+    console.log("[FORMDATA] Video field:", {
+      form_video: form.video,
+      videoArray: videoArray,
+      videoJsonString: videoJsonString,
+      videoCount: videoArray.length
+    });
     
     // Log semua array fields untuk debugging
     console.log("[FORMDATA] Array fields:", {
@@ -557,6 +567,17 @@ export default function Page() {
       const namaInFormData = formData.get("nama");
       const assignInFormData = formData.get("assign");
       const headerInFormData = formData.get("header");
+      const videoInFormData = formData.get("video");
+      
+      // Parse video untuk verifikasi
+      let videoParsed = null;
+      if (videoInFormData) {
+        try {
+          videoParsed = JSON.parse(String(videoInFormData));
+        } catch (e) {
+          console.error("[FORMDATA] Video parse error:", e);
+        }
+      }
       
       console.log({
         kategori: {
@@ -580,6 +601,15 @@ export default function Page() {
           exists: headerInFormData !== null,
           isFile: headerInFormData instanceof File,
           name: headerInFormData instanceof File ? headerInFormData.name : null
+        },
+        video: {
+          value: videoInFormData,
+          type: typeof videoInFormData,
+          exists: videoInFormData !== null,
+          parsed: videoParsed,
+          isArray: Array.isArray(videoParsed),
+          count: Array.isArray(videoParsed) ? videoParsed.length : 0,
+          raw: String(videoInFormData)
         }
       });
       
@@ -1082,33 +1112,49 @@ export default function Page() {
   }
 
   return (
-    <>
+    <div className="produk-container produk-builder-layout">
+      <div className="produk-form" style={{ position: "relative" }}>
       {isSubmitting && (
-        <div className="submit-lock-overlay">
-          <div className="submit-lock-card">
-            <span className="submit-lock-spinner" />
-            <p>{submitStatus || "Menyimpan produk, mohon tunggu..."}</p>
-            <small>Jangan tutup halaman hingga proses selesai.</small>
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "rgba(255,255,255,0.95)",
+            zIndex: 10,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "16px",
+            backdropFilter: "blur(4px)",
+          }}
+        >
+          <div className="spinner" style={{ width: "48px", height: "48px", border: "4px solid #3b82f6", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+          <div style={{ textAlign: "center" }}>
+            <p style={{ color: "#1f2937", fontWeight: 600, fontSize: "16px", marginBottom: "8px" }}>
+              {submitStatus || "Menyimpan produk, mohon tunggu..."}
+            </p>
+            <p style={{ color: "#6b7280", fontSize: "14px" }}>
+              Proses ini mungkin memakan waktu beberapa saat
+            </p>
           </div>
         </div>
       )}
-      <div className="produk-container produk-builder-layout">
-        <div className="produk-form">
-        {/* Header Section */}
-        <div className="form-header-section">
-          <button
-            className="back-to-products-btn"
-            onClick={() => router.push("/admin/products")}
-            aria-label="Back to products list"
-          >
-            <ArrowLeft size={18} />
-            <span>Back to Products</span>
-          </button>
-          <div className="form-title-wrapper">
-            <h2 className="form-title">Edit Produk</h2>
-            <p className="form-subtitle">Ubah informasi produk di bawah ini</p>
-          </div>
+      {/* Header Section */}
+      <div className="form-header-section">
+        <button
+          className="back-to-products-btn"
+          onClick={() => router.push("/admin/products")}
+          aria-label="Back to products list"
+        >
+          <ArrowLeft size={18} />
+          <span>Back to Products</span>
+        </button>
+        <div className="form-title-wrapper">
+          <h2 className="form-title">Edit Produk</h2>
+          <p className="form-subtitle">Ubah informasi produk di bawah ini</p>
         </div>
+      </div>
 
         {/* SECTION 1: Informasi Dasar */}
         <div className="form-section-card">
@@ -1120,7 +1166,7 @@ export default function Page() {
             {/* NAMA PRODUK */}
             <div className="form-field-group">
               <label className="form-label">
-                <span className="label-icon"></span>
+                <span className="label-icon">📦</span>
                 Nama Produk <span className="required">*</span>
               </label>
               <InputText
@@ -1144,69 +1190,92 @@ export default function Page() {
             {/* KATEGORI */}
             <div className="form-field-group">
               <label className="form-label">
-                <span className="label-icon"></span>
+                <span className="label-icon">🏷️</span>
                 Kategori <span className="required">*</span>
               </label>
               <Dropdown
                 className="w-full form-input"
                 value={form.kategori || null}
                 options={kategoriOptions}
+                optionLabel="label"
+                optionValue="value"
                 onChange={(e) => {
-                  handleChange("kategori", e.value ? Number(e.value) : null);
+                  const selectedValue = e.value;
+                  console.log("[KATEGORI] Dropdown onChange:", {
+                    selectedValue: selectedValue,
+                    type: typeof selectedValue,
+                    isNull: selectedValue === null,
+                    isUndefined: selectedValue === undefined,
+                    isEmpty: selectedValue === ""
+                  });
+                  // Ensure value is set as string ID (PrimeReact returns value directly from optionValue)
+                  const finalValue = selectedValue !== null && selectedValue !== undefined && selectedValue !== ""
+                    ? String(selectedValue) 
+                    : null;
+                  console.log("[KATEGORI] Setting kategori to:", finalValue);
+                  handleChange("kategori", finalValue);
                 }}
                 placeholder="Pilih Kategori"
                 showClear
+                filter
+                filterPlaceholder="Cari kategori..."
               />
+              {!form.kategori && (
+                <small className="field-hint" style={{ color: "#ef4444" }}>
+                  ⚠️ Kategori wajib dipilih
+                </small>
+              )}
             </div>
 
-            {/* KODE & URL - Otomatis dari nama produk */}
+            {/* KODE & URL */}
             <div className="grid grid-cols-2 gap-4">
               <div className="form-field-group">
                 <label className="form-label">
-                  <span className="label-icon"></span>
-                  Kode Produk (Slug)
+                  <span className="label-icon">🔗</span>
+                  Kode Produk
                 </label>
                 <InputText
                   className="w-full form-input"
-                  value={form.kode || ""}
-                  readOnly
-                  disabled
-                  placeholder="Otomatis dari nama produk"
-                  style={{ backgroundColor: "#f3f4f6", cursor: "not-allowed" }}
+                  value={form.kode || generateKode(form.nama) || ""}
+                  onChange={(e) => {
+                    const kode = e.target.value;
+                    setForm({
+                      ...form,
+                      kode,
+                      url: "/" + (kode || "produk-baru"),
+                    });
+                  }}
+                  placeholder="Kode otomatis dari nama (contoh: webinar-ternak-properti)"
+                  title="Kode akan otomatis di-generate dari nama produk dengan format dash"
                 />
               </div>
               <div className="form-field-group">
                 <label className="form-label">
-                  <span className="label-icon"></span>
+                  <span className="label-icon">🌐</span>
                   URL
                 </label>
                 <InputText
                   className="w-full form-input"
                   value={form.url || ""}
-                  readOnly
-                  disabled
+                  onChange={(e) => handleChange("url", e.target.value)}
                   placeholder="/kode-produk"
-                  style={{ backgroundColor: "#f3f4f6", cursor: "not-allowed" }}
                 />
               </div>
             </div>
-            <p className="field-hint">
-              Kode dan URL otomatis dihasilkan dari nama produk
-            </p>
           </div>
         </div>
 
         {/* SECTION 2: Media & Konten */}
         <div className="form-section-card">
           <div className="section-header">
-            <h3 className="section-title">Media & Konten</h3>
+            <h3 className="section-title">🖼️ Media & Konten</h3>
             <p className="section-description">Gambar, deskripsi, dan konten produk</p>
           </div>
           <div className="section-content">
             {/* HEADER IMAGE */}
             <div className="form-field-group">
               <label className="form-label">
-                <span className="label-icon"></span>
+                <span className="label-icon">🖼️</span>
                 Header Image
               </label>
               <div className="file-upload-card">
@@ -1242,7 +1311,7 @@ export default function Page() {
             {/* DESKRIPSI */}
             <div className="form-field-group">
               <label className="form-label">
-                <span className="label-icon"></span>
+                <span className="label-icon">📝</span>
                 Deskripsi Produk
               </label>
               <InputTextarea
@@ -1308,7 +1377,7 @@ export default function Page() {
         {/* SECTION 3: Gallery */}
         <div className="form-section-card">
           <div className="section-header">
-            <h3 className="section-title">Gallery Produk</h3>
+            <h3 className="section-title">🖼️ Gallery Produk</h3>
             <p className="section-description">Tambah gambar produk dengan caption</p>
           </div>
           <div className="section-content">
@@ -1324,10 +1393,18 @@ export default function Page() {
                         severity="danger"
                         className="p-button-danger p-button-sm"
                         onClick={() => deleteGalleryImage(i)}
-                        tooltip="Hapus Gambar"
+                        tooltip="Hapus dari server"
                         tooltipOptions={{ position: "top" }}
                       />
                     )}
+                    {/* Tombol hapus dari form (lokal) */}
+                    <Button
+                      icon="pi pi-trash"
+                      severity="danger"
+                      className="p-button-danger p-button-sm"
+                      onClick={() => removeArray("gambar", i)}
+                      tooltip="Hapus gambar"
+                    />
                   </div>
                 </div>
                 <div className="gallery-item-content">
@@ -1385,7 +1462,7 @@ export default function Page() {
         {/* SECTION 4: Testimoni */}
         <div className="form-section-card">
           <div className="section-header">
-            <h3 className="section-title">Testimoni</h3>
+            <h3 className="section-title">⭐ Testimoni</h3>
             <p className="section-description">Tambah testimoni dari pembeli</p>
           </div>
           <div className="section-content">
@@ -1408,11 +1485,10 @@ export default function Page() {
                     {/* Tombol hapus dari form (lokal) */}
                     <Button
                       icon="pi pi-trash"
-                      severity="secondary"
-                      className="p-button-secondary p-button-sm"
+                      severity="danger"
+                      className="p-button-danger p-button-sm"
                       onClick={() => removeArray("testimoni", i)}
-                      tooltip="Hapus dari form"
-                      tooltipOptions={{ position: "top" }}
+                      tooltip="Hapus testimoni"
                     />
                   </div>
                 </div>
@@ -1506,7 +1582,7 @@ export default function Page() {
             {/* LIST POINT */}
             <div className="form-field-group">
               <label className="form-label">
-                <span className="label-icon"></span>
+                <span className="label-icon">✅</span>
                 List Point (Benefit)
               </label>
               {form.list_point.map((p, i) => (
@@ -1536,42 +1612,66 @@ export default function Page() {
           </div>
         </div>
 
-        {/* SECTION 6: Form Fields */}
-        <section className="preview-form space-y-4 mt-6" aria-label="Order form">
-          <h2 className="font-semibold text-lg">Informasi Dasar</h2>
-
-          {[
-            { label: "Nama", key: "nama", placeholder: "Nama lengkap Anda" },
-            { label: "Nomor WhatsApp", key: "wa", placeholder: "08xxxxxxxxxx" },
-            { label: "Email", key: "email", placeholder: "email@example.com" },
-          ].map((field, i) => (
-            <div 
-              key={i}
-              className="p-4 border border-gray-200 rounded-xl bg-gray-50 shadow-sm"
-            >
-              <br></br>
-              <label className="font-medium text-gray-700">{field.label}</label>
+        {/* SECTION 6: Form Fields - Compact Style */}
+        <section className="compact-form-section-preview" aria-label="Order form">
+          <h2 className="compact-form-title-preview">Lengkapi Data:</h2>
+          
+          <div className="compact-form-card-preview">
+            {/* Nama Lengkap */}
+            <div className="compact-field-preview">
+              <label className="compact-label-preview">
+                Nama Lengkap <span className="required-preview">*</span>
+              </label>
               <input
                 type="text"
-                placeholder={field.placeholder}
-                className="w-full p-3 border border-gray-300 rounded-xl mt-2 focus:border-blue-500 focus:ring focus:ring-blue-200 transition"
+                placeholder="Contoh: Krisdayanti"
+                className="compact-input-preview"
                 disabled
               />
             </div>
-          ))}
 
-          {/* ALAMAT */}
-          <div className="space-y-2 p-4 border border-gray-200 rounded-xl bg-white shadow-sm">
-            <br></br>
-            <label className="block text-sm font-semibold text-gray-700">
-              Alamat
-            </label>
-            <textarea
-              placeholder="Alamat lengkap"
-              className="w-full p-3 border border-gray-300 rounded-xl mt-2 focus:border-blue-500 focus:ring focus:ring-blue-200 transition"
-              rows={3}
-              disabled
-            />
+            {/* No. WhatsApp */}
+            <div className="compact-field-preview">
+              <label className="compact-label-preview">
+                No. WhatsApp <span className="required-preview">*</span>
+              </label>
+              <div className="wa-input-wrapper-preview">
+                <div className="wa-prefix-preview">
+                  <span className="flag">🇮🇩</span>
+                  <span className="code">+62</span>
+                </div>
+                <input
+                  type="tel"
+                  placeholder="812345678"
+                  className="compact-input-preview wa-input-preview"
+                  disabled
+                />
+              </div>
+            </div>
+
+            {/* Email */}
+            <div className="compact-field-preview">
+              <label className="compact-label-preview">
+                Email <span className="required-preview">*</span>
+              </label>
+              <input
+                type="email"
+                placeholder="email@example.com"
+                className="compact-input-preview"
+                disabled
+              />
+            </div>
+
+            {/* Alamat */}
+            <div className="compact-field-preview">
+              <label className="compact-label-preview">Alamat</label>
+              <textarea
+                placeholder="Alamat lengkap (opsional)"
+                className="compact-input-preview compact-textarea-preview"
+                rows={2}
+                disabled
+              />
+            </div>
           </div>
         </section>
 
@@ -1640,7 +1740,7 @@ export default function Page() {
         {/* SECTION 8: Pengaturan */}
         <div className="form-section-card">
           <div className="section-header">
-            <h3 className="section-title">Pengaturan</h3>
+            <h3 className="section-title">⚙️ Pengaturan</h3>
             <p className="section-description">Assign user, landing page, dan status produk</p>
           </div>
           <div className="section-content">
@@ -1722,32 +1822,35 @@ export default function Page() {
           </div>
         </div>
 
-        {/* SUBMIT BUTTON */}
-        <div className="submit-section">
-          <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-            <Button 
-              label="Update Produk" 
-              icon="pi pi-save"
-              className="p-button-primary submit-btn" 
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-            />
-            <Button 
-              label="Hapus Produk" 
-              icon="pi pi-trash"
-              className="p-button-danger" 
-              onClick={deleteProduct}
-              disabled={isSubmitting}
-            />
-          </div>
-          <p className="submit-hint">Pastikan semua data sudah lengkap sebelum mengupdate</p>
+      {/* SUBMIT BUTTON */}
+      <div className="submit-section">
+        <div style={{ display: "flex", gap: "1rem", alignItems: "center", flexWrap: "wrap" }}>
+          <Button 
+            label="Update Produk" 
+            icon="pi pi-save"
+            className="p-button-primary submit-btn" 
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+          />
+          <Button 
+            label="Hapus Produk" 
+            icon="pi pi-trash"
+            className="p-button-danger" 
+            onClick={deleteProduct}
+            disabled={isSubmitting}
+          />
         </div>
+        <p className="submit-hint">
+          {isSubmitting 
+            ? (submitStatus || "Sedang mengunggah data ke server...") 
+            : "Pastikan semua data sudah lengkap sebelum menyimpan"}
+        </p>
       </div>
-        {/* ================= RIGHT: PREVIEW ================= */}
-        <div className="builder-preview-card">
-          <LandingTemplate form={form} />
-        </div>
       </div>
-    </>
+      {/* ================= RIGHT: PREVIEW ================= */}
+      <div className="builder-preview-card">
+        <LandingTemplate form={form} />
+      </div>
+    </div>
   );
 }
