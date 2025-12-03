@@ -73,7 +73,7 @@
 
 .webinar-info {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 0.8rem;
 }
 
@@ -99,30 +99,47 @@
   font-weight: 600;
 }
 
-.webinar-notice {
-  padding: 1rem;
+.webinar-instructions {
+  padding: 1.2rem;
   background: #fef3c7;
-  border-radius: 6px;
+  border-radius: 8px;
   border-left: 4px solid #f59e0b;
 }
 
-.notice-text {
-  overflow: hidden;
-  position: relative;
-}
-
-.running-text {
-  display: inline-block;
-  white-space: nowrap;
-  animation: scroll-text 30s linear infinite;
-  font-size: 0.85rem;
+.instructions-title {
+  font-size: 0.9rem;
+  font-weight: 600;
   color: #92400e;
-  font-weight: 500;
+  margin: 0 0 0.8rem 0;
 }
 
-@keyframes scroll-text {
-  0% { transform: translateX(100%); }
-  100% { transform: translateX(-100%); }
+.instructions-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  list-style: none;
+}
+
+.instructions-list li {
+  font-size: 0.85rem;
+  color: #78350f;
+  line-height: 1.6;
+  margin-bottom: 0.5rem;
+  position: relative;
+  padding-left: 1rem;
+}
+
+.instructions-list li:before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #f59e0b;
+  font-weight: bold;
+  font-size: 1.2rem;
+  line-height: 1.2;
+}
+
+.instructions-list li:last-child {
+  margin-bottom: 0;
 }
 
 .join-meeting-btn {

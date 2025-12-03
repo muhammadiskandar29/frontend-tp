@@ -372,42 +372,44 @@ export default function WebinarGatewayPage() {
                   <span className="info-label">Meeting ID</span>
                   <span className="info-value">{webinarData.meetingNumber}</span>
                 </div>
+                {webinarData.password && (
+                  <div className="info-item">
+                    <span className="info-label">Password</span>
+                    <span className="info-value">{webinarData.password}</span>
+                  </div>
+                )}
+                {webinarData.webinar?.start_time && (
+                  <div className="info-item">
+                    <span className="info-label">Waktu Mulai</span>
+                    <span className="info-value">
+                      {new Date(webinarData.webinar.start_time).toLocaleString("id-ID", {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit"
+                      })}
+                    </span>
+                  </div>
+                )}
+                {webinarData.webinar?.duration && (
+                  <div className="info-item">
+                    <span className="info-label">Durasi</span>
+                    <span className="info-value">{webinarData.webinar.duration} menit</span>
+                  </div>
+                )}
               </div>
 
-              {webinarData.kategoriNama?.toLowerCase() === "seminar" ? (
-                <div className="webinar-schedule">
-                  <div className="schedule-item">
-                    <span className="schedule-label">Jadwal Seminar</span>
-                    <span className="schedule-value">
-                      {webinarData.webinar?.start_time 
-                        ? new Date(webinarData.webinar.start_time).toLocaleString("id-ID", {
-                            weekday: "long",
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit"
-                          })
-                        : "Jadwal akan diumumkan kemudian"
-                      }
-                    </span>
-                  </div>
-                  {webinarData.webinar?.duration && (
-                    <div className="schedule-item">
-                      <span className="schedule-label">Durasi</span>
-                      <span className="schedule-value">{webinarData.webinar.duration} menit</span>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="webinar-notice">
-                  <div className="notice-text">
-                    <span className="running-text">
-                      Selamat datang di Webinar One Dashboard — Pastikan kamera dan mikrofon siap, gunakan koneksi internet stabil, dan hubungi host bila mengalami kendala.
-                    </span>
-                  </div>
-                </div>
-              )}
+              <div className="webinar-instructions">
+                <h3 className="instructions-title">Panduan Bergabung</h3>
+                <ul className="instructions-list">
+                  <li>Pastikan kamera dan mikrofon Anda sudah siap</li>
+                  <li>Gunakan koneksi internet yang stabil</li>
+                  <li>Bergabung tepat waktu sesuai jadwal</li>
+                  <li>Hubungi host jika mengalami kendala teknis</li>
+                </ul>
+              </div>
 
               <button className="join-meeting-btn" onClick={handleJoinMeeting}>
                 Join Meeting
