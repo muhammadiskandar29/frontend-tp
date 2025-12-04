@@ -59,8 +59,8 @@ body {
 }
 
 .landing-logo {
-  width: 200px;
-  height: 133px;
+  width: 150px;
+  height: 100px;
   object-fit: contain;
   display: block;
 }
@@ -118,7 +118,7 @@ body {
 /* Product Title - Black Color */
 .preview-title-professional {
   text-align: center;
-  margin: 24px 0 0 0;
+  margin: 24px 0 32px 0;
   font-size: 2rem;
   font-weight: 700;
   color: #111827;
@@ -140,7 +140,7 @@ body {
 }
 
 .header-wrapper.header-overlap {
-  margin-top: -40px;
+  margin-top: 0;
   margin-bottom: 48px;
   position: relative;
   z-index: 2;
@@ -1178,8 +1178,8 @@ body {
   }
 
   .landing-logo {
-    width: 150px;
-    height: 100px;
+    width: 120px;
+    height: 80px;
   }
 
   /* Professional Promo Styles - Mobile */
