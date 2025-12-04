@@ -243,12 +243,7 @@ body {
   border: 1px solid var(--border);
 }
 
-.speaker-inline-image {
-  width: 350px;
-  height: 400px;
-  object-fit: cover;
-  object-position: center;
-}
+
 
 .speaker-inline-info {
   padding: 0;
