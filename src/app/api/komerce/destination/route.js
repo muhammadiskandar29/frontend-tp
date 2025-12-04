@@ -55,10 +55,33 @@ export async function GET(request) {
       );
     }
 
+    // Parse response dari Komerce
+    // Komerce mengembalikan data dalam format: { rajaongkir: { results: [...] } }
+    let destinations = [];
+    if (data?.rajaongkir?.results) {
+      destinations = data.rajaongkir.results;
+    } else if (Array.isArray(data)) {
+      destinations = data;
+    } else if (data?.results) {
+      destinations = data.results;
+    } else if (data?.data) {
+      destinations = Array.isArray(data.data) ? data.data : [];
+    }
+
+    // Filter berdasarkan query jika ada
+    if (query && destinations.length > 0) {
+      const queryLower = query.toLowerCase();
+      destinations = destinations.filter((dest) => {
+        const cityName = (dest.city_name || dest.name || '').toLowerCase();
+        const province = (dest.province || dest.province_name || '').toLowerCase();
+        return cityName.includes(queryLower) || province.includes(queryLower);
+      });
+    }
+
     // Return response dari Komerce
     return NextResponse.json({
       success: true,
-      data: data,
+      data: destinations,
     });
   } catch (error) {
     console.error('[KOMERCE_DESTINATION] Error:', error);

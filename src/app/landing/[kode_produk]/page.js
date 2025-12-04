@@ -54,6 +54,11 @@ export default function LandingPage() {
   });
 
   const [ongkir, setOngkir] = useState(0); // Ongkir dalam rupiah
+  
+  // Debug: log ongkir changes
+  useEffect(() => {
+    console.log('[LANDING] ongkir state changed:', ongkir);
+  }, [ongkir]);
   const [ongkirAddress, setOngkirAddress] = useState({
     kota: "",
     kecamatan: "",
@@ -854,6 +859,7 @@ export default function LandingPage() {
     {(form.landingpage === "2" || form.landingpage === 2) && (
       <OngkirCalculator
         onSelectOngkir={(price) => {
+          console.log('[LANDING] onSelectOngkir called with price:', price);
           setOngkir(price);
         }}
         onAddressChange={(address) => {

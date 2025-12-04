@@ -94,8 +94,10 @@ export default function OngkirCalculator({
 
     searchTimeoutRef.current = setTimeout(async () => {
       try {
+        console.log('[ONGKIR] Searching destination with query:', query);
         const results = await getDestinations(query);
-        setDestinationResults(results || []);
+        console.log('[ONGKIR] Destination results:', results);
+        setDestinationResults(Array.isArray(results) ? results : []);
       } catch (error) {
         console.error("Error searching destination:", error);
         setDestinationResults([]);
@@ -122,12 +124,17 @@ export default function OngkirCalculator({
   // Auto-calculate ongkir ketika kota + kurir sudah terpilih
   const autoCalculateOngkir = async (destId, selectedCourier) => {
     if (!origin) {
+      console.warn('[ONGKIR] Origin tidak dikonfigurasi. Pastikan NEXT_PUBLIC_RAJAONGKIR_ORIGIN sudah di-set di .env.local');
+      toast.error("Origin tidak dikonfigurasi. Silakan hubungi admin.");
       return;
     }
 
     if (!destId || !selectedCourier) {
+      console.warn('[ONGKIR] destId atau courier belum terisi:', { destId, selectedCourier });
       return;
     }
+    
+    console.log('[ONGKIR] Auto-calculating ongkir:', { origin, destId, selectedCourier });
 
     if (cooldownActive) {
       return;
@@ -154,8 +161,9 @@ export default function OngkirCalculator({
         setPrice(result.price);
         setEtd(result.etd);
 
-        // Call callback
-        if (onSelectOngkir) {
+        // Call callback - PASTIKAN dipanggil untuk update grand total
+        if (onSelectOngkir && result.price) {
+          console.log('[ONGKIR] Calling onSelectOngkir with price:', result.price);
           onSelectOngkir(result.price);
         }
 
@@ -237,13 +245,17 @@ export default function OngkirCalculator({
                 {destinationResults.map((dest, idx) => {
                   const id = dest.id || dest.city_id || dest.destination_id || "";
                   const name = dest.name || dest.city_name || dest.destination_name || dest.text || "";
+                  const province = dest.province || dest.province_name || "";
                   return (
                     <div
                       key={idx}
                       className="ongkir-result-item-compact"
-                      onClick={() => handleSelectDestination(dest)}
+                      onClick={() => {
+                        console.log('[ONGKIR] Selected destination:', dest);
+                        handleSelectDestination(dest);
+                      }}
                     >
-                      {name}
+                      {name} {province ? `(${province})` : ''}
                     </div>
                   );
                 })}
