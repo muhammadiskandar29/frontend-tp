@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const KOMERCE_BASE_URL = 'https://rajaongkir-api.komerce.co.id';
+const KOMERCE_BASE_URL = 'https://rajaongkir.komerce.id';
 // Hardcode API key (untuk production, lebih baik pakai environment variable)
 const RAJAONGKIR_KEY = process.env.RAJAONGKIR_KEY || 'mT8nGMeZ4cacc72ba9d93fd4g2xH48Gb';
 

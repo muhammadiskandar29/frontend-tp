@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const KOMERCE_BASE_URL = 'https://rajaongkir-api.komerce.co.id';
+const KOMERCE_BASE_URL = 'https://rajaongkir.komerce.id';
 // Hardcode API key (untuk production, lebih baik pakai environment variable)
 const RAJAONGKIR_KEY = process.env.RAJAONGKIR_KEY || 'mT8nGMeZ4cacc72ba9d93fd4g2xH48Gb';
 
@@ -34,11 +34,13 @@ export async function GET(request) {
     }
 
     // Build URL untuk search destination
-    const url = `${KOMERCE_BASE_URL}/domestic-destination${query ? `?q=${encodeURIComponent(query)}` : ''}`;
+    // Coba tanpa query dulu untuk test koneksi, lalu filter manual
+    const baseUrl = `${KOMERCE_BASE_URL}/domestic-destination`;
+    const url = query ? `${baseUrl}?q=${encodeURIComponent(query)}` : baseUrl;
 
     console.log('[KOMERCE_FIND_ORIGIN] Requesting:', url);
     console.log('[KOMERCE_FIND_ORIGIN] API Key:', RAJAONGKIR_KEY ? `${RAJAONGKIR_KEY.substring(0, 10)}...` : 'Not Set');
-    console.log('[KOMERCE_FIND_ORIGIN] Full URL:', url);
+    console.log('[KOMERCE_FIND_ORIGIN] Base URL:', KOMERCE_BASE_URL);
 
     let response;
     try {
