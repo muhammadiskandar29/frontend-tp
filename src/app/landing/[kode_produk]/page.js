@@ -471,33 +471,16 @@ export default function LandingPage() {
     <article className="landing-wrapper" itemScope itemType="https://schema.org/Product">
         <div className="produk-preview">
           
-          {/* Top Section with Orange Background - Variated Design */}
+          {/* Top Section with Orange Background - Professional Design */}
           <div className="top-orange-section">
-            {/* Badge Ribbon untuk Tawaran Terbatas */}
-            <div className="promo-badge-ribbon">
-              <span className="ribbon-text">⚡ Tawaran Terbatas!</span>
+            {/* Promo Text - Clean & Professional */}
+            <div className="promo-text-professional" role="banner">
+              <div className="promo-label">Tawaran Terbatas</div>
+              <h1 className="promo-title-professional">Isi Form Hari Ini Untuk Mendapatkan Akses Group Exclusive</h1>
             </div>
 
-            {/* Judul Promo dengan Layout Variasi */}
-            <div className="promo-text-variated" role="banner">
-              <div className="promo-main-content">
-                <div className="promo-icon-wrapper">
-                  <span className="promo-icon">🎯</span>
-                </div>
-                <div className="promo-text-content">
-                  <h1 className="promo-title-h1-variated">Tawaran Terbatas!</h1>
-                  <div className="promo-divider"></div>
-                  <h2 className="promo-title-h2-variated">Isi Form Hari Ini Untuk Mendapatkan Akses Group Exclusive!</h2>
-                </div>
-              </div>
-            </div>
-
-            {/* Nama Produk dengan Styling Variasi */}
-            <div className="preview-title-wrapper">
-              <div className="title-decoration-left"></div>
-              <h1 className="preview-title-variated" itemProp="name">{form.nama}</h1>
-              <div className="title-decoration-right"></div>
-            </div>
+            {/* Nama Produk - Elegant Typography */}
+            <h1 className="preview-title-professional" itemProp="name">{form.nama}</h1>
           </div>
 
           {/* Header - Outside orange section, with reduced overlap for closer spacing */}

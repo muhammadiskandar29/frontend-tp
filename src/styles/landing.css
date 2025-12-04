@@ -49,33 +49,15 @@ body {
   width: 100%;
 }
 
-/* Top Orange Section - Variated Design with Pattern */
+/* Top Orange Section - Professional Clean Design */
 .top-orange-section {
   background: #ff7e00;
-  padding: 32px 24px;
+  padding: 48px 24px;
   border-radius: 12px 12px 0 0;
   margin: -24px -24px 0 -24px;
   padding-bottom: 120px;
   position: relative;
   z-index: 1;
-  overflow: hidden;
-}
-
-/* Decorative Pattern Background */
-.top-orange-section::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: 
-    radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 2px, transparent 2px),
-    radial-gradient(circle at 80% 50%, rgba(255, 255, 255, 0.1) 2px, transparent 2px);
-  background-size: 40px 40px;
-  background-position: 0 0, 20px 20px;
-  opacity: 0.3;
-  pointer-events: none;
 }
 
 /* Header with reduced overlap for closer spacing */
@@ -85,184 +67,49 @@ body {
   z-index: 2;
 }
 
-/* Promo Badge Ribbon */
-.promo-badge-ribbon {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  background: rgba(0, 0, 0, 0.2);
-  padding: 8px 20px;
-  border-radius: 20px;
-  transform: rotate(5deg);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  z-index: 3;
-  animation: pulse-badge 2s ease-in-out infinite;
-}
-
-.ribbon-text {
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: white;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-@keyframes pulse-badge {
-  0%, 100% {
-    transform: rotate(5deg) scale(1);
-  }
-  50% {
-    transform: rotate(5deg) scale(1.05);
-  }
-}
-
-/* Promo Text - Variated Layout */
-.promo-text-variated {
+/* Promo Text - Professional Clean Design */
+.promo-text-professional {
   background: transparent;
   padding: 0;
   text-align: center;
-  border-radius: 0;
   margin-bottom: 32px;
-  border: none;
   position: relative;
   z-index: 2;
 }
 
-.promo-main-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-}
-
-.promo-icon-wrapper {
-  width: 80px;
-  height: 80px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(10px);
-  border: 3px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-  animation: float-icon 3s ease-in-out infinite;
-}
-
-@keyframes float-icon {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-.promo-icon {
-  font-size: 2.5rem;
+.promo-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 12px;
   display: block;
 }
 
-.promo-text-content {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  align-items: center;
-}
-
-.promo-title-h1-variated {
-  font-size: 3rem;
-  font-weight: 800;
+.promo-title-professional {
+  font-size: 2rem;
+  font-weight: 600;
   color: white;
   margin: 0;
-  line-height: 1.1;
-  letter-spacing: -1px;
-  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  position: relative;
-  display: inline-block;
+  line-height: 1.4;
+  letter-spacing: -0.3px;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-.promo-title-h1-variated::after {
-  content: '';
-  position: absolute;
-  bottom: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80px;
-  height: 4px;
-  background: white;
-  border-radius: 2px;
-  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.5);
-}
-
-.promo-divider {
-  width: 60px;
-  height: 2px;
-  background: rgba(255, 255, 255, 0.5);
-  margin: 8px 0;
-  border-radius: 1px;
-}
-
-.promo-title-h2-variated {
-  font-size: 1.25rem;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.95);
-  margin: 0;
-  line-height: 1.5;
-  letter-spacing: 0.2px;
-  max-width: 700px;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-/* Title Wrapper - Variated */
-.preview-title-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  margin-top: 32px;
-  position: relative;
-  z-index: 2;
-}
-
-.title-decoration-left,
-.title-decoration-right {
-  flex: 1;
-  max-width: 100px;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
-  position: relative;
-}
-
-.title-decoration-left::before,
-.title-decoration-right::before {
-  content: '✦';
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  color: white;
-  font-size: 1rem;
-}
-
-.title-decoration-left::before {
-  right: 0;
-}
-
-.title-decoration-right::before {
-  left: 0;
-}
-
-.preview-title-variated {
+/* Product Title - Professional Elegant */
+.preview-title-professional {
   text-align: center;
-  margin: 0;
-  font-size: 2.25rem;
+  margin: 32px 0 0 0;
+  font-size: 2.5rem;
   font-weight: 700;
   color: white;
   line-height: 1.2;
   letter-spacing: -0.5px;
-  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  padding: 0 20px;
   position: relative;
+  z-index: 2;
 }
 
 /* Header Image - 70% Width, Centered, No Border */
@@ -344,22 +191,15 @@ body {
 
 /* SPEAKER PROFILE SECTION - 6 Speakers Grid */
 .speaker-profile-section {
-  margin: 64px -24px;
-  padding: 48px 24px;
-  background: #ff7e00;
-  border-radius: 12px;
-  position: relative;
-  overflow: hidden;
+  margin: 64px 0;
 }
 
 .speaker-banner-image {
   width: 100%;
-  margin-bottom: 32px;
+  margin-bottom: 20px;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-  background: white;
-  padding: 8px;
+  box-shadow: var(--shadow-md);
 }
 
 .talent-banner-img {
@@ -372,10 +212,9 @@ body {
 .speaker-profile-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: white;
+  color: var(--text);
   text-align: center;
   margin-bottom: 20px;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* Speakers Separated Cards - Inline Layout */
@@ -1314,50 +1153,20 @@ body {
     font-size: 0.95rem;
   }
 
-  /* Variated Promo Styles - Mobile */
-  .promo-badge-ribbon {
-    top: 10px;
-    right: 10px;
-    padding: 6px 14px;
-    transform: rotate(3deg);
-  }
-
-  .ribbon-text {
+  /* Professional Promo Styles - Mobile */
+  .promo-label {
     font-size: 0.75rem;
+    letter-spacing: 1.5px;
   }
 
-  .promo-icon-wrapper {
-    width: 60px;
-    height: 60px;
-  }
-
-  .promo-icon {
-    font-size: 2rem;
-  }
-
-  .promo-title-h1-variated {
-    font-size: 2rem;
-  }
-
-  .promo-title-h2-variated {
-    font-size: 1rem;
-    padding: 0 10px;
-  }
-
-  .preview-title-wrapper {
-    flex-direction: column;
-    gap: 12px;
-    margin-top: 24px;
-  }
-
-  .title-decoration-left,
-  .title-decoration-right {
-    max-width: 60px;
-  }
-
-  .preview-title-variated {
+  .promo-title-professional {
     font-size: 1.5rem;
     padding: 0 10px;
+  }
+
+  .preview-title-professional {
+    font-size: 1.75rem;
+    margin-top: 24px;
   }
 
   .preview-price {
@@ -1414,8 +1223,7 @@ body {
   }
 
   .speaker-profile-section {
-    margin: 40px -25px;
-    padding: 32px 20px;
+    margin: 40px 0;
   }
 
   .special-offer-card {

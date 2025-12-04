@@ -87,7 +87,8 @@ export default function LoginPage() {
     <div className="login-centered-shell">
       <section className="login-card">
         <img src="/assets/logo.png" alt="One Dashboard" className="login-card__logo" />
-        <h2>Welcome Back!</h2>
+        <h3>Welcome to One Dashboard</h3>
+        <h2>powered by Ternak Properti</h2>
         <p>Sign in to your account</p>
 
         {showError && <div className="login-card__alert">{errorMsg}</div>}

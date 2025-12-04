@@ -101,7 +101,8 @@ export default function LoginPage() {
           <div className="login-logo">
             <img src="/assets/logo.png" alt="Logo" className="login-logo__img" />
           </div>
-          <h3>Welcome Back!</h3>
+          <h3>Welcome to One Dashboard</h3>
+          <h2>powered by Ternak Properti</h2>
         <p>Sign in to your account</p>
 
           {showError && <div className="login-alert">{errorMsg}</div>}
