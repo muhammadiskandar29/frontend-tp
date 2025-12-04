@@ -32,7 +32,7 @@ body {
    FRAME WRAPPER - COMPACT DESIGN
 ========================================= */
 .landing-wrapper {
-  max-width: 1100px;
+  max-width: 900px;
   margin: 24px auto;
   background: white;
   border-radius: 12px;
@@ -52,17 +52,17 @@ body {
 /* Top Orange Section - Professional Clean Design */
 .top-orange-section {
   background: #ff7e00;
-  padding: 48px 24px;
+  padding: 40px 32px;
   border-radius: 12px 12px 0 0;
   margin: -24px -24px 0 -24px;
-  padding-bottom: 120px;
+  padding-bottom: 100px;
   position: relative;
   z-index: 1;
 }
 
 /* Header with reduced overlap for closer spacing */
 .header-wrapper.header-overlap {
-  margin-top: -120px;
+  margin-top: -100px;
   position: relative;
   z-index: 2;
 }
@@ -72,29 +72,29 @@ body {
   background: transparent;
   padding: 0;
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
   position: relative;
   z-index: 2;
 }
 
 .promo-label {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.85);
   text-transform: uppercase;
-  letter-spacing: 2px;
-  margin-bottom: 12px;
+  letter-spacing: 1.5px;
+  margin-bottom: 10px;
   display: block;
 }
 
 .promo-title-professional {
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 600;
   color: white;
   margin: 0;
-  line-height: 1.4;
-  letter-spacing: -0.3px;
-  max-width: 800px;
+  line-height: 1.5;
+  letter-spacing: -0.2px;
+  max-width: 700px;
   margin-left: auto;
   margin-right: auto;
 }
@@ -102,12 +102,12 @@ body {
 /* Product Title - Professional Elegant */
 .preview-title-professional {
   text-align: center;
-  margin: 32px 0 0 0;
-  font-size: 2.5rem;
+  margin: 24px 0 0 0;
+  font-size: 2rem;
   font-weight: 700;
   color: white;
-  line-height: 1.2;
-  letter-spacing: -0.5px;
+  line-height: 1.3;
+  letter-spacing: -0.4px;
   position: relative;
   z-index: 2;
 }
@@ -131,7 +131,7 @@ body {
 }
 
 .preview-header-img {
-  width: 70%;
+  width: 60%;
   height: auto;
   display: block;
   border: none;
@@ -203,10 +203,11 @@ body {
 }
 
 .talent-banner-img {
-  width: 100%;
+  width: 80%;
   height: auto;
   display: block;
   object-fit: contain;
+  margin: 0 auto;
 }
 
 .speaker-profile-title {
@@ -509,10 +510,12 @@ body {
 }
 
 .preview-video iframe {
-  width: 100%;
+  width: 75%;
+  max-width: 600px;
   aspect-ratio: 16 / 9;
   border-radius: 8px;
-  margin-top: 10px;
+  margin: 10px auto 0;
+  display: block;
   box-shadow: var(--shadow-md);
   border: 1px solid var(--border);
 }
@@ -1155,18 +1158,21 @@ body {
 
   /* Professional Promo Styles - Mobile */
   .promo-label {
-    font-size: 0.75rem;
-    letter-spacing: 1.5px;
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
   }
 
   .promo-title-professional {
-    font-size: 1.5rem;
-    padding: 0 10px;
+    font-size: 1.25rem;
+    padding: 0;
+    line-height: 1.4;
   }
 
   .preview-title-professional {
-    font-size: 1.75rem;
-    margin-top: 24px;
+    font-size: 1.5rem;
+    margin-top: 20px;
+    line-height: 1.3;
   }
 
   .preview-price {
@@ -1238,6 +1244,28 @@ body {
   .preview-video {
     margin-top: 40px;
     margin-bottom: 40px;
+  }
+
+  .preview-video iframe {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .talent-banner-img {
+    width: 100%;
+  }
+
+  .preview-header-img {
+    width: 85%;
+  }
+
+  .top-orange-section {
+    padding: 32px 20px;
+    padding-bottom: 80px;
+  }
+
+  .header-wrapper.header-overlap {
+    margin-top: -80px;
   }
 
   .preview-testimonials {
