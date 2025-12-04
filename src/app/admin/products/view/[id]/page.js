@@ -7,6 +7,7 @@ import Layout from "@/components/Layout";
 import { getProductById } from "@/lib/products";
 import FollowupSection from "./FollowupSection";
 import LinkZoomSection from "./LinkZoomSection";
+import TrainerSection from "./TrainerSection";
 import "@/styles/product-detail.css";
 
 // Helper function untuk build image URL via proxy
@@ -146,6 +147,12 @@ export default function DetailProdukPage({ params }) {
             onClick={() => setActiveTab("link-zoom")}
           >
             Link Zoom
+          </button>
+          <button
+            className={`tab ${activeTab === "trainer" ? "active" : ""}`}
+            onClick={() => setActiveTab("trainer")}
+          >
+            Trainer
           </button>
         </div>
 
@@ -381,6 +388,17 @@ export default function DetailProdukPage({ params }) {
         {/* === TAB LINK ZOOM === */}
         {activeTab === "link-zoom" && (
           <LinkZoomSection productId={id} productName={product.nama} />
+        )}
+
+        {/* === TAB TRAINER === */}
+        {activeTab === "trainer" && (
+          <TrainerSection
+            productId={id}
+            product={product}
+            onProductUpdate={(updatedProduct) => {
+              setProduct(updatedProduct);
+            }}
+          />
         )}
       </div>
     </Layout>

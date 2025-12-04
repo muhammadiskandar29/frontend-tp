@@ -67,13 +67,20 @@ export async function POST(request) {
     console.log('[KOMERCE_COST] URL:', `${KOMERCE_BASE_URL}/cost/domestic-cost`);
 
     let response;
+    let costUrl = ''; // Declare di scope yang lebih luas untuk error handling
     try {
       // Create AbortController untuk timeout (lebih kompatibel)
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 detik timeout
       
-      // Endpoint: /api/v1/cost/domestic-cost
-      response = await fetch(`${KOMERCE_BASE_URL}/cost/domestic-cost`, {
+      // Endpoint: Coba beberapa format yang mungkin
+      // Format 1: /api/v1/cost/domestic-cost
+      // Format 2: /api/v1/domestic-cost (tanpa /cost)
+      costUrl = `${KOMERCE_BASE_URL}/cost/domestic-cost`;
+      console.log('[KOMERCE_COST] Trying URL 1:', costUrl);
+      console.log('[KOMERCE_COST] Payload:', JSON.stringify(payload, null, 2));
+      
+      response = await fetch(costUrl, {
         method: 'POST',
         headers: {
           'key': RAJAONGKIR_KEY, // Dokumentasi menggunakan 'key' bukan 'api-key'
@@ -83,11 +90,37 @@ export async function POST(request) {
         signal: controller.signal,
       });
       
-      clearTimeout(timeoutId);
+      // Jika 404, coba format alternatif
+      if (response.status === 404) {
+        console.log('[KOMERCE_COST] 404 error, trying alternative endpoint...');
+        clearTimeout(timeoutId); // Clear timeout sebelum retry
+        
+        // Buat controller baru untuk retry
+        const retryController = new AbortController();
+        const retryTimeoutId = setTimeout(() => retryController.abort(), 30000);
+        
+        costUrl = `${KOMERCE_BASE_URL}/domestic-cost`;
+        console.log('[KOMERCE_COST] Trying URL 2:', costUrl);
+        
+        response = await fetch(costUrl, {
+          method: 'POST',
+          headers: {
+            'key': RAJAONGKIR_KEY,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+          signal: retryController.signal,
+        });
+        
+        clearTimeout(retryTimeoutId);
+      } else {
+        clearTimeout(timeoutId);
+      }
       
       // Log response untuk debugging
-      console.log('[KOMERCE_COST] Response status:', response.status);
-      console.log('[KOMERCE_COST] Response ok:', response.ok);
+      console.log('[KOMERCE_COST] Final response status:', response.status);
+      console.log('[KOMERCE_COST] Final response ok:', response.ok);
+      console.log('[KOMERCE_COST] Final URL used:', costUrl);
     } catch (fetchError) {
       console.error('[KOMERCE_COST] Fetch error:', fetchError);
       return NextResponse.json(
@@ -143,6 +176,20 @@ export async function POST(request) {
 
     if (!response.ok) {
       console.error('[KOMERCE_COST] Error response:', data);
+      console.error('[KOMERCE_COST] Response status:', response.status);
+      
+      // Handle 404 - endpoint tidak ditemukan
+      if (response.status === 404) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: 'Endpoint cost tidak ditemukan. Periksa dokumentasi API Komerce untuk endpoint yang benar.',
+            error: 'ENDPOINT_NOT_FOUND',
+            details: `URL yang dicoba: ${costUrl || 'unknown'}`,
+          },
+          { status: 404 }
+        );
+      }
       
       // Handle rate limit
       if (response.status === 429 || data?.message?.toLowerCase().includes('rate limit')) {
@@ -172,12 +219,18 @@ export async function POST(request) {
       data: data,
     });
   } catch (error) {
-    console.error('[KOMERCE_COST] Error:', error);
+    console.error('[KOMERCE_COST] Unexpected error:', error);
+    console.error('[KOMERCE_COST] Error name:', error.name);
+    console.error('[KOMERCE_COST] Error message:', error.message);
+    console.error('[KOMERCE_COST] Error stack:', error.stack);
+    
     return NextResponse.json(
       {
         success: false,
-        message: 'Gagal terhubung ke Komerce API',
-        error: error.message,
+        message: 'Terjadi kesalahan saat menghitung ongkir',
+        error: error.message || 'Unknown error',
+        errorName: error.name,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
       },
       { status: 500 }
     );
