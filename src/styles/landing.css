@@ -209,7 +209,7 @@ body {
   margin-bottom: 20px;
 }
 
-/* Speakers Inline Layout - No Card Background */
+/* Speakers Separated Cards - Inline Layout */
 .speakers-inline-list {
   display: flex;
   flex-direction: column;
@@ -217,65 +217,96 @@ body {
   margin-top: 20px;
 }
 
-.speaker-inline-item {
+.speaker-card-separated {
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
-  gap: 24px;
-  padding: 0;
-  background: transparent;
-  border: none;
-  box-shadow: none;
+  align-items: stretch;
+  gap: 0;
+  width: 100%;
 }
 
-.speaker-inline-image-wrapper {
-  width: 350px;
-  height: 400px;
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  position: relative;
-  border-radius: 12px;
-  flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border: 1px solid var(--border);
-}
-
-
-
-.speaker-inline-info {
-  padding: 0;
-  flex: 1;
+/* Photo Card - Left Side (Dark Background) */
+.speaker-photo-card {
+  width: 420px;
+  min-width: 420px;
+  background: #1f2937;
+  border-radius: 12px 0 0 12px;
+  padding: 32px 24px;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  position: relative;
+  overflow: hidden;
 }
 
-.speaker-inline-name {
-  font-size: 1.25rem;
+.speaker-photo-img {
+  width: 100%;
+  height: auto;
+  max-height: 550px;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  flex-shrink: 0;
+}
+
+.speaker-photo-name {
+  font-size: 1rem;
   font-weight: 700;
-  color: var(--text);
-  margin-bottom: 8px;
+  color: white;
+  text-align: center;
+  margin-bottom: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
   line-height: 1.3;
 }
 
-.speaker-inline-title {
-  font-size: 1rem;
+.speaker-photo-role {
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.85);
+  text-align: center;
+  line-height: 1.5;
+  padding: 0 16px;
+}
+
+/* Info Card - Right Side (Light Background) */
+.speaker-info-card {
+  flex: 1;
+  background: #f9fafb;
+  border-radius: 0 12px 12px 0;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.speaker-info-role {
+  font-size: 0.9375rem;
   color: var(--text-secondary);
   margin-bottom: 12px;
   line-height: 1.4;
   font-weight: 500;
 }
 
-.speaker-inline-bio {
+.speaker-info-name {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 20px;
+  line-height: 1.2;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.speaker-info-bio {
   font-size: 0.9375rem;
   color: var(--text);
   line-height: 1.7;
   flex: 1;
 }
 
-.speaker-inline-bio strong {
+.speaker-info-bio strong {
   font-weight: 600;
   color: var(--text);
 }
@@ -427,7 +458,7 @@ body {
   flex-shrink: 0;
 }
 
-/* GALLERY - Pure Grid without Cards */
+/* GALLERY - Full Width 100% Images */
 .preview-gallery {
   margin-top: 24px;
 }
@@ -440,26 +471,29 @@ body {
   text-align: left;
 }
 
-.gallery-images-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+.gallery-images-full {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
   margin-top: 10px;
+  width: 100%;
 }
 
-.gallery-image-item {
+.gallery-image-full {
   width: 100%;
-  aspect-ratio: 1 / 1;
-  object-fit: cover;
+  max-width: 100%;
+  height: auto;
   display: block;
+  object-fit: cover;
   border-radius: 0;
   box-shadow: none;
   transition: none;
   background: #f3f4f6;
   border: none;
+  margin-bottom: 0;
 }
 
-.gallery-image-item:hover {
+.gallery-image-full:hover {
   box-shadow: none;
   transform: none;
 }

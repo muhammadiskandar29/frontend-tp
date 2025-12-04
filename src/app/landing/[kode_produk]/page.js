@@ -544,108 +544,120 @@ export default function LandingPage() {
           <h2 className="speaker-profile-title">Profil Pembicara</h2>
           <div className="speakers-inline-list">
             {/* Speaker 1: Dimas Dwi Ananto */}
-            <div className="speaker-inline-item">
-              <div className="speaker-inline-image-wrapper">
+            <div className="speaker-card-separated">
+              <div className="speaker-photo-card">
                 <img 
                   src="/assets/Dimas Dwi Ananto.png" 
                   alt="Dimas Dwi Ananto"
-                  className="speaker-inline-image"
+                  className="speaker-photo-img"
                 />
+                <div className="speaker-photo-name">DIMAS DWI ANANTO</div>
+                <div className="speaker-photo-role">Praktisi Lelang Properti</div>
               </div>
-              <div className="speaker-inline-info">
-                <div className="speaker-inline-name">Dimas Dwi Ananto</div>
-                <div className="speaker-inline-title">Praktisi Lelang Properti</div>
-                <div className="speaker-inline-bio">
+              <div className="speaker-info-card">
+                <div className="speaker-info-role">Praktisi Lelang Properti</div>
+                <div className="speaker-info-name">DIMAS DWI ANANTO</div>
+                <div className="speaker-info-bio">
                   Praktisi lelang properti berpengalaman dengan <strong>track record</strong> mengakuisisi properti dengan harga murah dan menjualnya kembali dengan keuntungan tinggi. Spesialisasi dalam strategi investasi properti tanpa KPR.
                 </div>
               </div>
             </div>
 
             {/* Speaker 2: Salvian Kumara */}
-            <div className="speaker-inline-item">
-              <div className="speaker-inline-image-wrapper">
+            <div className="speaker-card-separated">
+              <div className="speaker-photo-card">
                 <img 
                   src="/assets/Salvian Kumara.png" 
                   alt="Salvian Kumara"
-                  className="speaker-inline-image"
+                  className="speaker-photo-img"
                 />
+                <div className="speaker-photo-name">SALVIAN KUMARA</div>
+                <div className="speaker-photo-role">Expert Real Estate Investment</div>
               </div>
-              <div className="speaker-inline-info">
-                <div className="speaker-inline-name">Salvian Kumara</div>
-                <div className="speaker-inline-title">Expert Real Estate Investment</div>
-                <div className="speaker-inline-bio">
+              <div className="speaker-info-card">
+                <div className="speaker-info-role">Expert Real Estate Investment</div>
+                <div className="speaker-info-name">SALVIAN KUMARA</div>
+                <div className="speaker-info-bio">
                   Expert di bidang real estate investment dengan pengalaman lebih dari 10 tahun. Fokus pada <strong>analisis pasar properti</strong> dan strategi investasi jangka panjang yang menguntungkan.
                 </div>
               </div>
             </div>
 
             {/* Speaker 3: Rhesa Yogaswara */}
-            <div className="speaker-inline-item">
-              <div className="speaker-inline-image-wrapper">
+            <div className="speaker-card-separated">
+              <div className="speaker-photo-card">
                 <img 
                   src="/assets/Rhesa Yogaswara.png" 
                   alt="Rhesa Yogaswara"
-                  className="speaker-inline-image"
+                  className="speaker-photo-img"
                 />
+                <div className="speaker-photo-name">RHESA YOGASWARA</div>
+                <div className="speaker-photo-role">Property Consultant & Trainer</div>
               </div>
-              <div className="speaker-inline-info">
-                <div className="speaker-inline-name">Rhesa Yogaswara</div>
-                <div className="speaker-inline-title">Property Consultant & Trainer</div>
-                <div className="speaker-inline-bio">
+              <div className="speaker-info-card">
+                <div className="speaker-info-role">Property Consultant & Trainer</div>
+                <div className="speaker-info-name">RHESA YOGASWARA</div>
+                <div className="speaker-info-bio">
                   Property consultant dan trainer yang telah membantu ratusan investor dalam <strong>membangun portofolio properti</strong>. Spesialis dalam riset pasar dan identifikasi peluang investasi.
                 </div>
               </div>
             </div>
 
             {/* Speaker 4: Stephanus P H A S */}
-            <div className="speaker-inline-item">
-              <div className="speaker-inline-image-wrapper">
+            <div className="speaker-card-separated">
+              <div className="speaker-photo-card">
                 <img 
                   src="/assets/Stephanus P H A S.png" 
                   alt="Stephanus P H A S"
-                  className="speaker-inline-image"
+                  className="speaker-photo-img"
                 />
+                <div className="speaker-photo-name">STEPHANUS P H A S</div>
+                <div className="speaker-photo-role">Business Development Specialist</div>
               </div>
-              <div className="speaker-inline-info">
-                <div className="speaker-inline-name">Stephanus P H A S</div>
-                <div className="speaker-inline-title">Business Development Specialist</div>
-                <div className="speaker-inline-bio">
+              <div className="speaker-info-card">
+                <div className="speaker-info-role">Business Development Specialist</div>
+                <div className="speaker-info-name">STEPHANUS P H A S</div>
+                <div className="speaker-info-bio">
                   Business development specialist dengan expertise dalam <strong>strategi pertumbuhan bisnis</strong> dan pengembangan pasar. Berpengalaman dalam transformasi organisasi dan ekspansi bisnis.
                 </div>
               </div>
             </div>
 
             {/* Speaker 5: Theo Ariandyen */}
-            <div className="speaker-inline-item">
-              <div className="speaker-inline-image-wrapper">
+            <div className="speaker-card-separated">
+              <div className="speaker-photo-card">
                 <img 
                   src="/assets/Theo Ariandyen.png" 
                   alt="Theo Ariandyen"
-                  className="speaker-inline-image"
+                  className="speaker-photo-img"
                 />
+                <div className="speaker-photo-name">THEO ARIANDYEN</div>
+                <div className="speaker-photo-role">Investment Strategist</div>
               </div>
-              <div className="speaker-inline-info">
-                <div className="speaker-inline-name">Theo Ariandyen</div>
-                <div className="speaker-inline-title">Investment Strategist</div>
-                <div className="speaker-inline-bio">
+              <div className="speaker-info-card">
+                <div className="speaker-info-role">Investment Strategist</div>
+                <div className="speaker-info-name">THEO ARIANDYEN</div>
+                <div className="speaker-info-bio">
                   Investment strategist yang fokus pada <strong>investasi properti strategis</strong> dan manajemen portofolio. Membantu investor dalam membuat keputusan investasi yang tepat berdasarkan analisis mendalam.
                 </div>
               </div>
             </div>
 
             {/* Speaker 6: Erzon Djazai */}
-            <div className="speaker-inline-item">
-              <div className="speaker-inline-image-wrapper">
+            <div className="speaker-card-separated">
+              <div className="speaker-photo-card">
                 <img 
                   src="/assets/Erzon Djazai.png" 
                   alt="Erzon Djazai"
-                  className="speaker-inline-image"
+                  className="speaker-photo-img"
                 />
+                <div className="speaker-photo-name">ERZON DJAZAI</div>
+                <div className="speaker-photo-role">Property Investment Advisor</div>
               </div>
-              <div className="speaker-inline-info">
-                <div className="speaker-inline-name">Erzon Djazai</div>
-                <div className="speaker-inline-title">Property Investment Advisor</div>
-                <div className="speaker-inline-bio">
+              <div className="speaker-info-card">
+                <div className="speaker-info-role">Property Investment Advisor</div>
+                <div className="speaker-info-name">ERZON DJAZAI</div>
+                <div className="speaker-info-bio">
                   Property investment advisor dengan pengalaman luas dalam <strong>mengidentifikasi peluang investasi properti</strong> dan memberikan konsultasi strategis untuk investor pemula maupun berpengalaman.
                 </div>
               </div>
@@ -700,7 +712,7 @@ export default function LandingPage() {
         {form.gambar?.length > 0 && (
           <section className="preview-gallery" aria-label="Product gallery">
             <h2 className="gallery-title">Galeri Produk</h2>
-            <div className="gallery-images-grid" itemProp="image">
+            <div className="gallery-images-full" itemProp="image">
               {form.gambar.map((g, i) => {
                 const imgSrc = buildImageUrl(g.path);
                 return imgSrc ? (
@@ -708,10 +720,8 @@ export default function LandingPage() {
                     key={i} 
                     src={imgSrc} 
                     alt={g.caption || `${form.nama} - Gambar ${i + 1}`}
-                    className="gallery-image-item"
+                    className="gallery-image-full"
                     loading="lazy"
-                    width="450"
-                    height="300"
                   />
                 ) : null;
               })}
