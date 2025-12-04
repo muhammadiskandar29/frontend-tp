@@ -1,0 +1,126 @@
+import { NextResponse } from 'next/server';
+
+const KOMERCE_BASE_URL = 'https://rajaongkir-api.komerce.co.id';
+const RAJAONGKIR_KEY = process.env.RAJAONGKIR_KEY;
+
+export async function POST(request) {
+  try {
+    if (!RAJAONGKIR_KEY) {
+      console.error('[KOMERCE_COST] RAJAONGKIR_KEY tidak ditemukan di environment');
+      return NextResponse.json(
+        { success: false, message: 'API key tidak dikonfigurasi' },
+        { status: 500 }
+      );
+    }
+
+    const body = await request.json();
+    const { origin, destination, weight, courier } = body;
+
+    // Validasi input
+    if (!origin || !destination || !weight || !courier) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'origin, destination, weight, dan courier wajib diisi',
+        },
+        { status: 400 }
+      );
+    }
+
+    // Validasi destination harus angka
+    if (isNaN(parseInt(destination, 10))) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'destination harus berupa ID (angka)',
+        },
+        { status: 400 }
+      );
+    }
+
+    // Validasi weight
+    const weightNum = parseInt(weight, 10);
+    if (isNaN(weightNum) || weightNum < 1 || weightNum > 50000) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'weight harus antara 1 dan 50000 gram',
+        },
+        { status: 400 }
+      );
+    }
+
+    const payload = {
+      origin: String(origin),
+      destination: String(destination),
+      weight: weightNum,
+      courier: String(courier).toLowerCase(), // jne, tiki, pos, dll
+    };
+
+    console.log('[KOMERCE_COST] Requesting cost:', JSON.stringify(payload, null, 2));
+
+    const response = await fetch(`${KOMERCE_BASE_URL}/domestic-cost`, {
+      method: 'POST',
+      headers: {
+        'api-key': RAJAONGKIR_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const responseText = await response.text();
+    let data;
+
+    try {
+      data = JSON.parse(responseText);
+    } catch (err) {
+      console.error('[KOMERCE_COST] Non-JSON response:', responseText.substring(0, 500));
+      return NextResponse.json(
+        { success: false, message: 'Response dari Komerce bukan JSON' },
+        { status: 500 }
+      );
+    }
+
+    if (!response.ok) {
+      console.error('[KOMERCE_COST] Error response:', data);
+      
+      // Handle rate limit
+      if (response.status === 429 || data?.message?.toLowerCase().includes('rate limit')) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: 'Terlalu banyak request. Silakan coba lagi dalam beberapa saat.',
+            error: 'RATE_LIMIT',
+          },
+          { status: 429 }
+        );
+      }
+
+      return NextResponse.json(
+        {
+          success: false,
+          message: data?.message || data?.error || 'Gagal menghitung ongkir',
+          error: data,
+        },
+        { status: response.status }
+      );
+    }
+
+    // Return response dari Komerce
+    return NextResponse.json({
+      success: true,
+      data: data,
+    });
+  } catch (error) {
+    console.error('[KOMERCE_COST] Error:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Gagal terhubung ke Komerce API',
+        error: error.message,
+      },
+      { status: 500 }
+    );
+  }
+}
+

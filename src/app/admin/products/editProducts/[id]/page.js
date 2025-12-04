@@ -65,6 +65,7 @@ export default function Page() {
     gambar: [], // [{ path: {type:'file', value:File}, caption }]
     landingpage: "1",
     status: 1,
+    enable_ongkir: 0, // 0 = disabled, 1 = enabled
     assign: [],
     custom_field: [],
     list_point: [],
@@ -363,6 +364,7 @@ export default function Page() {
     
     formData.append("landingpage", String(form.landingpage || getValue("landingpage") || "1"));
     formData.append("status", String(form.status || getValue("status") || "1"));
+    // enable_ongkir tidak dikirim ke backend, hanya untuk toggle UI di frontend
     
     console.log("[FORMDATA] Basic fields:", {
       kategori: kategoriId,
@@ -1064,6 +1066,7 @@ export default function Page() {
         tanggal_event: parsedTanggalEvent,
         status: produkData.status || "1",
         landingpage: produkData.landingpage || "1",
+        enable_ongkir: produkData.enable_ongkir || 0,
         id: produkData.id || productId,
         kategori: kategoriId,
         assign: produkData.assign_rel 
@@ -1108,6 +1111,7 @@ export default function Page() {
         tanggal_event: produkData.tanggal_event || "",
         landingpage: produkData.landingpage || "1",
         status: produkData.status || "1",
+        enable_ongkir: produkData.enable_ongkir || 0,
         header: produkData.header || "",
         gambar: safeParseJSON(produkData.gambar, []),
         testimoni: safeParseJSON(produkData.testimoni, []),
@@ -1508,6 +1512,25 @@ export default function Page() {
                 onChange={(e) => handleChange("tanggal_event", e.value)}
                 placeholder="Pilih tanggal event"
               />
+            </div>
+
+            {/* ENABLE ONGKIR */}
+            <div className="form-field-group">
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="form-label">
+                    <span className="label-icon">🚚</span>
+                    Aktifkan Cek Ongkir
+                  </label>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Jika diaktifkan, customer dapat cek ongkir di landing page menggunakan Raja Ongkir
+                  </p>
+                </div>
+                <InputSwitch
+                  checked={form.enable_ongkir === 1}
+                  onChange={(e) => handleChange("enable_ongkir", e.value ? 1 : 0)}
+                />
+              </div>
             </div>
           </div>
         </div>

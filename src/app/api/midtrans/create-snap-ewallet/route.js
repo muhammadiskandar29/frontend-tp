@@ -14,12 +14,13 @@ export async function POST(request) {
         email: formData.get('email'),
         amount: formData.get('amount'),
         product_name: formData.get('product_name'),
+        order_id: formData.get('order_id'),
       };
     } else {
       body = await request.json();
     }
 
-    const { name, email, amount, product_name } = body;
+    const { name, email, amount, product_name, order_id } = body;
 
     if (!name || !email || !amount) {
       return NextResponse.json(
@@ -34,6 +35,7 @@ export async function POST(request) {
       email,
       amount: parseInt(amount, 10),
       product_name: product_name || 'Product',
+      order_id: order_id ? parseInt(order_id, 10) : null,
     };
 
     console.log('[MIDTRANS_EWALLET] Forwarding to backend:', `${BACKEND_URL}/api/midtrans/create-snap-ewallet`);

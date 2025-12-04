@@ -77,6 +77,7 @@ export default function Page() {
   gambar: [], // [{ path: {type:'file', value:File}, caption }]
   landingpage: "1",
   status: 1,
+  enable_ongkir: 0, // 0 = disabled, 1 = enabled
   assign: [],
   custom_field: [],   // <--- kosong di awal
   list_point: [],   
@@ -202,6 +203,7 @@ const [submitProgress, setSubmitProgress] = useState("");
     formData.append("tanggal_event", formatDateForBackend(form.tanggal_event) || "");
     formData.append("landingpage", String(form.landingpage || 1));
     formData.append("status", String(form.status || 1));
+    // enable_ongkir tidak dikirim ke backend, hanya untuk toggle UI di frontend
     
     console.log("[FORMDATA] Basic fields:", {
       kategori: kategoriId,
@@ -1018,6 +1020,24 @@ useEffect(() => {
               onChange={(e) => handleChange("tanggal_event", e.value)}
               placeholder="Pilih tanggal event"
             />
+          </div>
+
+          {/* ENABLE ONGKIR */}
+          <div className="form-field-group">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="form-label">
+                  Aktifkan Cek Ongkir
+                </label>
+                <p className="text-sm text-gray-500 mt-1">
+                  Jika diaktifkan, customer dapat cek ongkir di landing page menggunakan Raja Ongkir
+                </p>
+              </div>
+              <InputSwitch
+                checked={form.enable_ongkir === 1}
+                onChange={(e) => handleChange("enable_ongkir", e.value ? 1 : 0)}
+              />
+            </div>
           </div>
         </div>
       </div>

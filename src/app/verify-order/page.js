@@ -256,7 +256,7 @@ export default function VerifyOrderOTPPage() {
       return;
     }
 
-    const { nama, email, totalHarga, productName } = dataToUse;
+    const { nama, email, totalHarga, productName, orderId } = dataToUse;
     const API_BASE = "/api";
 
     let endpoint = "";
@@ -277,7 +277,7 @@ export default function VerifyOrderOTPPage() {
     }
 
     console.log("[VERIFY_ORDER] Calling Midtrans endpoint:", endpoint);
-    console.log("[VERIFY_ORDER] Payload:", { name: nama, email, amount: totalHarga, product_name: productName });
+    console.log("[VERIFY_ORDER] Payload:", { name: nama, email, amount: totalHarga, product_name: productName, order_id: orderId });
 
     try {
       const payload = {
@@ -285,6 +285,7 @@ export default function VerifyOrderOTPPage() {
         email: email,
         amount: totalHarga,
         product_name: productName,
+        order_id: orderId,
       };
 
       const response = await fetch(endpoint, {

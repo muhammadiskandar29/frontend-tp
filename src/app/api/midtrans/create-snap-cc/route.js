@@ -5,7 +5,7 @@ import { BACKEND_URL } from "@/config/env";
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { name, email, amount, product_name } = body;
+    const { name, email, amount, product_name, order_id } = body;
 
     if (!name || !email || !amount) {
       return NextResponse.json(
@@ -20,6 +20,7 @@ export async function POST(request) {
       email,
       amount: parseInt(amount, 10),
       product_name: product_name || 'Product',
+      order_id: order_id ? parseInt(order_id, 10) : null,
     };
 
     console.log('[MIDTRANS_CC] Forwarding to backend:', `${BACKEND_URL}/api/midtrans/create-snap-cc`);

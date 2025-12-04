@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import Loading from "@/app/loading";
+import OngkirCalculator from "@/components/OngkirCalculator";
 import "@/styles/landing.css";
 
 // FAQ Component
@@ -51,6 +52,8 @@ export default function LandingPage() {
     alamat: "",
     custom_value: [],
   });
+
+  const [ongkir, setOngkir] = useState(0); // Ongkir dalam rupiah
 
   const formatPrice = (price) => {
     if (!price) return "0";
@@ -137,6 +140,7 @@ export default function LandingPage() {
         setData({
           ...d,
           product_name: d.nama,
+          enable_ongkir: d.enable_ongkir || 0, // Load enable_ongkir dari backend (jika ada)
           gambar: safeParse(d.gambar, []),
           custom_field: safeParse(d.custom_field, []),
           assign: safeParse(d.assign, []),
@@ -372,15 +376,19 @@ export default function LandingPage() {
 
     // Payload sesuai format backend requirement
     // Backend mengharapkan harga dan total_harga sebagai STRING
+    const hargaAsli = parseInt(form.harga_asli || '0', 10);
+    const ongkirValue = ongkir || 0;
+    const totalHarga = hargaAsli + ongkirValue;
+
     const payload = {
       nama: customerForm.nama,
       wa: customerForm.wa,
       email: customerForm.email,
       alamat: customerForm.alamat || '',
       produk: parseInt(form.id, 10), // produk tetap integer
-      harga: String(form.harga_asli || '0'), // harga sebagai string
-      ongkir: "0", // string
-      total_harga: String(form.harga_asli || '0'), // total_harga sebagai string
+      harga: String(hargaAsli), // harga sebagai string
+      ongkir: String(ongkirValue), // ongkir dari hasil cek Raja Ongkir
+      total_harga: String(totalHarga), // total_harga = harga + ongkir
       metode_bayar: paymentMethod,
       sumber: sumber || 'website',
       custom_value: Array.isArray(customerForm.custom_value) 
@@ -430,6 +438,10 @@ export default function LandingPage() {
 
 
       // Simpan data untuk verifikasi OTP + URL landing untuk redirect balik
+      const hargaAsli = parseInt(form.harga_asli || '0', 10);
+      const ongkirValue = ongkir || 0;
+      const totalHargaFinal = hargaAsli + ongkirValue;
+
       const pendingOrder = {
         orderId: orderId,
         customerId: customerId,
@@ -437,7 +449,7 @@ export default function LandingPage() {
         wa: customerForm.wa,
         email: customerForm.email,
         productName: form.nama || form.product_name,
-        totalHarga: form.harga_asli || "0",
+        totalHarga: String(totalHargaFinal), // total_harga = harga + ongkir
         paymentMethod: paymentMethod,
         landingUrl: window.location.pathname, // URL untuk balik setelah payment
       };
@@ -792,6 +804,20 @@ export default function LandingPage() {
     </div>
   </div>
 </section>
+
+        {/* Ongkir Calculator - Tampilkan jika enable_ongkir aktif */}
+        {(form.enable_ongkir === 1 || form.enable_ongkir === "1") && (
+          <section className="ongkir-section" aria-label="Ongkir calculator">
+            <OngkirCalculator
+              onSelectOngkir={(price) => {
+                setOngkir(price);
+                toast.success(`Ongkir: Rp ${price.toLocaleString("id-ID")}`);
+              }}
+              defaultWeight={1000}
+              defaultCourier="jne"
+            />
+          </section>
+        )}
 
         {/* Custom Field - Same Compact Style */}
         {form.custom_field?.length > 0 && (
