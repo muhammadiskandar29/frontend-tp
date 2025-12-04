@@ -92,6 +92,7 @@ export default function OngkirCalculator({
       clearTimeout(searchTimeoutRef.current);
     }
 
+    // Minimal 2 karakter untuk search (sesuai permintaan user)
     if (query.length < 2) {
       setDestinationResults([]);
       return;
@@ -106,10 +107,23 @@ export default function OngkirCalculator({
       } catch (error) {
         console.error("Error searching destination:", error);
         setDestinationResults([]);
+        
+        // Jangan tampilkan error untuk query terlalu pendek atau validasi
+        if (error.message && (
+          error.message.includes('minimal 2 karakter') || 
+          error.message.includes('minimal 3 karakter') ||
+          error.message.includes('wajib diisi')
+        )) {
+          // Query terlalu pendek, biarkan user terus mengetik tanpa error
+          console.log('[ONGKIR] Query validation error (too short), waiting for more characters');
+          return;
+        }
+        
         // Tampilkan error ke user jika API key tidak dikonfigurasi
         if (error.message && error.message.includes('API key tidak dikonfigurasi')) {
           toast.error("API key tidak dikonfigurasi. Silakan hubungi admin.");
-        } else {
+        } else if (error.message && !error.message.includes('minimal')) {
+          // Hanya tampilkan error untuk masalah lain, bukan untuk query terlalu pendek
           toast.error(error.message || "Gagal mencari kota tujuan");
         }
       }
@@ -126,6 +140,35 @@ export default function OngkirCalculator({
     setDestination(label);
     setDestinationSearch(label);
     setDestinationResults([]);
+    
+    // Auto-fill kecamatan, kelurahan, kode pos dari data yang dipilih
+    // Format label: "PEGADUNGAN, KALIDERES, JAKARTA BARAT, DKI JAKARTA, 11830"
+    // Atau dari field terpisah jika ada
+    if (dest.district_name) {
+      setKecamatan(dest.district_name);
+    }
+    if (dest.subdistrict_name) {
+      setKabupaten(dest.subdistrict_name);
+    }
+    if (dest.postal_code) {
+      setKodePos(dest.postal_code);
+    }
+    
+    // Jika tidak ada field terpisah, parse dari label
+    if (!dest.district_name && !dest.subdistrict_name && label) {
+      // Parse dari format: "PEGADUNGAN, KALIDERES, JAKARTA BARAT, DKI JAKARTA, 11830"
+      const parts = label.split(',').map(p => p.trim());
+      if (parts.length >= 4) {
+        // parts[0] = subdistrict (kelurahan), parts[1] = district (kecamatan)
+        setKabupaten(parts[0] || '');
+        setKecamatan(parts[1] || '');
+        // Kode pos biasanya di akhir
+        const lastPart = parts[parts.length - 1];
+        if (lastPart && /^\d+$/.test(lastPart)) {
+          setKodePos(lastPart);
+        }
+      }
+    }
     
     // Auto-calculate ongkir setelah destination terpilih
     // Menggunakan subdistrict_id untuk perhitungan yang lebih akurat

@@ -23,11 +23,12 @@ export async function GET(request) {
     const limit = searchParams.get('limit') || '10';
     const offset = searchParams.get('offset') || '0';
 
-    if (!search) {
+    // Validasi minimal 2 karakter (bukan 3)
+    if (!search || search.length < 2) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Parameter search (atau q) wajib diisi. Contoh: /api/komerce/destination?search=jakarta',
+          message: 'Parameter search (atau q) wajib diisi minimal 2 karakter. Contoh: /api/komerce/destination?search=ja',
         },
         { status: 400 }
       );

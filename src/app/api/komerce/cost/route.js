@@ -64,6 +64,7 @@ export async function POST(request) {
 
     console.log('[KOMERCE_COST] Requesting cost:', JSON.stringify(payload, null, 2));
     console.log('[KOMERCE_COST] API Key:', RAJAONGKIR_KEY ? 'Set' : 'Not Set');
+    console.log('[KOMERCE_COST] URL:', `${KOMERCE_BASE_URL}/cost/domestic-cost`);
 
     let response;
     try {
@@ -83,6 +84,10 @@ export async function POST(request) {
       });
       
       clearTimeout(timeoutId);
+      
+      // Log response untuk debugging
+      console.log('[KOMERCE_COST] Response status:', response.status);
+      console.log('[KOMERCE_COST] Response ok:', response.ok);
     } catch (fetchError) {
       console.error('[KOMERCE_COST] Fetch error:', fetchError);
       return NextResponse.json(
@@ -102,9 +107,31 @@ export async function POST(request) {
     try {
       data = JSON.parse(responseText);
     } catch (err) {
-      console.error('[KOMERCE_COST] Non-JSON response:', responseText.substring(0, 500));
+      console.error('[KOMERCE_COST] Non-JSON response:', responseText);
+      console.error('[KOMERCE_COST] Response status:', response.status);
+      console.error('[KOMERCE_COST] Response headers:', Object.fromEntries(response.headers.entries()));
+      
+      // Coba parse sebagai HTML atau text error
+      if (responseText.includes('<html>') || responseText.includes('<!DOCTYPE')) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            message: 'API Komerce mengembalikan HTML (mungkin error page). Periksa URL endpoint dan API key.',
+            error: 'HTML_RESPONSE',
+            details: responseText.substring(0, 200)
+          },
+          { status: 500 }
+        );
+      }
+      
       return NextResponse.json(
-        { success: false, message: 'Response dari Komerce bukan JSON' },
+        { 
+          success: false, 
+          message: 'Response dari Komerce bukan JSON',
+          error: 'INVALID_JSON',
+          details: responseText.substring(0, 500),
+          statusCode: response.status
+        },
         { status: 500 }
       );
     }
