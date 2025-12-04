@@ -849,24 +849,22 @@ export default function LandingPage() {
         Masukkan alamat lengkap Anda
       </p>
     </div>
+
+    {/* Ongkir Calculator - Tampilkan jika landingpage = "2" (fisik), di dalam card yang sama */}
+    {(form.landingpage === "2" || form.landingpage === 2) && (
+      <OngkirCalculator
+        onSelectOngkir={(price) => {
+          setOngkir(price);
+        }}
+        onAddressChange={(address) => {
+          setOngkirAddress(address);
+          generateAlamatLengkap(customerForm.alamat, address);
+        }}
+        defaultCourier="jne"
+      />
+    )}
   </div>
 </section>
-
-        {/* Ongkir Calculator - Tampilkan jika landingpage = "2" (fisik) */}
-        {(form.landingpage === "2" || form.landingpage === 2) && (
-          <section className="ongkir-detail-section" aria-label="Detail ongkir">
-            <OngkirCalculator
-              onSelectOngkir={(price) => {
-                setOngkir(price);
-              }}
-              onAddressChange={(address) => {
-                setOngkirAddress(address);
-                generateAlamatLengkap(customerForm.alamat, address);
-              }}
-              defaultCourier="jne"
-            />
-          </section>
-        )}
 
 
         {/* Custom Field - Same Compact Style */}

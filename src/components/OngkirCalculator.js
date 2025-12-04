@@ -217,8 +217,7 @@ export default function OngkirCalculator({
   ];
 
   return (
-    <div className="ongkir-calculator-compact">
-      <div className="compact-form-card">
+    <>
         {/* Kota Tujuan - Search */}
         <div className="compact-field">
           <label className="compact-label">
@@ -326,26 +325,7 @@ export default function OngkirCalculator({
             <p className="text-sm text-red-600 mt-1">Tunggu {cooldownTime} detik sebelum cek ongkir lagi</p>
           </div>
         )}
-
-        {/* Result */}
-        {price !== null && (
-          <div className="compact-field" style={{ marginTop: '8px', padding: '12px', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '8px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span className="compact-label" style={{ margin: 0, fontSize: '14px' }}>Ongkir:</span>
-              <span style={{ fontSize: '16px', fontWeight: 700, color: '#10b981' }}>
-                Rp {price.toLocaleString("id-ID")}
-              </span>
-            </div>
-            {etd && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span className="compact-label" style={{ margin: 0, fontSize: '14px' }}>Estimasi:</span>
-                <span style={{ fontSize: '14px', fontWeight: 500, color: '#374151' }}>{etd}</span>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
+    </>
   );
 }
 
