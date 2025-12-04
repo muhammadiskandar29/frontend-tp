@@ -825,14 +825,13 @@ useEffect(() => {
       {/* SECTION 1: Informasi Dasar */}
       <div className="form-section-card">
         <div className="section-header">
-          <h3 className="section-title">📋 Informasi Dasar</h3>
+          <h3 className="section-title">Informasi Dasar</h3>
           <p className="section-description">Data utama produk yang akan ditampilkan</p>
         </div>
         <div className="section-content">
           {/* NAMA PRODUK */}
           <div className="form-field-group">
             <label className="form-label">
-              <span className="label-icon">📦</span>
               Nama Produk <span className="required">*</span>
             </label>
             <InputText
@@ -857,7 +856,6 @@ useEffect(() => {
           {/* KATEGORI */}
           <div className="form-field-group">
             <label className="form-label">
-              <span className="label-icon">🏷️</span>
               Kategori <span className="required">*</span>
             </label>
             <Dropdown
@@ -890,7 +888,7 @@ useEffect(() => {
             />
             {!form.kategori && (
               <small className="field-hint" style={{ color: "#ef4444" }}>
-                ⚠️ Kategori wajib dipilih
+                Kategori wajib dipilih
               </small>
             )}
           </div>
@@ -899,7 +897,6 @@ useEffect(() => {
           <div className="grid grid-cols-2 gap-4">
             <div className="form-field-group">
               <label className="form-label">
-                <span className="label-icon">🔗</span>
                 Kode Produk
               </label>
               <InputText
@@ -919,7 +916,6 @@ useEffect(() => {
             </div>
             <div className="form-field-group">
               <label className="form-label">
-                <span className="label-icon">🌐</span>
                 URL
               </label>
               <InputText
@@ -935,14 +931,13 @@ useEffect(() => {
       {/* SECTION 2: Media & Konten */}
       <div className="form-section-card">
         <div className="section-header">
-          <h3 className="section-title">🖼️ Media & Konten</h3>
+          <h3 className="section-title">Media & Konten</h3>
           <p className="section-description">Gambar, deskripsi, dan konten produk</p>
         </div>
         <div className="section-content">
           {/* HEADER IMAGE */}
           <div className="form-field-group">
             <label className="form-label">
-              <span className="label-icon">🖼️</span>
               Header Image
             </label>
             <div className="file-upload-card">
@@ -968,7 +963,6 @@ useEffect(() => {
           {/* DESKRIPSI */}
           <div className="form-field-group">
             <label className="form-label">
-              <span className="label-icon">📝</span>
               Deskripsi Produk
             </label>
             <InputTextarea
@@ -984,8 +978,7 @@ useEffect(() => {
           <div className="grid grid-cols-2 gap-4">
             <div className="form-field-group">
               <label className="form-label">
-                <span className="label-icon">💰</span>
-                Harga Coret
+                Harga Asli
               </label>
               <InputNumber
                 className="w-full form-input"
@@ -999,8 +992,7 @@ useEffect(() => {
             </div>
             <div className="form-field-group">
               <label className="form-label">
-                <span className="label-icon">💵</span>
-                Harga Asli <span className="required">*</span>
+                Harga Promo <span className="required">*</span>
               </label>
               <InputNumber
                 className="w-full form-input"
@@ -1017,7 +1009,6 @@ useEffect(() => {
           {/* TANGGAL EVENT */}
           <div className="form-field-group">
             <label className="form-label">
-              <span className="label-icon">📅</span>
               Tanggal Event
             </label>
             <Calendar
@@ -1034,7 +1025,7 @@ useEffect(() => {
       {/* SECTION 3: Gallery */}
       <div className="form-section-card">
         <div className="section-header">
-          <h3 className="section-title">🖼️ Gallery Produk</h3>
+          <h3 className="section-title">Gallery Produk</h3>
           <p className="section-description">Tambah gambar produk dengan caption</p>
         </div>
         <div className="section-content">
@@ -1095,7 +1086,7 @@ useEffect(() => {
       {/* SECTION 4: Testimoni */}
       <div className="form-section-card">
         <div className="section-header">
-          <h3 className="section-title">⭐ Testimoni</h3>
+          <h3 className="section-title">Testimoni</h3>
           <p className="section-description">Tambah testimoni dari pembeli</p>
         </div>
         <div className="section-content">
@@ -1168,14 +1159,13 @@ useEffect(() => {
       {/* SECTION 5: Konten Tambahan */}
       <div className="form-section-card">
         <div className="section-header">
-          <h3 className="section-title">🎬 Konten Tambahan</h3>
+          <h3 className="section-title">Konten Tambahan</h3>
           <p className="section-description">Video, list point, dan konten pendukung</p>
         </div>
         <div className="section-content">
           {/* VIDEO */}
           <div className="form-field-group">
             <label className="form-label">
-              <span className="label-icon">🎥</span>
               Video (URL, pisahkan dengan koma)
             </label>
             <InputTextarea
@@ -1191,7 +1181,6 @@ useEffect(() => {
           {/* LIST POINT */}
           <div className="form-field-group">
             <label className="form-label">
-              <span className="label-icon">✅</span>
               List Point (Benefit)
             </label>
             {form.list_point.map((p, i) => (
@@ -1287,7 +1276,7 @@ useEffect(() => {
       {/* SECTION 7: Custom Fields */}
       <div className="form-section-card">
         <div className="section-header">
-          <h3 className="section-title">🔧 Custom Fields</h3>
+          <h3 className="section-title">Custom Fields</h3>
           <p className="section-description">Tambah field tambahan untuk form pembeli</p>
         </div>
         <div className="section-content">
@@ -1350,7 +1339,7 @@ useEffect(() => {
       {/* SECTION 8: Pengaturan */}
       <div className="form-section-card">
         <div className="section-header">
-          <h3 className="section-title">⚙️ Pengaturan</h3>
+          <h3 className="section-title">Pengaturan</h3>
           <p className="section-description">Assign user, landing page, dan status produk</p>
         </div>
         <div className="section-content">
@@ -1358,7 +1347,6 @@ useEffect(() => {
           {/* ASSIGN BY - Penanggung Jawab */}
           <div className="form-field-group">
             <label className="form-label">
-              <span className="label-icon">👥</span>
               Penanggung Jawab (Assign By) <span className="required">*</span>
             </label>
             <MultiSelect
@@ -1378,7 +1366,6 @@ useEffect(() => {
           {/* LANDING PAGE */}
           <div className="form-field-group">
             <label className="form-label">
-              <span className="label-icon">🌐</span>
               Landing Page
             </label>
             <InputText
@@ -1388,29 +1375,6 @@ useEffect(() => {
               placeholder="Masukkan nama landing page atau kode"
             />
             <p className="field-hint">Default: 1</p>
-          </div>
-
-          {/* STATUS */}
-          <div className="status-card">
-            <div className="status-content">
-              <div className="status-info">
-                <label className="form-label">
-                  <span className="label-icon">🔘</span>
-                  Status Produk
-                </label>
-                <p className="status-indicator">
-                  {form.status === 1 ? (
-                    <span className="status-active">● Aktif</span>
-                  ) : (
-                    <span className="status-inactive">○ Tidak Aktif</span>
-                  )}
-                </p>
-              </div>
-              <InputSwitch 
-                checked={form.status === 1} 
-                onChange={(e) => handleChange("status", e.value ? 1 : 0)} 
-              />
-            </div>
           </div>
         </div>
       </div>
