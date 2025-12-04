@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import Loading from "@/app/loading";
@@ -38,10 +38,6 @@ export default function LandingPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false); // Prevent double-click
   const [testimoniIndex, setTestimoniIndex] = useState(0); // For testimoni carousel
-  const [captchaChecked, setCaptchaChecked] = useState(false); // For captcha verification
-  const [captchaChallenge, setCaptchaChallenge] = useState(null); // For captcha challenge
-  const [captchaAnswer, setCaptchaAnswer] = useState(""); // User's answer to challenge
-  const captchaRef = useRef(null);
 
   const sumber = searchParams.get("utm_sumber") || "website";
   
@@ -160,19 +156,6 @@ export default function LandingPage() {
 
     fetchData();
   }, [kode_produk]);
-
-  // Generate Captcha Challenge
-  useEffect(() => {
-    const generateChallenge = () => {
-      const num1 = Math.floor(Math.random() * 10) + 1;
-      const num2 = Math.floor(Math.random() * 10) + 1;
-      const answer = num1 + num2;
-      setCaptchaChallenge({ question: `${num1} + ${num2}`, answer: answer });
-      setCaptchaAnswer("");
-      setCaptchaChecked(false);
-    };
-    generateChallenge();
-  }, []);
 
   // SEO Meta Tags & Structured Data - Optimized
   useEffect(() => {
@@ -384,7 +367,6 @@ export default function LandingPage() {
     if (!paymentMethod) return toast.error("Silakan pilih metode pembayaran");
     if (!customerForm.nama || !customerForm.email || !customerForm.wa)
       return toast.error("Silakan lengkapi data yang diperlukan");
-    if (!captchaChecked) return toast.error("Silakan selesaikan verifikasi bahwa Anda bukan robot");
 
     setSubmitting(true);
 
@@ -972,93 +954,11 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Captcha Challenge - Google reCAPTCHA Style */}
-        <div className="captcha-section">
-          <div className="captcha-wrapper">
-            <div className="captcha-checkbox-wrapper">
-              <input
-                type="checkbox"
-                checked={captchaChecked}
-                onChange={(e) => {
-                  if (e.target.checked) {
-                    // Verify answer when checked
-                    if (captchaChallenge && parseInt(captchaAnswer) === captchaChallenge.answer) {
-                      setCaptchaChecked(true);
-                    } else {
-                      e.target.checked = false;
-                      toast.error("Jawaban salah. Silakan coba lagi.");
-                      // Regenerate challenge
-                      const num1 = Math.floor(Math.random() * 10) + 1;
-                      const num2 = Math.floor(Math.random() * 10) + 1;
-                      const answer = num1 + num2;
-                      setCaptchaChallenge({ question: `${num1} + ${num2}`, answer: answer });
-                      setCaptchaAnswer("");
-                    }
-                  } else {
-                    setCaptchaChecked(false);
-                  }
-                }}
-                className="captcha-checkbox"
-                disabled={!captchaAnswer || captchaAnswer === ""}
-                id="captcha-checkbox"
-              />
-              {captchaChecked && (
-                <span className="captcha-checkmark">✓</span>
-              )}
-            </div>
-            <div className="captcha-content">
-              <div className="captcha-text-main">Saya bukan robot</div>
-              <div className="captcha-logo">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="#4285F4"/>
-                </svg>
-                <span>reCAPTCHA</span>
-              </div>
-            </div>
-          </div>
-          {!captchaChecked && (
-            <div className="captcha-challenge">
-              <div className="captcha-challenge-text">
-                Verifikasi: Berapa hasil dari <strong>{captchaChallenge?.question}</strong>?
-              </div>
-              <div className="captcha-input-wrapper">
-                <input
-                  type="number"
-                  value={captchaAnswer}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, '');
-                    setCaptchaAnswer(val);
-                    setCaptchaChecked(false);
-                  }}
-                  placeholder="Masukkan jawaban"
-                  className="captcha-input"
-                  ref={captchaRef}
-                />
-                <button
-                  type="button"
-                  className="captcha-refresh-btn"
-                  onClick={() => {
-                    const num1 = Math.floor(Math.random() * 10) + 1;
-                    const num2 = Math.floor(Math.random() * 10) + 1;
-                    const answer = num1 + num2;
-                    setCaptchaChallenge({ question: `${num1} + ${num2}`, answer: answer });
-                    setCaptchaAnswer("");
-                    setCaptchaChecked(false);
-                  }}
-                  title="Refresh challenge"
-                >
-                  🔄
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
         {/* CTA */}
         <button 
           className={`cta-button ${submitting ? 'cta-loading' : ''}`}
           onClick={handleSubmit}
-          disabled={submitting || !captchaChecked}
+          disabled={submitting}
           aria-label={`Pesan ${form.nama} sekarang`}
           itemProp="offers"
         >
