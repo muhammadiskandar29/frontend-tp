@@ -59,33 +59,31 @@ body {
 }
 
 .landing-logo {
-  width: 300px;
-  height: 200px;
+  width: 200px;
+  height: 133px;
   object-fit: contain;
   display: block;
 }
 
-/* Top Orange Section - Professional Clean Design */
-.top-orange-section {
-  background: #ff7e00;
-  padding: 40px 32px;
-  border-radius: 12px 12px 0 0;
-  margin: -24px -24px 0 -24px;
-  padding-bottom: 100px;
+/* Top Section - No Background */
+.top-section {
+  background: transparent;
+  padding: 0;
+  margin: 0;
   position: relative;
   z-index: 1;
 }
 
-/* Header with reduced overlap for closer spacing */
+/* Header - Normal spacing */
 .header-wrapper.header-overlap {
-  margin-top: -100px;
+  margin-top: 0;
   position: relative;
   z-index: 2;
 }
 
-/* Promo Card - Highlight with Border Radius */
+/* Promo Card - Highlight Orange with Border Radius */
 .promo-card-highlight {
-  background: white;
+  background: #ff7e00;
   padding: 24px 32px;
   border-radius: 12px;
   text-align: center;
@@ -98,7 +96,7 @@ body {
 .promo-label {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #ff7e00;
+  color: white;
   text-transform: uppercase;
   letter-spacing: 1.5px;
   margin-bottom: 10px;
@@ -108,7 +106,7 @@ body {
 .promo-title-professional {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #111827;
+  color: white;
   margin: 0;
   line-height: 1.5;
   letter-spacing: -0.2px;
@@ -1180,8 +1178,8 @@ body {
   }
 
   .landing-logo {
-    width: 200px;
-    height: 133px;
+    width: 150px;
+    height: 100px;
   }
 
   /* Professional Promo Styles - Mobile */
@@ -1244,14 +1242,13 @@ body {
     min-width: auto;
   }
 
-  .top-orange-section {
-    margin: -30px -25px 0 -25px;
-    padding: 20px;
-    padding-bottom: 180px;
+  .top-section {
+    margin: 0;
+    padding: 0;
   }
 
   .header-wrapper.header-overlap {
-    margin-top: -180px;
+    margin-top: 0;
     margin-bottom: 32px;
   }
 
@@ -1292,13 +1289,12 @@ body {
     width: 85%;
   }
 
-  .top-orange-section {
-    padding: 32px 20px;
-    padding-bottom: 80px;
+  .top-section {
+    padding: 0;
   }
 
   .header-wrapper.header-overlap {
-    margin-top: -80px;
+    margin-top: 0;
   }
 
   .preview-testimonials {
@@ -1413,14 +1409,13 @@ body {
     padding: 10px 12px;
   }
 
-  .top-orange-section {
-    margin: -25px -20px 0 -20px;
-    padding: 16px;
-    padding-bottom: 150px;
+  .top-section {
+    margin: 0;
+    padding: 0;
   }
 
   .header-wrapper.header-overlap {
-    margin-top: -150px;
+    margin-top: 0;
   }
 
   .preview-header-img {

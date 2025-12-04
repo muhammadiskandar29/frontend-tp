@@ -480,9 +480,9 @@ export default function LandingPage() {
             />
           </div>
 
-          {/* Top Section with Orange Background - Professional Design */}
-          <div className="top-orange-section">
-            {/* Promo Card - Highlight */}
+          {/* Top Section - No Background */}
+          <div className="top-section">
+            {/* Promo Card - Highlight Orange */}
             <div className="promo-card-highlight" role="banner">
               <div className="promo-label">Tawaran Terbatas</div>
               <h1 className="promo-title-professional">Isi Form Hari Ini Untuk Mendapatkan Akses Group Exclusive</h1>
