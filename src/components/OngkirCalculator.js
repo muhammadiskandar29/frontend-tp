@@ -117,18 +117,20 @@ export default function OngkirCalculator({
   };
 
   const handleSelectDestination = (dest) => {
-    // Handle berbagai format response dari Komerce
-    const id = dest.id || dest.city_id || dest.destination_id || "";
-    const name = dest.name || dest.city_name || dest.destination_name || dest.text || "";
+    // Handle response dari Komerce API V2
+    // Gunakan subdistrict_id untuk cost calculation (lebih akurat)
+    const subdistrictId = dest.subdistrict_id || dest.id || "";
+    const label = dest.label || dest.name || dest.city_name || dest.subdistrict_name || "";
     
-    setDestinationId(String(id));
-    setDestination(name);
-    setDestinationSearch(name);
+    setDestinationId(String(subdistrictId));
+    setDestination(label);
+    setDestinationSearch(label);
     setDestinationResults([]);
     
-    // Auto-calculate ongkir setelah kota terpilih
-    if (id && courier) {
-      autoCalculateOngkir(String(id), courier);
+    // Auto-calculate ongkir setelah destination terpilih
+    // Menggunakan subdistrict_id untuk perhitungan yang lebih akurat
+    if (subdistrictId && courier) {
+      autoCalculateOngkir(String(subdistrictId), courier);
     }
   };
   
@@ -254,9 +256,12 @@ export default function OngkirCalculator({
             {destinationResults.length > 0 && (
               <div className="ongkir-results-compact">
                 {destinationResults.map((dest, idx) => {
-                  const id = dest.id || dest.city_id || dest.destination_id || "";
-                  const name = dest.name || dest.city_name || dest.destination_name || dest.text || "";
-                  const province = dest.province || dest.province_name || "";
+                  // Format display sesuai response API V2
+                  const label = dest.label || 
+                    `${dest.subdistrict_name || ''}, ${dest.district_name || ''}, ${dest.city_name || ''}, ${dest.province_name || ''}`.trim() ||
+                    dest.name || dest.city_name || '';
+                  const subdistrictId = dest.subdistrict_id || dest.id || "";
+                  
                   return (
                     <div
                       key={idx}
@@ -266,7 +271,7 @@ export default function OngkirCalculator({
                         handleSelectDestination(dest);
                       }}
                     >
-                      {name} {province ? `(${province})` : ''}
+                      {label || `ID: ${subdistrictId}`}
                     </div>
                   );
                 })}

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const KOMERCE_BASE_URL = 'https://rajaongkir.komerce.id';
+const KOMERCE_BASE_URL = 'https://rajaongkir.komerce.id/api/v1';
 // Hardcode API key (untuk production, lebih baik pakai environment variable)
 const RAJAONGKIR_KEY = process.env.RAJAONGKIR_KEY || 'mT8nGMeZ4cacc72ba9d93fd4g2xH48Gb';
 
@@ -19,11 +19,22 @@ export async function GET(request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const query = searchParams.get('q') || '';
-    const type = searchParams.get('type') || 'destination'; // origin atau destination
+    const search = searchParams.get('q') || searchParams.get('search') || '';
+    const limit = searchParams.get('limit') || '10';
+    const offset = searchParams.get('offset') || '0';
 
-    // Build URL dengan query parameter
-    const url = `${KOMERCE_BASE_URL}/domestic-destination${query ? `?q=${encodeURIComponent(query)}` : ''}`;
+    if (!search) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Parameter search (atau q) wajib diisi. Contoh: /api/komerce/destination?search=jakarta',
+        },
+        { status: 400 }
+      );
+    }
+
+    // Build URL sesuai dokumentasi: /api/v1/destination/domestic-destination?search=jakarta&limit=5&offset=0
+    const url = `${KOMERCE_BASE_URL}/destination/domestic-destination?search=${encodeURIComponent(search)}&limit=${limit}&offset=${offset}`;
 
     console.log('[KOMERCE_DESTINATION] Requesting:', url);
     console.log('[KOMERCE_DESTINATION] API Key:', RAJAONGKIR_KEY ? 'Set' : 'Not Set');
@@ -37,9 +48,8 @@ export async function GET(request) {
       response = await fetch(url, {
         method: 'GET',
         headers: {
-          'api-key': RAJAONGKIR_KEY,
+          'key': RAJAONGKIR_KEY, // Dokumentasi menggunakan 'key' bukan 'api-key'
           'Content-Type': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (compatible; Next.js)',
         },
         signal: controller.signal,
       });
@@ -83,28 +93,18 @@ export async function GET(request) {
       );
     }
 
-    // Parse response dari Komerce
-    // Komerce mengembalikan data dalam format: { rajaongkir: { results: [...] } }
+    // Parse response dari Komerce API V2
+    // Response format: { data: [...], meta: {...} } atau langsung array
     let destinations = [];
-    if (data?.rajaongkir?.results) {
-      destinations = data.rajaongkir.results;
+    if (data?.data && Array.isArray(data.data)) {
+      destinations = data.data;
     } else if (Array.isArray(data)) {
       destinations = data;
-    } else if (data?.results) {
+    } else if (data?.results && Array.isArray(data.results)) {
       destinations = data.results;
-    } else if (data?.data) {
-      destinations = Array.isArray(data.data) ? data.data : [];
     }
 
-    // Filter berdasarkan query jika ada
-    if (query && destinations.length > 0) {
-      const queryLower = query.toLowerCase();
-      destinations = destinations.filter((dest) => {
-        const cityName = (dest.city_name || dest.name || '').toLowerCase();
-        const province = (dest.province || dest.province_name || '').toLowerCase();
-        return cityName.includes(queryLower) || province.includes(queryLower);
-      });
-    }
+    // Response sudah difilter oleh API, tidak perlu filter lagi
 
     // Return response dari Komerce
     return NextResponse.json({

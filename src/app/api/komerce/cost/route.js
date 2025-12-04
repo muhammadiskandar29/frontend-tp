@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const KOMERCE_BASE_URL = 'https://rajaongkir.komerce.id';
+const KOMERCE_BASE_URL = 'https://rajaongkir.komerce.id/api/v1';
 // Hardcode API key (untuk production, lebih baik pakai environment variable)
 const RAJAONGKIR_KEY = process.env.RAJAONGKIR_KEY || 'mT8nGMeZ4cacc72ba9d93fd4g2xH48Gb';
 
@@ -71,12 +71,12 @@ export async function POST(request) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 detik timeout
       
-      response = await fetch(`${KOMERCE_BASE_URL}/domestic-cost`, {
+      // Endpoint: /api/v1/cost/domestic-cost
+      response = await fetch(`${KOMERCE_BASE_URL}/cost/domestic-cost`, {
         method: 'POST',
         headers: {
-          'api-key': RAJAONGKIR_KEY,
+          'key': RAJAONGKIR_KEY, // Dokumentasi menggunakan 'key' bukan 'api-key'
           'Content-Type': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (compatible; Next.js)',
         },
         body: JSON.stringify(payload),
         signal: controller.signal,

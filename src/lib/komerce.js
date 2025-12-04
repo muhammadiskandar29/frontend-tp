@@ -134,7 +134,8 @@ export async function getCost({ origin, destination, weight, courier }) {
  */
 export async function getDestinations(query = '') {
   try {
-    const url = `/api/komerce/destination${query ? `?q=${encodeURIComponent(query)}` : ''}`;
+    // Gunakan parameter 'search' sesuai dokumentasi API V2
+    const url = `/api/komerce/destination${query ? `?search=${encodeURIComponent(query)}` : ''}`;
     const response = await fetch(url);
     const json = await response.json();
 
