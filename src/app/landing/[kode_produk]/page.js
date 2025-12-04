@@ -649,7 +649,7 @@ export default function LandingPage() {
             {/* Benefit List */}
             {form.list_point?.length > 0 && (
               <div className="special-offer-benefits">
-                <h3>Benefit yang akan Anda dapatkan:</h3>
+                <h3 style="color: #fff">Benefit yang akan Anda dapatkan:</h3>
                 <ul itemProp="featureList">
                   {form.list_point.map((p, i) => (
                     <li key={i} itemProp="itemListElement">
