@@ -102,13 +102,18 @@ export async function POST(request) {
     }
 
     const responseText = await response.text();
+    console.log('[KOMERCE_COST] Raw response (first 1000 chars):', responseText.substring(0, 1000));
+    console.log('[KOMERCE_COST] Response length:', responseText.length);
+    console.log('[KOMERCE_COST] Response status:', response.status);
+    
     let data;
 
     try {
       data = JSON.parse(responseText);
+      console.log('[KOMERCE_COST] Parsed JSON successfully');
     } catch (err) {
-      console.error('[KOMERCE_COST] Non-JSON response:', responseText);
-      console.error('[KOMERCE_COST] Response status:', response.status);
+      console.error('[KOMERCE_COST] JSON parse error:', err.message);
+      console.error('[KOMERCE_COST] Full response:', responseText);
       console.error('[KOMERCE_COST] Response headers:', Object.fromEntries(response.headers.entries()));
       
       // Coba parse sebagai HTML atau text error

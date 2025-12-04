@@ -59,8 +59,8 @@ body {
 }
 
 .landing-logo {
-  width: 150px;
-  height: 100px;
+  width: 300px;
+  height: 250px;
   object-fit: contain;
   display: block;
 }

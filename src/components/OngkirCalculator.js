@@ -92,8 +92,9 @@ export default function OngkirCalculator({
       clearTimeout(searchTimeoutRef.current);
     }
 
-    // Minimal 2 karakter untuk search (sesuai permintaan user)
-    if (query.length < 2) {
+    // Tidak ada filter minimal karakter - biarkan user ketik bebas
+    // Jika query kosong, clear results
+    if (!query || query.trim().length === 0) {
       setDestinationResults([]);
       return;
     }
@@ -108,24 +109,15 @@ export default function OngkirCalculator({
         console.error("Error searching destination:", error);
         setDestinationResults([]);
         
-        // Jangan tampilkan error untuk query terlalu pendek atau validasi
-        if (error.message && (
-          error.message.includes('minimal 2 karakter') || 
-          error.message.includes('minimal 3 karakter') ||
-          error.message.includes('wajib diisi')
-        )) {
-          // Query terlalu pendek, biarkan user terus mengetik tanpa error
-          console.log('[ONGKIR] Query validation error (too short), waiting for more characters');
-          return;
-        }
+        // Jangan tampilkan error toast - biarkan user terus mengetik tanpa gangguan
+        // Hanya log ke console untuk debugging
+        console.log('[ONGKIR] Search error (silent):', error.message);
         
-        // Tampilkan error ke user jika API key tidak dikonfigurasi
+        // Hanya tampilkan error untuk masalah kritis (API key)
         if (error.message && error.message.includes('API key tidak dikonfigurasi')) {
           toast.error("API key tidak dikonfigurasi. Silakan hubungi admin.");
-        } else if (error.message && !error.message.includes('minimal')) {
-          // Hanya tampilkan error untuk masalah lain, bukan untuk query terlalu pendek
-          toast.error(error.message || "Gagal mencari kota tujuan");
         }
+        // Untuk error lain, tidak tampilkan toast - biarkan user terus mengetik
       }
     }, 300);
   };

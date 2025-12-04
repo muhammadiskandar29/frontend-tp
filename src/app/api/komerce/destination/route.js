@@ -23,14 +23,16 @@ export async function GET(request) {
     const limit = searchParams.get('limit') || '10';
     const offset = searchParams.get('offset') || '0';
 
-    // Validasi minimal 2 karakter (bukan 3)
-    if (!search || search.length < 2) {
+    // Tidak ada validasi minimal karakter - biarkan user ketik bebas
+    // Jika search kosong, API Komerce akan return semua data atau error sendiri
+    if (!search) {
       return NextResponse.json(
         {
-          success: false,
-          message: 'Parameter search (atau q) wajib diisi minimal 2 karakter. Contoh: /api/komerce/destination?search=ja',
+          success: true,
+          data: [],
+          message: 'Masukkan kata kunci untuk mencari kota tujuan',
         },
-        { status: 400 }
+        { status: 200 }
       );
     }
 
