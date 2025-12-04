@@ -49,7 +49,7 @@ export default function LandingPage() {
     nama: "",
     wa: "",
     email: "",
-    alamat: "",
+    alamat: "", // Alamat dasar yang diketik user
     custom_value: [],
   });
 
@@ -57,14 +57,41 @@ export default function LandingPage() {
   const [ongkirAddress, setOngkirAddress] = useState({
     kota: "",
     kecamatan: "",
-    kabupaten: "",
+    kelurahan: "", // Kelurahan/Kabupaten
     kode_pos: "",
-  }); // Alamat lengkap dari ongkir calculator
+  }); // Detail ongkir untuk hitung ongkir dan generate alamat lengkap
+  const [alamatLengkap, setAlamatLengkap] = useState(""); // Alamat lengkap yang dikirim ke backend
 
   const formatPrice = (price) => {
     if (!price) return "0";
     const numPrice = typeof price === "string" ? parseInt(price.replace(/[^\d]/g, "")) : price;
     return (isNaN(numPrice) ? 0 : numPrice).toLocaleString("id-ID");
+  };
+
+  // Generate alamat lengkap dengan format: "alamat dasar, kec. [kecamatan], kel/kab. [kelurahan], kode pos [kode pos]"
+  const generateAlamatLengkap = (alamatDasar, addressDetail) => {
+    const parts = [];
+    
+    // Alamat dasar
+    if (alamatDasar && alamatDasar.trim()) {
+      parts.push(alamatDasar.trim());
+    }
+    
+    // Detail ongkir
+    if (addressDetail.kecamatan && addressDetail.kecamatan.trim()) {
+      parts.push(`kec. ${addressDetail.kecamatan.trim()}`);
+    }
+    
+    if (addressDetail.kelurahan && addressDetail.kelurahan.trim()) {
+      parts.push(`kel/kab. ${addressDetail.kelurahan.trim()}`);
+    }
+    
+    if (addressDetail.kode_pos && addressDetail.kode_pos.trim()) {
+      parts.push(`kode pos ${addressDetail.kode_pos.trim()}`);
+    }
+    
+    const alamatFinal = parts.join(", ");
+    setAlamatLengkap(alamatFinal);
   };
 
   /**
@@ -396,7 +423,7 @@ export default function LandingPage() {
       nama: customerForm.nama,
       wa: customerForm.wa,
       email: customerForm.email,
-      alamat: customerForm.alamat || '',
+      alamat: alamatLengkap || customerForm.alamat || '', // Gunakan alamat lengkap yang sudah di-generate
       produk: parseInt(form.id, 10), // produk tetap integer
       harga: String(hargaAsli), // harga sebagai string
       ongkir: String(ongkirValue), // ongkir dari hasil cek Raja Ongkir
@@ -803,43 +830,71 @@ export default function LandingPage() {
       />
     </div>
 
-    {/* Alamat */}
+    {/* Alamat Dasar */}
     <div className="compact-field">
-      <label className="compact-label">Alamat</label>
+      <label className="compact-label">
+        Alamat <span className="required">*</span>
+      </label>
       <textarea
-        placeholder="Alamat lengkap (opsional)"
+        placeholder="Contoh: Jl. Peta Utara 1, No 62 RT 01/07"
         className="compact-input compact-textarea"
-        rows={2}
+        rows={3}
         value={customerForm.alamat}
-        onChange={(e) => setCustomerForm({ ...customerForm, alamat: e.target.value })}
+        onChange={(e) => {
+          setCustomerForm({ ...customerForm, alamat: e.target.value });
+          generateAlamatLengkap(e.target.value, ongkirAddress);
+        }}
       />
+      <p className="text-sm text-gray-500 mt-1">
+        Masukkan alamat lengkap Anda
+      </p>
     </div>
   </div>
 </section>
 
         {/* Ongkir Calculator - Tampilkan jika landingpage = "2" (fisik) */}
         {(form.landingpage === "2" || form.landingpage === 2) && (
-          <section className="ongkir-section" aria-label="Ongkir calculator">
+          <section className="ongkir-detail-section" aria-label="Detail ongkir">
             <OngkirCalculator
               onSelectOngkir={(price) => {
                 setOngkir(price);
               }}
               onAddressChange={(address) => {
                 setOngkirAddress(address);
-                // Update alamat lengkap di customerForm
-                const alamatLengkap = [
-                  address.kota && `Kota: ${address.kota}`,
-                  address.kecamatan && `Kecamatan: ${address.kecamatan}`,
-                  address.kabupaten && `Kabupaten: ${address.kabupaten}`,
-                  address.kode_pos && `Kode Pos: ${address.kode_pos}`,
-                ].filter(Boolean).join(", ");
-                setCustomerForm(prev => ({
-                  ...prev,
-                  alamat: alamatLengkap || prev.alamat
-                }));
+                generateAlamatLengkap(customerForm.alamat, address);
               }}
               defaultCourier="jne"
             />
+          </section>
+        )}
+
+        {/* Total Harga Card - Tampilkan jika landingpage = "2" dan ongkir sudah dihitung */}
+        {(form.landingpage === "2" || form.landingpage === 2) && ongkir > 0 && (
+          <section className="total-price-section" aria-label="Total harga">
+            <div className="total-price-card">
+              <h3 className="total-price-title">Ringkasan Pembayaran</h3>
+              <div className="total-price-details">
+                <div className="total-price-row">
+                  <span className="total-price-label">Harga Produk</span>
+                  <span className="total-price-value">
+                    Rp {formatPrice(form.harga_asli || "0")}
+                  </span>
+                </div>
+                <div className="total-price-row">
+                  <span className="total-price-label">Ongkir</span>
+                  <span className="total-price-value">
+                    Rp {ongkir.toLocaleString("id-ID")}
+                  </span>
+                </div>
+                <div className="total-price-divider"></div>
+                <div className="total-price-row total-price-total">
+                  <span className="total-price-label">Total</span>
+                  <span className="total-price-value">
+                    Rp {(parseInt(form.harga_asli || "0", 10) + ongkir).toLocaleString("id-ID")}
+                  </span>
+                </div>
+              </div>
+            </div>
           </section>
         )}
 

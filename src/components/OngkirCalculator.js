@@ -195,7 +195,7 @@ export default function OngkirCalculator({
       onAddressChange({
         kota: destination,
         kecamatan,
-        kabupaten,
+        kelurahan: kabupaten, // Kelurahan/Kabupaten
         kode_pos: kodePos,
       });
     }
@@ -217,9 +217,7 @@ export default function OngkirCalculator({
   ];
 
   return (
-    <div className="ongkir-calculator">
-      <h3 className="ongkir-title">Cek Ongkir</h3>
-      
+    <div className="ongkir-calculator-no-card">
       <div className="ongkir-form">
         {/* Destination Search */}
         <div className="ongkir-field">
@@ -272,15 +270,15 @@ export default function OngkirCalculator({
           />
         </div>
 
-        {/* Kabupaten */}
+        {/* Kelurahan/Kabupaten */}
         <div className="ongkir-field">
           <label className="ongkir-label">
-            Kabupaten
+            Kelurahan/Kabupaten
           </label>
           <input
             type="text"
             className="ongkir-input"
-            placeholder="Masukkan kabupaten"
+            placeholder="Masukkan kelurahan/kabupaten"
             value={kabupaten}
             onChange={(e) => setKabupaten(e.target.value)}
           />

@@ -4,12 +4,22 @@
   padding: 0;
 }
 
+.ongkir-detail-section {
+  margin: 0;
+  padding: 0;
+}
+
 .ongkir-calculator {
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.ongkir-calculator-no-card {
+  margin: 0;
+  padding: 0;
 }
 
 .ongkir-title {
@@ -209,6 +219,77 @@
   font-size: 0.875rem;
   color: #991b1b;
   font-weight: 500;
+}
+
+/* Total Price Card Styles */
+.total-price-section {
+  margin: 32px 0;
+  padding: 0;
+}
+
+.total-price-card {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px solid #fbbf24;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.2);
+}
+
+.total-price-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #92400e;
+  margin: 0 0 20px 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #fbbf24;
+}
+
+.total-price-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.total-price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.total-price-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #78350f;
+}
+
+.total-price-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #78350f;
+}
+
+.total-price-divider {
+  height: 1px;
+  background: #fbbf24;
+  margin: 8px 0;
+}
+
+.total-price-total {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 2px solid #fbbf24;
+}
+
+.total-price-total .total-price-label {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #92400e;
+}
+
+.total-price-total .total-price-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #92400e;
 }
 
 /* Responsive */
