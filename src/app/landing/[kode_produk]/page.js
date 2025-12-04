@@ -471,15 +471,24 @@ export default function LandingPage() {
     <article className="landing-wrapper" itemScope itemType="https://schema.org/Product">
         <div className="produk-preview">
           
+          {/* Logo Section - Top */}
+          <div className="logo-section">
+            <img 
+              src="/assets/logo.png" 
+              alt="Logo" 
+              className="landing-logo"
+            />
+          </div>
+
           {/* Top Section with Orange Background - Professional Design */}
           <div className="top-orange-section">
-            {/* Promo Text - Clean & Professional */}
-            <div className="promo-text-professional" role="banner">
+            {/* Promo Card - Highlight */}
+            <div className="promo-card-highlight" role="banner">
               <div className="promo-label">Tawaran Terbatas</div>
               <h1 className="promo-title-professional">Isi Form Hari Ini Untuk Mendapatkan Akses Group Exclusive</h1>
             </div>
 
-            {/* Nama Produk - Elegant Typography */}
+            {/* Nama Produk - Black Color */}
             <h1 className="preview-title-professional" itemProp="name">{form.nama}</h1>
           </div>
 

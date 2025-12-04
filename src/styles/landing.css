@@ -49,6 +49,22 @@ body {
   width: 100%;
 }
 
+/* Logo Section - Top */
+.logo-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 32px;
+  padding: 0;
+}
+
+.landing-logo {
+  width: 300px;
+  height: 200px;
+  object-fit: contain;
+  display: block;
+}
+
 /* Top Orange Section - Professional Clean Design */
 .top-orange-section {
   background: #ff7e00;
@@ -67,20 +83,22 @@ body {
   z-index: 2;
 }
 
-/* Promo Text - Professional Clean Design */
-.promo-text-professional {
-  background: transparent;
-  padding: 0;
+/* Promo Card - Highlight with Border Radius */
+.promo-card-highlight {
+  background: white;
+  padding: 24px 32px;
+  border-radius: 12px;
   text-align: center;
   margin-bottom: 24px;
   position: relative;
   z-index: 2;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .promo-label {
   font-size: 0.75rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.85);
+  color: #ff7e00;
   text-transform: uppercase;
   letter-spacing: 1.5px;
   margin-bottom: 10px;
@@ -90,7 +108,7 @@ body {
 .promo-title-professional {
   font-size: 1.5rem;
   font-weight: 600;
-  color: white;
+  color: #111827;
   margin: 0;
   line-height: 1.5;
   letter-spacing: -0.2px;
@@ -99,13 +117,13 @@ body {
   margin-right: auto;
 }
 
-/* Product Title - Professional Elegant */
+/* Product Title - Black Color */
 .preview-title-professional {
   text-align: center;
   margin: 24px 0 0 0;
   font-size: 2rem;
   font-weight: 700;
-  color: white;
+  color: #111827;
   line-height: 1.3;
   letter-spacing: -0.4px;
   position: relative;
@@ -1156,7 +1174,22 @@ body {
     font-size: 0.95rem;
   }
 
+  /* Logo Section - Mobile */
+  .logo-section {
+    margin-bottom: 24px;
+  }
+
+  .landing-logo {
+    width: 200px;
+    height: 133px;
+  }
+
   /* Professional Promo Styles - Mobile */
+  .promo-card-highlight {
+    padding: 20px 24px;
+    margin-bottom: 20px;
+  }
+
   .promo-label {
     font-size: 0.7rem;
     letter-spacing: 1px;
