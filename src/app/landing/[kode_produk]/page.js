@@ -868,35 +868,6 @@ export default function LandingPage() {
           </section>
         )}
 
-        {/* Total Harga Card - Tampilkan jika landingpage = "2" dan ongkir sudah dihitung */}
-        {(form.landingpage === "2" || form.landingpage === 2) && ongkir > 0 && (
-          <section className="total-price-section" aria-label="Total harga">
-            <div className="total-price-card">
-              <h3 className="total-price-title">Ringkasan Pembayaran</h3>
-              <div className="total-price-details">
-                <div className="total-price-row">
-                  <span className="total-price-label">Harga Produk</span>
-                  <span className="total-price-value">
-                    Rp {formatPrice(form.harga_asli || "0")}
-                  </span>
-                </div>
-                <div className="total-price-row">
-                  <span className="total-price-label">Ongkir</span>
-                  <span className="total-price-value">
-                    Rp {ongkir.toLocaleString("id-ID")}
-                  </span>
-                </div>
-                <div className="total-price-divider"></div>
-                <div className="total-price-row total-price-total">
-                  <span className="total-price-label">Total</span>
-                  <span className="total-price-value">
-                    Rp {(parseInt(form.harga_asli || "0", 10) + ongkir).toLocaleString("id-ID")}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
 
         {/* Custom Field - Same Compact Style */}
         {form.custom_field?.length > 0 && (
@@ -922,6 +893,39 @@ export default function LandingPage() {
                   />
                 </div>
               ))}
+            </div>
+          </section>
+        )}
+
+        {/* Grand Total Card - Tampilkan jika landingpage = "2" dan ongkir sudah dihitung */}
+        {(form.landingpage === "2" || form.landingpage === 2) && ongkir > 0 && (
+          <section className="compact-form-section" aria-label="Grand total">
+            <div className="compact-form-card">
+              <div className="compact-field">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '8px 0' }}>
+                  <span className="compact-label" style={{ margin: 0 }}>Harga Produk</span>
+                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}>
+                    Rp {formatPrice(form.harga_asli || "0")}
+                  </span>
+                </div>
+              </div>
+              <div className="compact-field">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '8px 0' }}>
+                  <span className="compact-label" style={{ margin: 0 }}>Ongkir</span>
+                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}>
+                    Rp {ongkir.toLocaleString("id-ID")}
+                  </span>
+                </div>
+              </div>
+              <div style={{ height: '1px', background: '#e5e7eb', margin: '12px 0' }}></div>
+              <div className="compact-field">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '8px 0' }}>
+                  <span className="compact-label" style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#111827' }}>Total</span>
+                  <span style={{ fontSize: '18px', fontWeight: 700, color: '#111827' }}>
+                    Rp {(parseInt(form.harga_asli || "0", 10) + ongkir).toLocaleString("id-ID")}
+                  </span>
+                </div>
+              </div>
             </div>
           </section>
         )}

@@ -217,34 +217,34 @@ export default function OngkirCalculator({
   ];
 
   return (
-    <div className="ongkir-calculator-no-card">
-      <div className="ongkir-form">
-        {/* Destination Search */}
-        <div className="ongkir-field">
-          <label className="ongkir-label">
+    <div className="ongkir-calculator-compact">
+      <div className="compact-form-card">
+        {/* Kota Tujuan - Search */}
+        <div className="compact-field">
+          <label className="compact-label">
             Kota Tujuan <span className="required">*</span>
           </label>
-          <div className="ongkir-search-wrapper">
+          <div className="ongkir-search-wrapper-compact">
             <input
               type="text"
-              className="ongkir-input"
+              className="compact-input"
               placeholder="Cari kota tujuan..."
               value={destinationSearch}
               onChange={(e) => handleDestinationSearch(e.target.value)}
               disabled={loading || cooldownActive}
             />
             {destinationResults.length > 0 && (
-              <div className="ongkir-results">
+              <div className="ongkir-results-compact">
                 {destinationResults.map((dest, idx) => {
                   const id = dest.id || dest.city_id || dest.destination_id || "";
                   const name = dest.name || dest.city_name || dest.destination_name || dest.text || "";
                   return (
                     <div
                       key={idx}
-                      className="ongkir-result-item"
+                      className="ongkir-result-item-compact"
                       onClick={() => handleSelectDestination(dest)}
                     >
-                      {name} {id ? `(ID: ${id})` : ""}
+                      {name}
                     </div>
                   );
                 })}
@@ -252,46 +252,40 @@ export default function OngkirCalculator({
             )}
           </div>
           {destination && (
-            <p className="ongkir-selected">Dipilih: {destination}</p>
+            <p className="text-sm text-gray-500 mt-1">Dipilih: {destination}</p>
           )}
         </div>
 
-        {/* Kecamatan */}
-        <div className="ongkir-field">
-          <label className="ongkir-label">
-            Kecamatan
-          </label>
+        {/* Kecamatan - Input Manual */}
+        <div className="compact-field">
+          <label className="compact-label">Kecamatan</label>
           <input
             type="text"
-            className="ongkir-input"
+            className="compact-input"
             placeholder="Masukkan kecamatan"
             value={kecamatan}
             onChange={(e) => setKecamatan(e.target.value)}
           />
         </div>
 
-        {/* Kelurahan/Kabupaten */}
-        <div className="ongkir-field">
-          <label className="ongkir-label">
-            Kelurahan/Kabupaten
-          </label>
+        {/* Kelurahan/Kabupaten - Input Manual */}
+        <div className="compact-field">
+          <label className="compact-label">Kelurahan/Kabupaten</label>
           <input
             type="text"
-            className="ongkir-input"
+            className="compact-input"
             placeholder="Masukkan kelurahan/kabupaten"
             value={kabupaten}
             onChange={(e) => setKabupaten(e.target.value)}
           />
         </div>
 
-        {/* Kode Pos */}
-        <div className="ongkir-field">
-          <label className="ongkir-label">
-            Kode Pos
-          </label>
+        {/* Kode Pos - Input Manual */}
+        <div className="compact-field">
+          <label className="compact-label">Kode Pos</label>
           <input
             type="text"
-            className="ongkir-input"
+            className="compact-input"
             placeholder="Masukkan kode pos"
             value={kodePos}
             onChange={(e) => setKodePos(e.target.value.replace(/\D/g, ''))}
@@ -299,16 +293,17 @@ export default function OngkirCalculator({
           />
         </div>
 
-        {/* Courier */}
-        <div className="ongkir-field">
-          <label className="ongkir-label">
+        {/* Kurir */}
+        <div className="compact-field">
+          <label className="compact-label">
             Kurir <span className="required">*</span>
           </label>
           <select
-            className="ongkir-select"
+            className="compact-input"
             value={courier}
             onChange={(e) => setCourier(e.target.value)}
             disabled={loading || cooldownActive}
+            style={{ appearance: 'auto', cursor: 'pointer' }}
           >
             {couriers.map((c) => (
               <option key={c.value} value={c.value}>
@@ -320,31 +315,31 @@ export default function OngkirCalculator({
 
         {/* Loading Indicator */}
         {loading && (
-          <div className="ongkir-loading">
-            <span>Menghitung ongkir...</span>
+          <div className="compact-field">
+            <p className="text-sm text-blue-600 mt-1">Menghitung ongkir...</p>
           </div>
         )}
 
         {/* Cooldown Warning */}
         {cooldownActive && !loading && (
-          <div className="ongkir-cooldown">
-            <span>Tunggu {cooldownTime} detik sebelum cek ongkir lagi</span>
+          <div className="compact-field">
+            <p className="text-sm text-red-600 mt-1">Tunggu {cooldownTime} detik sebelum cek ongkir lagi</p>
           </div>
         )}
 
         {/* Result */}
         {price !== null && (
-          <div className="ongkir-result">
-            <div className="ongkir-result-price">
-              <span className="ongkir-result-label">Ongkir:</span>
-              <span className="ongkir-result-value">
+          <div className="compact-field" style={{ marginTop: '8px', padding: '12px', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <span className="compact-label" style={{ margin: 0, fontSize: '14px' }}>Ongkir:</span>
+              <span style={{ fontSize: '16px', fontWeight: 700, color: '#10b981' }}>
                 Rp {price.toLocaleString("id-ID")}
               </span>
             </div>
             {etd && (
-              <div className="ongkir-result-etd">
-                <span className="ongkir-result-label">Estimasi:</span>
-                <span className="ongkir-result-value">{etd}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span className="compact-label" style={{ margin: 0, fontSize: '14px' }}>Estimasi:</span>
+                <span style={{ fontSize: '14px', fontWeight: 500, color: '#374151' }}>{etd}</span>
               </div>
             )}
           </div>

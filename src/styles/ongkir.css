@@ -22,6 +22,50 @@
   padding: 0;
 }
 
+.ongkir-calculator-compact {
+  margin: 0;
+  padding: 0;
+}
+
+.ongkir-search-wrapper-compact {
+  position: relative;
+}
+
+.ongkir-results-compact {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  margin-top: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.ongkir-result-item-compact {
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #374151;
+  transition: background 0.2s;
+}
+
+.ongkir-result-item-compact:hover {
+  background: #f9fafb;
+}
+
+.ongkir-result-item-compact:first-child {
+  border-radius: 8px 8px 0 0;
+}
+
+.ongkir-result-item-compact:last-child {
+  border-radius: 0 0 8px 8px;
+}
+
 .ongkir-title {
   font-size: 1.25rem;
   font-weight: 700;
