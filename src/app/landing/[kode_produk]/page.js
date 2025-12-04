@@ -38,8 +38,12 @@ export default function LandingPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false); // Prevent double-click
   const [testimoniIndex, setTestimoniIndex] = useState(0); // For testimoni carousel
+  const [captchaChecked, setCaptchaChecked] = useState(false); // For captcha checkbox
 
   const sumber = searchParams.get("utm_sumber") || "website";
+  
+  // WhatsApp Sales Admin - bisa diambil dari data produk (assign) atau hardcode
+  const salesWA = "6281234567890"; // Format: 62xxxxxxxxxx (tanpa +)
 
   const [customerForm, setCustomerForm] = useState({
     nama: "",
@@ -364,6 +368,7 @@ export default function LandingPage() {
     if (!paymentMethod) return toast.error("Silakan pilih metode pembayaran");
     if (!customerForm.nama || !customerForm.email || !customerForm.wa)
       return toast.error("Silakan lengkapi data yang diperlukan");
+    if (!captchaChecked) return toast.error("Silakan centang verifikasi bahwa Anda bukan robot");
 
     setSubmitting(true);
 
@@ -480,7 +485,7 @@ export default function LandingPage() {
             <h1 className="preview-title" itemProp="name">{form.nama}</h1>
           </div>
 
-          {/* Header - Outside orange section, with 50% overlap */}
+          {/* Header - Outside orange section, with reduced overlap for closer spacing */}
           <div className="header-wrapper header-overlap">
             {headerSrc ? (
               <img 
@@ -504,6 +509,29 @@ export default function LandingPage() {
             </div>
           )}
 
+        {/* CTA WhatsApp Sales Section */}
+        <section className="whatsapp-cta-section" aria-label="Contact sales">
+          <div className="whatsapp-cta-content">
+            <p className="whatsapp-cta-text">
+              Masih ada pertanyaan? Ingin konsultasi lebih detail sebelum memutuskan?
+            </p>
+            <p className="whatsapp-cta-subtext">
+              Tim sales kami siap membantu Anda. Hubungi kami melalui WhatsApp untuk mendapatkan informasi lengkap.
+            </p>
+            <a
+              href={`https://wa.me/${salesWA}?text=${encodeURIComponent(`Halo, saya tertarik dengan produk: ${form.nama}\n\nBisa tolong berikan informasi lebih detail?`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="whatsapp-cta-button"
+            >
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+              </svg>
+              <span>Hubungi Sales via WhatsApp</span>
+            </a>
+          </div>
+        </section>
+
         {/* Profil Pembicara Workshop - 6 Speakers */}
         <section className="speaker-profile-section" aria-label="Speaker profile">
           <div className="speaker-banner-image">
@@ -514,110 +542,110 @@ export default function LandingPage() {
             />
           </div>
           <h2 className="speaker-profile-title">Profil Pembicara</h2>
-          <div className="speakers-grid">
+          <div className="speakers-inline-list">
             {/* Speaker 1: Dimas Dwi Ananto */}
-            <div className="speaker-card">
-              <div className="speaker-image-wrapper">
+            <div className="speaker-inline-item">
+              <div className="speaker-inline-image-wrapper">
                 <img 
                   src="/assets/Dimas Dwi Ananto.png" 
                   alt="Dimas Dwi Ananto"
-                  className="speaker-image"
+                  className="speaker-inline-image"
                 />
               </div>
-              <div className="speaker-info">
-                <div className="speaker-name">Dimas Dwi Ananto</div>
-                <div className="speaker-title">Praktisi Lelang Properti</div>
-                <div className="speaker-bio">
+              <div className="speaker-inline-info">
+                <div className="speaker-inline-name">Dimas Dwi Ananto</div>
+                <div className="speaker-inline-title">Praktisi Lelang Properti</div>
+                <div className="speaker-inline-bio">
                   Praktisi lelang properti berpengalaman dengan <strong>track record</strong> mengakuisisi properti dengan harga murah dan menjualnya kembali dengan keuntungan tinggi. Spesialisasi dalam strategi investasi properti tanpa KPR.
                 </div>
               </div>
             </div>
 
             {/* Speaker 2: Salvian Kumara */}
-            <div className="speaker-card">
-              <div className="speaker-image-wrapper">
+            <div className="speaker-inline-item">
+              <div className="speaker-inline-image-wrapper">
                 <img 
                   src="/assets/Salvian Kumara.png" 
                   alt="Salvian Kumara"
-                  className="speaker-image"
+                  className="speaker-inline-image"
                 />
               </div>
-              <div className="speaker-info">
-                <div className="speaker-name">Salvian Kumara</div>
-                <div className="speaker-title">Expert Real Estate Investment</div>
-                <div className="speaker-bio">
+              <div className="speaker-inline-info">
+                <div className="speaker-inline-name">Salvian Kumara</div>
+                <div className="speaker-inline-title">Expert Real Estate Investment</div>
+                <div className="speaker-inline-bio">
                   Expert di bidang real estate investment dengan pengalaman lebih dari 10 tahun. Fokus pada <strong>analisis pasar properti</strong> dan strategi investasi jangka panjang yang menguntungkan.
                 </div>
               </div>
             </div>
 
             {/* Speaker 3: Rhesa Yogaswara */}
-            <div className="speaker-card">
-              <div className="speaker-image-wrapper">
+            <div className="speaker-inline-item">
+              <div className="speaker-inline-image-wrapper">
                 <img 
                   src="/assets/Rhesa Yogaswara.png" 
                   alt="Rhesa Yogaswara"
-                  className="speaker-image"
+                  className="speaker-inline-image"
                 />
               </div>
-              <div className="speaker-info">
-                <div className="speaker-name">Rhesa Yogaswara</div>
-                <div className="speaker-title">Property Consultant & Trainer</div>
-                <div className="speaker-bio">
+              <div className="speaker-inline-info">
+                <div className="speaker-inline-name">Rhesa Yogaswara</div>
+                <div className="speaker-inline-title">Property Consultant & Trainer</div>
+                <div className="speaker-inline-bio">
                   Property consultant dan trainer yang telah membantu ratusan investor dalam <strong>membangun portofolio properti</strong>. Spesialis dalam riset pasar dan identifikasi peluang investasi.
                 </div>
               </div>
             </div>
 
             {/* Speaker 4: Stephanus P H A S */}
-            <div className="speaker-card">
-              <div className="speaker-image-wrapper">
+            <div className="speaker-inline-item">
+              <div className="speaker-inline-image-wrapper">
                 <img 
                   src="/assets/Stephanus P H A S.png" 
                   alt="Stephanus P H A S"
-                  className="speaker-image"
+                  className="speaker-inline-image"
                 />
               </div>
-              <div className="speaker-info">
-                <div className="speaker-name">Stephanus P H A S</div>
-                <div className="speaker-title">Business Development Specialist</div>
-                <div className="speaker-bio">
+              <div className="speaker-inline-info">
+                <div className="speaker-inline-name">Stephanus P H A S</div>
+                <div className="speaker-inline-title">Business Development Specialist</div>
+                <div className="speaker-inline-bio">
                   Business development specialist dengan expertise dalam <strong>strategi pertumbuhan bisnis</strong> dan pengembangan pasar. Berpengalaman dalam transformasi organisasi dan ekspansi bisnis.
                 </div>
               </div>
             </div>
 
             {/* Speaker 5: Theo Ariandyen */}
-            <div className="speaker-card">
-              <div className="speaker-image-wrapper">
+            <div className="speaker-inline-item">
+              <div className="speaker-inline-image-wrapper">
                 <img 
                   src="/assets/Theo Ariandyen.png" 
                   alt="Theo Ariandyen"
-                  className="speaker-image"
+                  className="speaker-inline-image"
                 />
               </div>
-              <div className="speaker-info">
-                <div className="speaker-name">Theo Ariandyen</div>
-                <div className="speaker-title">Investment Strategist</div>
-                <div className="speaker-bio">
+              <div className="speaker-inline-info">
+                <div className="speaker-inline-name">Theo Ariandyen</div>
+                <div className="speaker-inline-title">Investment Strategist</div>
+                <div className="speaker-inline-bio">
                   Investment strategist yang fokus pada <strong>investasi properti strategis</strong> dan manajemen portofolio. Membantu investor dalam membuat keputusan investasi yang tepat berdasarkan analisis mendalam.
                 </div>
               </div>
             </div>
 
             {/* Speaker 6: Erzon Djazai */}
-            <div className="speaker-card">
-              <div className="speaker-image-wrapper">
+            <div className="speaker-inline-item">
+              <div className="speaker-inline-image-wrapper">
                 <img 
                   src="/assets/Erzon Djazai.png" 
                   alt="Erzon Djazai"
-                  className="speaker-image"
+                  className="speaker-inline-image"
                 />
               </div>
-              <div className="speaker-info">
-                <div className="speaker-name">Erzon Djazai</div>
-                <div className="speaker-title">Property Investment Advisor</div>
-                <div className="speaker-bio">
+              <div className="speaker-inline-info">
+                <div className="speaker-inline-name">Erzon Djazai</div>
+                <div className="speaker-inline-title">Property Investment Advisor</div>
+                <div className="speaker-inline-bio">
                   Property investment advisor dengan pengalaman luas dalam <strong>mengidentifikasi peluang investasi properti</strong> dan memberikan konsultasi strategis untuk investor pemula maupun berpengalaman.
                 </div>
               </div>
@@ -672,7 +700,7 @@ export default function LandingPage() {
         {form.gambar?.length > 0 && (
           <section className="preview-gallery" aria-label="Product gallery">
             <h2 className="gallery-title">Galeri Produk</h2>
-            <div className="images" itemProp="image">
+            <div className="gallery-images-grid" itemProp="image">
               {form.gambar.map((g, i) => {
                 const imgSrc = buildImageUrl(g.path);
                 return imgSrc ? (
@@ -680,6 +708,7 @@ export default function LandingPage() {
                     key={i} 
                     src={imgSrc} 
                     alt={g.caption || `${form.nama} - Gambar ${i + 1}`}
+                    className="gallery-image-item"
                     loading="lazy"
                     width="450"
                     height="300"
@@ -710,70 +739,70 @@ export default function LandingPage() {
           </section>
         )}
 
-        {/* Testimoni - Horizontal Carousel */}
+        {/* Testimoni - Google Review Style with Horizontal Scroll */}
         {form.testimoni?.length > 0 && (
           <section className="preview-testimonials" aria-label="Customer testimonials">
             <h2>Testimoni Pembeli</h2>
-            <div className="testimonials-carousel-wrapper">
+            <div className="testimonials-carousel-wrapper-new">
               {testimoniIndex > 0 && (
                 <button 
-                  className="testimoni-nav-btn testimoni-nav-prev"
+                  className="testimoni-nav-btn-new testimoni-nav-prev-new"
                   onClick={() => setTestimoniIndex(Math.max(0, testimoniIndex - 1))}
                   aria-label="Previous testimonials"
                 >
                   ‹
                 </button>
               )}
-              <div className="testimonials-carousel" itemScope itemType="https://schema.org/Review">
+              <div className="testimonials-carousel-new" itemScope itemType="https://schema.org/Review">
                 <div 
-                  className="testimonials-track"
-                  style={{ transform: `translateX(-${testimoniIndex * (100 / 3)}%)` }}
+                  className="testimonials-track-new"
+                  style={{ transform: `translateX(-${testimoniIndex * 33.333}%)` }}
                 >
                   {form.testimoni.map((t, i) => {
                     const testiImgSrc = buildImageUrl(t.gambar);
                     return (
-                      <article key={i} className="testi-card" itemScope itemType="https://schema.org/Review">
-                        <div className="testi-header">
+                      <article key={i} className="testi-card-new" itemScope itemType="https://schema.org/Review">
+                        <div className="testi-header-new">
                           {testiImgSrc ? (
-                            <div className="testi-avatar-wrapper">
+                            <div className="testi-avatar-wrapper-new">
                               <img 
                                 src={testiImgSrc} 
                                 alt={`Foto ${t.nama}`}
-                                className="testi-avatar"
+                                className="testi-avatar-new"
                                 itemProp="author"
                                 loading="lazy"
                               />
                             </div>
                           ) : (
-                            <div className="testi-avatar-wrapper">
-                              <div className="testi-avatar-placeholder">
+                            <div className="testi-avatar-wrapper-new">
+                              <div className="testi-avatar-placeholder-new">
                                 {t.nama?.charAt(0)?.toUpperCase() || "U"}
                               </div>
                             </div>
                           )}
-                          <div className="testi-info">
-                            <div className="testi-name" itemProp="author" itemScope itemType="https://schema.org/Person">
+                          <div className="testi-info-new">
+                            <div className="testi-name-new" itemProp="author" itemScope itemType="https://schema.org/Person">
                               <span itemProp="name">{t.nama}</span>
+                            </div>
+                            <div className="testi-stars-new">
+                              <span className="star-new">★</span>
+                              <span className="star-new">★</span>
+                              <span className="star-new">★</span>
+                              <span className="star-new">★</span>
+                              <span className="star-new">★</span>
                             </div>
                           </div>
                         </div>
-                        <div className="testi-stars">
-                          <span className="star">★</span>
-                          <span className="star">★</span>
-                          <span className="star">★</span>
-                          <span className="star">★</span>
-                          <span className="star">★</span>
-                        </div>
-                        <div className="testi-desc" itemProp="reviewBody">{t.deskripsi}</div>
+                        <div className="testi-desc-new" itemProp="reviewBody">{t.deskripsi}</div>
                       </article>
                     );
                   })}
                 </div>
               </div>
-              {testimoniIndex < Math.floor((form.testimoni.length - 3) / 3) && form.testimoni.length > 3 && (
+              {testimoniIndex < Math.max(0, form.testimoni.length - 3) && form.testimoni.length > 3 && (
                 <button 
-                  className="testimoni-nav-btn testimoni-nav-next"
-                  onClick={() => setTestimoniIndex(Math.min(Math.floor((form.testimoni.length - 3) / 3), testimoniIndex + 1))}
+                  className="testimoni-nav-btn-new testimoni-nav-next-new"
+                  onClick={() => setTestimoniIndex(Math.min(Math.max(0, form.testimoni.length - 3), testimoniIndex + 1))}
                   aria-label="Next testimonials"
                 >
                   ›
@@ -950,11 +979,24 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* Captcha Checkbox */}
+        <div className="captcha-section">
+          <label className="captcha-checkbox-label">
+            <input
+              type="checkbox"
+              checked={captchaChecked}
+              onChange={(e) => setCaptchaChecked(e.target.checked)}
+              className="captcha-checkbox"
+            />
+            <span className="captcha-text">Saya bukan robot</span>
+          </label>
+        </div>
+
         {/* CTA */}
         <button 
           className={`cta-button ${submitting ? 'cta-loading' : ''}`}
           onClick={handleSubmit}
-          disabled={submitting}
+          disabled={submitting || !captchaChecked}
           aria-label={`Pesan ${form.nama} sekarang`}
           itemProp="offers"
         >
