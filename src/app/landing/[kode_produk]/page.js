@@ -476,6 +476,10 @@ export default function LandingPage() {
           {/* Top Section with Orange Background */}
           <div className="top-orange-section">
             {/* Judul Promo */}
+            <img 
+              src="/assets/logo.png" 
+              alt="Talent Ternak Properti"
+            />
             <div className="promo-text" role="banner">
               <h1 className="promo-title-h1">Tawaran Terbatas!</h1>
               <h2 className="promo-title-h2">Isi Form Hari Ini Untuk Mendapatkan Akses Group Exclusive!</h2>
