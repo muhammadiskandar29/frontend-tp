@@ -37,14 +37,57 @@ export async function GET(request) {
     const url = `${KOMERCE_BASE_URL}/domestic-destination${query ? `?q=${encodeURIComponent(query)}` : ''}`;
 
     console.log('[KOMERCE_FIND_ORIGIN] Requesting:', url);
+    console.log('[KOMERCE_FIND_ORIGIN] API Key:', RAJAONGKIR_KEY ? `${RAJAONGKIR_KEY.substring(0, 10)}...` : 'Not Set');
+    console.log('[KOMERCE_FIND_ORIGIN] Full URL:', url);
 
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'api-key': RAJAONGKIR_KEY,
-        'Content-Type': 'application/json',
-      },
-    });
+    let response;
+    try {
+      // Create AbortController untuk timeout (lebih kompatibel)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 detik timeout
+      
+      response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'api-key': RAJAONGKIR_KEY,
+          'Content-Type': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (compatible; Next.js)',
+        },
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+    } catch (fetchError) {
+      console.error('[KOMERCE_FIND_ORIGIN] Fetch error:', fetchError);
+      console.error('[KOMERCE_FIND_ORIGIN] Error name:', fetchError.name);
+      console.error('[KOMERCE_FIND_ORIGIN] Error message:', fetchError.message);
+      
+      // Handle specific error types
+      if (fetchError.name === 'AbortError' || fetchError.message.includes('timeout')) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: 'Request timeout. API Komerce tidak merespons dalam 30 detik.',
+            error: 'TIMEOUT',
+          },
+          { status: 504 }
+        );
+      }
+      
+      if (fetchError.message.includes('fetch failed') || fetchError.message.includes('ECONNREFUSED')) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: 'Gagal terhubung ke API Komerce. Periksa koneksi internet atau API endpoint mungkin sedang down.',
+            error: 'CONNECTION_FAILED',
+            details: fetchError.message,
+          },
+          { status: 503 }
+        );
+      }
+      
+      throw fetchError; // Re-throw untuk di-handle di catch block
+    }
 
     const responseText = await response.text();
     let data;

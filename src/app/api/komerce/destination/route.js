@@ -26,14 +26,37 @@ export async function GET(request) {
     const url = `${KOMERCE_BASE_URL}/domestic-destination${query ? `?q=${encodeURIComponent(query)}` : ''}`;
 
     console.log('[KOMERCE_DESTINATION] Requesting:', url);
+    console.log('[KOMERCE_DESTINATION] API Key:', RAJAONGKIR_KEY ? 'Set' : 'Not Set');
 
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'api-key': RAJAONGKIR_KEY,
-        'Content-Type': 'application/json',
-      },
-    });
+    let response;
+    try {
+      // Create AbortController untuk timeout (lebih kompatibel)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 detik timeout
+      
+      response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'api-key': RAJAONGKIR_KEY,
+          'Content-Type': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (compatible; Next.js)',
+        },
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+    } catch (fetchError) {
+      console.error('[KOMERCE_DESTINATION] Fetch error:', fetchError);
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Gagal terhubung ke API Komerce. Periksa koneksi atau API mungkin sedang down.',
+          error: 'CONNECTION_FAILED',
+          details: fetchError.message,
+        },
+        { status: 503 }
+      );
+    }
 
     const responseText = await response.text();
     let data;
