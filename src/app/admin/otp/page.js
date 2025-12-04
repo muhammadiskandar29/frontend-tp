@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import "@/styles/otp.css";
 import { getCustomerSession, verifyCustomerOTP, resendCustomerOTP } from "@/lib/customerAuth";
@@ -56,8 +56,11 @@ export default function CustomerOTPPage() {
       return;
     }
     
-    setCustomerId(session.user.id);
-    setWa(session.user.wa || session.user.phone);
+    // Use startTransition for state updates in effect (React 19 best practice)
+    startTransition(() => {
+      setCustomerId(session.user.id);
+      setWa(session.user.wa || session.user.phone);
+    });
     console.log("[OTP] Customer ID:", session.user.id);
     console.log("[OTP] WA:", session.user.wa || session.user.phone);
     resetOtpTimer();

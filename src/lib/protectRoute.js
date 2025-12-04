@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { isTokenExpired } from "@/lib/checkToken";
@@ -22,7 +22,10 @@ export function useProtectedRoute() {
           router.replace("/admin/login");
         }, 1000);
       } else {
-        setAllowed(true);
+        // Use startTransition to defer state update (React 19 best practice)
+        startTransition(() => {
+          setAllowed(true);
+        });
       }
     } catch (err) {
       console.warn("Auth check error:", err);
