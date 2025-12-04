@@ -49,15 +49,33 @@ body {
   width: 100%;
 }
 
-/* Top Orange Section - Solid Color, Reduced Overlap */
+/* Top Orange Section - Variated Design with Pattern */
 .top-orange-section {
   background: #ff7e00;
-  padding: 24px;
+  padding: 32px 24px;
   border-radius: 12px 12px 0 0;
   margin: -24px -24px 0 -24px;
   padding-bottom: 120px;
   position: relative;
   z-index: 1;
+  overflow: hidden;
+}
+
+/* Decorative Pattern Background */
+.top-orange-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 2px, transparent 2px),
+    radial-gradient(circle at 80% 50%, rgba(255, 255, 255, 0.1) 2px, transparent 2px);
+  background-size: 40px 40px;
+  background-position: 0 0, 20px 20px;
+  opacity: 0.3;
+  pointer-events: none;
 }
 
 /* Header with reduced overlap for closer spacing */
@@ -67,43 +85,184 @@ body {
   z-index: 2;
 }
 
-/* Promo Banner - White Text */
-.promo-text {
+/* Promo Badge Ribbon */
+.promo-badge-ribbon {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 8px 20px;
+  border-radius: 20px;
+  transform: rotate(5deg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 3;
+  animation: pulse-badge 2s ease-in-out infinite;
+}
+
+.ribbon-text {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+@keyframes pulse-badge {
+  0%, 100% {
+    transform: rotate(5deg) scale(1);
+  }
+  50% {
+    transform: rotate(5deg) scale(1.05);
+  }
+}
+
+/* Promo Text - Variated Layout */
+.promo-text-variated {
   background: transparent;
   padding: 0;
   text-align: center;
   border-radius: 0;
-  margin-bottom: 24px;
+  margin-bottom: 32px;
   border: none;
+  position: relative;
+  z-index: 2;
 }
 
-.promo-title-h1 {
+.promo-main-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.promo-icon-wrapper {
+  width: 80px;
+  height: 80px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  animation: float-icon 3s ease-in-out infinite;
+}
+
+@keyframes float-icon {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.promo-icon {
   font-size: 2.5rem;
-  font-weight: 700;
-  color: white;
-  margin: 0 0 16px 0;
-  line-height: 1.2;
-  letter-spacing: -0.5px;
+  display: block;
 }
 
-.promo-title-h2 {
-  font-size: 1.5rem;
-  font-weight: 600;
+.promo-text-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.promo-title-h1-variated {
+  font-size: 3rem;
+  font-weight: 800;
   color: white;
   margin: 0;
-  line-height: 1.4;
-  letter-spacing: -0.2px;
+  line-height: 1.1;
+  letter-spacing: -1px;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  position: relative;
+  display: inline-block;
 }
 
-/* Title - Compact Typography */
-.preview-title {
+.promo-title-h1-variated::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 4px;
+  background: white;
+  border-radius: 2px;
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.5);
+}
+
+.promo-divider {
+  width: 60px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.5);
+  margin: 8px 0;
+  border-radius: 1px;
+}
+
+.promo-title-h2-variated {
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.95);
+  margin: 0;
+  line-height: 1.5;
+  letter-spacing: 0.2px;
+  max-width: 700px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Title Wrapper - Variated */
+.preview-title-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 32px;
+  position: relative;
+  z-index: 2;
+}
+
+.title-decoration-left,
+.title-decoration-right {
+  flex: 1;
+  max-width: 100px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+  position: relative;
+}
+
+.title-decoration-left::before,
+.title-decoration-right::before {
+  content: '✦';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: white;
+  font-size: 1rem;
+}
+
+.title-decoration-left::before {
+  right: 0;
+}
+
+.title-decoration-right::before {
+  left: 0;
+}
+
+.preview-title-variated {
   text-align: center;
-  margin: 24px 0 0 0;
-  font-size: 2.5rem;
+  margin: 0;
+  font-size: 2.25rem;
   font-weight: 700;
   color: white;
   line-height: 1.2;
   letter-spacing: -0.5px;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  padding: 0 20px;
+  position: relative;
 }
 
 /* Header Image - 70% Width, Centered, No Border */
@@ -112,13 +271,14 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 16px 0;
+  margin: 16px 0 48px 0;
   border: none;
   box-shadow: none;
 }
 
 .header-wrapper.header-overlap {
   margin-top: -40px;
+  margin-bottom: 48px;
   position: relative;
   z-index: 2;
 }
@@ -184,15 +344,22 @@ body {
 
 /* SPEAKER PROFILE SECTION - 6 Speakers Grid */
 .speaker-profile-section {
-  margin: 24px 0;
+  margin: 64px -24px;
+  padding: 48px 24px;
+  background: #ff7e00;
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
 }
 
 .speaker-banner-image {
   width: 100%;
-  margin-bottom: 20px;
+  margin-bottom: 32px;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  background: white;
+  padding: 8px;
 }
 
 .talent-banner-img {
@@ -205,9 +372,10 @@ body {
 .speaker-profile-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--text);
+  color: white;
   text-align: center;
   margin-bottom: 20px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* Speakers Separated Cards - Inline Layout */
@@ -228,8 +396,8 @@ body {
 
 /* Photo Card - Left Side (No Background, Just Image) */
 .speaker-photo-card {
-  width: 420px;
-  min-width: 420px;
+  width: 300px;
+  min-width: 300px;
   background: transparent;
   border-radius: 12px 0 0 12px;
   padding: 0;
@@ -256,7 +424,7 @@ body {
 .speaker-info-card {
   flex: 1;
   background: #f9fafb;
-  border-radius: 0 12px 12px 0;
+  border-radius: 20px;
   padding: 32px;
   display: flex;
   flex-direction: column;
@@ -295,7 +463,7 @@ body {
 
 /* SPECIAL OFFER CARD */
 .special-offer-card {
-  margin: 24px 200px;
+  margin: 64px 200px;
   padding: 24px;
   background: #4b5563;
   border-radius: 12px;
@@ -382,7 +550,8 @@ body {
   background: var(--bg-light);
   padding: 14px 16px;
   border-radius: 10px;
-  margin-top: 16px;
+  margin-top: 48px;
+  margin-bottom: 48px;
   line-height: 1.6;
   font-size: 0.875rem;
   color: var(--text);
@@ -392,7 +561,7 @@ body {
 
 /* WhatsApp CTA Section */
 .whatsapp-cta-section {
-  margin: 32px 0;
+  margin: 64px 0;
   padding: 24px;
   background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
   border-radius: 12px;
@@ -449,7 +618,8 @@ body {
 
 /* GALLERY - 2 Column Grid with Square Images */
 .preview-gallery {
-  margin-top: 24px;
+  margin-top: 64px;
+  margin-bottom: 64px;
 }
 
 .gallery-title {
@@ -487,7 +657,8 @@ body {
 
 /* VIDEO - Full Width with Aspect Ratio */
 .preview-video {
-  margin-top: 24px;
+  margin-top: 64px;
+  margin-bottom: 64px;
 }
 
 .video-title {
@@ -509,7 +680,8 @@ body {
 
 /* TESTIMONI - Google Review Style */
 .preview-testimonials {
-  margin-top: 24px;
+  margin-top: 64px;
+  margin-bottom: 64px;
   padding: 0;
   background: transparent;
   border-radius: 0;
@@ -881,7 +1053,8 @@ body {
 
 /* PAYMENT - Compact Cards */
 .payment-section {
-  margin-top: 24px;
+  margin-top: 64px;
+  margin-bottom: 64px;
 }
 
 .payment-title {
@@ -953,7 +1126,7 @@ body {
 
 /* FAQ Section */
 .faq-section {
-  margin: 32px 0;
+  margin: 64px 0;
   padding: 24px;
   background: #ff7e00;
   border-radius: 12px;
@@ -1141,6 +1314,52 @@ body {
     font-size: 0.95rem;
   }
 
+  /* Variated Promo Styles - Mobile */
+  .promo-badge-ribbon {
+    top: 10px;
+    right: 10px;
+    padding: 6px 14px;
+    transform: rotate(3deg);
+  }
+
+  .ribbon-text {
+    font-size: 0.75rem;
+  }
+
+  .promo-icon-wrapper {
+    width: 60px;
+    height: 60px;
+  }
+
+  .promo-icon {
+    font-size: 2rem;
+  }
+
+  .promo-title-h1-variated {
+    font-size: 2rem;
+  }
+
+  .promo-title-h2-variated {
+    font-size: 1rem;
+    padding: 0 10px;
+  }
+
+  .preview-title-wrapper {
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  .title-decoration-left,
+  .title-decoration-right {
+    max-width: 60px;
+  }
+
+  .preview-title-variated {
+    font-size: 1.5rem;
+    padding: 0 10px;
+  }
+
   .preview-price {
     padding: 25px;
   }
@@ -1185,6 +1404,54 @@ body {
 
   .header-wrapper.header-overlap {
     margin-top: -180px;
+    margin-bottom: 32px;
+  }
+
+  /* Spacing adjustments for mobile */
+  .preview-description {
+    margin-top: 32px;
+    margin-bottom: 32px;
+  }
+
+  .speaker-profile-section {
+    margin: 40px -25px;
+    padding: 32px 20px;
+  }
+
+  .special-offer-card {
+    margin: 40px 0;
+  }
+
+  .preview-gallery {
+    margin-top: 40px;
+    margin-bottom: 40px;
+  }
+
+  .preview-video {
+    margin-top: 40px;
+    margin-bottom: 40px;
+  }
+
+  .preview-testimonials {
+    margin-top: 40px;
+    margin-bottom: 40px;
+  }
+
+  .compact-form-section {
+    margin: 40px 0;
+  }
+
+  .payment-section {
+    margin-top: 40px;
+    margin-bottom: 40px;
+  }
+
+  .whatsapp-cta-section {
+    margin: 40px 0;
+  }
+
+  .faq-section {
+    margin: 40px 0;
   }
 
   .promo-title-h1 {
@@ -1405,7 +1672,7 @@ body {
    COMPACT FORM STYLES (Lengkapi Data)
    ================================== */
 .compact-form-section {
-  margin: 24px 0;
+  margin: 64px 0;
 }
 
 .compact-form-title {

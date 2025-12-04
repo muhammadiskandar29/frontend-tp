@@ -471,16 +471,33 @@ export default function LandingPage() {
     <article className="landing-wrapper" itemScope itemType="https://schema.org/Product">
         <div className="produk-preview">
           
-          {/* Top Section with Orange Background */}
+          {/* Top Section with Orange Background - Variated Design */}
           <div className="top-orange-section">
-            {/* Judul Promo */}
-            <div className="promo-text" role="banner">
-              <h1 className="promo-title-h1">Tawaran Terbatas!</h1>
-              <h2 className="promo-title-h2">Isi Form Hari Ini Untuk Mendapatkan Akses Group Exclusive!</h2>
+            {/* Badge Ribbon untuk Tawaran Terbatas */}
+            <div className="promo-badge-ribbon">
+              <span className="ribbon-text">⚡ Tawaran Terbatas!</span>
             </div>
 
-            {/* Nama Produk */}
-            <h1 className="preview-title" itemProp="name">{form.nama}</h1>
+            {/* Judul Promo dengan Layout Variasi */}
+            <div className="promo-text-variated" role="banner">
+              <div className="promo-main-content">
+                <div className="promo-icon-wrapper">
+                  <span className="promo-icon">🎯</span>
+                </div>
+                <div className="promo-text-content">
+                  <h1 className="promo-title-h1-variated">Tawaran Terbatas!</h1>
+                  <div className="promo-divider"></div>
+                  <h2 className="promo-title-h2-variated">Isi Form Hari Ini Untuk Mendapatkan Akses Group Exclusive!</h2>
+                </div>
+              </div>
+            </div>
+
+            {/* Nama Produk dengan Styling Variasi */}
+            <div className="preview-title-wrapper">
+              <div className="title-decoration-left"></div>
+              <h1 className="preview-title-variated" itemProp="name">{form.nama}</h1>
+              <div className="title-decoration-right"></div>
+            </div>
           </div>
 
           {/* Header - Outside orange section, with reduced overlap for closer spacing */}
@@ -714,78 +731,6 @@ export default function LandingPage() {
           </section>
         )}
 
-        {/* Testimoni - Google Review Style with Horizontal Scroll */}
-        {form.testimoni?.length > 0 && (
-          <section className="preview-testimonials" aria-label="Customer testimonials">
-            <h2>Testimoni Pembeli</h2>
-            <div className="testimonials-carousel-wrapper-new">
-              {testimoniIndex > 0 && (
-                <button 
-                  className="testimoni-nav-btn-new testimoni-nav-prev-new"
-                  onClick={() => setTestimoniIndex(Math.max(0, testimoniIndex - 1))}
-                  aria-label="Previous testimonials"
-                >
-                  ‹
-                </button>
-              )}
-              <div className="testimonials-carousel-new" itemScope itemType="https://schema.org/Review">
-                <div 
-                  className="testimonials-track-new"
-                  style={{ transform: `translateX(-${testimoniIndex * 28}%)` }}
-                >
-                  {form.testimoni.map((t, i) => {
-                    const testiImgSrc = buildImageUrl(t.gambar);
-                    return (
-                      <article key={i} className="testi-card-new" itemScope itemType="https://schema.org/Review">
-                        <div className="testi-header-new">
-                          {testiImgSrc ? (
-                            <div className="testi-avatar-wrapper-new">
-                              <img 
-                                src={testiImgSrc} 
-                                alt={`Foto ${t.nama}`}
-                                className="testi-avatar-new"
-                                itemProp="author"
-                                loading="lazy"
-                              />
-                            </div>
-                          ) : (
-                            <div className="testi-avatar-wrapper-new">
-                              <div className="testi-avatar-placeholder-new">
-                                {t.nama?.charAt(0)?.toUpperCase() || "U"}
-                              </div>
-                            </div>
-                          )}
-                          <div className="testi-info-new">
-                            <div className="testi-name-new" itemProp="author" itemScope itemType="https://schema.org/Person">
-                              <span itemProp="name">{t.nama}</span>
-                            </div>
-                            <div className="testi-stars-new">
-                              <span className="star-new">★</span>
-                              <span className="star-new">★</span>
-                              <span className="star-new">★</span>
-                              <span className="star-new">★</span>
-                              <span className="star-new">★</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="testi-desc-new" itemProp="reviewBody">{t.deskripsi}</div>
-                      </article>
-                    );
-                  })}
-                </div>
-              </div>
-              {testimoniIndex < Math.max(0, form.testimoni.length - 3) && form.testimoni.length > 3 && (
-                <button 
-                  className="testimoni-nav-btn-new testimoni-nav-next-new"
-                  onClick={() => setTestimoniIndex(Math.min(Math.max(0, form.testimoni.length - 3), testimoniIndex + 1))}
-                  aria-label="Next testimonials"
-                >
-                  ›
-                </button>
-              )}
-            </div>
-          </section>
-        )}
 {/* INFORMASI DASAR - Compact Form */}
 <section className="compact-form-section" aria-label="Order form">
   <h2 className="compact-form-title">Lengkapi Data:</h2>
@@ -971,6 +916,79 @@ export default function LandingPage() {
             "Pesan Sekarang"
           )}
         </button>
+
+{/* Testimoni - Google Review Style with Horizontal Scroll */}
+{form.testimoni?.length > 0 && (
+          <section className="preview-testimonials" aria-label="Customer testimonials">
+            <h2>Testimoni Pembeli</h2>
+            <div className="testimonials-carousel-wrapper-new">
+              {testimoniIndex > 0 && (
+                <button 
+                  className="testimoni-nav-btn-new testimoni-nav-prev-new"
+                  onClick={() => setTestimoniIndex(Math.max(0, testimoniIndex - 1))}
+                  aria-label="Previous testimonials"
+                >
+                  ‹
+                </button>
+              )}
+              <div className="testimonials-carousel-new" itemScope itemType="https://schema.org/Review">
+                <div 
+                  className="testimonials-track-new"
+                  style={{ transform: `translateX(-${testimoniIndex * 28}%)` }}
+                >
+                  {form.testimoni.map((t, i) => {
+                    const testiImgSrc = buildImageUrl(t.gambar);
+                    return (
+                      <article key={i} className="testi-card-new" itemScope itemType="https://schema.org/Review">
+                        <div className="testi-header-new">
+                          {testiImgSrc ? (
+                            <div className="testi-avatar-wrapper-new">
+                              <img 
+                                src={testiImgSrc} 
+                                alt={`Foto ${t.nama}`}
+                                className="testi-avatar-new"
+                                itemProp="author"
+                                loading="lazy"
+                              />
+                            </div>
+                          ) : (
+                            <div className="testi-avatar-wrapper-new">
+                              <div className="testi-avatar-placeholder-new">
+                                {t.nama?.charAt(0)?.toUpperCase() || "U"}
+                              </div>
+                            </div>
+                          )}
+                          <div className="testi-info-new">
+                            <div className="testi-name-new" itemProp="author" itemScope itemType="https://schema.org/Person">
+                              <span itemProp="name">{t.nama}</span>
+                            </div>
+                            <div className="testi-stars-new">
+                              <span className="star-new">★</span>
+                              <span className="star-new">★</span>
+                              <span className="star-new">★</span>
+                              <span className="star-new">★</span>
+                              <span className="star-new">★</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="testi-desc-new" itemProp="reviewBody">{t.deskripsi}</div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </div>
+              {testimoniIndex < Math.max(0, form.testimoni.length - 3) && form.testimoni.length > 3 && (
+                <button 
+                  className="testimoni-nav-btn-new testimoni-nav-next-new"
+                  onClick={() => setTestimoniIndex(Math.min(Math.max(0, form.testimoni.length - 3), testimoniIndex + 1))}
+                  aria-label="Next testimonials"
+                >
+                  ›
+                </button>
+              )}
+            </div>
+          </section>
+        )}
 
 {/* CTA WhatsApp Sales Section */}
 <section className="whatsapp-cta-section" aria-label="Contact sales">
