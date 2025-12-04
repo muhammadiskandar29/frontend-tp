@@ -140,7 +140,7 @@ export default function LandingPage() {
         setData({
           ...d,
           product_name: d.nama,
-          enable_ongkir: d.enable_ongkir || 0, // Load enable_ongkir dari backend (jika ada)
+          landingpage: d.landingpage || "1", // 1 = non-fisik, 2 = fisik
           gambar: safeParse(d.gambar, []),
           custom_field: safeParse(d.custom_field, []),
           assign: safeParse(d.assign, []),
@@ -371,6 +371,12 @@ export default function LandingPage() {
     if (!paymentMethod) return toast.error("Silakan pilih metode pembayaran");
     if (!customerForm.nama || !customerForm.email || !customerForm.wa)
       return toast.error("Silakan lengkapi data yang diperlukan");
+    
+    // Validasi ongkir untuk produk fisik (landingpage = "2")
+    const isFisik = form.landingpage === "2" || form.landingpage === 2;
+    if (isFisik && (!ongkir || ongkir === 0)) {
+      return toast.error("Silakan hitung ongkir terlebih dahulu");
+    }
 
     setSubmitting(true);
 
@@ -805,8 +811,8 @@ export default function LandingPage() {
   </div>
 </section>
 
-        {/* Ongkir Calculator - Tampilkan jika enable_ongkir aktif */}
-        {(form.enable_ongkir === 1 || form.enable_ongkir === "1") && (
+        {/* Ongkir Calculator - Tampilkan jika landingpage = "2" (fisik) */}
+        {(form.landingpage === "2" || form.landingpage === 2) && (
           <section className="ongkir-section" aria-label="Ongkir calculator">
             <OngkirCalculator
               onSelectOngkir={(price) => {

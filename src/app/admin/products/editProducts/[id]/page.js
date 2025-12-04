@@ -63,9 +63,8 @@ export default function Page() {
     deskripsi: "",
     tanggal_event: "",
     gambar: [], // [{ path: {type:'file', value:File}, caption }]
-    landingpage: "1",
+    landingpage: "1", // 1 = non-fisik, 2 = fisik
     status: 1,
-    enable_ongkir: 0, // 0 = disabled, 1 = enabled
     assign: [],
     custom_field: [],
     list_point: [],
@@ -364,7 +363,6 @@ export default function Page() {
     
     formData.append("landingpage", String(form.landingpage || getValue("landingpage") || "1"));
     formData.append("status", String(form.status || getValue("status") || "1"));
-    // enable_ongkir tidak dikirim ke backend, hanya untuk toggle UI di frontend
     
     console.log("[FORMDATA] Basic fields:", {
       kategori: kategoriId,
@@ -1066,7 +1064,6 @@ export default function Page() {
         tanggal_event: parsedTanggalEvent,
         status: produkData.status || "1",
         landingpage: produkData.landingpage || "1",
-        enable_ongkir: produkData.enable_ongkir || 0,
         id: produkData.id || productId,
         kategori: kategoriId,
         assign: produkData.assign_rel 
@@ -1111,7 +1108,6 @@ export default function Page() {
         tanggal_event: produkData.tanggal_event || "",
         landingpage: produkData.landingpage || "1",
         status: produkData.status || "1",
-        enable_ongkir: produkData.enable_ongkir || 0,
         header: produkData.header || "",
         gambar: safeParseJSON(produkData.gambar, []),
         testimoni: safeParseJSON(produkData.testimoni, []),
@@ -1514,23 +1510,27 @@ export default function Page() {
               />
             </div>
 
-            {/* ENABLE ONGKIR */}
+            {/* LANDING PAGE TYPE */}
             <div className="form-field-group">
-              <div className="flex items-center justify-between">
-                <div>
-                  <label className="form-label">
-                    <span className="label-icon">🚚</span>
-                    Aktifkan Cek Ongkir
-                  </label>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Jika diaktifkan, customer dapat cek ongkir di landing page menggunakan Raja Ongkir
-                  </p>
-                </div>
-                <InputSwitch
-                  checked={form.enable_ongkir === 1}
-                  onChange={(e) => handleChange("enable_ongkir", e.value ? 1 : 0)}
-                />
-              </div>
+              <label className="form-label">
+                <span className="label-icon">📄</span>
+                Tipe Landing Page <span className="required">*</span>
+              </label>
+              <Dropdown
+                className="w-full form-input"
+                value={form.landingpage}
+                onChange={(e) => handleChange("landingpage", e.value)}
+                options={[
+                  { label: "Non-Fisik (Seminar, Webinar, dll)", value: "1" },
+                  { label: "Fisik (Buku, Baju, dll)", value: "2" }
+                ]}
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Pilih tipe landing page"
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                Non-Fisik: tanpa ongkir | Fisik: dengan form cek ongkir
+              </p>
             </div>
           </div>
         </div>
