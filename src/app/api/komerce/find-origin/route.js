@@ -4,15 +4,17 @@ const KOMERCE_BASE_URL = 'https://rajaongkir-api.komerce.co.id';
 // Hardcode API key (untuk production, lebih baik pakai environment variable)
 const RAJAONGKIR_KEY = process.env.RAJAONGKIR_KEY || 'mT8nGMeZ4cacc72ba9d93fd4g2xH48Gb';
 
+/**
+ * Endpoint untuk mencari ID kota origin berdasarkan nama kota
+ * GET /api/komerce/find-origin?q=tangerang
+ */
 export async function GET(request) {
   try {
     if (!RAJAONGKIR_KEY) {
-      console.error('[KOMERCE_DESTINATION] RAJAONGKIR_KEY tidak ditemukan di environment');
-      console.error('[KOMERCE_DESTINATION] Pastikan RAJAONGKIR_KEY sudah di-set di Vercel Environment Variables');
       return NextResponse.json(
         { 
           success: false, 
-          message: 'API key tidak dikonfigurasi. Silakan hubungi admin untuk mengkonfigurasi RAJAONGKIR_KEY di Vercel.' 
+          message: 'API key tidak dikonfigurasi. Silakan set RAJAONGKIR_KEY di Vercel Environment Variables.' 
         },
         { status: 500 }
       );
@@ -20,12 +22,21 @@ export async function GET(request) {
 
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('q') || '';
-    const type = searchParams.get('type') || 'destination'; // origin atau destination
 
-    // Build URL dengan query parameter
+    if (!query) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: 'Parameter q (query) wajib diisi. Contoh: /api/komerce/find-origin?q=tangerang' 
+        },
+        { status: 400 }
+      );
+    }
+
+    // Build URL untuk search destination
     const url = `${KOMERCE_BASE_URL}/domestic-destination${query ? `?q=${encodeURIComponent(query)}` : ''}`;
 
-    console.log('[KOMERCE_DESTINATION] Requesting:', url);
+    console.log('[KOMERCE_FIND_ORIGIN] Requesting:', url);
 
     const response = await fetch(url, {
       method: 'GET',
@@ -41,7 +52,7 @@ export async function GET(request) {
     try {
       data = JSON.parse(responseText);
     } catch (err) {
-      console.error('[KOMERCE_DESTINATION] Non-JSON response:', responseText.substring(0, 500));
+      console.error('[KOMERCE_FIND_ORIGIN] Non-JSON response:', responseText.substring(0, 500));
       return NextResponse.json(
         { success: false, message: 'Response dari Komerce bukan JSON' },
         { status: 500 }
@@ -49,7 +60,7 @@ export async function GET(request) {
     }
 
     if (!response.ok) {
-      console.error('[KOMERCE_DESTINATION] Error response:', data);
+      console.error('[KOMERCE_FIND_ORIGIN] Error response:', data);
       return NextResponse.json(
         {
           success: false,
@@ -61,7 +72,6 @@ export async function GET(request) {
     }
 
     // Parse response dari Komerce
-    // Komerce mengembalikan data dalam format: { rajaongkir: { results: [...] } }
     let destinations = [];
     if (data?.rajaongkir?.results) {
       destinations = data.rajaongkir.results;
@@ -79,17 +89,31 @@ export async function GET(request) {
       destinations = destinations.filter((dest) => {
         const cityName = (dest.city_name || dest.name || '').toLowerCase();
         const province = (dest.province || dest.province_name || '').toLowerCase();
-        return cityName.includes(queryLower) || province.includes(queryLower);
+        const type = (dest.type || '').toLowerCase();
+        return cityName.includes(queryLower) || province.includes(queryLower) || type.includes(queryLower);
       });
     }
 
-    // Return response dari Komerce
+    // Format response untuk lebih mudah dibaca
+    const formattedResults = destinations.map((dest) => ({
+      id: dest.id || dest.city_id || dest.destination_id || '',
+      name: dest.city_name || dest.name || dest.destination_name || '',
+      province: dest.province || dest.province_name || '',
+      type: dest.type || '',
+      postal_code: dest.postal_code || '',
+    }));
+
     return NextResponse.json({
       success: true,
-      data: destinations,
+      query: query,
+      count: formattedResults.length,
+      data: formattedResults,
+      message: formattedResults.length > 0 
+        ? `Ditemukan ${formattedResults.length} kota. Gunakan ID untuk NEXT_PUBLIC_RAJAONGKIR_ORIGIN`
+        : 'Tidak ada kota yang ditemukan. Coba cari dengan kata kunci lain.',
     });
   } catch (error) {
-    console.error('[KOMERCE_DESTINATION] Error:', error);
+    console.error('[KOMERCE_FIND_ORIGIN] Error:', error);
     return NextResponse.json(
       {
         success: false,

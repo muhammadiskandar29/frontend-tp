@@ -33,7 +33,13 @@ export default function OngkirCalculator({
   const calculateTimeoutRef = useRef(null);
 
   // Get origin dari env atau prop
-  const origin = originId || process.env.NEXT_PUBLIC_RAJAONGKIR_ORIGIN || "";
+  // Origin bisa dari prop, env variable, atau hardcode
+  // Priority: prop > env > hardcode fallback
+  // Hardcode origin ID Kabupaten Tangerang
+  // Cari ID-nya dulu pakai endpoint: /api/komerce/find-origin?q=tangerang
+  // Setelah dapat ID-nya, ganti nilai di bawah ini
+  const DEFAULT_ORIGIN_ID = ""; // TODO: Ganti dengan ID Kabupaten Tangerang (contoh: "456")
+  const origin = originId || process.env.NEXT_PUBLIC_RAJAONGKIR_ORIGIN || DEFAULT_ORIGIN_ID;
 
   // Check cooldown on mount
   useEffect(() => {
