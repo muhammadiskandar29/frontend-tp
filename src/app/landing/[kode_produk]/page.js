@@ -551,8 +551,6 @@ export default function LandingPage() {
                   alt="Dimas Dwi Ananto"
                   className="speaker-photo-img"
                 />
-                <div className="speaker-photo-name">DIMAS DWI ANANTO</div>
-                <div className="speaker-photo-role">Praktisi Lelang Properti</div>
               </div>
               <div className="speaker-info-card">
                 <div className="speaker-info-role">Praktisi Lelang Properti</div>
@@ -571,8 +569,6 @@ export default function LandingPage() {
                   alt="Salvian Kumara"
                   className="speaker-photo-img"
                 />
-                <div className="speaker-photo-name">SALVIAN KUMARA</div>
-                <div className="speaker-photo-role">Expert Real Estate Investment</div>
               </div>
               <div className="speaker-info-card">
                 <div className="speaker-info-role">Expert Real Estate Investment</div>
@@ -591,8 +587,6 @@ export default function LandingPage() {
                   alt="Rhesa Yogaswara"
                   className="speaker-photo-img"
                 />
-                <div className="speaker-photo-name">RHESA YOGASWARA</div>
-                <div className="speaker-photo-role">Property Consultant & Trainer</div>
               </div>
               <div className="speaker-info-card">
                 <div className="speaker-info-role">Property Consultant & Trainer</div>
@@ -611,8 +605,6 @@ export default function LandingPage() {
                   alt="Stephanus P H A S"
                   className="speaker-photo-img"
                 />
-                <div className="speaker-photo-name">STEPHANUS P H A S</div>
-                <div className="speaker-photo-role">Business Development Specialist</div>
               </div>
               <div className="speaker-info-card">
                 <div className="speaker-info-role">Business Development Specialist</div>
@@ -631,8 +623,6 @@ export default function LandingPage() {
                   alt="Theo Ariandyen"
                   className="speaker-photo-img"
                 />
-                <div className="speaker-photo-name">THEO ARIANDYEN</div>
-                <div className="speaker-photo-role">Investment Strategist</div>
               </div>
               <div className="speaker-info-card">
                 <div className="speaker-info-role">Investment Strategist</div>
@@ -651,8 +641,6 @@ export default function LandingPage() {
                   alt="Erzon Djazai"
                   className="speaker-photo-img"
                 />
-                <div className="speaker-photo-name">ERZON DJAZAI</div>
-                <div className="speaker-photo-role">Property Investment Advisor</div>
               </div>
               <div className="speaker-info-card">
                 <div className="speaker-info-role">Property Investment Advisor</div>
@@ -766,7 +754,7 @@ export default function LandingPage() {
               <div className="testimonials-carousel-new" itemScope itemType="https://schema.org/Review">
                 <div 
                   className="testimonials-track-new"
-                  style={{ transform: `translateX(-${testimoniIndex * 33.333}%)` }}
+                  style={{ transform: `translateX(-${testimoniIndex * 30}%)` }}
                 >
                   {form.testimoni.map((t, i) => {
                     const testiImgSrc = buildImageUrl(t.gambar);
