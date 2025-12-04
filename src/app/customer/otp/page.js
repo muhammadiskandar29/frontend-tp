@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, startTransition } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import "@/styles/otp.css";
@@ -111,11 +111,8 @@ export default function CustomerOTPPage() {
     const customerIdValue = session.user.id;
     const waNumber = session.user.wa || session.user.phone;
     
-    // Use startTransition for state updates in effect (React 19 best practice)
-    startTransition(() => {
-      setCustomerId(customerIdValue);
-      setWa(waNumber);
-    });
+    setCustomerId(customerIdValue);
+    setWa(waNumber);
     console.log("🔵 [OTP] Customer ID:", customerIdValue);
     console.log("🔵 [OTP] WA:", waNumber);
     resetOtpTimer();
