@@ -978,9 +978,8 @@ body {
   }
 
   .speaker-image-wrapper {
-    width: 180px;
-    min-width: 180px;
-    height: 180px;
+    width: 300px;
+    height: 300px;
   }
 
   .speaker-name {
