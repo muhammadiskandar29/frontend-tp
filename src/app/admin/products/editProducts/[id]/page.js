@@ -305,24 +305,64 @@ export default function Page() {
   // Array fields sebagai JSON string
   // ============================
   async function buildProductFormData(form, kategoriId, normalizedAssign, onProgress = null) {
+    // ============================
+    // AMBIL DATA ORIGINAL DARI LOCALSTORAGE SEBAGAI FALLBACK
+    // ============================
+    let originalData = null;
+    try {
+      const stored = localStorage.getItem(`product_original_data_${productId}`);
+      if (stored) {
+        originalData = JSON.parse(stored);
+        console.log("[FORMDATA] ✅ Original data loaded from localStorage:", {
+          productId: productId,
+          fields: Object.keys(originalData)
+        });
+      }
+    } catch (error) {
+      console.error("[FORMDATA] ❌ Failed to load original data from localStorage:", error);
+    }
+    
+    // Helper: gunakan nilai dari form jika ada, jika tidak gunakan original data
+    const getValue = (key, defaultValue = "") => {
+      const formValue = form[key];
+      if (formValue !== null && formValue !== undefined && formValue !== "") {
+        return formValue;
+      }
+      if (originalData && originalData[key] !== null && originalData[key] !== undefined) {
+        return originalData[key];
+      }
+      return defaultValue;
+    };
+    
     // SELALU generate kode dari nama (auto generate dengan dash)
-    const kode = generateKode(form.nama) || "produk-baru";
+    const kode = generateKode(form.nama) || getValue("kode") || "produk-baru";
     
     const formData = new FormData();
     
     // ============================
-    // 1. BASIC FIELDS
+    // 0. _method: "PUT" - WAJIB UNTUK LARAVEL FORMDATA PUT REQUEST
     // ============================
-    formData.append("kategori", String(kategoriId));
-    formData.append("nama", form.nama || "");
+    formData.append("_method", "PUT");
+    
+    // ============================
+    // 1. BASIC FIELDS - SELALU KIRIM, GUNAKAN ORIGINAL DATA SEBAGAI FALLBACK
+    // ============================
+    formData.append("kategori", String(kategoriId || getValue("kategori") || ""));
+    formData.append("nama", form.nama || getValue("nama") || "");
     formData.append("kode", kode);
     formData.append("url", "/" + kode);
-    formData.append("deskripsi", form.deskripsi || "");
-    formData.append("harga_asli", String(form.harga_asli || 0));
-    formData.append("harga_coret", String(form.harga_coret || 0));
-    formData.append("tanggal_event", formatDateForBackend(form.tanggal_event) || "");
-    formData.append("landingpage", String(form.landingpage || 1));
-    formData.append("status", String(form.status || 1));
+    formData.append("deskripsi", form.deskripsi || getValue("deskripsi") || "");
+    formData.append("harga_asli", String(form.harga_asli || getValue("harga_asli") || 0));
+    formData.append("harga_coret", String(form.harga_coret || getValue("harga_coret") || 0));
+    
+    // Tanggal event: gunakan dari form jika ada, jika tidak dari original data
+    const tanggalEvent = form.tanggal_event 
+      ? formatDateForBackend(form.tanggal_event) 
+      : (originalData?.tanggal_event || "");
+    formData.append("tanggal_event", tanggalEvent);
+    
+    formData.append("landingpage", String(form.landingpage || getValue("landingpage") || "1"));
+    formData.append("status", String(form.status || getValue("status") || "1"));
     
     console.log("[FORMDATA] Basic fields:", {
       kategori: kategoriId,
@@ -333,6 +373,7 @@ export default function Page() {
     
     // ============================
     // 2. HEADER IMAGE - File langsung (jika ada file baru)
+    // Jika tidak ada file baru, jangan kirim field header (backend akan keep existing)
     // ============================
     if (form.header?.type === "file" && form.header.value) {
       if (onProgress) {
@@ -342,92 +383,141 @@ export default function Page() {
       formData.append("header", compressedHeader);
     }
     // Jika header existing (type === "url"), tidak perlu append
+    // Backend akan keep existing header jika field header tidak dikirim
     
     // ============================
     // 3. GAMBAR GALLERY - File langsung
     // Format: gambar[0][file], gambar[0][caption], gambar[1][file], gambar[1][caption]
-    // Sama persis dengan addProducts, tapi handle existing images juga
+    // SELALU kirim caption untuk semua gambar yang ada (dari form atau original data)
     // ============================
-    const gambarFiles = (form.gambar || []).filter(g => g.path && g.path.type === "file" && g.path.value);
+    // Gunakan form.gambar jika ada, jika tidak gunakan original data
+    const gambarFromForm = form.gambar || [];
+    const gambarFromOriginal = originalData?.gambar || [];
+    // Ambil yang lebih banyak untuk memastikan semua gambar dikirim
+    const maxGambarLength = Math.max(gambarFromForm.length, gambarFromOriginal.length);
+    
+    const gambarFiles = gambarFromForm.filter(g => g.path && g.path.type === "file" && g.path.value);
     if (onProgress && gambarFiles.length > 0) {
       onProgress(`Mengompresi ${gambarFiles.length} gambar...`);
     }
     
-    for (let i = 0; i < (form.gambar || []).length; i++) {
-      const g = form.gambar[i];
-      if (g.path && g.path.type === "file" && g.path.value) {
+    for (let i = 0; i < maxGambarLength; i++) {
+      const g = gambarFromForm[i];
+      const origG = gambarFromOriginal[i];
+      
+      // Jika ada file baru, kirim file
+      if (g && g.path && g.path.type === "file" && g.path.value) {
         if (onProgress) {
           onProgress(`Mengompresi gambar ${i + 1}/${gambarFiles.length}...`);
         }
         const compressedGambar = await compressImage(g.path.value);
         formData.append(`gambar[${i}][file]`, compressedGambar);
         formData.append(`gambar[${i}][caption]`, g.caption || "");
-      } else if (g.path && g.path.type === "url" && g.path.value) {
-        // Existing image - tetap append caption untuk update
-        formData.append(`gambar[${i}][caption]`, g.caption || "");
+      } else {
+        // Tidak ada file baru, tapi tetap kirim caption (dari form atau original)
+        const caption = g?.caption || origG?.caption || "";
+        formData.append(`gambar[${i}][caption]`, caption);
       }
     }
     
     // ============================
     // 4. TESTIMONI - File langsung
     // Format: testimoni[0][gambar], testimoni[0][nama], testimoni[0][deskripsi]
+    // SELALU kirim semua testimoni yang ada (dari form atau original data)
     // ============================
-    const testimoniFiles = (form.testimoni || []).filter(t => t.gambar && t.gambar.type === "file" && t.gambar.value);
+    const testimoniFromForm = form.testimoni || [];
+    const testimoniFromOriginal = originalData?.testimoni || [];
+    // Ambil yang lebih banyak untuk memastikan semua testimoni dikirim
+    const maxTestimoniLength = Math.max(testimoniFromForm.length, testimoniFromOriginal.length);
+    
+    const testimoniFiles = testimoniFromForm.filter(t => t.gambar && t.gambar.type === "file" && t.gambar.value);
     if (onProgress && testimoniFiles.length > 0) {
       onProgress(`Mengompresi ${testimoniFiles.length} testimoni...`);
     }
     
-    for (let i = 0; i < (form.testimoni || []).length; i++) {
-      const t = form.testimoni[i];
-      if (t.gambar && t.gambar.type === "file" && t.gambar.value) {
+    for (let i = 0; i < maxTestimoniLength; i++) {
+      const t = testimoniFromForm[i];
+      const origT = testimoniFromOriginal[i];
+      
+      // Jika ada file baru, kirim file
+      if (t && t.gambar && t.gambar.type === "file" && t.gambar.value) {
         if (onProgress) {
           onProgress(`Mengompresi testimoni ${i + 1}/${testimoniFiles.length}...`);
         }
         const compressedTestimoni = await compressImage(t.gambar.value);
         formData.append(`testimoni[${i}][gambar]`, compressedTestimoni);
       }
-      formData.append(`testimoni[${i}][nama]`, t.nama || "");
-      formData.append(`testimoni[${i}][deskripsi]`, t.deskripsi || "");
+      
+      // Selalu kirim nama dan deskripsi (dari form atau original data)
+      const nama = t?.nama || origT?.nama || "";
+      const deskripsi = t?.deskripsi || origT?.deskripsi || "";
+      formData.append(`testimoni[${i}][nama]`, nama);
+      formData.append(`testimoni[${i}][deskripsi]`, deskripsi);
     }
     
     // ============================
     // 5. ARRAY FIELDS - Sebagai JSON string (sesuai Postman)
+    // Gunakan original data sebagai fallback jika form field kosong
     // ============================
     // custom_field - JSON string
-    const customFieldArray = (form.custom_field || []).map((f, idx) => ({
-      nama_field: f.label || f.key || "",
-      urutan: idx + 1,
-    }));
+    const customFieldArray = (form.custom_field && form.custom_field.length > 0)
+      ? form.custom_field.map((f, idx) => ({
+          nama_field: f.label || f.key || "",
+          urutan: idx + 1,
+        }))
+      : (originalData?.custom_field || []).map((f, idx) => ({
+          nama_field: f.nama_field || f.label || "",
+          urutan: idx + 1,
+        }));
     formData.append("custom_field", JSON.stringify(customFieldArray));
     
     // list_point - JSON string
-    const listPointArray = (form.list_point || []).map((p, idx) => ({
-      nama: p.nama || "",
-      urutan: idx + 1,
-    }));
+    const listPointArray = (form.list_point && form.list_point.length > 0)
+      ? form.list_point.map((p, idx) => ({
+          nama: p.nama || "",
+          urutan: idx + 1,
+        }))
+      : (originalData?.list_point || []).map((p, idx) => ({
+          nama: typeof p === "string" ? p : (p.nama || ""),
+          urutan: idx + 1,
+        }));
     formData.append("list_point", JSON.stringify(listPointArray));
     
     // assign - JSON string (array of numbers)
-    formData.append("assign", JSON.stringify(normalizedAssign || []));
+    const assignArray = (normalizedAssign && normalizedAssign.length > 0)
+      ? normalizedAssign
+      : (originalData?.assign || []);
+    formData.append("assign", JSON.stringify(assignArray));
     
     // fb_pixel - JSON string (array of numbers)
-    const fbPixelArray = (form.fb_pixel || []).map(v => Number(v)).filter(n => !Number.isNaN(n));
+    const fbPixelArray = (form.fb_pixel && form.fb_pixel.length > 0)
+      ? form.fb_pixel.map(v => Number(v)).filter(n => !Number.isNaN(n))
+      : (originalData?.fb_pixel || []).map(v => Number(v)).filter(n => !Number.isNaN(n));
     formData.append("fb_pixel", JSON.stringify(fbPixelArray));
     
     // event_fb_pixel - JSON string
-    const eventFbPixelArray = (form.event_fb_pixel || []).map((ev) => ({ 
-      event: ev || "" 
-    }));
+    const eventFbPixelArray = (form.event_fb_pixel && form.event_fb_pixel.length > 0)
+      ? form.event_fb_pixel.map((ev) => ({ 
+          event: ev || "" 
+        }))
+      : (originalData?.event_fb_pixel || []).map((ev) => ({
+          event: typeof ev === "string" ? ev : (ev.event || "")
+        }));
     formData.append("event_fb_pixel", JSON.stringify(eventFbPixelArray));
     
     // gtm - JSON string (array of numbers)
-    const gtmArray = (form.gtm || []).map(v => Number(v)).filter(n => !Number.isNaN(n));
+    const gtmArray = (form.gtm && form.gtm.length > 0)
+      ? form.gtm.map(v => Number(v)).filter(n => !Number.isNaN(n))
+      : (originalData?.gtm || []).map(v => Number(v)).filter(n => !Number.isNaN(n));
     formData.append("gtm", JSON.stringify(gtmArray));
     
     // video - JSON string (array of strings)
-    const videoArray = form.video
-      ? form.video.split(",").map((v) => v.trim()).filter((v) => v)
-      : [];
+    let videoArray = [];
+    if (form.video) {
+      videoArray = form.video.split(",").map((v) => v.trim()).filter((v) => v);
+    } else if (originalData?.video && originalData.video.length > 0) {
+      videoArray = originalData.video;
+    }
     
     // Pastikan video selalu dikirim, bahkan jika kosong (untuk clear video)
     const videoJsonString = JSON.stringify(videoArray);
@@ -666,7 +756,7 @@ export default function Page() {
       // Log request untuk network tracking
       console.log("[NETWORK] ========== REQUEST FORMDATA ==========");
       console.log("URL:", `/api/admin/produk/${productId}`);
-      console.log("Method:", "PUT");
+      console.log("Method:", "POST (with _method=PUT in FormData)");
       console.log("Content-Type:", "multipart/form-data (auto-set by browser)");
       const token = localStorage.getItem("token") || "";
       console.log("Headers:", {
@@ -677,10 +767,12 @@ export default function Page() {
       
       // Verify data sebelum kirim
       console.log("[NETWORK] ========== PRE-SEND VERIFICATION ==========");
+      const preMethod = formData.get("_method");
       const preKategori = formData.get("kategori");
       const preNama = formData.get("nama");
       const preAssign = formData.get("assign");
       const preHeader = formData.get("header");
+      console.log("_method:", preMethod);
       console.log("Kategori:", preKategori);
       console.log("Nama:", preNama);
       console.log("Assign:", preAssign);
@@ -689,7 +781,7 @@ export default function Page() {
       console.log("[NETWORK] ======================================");
       
       const res = await fetch(`/api/admin/produk/${productId}`, {
-        method: "PUT",
+        method: "POST", // WAJIB POST untuk FormData, dengan _method=PUT di FormData
         headers: {
           Accept: "application/json",
           Authorization: `Bearer ${token}`
@@ -998,6 +1090,52 @@ export default function Page() {
       // Set user yang membuat produk (created by)
       if (produkData.user_input_rel) {
         setCreatedByUser(produkData.user_input_rel);
+      }
+      
+      // ============================
+      // SIMPAN DATA PRODUK ASLI KE LOCALSTORAGE
+      // Digunakan sebagai fallback saat build FormData untuk memastikan semua field dikirim
+      // ============================
+      const originalProductData = {
+        id: produkData.id || productId,
+        kategori: kategoriId,
+        nama: produkData.nama || "",
+        kode: produkData.kode || kodeGenerated,
+        url: produkData.url || "/" + kodeGenerated,
+        deskripsi: produkData.deskripsi || "",
+        harga_asli: produkData.harga_asli || "",
+        harga_coret: produkData.harga_coret || "",
+        tanggal_event: produkData.tanggal_event || "",
+        landingpage: produkData.landingpage || "1",
+        status: produkData.status || "1",
+        header: produkData.header || "",
+        gambar: safeParseJSON(produkData.gambar, []),
+        testimoni: safeParseJSON(produkData.testimoni, []),
+        custom_field: safeParseJSON(produkData.custom_field, []),
+        list_point: safeParseJSON(produkData.list_point, []),
+        assign: produkData.assign_rel 
+          ? produkData.assign_rel.map((u) => u.id) 
+          : safeParseJSON(produkData.assign, []).map(a => typeof a === "number" ? a : Number(a)).filter(a => !isNaN(a)),
+        fb_pixel: safeParseJSON(produkData.fb_pixel, []),
+        event_fb_pixel: safeParseJSON(produkData.event_fb_pixel, []),
+        gtm: safeParseJSON(produkData.gtm, []),
+        video: produkData.video 
+          ? (Array.isArray(produkData.video) 
+              ? produkData.video 
+              : safeParseJSON(produkData.video, []))
+          : [],
+      };
+      
+      // Simpan ke localStorage
+      try {
+        localStorage.setItem(`product_original_data_${productId}`, JSON.stringify(originalProductData));
+        console.log("[LOCALSTORAGE] ✅ Original product data saved:", {
+          productId: productId,
+          key: `product_original_data_${productId}`,
+          fields: Object.keys(originalProductData)
+        });
+      } catch (error) {
+        console.error("[LOCALSTORAGE] ❌ Failed to save original product data:", error);
       }
       
       console.log("✅ [EDIT] Product data loaded:", {
