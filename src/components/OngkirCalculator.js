@@ -7,18 +7,21 @@ import "@/styles/ongkir.css";
 
 const COOLDOWN_DURATION = 20 * 1000; // 20 detik dalam milliseconds
 const COOLDOWN_KEY = "ongkir_last_call";
+const DEFAULT_WEIGHT = 1000; // Hardcode berat 1000 gram
 
 export default function OngkirCalculator({ 
   originId, 
   onSelectOngkir,
-  defaultWeight = 1000,
+  onAddressChange, // Callback untuk update alamat lengkap
   defaultCourier = "jne"
 }) {
   const [destination, setDestination] = useState("");
   const [destinationId, setDestinationId] = useState("");
   const [destinationSearch, setDestinationSearch] = useState("");
   const [destinationResults, setDestinationResults] = useState([]);
-  const [weight, setWeight] = useState(defaultWeight);
+  const [kecamatan, setKecamatan] = useState("");
+  const [kabupaten, setKabupaten] = useState("");
+  const [kodePos, setKodePos] = useState("");
   const [courier, setCourier] = useState(defaultCourier);
   const [price, setPrice] = useState(null);
   const [etd, setEtd] = useState("");
@@ -27,6 +30,7 @@ export default function OngkirCalculator({
   const [cooldownTime, setCooldownTime] = useState(0);
   const searchTimeoutRef = useRef(null);
   const cooldownIntervalRef = useRef(null);
+  const calculateTimeoutRef = useRef(null);
 
   // Get origin dari env atau prop
   const origin = originId || process.env.NEXT_PUBLIC_RAJAONGKIR_ORIGIN || "";
@@ -108,69 +112,103 @@ export default function OngkirCalculator({
     setDestination(name);
     setDestinationSearch(name);
     setDestinationResults([]);
+    
+    // Auto-calculate ongkir setelah kota terpilih
+    if (id && courier) {
+      autoCalculateOngkir(String(id), courier);
+    }
   };
-
-  const handleCalculate = async () => {
+  
+  // Auto-calculate ongkir ketika kota + kurir sudah terpilih
+  const autoCalculateOngkir = async (destId, selectedCourier) => {
     if (!origin) {
-      toast.error("Origin tidak dikonfigurasi");
       return;
     }
 
-    if (!destinationId) {
-      toast.error("Silakan pilih destinasi");
-      return;
-    }
-
-    if (!weight || weight < 1 || weight > 50000) {
-      toast.error("Berat harus antara 1 dan 50000 gram");
+    if (!destId || !selectedCourier) {
       return;
     }
 
     if (cooldownActive) {
-      toast.error(`Tunggu ${cooldownTime} detik sebelum cek ongkir lagi`);
       return;
     }
 
-    setLoading(true);
-    setPrice(null);
-    setEtd("");
+    // Debounce untuk menghindari terlalu banyak request
+    if (calculateTimeoutRef.current) {
+      clearTimeout(calculateTimeoutRef.current);
+    }
 
-    try {
-      const result = await getCost({
-        origin,
-        destination: destinationId,
-        weight,
-        courier,
-      });
-
-      setPrice(result.price);
-      setEtd(result.etd);
-
-      // Call callback
-      if (onSelectOngkir) {
-        onSelectOngkir(result.price);
-      }
-
-      // Set cooldown
-      localStorage.setItem(COOLDOWN_KEY, Date.now().toString());
-      checkCooldown();
-
-      toast.success("Ongkir berhasil dihitung");
-    } catch (error) {
-      console.error("Error calculating cost:", error);
-      
-      if (error.message.includes("rate limit") || error.message.includes("Terlalu banyak")) {
-        toast.error("Terlalu banyak request. Silakan coba lagi dalam beberapa saat.");
-      } else {
-        toast.error(error.message || "Gagal menghitung ongkir");
-      }
-      
+    calculateTimeoutRef.current = setTimeout(async () => {
+      setLoading(true);
       setPrice(null);
       setEtd("");
-    } finally {
-      setLoading(false);
-    }
+
+      try {
+        const result = await getCost({
+          origin,
+          destination: destId,
+          weight: DEFAULT_WEIGHT,
+          courier: selectedCourier,
+        });
+
+        setPrice(result.price);
+        setEtd(result.etd);
+
+        // Call callback
+        if (onSelectOngkir) {
+          onSelectOngkir(result.price);
+        }
+
+        // Set cooldown
+        localStorage.setItem(COOLDOWN_KEY, Date.now().toString());
+        checkCooldown();
+
+        toast.success("Ongkir berhasil dihitung");
+      } catch (error) {
+        console.error("Error calculating cost:", error);
+        
+        if (error.message.includes("rate limit") || error.message.includes("Terlalu banyak")) {
+          toast.error("Terlalu banyak request. Silakan coba lagi dalam beberapa saat.");
+        } else {
+          toast.error(error.message || "Gagal menghitung ongkir");
+        }
+        
+        setPrice(null);
+        setEtd("");
+      } finally {
+        setLoading(false);
+      }
+    }, 500); // Debounce 500ms
   };
+
+  // Auto-calculate ketika kurir berubah
+  useEffect(() => {
+    if (destinationId && courier && origin) {
+      autoCalculateOngkir(destinationId, courier);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courier]);
+
+  // Update alamat lengkap ke parent component
+  useEffect(() => {
+    if (onAddressChange) {
+      onAddressChange({
+        kota: destination,
+        kecamatan,
+        kabupaten,
+        kode_pos: kodePos,
+      });
+    }
+  }, [destination, kecamatan, kabupaten, kodePos, onAddressChange]);
+
+  // Cleanup timeout
+  useEffect(() => {
+    return () => {
+      if (calculateTimeoutRef.current) {
+        clearTimeout(calculateTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const couriers = [
     { value: "jne", label: "JNE" },
@@ -220,22 +258,47 @@ export default function OngkirCalculator({
           )}
         </div>
 
-        {/* Weight */}
+        {/* Kecamatan */}
         <div className="ongkir-field">
           <label className="ongkir-label">
-            Berat (gram) <span className="required">*</span>
+            Kecamatan
           </label>
           <input
-            type="number"
+            type="text"
             className="ongkir-input"
-            min="1"
-            max="50000"
-            value={weight}
-            onChange={(e) => setWeight(parseInt(e.target.value, 10) || 1)}
-            disabled={loading || cooldownActive}
-            placeholder="Contoh: 1000"
+            placeholder="Masukkan kecamatan"
+            value={kecamatan}
+            onChange={(e) => setKecamatan(e.target.value)}
           />
-          <p className="ongkir-hint">Minimal 1 gram, maksimal 50000 gram</p>
+        </div>
+
+        {/* Kabupaten */}
+        <div className="ongkir-field">
+          <label className="ongkir-label">
+            Kabupaten
+          </label>
+          <input
+            type="text"
+            className="ongkir-input"
+            placeholder="Masukkan kabupaten"
+            value={kabupaten}
+            onChange={(e) => setKabupaten(e.target.value)}
+          />
+        </div>
+
+        {/* Kode Pos */}
+        <div className="ongkir-field">
+          <label className="ongkir-label">
+            Kode Pos
+          </label>
+          <input
+            type="text"
+            className="ongkir-input"
+            placeholder="Masukkan kode pos"
+            value={kodePos}
+            onChange={(e) => setKodePos(e.target.value.replace(/\D/g, ''))}
+            maxLength={5}
+          />
         </div>
 
         {/* Courier */}
@@ -257,19 +320,19 @@ export default function OngkirCalculator({
           </select>
         </div>
 
-        {/* Calculate Button */}
-        <button
-          type="button"
-          className="ongkir-button"
-          onClick={handleCalculate}
-          disabled={loading || cooldownActive || !destinationId}
-        >
-          {loading
-            ? "Menghitung..."
-            : cooldownActive
-            ? `Tunggu ${cooldownTime}s`
-            : "Hitung Ongkir"}
-        </button>
+        {/* Loading Indicator */}
+        {loading && (
+          <div className="ongkir-loading">
+            <span>Menghitung ongkir...</span>
+          </div>
+        )}
+
+        {/* Cooldown Warning */}
+        {cooldownActive && !loading && (
+          <div className="ongkir-cooldown">
+            <span>Tunggu {cooldownTime} detik sebelum cek ongkir lagi</span>
+          </div>
+        )}
 
         {/* Result */}
         {price !== null && (

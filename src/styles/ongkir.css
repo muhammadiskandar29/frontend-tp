@@ -181,6 +181,36 @@
   font-size: 1.25rem;
 }
 
+.ongkir-loading {
+  margin-top: 16px;
+  padding: 12px;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.ongkir-loading span {
+  font-size: 0.875rem;
+  color: #92400e;
+  font-weight: 500;
+}
+
+.ongkir-cooldown {
+  margin-top: 16px;
+  padding: 12px;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.ongkir-cooldown span {
+  font-size: 0.875rem;
+  color: #991b1b;
+  font-weight: 500;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .ongkir-calculator {

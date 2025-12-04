@@ -54,6 +54,12 @@ export default function LandingPage() {
   });
 
   const [ongkir, setOngkir] = useState(0); // Ongkir dalam rupiah
+  const [ongkirAddress, setOngkirAddress] = useState({
+    kota: "",
+    kecamatan: "",
+    kabupaten: "",
+    kode_pos: "",
+  }); // Alamat lengkap dari ongkir calculator
 
   const formatPrice = (price) => {
     if (!price) return "0";
@@ -817,9 +823,21 @@ export default function LandingPage() {
             <OngkirCalculator
               onSelectOngkir={(price) => {
                 setOngkir(price);
-                toast.success(`Ongkir: Rp ${price.toLocaleString("id-ID")}`);
               }}
-              defaultWeight={1000}
+              onAddressChange={(address) => {
+                setOngkirAddress(address);
+                // Update alamat lengkap di customerForm
+                const alamatLengkap = [
+                  address.kota && `Kota: ${address.kota}`,
+                  address.kecamatan && `Kecamatan: ${address.kecamatan}`,
+                  address.kabupaten && `Kabupaten: ${address.kabupaten}`,
+                  address.kode_pos && `Kode Pos: ${address.kode_pos}`,
+                ].filter(Boolean).join(", ");
+                setCustomerForm(prev => ({
+                  ...prev,
+                  alamat: alamatLengkap || prev.alamat
+                }));
+              }}
               defaultCourier="jne"
             />
           </section>
