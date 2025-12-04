@@ -139,10 +139,14 @@ export async function getDestinations(query = '') {
     const json = await response.json();
 
     if (!response.ok || !json.success) {
-      throw new Error(json.message || 'Gagal mengambil data destinasi');
+      const errorMsg = json.message || 'Gagal mengambil data destinasi';
+      console.error('[KOMERCE] getDestinations API error:', errorMsg);
+      throw new Error(errorMsg);
     }
 
-    return json.data || [];
+    const data = json.data || [];
+    console.log('[KOMERCE] getDestinations success, found:', data.length, 'results');
+    return data;
   } catch (error) {
     console.error('[KOMERCE] getDestinations error:', error);
     throw error;

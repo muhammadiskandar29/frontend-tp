@@ -101,6 +101,12 @@ export default function OngkirCalculator({
       } catch (error) {
         console.error("Error searching destination:", error);
         setDestinationResults([]);
+        // Tampilkan error ke user jika API key tidak dikonfigurasi
+        if (error.message && error.message.includes('API key tidak dikonfigurasi')) {
+          toast.error("API key tidak dikonfigurasi. Silakan hubungi admin.");
+        } else {
+          toast.error(error.message || "Gagal mencari kota tujuan");
+        }
       }
     }, 300);
   };

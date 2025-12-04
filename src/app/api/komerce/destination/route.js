@@ -7,8 +7,12 @@ export async function GET(request) {
   try {
     if (!RAJAONGKIR_KEY) {
       console.error('[KOMERCE_DESTINATION] RAJAONGKIR_KEY tidak ditemukan di environment');
+      console.error('[KOMERCE_DESTINATION] Pastikan RAJAONGKIR_KEY sudah di-set di Vercel Environment Variables');
       return NextResponse.json(
-        { success: false, message: 'API key tidak dikonfigurasi' },
+        { 
+          success: false, 
+          message: 'API key tidak dikonfigurasi. Silakan hubungi admin untuk mengkonfigurasi RAJAONGKIR_KEY di Vercel.' 
+        },
         { status: 500 }
       );
     }
