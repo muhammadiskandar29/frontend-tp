@@ -229,9 +229,8 @@ body {
 }
 
 .speaker-inline-image-wrapper {
-  width: 280px;
-  min-width: 280px;
-  height: 280px;
+  width: 350px;
+  height: 350px;
   background: transparent;
   display: flex;
   align-items: center;
