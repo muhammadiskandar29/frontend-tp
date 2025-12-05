@@ -127,19 +127,37 @@ export default function OngkirCalculator({
 
   const handleSelectDestination = (dest) => {
     // Handle response dari Komerce API
-    // Untuk RajaOngkir V1 Basic, gunakan CITY_ID (bukan subdistrict_id)
+    // PENTING: Untuk RajaOngkir V1 Basic, HANYA gunakan CITY_ID (bukan subdistrict_id)
+    // Detail kecamatan/kelurahan hanya untuk alamat lengkap, TIDAK untuk cost calculation
     const cityId = dest.city_id || dest.id || "";
     const label = dest.label || dest.name || dest.city_name || "";
     
-    console.log('[ONGKIR] Selected destination:', { cityId, label, dest });
+    console.log('[ONGKIR] Selected destination (CITY ONLY):', { 
+      cityId, 
+      label, 
+      city_name: dest.city_name,
+      province_name: dest.province_name,
+      // Pastikan tidak ada subdistrict_id
+      has_subdistrict_id: !!dest.subdistrict_id,
+      dest 
+    });
     
-    setDestinationId(String(cityId)); // Simpan city_id untuk cost calculation
+    // VALIDASI: Pastikan ini adalah city_id, bukan subdistrict_id
+    if (dest.subdistrict_id && !dest.city_id) {
+      console.error('[ONGKIR] ERROR: Selected item has subdistrict_id but no city_id!', dest);
+      toast.error("Data yang dipilih bukan kota. Silakan pilih kota yang benar.");
+      return;
+    }
+    
+    // Simpan city_id untuk cost calculation (HANYA city_id, bukan subdistrict_id)
+    setDestinationId(String(cityId));
     setDestination(label);
     setDestinationSearch(label);
     setDestinationResults([]);
     
     // Auto-fill kecamatan, kelurahan, kode pos dari data yang dipilih (jika ada)
-    // Untuk city data, mungkin tidak ada detail kecamatan/kelurahan
+    // CATATAN: Field-field ini hanya untuk alamat lengkap, TIDAK digunakan untuk cost calculation
+    // Cost calculation HANYA menggunakan city_id
     if (dest.district_name) {
       setKecamatan(dest.district_name);
     }
@@ -150,21 +168,13 @@ export default function OngkirCalculator({
       setKodePos(dest.postal_code);
     }
     
-    // Jika tidak ada field terpisah, parse dari label (jika format lengkap)
-    if (!dest.district_name && !dest.subdistrict_name && label) {
-      // Parse dari format: "KOTA, PROVINSI" atau format lebih lengkap
-      const parts = label.split(',').map(p => p.trim());
-      if (parts.length >= 2) {
-        // Untuk city data, biasanya format: "KOTA, PROVINSI"
-        // Tidak ada detail kecamatan/kelurahan di city level
-      }
-    }
-    
     // Auto-calculate ongkir setelah destination terpilih
-    // Menggunakan CITY_ID untuk RajaOngkir V1 Basic
+    // PENTING: Menggunakan CITY_ID untuk RajaOngkir V1 Basic (bukan subdistrict_id)
     if (cityId && courier) {
-      console.log('[ONGKIR] Auto-calculating with city_id:', cityId);
+      console.log('[ONGKIR] Auto-calculating with city_id (NOT subdistrict_id):', cityId);
       autoCalculateOngkir(String(cityId), courier);
+    } else {
+      console.warn('[ONGKIR] Cannot calculate: missing cityId or courier', { cityId, courier });
     }
   };
   
@@ -177,11 +187,19 @@ export default function OngkirCalculator({
     }
 
     if (!destId || !selectedCourier) {
-      console.warn('[ONGKIR] destId atau courier belum terisi:', { destId, selectedCourier });
+      console.warn('[ONGKIR] destId (city_id) atau courier belum terisi:', { destId, selectedCourier });
       return;
     }
     
-    console.log('[ONGKIR] Auto-calculating ongkir:', { origin, destId, selectedCourier });
+    // VALIDASI: Pastikan destId adalah city_id (bukan subdistrict_id)
+    // City_id biasanya lebih kecil dari subdistrict_id (contoh: 151 vs 17523)
+    // Tapi lebih baik validasi dari data yang dipilih, bukan dari angka
+    console.log('[ONGKIR] Auto-calculating ongkir dengan CITY_ID:', { 
+      origin, 
+      destination_city_id: destId, 
+      courier: selectedCourier,
+      note: 'Menggunakan CITY_ID untuk RajaOngkir V1 Basic'
+    });
 
     if (cooldownActive) {
       return;

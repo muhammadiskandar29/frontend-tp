@@ -109,27 +109,70 @@ export async function GET(request) {
 
     // Filter untuk hanya mengambil CITY data (untuk RajaOngkir V1 Basic)
     // V1 Basic hanya menerima CITY_ID, bukan subdistrict_id
-    // Map response untuk memastikan kita menggunakan city_id
+    // PENTING: Hanya ambil data kota (city), bukan subdistrict/kecamatan/kelurahan
     const cityDestinations = destinations
       .filter(dest => {
-        // Hanya ambil data yang punya city_id (bukan subdistrict)
-        // Jika ada city_id, itu adalah city data
-        // Jika hanya ada subdistrict_id tanpa city_id, skip (itu subdistrict data)
-        return dest.city_id || dest.id; // Ambil yang punya city_id atau id (asumsi id adalah city_id)
+        // STRICT FILTER: Hanya ambil data yang:
+        // 1. Punya city_id (bukan subdistrict_id)
+        // 2. TIDAK punya subdistrict_id sama sekali (atau null/undefined/kosong)
+        // 3. TIDAK punya district_id (kecamatan)
+        // 4. Type adalah "city" atau tidak ada type (bukan "subdistrict" atau "district")
+        
+        const hasCityId = !!(dest.city_id || (dest.id && !dest.subdistrict_id && !dest.district_id));
+        const noSubdistrictId = !dest.subdistrict_id || dest.subdistrict_id === null || dest.subdistrict_id === undefined || dest.subdistrict_id === '';
+        const noDistrictId = !dest.district_id || dest.district_id === null || dest.district_id === undefined || dest.district_id === '';
+        const isCityType = !dest.type || 
+          dest.type.toLowerCase() === 'city' || 
+          dest.type.toLowerCase() === 'kota' ||
+          dest.type.toLowerCase() === 'kabupaten';
+        const notSubdistrictType = dest.type && 
+          dest.type.toLowerCase() !== 'subdistrict' && 
+          dest.type.toLowerCase() !== 'kecamatan' &&
+          dest.type.toLowerCase() !== 'kelurahan';
+        
+        // REJECT jika punya subdistrict_id atau district_id
+        if (dest.subdistrict_id || dest.district_id) {
+          console.log('[KOMERCE_DESTINATION] REJECTING (has subdistrict/district):', {
+            city_id: dest.city_id,
+            subdistrict_id: dest.subdistrict_id,
+            district_id: dest.district_id,
+            name: dest.city_name || dest.name || dest.label
+          });
+          return false;
+        }
+        
+        const isValid = hasCityId && noSubdistrictId && noDistrictId && (isCityType || notSubdistrictType);
+        
+        if (!isValid) {
+          console.log('[KOMERCE_DESTINATION] REJECTING (filter failed):', {
+            hasCityId,
+            noSubdistrictId,
+            noDistrictId,
+            isCityType,
+            notSubdistrictType,
+            dest: dest.city_name || dest.name || dest.label
+          });
+        }
+        
+        return isValid;
       })
       .map(dest => {
         // Normalize response untuk memastikan city_id tersedia
+        const cityId = dest.city_id || dest.id;
+        const cityName = dest.city_name || dest.name || dest.label || '';
+        const provinceName = dest.province_name || '';
+        
         return {
-          city_id: dest.city_id || dest.id, // Gunakan city_id atau id sebagai fallback
-          city_name: dest.city_name || dest.name || dest.label || '',
+          city_id: cityId, // Hanya gunakan city_id, jangan gunakan subdistrict_id
+          city_name: cityName,
           province_id: dest.province_id || '',
-          province_name: dest.province_name || '',
-          type: dest.type || '',
+          province_name: provinceName,
+          type: dest.type || 'city',
           postal_code: dest.postal_code || '',
-          // Untuk display
-          label: dest.label || `${dest.city_name || dest.name || ''}, ${dest.province_name || ''}`.trim(),
-          // Keep original data untuk reference
-          ...dest
+          // Untuk display - hanya kota dan provinsi
+          label: dest.label || `${cityName}${provinceName ? ', ' + provinceName : ''}`.trim(),
+          // Jangan include subdistrict_id atau district_id
+          // Keep original data untuk reference (tapi pastikan city_id yang digunakan)
         };
       })
       // Remove duplicates berdasarkan city_id
