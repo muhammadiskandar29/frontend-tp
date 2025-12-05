@@ -1740,3 +1740,59 @@ body {
   font-weight: 500;
   color: #374151;
 }
+
+/* Page Loading Overlay - untuk initial load */
+.page-loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.page-loading-content {
+  background: white;
+  padding: 40px 50px;
+  border-radius: 20px;
+  text-align: center;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.1);
+  animation: overlay-slide 0.3s ease;
+}
+
+.page-loading-spinner {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.page-loading-spinner span {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  animation: submit-bounce 1.4s ease-in-out infinite;
+}
+
+.page-loading-spinner span:nth-child(2) {
+  animation-delay: 0.2s;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.page-loading-spinner span:nth-child(3) {
+  animation-delay: 0.4s;
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.page-loading-content p {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #374151;
+}

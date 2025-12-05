@@ -208,13 +208,24 @@ export async function api(endpoint, options = {}) {
   } catch (err) {
     console.error(`❌ API Error [${endpoint}]:`, err);
 
-    // Network error
-    if (err instanceof TypeError && err.message === "Failed to fetch") {
-      const message = "🚫 Tidak dapat terhubung ke server. Coba lagi nanti.";
+    // Network error - handle various network error types
+    if (
+      err instanceof TypeError && 
+      (err.message === "Failed to fetch" || 
+       err.message === "NetworkError when attempting to fetch resource" ||
+       err.message.includes("fetch"))
+    ) {
+      const message = "🚫 Tidak dapat terhubung ke server. Periksa koneksi internet atau coba lagi nanti.";
+      console.error(`❌ Network Error Details:`, {
+        endpoint,
+        url,
+        error: err.message,
+        stack: err.stack
+      });
       if (config.features.enableToast) {
         toast.error(message);
       }
-      return { success: false, message };
+      throw new Error(message);
     }
 
     // Other errors
@@ -223,12 +234,7 @@ export async function api(endpoint, options = {}) {
       toast.error(message);
     }
 
-    return { 
-      success: false, 
-      message,
-      error: err,
-      status: err.status 
-    };
+    throw err;
   }
 }
 

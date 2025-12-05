@@ -31,9 +31,12 @@ export function useProducts() {
         console.log("📦 Loaded products:", data);
 
         setProducts(Array.isArray(data) ? data : []);
+        setError(null); // Clear any previous errors
       } catch (err) {
         console.error("❌ Error fetching products:", err);
-        setError(err?.message || "Gagal memuat produk");
+        const errorMessage = err?.message || err?.error?.message || "Gagal memuat produk";
+        setError(errorMessage);
+        setProducts([]); // Set empty array on error to prevent UI issues
       } finally {
         setLoading(false);
       }

@@ -8,25 +8,41 @@ export async function getProducts(includeDeleted = false) {
   try {
     const res = await api("/admin/produk", { method: "GET" });
 
-    if (!res?.success) {
-      throw new Error(res?.message || "Gagal mengambil data produk");
+    // Check if response has success property
+    if (res && res.success === false) {
+      const errorMessage = res.message || "Gagal mengambil data produk";
+      console.error("❌ getProducts API returned error:", errorMessage);
+      throw new Error(errorMessage);
     }
 
-    // Backend biasanya kirim array, fallback supaya aman
-    let list = Array.isArray(res.data) ? res.data : [];
+    // If no success property but has data, assume success
+    if (res && res.data !== undefined) {
+      // Backend biasanya kirim array, fallback supaya aman
+      let list = Array.isArray(res.data) ? res.data : [];
 
-    // Filter out soft-deleted products (status = "0" atau null)
-    // Kecuali includeDeleted = true
-    if (!includeDeleted) {
-      list = list.filter(p => p.status === "1" || p.status === 1);
+      // Filter out soft-deleted products (status = "0" atau null)
+      // Kecuali includeDeleted = true
+      if (!includeDeleted) {
+        list = list.filter(p => p.status === "1" || p.status === 1);
+      }
+
+      console.log("📦 getProducts() →", list.length, "produk aktif");
+
+      return list;
     }
 
-    console.log("📦 getProducts() →", list.length, "produk aktif");
+    // If response is directly an array (fallback)
+    if (Array.isArray(res)) {
+      return includeDeleted ? res : res.filter(p => p.status === "1" || p.status === 1);
+    }
 
-    return list;
+    // If no data, return empty array
+    console.warn("⚠️ getProducts() → No data in response, returning empty array");
+    return [];
   } catch (err) {
     console.error("❌ Error getProducts:", err);
-    throw err;
+    // Re-throw with more context
+    throw new Error(err.message || "Gagal mengambil data produk dari server");
   }
 }
 

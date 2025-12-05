@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
-import Loading from "@/app/loading";
 import OngkirCalculator from "@/components/OngkirCalculator";
 import "@/styles/landing.css";
 
@@ -337,8 +336,7 @@ export default function LandingPage() {
     };
   }, [data]);
 
-  if (loading) return <Loading message="Memuat halaman..." />;
-  if (!data) return (
+  if (!data && !loading) return (
     <div className="not-found-page">
       <div className="not-found-content">
         <span className="not-found-icon">📦</span>
@@ -525,7 +523,8 @@ export default function LandingPage() {
 
   return (
     <article className="landing-wrapper" itemScope itemType="https://schema.org/Product">
-        <div className="produk-preview">
+        {!loading && (
+          <div className="produk-preview">
           
           {/* Logo Section - Top */}
           <div className="logo-section">
@@ -1165,6 +1164,7 @@ export default function LandingPage() {
           </div>
         )}
         </div>
+        )}
       </article>
   );
 }
