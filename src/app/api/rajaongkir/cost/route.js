@@ -1,21 +1,10 @@
 import { NextResponse } from 'next/server';
 
-// Hardcode API key (untuk production, lebih baik pakai environment variable)
-const RAJAONGKIR_API_KEY = process.env.RAJAONGKIR_API_KEY || 'mT8nGMeZ4cacc72ba9d93fd4g2xH48Gb';
+const API_KEY = 'mT8nGMeZ4cacc72ba9d93fd4g2xH48Gb';
 const RAJAONGKIR_BASE_URL = 'https://api.rajaongkir.com/starter';
 
 export async function POST(request) {
   try {
-    if (!RAJAONGKIR_API_KEY) {
-      console.error('[RAJAONGKIR_COST] RAJAONGKIR_API_KEY tidak ditemukan di environment');
-      return NextResponse.json(
-        { 
-          success: false,
-          message: 'API key tidak dikonfigurasi'
-        },
-        { status: 400 }
-      );
-    }
 
     const body = await request.json();
     const { origin, destination, weight, courier } = body;
@@ -31,7 +20,17 @@ export async function POST(request) {
       );
     }
 
-    // Validasi destination harus angka (city_id)
+    // Validasi origin dan destination harus angka (city_id) - RajaOngkir V1 Basic hanya menerima city_id
+    if (isNaN(parseInt(origin, 10))) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'origin harus berupa city_id (angka)'
+        },
+        { status: 400 }
+      );
+    }
+
     if (isNaN(parseInt(destination, 10))) {
       return NextResponse.json(
         {
@@ -54,16 +53,18 @@ export async function POST(request) {
       );
     }
 
-    // Build URL-encoded body (RajaOngkir requires form-urlencoded, NOT JSON)
+    // Build URL-encoded body (RajaOngkir V1 Basic requires form-urlencoded)
+    // CATATAN: RajaOngkir V1 Basic hanya menerima CITY_ID (bukan subdistrict_id)
+    // Format: origin="151" (city_id), destination="23" (city_id), weight=1000, courier="jne"
     const params = new URLSearchParams();
-    params.append('origin', String(origin));
-    params.append('destination', String(destination));
+    params.append('origin', String(origin));      // city_id (contoh: "151" untuk Jakarta Barat)
+    params.append('destination', String(destination)); // city_id (contoh: "23" untuk Bandung)
     params.append('weight', String(weightNum));
     params.append('courier', String(courier).toLowerCase());
 
-    console.log('[RAJAONGKIR_COST] Requesting cost:', {
-      origin,
-      destination,
+    console.log('[RAJAONGKIR_COST] Requesting cost (V1 Basic - CITY_ID only):', {
+      origin: String(origin),      // city_id
+      destination: String(destination), // city_id
       weight: weightNum,
       courier: courier.toLowerCase()
     });
@@ -76,7 +77,7 @@ export async function POST(request) {
       response = await fetch(`${RAJAONGKIR_BASE_URL}/cost`, {
         method: 'POST',
         headers: {
-          'key': RAJAONGKIR_API_KEY,
+          'key': API_KEY,
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: params.toString(),

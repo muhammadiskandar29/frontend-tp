@@ -17,52 +17,77 @@ export async function GET(request) {
     const json = await response.json();
 
     // Validate top-level structure
-if (!data || !data.rajaongkir) {
-  console.error("[RAJAONGKIR_CITIES] Invalid structure:", data);
-  return NextResponse.json(
-    {
-      success: false,
-      message: "Response dari RajaOngkir tidak mengandung data"
-    },
-    { status: 500 }
-  );
-}
-
-// Validate status object
-const statusCode = data.rajaongkir.status?.code;
-const statusMsg = data.rajaongkir.status?.description || "Gagal mengambil data kota";
-
-if (statusCode !== 200) {
-  console.error("[RAJAONGKIR_CITIES] Status error:", data.rajaongkir.status);
-
-  return NextResponse.json(
-    {
-      success: false,
-      message: statusMsg
-    },
-    { status: 400 }
-  );
-}
-
-
-    let list = json.rajaongkir.results;
-
-    // local filter
-    if (search) {
-      list = list.filter(
-        (c) =>
-          c.city_name.toLowerCase().includes(search) ||
-          c.province.toLowerCase().includes(search)
+    if (!json || !json.rajaongkir) {
+      console.error("[RAJAONGKIR_CITIES] Invalid structure:", json);
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Response dari RajaOngkir tidak mengandung data"
+        },
+        { status: 500 }
       );
     }
 
+    // Validate status object
+    const statusCode = json.rajaongkir.status?.code;
+    const statusMsg = json.rajaongkir.status?.description || "Gagal mengambil data kota";
+
+    if (statusCode !== 200) {
+      console.error("[RAJAONGKIR_CITIES] Status error:", json.rajaongkir.status);
+      return NextResponse.json(
+        {
+          success: false,
+          message: statusMsg
+        },
+        { status: 400 }
+      );
+    }
+
+    // Check if results exist
+    if (!json.rajaongkir.results || !Array.isArray(json.rajaongkir.results)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Data kota tidak ditemukan"
+        },
+        { status: 500 }
+      );
+    }
+
+    let list = json.rajaongkir.results;
+
+    // Local filter
+    if (search) {
+      list = list.filter(
+        (c) =>
+          c.city_name?.toLowerCase().includes(search) ||
+          c.province?.toLowerCase().includes(search)
+      );
+    }
+
+    // Format response sesuai yang diharapkan frontend
+    const formattedCities = list.map(city => ({
+      city_id: city.city_id,
+      city_name: city.city_name,
+      province_id: city.province_id,
+      province_name: city.province,
+      type: city.type || '',
+      postal_code: city.postal_code || '',
+      label: `${city.city_name}, ${city.province}`.trim(),
+    }));
+
     return NextResponse.json({
       success: true,
-      data: list
+      data: formattedCities,
+      count: formattedCities.length
     });
   } catch (e) {
+    console.error('[RAJAONGKIR_CITIES] Error:', e);
     return NextResponse.json(
-      { success: false, message: e.message },
+      { 
+        success: false, 
+        message: e.message || 'Terjadi kesalahan saat mengambil data kota' 
+      },
       { status: 500 }
     );
   }
