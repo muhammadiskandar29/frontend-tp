@@ -1,18 +1,13 @@
 import { NextResponse } from 'next/server';
 
-// Hardcode API key (untuk production, lebih baik pakai environment variable)
 const RAJAONGKIR_API_KEY = process.env.RAJAONGKIR_API_KEY || 'mT8nGMeZ4cacc72ba9d93fd4g2xH48Gb';
 const RAJAONGKIR_BASE_URL = 'https://api.rajaongkir.com/starter';
 
 export async function GET(request) {
   try {
     if (!RAJAONGKIR_API_KEY) {
-      console.error('[RAJAONGKIR_CITIES] RAJAONGKIR_API_KEY tidak ditemukan di environment');
       return NextResponse.json(
-        {
-          success: false,
-          message: 'API key tidak dikonfigurasi'
-        },
+        { success: false, message: 'API key tidak dikonfigurasi' },
         { status: 400 }
       );
     }
@@ -27,11 +22,11 @@ export async function GET(request) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-      // RajaOngkir API: GET /starter/city?key=API_KEY
-      response = await fetch(`${RAJAONGKIR_BASE_URL}/city?key=${RAJAONGKIR_API_KEY}`, {
+      // FIX PENTING → remove ?key=
+      response = await fetch(`${RAJAONGKIR_BASE_URL}/city`, {
         method: 'GET',
         headers: {
-          'key': RAJAONGKIR_API_KEY,
+          key: RAJAONGKIR_API_KEY,
         },
         signal: controller.signal,
       });
@@ -40,10 +35,7 @@ export async function GET(request) {
     } catch (fetchError) {
       console.error('[RAJAONGKIR_CITIES] Fetch error:', fetchError);
       return NextResponse.json(
-        {
-          success: false,
-          message: 'Gagal terhubung ke API RajaOngkir'
-        },
+        { success: false, message: 'Gagal terhubung ke API RajaOngkir' },
         { status: 503 }
       );
     }
@@ -57,49 +49,36 @@ export async function GET(request) {
       console.error('[RAJAONGKIR_CITIES] JSON parse error:', err.message);
       console.error('[RAJAONGKIR_CITIES] Raw response:', responseText.substring(0, 500));
       return NextResponse.json(
-        {
-          success: false,
-          message: 'Response dari RajaOngkir bukan JSON'
-        },
+        { success: false, message: 'Response dari RajaOngkir bukan JSON' },
         { status: 500 }
       );
     }
 
-    // Check if RajaOngkir returned an error
     if (data.rajaongkir?.status?.code !== 200) {
       const errorMsg = data.rajaongkir?.status?.description || 'Gagal mengambil data kota';
       return NextResponse.json(
-        {
-          success: false,
-          message: errorMsg
-        },
+        { success: false, message: errorMsg },
         { status: response.status }
       );
     }
 
-    // Check if response is valid
     if (!data.rajaongkir || !data.rajaongkir.results) {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'Format response tidak valid dari RajaOngkir'
-        },
+        { success: false, message: 'Format response tidak valid dari RajaOngkir' },
         { status: 500 }
       );
     }
 
-    // Filter by search query if provided (local filtering)
     let cities = data.rajaongkir.results;
-    if (searchQuery && searchQuery.trim()) {
-      const searchLower = searchQuery.toLowerCase().trim();
+    if (searchQuery.trim()) {
+      const s = searchQuery.toLowerCase().trim();
       cities = cities.filter(city => {
         const cityName = (city.city_name || '').toLowerCase();
         const provinceName = (city.province || '').toLowerCase();
-        return cityName.includes(searchLower) || provinceName.includes(searchLower);
+        return cityName.includes(s) || provinceName.includes(s);
       });
     }
 
-    // Format response: { city_id, city_name, province }
     const formattedCities = cities.map(city => ({
       city_id: city.city_id,
       city_name: city.city_name,
@@ -107,24 +86,20 @@ export async function GET(request) {
       province_name: city.province,
       type: city.type || '',
       postal_code: city.postal_code || '',
-      label: `${city.city_name}, ${city.province}`.trim(),
+      label: `${city.city_name}, ${city.province}`,
     }));
 
-    // Return formatted response
     return NextResponse.json({
       success: true,
       data: formattedCities,
       count: formattedCities.length,
     });
+
   } catch (error) {
     console.error('[RAJAONGKIR_CITIES] Unexpected error:', error);
     return NextResponse.json(
-      {
-        success: false,
-        message: error.message || 'Terjadi kesalahan saat mengambil data kota'
-      },
+      { success: false, message: error.message || 'Terjadi kesalahan saat mengambil data kota' },
       { status: 500 }
     );
   }
 }
-
