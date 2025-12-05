@@ -197,7 +197,16 @@ export default function LinkZoomSection({ productId, productName }) {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok || !data?.success) {
-        throw new Error(data?.message || "Gagal menyimpan webinar");
+        const errorMessage = data?.message || data?.error || "Gagal menyimpan webinar";
+        
+        // Handle specific error: MethodNotAllowedHttpException
+        if (errorMessage.includes("PUT method is not supported") || 
+            errorMessage.includes("MethodNotAllowedHttpException") ||
+            res.status === 405) {
+          throw new Error("Error backend: PUT method tidak didukung. Backend perlu mengkonfigurasi route PUT untuk api/admin/webinar/{id}");
+        }
+        
+        throw new Error(errorMessage);
       }
 
       toast.success(data.message || "Webinar berhasil disimpan");

@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { BACKEND_URL } from "@/config/env";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, PUT, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization",
+};
+
 // GET handler - untuk mendapatkan webinar berdasarkan ID produk
 export async function GET(request, { params }) {
   try {
@@ -9,7 +15,7 @@ export async function GET(request, { params }) {
     if (!id) {
       return NextResponse.json(
         { success: false, message: "ID produk tidak ditemukan" },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -17,7 +23,7 @@ export async function GET(request, { params }) {
     if (Number.isNaN(produkId)) {
       return NextResponse.json(
         { success: false, message: "ID produk tidak valid" },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -25,7 +31,7 @@ export async function GET(request, { params }) {
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return NextResponse.json(
         { success: false, message: "Token tidak ditemukan" },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       );
     }
 
@@ -71,11 +77,11 @@ export async function GET(request, { params }) {
           message: data?.message || "Gagal mengambil data webinar",
           error: data?.error || data,
         },
-        { status: res.status }
+        { status: res.status, headers: corsHeaders }
       );
     }
 
-    return NextResponse.json(data, { status: res.status });
+    return NextResponse.json(data, { status: res.status, headers: corsHeaders });
   } catch (error) {
     console.error("❌ [WEBINAR GET] API Proxy Error:", error);
     return NextResponse.json(
@@ -97,7 +103,7 @@ export async function PUT(request, { params }) {
     if (!id) {
       return NextResponse.json(
         { success: false, message: "ID webinar tidak ditemukan" },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -105,7 +111,7 @@ export async function PUT(request, { params }) {
     if (Number.isNaN(webinarId)) {
       return NextResponse.json(
         { success: false, message: "ID webinar tidak valid" },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -123,33 +129,40 @@ export async function PUT(request, { params }) {
     if (!topic) {
       return NextResponse.json(
         { success: false, message: "Topic webinar wajib diisi" },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
     if (!start_time) {
       return NextResponse.json(
         { success: false, message: "Start time wajib diisi" },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
+    // Payload sesuai dokumentasi: semua field boolean dan format yang benar
     const payload = {
-      topic,
-      start_time,
-      duration,
-      waiting_room,
-      host_video,
-      participant_video,
-      mute_upon_entry,
-      join_before_host,
+      topic: topic,
+      start_time: start_time, // Format: "2024-12-25 14:00:00"
+      duration: duration, // dalam menit (integer)
+      waiting_room: waiting_room, // Boolean
+      host_video: host_video, // Boolean
+      participant_video: participant_video, // Boolean
+      mute_upon_entry: mute_upon_entry, // Boolean
+      join_before_host: join_before_host, // Boolean
     };
+    
+    // Validasi payload sesuai dokumentasi
+    console.log("🔍 [WEBINAR PUT] Validated payload:", payload);
 
     // Get authorization token from request
     const authHeader = request.headers.get("authorization");
     const token = authHeader?.replace("Bearer ", "");
 
-    console.log("🔍 [WEBINAR PUT] Updating webinar:", webinarId, "with payload:", payload);
+    console.log("🔍 [WEBINAR PUT] ========== UPDATE WEBINAR ==========");
+    console.log("🔍 [WEBINAR PUT] Webinar ID:", webinarId);
     console.log("🔍 [WEBINAR PUT] Backend URL:", `${BACKEND_URL}/api/admin/webinar/${webinarId}`);
+    console.log("🔍 [WEBINAR PUT] Payload:", JSON.stringify(payload, null, 2));
+    console.log("🔍 [WEBINAR PUT] Request method: PUT");
 
     const res = await fetch(`${BACKEND_URL}/api/admin/webinar/${webinarId}`, {
       method: "PUT",
@@ -166,17 +179,36 @@ export async function PUT(request, { params }) {
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
+      // Handle specific error: MethodNotAllowedHttpException
+      const errorMessage = data?.message || data?.error || "Gagal mengupdate link Zoom";
+      
+      if (errorMessage.includes("PUT method is not supported") || 
+          errorMessage.includes("MethodNotAllowedHttpException") ||
+          res.status === 405) {
+        console.error("❌ [WEBINAR PUT] Backend tidak mendukung PUT method untuk route ini");
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Error backend: PUT method tidak didukung untuk route ini. Backend perlu mengkonfigurasi route PUT untuk api/admin/webinar/{id}",
+            error: errorMessage,
+            hint: "Backend perlu menambahkan PUT method di route api/admin/webinar/{id}"
+          },
+          { status: res.status }
+        );
+      }
+      
       return NextResponse.json(
         {
           success: false,
-          message: data?.message || "Gagal mengupdate link Zoom",
+          message: errorMessage,
           error: data?.error || data,
         },
-        { status: res.status }
+        { status: res.status, headers: corsHeaders }
       );
     }
 
-    return NextResponse.json(data, { status: res.status });
+    console.log("✅ [WEBINAR PUT] Success - Response:", data);
+    return NextResponse.json(data, { status: res.status, headers: corsHeaders });
   } catch (error) {
     console.error("❌ [WEBINAR PUT] API Proxy Error:", error);
     return NextResponse.json(
@@ -190,14 +222,10 @@ export async function PUT(request, { params }) {
   }
 }
 
-export function OPTIONS() {
+export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, PUT, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization",
-    },
+    headers: corsHeaders,
   });
 }
 
