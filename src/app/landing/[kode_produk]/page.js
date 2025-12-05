@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
+import Loading from "@/app/loading";
 import OngkirCalculator from "@/components/OngkirCalculator";
 import "@/styles/landing.css";
 
@@ -451,7 +452,7 @@ export default function LandingPage() {
       return toast.error("Silakan lengkapi data yang diperlukan");
     
     // Validasi ongkir untuk produk fisik (landingpage = "2")
-    const isFisik = form?.landingpage === "2" || form?.landingpage === 2;
+    const isFisik = form.landingpage === "2" || form.landingpage === 2;
     if (isFisik && (!ongkir || ongkir === 0)) {
       return toast.error("Silakan hitung ongkir terlebih dahulu");
     }
@@ -464,7 +465,7 @@ export default function LandingPage() {
       return toast.error("Data produk tidak valid");
     }
 
-    const hargaAsli = parseInt(form?.harga_asli || '0', 10);
+    const hargaAsli = parseInt(form.harga_asli || '0', 10);
     const ongkirValue = ongkir || 0;
     const totalHarga = hargaAsli + ongkirValue;
 
@@ -483,7 +484,7 @@ export default function LandingPage() {
         ? customerForm.custom_value 
         : (customerForm.custom_value ? [customerForm.custom_value] : []), // array
       // product_name hanya untuk Midtrans, tidak dikirim ke /api/order
-      product_name: form?.product_name || form?.nama,
+      product_name: form.product_name || form.nama,
     };
 
     try {
@@ -526,7 +527,7 @@ export default function LandingPage() {
 
 
       // Simpan data untuk verifikasi OTP + URL landing untuk redirect balik
-      const hargaAsli = parseInt(form?.harga_asli || '0', 10);
+      const hargaAsli = parseInt(form.harga_asli || '0', 10);
       const ongkirValue = ongkir || 0;
       const totalHargaFinal = hargaAsli + ongkirValue;
 
@@ -536,7 +537,7 @@ export default function LandingPage() {
         nama: customerForm.nama,
         wa: customerForm.wa,
         email: customerForm.email,
-        productName: form?.nama || form?.product_name || "Produk",
+        productName: form.nama || form.product_name || "Produk",
         totalHarga: String(totalHargaFinal), // total_harga = harga + ongkir
         paymentMethod: paymentMethod,
         landingUrl: window.location.pathname, // URL untuk balik setelah payment
@@ -565,13 +566,11 @@ export default function LandingPage() {
   // ==========================================================
   // RENDER PAGE
   // ==========================================================
-  // Add null check - form might be null during loading
-  const headerSrc = form?.header ? resolveHeaderSource(form.header) : "";
+  const headerSrc = resolveHeaderSource(form.header);
 
   return (
     <article className="landing-wrapper" itemScope itemType="https://schema.org/Product">
-        {!loading && (
-          <div className="produk-preview">
+      <div className="produk-preview">
           
           {/* Logo Section - Top */}
           <div className="logo-section">
@@ -599,7 +598,7 @@ export default function LandingPage() {
             {headerSrc ? (
               <img 
                 src={headerSrc} 
-                alt={`${form?.nama || "Produk"} - Header Image`}
+                alt={`${form.nama} - Header Image`}
                 className="preview-header-img"
                 itemProp="image"
                 loading="eager"
@@ -612,7 +611,7 @@ export default function LandingPage() {
           </div>
           
           {/* Deskripsi */}
-          {form?.deskripsi && (
+          {form.deskripsi && (
             <div className="preview-description" itemProp="description">
               {form.deskripsi}
             </div>
@@ -795,7 +794,7 @@ export default function LandingPage() {
                   <img 
                     key={i} 
                     src={imgSrc} 
-                    alt={g.caption || `${form?.nama || "Produk"} - Gambar ${i + 1}`}
+                    alt={g.caption || `${form.nama} - Gambar ${i + 1}`}
                     className="gallery-image-full"
                     loading="lazy"
                   />
@@ -817,7 +816,7 @@ export default function LandingPage() {
                   key={i} 
                   src={url} 
                   allowFullScreen
-                  title={`Video ${form?.nama || "Produk"} - ${i + 1}`}
+                  title={`Video ${form.nama} - ${i + 1}`}
                   loading="lazy"
                 />
               );
@@ -1055,7 +1054,7 @@ export default function LandingPage() {
           className={`cta-button ${submitting ? 'cta-loading' : ''}`}
           onClick={handleSubmit}
           disabled={submitting}
-          aria-label={`Pesan ${form?.nama || "produk"} sekarang`}
+          aria-label={`Pesan ${form.nama} sekarang`}
           itemProp="offers"
         >
           {submitting ? (
@@ -1151,7 +1150,7 @@ export default function LandingPage() {
               Tim sales kami siap membantu Anda. Hubungi kami melalui WhatsApp untuk mendapatkan informasi lengkap.
             </p>
             <a
-              href={`https://wa.me/${salesWA}?text=${encodeURIComponent(`Halo, saya tertarik dengan produk: ${form?.nama || "produk ini"}\n\nBisa tolong berikan informasi lebih detail?`)}`}
+              href={`https://wa.me/${salesWA}?text=${encodeURIComponent(`Halo, saya tertarik dengan produk: ${form.nama}\n\nBisa tolong berikan informasi lebih detail?`)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="whatsapp-cta-button"
@@ -1210,8 +1209,7 @@ export default function LandingPage() {
             </div>
           </div>
         )}
-        </div>
-        )}
-      </article>
+      </div>
+    </article>
   );
 }

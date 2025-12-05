@@ -54,9 +54,26 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        // If response is not JSON, it's likely a network or server error
+        setErrorMsg('Server tidak merespons dengan benar. Coba lagi nanti.');
+        setShowError(true);
+        return;
+      }
 
-      if (response.ok && data?.token) {
+      // Check if response is ok
+      if (!response.ok) {
+        const errorMessage = data?.message || `HTTP ${response.status}: ${data?.error || 'Login gagal'}`;
+        setErrorMsg(errorMessage);
+        setShowError(true);
+        return;
+      }
+
+      // Success case
+      if (data?.token) {
         setToken(data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         localStorage.setItem('division', data.user?.divisi || '');
@@ -68,7 +85,7 @@ export default function LoginPage() {
         localStorage.setItem('division_home', targetRoute);
         router.replace(targetRoute);
       } else {
-        // Check if error is "Email tidak terdaftar" - might be email sync issue
+        // No token in response
         const errorMessage = data?.message || 'Email atau password salah.';
         
         // If email not found, check if it might be a sync issue
@@ -83,9 +100,15 @@ export default function LoginPage() {
       }
     } catch (error) {
       console.error('Login error:', error);
+      
       // Handle network errors specifically
-      if (error instanceof TypeError && (error.message === "Failed to fetch" || error.message === "NetworkError when attempting to fetch resource")) {
-        setErrorMsg('Tidak dapat terhubung ke server. Periksa koneksi internet atau coba lagi nanti.');
+      if (
+        error instanceof TypeError && 
+        (error.message === "Failed to fetch" || 
+         error.message === "NetworkError when attempting to fetch resource" ||
+         error.message.includes("fetch"))
+      ) {
+        setErrorMsg('Tidak dapat terhubung ke server. Pastikan backend berjalan di http://3.105.234.181:8000 dan dapat diakses.');
       } else {
         setErrorMsg(error?.message || 'Gagal terhubung ke server. Coba lagi nanti.');
       }
