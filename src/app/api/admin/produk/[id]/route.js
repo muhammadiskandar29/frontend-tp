@@ -6,6 +6,13 @@ import axios from "axios";
 
 import { BACKEND_URL } from "@/config/env";
 
+// CORS headers helper
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization",
+};
+
 // Handle PUT request untuk update produk (sama seperti POST handler tapi dengan PUT method)
 export async function PUT(request, { params }) {
   try {
@@ -14,7 +21,7 @@ export async function PUT(request, { params }) {
     if (!id) {
       return NextResponse.json(
         { success: false, message: "Product ID is required" },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -22,7 +29,7 @@ export async function PUT(request, { params }) {
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return NextResponse.json(
         { success: false, message: "Token tidak ditemukan" },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       );
     }
 
@@ -94,7 +101,7 @@ export async function PUT(request, { params }) {
               allKeys: Array.from(incomingFormData.keys())
             }
           },
-          { status: 400 }
+          { status: 400, headers: corsHeaders }
         );
       }
       
@@ -258,7 +265,7 @@ export async function PUT(request, { params }) {
               allKeys: Array.from(incomingFormData.keys())
             }
           },
-          { status: 400 }
+          { status: 400, headers: corsHeaders }
         );
       }
       console.log(`[ROUTE_UPDATE_PUT] ✅ All critical fields present in incoming`);
@@ -483,7 +490,7 @@ export async function PUT(request, { params }) {
               message: "Tidak ada response dari backend",
               error: axiosError.message,
             },
-            { status: 500 }
+            { status: 500, headers: corsHeaders }
           );
         } else {
           // Error setting up request
@@ -659,7 +666,7 @@ export async function PUT(request, { params }) {
 
     // Fallback jika format berbeda
     console.log(`[ROUTE_UPDATE_PUT] ⚠️ Returning fallback response`);
-    return NextResponse.json(data);
+    return NextResponse.json(data, { headers: corsHeaders });
 
   } catch (error) {
     console.error(`❌ [PUT_PRODUK_UPDATE] Error:`, error.message);
@@ -668,7 +675,7 @@ export async function PUT(request, { params }) {
         success: false,
         message: error.message || "Terjadi kesalahan saat memperbarui produk",
       },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
@@ -681,7 +688,7 @@ export async function POST(request, { params }) {
     if (!id) {
       return NextResponse.json(
         { success: false, message: "Product ID is required" },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -689,7 +696,7 @@ export async function POST(request, { params }) {
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return NextResponse.json(
         { success: false, message: "Token tidak ditemukan" },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       );
     }
 
@@ -761,7 +768,7 @@ export async function POST(request, { params }) {
               allKeys: Array.from(incomingFormData.keys())
             }
           },
-          { status: 400 }
+          { status: 400, headers: corsHeaders }
         );
       }
       
@@ -865,7 +872,7 @@ export async function POST(request, { params }) {
               allKeys: Array.from(incomingFormData.keys())
             }
           },
-          { status: 400 }
+          { status: 400, headers: corsHeaders }
         );
       }
       console.log(`[ROUTE_UPDATE] ✅ All critical fields present in incoming`);
@@ -935,7 +942,7 @@ export async function POST(request, { params }) {
               message: "Tidak ada response dari backend",
               error: axiosError.message,
             },
-            { status: 500 }
+            { status: 500, headers: corsHeaders }
           );
         } else {
           // Error setting up request
@@ -1111,7 +1118,7 @@ export async function POST(request, { params }) {
 
     // Fallback jika format berbeda
     console.log(`[ROUTE_UPDATE] ⚠️ Returning fallback response`);
-    return NextResponse.json(data);
+    return NextResponse.json(data, { headers: corsHeaders });
 
   } catch (error) {
     console.error(`❌ [POST_PRODUK_UPDATE] Error:`, error.message);
@@ -1120,7 +1127,7 @@ export async function POST(request, { params }) {
         success: false,
         message: error.message || "Terjadi kesalahan saat memperbarui produk",
       },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
@@ -1132,7 +1139,7 @@ export async function GET(request, { params }) {
     if (!id) {
       return NextResponse.json(
         { success: false, message: "Product ID is required" },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -1155,11 +1162,11 @@ export async function GET(request, { params }) {
           success: false,
           message: data?.message || "Produk tidak ditemukan",
         },
-        { status: response.status }
+        { status: response.status, headers: corsHeaders }
       );
     }
 
-    return NextResponse.json(data, { status: response.status });
+    return NextResponse.json(data, { status: response.status, headers: corsHeaders });
   } catch (error) {
     console.error("[PRODUK GET] Error:", error);
     return NextResponse.json(
@@ -1168,7 +1175,7 @@ export async function GET(request, { params }) {
         message: "Terjadi kesalahan saat mengambil data produk",
         error: error.message,
       },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
@@ -1180,7 +1187,7 @@ export async function DELETE(request, { params }) {
     if (!id) {
       return NextResponse.json(
         { success: false, message: "Product ID is required" },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -1188,7 +1195,7 @@ export async function DELETE(request, { params }) {
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       );
     }
 
@@ -1243,8 +1250,20 @@ export async function DELETE(request, { params }) {
         message: "Terjadi kesalahan saat menghapus produk",
         error: error.message,
       },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
 
+// OPTIONS handler for CORS preflight
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization",
+      "Access-Control-Max-Age": "86400",
+    },
+  });
+}

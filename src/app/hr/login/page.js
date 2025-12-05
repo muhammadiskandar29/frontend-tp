@@ -12,7 +12,7 @@ export default function HRLoginPage() {
             <img src="/assets/logo.png" alt="Logo" className="hr-login-logo" />
           </div>
           <h3>Welcome to One Dashboard</h3>
-          <h2>powered by Ternak Properti</h2>
+          <h3>powered by Ternak Properti</h3>
           <p>Sign in to your HR account</p>
 
           <form autoComplete="off" data-form-type="other">

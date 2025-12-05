@@ -83,7 +83,12 @@ export default function LoginPage() {
       }
     } catch (error) {
       console.error('Login error:', error);
-      setErrorMsg('Gagal terhubung ke server. Coba lagi nanti.');
+      // Handle network errors specifically
+      if (error instanceof TypeError && (error.message === "Failed to fetch" || error.message === "NetworkError when attempting to fetch resource")) {
+        setErrorMsg('Tidak dapat terhubung ke server. Periksa koneksi internet atau coba lagi nanti.');
+      } else {
+        setErrorMsg(error?.message || 'Gagal terhubung ke server. Coba lagi nanti.');
+      }
       setShowError(true);
     } finally {
       setIsSubmitting(false);
@@ -102,7 +107,7 @@ export default function LoginPage() {
             <img src="/assets/logo.png" alt="Logo" className="login-logo__img" />
           </div>
           <h3>Welcome to One Dashboard</h3>
-          <h2>powered by Ternak Properti</h2>
+          <h3>powered by Ternak Properti</h3>
         <p>Sign in to your account</p>
 
           {showError && <div className="login-alert">{errorMsg}</div>}

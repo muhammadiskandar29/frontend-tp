@@ -13,14 +13,46 @@ export async function POST(request) {
     console.log('[LOGIN_PROXY] Backend URL:', backendUrl);
     console.log('[LOGIN_PROXY] Request body:', { email: body.email, password: '***' });
     
-    const response = await fetch(backendUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
+    // Add timeout and better error handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds timeout
+
+    let response;
+    try {
+      response = await fetch(backendUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      if (fetchError.name === 'AbortError') {
+        return NextResponse.json(
+          { 
+            success: false, 
+            message: 'Request timeout. Server tidak merespons.',
+            error: 'Timeout'
+          },
+          { status: 504 }
+        );
+      }
+      if (fetchError.message?.includes('fetch')) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            message: `Tidak dapat terhubung ke server backend. Pastikan backend berjalan di ${backendUrl}`,
+            error: fetchError.message
+          },
+          { status: 503 }
+        );
+      }
+      throw fetchError;
+    }
 
     const responseText = await response.text();
     let data;

@@ -6,6 +6,13 @@ import axios from "axios";
 
 import { BACKEND_URL } from "@/config/env";
 
+// CORS headers helper
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization",
+};
+
 // Image compression settings
 const IMAGE_CONFIG = {
   maxWidth: 1600,
@@ -382,7 +389,7 @@ export async function GET(request) {
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return NextResponse.json(
         { success: false, message: "Token tidak ditemukan" },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       );
     }
 
@@ -432,7 +439,7 @@ export async function GET(request) {
             success: false, 
             message: errorData?.message || `Gagal mengambil produk (${response.status})` 
           },
-          { status: response.status }
+          { status: response.status, headers: corsHeaders }
         );
       }
 
@@ -445,13 +452,15 @@ export async function GET(request) {
         console.error("❌ [GET_PRODUK] Response text:", responseText);
         return NextResponse.json(
           { success: false, message: "Response dari server tidak valid" },
-          { status: 500 }
+          { status: 500, headers: corsHeaders }
         );
       }
 
       console.log("🟢 [GET_PRODUK] Backend response:", data);
 
-      return NextResponse.json(data);
+      return NextResponse.json(data, {
+        headers: corsHeaders,
+      });
     } catch (fetchError) {
       // Handle network errors, timeouts, etc.
       console.error("❌ [GET_PRODUK] Fetch error:", fetchError);
@@ -459,7 +468,10 @@ export async function GET(request) {
       if (fetchError.name === 'AbortError') {
         return NextResponse.json(
           { success: false, message: "Request timeout. Server tidak merespons." },
-          { status: 504 }
+          { 
+            status: 504,
+            headers: corsHeaders,
+          }
         );
       }
 
@@ -469,7 +481,10 @@ export async function GET(request) {
             success: false, 
             message: `Tidak dapat terhubung ke server backend. Pastikan backend berjalan di ${BACKEND_URL}` 
           },
-          { status: 503 }
+          { 
+            status: 503,
+            headers: corsHeaders,
+          }
         );
       }
 
@@ -483,9 +498,25 @@ export async function GET(request) {
         message: error.message || "Terjadi kesalahan saat mengambil produk",
         error: process.env.NODE_ENV === 'development' ? error.stack : undefined
       },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: corsHeaders,
+      }
     );
   }
+}
+
+// OPTIONS handler for CORS preflight
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization",
+      "Access-Control-Max-Age": "86400",
+    },
+  });
 }
 
 export async function POST(request) {
@@ -495,7 +526,7 @@ export async function POST(request) {
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return NextResponse.json(
         { success: false, message: "Token tidak ditemukan" },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       );
     }
 
@@ -567,7 +598,7 @@ export async function POST(request) {
               allKeys: Array.from(incomingFormData.keys())
             }
           },
-          { status: 400 }
+          { status: 400, headers: corsHeaders }
         );
       }
       
@@ -672,7 +703,7 @@ export async function POST(request) {
               allKeys: Array.from(incomingFormData.keys())
             }
           },
-          { status: 400 }
+          { status: 400, headers: corsHeaders }
         );
       }
       console.log("[ROUTE] ✅ All critical fields present in incoming");
@@ -771,7 +802,7 @@ export async function POST(request) {
               message: "Tidak ada response dari backend",
               error: axiosError.message,
             },
-            { status: 500 }
+            { status: 500, headers: corsHeaders }
           );
         } else {
           // Error setting up request
@@ -801,7 +832,7 @@ export async function POST(request) {
             message: "Validation error",
             errors: validationErrors,
           },
-          { status: 400 }
+          { status: 400, headers: corsHeaders }
         );
       }
 
@@ -879,7 +910,7 @@ export async function POST(request) {
           error: parseError.message,
           status: response.status,
         },
-        { status: response.status || 500 }
+        { status: response.status || 500, headers: corsHeaders }
       );
     }
 
@@ -969,7 +1000,7 @@ export async function POST(request) {
             extractedErrorFields: extractedErrorFields,
           }
         },
-        { status: response.status }
+        { status: response.status, headers: corsHeaders }
       );
     }
 
@@ -985,12 +1016,12 @@ export async function POST(request) {
         success: true,
         message: data.message || "Produk berhasil dibuat",
         data: responseData,
-      });
+      }, { headers: corsHeaders });
     }
 
     // Fallback jika format berbeda
     console.log("[ROUTE] ⚠️ Returning fallback response");
-    return NextResponse.json(data);
+    return NextResponse.json(data, { headers: corsHeaders });
 
   } catch (error) {
     console.error("❌ [POST_PRODUK] Error:", error.message);
@@ -999,7 +1030,7 @@ export async function POST(request) {
         success: false,
         message: error.message || "Terjadi kesalahan saat membuat produk",
       },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
