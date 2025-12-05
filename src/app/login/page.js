@@ -91,11 +91,18 @@ export default function LoginPage() {
     setHasAttemptedLogin(true); // Mark that user has attempted login
 
     try {
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout (slightly longer than server)
+      
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
+        signal: controller.signal,
       });
+      
+      clearTimeout(timeoutId);
 
       let data;
       try {
@@ -115,13 +122,24 @@ export default function LoginPage() {
         return;
       }
 
-      // Success case
-      if (data?.token) {
+      // Success case - sesuai dokumentasi: { success: true, user: {...}, token: "..." }
+      if (data?.success === true && data?.token) {
         setToken(data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         localStorage.setItem('division', data.user?.divisi || '');
 
-        // ✅ Simpan cookie yang bisa dibaca middleware
+        // ✅ Simpan cookie yang bisa dibaca middleware (token berlaku 1 hari)
+        document.cookie = `token=${data.token}; path=/; max-age=${60 * 60 * 24}; SameSite=Lax`;
+
+        const targetRoute = getDivisionHome(data.user?.divisi);
+        localStorage.setItem('division_home', targetRoute);
+        router.replace(targetRoute);
+      } else if (data?.token) {
+        // Fallback: jika ada token meskipun success tidak true
+        setToken(data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('division', data.user?.divisi || '');
+
         document.cookie = `token=${data.token}; path=/; max-age=${60 * 60 * 24}; SameSite=Lax`;
 
         const targetRoute = getDivisionHome(data.user?.divisi);
@@ -157,6 +175,13 @@ export default function LoginPage() {
         }
       }
       // If hasAttemptedLogin is false, don't log anything (suppress errors on page load)
+      
+      // Handle timeout errors
+      if (error.name === 'AbortError') {
+        setErrorMsg('Request timeout. Server tidak merespons dalam 15 detik. Pastikan backend berjalan dan dapat diakses.');
+        setShowError(true);
+        return;
+      }
       
       // Handle network errors specifically
       if (

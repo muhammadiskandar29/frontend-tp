@@ -17,6 +17,11 @@ export async function POST(request) {
     const backendUrl = getBackendUrl('/login');
     
     console.log('[LOGIN_PROXY] Attempting to connect to:', backendUrl);
+    console.log('[LOGIN_PROXY] Request body:', { email: body.email, password: '***' });
+    
+    // Create AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout
     
     let response;
     try {
@@ -27,8 +32,26 @@ export async function POST(request) {
           'Accept': 'application/json',
         },
         body: JSON.stringify(body),
+        signal: controller.signal,
       });
+      
+      clearTimeout(timeoutId);
     } catch (fetchError) {
+      clearTimeout(timeoutId);
+      
+      // Handle timeout
+      if (fetchError.name === 'AbortError') {
+        console.error('[LOGIN_PROXY] Request timeout after 10 seconds');
+        return NextResponse.json(
+          { 
+            success: false, 
+            message: 'Request timeout. Server tidak merespons dalam 10 detik. Coba lagi nanti.',
+            error: 'TimeoutError'
+          },
+          { status: 504, headers: corsHeaders }
+        );
+      }
+      
       console.error('[LOGIN_PROXY] Fetch error:', fetchError);
       
       // Handle network errors
@@ -36,7 +59,7 @@ export async function POST(request) {
         return NextResponse.json(
           { 
             success: false, 
-            message: 'Tidak dapat terhubung ke server backend. Pastikan backend berjalan dan dapat diakses.',
+            message: 'Tidak dapat terhubung ke server backend. Pastikan backend berjalan di http://3.105.234.181:8000 dan dapat diakses.',
             error: 'NetworkError'
           },
           { status: 503, headers: corsHeaders }
@@ -66,7 +89,27 @@ export async function POST(request) {
       );
     }
 
-    const data = await response.json();
+    let data;
+    try {
+      data = await response.json();
+    } catch (parseError) {
+      console.error('[LOGIN_PROXY] Failed to parse response as JSON:', parseError);
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: 'Server mengembalikan response yang tidak valid.',
+          error: 'InvalidResponse'
+        },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
+    // Log response for debugging (without sensitive data)
+    console.log('[LOGIN_PROXY] Response received:', { 
+      success: data?.success, 
+      hasToken: !!data?.token,
+      hasUser: !!data?.user 
+    });
 
     return NextResponse.json(data, {
       status: response.status,
