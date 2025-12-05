@@ -3,7 +3,7 @@ import { BACKEND_URL } from "@/config/env";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, PUT, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization",
 };
 
@@ -90,13 +90,14 @@ export async function GET(request, { params }) {
         message: "Gagal terhubung ke server webinar",
         error: error.message,
       },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
 
-// PUT handler - untuk update webinar berdasarkan ID webinar
-export async function PUT(request, { params }) {
+// POST handler - untuk update webinar berdasarkan ID webinar
+// Menggunakan POST karena backend tidak mendukung PUT method
+export async function POST(request, { params }) {
   try {
     const { id } = await params;
 
@@ -152,20 +153,21 @@ export async function PUT(request, { params }) {
     };
     
     // Validasi payload sesuai dokumentasi
-    console.log("🔍 [WEBINAR PUT] Validated payload:", payload);
+    console.log("🔍 [WEBINAR POST] Validated payload:", payload);
 
     // Get authorization token from request
     const authHeader = request.headers.get("authorization");
     const token = authHeader?.replace("Bearer ", "");
 
-    console.log("🔍 [WEBINAR PUT] ========== UPDATE WEBINAR ==========");
-    console.log("🔍 [WEBINAR PUT] Webinar ID:", webinarId);
-    console.log("🔍 [WEBINAR PUT] Backend URL:", `${BACKEND_URL}/api/admin/webinar/${webinarId}`);
-    console.log("🔍 [WEBINAR PUT] Payload:", JSON.stringify(payload, null, 2));
-    console.log("🔍 [WEBINAR PUT] Request method: PUT");
+    console.log("🔍 [WEBINAR POST] ========== UPDATE WEBINAR ==========");
+    console.log("🔍 [WEBINAR POST] Webinar ID:", webinarId);
+    console.log("🔍 [WEBINAR POST] Backend URL:", `${BACKEND_URL}/api/admin/webinar/${webinarId}`);
+    console.log("🔍 [WEBINAR POST] Payload:", JSON.stringify(payload, null, 2));
+    console.log("🔍 [WEBINAR POST] Request method: POST (update)");
 
+    // Menggunakan POST karena backend tidak mendukung PUT method
     const res = await fetch(`${BACKEND_URL}/api/admin/webinar/${webinarId}`, {
-      method: "PUT",
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
@@ -174,7 +176,7 @@ export async function PUT(request, { params }) {
       body: JSON.stringify(payload),
     });
 
-    console.log("🔍 [WEBINAR PUT] Backend response status:", res.status);
+    console.log("🔍 [WEBINAR POST] Backend response status:", res.status);
 
     const data = await res.json().catch(() => ({}));
 
@@ -182,20 +184,8 @@ export async function PUT(request, { params }) {
       // Handle specific error: MethodNotAllowedHttpException
       const errorMessage = data?.message || data?.error || "Gagal mengupdate link Zoom";
       
-      if (errorMessage.includes("PUT method is not supported") || 
-          errorMessage.includes("MethodNotAllowedHttpException") ||
-          res.status === 405) {
-        console.error("❌ [WEBINAR PUT] Backend tidak mendukung PUT method untuk route ini");
-        return NextResponse.json(
-          {
-            success: false,
-            message: "Error backend: PUT method tidak didukung untuk route ini. Backend perlu mengkonfigurasi route PUT untuk api/admin/webinar/{id}",
-            error: errorMessage,
-            hint: "Backend perlu menambahkan PUT method di route api/admin/webinar/{id}"
-          },
-          { status: res.status }
-        );
-      }
+      // Error handling untuk berbagai jenis error
+      console.error("❌ [WEBINAR POST] Backend error:", errorMessage);
       
       return NextResponse.json(
         {
@@ -207,21 +197,23 @@ export async function PUT(request, { params }) {
       );
     }
 
-    console.log("✅ [WEBINAR PUT] Success - Response:", data);
+    console.log("✅ [WEBINAR POST] Success - Response:", data);
     return NextResponse.json(data, { status: res.status, headers: corsHeaders });
   } catch (error) {
-    console.error("❌ [WEBINAR PUT] API Proxy Error:", error);
+    console.error("❌ [WEBINAR POST] API Proxy Error:", error);
     return NextResponse.json(
       {
         success: false,
         message: "Gagal terhubung ke server webinar",
         error: error.message,
       },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
 
+// Handler untuk update webinar - menggunakan POST dengan _method=PUT di body jika diperlukan
+// Atau langsung POST jika backend mendukung POST untuk update
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,

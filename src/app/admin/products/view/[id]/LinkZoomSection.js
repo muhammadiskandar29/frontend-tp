@@ -178,8 +178,9 @@ export default function LinkZoomSection({ productId, productName }) {
       let method = "POST";
 
       if (modalMode === "edit" && selectedWebinar?.id) {
+        // Menggunakan POST untuk update karena backend tidak mendukung PUT
         url = `/api/admin/webinar/${selectedWebinar.id}`;
-        method = "PUT";
+        method = "POST"; // Changed from PUT to POST
       } else {
         payload.produk = Number(productId);
       }
@@ -199,12 +200,8 @@ export default function LinkZoomSection({ productId, productName }) {
       if (!res.ok || !data?.success) {
         const errorMessage = data?.message || data?.error || "Gagal menyimpan webinar";
         
-        // Handle specific error: MethodNotAllowedHttpException
-        if (errorMessage.includes("PUT method is not supported") || 
-            errorMessage.includes("MethodNotAllowedHttpException") ||
-            res.status === 405) {
-          throw new Error("Error backend: PUT method tidak didukung. Backend perlu mengkonfigurasi route PUT untuk api/admin/webinar/{id}");
-        }
+        // Error handling untuk berbagai jenis error
+        console.error("❌ [LINK ZOOM] Backend error:", errorMessage);
         
         throw new Error(errorMessage);
       }
