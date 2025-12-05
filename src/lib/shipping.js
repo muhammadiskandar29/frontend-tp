@@ -62,37 +62,21 @@ export async function getCost({ origin, destination, weight, courier }) {
 
     const json = await response.json();
 
-    if (!response.ok) {
-      const errorMsg = json.rajaongkir?.status?.description || json.message || 'Gagal menghitung ongkir';
+    if (!response.ok || !json.success) {
+      const errorMsg = json.message || 'Gagal menghitung ongkir';
       throw new Error(errorMsg);
     }
 
-    // Parse response dari RajaOngkir
-    // Format: { rajaongkir: { status: {...}, results: [{ costs: [{ value, etd }] }] } }
-    const rajaongkir = json.rajaongkir;
-    
-    if (!rajaongkir || !rajaongkir.results || rajaongkir.results.length === 0) {
-      throw new Error('Tidak ada hasil ongkir untuk rute ini');
-    }
-
-    const result = rajaongkir.results[0];
-    if (!result.costs || result.costs.length === 0) {
-      throw new Error('Ongkir tidak tersedia untuk rute ini');
-    }
-
-    // Ambil cost pertama (biasanya REG)
-    const cost = result.costs[0];
-    const price = parseInt(cost.value || 0, 10);
-    const etd = cost.etd || '';
-
-    if (price === 0) {
-      throw new Error('Ongkir tidak tersedia untuk rute ini');
+    // Parse normalized response from our API
+    // Format: { success: true, data: { price, etd, raw } }
+    if (!json.data) {
+      throw new Error('Response tidak valid dari server');
     }
 
     const resultData = {
-      price,
-      etd: etd || 'Estimasi pengiriman akan diinformasikan',
-      raw: json,
+      price: json.data.price,
+      etd: json.data.etd || 'Estimasi pengiriman akan diinformasikan',
+      raw: json.data.raw,
     };
 
     // Cache hasil

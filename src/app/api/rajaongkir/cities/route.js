@@ -9,12 +9,8 @@ export async function GET(request) {
       console.error('[RAJAONGKIR_CITIES] RAJAONGKIR_API_KEY tidak ditemukan di environment');
       return NextResponse.json(
         {
-          rajaongkir: {
-            status: {
-              code: 400,
-              description: 'API key tidak dikonfigurasi'
-            }
-          }
+          success: false,
+          message: 'API key tidak dikonfigurasi'
         },
         { status: 400 }
       );
@@ -44,12 +40,8 @@ export async function GET(request) {
       console.error('[RAJAONGKIR_CITIES] Fetch error:', fetchError);
       return NextResponse.json(
         {
-          rajaongkir: {
-            status: {
-              code: 503,
-              description: 'Gagal terhubung ke API RajaOngkir'
-            }
-          }
+          success: false,
+          message: 'Gagal terhubung ke API RajaOngkir'
         },
         { status: 503 }
       );
@@ -65,20 +57,34 @@ export async function GET(request) {
       console.error('[RAJAONGKIR_CITIES] Raw response:', responseText.substring(0, 500));
       return NextResponse.json(
         {
-          rajaongkir: {
-            status: {
-              code: 500,
-              description: 'Response dari RajaOngkir bukan JSON'
-            }
-          }
+          success: false,
+          message: 'Response dari RajaOngkir bukan JSON'
         },
         { status: 500 }
       );
     }
 
+    // Check if RajaOngkir returned an error
+    if (data.rajaongkir?.status?.code !== 200) {
+      const errorMsg = data.rajaongkir?.status?.description || 'Gagal mengambil data kota';
+      return NextResponse.json(
+        {
+          success: false,
+          message: errorMsg
+        },
+        { status: response.status }
+      );
+    }
+
     // Check if response is valid
     if (!data.rajaongkir || !data.rajaongkir.results) {
-      return NextResponse.json(data, { status: response.status });
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Format response tidak valid dari RajaOngkir'
+        },
+        { status: 500 }
+      );
     }
 
     // Filter by search query if provided (local filtering)
@@ -113,12 +119,8 @@ export async function GET(request) {
     console.error('[RAJAONGKIR_CITIES] Unexpected error:', error);
     return NextResponse.json(
       {
-        rajaongkir: {
-          status: {
-            code: 500,
-            description: error.message || 'Terjadi kesalahan saat mengambil data kota'
-          }
-        }
+        success: false,
+        message: error.message || 'Terjadi kesalahan saat mengambil data kota'
       },
       { status: 500 }
     );

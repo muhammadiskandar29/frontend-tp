@@ -9,12 +9,8 @@ export async function POST(request) {
       console.error('[RAJAONGKIR_COST] RAJAONGKIR_API_KEY tidak ditemukan di environment');
       return NextResponse.json(
         { 
-          rajaongkir: {
-            status: {
-              code: 400,
-              description: 'API key tidak dikonfigurasi'
-            }
-          }
+          success: false,
+          message: 'API key tidak dikonfigurasi'
         },
         { status: 400 }
       );
@@ -27,12 +23,8 @@ export async function POST(request) {
     if (!origin || !destination || !weight || !courier) {
       return NextResponse.json(
         {
-          rajaongkir: {
-            status: {
-              code: 400,
-              description: 'origin, destination, weight, dan courier wajib diisi'
-            }
-          }
+          success: false,
+          message: 'origin, destination, weight, dan courier wajib diisi'
         },
         { status: 400 }
       );
@@ -42,12 +34,8 @@ export async function POST(request) {
     if (isNaN(parseInt(destination, 10))) {
       return NextResponse.json(
         {
-          rajaongkir: {
-            status: {
-              code: 400,
-              description: 'destination harus berupa city_id (angka)'
-            }
-          }
+          success: false,
+          message: 'destination harus berupa city_id (angka)'
         },
         { status: 400 }
       );
@@ -58,12 +46,8 @@ export async function POST(request) {
     if (isNaN(weightNum) || weightNum < 1 || weightNum > 50000) {
       return NextResponse.json(
         {
-          rajaongkir: {
-            status: {
-              code: 400,
-              description: 'weight harus antara 1 dan 50000 gram'
-            }
-          }
+          success: false,
+          message: 'weight harus antara 1 dan 50000 gram'
         },
         { status: 400 }
       );
@@ -103,12 +87,8 @@ export async function POST(request) {
       console.error('[RAJAONGKIR_COST] Fetch error:', fetchError);
       return NextResponse.json(
         {
-          rajaongkir: {
-            status: {
-              code: 503,
-              description: 'Gagal terhubung ke API RajaOngkir'
-            }
-          }
+          success: false,
+          message: 'Gagal terhubung ke API RajaOngkir'
         },
         { status: 503 }
       );
@@ -124,29 +104,71 @@ export async function POST(request) {
       console.error('[RAJAONGKIR_COST] Raw response:', responseText.substring(0, 500));
       return NextResponse.json(
         {
-          rajaongkir: {
-            status: {
-              code: 500,
-              description: 'Response dari RajaOngkir bukan JSON'
-            }
-          }
+          success: false,
+          message: 'Response dari RajaOngkir bukan JSON'
         },
         { status: 500 }
       );
     }
 
-    // Return response exactly from RajaOngkir
-    return NextResponse.json(data, { status: response.status });
+    // Check if RajaOngkir returned an error
+    if (data.rajaongkir?.status?.code !== 200) {
+      const errorMsg = data.rajaongkir?.status?.description || 'Gagal menghitung ongkir';
+      return NextResponse.json(
+        {
+          success: false,
+          message: errorMsg,
+          raw: data
+        },
+        { status: response.status }
+      );
+    }
+
+    // Parse RajaOngkir response and normalize
+    const rajaongkir = data.rajaongkir;
+    if (!rajaongkir || !rajaongkir.results || rajaongkir.results.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Tidak ada hasil ongkir untuk rute ini',
+          raw: data
+        },
+        { status: 200 }
+      );
+    }
+
+    const result = rajaongkir.results[0];
+    if (!result.costs || result.costs.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Ongkir tidak tersedia untuk rute ini',
+          raw: data
+        },
+        { status: 200 }
+      );
+    }
+
+    // Ambil cost pertama (biasanya REG)
+    const cost = result.costs[0];
+    const price = parseInt(cost.value || 0, 10);
+    const etd = cost.etd || '';
+
+    // Return normalized JSON
+    return NextResponse.json({
+      success: true,
+      data: {
+        price,
+        etd,
+        raw: data
+      }
+    });
   } catch (error) {
     console.error('[RAJAONGKIR_COST] Unexpected error:', error);
     return NextResponse.json(
       {
-        rajaongkir: {
-          status: {
-            code: 500,
-            description: error.message || 'Terjadi kesalahan saat menghitung ongkir'
-          }
-        }
+        success: false,
+        message: error.message || 'Terjadi kesalahan saat menghitung ongkir'
       },
       { status: 500 }
     );
