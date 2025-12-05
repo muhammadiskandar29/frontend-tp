@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { getCost, getDestinations } from "@/lib/komerce";
+import { getCost, getDestinations } from "@/lib/shipping";
 import { toast } from "react-hot-toast";
 import "@/styles/ongkir.css";
 
@@ -36,11 +36,8 @@ export default function OngkirCalculator({
   // Origin bisa dari prop, env variable, atau hardcode fallback
   // Priority: prop > env > hardcode fallback
   // CATATAN: RajaOngkir V1 Basic hanya menerima CITY_ID (bukan subdistrict_id)
-  // Hardcode origin CITY_ID Tangerang
-  // Contoh: Jakarta Barat = 151, Bandung = 23
-  // Untuk Tangerang, perlu city_id yang benar (bukan subdistrict_id 73655)
-  // Sementara gunakan 151 (JAKBAR) sebagai contoh, ganti dengan city_id Tangerang yang benar
-  const DEFAULT_ORIGIN_ID = "151"; // JAKARTA BARAT (contoh, ganti dengan city_id Tangerang)
+  // Contoh: Jakarta Barat = 151, Bandung = 23, Tangerang = 456
+  const DEFAULT_ORIGIN_ID = "151"; // JAKARTA BARAT (contoh, ganti dengan city_id yang benar)
   const origin = originId || process.env.NEXT_PUBLIC_RAJAONGKIR_ORIGIN || DEFAULT_ORIGIN_ID;
 
   // Check cooldown on mount
@@ -126,7 +123,7 @@ export default function OngkirCalculator({
   };
 
   const handleSelectDestination = (dest) => {
-    // Handle response dari Komerce API
+    // Handle response dari RajaOngkir API
     // PENTING: Untuk RajaOngkir V1 Basic, HANYA gunakan CITY_ID (bukan subdistrict_id)
     // User memilih KOTA (Jakarta Barat, Jakarta Timur, dll) - BUKAN detail subdistrict
     // Detail kecamatan/kelurahan/kode pos diinput manual untuk alamat lengkap, TIDAK untuk cost calculation
