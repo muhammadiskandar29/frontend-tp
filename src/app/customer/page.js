@@ -199,7 +199,6 @@ return (
                 <img src="/assets/logo.png" alt="Logo" className="login-logo" /> 
          </div>
          <h3>Welcome to One Dashboard</h3>
-         <h3>powered by Ternak Properti</h3>
           <p>Sign in to your account</p>
 
       <form onSubmit={handleSubmit} autoComplete="off" data-form-type="other">
