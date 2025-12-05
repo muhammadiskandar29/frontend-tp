@@ -207,33 +207,11 @@ export async function api(endpoint, options = {}) {
     return await handleResponse(res, endpoint, options);
   } catch (err) {
     console.error(`❌ API Error [${endpoint}]:`, err);
-
-    // Network error - handle various network error types
-    if (
-      err instanceof TypeError && 
-      (err.message === "Failed to fetch" || 
-       err.message === "NetworkError when attempting to fetch resource" ||
-       err.message.includes("fetch"))
-    ) {
-      const message = "🚫 Tidak dapat terhubung ke server. Periksa koneksi internet atau coba lagi nanti.";
-      console.error(`❌ Network Error Details:`, {
-        endpoint,
-        url,
-        error: err.message,
-        stack: err.stack
-      });
-      if (config.features.enableToast) {
-        toast.error(message);
-      }
-      throw new Error(message);
+    
+    if (config.features.enableToast) {
+      toast.error(err.message || "Terjadi kesalahan");
     }
-
-    // Other errors
-    const message = err.message || "Terjadi kesalahan tidak diketahui.";
-    if (config.features.enableToast && !err.status) {
-      toast.error(message);
-    }
-
+    
     throw err;
   }
 }

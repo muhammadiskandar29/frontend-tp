@@ -41,8 +41,7 @@ export async function getProducts(includeDeleted = false) {
     return [];
   } catch (err) {
     console.error("❌ Error getProducts:", err);
-    // Re-throw with more context
-    throw new Error(err.message || "Gagal mengambil data produk dari server");
+    throw err;
   }
 }
 

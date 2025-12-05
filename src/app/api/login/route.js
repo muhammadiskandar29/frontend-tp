@@ -16,69 +16,16 @@ export async function POST(request) {
     const body = await request.json();
     const backendUrl = getBackendUrl('/login');
     
-    console.log('[LOGIN_PROXY] Backend URL:', backendUrl);
-    console.log('[LOGIN_PROXY] Request body:', { email: body.email, password: '***' });
-    
-    // Add timeout and better error handling
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout - reduced for faster response
+    const response = await fetch(backendUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
 
-    let response;
-    try {
-      response = await fetch(backendUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify(body),
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-    } catch (fetchError) {
-      clearTimeout(timeoutId);
-      if (fetchError.name === 'AbortError') {
-        return NextResponse.json(
-          { 
-            success: false, 
-            message: 'Request timeout. Server tidak merespons.',
-            error: 'Timeout'
-          },
-          { status: 504, headers: corsHeaders }
-        );
-      }
-      if (fetchError.message?.includes('fetch')) {
-        return NextResponse.json(
-          { 
-            success: false, 
-            message: `Tidak dapat terhubung ke server backend. Pastikan backend berjalan di ${backendUrl}`,
-            error: fetchError.message
-          },
-          { status: 503, headers: corsHeaders }
-        );
-      }
-      throw fetchError;
-    }
-
-    const responseText = await response.text();
-    let data;
-
-    try {
-      data = JSON.parse(responseText);
-    } catch (parseError) {
-      console.error('[LOGIN_PROXY] Non-JSON response:', responseText);
-      return NextResponse.json(
-        { 
-          success: false, 
-          message: 'Backend error: Response bukan JSON',
-          error: responseText.substring(0, 200)
-        },
-        { status: response.status || 500, headers: corsHeaders }
-      );
-    }
-
-    console.log('[LOGIN_PROXY] Response status:', response.status);
-    console.log('[LOGIN_PROXY] Response data:', data);
+    const data = await response.json();
 
     return NextResponse.json(data, {
       status: response.status,

@@ -124,6 +124,9 @@ export default function LandingPage() {
       }
     }
     
+    // Normalize backslashes to forward slashes (untuk Windows path)
+    cleanPath = cleanPath.replace(/\\/g, "/");
+    
     // Hapus leading slash jika ada (proxy akan handle)
     cleanPath = cleanPath.replace(/^\/+/, "");
     
@@ -133,8 +136,11 @@ export default function LandingPage() {
     // Hapus double slash
     cleanPath = cleanPath.replace(/\/+/g, "/");
     
+    // Encode URL untuk handle special characters
+    const encodedPath = encodeURIComponent(cleanPath);
+    
     // Gunakan proxy untuk menghindari mixed content HTTPS/HTTP
-    return `/api/image?path=${cleanPath}`;
+    return `/api/image?path=${encodedPath}`;
   };
 
   const resolveHeaderSource = (header) => {
@@ -146,6 +152,10 @@ export default function LandingPage() {
       rawPath = header.path;
     } else if (header?.value && typeof header.value === "string") {
       rawPath = header.value;
+    }
+    // Normalize backslashes to forward slashes
+    if (rawPath) {
+      rawPath = rawPath.replace(/\\/g, '/');
     }
     return buildImageUrl(rawPath);
   };
@@ -174,15 +184,41 @@ export default function LandingPage() {
 
         const d = json.data;
 
+        // Parse gambar dan testimoni dengan handle escaped backslashes
+        const parsedGambar = safeParse(d.gambar, []);
+        const parsedTestimoni = safeParse(d.testimoni, []);
+        
+        // Normalize path di gambar (handle escaped backslashes dari JSON string)
+        const normalizedGambar = Array.isArray(parsedGambar) 
+          ? parsedGambar.map(g => ({
+              ...g,
+              path: typeof g.path === 'string' ? g.path.replace(/\\/g, '/') : g.path
+            }))
+          : [];
+        
+        // Normalize path di testimoni
+        const normalizedTestimoni = Array.isArray(parsedTestimoni)
+          ? parsedTestimoni.map(t => ({
+              ...t,
+              gambar: typeof t.gambar === 'string' ? t.gambar.replace(/\\/g, '/') : t.gambar
+            }))
+          : [];
+
+        // Normalize header path juga
+        const normalizedHeader = typeof d.header === 'string' 
+          ? d.header.replace(/\\/g, '/') 
+          : d.header;
+
         setData({
           ...d,
+          header: normalizedHeader, // Normalize header path
           product_name: d.nama,
           landingpage: d.landingpage || "1", // 1 = non-fisik, 2 = fisik
-          gambar: safeParse(d.gambar, []),
+          gambar: normalizedGambar,
           custom_field: safeParse(d.custom_field, []),
           assign: safeParse(d.assign, []),
           video: safeParse(d.video, []),
-          testimoni: safeParse(d.testimoni, []),
+          testimoni: normalizedTestimoni,
           list_point: safeParse(d.list_point, []),
           fb_pixel: safeParse(d.fb_pixel, []),
           event_fb_pixel: safeParse(d.event_fb_pixel, []),

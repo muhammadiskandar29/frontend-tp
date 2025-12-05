@@ -398,110 +398,30 @@ export async function GET(request) {
     console.log("🟢 [GET_PRODUK] Fetching products...");
     console.log("🟢 [GET_PRODUK] Backend URL:", `${BACKEND_URL}/api/admin/produk`);
 
-    let response;
-    let data;
-
-    try {
-      // Create AbortController for timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout - reduced for faster response
-
-      response = await fetch(`${BACKEND_URL}/api/admin/produk`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      // Check if response is ok before trying to parse JSON
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorData;
-        try {
-          errorData = JSON.parse(errorText);
-        } catch {
-          errorData = { message: errorText || `HTTP ${response.status} ${response.statusText}` };
-        }
-        
-        console.error("❌ [GET_PRODUK] Backend error response:", {
-          status: response.status,
-          statusText: response.statusText,
-          data: errorData
-        });
-
-        return NextResponse.json(
-          { 
-            success: false, 
-            message: errorData?.message || `Gagal mengambil produk (${response.status})` 
-          },
-          { status: response.status, headers: corsHeaders }
-        );
-      }
-
-      // Parse JSON response
-      const responseText = await response.text();
-      try {
-        data = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error("❌ [GET_PRODUK] JSON parse error:", parseError);
-        console.error("❌ [GET_PRODUK] Response text:", responseText);
-        return NextResponse.json(
-          { success: false, message: "Response dari server tidak valid" },
-          { status: 500, headers: corsHeaders }
-        );
-      }
-
-      console.log("🟢 [GET_PRODUK] Backend response:", data);
-
-      return NextResponse.json(data, {
-        headers: corsHeaders,
-      });
-    } catch (fetchError) {
-      // Handle network errors, timeouts, etc.
-      console.error("❌ [GET_PRODUK] Fetch error:", fetchError);
-      
-      if (fetchError.name === 'AbortError') {
-        return NextResponse.json(
-          { success: false, message: "Request timeout. Server tidak merespons." },
-          { 
-            status: 504,
-            headers: corsHeaders,
-          }
-        );
-      }
-
-      if (fetchError.message?.includes('fetch')) {
-        return NextResponse.json(
-          { 
-            success: false, 
-            message: `Tidak dapat terhubung ke server backend. Pastikan backend berjalan di ${BACKEND_URL}` 
-          },
-          { 
-            status: 503,
-            headers: corsHeaders,
-          }
-        );
-      }
-
-      throw fetchError;
-    }
-  } catch (error) {
-    console.error("❌ [GET_PRODUK] Unexpected error:", error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        message: error.message || "Terjadi kesalahan saat mengambil produk",
-        error: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    const response = await fetch(`${BACKEND_URL}/api/admin/produk`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
       },
-      { 
-        status: 500,
-        headers: corsHeaders,
-      }
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return NextResponse.json(
+        { success: false, message: data?.message || "Gagal mengambil produk" },
+        { status: response.status, headers: corsHeaders }
+      );
+    }
+
+    return NextResponse.json(data, { headers: corsHeaders });
+  } catch (error) {
+    console.error("❌ [GET_PRODUK] Error:", error);
+    return NextResponse.json(
+      { success: false, message: error.message || "Terjadi kesalahan saat mengambil produk" },
+      { status: 500, headers: corsHeaders }
     );
   }
 }

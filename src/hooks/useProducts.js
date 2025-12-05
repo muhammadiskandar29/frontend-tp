@@ -26,17 +26,11 @@ export function useProducts() {
 
       try {
         const data = await getProducts();
-
-        // Debug helper
-        console.log("📦 Loaded products:", data);
-
         setProducts(Array.isArray(data) ? data : []);
-        setError(null); // Clear any previous errors
+        setError(null);
       } catch (err) {
         console.error("❌ Error fetching products:", err);
-        const errorMessage = err?.message || err?.error?.message || "Gagal memuat produk";
-        setError(errorMessage);
-        setProducts([]); // Set empty array on error to prevent UI issues
+        setError(err?.message || "Gagal memuat produk");
       } finally {
         setLoading(false);
       }
