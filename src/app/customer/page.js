@@ -6,6 +6,16 @@ import { useRouter } from "next/navigation";
 import "@/styles/cstlogin.css";
 import { loginCustomer, getCustomerSession } from "@/lib/customerAuth";
 
+// === FOUNDER IMAGES ===
+const founders = [
+  "/assets/Dimas Dwi Ananto.png",
+  "/assets/Salvian Kumara.png",
+  "/assets/Rhesa Yogaswara.png",
+  "/assets/Stephanus P H A S.png",
+  "/assets/Theo Ariandyen.png",
+  "/assets/Erzon Djazai.png",
+];
+
 export default function LoginPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -13,58 +23,51 @@ export default function LoginPage() {
   const [current, setCurrent] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-// 🔸 Daftar gambar founder
-const founders = [
-"/assets/Dimas Dwi Ananto.png",
-"/assets/Salvian Kumara.png",
-"/assets/Rhesa Yogaswara.png",
-"/assets/Stephanus P H A S.png",
-"/assets/Theo Ariandyen.png",
-"/assets/Erzon Djazai.png",
-];
 
-// 🔹 Cek apakah sudah login
-useEffect(() => {
-  const session = getCustomerSession();
-  if (session.isAuthenticated && session.token) {
-    router.replace("/customer/dashboard");
-  }
-  
-  // Tampilkan debug log dari localStorage jika ada
-  const debugLog = localStorage.getItem("customer_login_debug");
-  if (debugLog) {
-    try {
-      const debug = JSON.parse(debugLog);
-      console.log("🔍 [LOGIN DEBUG] Previous login attempt:", debug);
-      // Hapus setelah ditampilkan (opsional, bisa di-comment jika ingin tetap tersimpan)
-      // localStorage.removeItem("customer_login_debug");
-    } catch (e) {
-      console.error("Failed to parse debug log:", e);
+  // === CEK LOGIN ===
+  useEffect(() => {
+    const session = getCustomerSession();
+    if (session.isAuthenticated && session.token) {
+      router.replace("/customer/dashboard");
     }
-  }
-}, [router]);
+    
+    // Tampilkan debug log dari localStorage jika ada
+    const debugLog = localStorage.getItem("customer_login_debug");
+    if (debugLog) {
+      try {
+        const debug = JSON.parse(debugLog);
+        console.log("🔍 [LOGIN DEBUG] Previous login attempt:", debug);
+        // Hapus setelah ditampilkan (opsional, bisa di-comment jika ingin tetap tersimpan)
+        // localStorage.removeItem("customer_login_debug");
+      } catch (e) {
+        console.error("Failed to parse debug log:", e);
+      }
+    }
+  }, [router]);
 
-// 🔹 Ganti gambar otomatis tiap 2 detik
-useEffect(() => {
-const interval = setInterval(() => {
-setCurrent((prev) => (prev + 1) % founders.length);
-}, 2000);
-return () => clearInterval(interval);
-}, [founders.length]);
+  // === AUTO ROTATE FOUNDER IMAGES ===
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % founders.length);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [founders.length]);
 
-// 🔹 Efek fade setiap kali gambar berubah
-useEffect(() => {
-setLoaded(false);
-const t = setTimeout(() => setLoaded(true), 50);
-return () => clearTimeout(t);
-}, [current]);
+  // === FADE EFFECT ===
+  useEffect(() => {
+    setLoaded(false);
+    const t = setTimeout(() => setLoaded(true), 50);
+    return () => clearTimeout(t);
+  }, [current]);
 
-const handleChange = (e) => {
-setFormData({ ...formData, [e.target.name]: e.target.value });
-setErrorMsg(""); // Clear error saat user mengetik
-};
+  // === HANDLE FORM CHANGE ===
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setErrorMsg(""); // Clear error saat user mengetik
+  };
 
-const handleSubmit = async (e) => {
+  // === HANDLE LOGIN ===
+  const handleSubmit = async (e) => {
 e.preventDefault();
 if (isSubmitting) return;
 
@@ -190,105 +193,100 @@ try {
 }
 };
 
-return ( 
-  <>
+  // === UI ===
+  return (
     <div className="login-container">
-    {/* === LEFT PANEL === */} <div className="login-left"> 
-        <div className="login-box"> 
-            <div className="logo"> 
-                <img src="/assets/logo.png" alt="Logo" className="login-logo" /> 
-         </div>
-         <h3>Welcome to One Dashboard</h3>
+      {/* === LEFT PANEL === */}
+      <div className="login-left">
+        <div className="login-box">
+          <div className="logo">
+            <img src="/assets/logo.png" alt="Logo" className="login-logo" />
+          </div>
+          <h3>Welcome to One Dashboard</h3>
           <p>Sign in to your account</p>
 
-      <form onSubmit={handleSubmit} autoComplete="off" data-form-type="other">
-        <div className="form-group">
-          <label>Email</label>
-          <input
-            type="email"
-            name="email"
-            placeholder="Email address"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            autoComplete="email"
-          />
-        </div>
+          <form onSubmit={handleSubmit} autoComplete="off" data-form-type="other">
+            <div className="form-group">
+              <label>Email</label>
+              <input
+                type="email"
+                name="email"
+                placeholder="Email address"
+                value={formData.email}
+                onChange={handleChange}
+                required
+                autoComplete="email"
+              />
+            </div>
 
-        <div className="form-group">
-          <label>Password</label>
-          <input
-            type="password"
-            name="password"
-            placeholder="Enter your password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            autoComplete="current-password"
-            data-1p-ignore
-            data-lpignore="true"
-            data-form-type="other"
-          />
-        </div>
+            <div className="form-group">
+              <label>Password</label>
+              <input
+                type="password"
+                name="password"
+                placeholder="Enter your password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                autoComplete="current-password"
+                data-1p-ignore
+                data-lpignore="true"
+                data-form-type="other"
+              />
+            </div>
 
-        <div className="remember-forgot">
-          <label>
-            <input type="checkbox" /> Remember me
-          </label>
-          <a href="#">Forgot password?</a>
-        </div>
+            <div className="remember-forgot">
+              <label>
+                <input type="checkbox" /> Remember me
+              </label>
+              <a href="#">Forgot password?</a>
+            </div>
 
-        {errorMsg && (
-          <div style={{ 
-            color: "#ff4444", 
-            fontSize: "14px", 
-            marginBottom: "10px",
-            textAlign: "center"
-          }}>
-            {errorMsg}
+            {errorMsg && (
+              <div className="form-error">
+                {errorMsg}
+              </div>
+            )}
+
+            <button 
+              type="submit" 
+              className="btn-signin"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Signing In..." : "Sign In"}
+            </button>
+          </form>
+        </div>
+      </div>
+
+      {/* === RIGHT PANEL === */}
+      <div className="login-right">
+        <div className="overlay-content">
+          <h1>TEMPAT TERBAIK UNTUK BELAJAR DARI PRAKTISI PROPERTI</h1>
+          <h3>
+            Komunitas properti eksklusif — belajar langsung dari pelaku lapangan
+            yang sudah buktiin strategi cuan properti, bukan teori doang!
+          </h3>
+
+          {/* === Founder Image Fade === */}
+          <div className="founder-section">
+            <div className="image-stack">
+              {founders.map((src, i) => (
+                <Image
+                  key={i}
+                  src={src}
+                  alt="Founder"
+                  width={250}
+                  height={125}
+                  className={`founder-full ${
+                    i === current ? "fade-active" : "fade-inactive"
+                  }`}
+                />
+              ))}
+            </div>
           </div>
-        )}
-
-        <button 
-          type="submit" 
-          className="btn-signin"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? "Signing In..." : "Sign In"}
-        </button>
-      </form>
-    </div>
-  </div>
-
-  {/* === RIGHT PANEL === */}
-  <div className="login-right">
-    <div className="overlay-content">
-      <h1>TEMPAT TERBAIK UNTUK BELAJAR DARI PRAKTISI PROPERTI</h1>
-      <h3>
-        Komunitas properti eksklusif — belajar langsung dari pelaku lapangan
-        yang sudah buktiin strategi cuan properti, bukan teori doang!
-      </h3>
-
-      {/* === Founder Image Fade === */}
-      <div className="founder-section">
-        <div className="image-stack">
-          {founders.map((src, i) => (
-            <Image
-              key={i}
-              src={src}
-              alt="Founder"
-              width={250}
-              height={125}
-              className={`founder-full ${
-                i === current ? "fade-active" : "fade-inactive"
-              }`}
-            />
-          ))}
         </div>
       </div>
     </div>
-  </div>
-</div>
-  </>
-);
+  );
 }

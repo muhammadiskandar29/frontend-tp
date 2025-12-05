@@ -355,6 +355,9 @@
   z-index: 999;
   overflow: hidden;
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
 }
 
 .ticker span {
@@ -366,6 +369,15 @@
 
 .ticker-bottom span {
   animation-direction: reverse;
+}
+
+@keyframes scroll-text {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
 }
 
 .webinar-embed-wrapper {

@@ -251,7 +251,7 @@ export default function WebinarGatewayPage() {
     return (
       <div className="webinar-gateway-page">
         <div className="ticker ticker-top">
-          <span>Selamat datang di Webinar One Dashboard — Pastikan kamera dan mikrofon siap, gunakan koneksi internet stabil, dan hubungi host bila mengalami kendala.</span>
+          <span>Selamat datang di Webinar One Dashboard — Pastikan kamera dan mikrofon siap, gunakan koneksi internet stabil, dan hubungi host bila mengalami kendala. • Selamat datang di Webinar One Dashboard — Pastikan kamera dan mikrofon siap, gunakan koneksi internet stabil, dan hubungi host bila mengalami kendala. • Selamat datang di Webinar One Dashboard — Pastikan kamera dan mikrofon siap, gunakan koneksi internet stabil, dan hubungi host bila mengalami kendala.</span>
         </div>
         <div className="webinar-gateway-container">
           <div className="webinar-loading">
@@ -269,7 +269,7 @@ export default function WebinarGatewayPage() {
     return (
       <div className="webinar-gateway-page">
         <div className="ticker ticker-top">
-          <span>Selamat datang di Webinar One Dashboard — Pastikan kamera dan mikrofon siap, gunakan koneksi internet stabil, dan hubungi host bila mengalami kendala.</span>
+          <span>Selamat datang di Webinar One Dashboard — Pastikan kamera dan mikrofon siap, gunakan koneksi internet stabil, dan hubungi host bila mengalami kendala. • Selamat datang di Webinar One Dashboard — Pastikan kamera dan mikrofon siap, gunakan koneksi internet stabil, dan hubungi host bila mengalami kendala. • Selamat datang di Webinar One Dashboard — Pastikan kamera dan mikrofon siap, gunakan koneksi internet stabil, dan hubungi host bila mengalami kendala.</span>
         </div>
         <div className="webinar-gateway-container">
           <div className="webinar-error">
@@ -317,7 +317,7 @@ export default function WebinarGatewayPage() {
     return (
       <div className="webinar-gateway-page">
         <div className="ticker ticker-top">
-          <span>Selamat datang di Webinar One Dashboard — Pastikan kamera dan mikrofon siap, gunakan koneksi internet stabil, dan hubungi host bila mengalami kendala.</span>
+          <span>Selamat datang di Webinar One Dashboard — Pastikan kamera dan mikrofon siap, gunakan koneksi internet stabil, dan hubungi host bila mengalami kendala. • Selamat datang di Webinar One Dashboard — Pastikan kamera dan mikrofon siap, gunakan koneksi internet stabil, dan hubungi host bila mengalami kendala. • Selamat datang di Webinar One Dashboard — Pastikan kamera dan mikrofon siap, gunakan koneksi internet stabil, dan hubungi host bila mengalami kendala.</span>
         </div>
         <div className="webinar-gateway-container">
           <div className="webinar-error">
@@ -336,7 +336,7 @@ export default function WebinarGatewayPage() {
   return (
     <div className="webinar-gateway-page">
       <div className="ticker ticker-top">
-        <span>{runningTextTop}</span>
+        <span>{runningTextTop} • {runningTextTop} • {runningTextTop}</span>
       </div>
       <div className="webinar-gateway-container">
         {showZoom && webinarData ? (
@@ -385,12 +385,6 @@ export default function WebinarGatewayPage() {
                         minute: "2-digit"
                       })}
                     </span>
-                  </div>
-                )}
-                {webinarData.webinar?.duration && (
-                  <div className="info-item">
-                    <span className="info-label">Durasi</span>
-                    <span className="info-value">{webinarData.webinar.duration} menit</span>
                   </div>
                 )}
               </div>

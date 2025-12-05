@@ -45,19 +45,27 @@ export default function TrainerSection({ productId, product, onProductUpdate }) 
   // Set current trainer from product data
   useEffect(() => {
     if (product) {
-      // Check if product has trainer field or trainer_rel
+      // Check if product has trainer field or trainer_id
+      // Note: trainer_rel mungkin tidak ada jika relationship tidak didefinisikan di backend
       const trainerId = product.trainer || product.trainer_id;
-      const trainerRel = product.trainer_rel;
+      const trainerRel = product.trainer_rel; // Mungkin undefined jika backend error
       
       if (trainerId) {
         setSelectedTrainer(String(trainerId));
-        setCurrentTrainer(trainerRel || { id: trainerId, nama: "Trainer" });
+        // Jika trainer_rel tidak ada, cari dari trainers list
+        if (trainerRel) {
+          setCurrentTrainer(trainerRel);
+        } else {
+          // Fallback: cari dari trainers list
+          const trainerData = trainers.find(t => String(t.id) === String(trainerId));
+          setCurrentTrainer(trainerData || { id: trainerId, nama: "Trainer" });
+        }
       } else {
         setSelectedTrainer("");
         setCurrentTrainer(null);
       }
     }
-  }, [product]);
+  }, [product, trainers]);
 
   const handleSave = async () => {
     if (!id) {
@@ -89,7 +97,12 @@ export default function TrainerSection({ productId, product, onProductUpdate }) 
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        throw new Error(data.message || "Gagal mengupdate trainer");
+        // Handle specific error about trainer_rel
+        const errorMessage = data.message || data.error || "Gagal mengupdate trainer";
+        if (errorMessage.includes("trainer_rel") || errorMessage.includes("undefined relationship")) {
+          throw new Error("Error backend: Relationship trainer_rel tidak didefinisikan. Silakan hubungi developer backend.");
+        }
+        throw new Error(errorMessage);
       }
 
       toast.success(data.message || "Trainer berhasil diupdate");

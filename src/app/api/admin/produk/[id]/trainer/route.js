@@ -4,6 +4,12 @@ import { NextResponse } from "next/server";
 import axios from "axios";
 import { BACKEND_URL } from "@/config/env";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "PUT, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization",
+};
+
 /**
  * PUT /api/admin/produk/{id}/trainer
  * Update trainer untuk produk
@@ -17,7 +23,7 @@ export async function PUT(request, { params }) {
     if (!id) {
       return NextResponse.json(
         { success: false, message: "Product ID is required" },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -25,7 +31,7 @@ export async function PUT(request, { params }) {
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return NextResponse.json(
         { success: false, message: "Token tidak ditemukan" },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       );
     }
 
@@ -35,11 +41,11 @@ export async function PUT(request, { params }) {
     console.log(`[TRAINER_UPDATE] ========== PUT /api/admin/produk/${id}/trainer ==========`);
     console.log(`[TRAINER_UPDATE] Request body:`, reqBody);
     
-    // Validate request body
-    if (!reqBody || typeof reqBody.trainer !== "number") {
+    // Validate request body - sesuai dokumentasi: { "trainer": 6 }
+    if (!reqBody || (reqBody.trainer !== null && typeof reqBody.trainer !== "number")) {
       return NextResponse.json(
-        { success: false, message: "Trainer ID harus berupa number" },
-        { status: 400 }
+        { success: false, message: "Trainer ID harus berupa number atau null" },
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -61,18 +67,42 @@ export async function PUT(request, { params }) {
 
       console.log(`[TRAINER_UPDATE] ✅ Backend response:`, response.data);
       
-      return NextResponse.json(response.data);
+      // Response sesuai dokumentasi: { success: true, message: "...", data: {...} }
+      return NextResponse.json(response.data, { headers: corsHeaders });
     } catch (axiosError) {
       console.error(`[TRAINER_UPDATE] ❌ Axios error:`, axiosError);
       
       if (axiosError.response) {
         // Backend responded with error
+        const errorData = axiosError.response.data || {};
+        const errorMessage = errorData.message || errorData.error || "Gagal mengupdate trainer";
+        
+        console.error(`[TRAINER_UPDATE] ❌ Backend error response:`, {
+          status: axiosError.response.status,
+          data: errorData,
+          message: errorMessage
+        });
+        
+        // Handle specific error about trainer_rel relationship
+        if (errorMessage.includes("trainer_rel") || errorMessage.includes("undefined relationship")) {
+          return NextResponse.json(
+            {
+              success: false,
+              message: "Error: Relationship trainer_rel tidak didefinisikan di backend. Silakan hubungi developer backend untuk memperbaiki model Produk.",
+              error: errorMessage,
+              hint: "Backend perlu menambahkan relationship trainer_rel di model Produk"
+            },
+            { status: axiosError.response.status }
+          );
+        }
+        
         return NextResponse.json(
-          axiosError.response.data || {
+          {
             success: false,
-            message: "Gagal mengupdate trainer",
+            message: errorMessage,
+            error: errorData
           },
-          { status: axiosError.response.status }
+          { status: axiosError.response.status, headers: corsHeaders }
         );
       } else if (axiosError.request) {
         // Request sent but no response
@@ -83,7 +113,7 @@ export async function PUT(request, { params }) {
             message: "Tidak ada response dari backend",
             error: axiosError.message,
           },
-          { status: 500 }
+          { status: 500, headers: corsHeaders }
         );
       } else {
         // Error setting up request
@@ -98,8 +128,15 @@ export async function PUT(request, { params }) {
         success: false,
         message: error.message || "Terjadi kesalahan saat mengupdate trainer",
       },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: corsHeaders,
+  });
 }
 
