@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getBackendUrl } from '@/config/api';
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization",
+};
+
 /**
  * Login API Proxy Route
  * Proxy untuk menghindari CORS issues
@@ -15,7 +21,7 @@ export async function POST(request) {
     
     // Add timeout and better error handling
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds timeout
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout - reduced for faster response
 
     let response;
     try {
@@ -38,7 +44,7 @@ export async function POST(request) {
             message: 'Request timeout. Server tidak merespons.',
             error: 'Timeout'
           },
-          { status: 504 }
+          { status: 504, headers: corsHeaders }
         );
       }
       if (fetchError.message?.includes('fetch')) {
@@ -48,7 +54,7 @@ export async function POST(request) {
             message: `Tidak dapat terhubung ke server backend. Pastikan backend berjalan di ${backendUrl}`,
             error: fetchError.message
           },
-          { status: 503 }
+          { status: 503, headers: corsHeaders }
         );
       }
       throw fetchError;
@@ -67,7 +73,7 @@ export async function POST(request) {
           message: 'Backend error: Response bukan JSON',
           error: responseText.substring(0, 200)
         },
-        { status: response.status || 500 }
+        { status: response.status || 500, headers: corsHeaders }
       );
     }
 
@@ -76,6 +82,7 @@ export async function POST(request) {
 
     return NextResponse.json(data, {
       status: response.status,
+      headers: corsHeaders,
     });
   } catch (error) {
     console.error('[LOGIN_PROXY] Error:', error);
@@ -85,7 +92,7 @@ export async function POST(request) {
         message: 'Gagal terhubung ke server. Coba lagi nanti.',
         error: error.message 
       },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
@@ -93,6 +100,7 @@ export async function POST(request) {
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
+    headers: corsHeaders,
   });
 }
 

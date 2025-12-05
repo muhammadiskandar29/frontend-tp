@@ -403,8 +403,8 @@ export async function GET(request) {
 
     try {
       // Create AbortController for timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout - reduced for faster response
 
       response = await fetch(`${BACKEND_URL}/api/admin/produk`, {
         method: "GET",
