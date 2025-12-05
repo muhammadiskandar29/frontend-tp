@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { getCost, getDestinations } from "@/lib/shipping";
-import { toast } from "react-hot-toast";
+import { searchCities, calculateCost } from "@/lib/rajaongkir-direct";
 import "@/styles/ongkir.css";
 
 const COOLDOWN_DURATION = 20 * 1000; // 20 detik dalam milliseconds
@@ -32,11 +31,8 @@ export default function OngkirCalculator({
   const cooldownIntervalRef = useRef(null);
   const calculateTimeoutRef = useRef(null);
 
-  // Hardcode origin city_id: 73655 (Kelapa Dua, Kabupaten Tangerang, Banten)
-  // CATATAN: RajaOngkir V2 Basic hanya menerima CITY_ID (bukan subdistrict_id)
-  // Origin hardcode, tidak perlu dari prop atau env
-  const ORIGIN_CITY_ID = "73655"; // Kelapa Dua, Kabupaten Tangerang, Banten
-  const origin = ORIGIN_CITY_ID;
+  // Hardcode origin city/subdistrict ID: 73655 (Kelapa Dua, Tangerang, Banten)
+  // Origin sudah di-hardcode di rajaongkir-direct.js, tidak perlu di sini
 
   // Check cooldown on mount
   useEffect(() => {
@@ -83,6 +79,7 @@ export default function OngkirCalculator({
     }
   };
 
+  // Search kota tujuan - bisa mulai dari 1 huruf
   const handleDestinationSearch = async (query) => {
     setDestinationSearch(query);
     
@@ -90,32 +87,23 @@ export default function OngkirCalculator({
       clearTimeout(searchTimeoutRef.current);
     }
 
-    // Tidak ada filter minimal karakter - biarkan user ketik bebas
     // Jika query kosong, clear results
     if (!query || query.trim().length === 0) {
       setDestinationResults([]);
       return;
     }
 
+    // Debounce search untuk menghindari terlalu banyak request
     searchTimeoutRef.current = setTimeout(async () => {
       try {
-        console.log('[ONGKIR] Searching destination with query:', query);
-        const results = await getDestinations(query);
-        console.log('[ONGKIR] Destination results:', results);
+        // Fetch langsung ke RajaOngkir API (tanpa backend)
+        const results = await searchCities(query);
+        // Silent error handling - jika error, results akan empty array
         setDestinationResults(Array.isArray(results) ? results : []);
       } catch (error) {
-        console.error("Error searching destination:", error);
+        // Silent error - tidak tampilkan ke user, cukup reset dropdown
+        console.warn('[ONGKIR] Search error (silent):', error.message);
         setDestinationResults([]);
-        
-        // Jangan tampilkan error toast - biarkan user terus mengetik tanpa gangguan
-        // Hanya log ke console untuk debugging
-        console.log('[ONGKIR] Search error (silent):', error.message);
-        
-        // Hanya tampilkan error untuk masalah kritis (API key)
-        if (error.message && error.message.includes('API key tidak dikonfigurasi')) {
-          toast.error("API key tidak dikonfigurasi. Silakan hubungi admin.");
-        }
-        // Untuk error lain, tidak tampilkan toast - biarkan user terus mengetik
       }
     }, 300);
   };
@@ -141,9 +129,9 @@ export default function OngkirCalculator({
     });
     
     // VALIDASI: Pastikan ini adalah city_id, bukan subdistrict_id
+    // Silent error - jika tidak valid, cukup return tanpa menampilkan error
     if (dest.subdistrict_id && !dest.city_id) {
-      console.error('[ONGKIR] ERROR: Selected item has subdistrict_id but no city_id!', dest);
-      toast.error("Data yang dipilih bukan kota. Silakan pilih kota yang benar.");
+      console.warn('[ONGKIR] Invalid selection: subdistrict_id without city_id (silent)');
       return;
     }
     
@@ -174,22 +162,11 @@ export default function OngkirCalculator({
   };
   
   // Auto-calculate ongkir ketika kota + kurir sudah terpilih
+  // Fetch langsung ke RajaOngkir API (tanpa backend)
   const autoCalculateOngkir = async (destId, selectedCourier) => {
     if (!destId || !selectedCourier) {
-      console.warn('[ONGKIR] destId (city_id) atau courier belum terisi:', { destId, selectedCourier });
       return;
     }
-    
-    // VALIDASI: Pastikan destId adalah city_id (bukan subdistrict_id)
-    // City_id biasanya lebih kecil dari subdistrict_id (contoh: 151 vs 17523)
-    // Tapi lebih baik validasi dari data yang dipilih, bukan dari angka
-    console.log('[ONGKIR] Auto-calculating ongkir dengan CITY_ID (V2 Basic):', { 
-      origin: ORIGIN_CITY_ID, 
-      destination_city_id: destId, 
-      courier: selectedCourier,
-      weight: DEFAULT_WEIGHT,
-      note: 'Menggunakan CITY_ID untuk RajaOngkir V2 Basic, origin hardcode 73655'
-    });
 
     if (cooldownActive) {
       return;
@@ -206,37 +183,35 @@ export default function OngkirCalculator({
       setEtd("");
 
       try {
-        // Origin hardcode 73655, tidak perlu dikirim dari frontend
-        // API route akan menggunakan origin hardcode
-        const result = await getCost({
+        // Fetch langsung ke RajaOngkir API (tanpa backend)
+        // Silent error handling - jika error, price akan 0
+        const result = await calculateCost({
           destination: destId,
           weight: DEFAULT_WEIGHT,
           courier: selectedCourier,
         });
 
-        setPrice(result.price);
-        setEtd(result.etd);
+        // Update state hanya jika ada hasil
+        if (result && result.price > 0) {
+          setPrice(result.price);
+          setEtd(result.etd || '');
 
-        // Call callback - PASTIKAN dipanggil untuk update grand total
-        if (onSelectOngkir && result.price) {
-          console.log('[ONGKIR] Calling onSelectOngkir with price:', result.price);
-          onSelectOngkir(result.price);
-        }
+          // Call callback untuk update grand total di parent
+          if (onSelectOngkir) {
+            onSelectOngkir(result.price);
+          }
 
-        // Set cooldown
-        localStorage.setItem(COOLDOWN_KEY, Date.now().toString());
-        checkCooldown();
-
-        toast.success("Ongkir berhasil dihitung");
-      } catch (error) {
-        console.error("Error calculating cost:", error);
-        
-        if (error.message.includes("rate limit") || error.message.includes("Terlalu banyak")) {
-          toast.error("Terlalu banyak request. Silakan coba lagi dalam beberapa saat.");
+          // Set cooldown
+          localStorage.setItem(COOLDOWN_KEY, Date.now().toString());
+          checkCooldown();
         } else {
-          toast.error(error.message || "Gagal menghitung ongkir");
+          // Silent error - reset state tanpa menampilkan error
+          setPrice(null);
+          setEtd("");
         }
-        
+      } catch (error) {
+        // Silent error - tidak tampilkan ke user, cukup reset state
+        console.warn('[ONGKIR] Calculate error (silent):', error.message);
         setPrice(null);
         setEtd("");
       } finally {
@@ -247,7 +222,7 @@ export default function OngkirCalculator({
 
   // Auto-calculate ketika kurir berubah
   useEffect(() => {
-    if (destinationId && courier && origin) {
+    if (destinationId && courier) {
       autoCalculateOngkir(destinationId, courier);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
