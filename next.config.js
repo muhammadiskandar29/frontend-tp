@@ -79,6 +79,12 @@ const nextConfig = {
         source: "/api/webinar/gateway/:path*",
         destination: "/api/webinar/gateway/:path*",
       },
+      // Exclude /api/login from rewrite - it should use Next.js API route handler
+      {
+        source: "/api/login",
+        destination: "/api/login",
+      },
+      // Rewrite other API routes to backend
       {
         source: "/api/:path*",
         destination: `${backendUrl}/api/:path*`,

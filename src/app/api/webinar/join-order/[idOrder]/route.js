@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { BACKEND_URL } from "@/config/env";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization",
+};
+
 export async function GET(request, { params }) {
   try {
     // Next.js 15+ requires params to be awaited
@@ -9,7 +15,7 @@ export async function GET(request, { params }) {
     if (!idOrder) {
       return NextResponse.json(
         { success: false, message: "Order ID tidak ditemukan" },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -18,7 +24,7 @@ export async function GET(request, { params }) {
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return NextResponse.json(
         { success: false, message: "Token tidak ditemukan" },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       );
     }
 
@@ -50,7 +56,7 @@ export async function GET(request, { params }) {
       console.error("❌ [WEBINAR_JOIN] Response text:", text);
       return NextResponse.json(
         { success: false, message: "Gagal memparse response dari backend" },
-        { status: 500 }
+        { status: 500, headers: corsHeaders }
       );
     }
 
@@ -62,17 +68,33 @@ export async function GET(request, { params }) {
           message: data?.message || "Gagal mengambil data webinar",
           error: data?.error || "Unknown error"
         },
-        { status: response.status }
+        { status: response.status, headers: corsHeaders }
       );
     }
 
-    return NextResponse.json(data);
+    // Response sesuai dokumentasi: { success: true, data: { meetingNumber, password, signature, ... } }
+    console.log("✅ [WEBINAR_JOIN] Success - Response data structure:", {
+      success: data?.success,
+      hasMeetingNumber: !!data?.data?.meetingNumber,
+      hasPassword: !!data?.data?.password,
+      hasSignature: !!data?.data?.signature,
+      hasWebinar: !!data?.data?.webinar,
+    });
+
+    return NextResponse.json(data, { status: response.status, headers: corsHeaders });
   } catch (error) {
     console.error("❌ [WEBINAR_JOIN] Error:", error);
     return NextResponse.json(
       { success: false, message: error.message || "Terjadi kesalahan saat mengambil data webinar" },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: corsHeaders,
+  });
 }
 

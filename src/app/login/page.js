@@ -116,7 +116,15 @@ export default function LoginPage() {
 
       // Check if response is ok
       if (!response.ok) {
-        const errorMessage = data?.message || `HTTP ${response.status}: ${data?.error || 'Login gagal'}`;
+        let errorMessage = data?.message || `HTTP ${response.status}: ${data?.error || 'Login gagal'}`;
+        
+        // Add helpful hints for specific error codes
+        if (response.status === 504) {
+          errorMessage += ' (Timeout - Backend mungkin tidak dapat diakses dari Vercel server)';
+        } else if (response.status === 503) {
+          errorMessage += ' (Network Error - Cek firewall/security group backend)';
+        }
+        
         setErrorMsg(errorMessage);
         setShowError(true);
         return;
@@ -177,8 +185,8 @@ export default function LoginPage() {
       // If hasAttemptedLogin is false, don't log anything (suppress errors on page load)
       
       // Handle timeout errors
-      if (error.name === 'AbortError') {
-        setErrorMsg('Request timeout. Server tidak merespons dalam 15 detik. Pastikan backend berjalan dan dapat diakses.');
+      if (error.name === 'AbortError' || error?.message?.includes('timeout')) {
+        setErrorMsg('Request timeout. Server tidak merespons. Jika backend berjalan di Postman, pastikan backend dapat diakses dari Vercel server (bukan hanya dari browser). Cek firewall/security group backend.');
         setShowError(true);
         return;
       }
@@ -190,9 +198,11 @@ export default function LoginPage() {
          error.message === "NetworkError when attempting to fetch resource" ||
          error.message.includes("fetch"))
       ) {
-        setErrorMsg('Tidak dapat terhubung ke server. Pastikan backend berjalan di http://3.105.234.181:8000 dan dapat diakses.');
+        setErrorMsg('Tidak dapat terhubung ke server. Backend mungkin memblokir request dari Vercel. Pastikan backend di http://3.105.234.181:8000 dapat diakses dari Vercel server (bukan hanya dari browser/Postman).');
       } else {
-        setErrorMsg(error?.message || 'Gagal terhubung ke server. Coba lagi nanti.');
+        // Use error message from API response if available
+        const errorMessage = error?.message || data?.message || 'Gagal terhubung ke server. Coba lagi nanti.';
+        setErrorMsg(errorMessage);
       }
       setShowError(true);
     } finally {
