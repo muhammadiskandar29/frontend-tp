@@ -159,8 +159,14 @@ export async function GET(request) {
       .map(dest => {
         // Normalize response untuk memastikan city_id tersedia
         const cityId = dest.city_id || dest.id;
-        const cityName = dest.city_name || dest.name || dest.label || '';
+        const cityName = dest.city_name || dest.name || '';
         const provinceName = dest.province_name || '';
+        
+        // Untuk display: Hanya tampilkan nama kota dan provinsi
+        // Contoh: "Jakarta Barat, DKI Jakarta" (BUKAN "GROGOL, GROGOL PETAMBURAN, JAKARTA BARAT, DKI JAKARTA, 11450")
+        const displayLabel = cityName && provinceName 
+          ? `${cityName}, ${provinceName}`
+          : cityName || dest.label || '';
         
         return {
           city_id: cityId, // Hanya gunakan city_id, jangan gunakan subdistrict_id
@@ -168,11 +174,10 @@ export async function GET(request) {
           province_id: dest.province_id || '',
           province_name: provinceName,
           type: dest.type || 'city',
-          postal_code: dest.postal_code || '',
-          // Untuk display - hanya kota dan provinsi
-          label: dest.label || `${cityName}${provinceName ? ', ' + provinceName : ''}`.trim(),
-          // Jangan include subdistrict_id atau district_id
-          // Keep original data untuk reference (tapi pastikan city_id yang digunakan)
+          postal_code: dest.postal_code || '', // Kode pos kota (jika ada)
+          // Untuk display - HANYA kota dan provinsi (tidak ada detail kecamatan/kelurahan)
+          label: displayLabel,
+          // Jangan include subdistrict_id, district_id, atau detail lainnya
         };
       })
       // Remove duplicates berdasarkan city_id
