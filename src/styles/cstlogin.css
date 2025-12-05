@@ -508,11 +508,14 @@ font-size: 0.8rem;
   color: var(--danger);
 }
 
+/* ===========================
+CUSTOMER LOGIN PAGE
+=========================== */
 .login-container {
   display: flex;
   flex-wrap: wrap;
   min-height: 100vh;
-  font-family: Inter,system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--gray-bg);
 }
 
@@ -529,8 +532,8 @@ font-size: 0.8rem;
 .login-box {
   background: var(--white);
   padding: 2rem clamp(1.5rem, 4vw, 3rem);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  border-radius: 20px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.07);
   width: min(420px, 100%);
 }
 
@@ -539,22 +542,27 @@ font-size: 0.8rem;
   margin-bottom: 1.2rem;
 }
 
-.logo h2 {
-  color: var(--primary);
-  font-size: 1rem;
-  margin-top: 0.3rem;
+.logo .login-logo {
+  width: auto;
+  height: auto;
+  max-width: 120px;
+  max-height: 60px;
+  object-fit: contain;
 }
 
 .login-box h3 {
   text-align: center;
   margin-bottom: 0.3rem;
   color: var(--dark-text);
+  font-size: 1.5rem;
+  font-weight: 600;
 }
 
 .login-box p {
   text-align: center;
   color: var(--gray-text);
   margin-bottom: 1.2rem;
+  font-size: 0.9rem;
 }
 
 .form-group {
@@ -572,16 +580,23 @@ font-size: 0.8rem;
 
 .form-group input {
   border: 1px solid var(--gray-border);
-  border-radius: 6px;
-  padding: 0.5rem 0.7rem;
+  border-radius: 10px;
+  padding: 12px 14px;
   font-size: 0.9rem;
   color: var(--dark-text);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .form-group input:focus {
   border-color: var(--primary);
   outline: none;
-  box-shadow: 0 0 0 2px rgba(241, 161, 36, 0.15);
+  box-shadow: 0 0 0 3px rgba(241, 161, 36, 0.15);
+}
+
+.form-group input::placeholder {
+  color: #9ca3af;
 }
 
 .remember-forgot {
@@ -592,13 +607,39 @@ font-size: 0.8rem;
   font-size: 0.85rem;
 }
 
+.remember-forgot label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--gray-text);
+  cursor: pointer;
+}
+
+.remember-forgot input[type="checkbox"] {
+  cursor: pointer;
+  accent-color: var(--primary);
+  width: auto;
+  margin: 0;
+}
+
 .remember-forgot a {
   color: var(--primary);
   text-decoration: none;
+  transition: text-decoration 0.2s ease;
 }
 
 .remember-forgot a:hover {
   text-decoration: underline;
+}
+
+.form-error {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  text-align: center;
 }
 
 .btn-signin {
@@ -606,15 +647,15 @@ font-size: 0.8rem;
   background: var(--primary);
   color: var(--white);
   border: none;
-  border-radius: 6px;
-  padding: 0.6rem;
+  border-radius: 10px;
+  padding: 12px 20px;
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
   transition: background 0.2s ease, transform 0.15s ease;
 }
 
-.btn-signin:hover {
+.btn-signin:hover:not(:disabled) {
   background: var(--primary-hover);
   transform: translateY(-1px);
 }
@@ -626,17 +667,10 @@ font-size: 0.8rem;
   opacity: 0.8;
 }
 
-.form-error {
-  color: #dc2626;
-  font-size: 0.85rem;
-  margin-bottom: 0.8rem;
-  text-align: center;
-}
-
 /* RIGHT SIDE */
 .login-right {
   flex: 1.1 1 480px;
-  min-height: 400px;
+  min-height: 250px;
   background: var(--primary);
   display: flex;
   align-items: center;
@@ -650,11 +684,16 @@ font-size: 0.8rem;
 }
 
 .overlay-content {
+  position: relative;
+  z-index: 2;
   width: min(700px, 100%);
   text-align: center;
   padding: 2rem;
-  margin-bottom: clamp(2rem, 7vw, 10rem);
   border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   backdrop-filter: blur(4px);
 }
 
@@ -662,6 +701,7 @@ font-size: 0.8rem;
   font-size: clamp(1.2rem, 2vw, 1.8rem);
   font-weight: 700;
   margin-bottom: 0.8rem;
+  color: white;
 }
 
 .overlay-content h3 {
@@ -669,6 +709,7 @@ font-size: 0.8rem;
   font-weight: 400;
   line-height: 1.4;
   margin-bottom: 2rem;
+  color: white;
 }
 
 .founder-card {
@@ -742,7 +783,7 @@ font-size: 0.8rem;
   }
 
   .login-box h3 {
-    font-size: 1.1rem;
+    font-size: 1.3rem;
   }
 
   .overlay-content {
@@ -754,39 +795,20 @@ font-size: 0.8rem;
     height: 110px;
   }
 }
+/* ===== Founder Section Fade Effect ===== */
 .founder-section {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 0rem;
+  margin-top: 1rem;
 }
 
 .founder-full {
+  border-radius: 12px;
+  transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out;
   max-width: 100%;
   height: auto;
   object-fit: contain;
-}
-
-/* === SMOOTH FADE IMAGE TRANSITION === */
-.fade-image {
-  opacity: 0;
-  transition: opacity 0.8s ease-in-out;
-}
-
-.fade-image-loaded {
-  opacity: 1;
-}
-
-/* ===== Founder Section Fade Effect ===== */
-.founder-section {
-  @apply flex justify-center mt-6;
-}
-
-.founder-full {
-  @apply rounded-xl;
-  transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out;
-  opacity: 0;
-  transform: scale(0.98);
 }
 
 .fade-image-loaded {

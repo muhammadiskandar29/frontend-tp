@@ -37,7 +37,10 @@ export async function searchCities(query = '') {
     // Tangani response bukan JSON atau format tidak sesuai
     if (!json || !json.success) {
       // Silent error - tidak tampilkan ke user
-      console.warn('[RAJAONGKIR] Search cities error (silent):', json?.message);
+      // Hanya log jika bukan error yang sudah diketahui (untuk menghindari spam log)
+      if (json?.message && !json.message.includes('Format response tidak valid')) {
+        console.warn('[RAJAONGKIR] Search cities error (silent):', json?.message);
+      }
       return json?.data || []; // Return empty array jika ada error
     }
 
