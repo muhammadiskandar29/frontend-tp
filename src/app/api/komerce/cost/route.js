@@ -62,9 +62,10 @@ export async function POST(request) {
       courier: String(courier).toLowerCase(), // jne, tiki, pos, dll
     };
 
-    console.log('[KOMERCE_COST] Requesting cost:', JSON.stringify(payload, null, 2));
+    console.log('[KOMERCE_COST] Requesting cost (V1 Basic - CITY_ID only):', JSON.stringify(payload, null, 2));
     console.log('[KOMERCE_COST] API Key:', RAJAONGKIR_KEY ? 'Set' : 'Not Set');
-    console.log('[KOMERCE_COST] URL:', `${KOMERCE_BASE_URL}/cost/domestic-cost`);
+    console.log('[KOMERCE_COST] Base URL:', KOMERCE_BASE_URL);
+    console.log('[KOMERCE_COST] CATATAN: V1 Basic hanya menerima CITY_ID (bukan subdistrict_id)');
 
     let response;
     let costUrl = ''; // Declare di scope yang lebih luas untuk error handling
@@ -73,10 +74,11 @@ export async function POST(request) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 detik timeout
       
-      // Endpoint: Coba beberapa format yang mungkin
-      // Format 1: /api/v1/cost/domestic-cost
-      // Format 2: /api/v1/domestic-cost (tanpa /cost)
-      costUrl = `${KOMERCE_BASE_URL}/cost/domestic-cost`;
+      // Endpoint untuk RajaOngkir V1 Basic
+      // V1 Basic menggunakan endpoint: /api/v1/cost
+      // CATATAN: V1 Basic hanya menerima CITY_ID (bukan subdistrict_id)
+      // Payload: { origin: "151", destination: "23", weight: 1000, courier: "jne" }
+      costUrl = `${KOMERCE_BASE_URL}/cost`;
       console.log('[KOMERCE_COST] Trying URL 1:', costUrl);
       console.log('[KOMERCE_COST] Payload:', JSON.stringify(payload, null, 2));
       
@@ -99,6 +101,7 @@ export async function POST(request) {
         const retryController = new AbortController();
         const retryTimeoutId = setTimeout(() => retryController.abort(), 30000);
         
+        // Fallback: coba endpoint alternatif jika /cost tidak ada
         costUrl = `${KOMERCE_BASE_URL}/domestic-cost`;
         console.log('[KOMERCE_COST] Trying URL 2:', costUrl);
         

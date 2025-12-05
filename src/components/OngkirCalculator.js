@@ -33,11 +33,14 @@ export default function OngkirCalculator({
   const calculateTimeoutRef = useRef(null);
 
   // Get origin dari env atau prop
-  // Origin bisa dari prop, env variable, atau hardcode
+  // Origin bisa dari prop, env variable, atau hardcode fallback
   // Priority: prop > env > hardcode fallback
-  // Hardcode origin ID Tangerang (Kelapa Dua, Tangerang, Banten)
-  // ID: 73655 - KELAPA DUA, KELAPA DUA, TANGERANG, BANTEN, 15810
-  const DEFAULT_ORIGIN_ID = "73655";
+  // CATATAN: RajaOngkir V1 Basic hanya menerima CITY_ID (bukan subdistrict_id)
+  // Hardcode origin CITY_ID Tangerang
+  // Contoh: Jakarta Barat = 151, Bandung = 23
+  // Untuk Tangerang, perlu city_id yang benar (bukan subdistrict_id 73655)
+  // Sementara gunakan 151 (JAKBAR) sebagai contoh, ganti dengan city_id Tangerang yang benar
+  const DEFAULT_ORIGIN_ID = "151"; // JAKARTA BARAT (contoh, ganti dengan city_id Tangerang)
   const origin = originId || process.env.NEXT_PUBLIC_RAJAONGKIR_ORIGIN || DEFAULT_ORIGIN_ID;
 
   // Check cooldown on mount
@@ -123,19 +126,20 @@ export default function OngkirCalculator({
   };
 
   const handleSelectDestination = (dest) => {
-    // Handle response dari Komerce API V2
-    // Gunakan subdistrict_id untuk cost calculation (lebih akurat)
-    const subdistrictId = dest.subdistrict_id || dest.id || "";
-    const label = dest.label || dest.name || dest.city_name || dest.subdistrict_name || "";
+    // Handle response dari Komerce API
+    // Untuk RajaOngkir V1 Basic, gunakan CITY_ID (bukan subdistrict_id)
+    const cityId = dest.city_id || dest.id || "";
+    const label = dest.label || dest.name || dest.city_name || "";
     
-    setDestinationId(String(subdistrictId));
+    console.log('[ONGKIR] Selected destination:', { cityId, label, dest });
+    
+    setDestinationId(String(cityId)); // Simpan city_id untuk cost calculation
     setDestination(label);
     setDestinationSearch(label);
     setDestinationResults([]);
     
-    // Auto-fill kecamatan, kelurahan, kode pos dari data yang dipilih
-    // Format label: "PEGADUNGAN, KALIDERES, JAKARTA BARAT, DKI JAKARTA, 11830"
-    // Atau dari field terpisah jika ada
+    // Auto-fill kecamatan, kelurahan, kode pos dari data yang dipilih (jika ada)
+    // Untuk city data, mungkin tidak ada detail kecamatan/kelurahan
     if (dest.district_name) {
       setKecamatan(dest.district_name);
     }
@@ -146,26 +150,21 @@ export default function OngkirCalculator({
       setKodePos(dest.postal_code);
     }
     
-    // Jika tidak ada field terpisah, parse dari label
+    // Jika tidak ada field terpisah, parse dari label (jika format lengkap)
     if (!dest.district_name && !dest.subdistrict_name && label) {
-      // Parse dari format: "PEGADUNGAN, KALIDERES, JAKARTA BARAT, DKI JAKARTA, 11830"
+      // Parse dari format: "KOTA, PROVINSI" atau format lebih lengkap
       const parts = label.split(',').map(p => p.trim());
-      if (parts.length >= 4) {
-        // parts[0] = subdistrict (kelurahan), parts[1] = district (kecamatan)
-        setKabupaten(parts[0] || '');
-        setKecamatan(parts[1] || '');
-        // Kode pos biasanya di akhir
-        const lastPart = parts[parts.length - 1];
-        if (lastPart && /^\d+$/.test(lastPart)) {
-          setKodePos(lastPart);
-        }
+      if (parts.length >= 2) {
+        // Untuk city data, biasanya format: "KOTA, PROVINSI"
+        // Tidak ada detail kecamatan/kelurahan di city level
       }
     }
     
     // Auto-calculate ongkir setelah destination terpilih
-    // Menggunakan subdistrict_id untuk perhitungan yang lebih akurat
-    if (subdistrictId && courier) {
-      autoCalculateOngkir(String(subdistrictId), courier);
+    // Menggunakan CITY_ID untuk RajaOngkir V1 Basic
+    if (cityId && courier) {
+      console.log('[ONGKIR] Auto-calculating with city_id:', cityId);
+      autoCalculateOngkir(String(cityId), courier);
     }
   };
   
@@ -291,11 +290,11 @@ export default function OngkirCalculator({
             {destinationResults.length > 0 && (
               <div className="ongkir-results-compact">
                 {destinationResults.map((dest, idx) => {
-                  // Format display sesuai response API V2
+                  // Format display untuk city data (RajaOngkir V1 Basic)
                   const label = dest.label || 
-                    `${dest.subdistrict_name || ''}, ${dest.district_name || ''}, ${dest.city_name || ''}, ${dest.province_name || ''}`.trim() ||
+                    `${dest.city_name || ''}, ${dest.province_name || ''}`.trim() ||
                     dest.name || dest.city_name || '';
-                  const subdistrictId = dest.subdistrict_id || dest.id || "";
+                  const cityId = dest.city_id || dest.id || "";
                   
                   return (
                     <div
@@ -306,7 +305,7 @@ export default function OngkirCalculator({
                         handleSelectDestination(dest);
                       }}
                     >
-                      {label || `ID: ${subdistrictId}`}
+                      {label || `ID: ${cityId}`}
                     </div>
                   );
                 })}

@@ -96,7 +96,7 @@ export async function GET(request) {
       );
     }
 
-    // Parse response dari Komerce API V2
+    // Parse response dari Komerce API
     // Response format: { data: [...], meta: {...} } atau langsung array
     let destinations = [];
     if (data?.data && Array.isArray(data.data)) {
@@ -107,12 +107,42 @@ export async function GET(request) {
       destinations = data.results;
     }
 
-    // Response sudah difilter oleh API, tidak perlu filter lagi
+    // Filter untuk hanya mengambil CITY data (untuk RajaOngkir V1 Basic)
+    // V1 Basic hanya menerima CITY_ID, bukan subdistrict_id
+    // Map response untuk memastikan kita menggunakan city_id
+    const cityDestinations = destinations
+      .filter(dest => {
+        // Hanya ambil data yang punya city_id (bukan subdistrict)
+        // Jika ada city_id, itu adalah city data
+        // Jika hanya ada subdistrict_id tanpa city_id, skip (itu subdistrict data)
+        return dest.city_id || dest.id; // Ambil yang punya city_id atau id (asumsi id adalah city_id)
+      })
+      .map(dest => {
+        // Normalize response untuk memastikan city_id tersedia
+        return {
+          city_id: dest.city_id || dest.id, // Gunakan city_id atau id sebagai fallback
+          city_name: dest.city_name || dest.name || dest.label || '',
+          province_id: dest.province_id || '',
+          province_name: dest.province_name || '',
+          type: dest.type || '',
+          postal_code: dest.postal_code || '',
+          // Untuk display
+          label: dest.label || `${dest.city_name || dest.name || ''}, ${dest.province_name || ''}`.trim(),
+          // Keep original data untuk reference
+          ...dest
+        };
+      })
+      // Remove duplicates berdasarkan city_id
+      .filter((dest, index, self) => 
+        index === self.findIndex(d => d.city_id === dest.city_id)
+      );
 
-    // Return response dari Komerce
+    console.log('[KOMERCE_DESTINATION] Filtered cities:', cityDestinations.length, 'from', destinations.length, 'total results');
+
+    // Return response dari Komerce (hanya city data)
     return NextResponse.json({
       success: true,
-      data: destinations,
+      data: cityDestinations,
     });
   } catch (error) {
     console.error('[KOMERCE_DESTINATION] Error:', error);
