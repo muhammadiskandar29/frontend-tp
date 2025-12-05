@@ -21,6 +21,7 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [checked, setChecked] = useState(false);
   const [showPasswordField, setShowPasswordField] = useState(false);
+  const [hasAttemptedLogin, setHasAttemptedLogin] = useState(false);
 
   // === CEK LOGIN ===
   useEffect(() => {
@@ -31,6 +32,47 @@ export default function LoginPage() {
       router.replace('/admin'); // langsung replace biar gak flicker
     }
   }, [router]);
+
+  // === HANDLE UNHANDLED ERRORS ===
+  useEffect(() => {
+    // Handle unhandled promise rejections - suppress network errors on page load
+    const handleUnhandledRejection = (event) => {
+      // Suppress network errors that occur on page load (before user attempts login)
+      if (
+        event.reason instanceof TypeError &&
+        (event.reason.message === "Failed to fetch" ||
+         event.reason.message === "NetworkError when attempting to fetch resource" ||
+         event.reason.message?.includes("fetch"))
+      ) {
+        // Prevent default error logging for network errors on page load
+        event.preventDefault();
+        return;
+      }
+    };
+
+    // Handle general errors - suppress network errors on page load
+    const handleError = (event) => {
+      // Suppress network errors that occur on page load (before user attempts login)
+      if (
+        event.error instanceof TypeError &&
+        (event.error.message === "Failed to fetch" ||
+         event.error.message === "NetworkError when attempting to fetch resource" ||
+         event.error.message?.includes("fetch"))
+      ) {
+        // Prevent default error logging for network errors on page load
+        event.preventDefault();
+        return;
+      }
+    };
+
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    window.addEventListener('error', handleError);
+
+    return () => {
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+      window.removeEventListener('error', handleError);
+    };
+  }, []);
 
   // === AUTO-MODAL kalau dari middleware ===
   useEffect(() => {
@@ -46,6 +88,7 @@ export default function LoginPage() {
     e.preventDefault();
     if (isSubmitting) return;
     setIsSubmitting(true);
+    setHasAttemptedLogin(true); // Mark that user has attempted login
 
     try {
       const response = await fetch(API_URL, {
@@ -99,7 +142,21 @@ export default function LoginPage() {
         setShowError(true);
       }
     } catch (error) {
-      console.error('Login error:', error);
+      // Only log error to console if user has attempted login
+      // This prevents error spam on page load
+      // Note: hasAttemptedLogin is set to true at the start of handleLogin
+      if (hasAttemptedLogin) {
+        // Only log non-network errors to avoid console spam
+        if (
+          !(error instanceof TypeError && 
+            (error.message === "Failed to fetch" || 
+             error.message === "NetworkError when attempting to fetch resource" ||
+             error.message.includes("fetch")))
+        ) {
+          console.error('Login error:', error);
+        }
+      }
+      // If hasAttemptedLogin is false, don't log anything (suppress errors on page load)
       
       // Handle network errors specifically
       if (
