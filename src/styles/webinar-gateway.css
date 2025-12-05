@@ -363,7 +363,7 @@
 .ticker span {
   display: inline-block;
   white-space: nowrap;
-  animation: scroll-text 18s linear infinite;
+  animation: scroll-text 40s linear infinite;
   letter-spacing: 0.5px;
 }
 
