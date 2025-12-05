@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { searchCities, calculateCost } from "@/lib/rajaongkir-direct";
+import { searchCities, calculateCost } from "@/lib/rajaongkir-backend";
 import "@/styles/ongkir.css";
 
 const COOLDOWN_DURATION = 20 * 1000; // 20 detik dalam milliseconds

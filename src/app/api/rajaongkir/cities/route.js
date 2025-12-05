@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server';
 
-// Hardcode API key
+/**
+ * Backend API Route untuk search kota/subdistrict dari RajaOngkir V2 Basic
+ * 
+ * Hardcode untuk testing (nanti bisa pindahkan ke environment variable):
+ * - API_KEY: mT8nGMeZ4cacc72ba9d93fd4g2xH48Gb
+ * 
+ * TODO: Pindahkan ke process.env.RAJAONGKIR_API_KEY
+ */
 const API_KEY = 'mT8nGMeZ4cacc72ba9d93fd4g2xH48Gb';
 const RAJAONGKIR_BASE_URL = 'https://api.rajaongkir.com/basic'; // V2 Basic
 
@@ -29,14 +36,16 @@ export async function GET(request) {
     try {
       json = JSON.parse(responseText);
     } catch (err) {
+      // Handle error dengan baik, jangan lempar error ke frontend
       console.error('[RAJAONGKIR_CITIES] JSON parse error:', err.message);
       console.error('[RAJAONGKIR_CITIES] Full response:', responseText);
       return NextResponse.json(
         {
           success: false,
-          message: 'Response dari RajaOngkir bukan JSON'
+          message: 'Response dari RajaOngkir bukan JSON',
+          data: [] // Return empty array agar frontend tidak error
         },
-        { status: 500 }
+        { status: 200 } // Return 200 agar frontend tidak throw error
       );
     }
 
@@ -45,39 +54,43 @@ export async function GET(request) {
     // Validate top-level structure
     // RajaOngkir bisa return error langsung atau dalam struktur rajaongkir
     if (!json) {
-      console.error("[RAJAONGKIR_CITIES] Empty response");
+      // Handle error dengan baik, jangan lempar error ke frontend
+      console.warn("[RAJAONGKIR_CITIES] Empty response");
       return NextResponse.json(
         {
           success: false,
-          message: "Response kosong dari RajaOngkir"
+          message: "Response kosong dari RajaOngkir",
+          data: [] // Return empty array agar frontend tidak error
         },
-        { status: 500 }
+        { status: 200 } // Return 200 agar frontend tidak throw error
       );
     }
 
     // Check if it's an error response (bisa langsung error atau dalam rajaongkir.status)
     if (json.status && json.status.code !== 200) {
-      console.error("[RAJAONGKIR_CITIES] Error response:", json);
+      // Handle error dengan baik, jangan lempar error ke frontend
+      console.warn("[RAJAONGKIR_CITIES] Error response:", json);
       return NextResponse.json(
         {
           success: false,
-          message: json.status.description || json.message || "Gagal mengambil data kota"
+          message: json.status.description || json.message || "Gagal mengambil data kota",
+          data: [] // Return empty array agar frontend tidak error
         },
-        { status: json.status.code || 400 }
+        { status: 200 } // Return 200 agar frontend tidak throw error
       );
     }
 
     // Check if response has rajaongkir wrapper
     if (!json.rajaongkir) {
-      console.error("[RAJAONGKIR_CITIES] Invalid structure - missing rajaongkir wrapper:", Object.keys(json));
-      console.error("[RAJAONGKIR_CITIES] Full response:", JSON.stringify(json).substring(0, 1000));
+      // Handle error dengan baik, jangan lempar error ke frontend
+      console.warn("[RAJAONGKIR_CITIES] Invalid structure - missing rajaongkir wrapper:", Object.keys(json));
       return NextResponse.json(
         {
           success: false,
           message: "Format response tidak valid dari RajaOngkir",
-          debug: { keys: Object.keys(json), sample: JSON.stringify(json).substring(0, 200) }
+          data: [] // Return empty array agar frontend tidak error
         },
-        { status: 500 }
+        { status: 200 } // Return 200 agar frontend tidak throw error
       );
     }
 
@@ -86,26 +99,29 @@ export async function GET(request) {
     const statusMsg = json.rajaongkir.status?.description || "Gagal mengambil data kota";
 
     if (statusCode !== 200) {
-      console.error("[RAJAONGKIR_CITIES] Status error:", json.rajaongkir.status);
+      // Handle error dengan baik, jangan lempar error ke frontend
+      console.warn("[RAJAONGKIR_CITIES] Status error:", json.rajaongkir.status);
       return NextResponse.json(
         {
           success: false,
-          message: statusMsg
+          message: statusMsg,
+          data: [] // Return empty array agar frontend tidak error
         },
-        { status: 400 }
+        { status: 200 } // Return 200 agar frontend tidak throw error
       );
     }
 
     // Check if results exist
     if (!json.rajaongkir.results || !Array.isArray(json.rajaongkir.results)) {
-      console.error('[RAJAONGKIR_CITIES] No results array:', json.rajaongkir);
+      // Handle error dengan baik, jangan lempar error ke frontend
+      console.warn('[RAJAONGKIR_CITIES] No results array:', json.rajaongkir);
       return NextResponse.json(
         {
           success: false,
           message: "Data kota tidak ditemukan",
-          debug: json.rajaongkir
+          data: [] // Return empty array agar frontend tidak error
         },
-        { status: 500 }
+        { status: 200 } // Return 200 agar frontend tidak throw error
       );
     }
 
@@ -139,13 +155,15 @@ export async function GET(request) {
       count: formattedCities.length
     });
   } catch (e) {
+    // Handle semua error dengan baik, jangan lempar error ke frontend
     console.error('[RAJAONGKIR_CITIES] Error:', e);
     return NextResponse.json(
       { 
         success: false, 
-        message: e.message || 'Terjadi kesalahan saat mengambil data kota' 
+        message: e.message || 'Terjadi kesalahan saat mengambil data kota',
+        data: [] // Return empty array agar frontend tidak error
       },
-      { status: 500 }
+      { status: 200 } // Return 200 agar frontend tidak throw error
     );
   }
 }
