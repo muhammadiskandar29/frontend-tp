@@ -16,15 +16,34 @@ export async function GET(request) {
 
     const json = await response.json();
 
-    if (json.rajaongkir.status.code !== 200) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: json.rajaongkir.status.description || 'Gagal mengambil data kota'
-        },
-        { status: json.rajaongkir.status.code }
-      );
-    }
+    // Validate top-level structure
+if (!data || !data.rajaongkir) {
+  console.error("[RAJAONGKIR_CITIES] Invalid structure:", data);
+  return NextResponse.json(
+    {
+      success: false,
+      message: "Response dari RajaOngkir tidak mengandung data"
+    },
+    { status: 500 }
+  );
+}
+
+// Validate status object
+const statusCode = data.rajaongkir.status?.code;
+const statusMsg = data.rajaongkir.status?.description || "Gagal mengambil data kota";
+
+if (statusCode !== 200) {
+  console.error("[RAJAONGKIR_CITIES] Status error:", data.rajaongkir.status);
+
+  return NextResponse.json(
+    {
+      success: false,
+      message: statusMsg
+    },
+    { status: 400 }
+  );
+}
+
 
     let list = json.rajaongkir.results;
 
