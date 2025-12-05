@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
-const RAJAONGKIR_API_KEY = mT8nGMeZ4cacc72ba9d93fd4g2xH48Gb;
+// Hardcode API key (untuk production, lebih baik pakai environment variable)
+const RAJAONGKIR_API_KEY = process.env.RAJAONGKIR_API_KEY || 'mT8nGMeZ4cacc72ba9d93fd4g2xH48Gb';
 const RAJAONGKIR_BASE_URL = 'https://api.rajaongkir.com/starter';
 
 export async function GET(request) {
