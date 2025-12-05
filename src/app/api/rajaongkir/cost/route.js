@@ -1,36 +1,31 @@
 import { NextResponse } from 'next/server';
 
+// Hardcode API key dan origin city_id
 const API_KEY = 'mT8nGMeZ4cacc72ba9d93fd4g2xH48Gb';
-const RAJAONGKIR_BASE_URL = 'https://api.rajaongkir.com/starter';
+const ORIGIN_CITY_ID = '73655'; // Kelapa Dua, Kabupaten Tangerang, Banten
+const RAJAONGKIR_BASE_URL = 'https://api.rajaongkir.com/basic'; // V2 Basic
 
 export async function POST(request) {
   try {
 
     const body = await request.json();
-    const { origin, destination, weight, courier } = body;
+    const { destination, weight, courier } = body;
+
+    // Origin hardcode, tidak perlu dari request
+    const origin = ORIGIN_CITY_ID;
 
     // Validasi input
-    if (!origin || !destination || !weight || !courier) {
+    if (!destination || !weight || !courier) {
       return NextResponse.json(
         {
           success: false,
-          message: 'origin, destination, weight, dan courier wajib diisi'
+          message: 'destination, weight, dan courier wajib diisi'
         },
         { status: 400 }
       );
     }
 
-    // Validasi origin dan destination harus angka (city_id) - RajaOngkir V1 Basic hanya menerima city_id
-    if (isNaN(parseInt(origin, 10))) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'origin harus berupa city_id (angka)'
-        },
-        { status: 400 }
-      );
-    }
-
+    // Validasi destination harus angka (city_id) - RajaOngkir V2 Basic hanya menerima city_id
     if (isNaN(parseInt(destination, 10))) {
       return NextResponse.json(
         {
@@ -53,18 +48,18 @@ export async function POST(request) {
       );
     }
 
-    // Build URL-encoded body (RajaOngkir V1 Basic requires form-urlencoded)
-    // CATATAN: RajaOngkir V1 Basic hanya menerima CITY_ID (bukan subdistrict_id)
-    // Format: origin="151" (city_id), destination="23" (city_id), weight=1000, courier="jne"
+    // Build URL-encoded body (RajaOngkir V2 Basic requires form-urlencoded)
+    // CATATAN: RajaOngkir V2 Basic hanya menerima CITY_ID (bukan subdistrict_id)
+    // Format: origin="73655" (hardcode), destination="23" (city_id), weight=1000, courier="jne"
     const params = new URLSearchParams();
-    params.append('origin', String(origin));      // city_id (contoh: "151" untuk Jakarta Barat)
-    params.append('destination', String(destination)); // city_id (contoh: "23" untuk Bandung)
+    params.append('origin', String(origin));      // Hardcode: 73655 (Kelapa Dua, Kabupaten Tangerang)
+    params.append('destination', String(destination)); // city_id tujuan
     params.append('weight', String(weightNum));
     params.append('courier', String(courier).toLowerCase());
 
-    console.log('[RAJAONGKIR_COST] Requesting cost (V1 Basic - CITY_ID only):', {
-      origin: String(origin),      // city_id
-      destination: String(destination), // city_id
+    console.log('[RAJAONGKIR_COST] Requesting cost (V2 Basic - CITY_ID only):', {
+      origin: String(origin),      // Hardcode: 73655
+      destination: String(destination), // city_id tujuan
       weight: weightNum,
       courier: courier.toLowerCase()
     });

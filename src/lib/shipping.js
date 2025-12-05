@@ -1,21 +1,22 @@
 /**
- * RajaOngkir V1 Basic API Helper
+ * RajaOngkir V2 Basic API Helper
  * Helper functions untuk berinteraksi dengan RajaOngkir API via Next.js API routes
+ * Origin hardcode: 73655 (Kelapa Dua, Kabupaten Tangerang, Banten)
  */
 
 /**
- * Hitung ongkir menggunakan RajaOngkir V1 Basic API
+ * Hitung ongkir menggunakan RajaOngkir V2 Basic API
  * @param {Object} params
- * @param {string} params.origin - City ID origin (kota asal)
- * @param {string} params.destination - City ID destination (kota tujuan)
- * @param {number} params.weight - Berat dalam gram (1-50000)
- * @param {string} params.courier - Kode kurir (jne, jnt, tiki)
+ * @param {string} params.destination - City ID destination (kota tujuan) - REQUIRED
+ * @param {number} params.weight - Berat dalam gram (1-50000) - REQUIRED
+ * @param {string} params.courier - Kode kurir (jne, jnt, tiki) - REQUIRED
+ * @param {string} params.origin - City ID origin (OPTIONAL, akan di-hardcode di API route)
  * @returns {Promise<{price: number, etd: string, raw: any}>}
  */
-export async function getCost({ origin, destination, weight, courier }) {
-  // Validasi input
-  if (!origin || !destination || !weight || !courier) {
-    throw new Error('origin, destination, weight, dan courier wajib diisi');
+export async function getCost({ destination, weight, courier, origin }) {
+  // Validasi input (origin tidak wajib, akan di-hardcode di API route)
+  if (!destination || !weight || !courier) {
+    throw new Error('destination, weight, dan courier wajib diisi');
   }
 
   // Validasi destination harus angka (city_id)
@@ -29,8 +30,9 @@ export async function getCost({ origin, destination, weight, courier }) {
     throw new Error('weight harus antara 1 dan 50000 gram');
   }
 
-  // Check cache di sessionStorage
-  const cacheKey = `rajaongkir_cost_${origin}_${destination}_${weight}_${courier}`;
+  // Check cache di sessionStorage (origin hardcode 73655)
+  const ORIGIN_HARDCODE = '73655';
+  const cacheKey = `rajaongkir_cost_${ORIGIN_HARDCODE}_${destination}_${weight}_${courier}`;
   const cached = sessionStorage.getItem(cacheKey);
   if (cached) {
     try {
@@ -47,16 +49,17 @@ export async function getCost({ origin, destination, weight, courier }) {
   }
 
   try {
+    // Origin hardcode di API route, tidak perlu dikirim dari frontend
     const response = await fetch('/api/rajaongkir/cost', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        origin: String(origin),
         destination: String(destination),
         weight: weightNum,
         courier: String(courier).toLowerCase(),
+        // Origin tidak perlu dikirim, akan di-hardcode di API route
       }),
     });
 

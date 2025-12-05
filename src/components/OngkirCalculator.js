@@ -32,13 +32,11 @@ export default function OngkirCalculator({
   const cooldownIntervalRef = useRef(null);
   const calculateTimeoutRef = useRef(null);
 
-  // Get origin dari env atau prop
-  // Origin bisa dari prop, env variable, atau hardcode fallback
-  // Priority: prop > env > hardcode fallback
-  // CATATAN: RajaOngkir V1 Basic hanya menerima CITY_ID (bukan subdistrict_id)
-  // Contoh: Jakarta Barat = 151, Bandung = 23, Tangerang = 456
-  const DEFAULT_ORIGIN_ID = "151"; // JAKARTA BARAT (contoh, ganti dengan city_id yang benar)
-  const origin = originId || process.env.NEXT_PUBLIC_RAJAONGKIR_ORIGIN || DEFAULT_ORIGIN_ID;
+  // Hardcode origin city_id: 73655 (Kelapa Dua, Kabupaten Tangerang, Banten)
+  // CATATAN: RajaOngkir V2 Basic hanya menerima CITY_ID (bukan subdistrict_id)
+  // Origin hardcode, tidak perlu dari prop atau env
+  const ORIGIN_CITY_ID = "73655"; // Kelapa Dua, Kabupaten Tangerang, Banten
+  const origin = ORIGIN_CITY_ID;
 
   // Check cooldown on mount
   useEffect(() => {
@@ -177,12 +175,6 @@ export default function OngkirCalculator({
   
   // Auto-calculate ongkir ketika kota + kurir sudah terpilih
   const autoCalculateOngkir = async (destId, selectedCourier) => {
-    if (!origin) {
-      console.warn('[ONGKIR] Origin tidak dikonfigurasi. Pastikan NEXT_PUBLIC_RAJAONGKIR_ORIGIN sudah di-set di .env.local');
-      toast.error("Origin tidak dikonfigurasi. Silakan hubungi admin.");
-      return;
-    }
-
     if (!destId || !selectedCourier) {
       console.warn('[ONGKIR] destId (city_id) atau courier belum terisi:', { destId, selectedCourier });
       return;
@@ -191,11 +183,12 @@ export default function OngkirCalculator({
     // VALIDASI: Pastikan destId adalah city_id (bukan subdistrict_id)
     // City_id biasanya lebih kecil dari subdistrict_id (contoh: 151 vs 17523)
     // Tapi lebih baik validasi dari data yang dipilih, bukan dari angka
-    console.log('[ONGKIR] Auto-calculating ongkir dengan CITY_ID:', { 
-      origin, 
+    console.log('[ONGKIR] Auto-calculating ongkir dengan CITY_ID (V2 Basic):', { 
+      origin: ORIGIN_CITY_ID, 
       destination_city_id: destId, 
       courier: selectedCourier,
-      note: 'Menggunakan CITY_ID untuk RajaOngkir V1 Basic'
+      weight: DEFAULT_WEIGHT,
+      note: 'Menggunakan CITY_ID untuk RajaOngkir V2 Basic, origin hardcode 73655'
     });
 
     if (cooldownActive) {
@@ -213,8 +206,9 @@ export default function OngkirCalculator({
       setEtd("");
 
       try {
+        // Origin hardcode 73655, tidak perlu dikirim dari frontend
+        // API route akan menggunakan origin hardcode
         const result = await getCost({
-          origin,
           destination: destId,
           weight: DEFAULT_WEIGHT,
           courier: selectedCourier,
