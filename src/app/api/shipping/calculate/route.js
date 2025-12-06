@@ -30,8 +30,10 @@ export async function GET(request) {
       return NextResponse.json({
         success: true,
         message: 'Parameter tidak lengkap',
+        price: 0,
+        etd: '',
         data: {}
-      });
+      }, { status: 200 });
     }
 
     // Build URL dengan query parameters
@@ -171,13 +173,14 @@ export async function GET(request) {
     console.log('[SHIPPING_CALCULATE] Calculated cost:', normalizedData.price);
 
     // Return normalized data dengan format standar
+    // Pastikan selalu return price dan etd di level atas untuk kompatibilitas frontend
     return NextResponse.json({
       success: true,
       message: 'Berhasil menghitung ongkir',
-      price: normalizedData.price,
-      etd: normalizedData.etd,
+      price: normalizedData.price || 0,
+      etd: normalizedData.etd || '',
       data: normalizedData
-    });
+    }, { status: 200 });
 
   } catch (error) {
     // Catch-all error handler - tidak boleh crash

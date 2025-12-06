@@ -160,7 +160,7 @@ export async function GET(request) {
       success: true,
       message: 'Berhasil mengambil data',
       data: normalizedData
-    });
+    }, { status: 200 });
 
   } catch (error) {
     // Catch-all error handler - tidak boleh crash
