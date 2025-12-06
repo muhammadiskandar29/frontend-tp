@@ -9,7 +9,8 @@ import { NextResponse } from 'next/server';
  * TODO: Pindahkan ke process.env.RAJAONGKIR_API_KEY
  */
 const API_KEY = 'mT8nGMeZ4cacc72ba9d93fd4g2xH48Gb';
-const RAJAONGKIR_BASE_URL = 'https://api.rajaongkir.com/basic'; // V2 Basic
+// Catatan: RajaOngkir V2 Basic menggunakan endpoint /starter (bukan /basic)
+const RAJAONGKIR_BASE_URL = 'https://api.rajaongkir.com/starter'; // V2 Basic/Starter
 
 export async function GET(request) {
   try {

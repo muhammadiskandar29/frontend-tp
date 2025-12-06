@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { searchCities, calculateCost } from "@/lib/rajaongkir-backend";
+import { searchDestinations, calculateCost } from "@/lib/komerce-backend";
 import "@/styles/ongkir.css";
 
 const COOLDOWN_DURATION = 20 * 1000; // 20 detik dalam milliseconds
@@ -79,7 +79,7 @@ export default function OngkirCalculator({
     }
   };
 
-  // Search kota tujuan - bisa mulai dari 1 huruf
+  // Search destination - bisa mulai dari 1 huruf
   const handleDestinationSearch = async (query) => {
     setDestinationSearch(query);
     
@@ -96,55 +96,36 @@ export default function OngkirCalculator({
     // Debounce search untuk menghindari terlalu banyak request
     searchTimeoutRef.current = setTimeout(async () => {
       try {
-        // Fetch langsung ke RajaOngkir API (tanpa backend)
-        const results = await searchCities(query);
+        // Fetch via backend API route (Komerce)
+        const results = await searchDestinations(query);
         // Silent error handling - jika error, results akan empty array
         setDestinationResults(Array.isArray(results) ? results : []);
       } catch (error) {
         // Silent error - tidak tampilkan ke user, cukup reset dropdown
-        console.warn('[ONGKIR] Search error (silent):', error.message);
         setDestinationResults([]);
       }
     }, 300);
   };
 
   const handleSelectDestination = (dest) => {
-    // Handle response dari RajaOngkir API
-    // PENTING: Untuk RajaOngkir V1 Basic, HANYA gunakan CITY_ID (bukan subdistrict_id)
-    // User memilih KOTA (Jakarta Barat, Jakarta Timur, dll) - BUKAN detail subdistrict
-    // Detail kecamatan/kelurahan/kode pos diinput manual untuk alamat lengkap, TIDAK untuk cost calculation
+    // Handle response dari Komerce API
+    // User memilih destination (kota/subdistrict)
+    // Detail kecamatan/kelurahan/kode pos diinput manual untuk alamat lengkap
     
-    const cityId = dest.city_id || dest.id || "";
-    // Label hanya kota dan provinsi: "Jakarta Barat, DKI Jakarta"
+    const destinationId = dest.destination_id || dest.id || dest.city_id || "";
+    // Label: "Kota, Provinsi"
     const label = dest.label || `${dest.city_name || ''}${dest.province_name ? ', ' + dest.province_name : ''}`.trim();
     
-    console.log('[ONGKIR] Selected destination (CITY ONLY):', { 
-      cityId, 
-      label, 
-      city_name: dest.city_name,
-      province_name: dest.province_name,
-      // Pastikan tidak ada subdistrict_id
-      has_subdistrict_id: !!dest.subdistrict_id,
-      dest 
-    });
-    
-    // VALIDASI: Pastikan ini adalah city_id, bukan subdistrict_id
-    // Silent error - jika tidak valid, cukup return tanpa menampilkan error
-    if (dest.subdistrict_id && !dest.city_id) {
-      console.warn('[ONGKIR] Invalid selection: subdistrict_id without city_id (silent)');
-      return;
-    }
-    
-    // Simpan city_id untuk cost calculation (HANYA city_id, bukan subdistrict_id)
-    setDestinationId(String(cityId));
-    setDestination(label); // Hanya nama kota dan provinsi
+    // Simpan destination_id untuk cost calculation
+    setDestinationId(String(destinationId));
+    setDestination(label);
     setDestinationSearch(label);
     setDestinationResults([]);
     
     // CATATAN: Field kecamatan, kelurahan, kode pos TIDAK diisi otomatis
     // User harus input manual untuk detail alamat lengkap
     // Field-field ini hanya untuk alamat lengkap, TIDAK digunakan untuk cost calculation
-    // Cost calculation HANYA menggunakan city_id dari kota yang dipilih
+    // Cost calculation menggunakan destination_id dari Komerce
     
     // Clear field detail (user akan input manual)
     setKecamatan("");
@@ -152,19 +133,18 @@ export default function OngkirCalculator({
     setKodePos("");
     
     // Auto-calculate ongkir setelah destination terpilih
-    // PENTING: Menggunakan CITY_ID untuk RajaOngkir V1 Basic (bukan subdistrict_id)
-    if (cityId && courier) {
-      console.log('[ONGKIR] Auto-calculating with city_id (NOT subdistrict_id):', cityId);
-      autoCalculateOngkir(String(cityId), courier);
-    } else {
-      console.warn('[ONGKIR] Cannot calculate: missing cityId or courier', { cityId, courier });
+    if (destinationId && courier) {
+      autoCalculateOngkir(String(destinationId), courier);
     }
   };
   
-  // Auto-calculate ongkir ketika kota + kurir sudah terpilih
-  // Fetch langsung ke RajaOngkir API (tanpa backend)
-  const autoCalculateOngkir = async (destId, selectedCourier) => {
-    if (!destId || !selectedCourier) {
+  // Hardcode origin destination ID (alamat kantor)
+  const ORIGIN_DESTINATION_ID = '73655'; // Kelapa Dua, Tangerang, Banten
+
+  // Auto-calculate ongkir ketika destination + kurir sudah terpilih
+  // Fetch via backend API route (Komerce)
+  const autoCalculateOngkir = async (receiverDestId, selectedCourier) => {
+    if (!receiverDestId || !selectedCourier) {
       return;
     }
 
@@ -183,12 +163,14 @@ export default function OngkirCalculator({
       setEtd("");
 
       try {
-        // Fetch langsung ke RajaOngkir API (tanpa backend)
+        // Fetch via backend API route (Komerce)
         // Silent error handling - jika error, price akan 0
         const result = await calculateCost({
-          destination: destId,
+          shipper_destination_id: ORIGIN_DESTINATION_ID, // Hardcode origin
+          receiver_destination_id: receiverDestId,
           weight: DEFAULT_WEIGHT,
-          courier: selectedCourier,
+          item_value: 0,
+          cod: 0
         });
 
         // Update state hanya jika ada hasil
@@ -211,7 +193,6 @@ export default function OngkirCalculator({
         }
       } catch (error) {
         // Silent error - tidak tampilkan ke user, cukup reset state
-        console.warn('[ONGKIR] Calculate error (silent):', error.message);
         setPrice(null);
         setEtd("");
       } finally {
@@ -274,25 +255,23 @@ export default function OngkirCalculator({
             {destinationResults.length > 0 && (
               <div className="ongkir-results-compact">
                 {destinationResults.map((dest, idx) => {
-                  // Format display: Hanya kota dan provinsi
-                  // Contoh: "Jakarta Barat, DKI Jakarta" (BUKAN detail subdistrict)
+                  // Format display: Kota dan provinsi dari Komerce response
                   const cityName = dest.city_name || dest.name || '';
-                  const provinceName = dest.province_name || '';
-                  const label = cityName && provinceName
+                  const provinceName = dest.province_name || dest.province || '';
+                  const label = dest.label || (cityName && provinceName
                     ? `${cityName}, ${provinceName}`
-                    : cityName || dest.label || '';
-                  const cityId = dest.city_id || dest.id || "";
+                    : cityName || '');
+                  const destinationId = dest.destination_id || dest.id || dest.city_id || "";
                   
                   return (
                     <div
                       key={idx}
                       className="ongkir-result-item-compact"
                       onClick={() => {
-                        console.log('[ONGKIR] Selected destination (CITY):', { cityId, label, dest });
                         handleSelectDestination(dest);
                       }}
                     >
-                      {label || `ID: ${cityId}`}
+                      {label || `ID: ${destinationId}`}
                     </div>
                   );
                 })}

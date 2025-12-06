@@ -673,7 +673,7 @@ CUSTOMER LOGIN PAGE
   min-height: 250px;
   background: var(--primary);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   color: white;
   position: relative;
@@ -681,6 +681,7 @@ CUSTOMER LOGIN PAGE
   background-size: cover;
   background-position: center;
   padding: clamp(2rem, 5vw, 4rem);
+  padding-top: clamp(3rem, 6vw, 5rem);
 }
 
 .overlay-content {
@@ -693,8 +694,9 @@ CUSTOMER LOGIN PAGE
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   backdrop-filter: blur(4px);
+  margin-top: 0;
 }
 
 .overlay-content h1 {
@@ -702,13 +704,14 @@ CUSTOMER LOGIN PAGE
   font-weight: 700;
   margin-bottom: 0.8rem;
   color: white;
+  margin-top: 0;
 }
 
 .overlay-content h3 {
   font-size: clamp(0.95rem, 1.5vw, 1.1rem);
   font-weight: 400;
   line-height: 1.4;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   color: white;
 }
 
