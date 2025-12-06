@@ -84,6 +84,11 @@ const nextConfig = {
         source: "/api/login",
         destination: "/api/login",
       },
+      // Exclude /api/shipping from rewrite - it should use Next.js API route handler (Komerce)
+      {
+        source: "/api/shipping/:path*",
+        destination: "/api/shipping/:path*",
+      },
       // Rewrite other API routes to backend
       {
         source: "/api/:path*",
