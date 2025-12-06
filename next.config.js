@@ -73,50 +73,43 @@ const nextConfig = {
     // Backend URL - hardcode sesuai permintaan
     const backendUrl = "http://3.105.234.181:8000";
 
-    return [
-      // IMPORTANT: Routes yang lebih spesifik HARUS diletakkan SEBELUM pattern yang lebih umum
-      // Next.js akan mengevaluasi rewrites dari atas ke bawah, dan akan stop di match pertama
-      
-      // Exclude /api/shipping from rewrite - CRITICAL: HARUS sebelum /api/:path*
-      // Route ini akan di-handle oleh Next.js API route handler (Komerce)
-      {
-        source: "/api/shipping/search",
-        destination: "/api/shipping/search",
-      },
-      {
-        source: "/api/shipping/calculate",
-        destination: "/api/shipping/calculate",
-      },
-      {
-        source: "/api/shipping/:path*",
-        destination: "/api/shipping/:path*",
-      },
-      
-      // Biarkan route internal Next (gateway) tetap di-handle oleh Next.js
-      {
-        source: "/api/webinar/gateway/:path*",
-        destination: "/api/webinar/gateway/:path*",
-      },
-      
-      // Exclude /api/login from rewrite - it should use Next.js API route handler
-      {
-        source: "/api/login",
-        destination: "/api/login",
-      },
-      
-      // Exclude /api/rajaongkir from rewrite (jika masih digunakan)
-      {
-        source: "/api/rajaongkir/:path*",
-        destination: "/api/rajaongkir/:path*",
-      },
-      
-      // Rewrite other API routes to backend (pattern umum di akhir)
-      // Hanya akan match jika tidak match dengan pattern di atas
-      {
-        source: "/api/:path*",
-        destination: `${backendUrl}/api/:path*`,
-      },
-    ];
+    return {
+      // beforeFiles: Routes yang akan di-evaluasi SEBELUM Next.js mengecek file system
+      // Ini memastikan route shipping tidak di-rewrite ke backend
+      beforeFiles: [
+        // CRITICAL: Route shipping HARUS di-handle oleh Next.js API route handler
+        // Jangan rewrite ke backend, biarkan Next.js handle
+        {
+          source: "/api/shipping/:path*",
+          destination: "/api/shipping/:path*",
+        },
+      ],
+      // afterFiles: Routes yang akan di-evaluasi SETELAH Next.js mengecek file system
+      // Jika file tidak ditemukan, baru di-rewrite ke backend
+      afterFiles: [
+        // Biarkan route internal Next (gateway) tetap di-handle oleh Next.js
+        {
+          source: "/api/webinar/gateway/:path*",
+          destination: "/api/webinar/gateway/:path*",
+        },
+        // Exclude /api/login from rewrite - it should use Next.js API route handler
+        {
+          source: "/api/login",
+          destination: "/api/login",
+        },
+        // Exclude /api/rajaongkir from rewrite (jika masih digunakan)
+        {
+          source: "/api/rajaongkir/:path*",
+          destination: "/api/rajaongkir/:path*",
+        },
+        // Rewrite other API routes to backend (pattern umum di akhir)
+        // Hanya akan match jika file tidak ditemukan di Next.js
+        {
+          source: "/api/:path*",
+          destination: `${backendUrl}/api/:path*`,
+        },
+      ],
+    };
   },
 };
 

@@ -680,9 +680,9 @@ CUSTOMER LOGIN PAGE
   background-image: url("/assets/cstbg.png");
   background-size: cover;
   background-position: center;
-  padding: clamp(1rem, 3vw, 2rem);
-  padding-top: clamp(1rem, 3vw, 2.5rem);
-  padding-bottom: clamp(1rem, 3vw, 2rem);
+  padding: clamp(0.5rem, 2vw, 1.5rem);
+  padding-top: clamp(0.5rem, 2vw, 1.5rem);
+  padding-bottom: clamp(0.5rem, 2vw, 1.5rem);
   overflow-y: auto;
 }
 
@@ -691,7 +691,7 @@ CUSTOMER LOGIN PAGE
   z-index: 2;
   width: min(700px, 100%);
   text-align: center;
-  padding: 1.5rem 2rem;
+  padding: 0.5rem 2rem;
   border-radius: 16px;
   display: flex;
   flex-direction: column;
@@ -700,14 +700,14 @@ CUSTOMER LOGIN PAGE
   backdrop-filter: blur(4px);
   margin-top: 0;
   margin-bottom: 0;
-  padding-top: 0.5rem;
-  padding-bottom: 1rem;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
 .overlay-content h1 {
   font-size: clamp(1.2rem, 2vw, 1.8rem);
   font-weight: 700;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.3rem;
   color: white;
   margin-top: 0;
 }
@@ -716,7 +716,7 @@ CUSTOMER LOGIN PAGE
   font-size: clamp(0.95rem, 1.5vw, 1.1rem);
   font-weight: 400;
   line-height: 1.4;
-  margin-bottom: 0.8rem;
+  margin-bottom: 0.5rem;
   color: white;
 }
 
@@ -808,7 +808,7 @@ CUSTOMER LOGIN PAGE
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 0.2rem;
+  margin-top: 0;
 }
 
 .founder-full {
