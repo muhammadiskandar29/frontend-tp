@@ -1,67 +1,68 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server'
 
-const API_KEY = process.env.RAJAONGKIR_API_KEY;
-const BASE_URL = "https://rajaongkir.komerce.id/api/v1/cost/domestic-cost";
+const API_KEY = process.env.RAJAONGKIR_API_KEY
+const BASE_URL = 'https://rajaongkir.komerce.id/api/v1/cost/domestic-cost'
+
+async function callUpstreamCost(bodyObj) {
+  const res = await fetch(BASE_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      key: API_KEY
+    },
+    body: JSON.stringify(bodyObj)
+  })
+  const text = await res.text().catch(() => '')
+  if (!res.ok) return { ok: false, status: res.status, text }
+  let json = null
+  try { json = JSON.parse(text) } catch(e) { return { ok: false, status: res.status, text } }
+  return { ok: true, json }
+}
 
 export async function GET(request) {
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(request.url)
+    const origin = searchParams.get('origin') || searchParams.get('shipper_destination_id')
+    const destination = searchParams.get('destination') || searchParams.get('receiver_destination_id')
+    const weight = Number(searchParams.get('weight') || '1000')
+    const courier = searchParams.get('courier') || 'jne'
 
-    // ambil query
-    const origin = searchParams.get("origin");         // subdistrict_id
-    const destination = searchParams.get("destination"); // subdistrict_id
-    const weight = parseInt(searchParams.get("weight") || "1000");
-    const courier = searchParams.get("courier") || "jne"; // optional
+    if (!origin || !destination) return NextResponse.json({ success: true, data: {} }, { status: 200 })
 
-    // butuh origin & destination → wajib
-    if (!origin || !destination) {
-      return NextResponse.json({ success: true, data: {} });
-    }
+    const upstream = await callUpstreamCost({ origin: Number(origin), destination: Number(destination), weight, courier })
+    if (!upstream.ok) return NextResponse.json({ success: false, message: `Upstream error ${upstream.status}`, debug: upstream.text || upstream.json }, { status: 200 })
 
-    const body = JSON.stringify({
-      origin: Number(origin),
-      destination: Number(destination),
-      weight,
-      courier
-    });
+    const data = upstream.json?.data || upstream.json || {}
+    const price = data.price || data.cost || 0
+    const etd = data.etd || data.estimated_delivery || ''
 
-    const response = await fetch(BASE_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        key: API_KEY
-      },
-      body
-    });
-
-    if (!response.ok) {
-      return NextResponse.json({ success: false, data: {} });
-    }
-
-    const json = await response.json();
-
-    if (!json.success) {
-      return NextResponse.json({ success: false, data: {} });
-    }
-
-    const raw = json.data || {};
-
-    const normalized = {
-      price: raw.price || raw.cost || raw.amount || 0,
-      etd: raw.etd || raw.estimate || "-",
-      courier: raw.courier || "",
-      service: raw.service || "",
-      raw
-    };
-
-    return NextResponse.json({
-      success: true,
-      price: normalized.price,
-      etd: normalized.etd,
-      data: normalized
-    });
-
+    return NextResponse.json({ success: true, price, etd, data }, { status: 200 })
   } catch (err) {
-    return NextResponse.json({ success: false, data: {} });
+    console.error('[RAJAONGKIR/COST] Error:', err)
+    return NextResponse.json({ success: false, message: err.message, data: {} }, { status: 200 })
+  }
+}
+
+export async function POST(request) {
+  try {
+    const body = await request.json().catch(() => ({}))
+    const origin = body.origin
+    const destination = body.destination
+    const weight = Number(body.weight || 1000)
+    const courier = body.courier || 'jne'
+
+    if (!origin || !destination) return NextResponse.json({ success: true, data: {} }, { status: 200 })
+
+    const upstream = await callUpstreamCost({ origin: Number(origin), destination: Number(destination), weight, courier })
+    if (!upstream.ok) return NextResponse.json({ success: false, message: `Upstream error ${upstream.status}`, debug: upstream.text || upstream.json }, { status: 200 })
+
+    const data = upstream.json?.data || upstream.json || {}
+    const price = data.price || data.cost || 0
+    const etd = data.etd || data.estimated_delivery || ''
+
+    return NextResponse.json({ success: true, price, etd, data }, { status: 200 })
+  } catch (err) {
+    console.error('[RAJAONGKIR/COST] Error:', err)
+    return NextResponse.json({ success: false, message: err.message, data: {} }, { status: 200 })
   }
 }

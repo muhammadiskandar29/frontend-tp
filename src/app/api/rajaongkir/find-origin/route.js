@@ -1,129 +1,56 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server'
 
-const API_KEY = 'mT8nGMeZ4cacc72ba9d93fd4g2xH48Gb';
-// Catatan: RajaOngkir V2 Basic menggunakan endpoint /starter (bukan /basic)
-const RAJAONGKIR_BASE_URL = 'https://api.rajaongkir.com/starter'; // V2 Basic/Starter
+const API_KEY = process.env.RAJAONGKIR_API_KEY
+const BASE_URL = 'https://rajaongkir.komerce.id/api/v1'
 
 export async function GET(request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const searchQuery = searchParams.get('q') || searchParams.get('search') || '';
-    
-    // Encode search query untuk handle spasi dan karakter spesial
-    const search = searchQuery.trim().toLowerCase();
+    const { searchParams } = new URL(request.url)
+    const search = searchParams.get('q') || searchParams.get('search') || ''
 
-    if (!search) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Masukkan kata kunci untuk mencari kota origin'
-        },
-        { status: 400 }
-      );
+    if (!search || !search.trim()) {
+      return NextResponse.json({ success: false, message: 'Masukkan kata kunci untuk mencari kota origin', data: [] }, { status: 200 })
     }
 
-    console.log('[RAJAONGKIR_FIND_ORIGIN] Searching origin, query:', search);
+    // Use domestic-destination endpoint for search
+    const url = `${BASE_URL}/destination/domestic-destination?search=${encodeURIComponent(search.trim())}&limit=20&offset=0`
 
-    const response = await fetch(`${RAJAONGKIR_BASE_URL}/city`, {
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'key': API_KEY,
-        'Content-Type': 'application/json'
+        key: API_KEY
       }
-    });
+    })
 
-    const responseText = await response.text();
-    console.log('[RAJAONGKIR_FIND_ORIGIN] Response status:', response.status);
-
-    let json;
-    try {
-      json = JSON.parse(responseText);
-    } catch (err) {
-      console.error('[RAJAONGKIR_FIND_ORIGIN] JSON parse error:', err.message);
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Response dari RajaOngkir bukan JSON'
-        },
-        { status: 500 }
-      );
+    if (!response.ok) {
+      const text = await response.text().catch(() => '')
+      return NextResponse.json({ success: false, message: `Upstream HTTP ${response.status}`, debug: text, data: [] }, { status: 200 })
     }
 
-    // Check if response has rajaongkir wrapper
-    if (!json || !json.rajaongkir) {
-      console.error("[RAJAONGKIR_FIND_ORIGIN] Invalid structure:", Object.keys(json || {}));
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Format response tidak valid dari RajaOngkir"
-        },
-        { status: 500 }
-      );
+    const json = await response.json().catch(() => null)
+    if (!json || !json.success) {
+      return NextResponse.json({ success: false, message: json?.message || 'Invalid upstream response', debug: json, data: [] }, { status: 200 })
     }
 
-    // Validate status object
-    const statusCode = json.rajaongkir.status?.code;
-    const statusMsg = json.rajaongkir.status?.description || "Gagal mengambil data kota";
+    const list = Array.isArray(json.data) ? json.data : []
 
-    if (statusCode !== 200) {
-      console.error("[RAJAONGKIR_FIND_ORIGIN] Status error:", json.rajaongkir.status);
-      return NextResponse.json(
-        {
-          success: false,
-          message: statusMsg
-        },
-        { status: 400 }
-      );
-    }
+    // Format response untuk kompatibilitas dengan frontend
+    const formatted = list.map(item => ({
+      id: item.subdistrict_id || item.city_id,
+      city_id: item.city_id,
+      label: `${item.subdistrict_name || item.subdistrict || item.city_name}, ${item.city_name}, ${item.province_name}`.trim(),
+      city_name: item.city_name,
+      province_name: item.province_name,
+      province_id: item.province_id,
+      subdistrict_id: item.subdistrict_id,
+      subdistrict_name: item.subdistrict_name || item.subdistrict,
+      type: item.type || '',
+      postal_code: item.postal_code || '',
+    }))
 
-    // Check if results exist
-    if (!json.rajaongkir.results || !Array.isArray(json.rajaongkir.results)) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Data kota tidak ditemukan"
-        },
-        { status: 500 }
-      );
-    }
-
-    // Filter by search query
-    const searchLower = search.toLowerCase().trim();
-    const matchedCities = json.rajaongkir.results.filter((city) => {
-      if (!city) return false;
-      const cityName = (city.city_name || '').toLowerCase();
-      const provinceName = (city.province || '').toLowerCase();
-      return cityName.includes(searchLower) || provinceName.includes(searchLower);
-    });
-
-    // Format response
-    const results = matchedCities.map(city => ({
-      id: city.city_id,
-      city_id: city.city_id,
-      label: `${city.city_name}, ${city.province}`.trim(),
-      city_name: city.city_name,
-      province_name: city.province,
-      province_id: city.province_id,
-      type: city.type || '',
-      postal_code: city.postal_code || '',
-    }));
-
-    console.log('[RAJAONGKIR_FIND_ORIGIN] Found', results.length, 'matches');
-
-    return NextResponse.json({
-      success: true,
-      data: results,
-      count: results.length
-    });
-  } catch (e) {
-    console.error('[RAJAONGKIR_FIND_ORIGIN] Error:', e);
-    return NextResponse.json(
-      { 
-        success: false, 
-        message: e.message || 'Terjadi kesalahan saat mencari origin' 
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: true, data: formatted, count: formatted.length }, { status: 200 })
+  } catch (err) {
+    console.error('[RAJAONGKIR/FIND_ORIGIN] Error:', err)
+    return NextResponse.json({ success: false, message: err.message || 'Internal error', data: [] }, { status: 200 })
   }
 }
-
