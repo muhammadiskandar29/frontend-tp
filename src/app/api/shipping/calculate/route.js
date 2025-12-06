@@ -80,8 +80,10 @@ export async function GET(request) {
       return NextResponse.json({
         success: true,
         message: 'Gagal menghitung ongkir',
+        price: 0,
+        etd: '',
         data: {}
-      });
+      }, { status: 200 });
     }
 
     // Tangani HTTP error (400/401/422/500) - silent, return empty object
@@ -95,16 +97,20 @@ export async function GET(request) {
         return NextResponse.json({
           success: true,
           message: 'Request tidak valid',
+          price: 0,
+          etd: '',
           data: {}
-        });
+        }, { status: 200 });
       }
       
       // Error lainnya - silent
       return NextResponse.json({
         success: true,
         message: 'Gagal menghitung ongkir',
+        price: 0,
+        etd: '',
         data: {}
-      });
+      }, { status: 200 });
     }
 
     // Parse response text
@@ -116,8 +122,10 @@ export async function GET(request) {
       return NextResponse.json({
         success: true,
         message: 'Response kosong',
+        price: 0,
+        etd: '',
         data: {}
-      });
+      }, { status: 200 });
     }
 
     // Parse JSON - silent error jika gagal
@@ -130,8 +138,10 @@ export async function GET(request) {
       return NextResponse.json({
         success: true,
         message: 'Format response tidak valid',
+        price: 0,
+        etd: '',
         data: {}
-      });
+      }, { status: 200 });
     }
 
     // Handle berbagai format response dari Komerce
@@ -156,8 +166,10 @@ export async function GET(request) {
       return NextResponse.json({
         success: true,
         message: 'Format response tidak dikenal',
+        price: 0,
+        etd: '',
         data: {}
-      });
+      }, { status: 200 });
     }
 
     // Normalize data untuk frontend
@@ -189,8 +201,10 @@ export async function GET(request) {
     return NextResponse.json({
       success: true,
       message: 'Terjadi kesalahan',
+      price: 0,
+      etd: '',
       data: {}
-    });
+    }, { status: 200 });
   }
 }
 

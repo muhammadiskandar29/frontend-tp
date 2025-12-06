@@ -25,7 +25,7 @@ export async function GET(request) {
         success: true,
         message: 'Search kosong',
         data: []
-      });
+      }, { status: 200 });
     }
 
     // Build URL dengan query parameter
@@ -61,7 +61,7 @@ export async function GET(request) {
         success: true,
         message: 'Gagal mengambil data',
         data: []
-      });
+      }, { status: 200 });
     }
 
     // Tangani HTTP error (400/401/422/500) - silent, return empty array
@@ -76,7 +76,7 @@ export async function GET(request) {
           success: true,
           message: 'Request tidak valid',
           data: []
-        });
+        }, { status: 200 });
       }
       
       // Error lainnya - silent
@@ -84,7 +84,7 @@ export async function GET(request) {
         success: true,
         message: 'Gagal mengambil data',
         data: []
-      });
+      }, { status: 200 });
     }
 
     // Parse response text
@@ -97,7 +97,7 @@ export async function GET(request) {
         success: true,
         message: 'Response kosong',
         data: []
-      });
+      }, { status: 200 });
     }
 
     // Parse JSON - silent error jika gagal
@@ -111,7 +111,7 @@ export async function GET(request) {
         success: true,
         message: 'Format response tidak valid',
         data: []
-      });
+      }, { status: 200 });
     }
 
     // Handle berbagai format response dari Komerce
@@ -137,7 +137,7 @@ export async function GET(request) {
         success: true,
         message: 'Format response tidak dikenal',
         data: []
-      });
+      }, { status: 200 });
     }
 
     // Normalize data untuk frontend
@@ -170,7 +170,7 @@ export async function GET(request) {
       success: true,
       message: 'Terjadi kesalahan',
       data: []
-    });
+    }, { status: 200 });
   }
 }
 
