@@ -1,127 +1,115 @@
 /**
- * RajaOngkir V2 Basic API Helper
- * Helper functions untuk berinteraksi dengan RajaOngkir API via Next.js API routes
- * Origin hardcode: 73655 (Kelapa Dua, Kabupaten Tangerang, Banten)
+ * Shipping API Helper - Frontend Helper (Menggunakan Backend API Routes)
+ * 
+ * Frontend tidak bisa langsung akses Komerce API karena CORS dan pembatasan API Key.
+ * Jadi menggunakan Next.js API routes sebagai backend proxy.
+ * 
+ * Backend API Routes:
+ * - GET /api/shipping/search?search=... (untuk search destination)
+ * - GET /api/shipping/calculate?shipper_destination_id=...&receiver_destination_id=...&weight=...&item_value=...&cod=... (untuk hitung ongkir)
  */
 
 /**
- * Hitung ongkir menggunakan RajaOngkir V2 Basic API
- * @param {Object} params
- * @param {string} params.destination - City ID destination (kota tujuan) - REQUIRED
- * @param {number} params.weight - Berat dalam gram (1-50000) - REQUIRED
- * @param {string} params.courier - Kode kurir (jne, jnt, tiki) - REQUIRED
- * @param {string} params.origin - City ID origin (OPTIONAL, akan di-hardcode di API route)
- * @returns {Promise<{price: number, etd: string, raw: any}>}
+ * Search destination via backend API route
+ * @param {string} search - Search keyword (bisa mulai dari 1 huruf, tidak akan error jika kosong)
+ * @returns {Promise<Array>} Array of destination objects
  */
-export async function getCost({ destination, weight, courier, origin }) {
-  // Validasi input (origin tidak wajib, akan di-hardcode di API route)
-  if (!destination || !weight || !courier) {
-    throw new Error('destination, weight, dan courier wajib diisi');
-  }
-
-  // Validasi destination harus angka (city_id)
-  if (isNaN(parseInt(destination, 10))) {
-    throw new Error('destination harus berupa city_id (angka)');
-  }
-
-  // Validasi weight
-  const weightNum = parseInt(weight, 10);
-  if (isNaN(weightNum) || weightNum < 1 || weightNum > 50000) {
-    throw new Error('weight harus antara 1 dan 50000 gram');
-  }
-
-  // Check cache di sessionStorage (origin hardcode 73655)
-  const ORIGIN_HARDCODE = '73655';
-  const cacheKey = `rajaongkir_cost_${ORIGIN_HARDCODE}_${destination}_${weight}_${courier}`;
-  const cached = sessionStorage.getItem(cacheKey);
-  if (cached) {
-    try {
-      const cachedData = JSON.parse(cached);
-      const now = Date.now();
-      // Cache valid selama 60 detik
-      if (now - cachedData.timestamp < 60000) {
-        console.log('[RAJAONGKIR] Using cached result');
-        return cachedData.data;
-      }
-    } catch (err) {
-      // Invalid cache, continue to fetch
-    }
-  }
-
+export async function searchDestinations(search = '') {
   try {
-    // Origin hardcode di API route, tidak perlu dikirim dari frontend
-    const response = await fetch('/api/rajaongkir/cost', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        destination: String(destination),
-        weight: weightNum,
-        courier: String(courier).toLowerCase(),
-        // Origin tidak perlu dikirim, akan di-hardcode di API route
-      }),
-    });
-
-    const json = await response.json();
-
-    if (!response.ok || !json.success) {
-      const errorMsg = json.message || 'Gagal menghitung ongkir';
-      throw new Error(errorMsg);
+    // Jika search kosong, return empty array (tidak error)
+    if (!search || search.trim().length === 0) {
+      return [];
     }
 
-    // Parse normalized response from our API
-    // Format: { success: true, data: { price, etd, raw } }
-    if (!json.data) {
-      throw new Error('Response tidak valid dari server');
-    }
-
-    const resultData = {
-      price: json.data.price,
-      etd: json.data.etd || 'Estimasi pengiriman akan diinformasikan',
-      raw: json.data.raw,
-    };
-
-    // Cache hasil
-    try {
-      sessionStorage.setItem(cacheKey, JSON.stringify({
-        timestamp: Date.now(),
-        data: resultData,
-      }));
-    } catch (err) {
-      // Ignore cache error
-    }
-
-    return resultData;
-  } catch (error) {
-    console.error('[RAJAONGKIR] getCost error:', error);
-    throw error;
-  }
-}
-
-/**
- * Get city list (untuk autocomplete/search)
- * @param {string} query - Search query (optional)
- * @returns {Promise<Array>}
- */
-export async function getDestinations(query = '') {
-  try {
-    const url = `/api/rajaongkir/cities${query ? `?search=${encodeURIComponent(query)}` : ''}`;
+    // Fetch via backend API route (mengatasi CORS)
+    const url = `/api/shipping/search?search=${encodeURIComponent(search.trim())}`;
     const response = await fetch(url);
-    const json = await response.json();
 
-    if (!response.ok || !json.success) {
-      const errorMsg = json.rajaongkir?.status?.description || json.message || 'Gagal mengambil data kota';
-      console.error('[RAJAONGKIR] getDestinations API error:', errorMsg);
-      throw new Error(errorMsg);
+    // Tangani response kosong atau error HTTP - silent
+    if (!response || !response.ok) {
+      // Silent error - tidak tampilkan ke user, cukup return empty array
+      return [];
     }
 
-    const data = json.data || [];
-    console.log('[RAJAONGKIR] getDestinations success, found:', data.length, 'results');
-    return data;
+    const json = await response.json();
+
+    // Tangani response bukan JSON atau format tidak sesuai - silent
+    // Backend selalu return format: { success, message, data }
+    if (!json || !json.success) {
+      // Silent error - tidak tampilkan ke user
+      return json?.data || [];
+    }
+
+    // Return data destination
+    return Array.isArray(json.data) ? json.data : [];
+
   } catch (error) {
-    console.error('[RAJAONGKIR] getDestinations error:', error);
-    throw error;
+    // Tangani semua error tanpa menampilkan ke user
+    // Silent error - return empty array
+    return [];
   }
 }
 
+/**
+ * Hitung ongkir via backend API route
+ * @param {Object} params
+ * @param {string} params.shipper_destination_id - ID origin (alamat pengirim)
+ * @param {string} params.receiver_destination_id - ID destination (alamat penerima)
+ * @param {number} params.weight - Berat dalam gram (default: 1000)
+ * @param {number} params.item_value - Nilai barang dalam rupiah (default: 0)
+ * @param {number} params.cod - COD amount dalam rupiah (default: 0)
+ * @returns {Promise<{price: number, etd: string}>}
+ */
+export async function calculateCost({ 
+  shipper_destination_id, 
+  receiver_destination_id, 
+  weight = 1000, 
+  item_value = 0, 
+  cod = 0 
+}) {
+  try {
+    // Validasi input minimal
+    if (!shipper_destination_id || !receiver_destination_id) {
+      return { price: 0, etd: '' };
+    }
+
+    // Build query string
+    const params = new URLSearchParams();
+    params.append('shipper_destination_id', String(shipper_destination_id));
+    params.append('receiver_destination_id', String(receiver_destination_id));
+    params.append('weight', String(weight));
+    params.append('item_value', String(item_value));
+    params.append('cod', String(cod));
+
+    // Fetch via backend API route (mengatasi CORS)
+    const url = `/api/shipping/calculate?${params.toString()}`;
+    const response = await fetch(url);
+
+    // Tangani HTTP error (500/400/403) - silent
+    if (!response || !response.ok) {
+      // Silent error - tidak tampilkan ke user
+      return { price: 0, etd: '' };
+    }
+
+    const json = await response.json();
+
+    // Tangani response bukan JSON atau format tidak sesuai - silent
+    // Backend selalu return format: { success, message, data }
+    if (!json || !json.success) {
+      // Silent error - tidak tampilkan ke user
+      return { price: json?.price || 0, etd: json?.etd || '' };
+    }
+
+    // Return hasil ongkir
+    // Backend return format: { success: true, price, etd, data: {...} }
+    const price = json.price || json.data?.price || 0;
+    const etd = json.etd || json.data?.etd || '';
+
+    return { price, etd };
+
+  } catch (error) {
+    // Tangani semua error tanpa menampilkan ke user
+    // Silent error - return default values
+    return { price: 0, etd: '' };
+  }
+}

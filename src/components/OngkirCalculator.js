@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { searchDestinations, calculateCost } from "@/lib/komerce-backend";
+import { searchDestinations, calculateCost } from "@/lib/shipping";
 import "@/styles/ongkir.css";
 
 const COOLDOWN_DURATION = 20 * 1000; // 20 detik dalam milliseconds
