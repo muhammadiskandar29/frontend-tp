@@ -27,6 +27,8 @@ export default function OngkirCalculator({
   const [loading, setLoading] = useState(false);
   const [cooldownActive, setCooldownActive] = useState(false);
   const [cooldownTime, setCooldownTime] = useState(0);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [searchError, setSearchError] = useState("");
   const searchTimeoutRef = useRef(null);
   const cooldownIntervalRef = useRef(null);
   const calculateTimeoutRef = useRef(null);
@@ -96,13 +98,24 @@ export default function OngkirCalculator({
     // Debounce search untuk menghindari terlalu banyak request
     searchTimeoutRef.current = setTimeout(async () => {
       try {
+        setSearchError("");
         // Fetch via backend API route (Komerce)
         const results = await searchDestinations(query);
-        // Silent error handling - jika error, results akan empty array
-        setDestinationResults(Array.isArray(results) ? results : []);
+        // Error handling - jika error, results akan empty array
+        if (Array.isArray(results) && results.length > 0) {
+          setDestinationResults(results);
+          setSearchError("");
+        } else {
+          setDestinationResults([]);
+          if (query.trim().length > 0) {
+            setSearchError("Kota tidak ditemukan. Coba dengan kata kunci lain.");
+          }
+        }
       } catch (error) {
-        // Silent error - tidak tampilkan ke user, cukup reset dropdown
+        // Error handling - tampilkan error ke user
+        console.error('[ONGKIR] Search error:', error);
         setDestinationResults([]);
+        setSearchError("Gagal mencari kota. Silakan coba lagi.");
       }
     }, 300);
   };
@@ -161,22 +174,24 @@ export default function OngkirCalculator({
       setLoading(true);
       setPrice(null);
       setEtd("");
+      setErrorMessage("");
 
       try {
         // Fetch via backend API route (Komerce)
-        // Silent error handling - jika error, price akan 0
         const result = await calculateCost({
           shipper_destination_id: ORIGIN_DESTINATION_ID, // Hardcode origin
           receiver_destination_id: receiverDestId,
           weight: DEFAULT_WEIGHT,
           item_value: 0,
-          cod: 0
+          cod: 0,
+          courier: selectedCourier
         });
 
         // Update state hanya jika ada hasil
         if (result && result.price > 0) {
           setPrice(result.price);
           setEtd(result.etd || '');
+          setErrorMessage("");
 
           // Call callback untuk update grand total di parent
           if (onSelectOngkir) {
@@ -187,12 +202,17 @@ export default function OngkirCalculator({
           localStorage.setItem(COOLDOWN_KEY, Date.now().toString());
           checkCooldown();
         } else {
-          // Silent error - reset state tanpa menampilkan error
+          // Error handling - tampilkan error ke user
+          const errorMsg = result?.error || "Ongkir tidak tersedia untuk rute ini. Silakan coba kota lain atau kurir lain.";
+          setErrorMessage(errorMsg);
           setPrice(null);
           setEtd("");
+          console.error('[ONGKIR] Calculate failed:', errorMsg);
         }
       } catch (error) {
-        // Silent error - tidak tampilkan ke user, cukup reset state
+        // Error handling - tampilkan error ke user
+        console.error('[ONGKIR] Calculate error:', error);
+        setErrorMessage("Gagal menghitung ongkir. Silakan coba lagi.");
         setPrice(null);
         setEtd("");
       } finally {
@@ -281,6 +301,9 @@ export default function OngkirCalculator({
           {destination && (
             <p className="text-sm text-gray-500 mt-1">Dipilih: {destination}</p>
           )}
+          {searchError && (
+            <p className="text-sm text-red-600 mt-1">{searchError}</p>
+          )}
         </div>
 
         {/* Kecamatan - Input Manual (untuk alamat lengkap) */}
@@ -360,6 +383,22 @@ export default function OngkirCalculator({
         {cooldownActive && !loading && (
           <div className="compact-field">
             <p className="text-sm text-red-600 mt-1">Tunggu {cooldownTime} detik sebelum cek ongkir lagi</p>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {errorMessage && !loading && (
+          <div className="compact-field">
+            <p className="text-sm text-red-600 mt-1">{errorMessage}</p>
+          </div>
+        )}
+
+        {/* Success Message */}
+        {price && price > 0 && !loading && (
+          <div className="compact-field">
+            <p className="text-sm text-green-600 mt-1">
+              Ongkir: Rp {price.toLocaleString("id-ID")} {etd ? `(${etd} hari)` : ''}
+            </p>
           </div>
         )}
     </>

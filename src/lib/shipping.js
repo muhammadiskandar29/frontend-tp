@@ -25,18 +25,18 @@ export async function searchDestinations(search = '') {
     const url = `/api/shipping/search?search=${encodeURIComponent(search.trim())}`;
     const response = await fetch(url);
 
-    // Tangani response kosong atau error HTTP - silent
+    // Tangani response kosong atau error HTTP
     if (!response || !response.ok) {
-      // Silent error - tidak tampilkan ke user, cukup return empty array
+      console.error('[SHIPPING] Search failed:', response?.status, response?.statusText);
       return [];
     }
 
     const json = await response.json();
 
-    // Tangani response bukan JSON atau format tidak sesuai - silent
+    // Tangani response bukan JSON atau format tidak sesuai
     // Backend selalu return format: { success, message, data }
     if (!json || !json.success) {
-      // Silent error - tidak tampilkan ke user
+      console.error('[SHIPPING] Search error:', json?.message || 'Unknown error');
       return json?.data || [];
     }
 
@@ -65,7 +65,8 @@ export async function calculateCost({
   receiver_destination_id, 
   weight = 1000, 
   item_value = 0, 
-  cod = 0 
+  cod = 0,
+  courier = 'jne'
 }) {
   try {
     // Validasi input minimal
@@ -80,24 +81,25 @@ export async function calculateCost({
     params.append('weight', String(weight));
     params.append('item_value', String(item_value));
     params.append('cod', String(cod));
+    params.append('courier', String(courier));
 
     // Fetch via backend API route (mengatasi CORS)
     const url = `/api/shipping/calculate?${params.toString()}`;
     const response = await fetch(url);
 
-    // Tangani HTTP error (500/400/403) - silent
+    // Tangani HTTP error (500/400/403)
     if (!response || !response.ok) {
-      // Silent error - tidak tampilkan ke user
-      return { price: 0, etd: '' };
+      console.error('[SHIPPING] Calculate failed:', response?.status, response?.statusText);
+      return { price: 0, etd: '', error: `HTTP ${response?.status}` };
     }
 
     const json = await response.json();
 
-    // Tangani response bukan JSON atau format tidak sesuai - silent
+    // Tangani response bukan JSON atau format tidak sesuai
     // Backend selalu return format: { success, message, data }
     if (!json || !json.success) {
-      // Silent error - tidak tampilkan ke user
-      return { price: json?.price || 0, etd: json?.etd || '' };
+      console.error('[SHIPPING] Calculate error:', json?.message || 'Unknown error');
+      return { price: json?.price || 0, etd: json?.etd || '', error: json?.message || 'Unknown error' };
     }
 
     // Return hasil ongkir
@@ -108,8 +110,8 @@ export async function calculateCost({
     return { price, etd };
 
   } catch (error) {
-    // Tangani semua error tanpa menampilkan ke user
-    // Silent error - return default values
-    return { price: 0, etd: '' };
+    // Tangani semua error
+    console.error('[SHIPPING] Calculate error:', error);
+    return { price: 0, etd: '', error: error.message || 'Unknown error' };
   }
 }

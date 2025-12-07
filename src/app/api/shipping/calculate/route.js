@@ -12,6 +12,9 @@ import { NextResponse } from 'next/server';
  */
 const API_KEY = 'mT8nGMeZ4cacc72ba9d93fd4g2xH48Gb';
 const KOMERCE_BASE_URL = 'https://api-sandbox.collaborator.komerce.id/tariff/api/v1';
+const RAJAONGKIR_API_KEY = 'mT8nGMeZ4cacc72ba9d93fd4g2xH48Gb';
+const RAJAONGKIR_BASE_URL = 'https://api.rajaongkir.com/basic';
+const ORIGIN_CITY_ID = '73655'; // Kelapa Dua, Kabupaten Tangerang, Banten
 
 export async function GET(request) {
   try {
@@ -23,6 +26,7 @@ export async function GET(request) {
     const weight = searchParams.get('weight') || '1000';
     const item_value = searchParams.get('item_value') || '0';
     const cod = searchParams.get('cod') || '0';
+    const courier = searchParams.get('courier') || 'jne';
 
     // Validasi minimal - shipper dan receiver wajib
     if (!shipper_destination_id || !receiver_destination_id) {
@@ -63,42 +67,50 @@ export async function GET(request) {
 
       clearTimeout(timeoutId);
     } catch (fetchError) {
-      // Tangani timeout dan network error - silent, return empty object
+      // Tangani timeout dan network error - log untuk debugging
       if (fetchError.name === 'AbortError') {
-        console.warn('[SHIPPING_CALCULATE] Request timeout (silent)');
+        console.error('[SHIPPING_CALCULATE] Request timeout:', costUrl);
       } else {
-        console.warn('[SHIPPING_CALCULATE] Fetch failed (silent):', fetchError.message);
+        console.error('[SHIPPING_CALCULATE] Fetch failed:', fetchError.message, 'URL:', costUrl);
       }
-      return NextResponse.json({
-        success: true,
-        message: 'Gagal menghitung ongkir',
-        price: 0,
-        etd: '',
-        data: {}
-      }, { status: 200 });
+      // Fallback ke RajaOngkir API
+      console.log('[SHIPPING_CALCULATE] Trying fallback to RajaOngkir API...');
+      try {
+        return await fallbackToRajaOngkir(receiver_destination_id, parseInt(weight, 10), courier);
+      } catch (fallbackError) {
+        console.error('[SHIPPING_CALCULATE] Fallback also failed:', fallbackError);
+        return NextResponse.json({
+          success: false,
+          message: 'Gagal terhubung ke server. Silakan coba lagi.',
+          price: 0,
+          etd: '',
+          data: {}
+        }, { status: 200 });
+      }
     }
 
-    // Tangani HTTP error (400/401/422/500) - silent, return empty object
+    // Tangani HTTP error (400/401/422/500) - log untuk debugging
     if (!response || !response.ok) {
       const status = response?.status || 0;
-      console.warn('[SHIPPING_CALCULATE] HTTP error (silent):', status);
+      const responseTextPreview = await response.text().catch(() => '');
+      console.error('[SHIPPING_CALCULATE] HTTP error:', status, 'Response:', responseTextPreview.substring(0, 500));
       
       // Tangani berbagai status code
       if (status === 400 || status === 401 || status === 422) {
-        // Bad request, unauthorized, atau unprocessable entity - silent
+        // Bad request, unauthorized, atau unprocessable entity
         return NextResponse.json({
-          success: true,
-          message: 'Request tidak valid',
+          success: false,
+          message: 'Request tidak valid. Pastikan kota tujuan sudah dipilih.',
           price: 0,
           etd: '',
           data: {}
         }, { status: 200 });
       }
       
-      // Error lainnya - silent
+      // Error lainnya
       return NextResponse.json({
-        success: true,
-        message: 'Gagal menghitung ongkir',
+        success: false,
+        message: `Gagal menghitung ongkir (HTTP ${status}). Silakan coba lagi.`,
         price: 0,
         etd: '',
         data: {}
@@ -108,28 +120,36 @@ export async function GET(request) {
     // Parse response text
     const responseText = await response.text();
 
-    // Tangani response kosong
+    // Tangani response kosong - coba fallback
     if (!responseText || responseText.trim().length === 0) {
-      console.warn('[SHIPPING_CALCULATE] Empty response (silent)');
-      return NextResponse.json({
-        success: true,
-        message: 'Response kosong',
-        price: 0,
-        etd: '',
-        data: {}
-      }, { status: 200 });
+      console.error('[SHIPPING_CALCULATE] Empty response from API');
+      console.log('[SHIPPING_CALCULATE] Trying fallback to RajaOngkir API...');
+      try {
+        return await fallbackToRajaOngkir(receiver_destination_id, parseInt(weight, 10), courier);
+      } catch (fallbackError) {
+        console.error('[SHIPPING_CALCULATE] Fallback also failed:', fallbackError);
+        return NextResponse.json({
+          success: false,
+          message: 'Tidak ada data ongkir yang ditemukan',
+          price: 0,
+          etd: '',
+          data: {}
+        }, { status: 200 });
+      }
     }
 
-    // Parse JSON - silent error jika gagal
+    // Parse JSON - log error untuk debugging
     let json;
     try {
       json = JSON.parse(responseText);
+      console.log('[SHIPPING_CALCULATE] Response parsed successfully, keys:', Object.keys(json));
     } catch (parseError) {
-      // Silent error - return empty object
-      console.warn('[SHIPPING_CALCULATE] JSON parse error (silent):', parseError.message);
+      // Log error untuk debugging
+      console.error('[SHIPPING_CALCULATE] JSON parse error:', parseError.message);
+      console.error('[SHIPPING_CALCULATE] Raw response (first 500 chars):', responseText.substring(0, 500));
       return NextResponse.json({
-        success: true,
-        message: 'Format response tidak valid',
+        success: false,
+        message: 'Format response tidak valid dari server',
         price: 0,
         etd: '',
         data: {}
@@ -153,15 +173,21 @@ export async function GET(request) {
       // Format: langsung object
       costData = json;
     } else {
-      // Format tidak dikenal - silent error, return empty object
-      console.warn('[SHIPPING_CALCULATE] Unknown response format (silent)');
-      return NextResponse.json({
-        success: true,
-        message: 'Format response tidak dikenal',
-        price: 0,
-        etd: '',
-        data: {}
-      }, { status: 200 });
+      // Format tidak dikenal - log untuk debugging dan coba fallback
+      console.error('[SHIPPING_CALCULATE] Unknown response format. Response:', JSON.stringify(json).substring(0, 1000));
+      console.log('[SHIPPING_CALCULATE] Trying fallback to RajaOngkir API...');
+      try {
+        return await fallbackToRajaOngkir(receiver_destination_id, parseInt(weight, 10), courier);
+      } catch (fallbackError) {
+        console.error('[SHIPPING_CALCULATE] Fallback also failed:', fallbackError);
+        return NextResponse.json({
+          success: false,
+          message: 'Format response tidak dikenal dari server',
+          price: 0,
+          etd: '',
+          data: {}
+        }, { status: 200 });
+      }
     }
 
     // Normalize data untuk frontend
@@ -185,16 +211,83 @@ export async function GET(request) {
     }, { status: 200 });
 
   } catch (error) {
-    // Catch-all error handler - tidak boleh crash
-    // Silent error - return empty object
-    console.warn('[SHIPPING_CALCULATE] Unexpected error (silent):', error.message);
+    // Catch-all error handler - log untuk debugging
+    console.error('[SHIPPING_CALCULATE] Unexpected error:', error);
+    
+    // Fallback ke RajaOngkir API
+    console.log('[SHIPPING_CALCULATE] Trying fallback to RajaOngkir API...');
+    try {
+      return await fallbackToRajaOngkir(receiver_destination_id, parseInt(weight, 10), courier);
+    } catch (fallbackError) {
+      console.error('[SHIPPING_CALCULATE] Fallback also failed:', fallbackError);
+      return NextResponse.json({
+        success: false,
+        message: `Terjadi kesalahan: ${error.message || 'Unknown error'}`,
+        price: 0,
+        etd: '',
+        data: {}
+      }, { status: 200 });
+    }
+  }
+}
+
+// Fallback function ke RajaOngkir API
+async function fallbackToRajaOngkir(destination, weight = 1000, courier = 'jne') {
+  try {
+    // Build URL-encoded body untuk RajaOngkir
+    const params = new URLSearchParams();
+    params.append('origin', ORIGIN_CITY_ID);
+    params.append('destination', String(destination));
+    params.append('weight', String(weight));
+    params.append('courier', String(courier).toLowerCase());
+
+    const response = await fetch(`${RAJAONGKIR_BASE_URL}/cost`, {
+      method: 'POST',
+      headers: {
+        'key': RAJAONGKIR_API_KEY,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params.toString(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`RajaOngkir API returned ${response.status}`);
+    }
+
+    const responseText = await response.text();
+    const json = JSON.parse(responseText);
+
+    // Check status
+    if (json.rajaongkir?.status?.code !== 200) {
+      throw new Error(json.rajaongkir?.status?.description || 'RajaOngkir API error');
+    }
+
+    const result = json.rajaongkir?.results?.[0];
+    if (!result || !result.costs || result.costs.length === 0) {
+      throw new Error('No costs available from RajaOngkir');
+    }
+
+    const cost = result.costs[0];
+    const price = parseInt(cost.value || 0, 10);
+    const etd = cost.etd || '';
+
+    console.log('[SHIPPING_CALCULATE] Fallback to RajaOngkir successful, price:', price);
+    
     return NextResponse.json({
       success: true,
-      message: 'Terjadi kesalahan',
-      price: 0,
-      etd: '',
-      data: {}
+      message: 'Berhasil menghitung ongkir (via RajaOngkir)',
+      price: price,
+      etd: etd,
+      data: {
+        price: price,
+        etd: etd,
+        courier: courier,
+        service: cost.service || ''
+      }
     }, { status: 200 });
+  } catch (error) {
+    console.error('[SHIPPING_CALCULATE] Fallback to RajaOngkir failed:', error);
+    throw error;
   }
 }
 
