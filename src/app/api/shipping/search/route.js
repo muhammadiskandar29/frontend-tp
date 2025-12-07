@@ -31,9 +31,9 @@ export async function GET(request) {
     }
 
     // Build URL dengan query parameter
-    // Endpoint yang benar: /destination/domestic-destination dengan parameter search, limit, offset
+    // Endpoint: /destination/search?query={query}
     const keyword = search.trim();
-    const searchUrl = `${KOMERCE_BASE_URL}/destination/domestic-destination?search=${encodeURIComponent(keyword)}&limit=10&offset=0`;
+    const searchUrl = `${KOMERCE_BASE_URL}/destination/search?query=${encodeURIComponent(keyword)}`;
 
     let response;
     try {
@@ -170,21 +170,24 @@ export async function GET(request) {
     }
 
     // Normalize data untuk frontend
-    // Format dari Komerce: { id, label, province_name, city_name, district_name, subdistrict_name, zip_code }
-    const normalizedData = results.map(item => ({
-      id: item.id || item.destination_id || item.city_id || '',
-      destination_id: item.id || item.destination_id || item.city_id || '',
-      city_id: item.city_id || item.id || '',
-      city_name: item.city_name || item.name || '',
-      province_name: item.province_name || item.province || '',
-      province_id: item.province_id || '',
-      district_name: item.district_name || item.district || '',
-      subdistrict_name: item.subdistrict_name || item.subdistrict || '',
-      type: item.type || '',
-      zip_code: item.zip_code || item.postal_code || item.postal || '',
-      postal_code: item.zip_code || item.postal_code || item.postal || '',
-      label: item.label || `${item.district_name || item.city_name || item.name || ''}, ${item.city_name || ''}, ${item.province_name || item.province || ''}`.trim()
-    }));
+    // Format dari Komerce /destination/search: { district_id, district: { name }, city: { name }, province: { name } }
+    // Atau format alternatif: { id, district_name, city_name, province_name }
+    const normalizedData = results.map(item => {
+      // Handle nested structure (district.name, city.name, province.name)
+      const districtId = item.district_id || item.id || item.district?.id || '';
+      const districtName = item.district?.name || item.district_name || item.district || '';
+      const cityName = item.city?.name || item.city_name || item.city || '';
+      const provinceName = item.province?.name || item.province_name || item.province || '';
+      
+      return {
+        district_id: districtId,
+        id: districtId, // For backward compatibility
+        district_name: districtName,
+        city_name: cityName,
+        province_name: provinceName,
+        label: `${districtName || ''}, ${cityName || ''}, ${provinceName || ''}`.trim().replace(/^,\s*|,\s*$/g, '')
+      };
+    });
 
     // Return normalized data dengan format standar
     return NextResponse.json({
