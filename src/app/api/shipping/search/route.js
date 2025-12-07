@@ -181,8 +181,9 @@ export async function GET(request) {
       district_name: item.district_name || item.district || '',
       subdistrict_name: item.subdistrict_name || item.subdistrict || '',
       type: item.type || '',
+      zip_code: item.zip_code || item.postal_code || item.postal || '',
       postal_code: item.zip_code || item.postal_code || item.postal || '',
-      label: item.label || `${item.city_name || item.name || ''}, ${item.province_name || item.province || ''}`.trim()
+      label: item.label || `${item.district_name || item.city_name || item.name || ''}, ${item.city_name || ''}, ${item.province_name || item.province || ''}`.trim()
     }));
 
     // Return normalized data dengan format standar

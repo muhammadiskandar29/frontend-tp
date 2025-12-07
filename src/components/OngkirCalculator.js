@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { getProvinces, getCities, getDistricts, calculateDomesticCost } from "@/utils/shippingService";
+import { searchDestinations, calculateDomesticCost } from "@/utils/shippingService";
 import "@/styles/ongkir.css";
 
 const ORIGIN_DISTRICT_ID = 73655;
@@ -13,108 +13,88 @@ export default function OngkirCalculator({
   onSelectOngkir,
   onAddressChange,
   defaultCourier = "jne",
-  mode = "dropdown", // "dropdown" untuk cek ongkir page
-  compact = false // true untuk UI compact di landing page
+  mode = "dropdown",
+  compact = false
 }) {
-  // State untuk dropdown mode
-  const [provinces, setProvinces] = useState([]);
-  const [cities, setCities] = useState([]);
-  const [districts, setDistricts] = useState([]);
-  
-  const [selectedProvince, setSelectedProvince] = useState("");
-  const [selectedCity, setSelectedCity] = useState("");
-  const [selectedDistrict, setSelectedDistrict] = useState("");
-  
-  const [loadingProvinces, setLoadingProvinces] = useState(false);
-  const [loadingCities, setLoadingCities] = useState(false);
-  const [loadingDistricts, setLoadingDistricts] = useState(false);
+  // State untuk search mode (SOLUSI A)
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [selectedDestination, setSelectedDestination] = useState(null);
+  const [loadingSearch, setLoadingSearch] = useState(false);
   const [loadingCost, setLoadingCost] = useState(false);
-  
   const [costResults, setCostResults] = useState([]);
   const [error, setError] = useState("");
+  const searchTimeoutRef = useRef(null);
 
-  // Load provinces on mount (untuk dropdown mode)
+  // Auto calculate when destination selected
   useEffect(() => {
-    if (mode === "dropdown") {
-      loadProvinces();
-    }
-  }, [mode]);
-
-  // Load cities when province selected
-  useEffect(() => {
-    if (mode === "dropdown" && selectedProvince) {
-      loadCities(selectedProvince);
-      setSelectedCity("");
-      setSelectedDistrict("");
-      setCities([]);
-      setDistricts([]);
+    if (selectedDestination && selectedDestination.id) {
+      calculateCost(selectedDestination.id);
+    } else {
       setCostResults([]);
     }
-  }, [selectedProvince, mode]);
+  }, [selectedDestination]);
 
-  // Load districts when city selected
-  useEffect(() => {
-    if (mode === "dropdown" && selectedCity) {
-      loadDistricts(selectedCity);
-      setSelectedDistrict("");
-      setDistricts([]);
-      setCostResults([]);
+  const handleSearch = async (query) => {
+    setSearchQuery(query);
+    
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
     }
-  }, [selectedCity, mode]);
 
-  // Calculate cost when district selected
-  useEffect(() => {
-    if (mode === "dropdown" && selectedDistrict) {
-      calculateCost();
-    } else if (!selectedDistrict) {
-      setCostResults([]);
+    // Clear results if query is empty
+    if (!query || query.trim().length === 0) {
+      setSearchResults([]);
+      setSelectedDestination(null);
+      return;
     }
-  }, [selectedDistrict, mode]);
 
-  const loadProvinces = async () => {
-    setLoadingProvinces(true);
-    setError("");
-    try {
-      const data = await getProvinces();
-      setProvinces(data);
-    } catch (err) {
-      setError("Gagal memuat daftar provinsi");
-      console.error("Load provinces error:", err);
-    } finally {
-      setLoadingProvinces(false);
+    // Debounce search
+    searchTimeoutRef.current = setTimeout(async () => {
+      setLoadingSearch(true);
+      setError("");
+      
+      try {
+        const results = await searchDestinations(query.trim());
+        
+        if (Array.isArray(results) && results.length > 0) {
+          setSearchResults(results);
+        } else {
+          setSearchResults([]);
+          if (query.trim().length >= 2) {
+            setError("Lokasi tidak ditemukan. Coba dengan kata kunci lain.");
+          }
+        }
+      } catch (err) {
+        console.error("Search error:", err);
+        setSearchResults([]);
+        if (query.trim().length >= 2) {
+          setError("Gagal mencari lokasi. Silakan coba lagi.");
+        }
+      } finally {
+        setLoadingSearch(false);
+      }
+    }, 300);
+  };
+
+  const handleSelectDestination = (dest) => {
+    setSelectedDestination(dest);
+    setSearchQuery(dest.label || `${dest.district_name || dest.city_name || ''}, ${dest.province_name || ''}`.trim());
+    setSearchResults([]);
+    
+    // Update address if callback exists
+    if (onAddressChange) {
+      onAddressChange({
+        kota: dest.city_name || '',
+        kecamatan: dest.district_name || '',
+        kelurahan: dest.subdistrict_name || '',
+        kode_pos: dest.zip_code || dest.postal_code || '',
+      });
     }
   };
 
-  const loadCities = async (provinceId) => {
-    setLoadingCities(true);
-    setError("");
-    try {
-      const data = await getCities(provinceId);
-      setCities(data);
-    } catch (err) {
-      setError("Gagal memuat daftar kota");
-      console.error("Load cities error:", err);
-    } finally {
-      setLoadingCities(false);
-    }
-  };
-
-  const loadDistricts = async (cityId) => {
-    setLoadingDistricts(true);
-    setError("");
-    try {
-      const data = await getDistricts(cityId);
-      setDistricts(data);
-    } catch (err) {
-      setError("Gagal memuat daftar kecamatan");
-      console.error("Load districts error:", err);
-    } finally {
-      setLoadingDistricts(false);
-    }
-  };
-
-  const calculateCost = async () => {
-    if (!selectedDistrict) {
+  const calculateCost = async (destinationId) => {
+    if (!destinationId) {
       return;
     }
 
@@ -125,7 +105,7 @@ export default function OngkirCalculator({
     try {
       const results = await calculateDomesticCost({
         origin: ORIGIN_DISTRICT_ID,
-        destination: parseInt(selectedDistrict, 10),
+        destination: parseInt(destinationId, 10),
         weight: DEFAULT_WEIGHT,
         courier: DEFAULT_COURIER
       });
@@ -137,7 +117,7 @@ export default function OngkirCalculator({
       } else {
         // Call callback jika ada onSelectOngkir
         if (onSelectOngkir && results.length > 0) {
-          // Ambil harga terendah atau pertama
+          // Ambil harga terendah
           const lowestCost = Math.min(...results.map(r => r.cost || 0));
           onSelectOngkir(lowestCost);
         }
@@ -158,137 +138,81 @@ export default function OngkirCalculator({
     }).format(price);
   };
 
-  // Render dropdown mode
-  if (mode === "dropdown") {
-    return (
-      <>
-        {/* Form Selection */}
-        <div style={{ 
-          background: compact ? "transparent" : "white", 
-          border: compact ? "none" : "1px solid #e5e7eb", 
-          borderRadius: compact ? "0" : "12px", 
-          padding: compact ? "0" : "24px",
-          marginBottom: compact ? "16px" : "24px"
-        }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "16px" }}>
-            {/* Province Dropdown */}
-            <div>
-              <label style={{ 
-                display: "block", 
-                fontSize: "14px", 
-                fontWeight: 600, 
-                color: "#374151", 
-                marginBottom: "8px" 
-              }}>
-                Provinsi <span style={{ color: "#ef4444" }}>*</span>
-              </label>
-              <select
-                value={selectedProvince}
-                onChange={(e) => setSelectedProvince(e.target.value)}
-                disabled={loadingProvinces}
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  border: "1px solid #d1d5db",
-                  borderRadius: "8px",
-                  fontSize: "14px",
-                  backgroundColor: loadingProvinces ? "#f9fafb" : "white",
-                  cursor: loadingProvinces ? "not-allowed" : "pointer"
-                }}
-              >
-                <option value="">
-                  {loadingProvinces ? "Memuat provinsi..." : "Pilih Provinsi"}
-                </option>
-                {provinces.map((province) => (
-                  <option key={province.id} value={province.id}>
-                    {province.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+  // Cleanup timeout
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
-            {/* City Dropdown */}
-            <div>
-              <label style={{ 
-                display: "block", 
-                fontSize: "14px", 
-                fontWeight: 600, 
-                color: "#374151", 
-                marginBottom: "8px" 
-              }}>
-                Kota <span style={{ color: "#ef4444" }}>*</span>
-              </label>
-              <select
-                value={selectedCity}
-                onChange={(e) => setSelectedCity(e.target.value)}
-                disabled={!selectedProvince || loadingCities || cities.length === 0}
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  border: "1px solid #d1d5db",
-                  borderRadius: "8px",
-                  fontSize: "14px",
-                  backgroundColor: (!selectedProvince || loadingCities || cities.length === 0) ? "#f9fafb" : "white",
-                  cursor: (!selectedProvince || loadingCities || cities.length === 0) ? "not-allowed" : "pointer"
-                }}
-              >
-                <option value="">
-                  {loadingCities ? "Memuat kota..." : !selectedProvince ? "Pilih provinsi terlebih dahulu" : "Pilih Kota"}
-                </option>
-                {cities.map((city) => (
-                  <option key={city.id} value={city.id}>
-                    {city.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* District Dropdown */}
-            <div>
-              <label style={{ 
-                display: "block", 
-                fontSize: "14px", 
-                fontWeight: 600, 
-                color: "#374151", 
-                marginBottom: "8px" 
-              }}>
-                Kecamatan <span style={{ color: "#ef4444" }}>*</span>
-              </label>
-              <select
-                value={selectedDistrict}
-                onChange={(e) => setSelectedDistrict(e.target.value)}
-                disabled={!selectedCity || loadingDistricts || districts.length === 0}
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  border: "1px solid #d1d5db",
-                  borderRadius: "8px",
-                  fontSize: "14px",
-                  backgroundColor: (!selectedCity || loadingDistricts || districts.length === 0) ? "#f9fafb" : "white",
-                  cursor: (!selectedCity || loadingDistricts || districts.length === 0) ? "not-allowed" : "pointer"
-                }}
-              >
-                <option value="">
-                  {loadingDistricts ? "Memuat kecamatan..." : !selectedCity ? "Pilih kota terlebih dahulu" : "Pilih Kecamatan"}
-                </option>
-                {districts.map((district) => (
-                  <option key={district.id} value={district.id}>
-                    {district.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+  return (
+    <>
+      {/* Search Field - SOLUSI A */}
+      <div style={{ 
+        background: compact ? "transparent" : "white", 
+        border: compact ? "none" : "1px solid #e5e7eb", 
+        borderRadius: compact ? "0" : "12px", 
+        padding: compact ? "0" : "24px",
+        marginBottom: compact ? "16px" : "24px"
+      }}>
+        <div className="compact-field">
+          <label className="compact-label">
+            Cari Kecamatan / Kelurahan / Nama Tempat <span className="required">*</span>
+          </label>
+          <div className="ongkir-search-wrapper-compact">
+            <input
+              type="text"
+              className="compact-input"
+              placeholder="Contoh: Kelapa Dua, Jakarta Pusat, dll..."
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              disabled={loadingCost}
+            />
+            {searchResults.length > 0 && (
+              <div className="ongkir-results-compact">
+                {searchResults.map((dest, idx) => {
+                  const label = dest.label || `${dest.district_name || dest.city_name || ''}, ${dest.city_name || ''}, ${dest.province_name || ''}`.trim();
+                  
+                  return (
+                    <div
+                      key={idx}
+                      className="ongkir-result-item-compact"
+                      onClick={() => handleSelectDestination(dest)}
+                    >
+                      <div style={{ fontWeight: 500 }}>{label || `ID: ${dest.id}`}</div>
+                      {dest.district_name && (
+                        <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
+                          {dest.district_name}{dest.subdistrict_name ? `, ${dest.subdistrict_name}` : ''}
+                          {dest.zip_code ? ` - ${dest.zip_code}` : ''}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
-
-          {/* Info */}
-          <div style={{ marginTop: "16px", padding: "12px", background: "#f3f4f6", borderRadius: "8px" }}>
-            <p style={{ fontSize: "12px", color: "#6b7280", margin: 0 }}>
-              <strong>Origin:</strong> District ID {ORIGIN_DISTRICT_ID} | 
-              <strong> Berat:</strong> {DEFAULT_WEIGHT} gram | 
-              <strong> Kurir:</strong> JNE, JNT, SiCepat, AnterAja, POS
+          {selectedDestination && (
+            <p className="text-sm text-gray-500 mt-1">
+              Dipilih: {selectedDestination.label || `${selectedDestination.district_name || selectedDestination.city_name || ''}, ${selectedDestination.province_name || ''}`.trim()}
             </p>
-          </div>
+          )}
+          {loadingSearch && (
+            <p className="text-sm text-blue-600 mt-1">Mencari lokasi...</p>
+          )}
         </div>
+
+        {/* Info */}
+        <div style={{ marginTop: "16px", padding: "12px", background: "#f3f4f6", borderRadius: "8px" }}>
+          <p style={{ fontSize: "12px", color: "#6b7280", margin: 0 }}>
+            <strong>Origin:</strong> District ID {ORIGIN_DISTRICT_ID} | 
+            <strong> Berat:</strong> {DEFAULT_WEIGHT} gram | 
+            <strong> Kurir:</strong> JNE, JNT, SiCepat, AnterAja, POS
+          </p>
+        </div>
+      </div>
 
         {/* Error Message */}
         {error && (
@@ -447,7 +371,7 @@ export default function OngkirCalculator({
         )}
 
         {/* Empty State */}
-        {costResults.length === 0 && !loadingCost && selectedDistrict && (
+        {costResults.length === 0 && !loadingCost && selectedDestination && (
           <div style={{
             padding: "24px",
             textAlign: "center",
@@ -462,9 +386,4 @@ export default function OngkirCalculator({
         )}
       </>
     );
-  }
-
-  // Default: return empty untuk backward compatibility
-  // (bisa ditambahkan mode "search" nanti jika diperlukan)
-  return null;
 }
