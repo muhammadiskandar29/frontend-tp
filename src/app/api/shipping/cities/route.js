@@ -1,12 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server'
 
-/**
- * Next.js API Route untuk mengambil daftar cities
- * 
- * Endpoint: GET /api/shipping/cities?province_id={id}
- * 
- * Proxy ke: GET https://rajaongkir.komerce.id/api/v1/destination/city
- */
 const API_KEY = 'mT8nGMeZ4cacc72ba9d93fd4g2xH48Gb';
 const KOMERCE_BASE_URL = 'https://rajaongkir.komerce.id/api/v1';
 
@@ -15,69 +8,51 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const provinceId = searchParams.get('province_id');
 
-    const citiesUrl = `${KOMERCE_BASE_URL}/destination/city${provinceId ? `?province_id=${provinceId}` : ''}`;
-
-    let response;
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-      response = await fetch(citiesUrl, {
-        method: 'GET',
-        headers: {
-          'accept': 'application/json',
-          'key': API_KEY
-        },
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-    } catch (fetchError) {
-      console.error('[SHIPPING_CITIES] Fetch failed:', fetchError.message);
+    if (!provinceId) {
       return NextResponse.json({
         success: false,
-        message: 'Gagal terhubung ke server',
+        message: 'province_id wajib diisi',
         data: []
       }, { status: 200 });
     }
 
-    if (!response || !response.ok) {
-      const status = response?.status || 0;
-      console.error('[SHIPPING_CITIES] HTTP error:', status);
+    // ✅ Pakai path parameter, bukan query
+    const citiesUrl = `${KOMERCE_BASE_URL}/destination/city/${provinceId}`;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+    const response = await fetch(citiesUrl, {
+      method: 'GET',
+      headers: {
+        'accept': 'application/json',
+        'key': API_KEY
+      },
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
       return NextResponse.json({
         success: false,
-        message: `Gagal mengambil data (HTTP ${status})`,
+        message: `Gagal mengambil data (HTTP ${response.status})`,
         data: []
       }, { status: 200 });
     }
 
     const json = await response.json();
-    
-    let results = [];
-    if (json.data && Array.isArray(json.data)) {
-      results = json.data;
-    } else if (Array.isArray(json)) {
-      results = json;
-    }
-
-    // Normalize data
-    const normalizedData = results.map(item => ({
-      id: item.id || '',
-      name: item.name || '',
-      province_id: item.province_id || ''
-    }));
 
     return NextResponse.json({
       success: true,
       message: 'Berhasil mengambil data cities',
-      data: normalizedData
+      data: json.data || []
     }, { status: 200 });
 
   } catch (error) {
-    console.error('[SHIPPING_CITIES] Unexpected error:', error);
     return NextResponse.json({
       success: false,
-      message: `Terjadi kesalahan: ${error.message || 'Unknown error'}`,
+      message: `Terjadi kesalahan: ${error.message}`,
       data: []
     }, { status: 200 });
   }
