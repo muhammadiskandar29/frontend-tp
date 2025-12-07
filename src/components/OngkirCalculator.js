@@ -107,15 +107,20 @@ export default function OngkirCalculator({
           setSearchError("");
         } else {
           setDestinationResults([]);
-          if (query.trim().length > 0) {
+          // Hanya tampilkan error jika query cukup panjang (minimal 2 karakter)
+          // Untuk menghindari error spam saat user baru mulai mengetik
+          if (query.trim().length >= 2) {
             setSearchError("Kota tidak ditemukan. Coba dengan kata kunci lain.");
           }
         }
       } catch (error) {
-        // Error handling - tampilkan error ke user
-        console.error('[ONGKIR] Search error:', error);
+        // Error handling - hanya log, tidak tampilkan ke user kecuali error serius
+        console.warn('[ONGKIR] Search warning:', error.message || error);
         setDestinationResults([]);
-        setSearchError("Gagal mencari kota. Silakan coba lagi.");
+        // Hanya tampilkan error jika query cukup panjang
+        if (query.trim().length >= 2) {
+          setSearchError("Gagal mencari kota. Silakan coba lagi.");
+        }
       }
     }, 300);
   };
@@ -123,10 +128,10 @@ export default function OngkirCalculator({
   const handleSelectDestination = (dest) => {
     // Handle response dari Komerce API
     // User memilih destination (kota/subdistrict)
-    // Detail kecamatan/kelurahan/kode pos diinput manual untuk alamat lengkap
+    // Auto-fill kecamatan, kelurahan, kode pos dari data yang dipilih
     
     const destinationId = dest.destination_id || dest.id || dest.city_id || "";
-    // Label: "Kota, Provinsi"
+    // Label: "Kota, Provinsi" atau label lengkap dari API
     const label = dest.label || `${dest.city_name || ''}${dest.province_name ? ', ' + dest.province_name : ''}`.trim();
     
     // Simpan destination_id untuk cost calculation
@@ -135,15 +140,33 @@ export default function OngkirCalculator({
     setDestinationSearch(label);
     setDestinationResults([]);
     
-    // CATATAN: Field kecamatan, kelurahan, kode pos TIDAK diisi otomatis
-    // User harus input manual untuk detail alamat lengkap
-    // Field-field ini hanya untuk alamat lengkap, TIDAK digunakan untuk cost calculation
-    // Cost calculation menggunakan destination_id dari Komerce
+    // Auto-fill kecamatan, kelurahan, kode pos dari data yang dipilih
+    // Format dari Komerce API: district_name (kecamatan), subdistrict_name (kelurahan), zip_code (kode pos)
+    if (dest.district_name) {
+      setKecamatan(dest.district_name);
+    } else if (dest.district) {
+      setKecamatan(dest.district);
+    } else {
+      setKecamatan("");
+    }
     
-    // Clear field detail (user akan input manual)
-    setKecamatan("");
-    setKabupaten("");
-    setKodePos("");
+    if (dest.subdistrict_name) {
+      setKabupaten(dest.subdistrict_name);
+    } else if (dest.subdistrict) {
+      setKabupaten(dest.subdistrict);
+    } else {
+      setKabupaten("");
+    }
+    
+    if (dest.zip_code) {
+      setKodePos(dest.zip_code);
+    } else if (dest.postal_code) {
+      setKodePos(dest.postal_code);
+    } else if (dest.postal) {
+      setKodePos(dest.postal);
+    } else {
+      setKodePos("");
+    }
     
     // Auto-calculate ongkir setelah destination terpilih
     if (destinationId && courier) {
@@ -275,12 +298,10 @@ export default function OngkirCalculator({
             {destinationResults.length > 0 && (
               <div className="ongkir-results-compact">
                 {destinationResults.map((dest, idx) => {
-                  // Format display: Kota dan provinsi dari Komerce response
-                  const cityName = dest.city_name || dest.name || '';
-                  const provinceName = dest.province_name || dest.province || '';
-                  const label = dest.label || (cityName && provinceName
-                    ? `${cityName}, ${provinceName}`
-                    : cityName || '');
+                  // Format display: Gunakan label dari API atau format manual
+                  const label = dest.label || (dest.city_name && dest.province_name
+                    ? `${dest.city_name}, ${dest.province_name}`
+                    : dest.city_name || dest.name || '');
                   const destinationId = dest.destination_id || dest.id || dest.city_id || "";
                   
                   return (
@@ -291,7 +312,12 @@ export default function OngkirCalculator({
                         handleSelectDestination(dest);
                       }}
                     >
-                      {label || `ID: ${destinationId}`}
+                      <div style={{ fontWeight: 500 }}>{label || `ID: ${destinationId}`}</div>
+                      {dest.district_name && (
+                        <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
+                          {dest.district_name}{dest.subdistrict_name ? `, ${dest.subdistrict_name}` : ''}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -306,49 +332,49 @@ export default function OngkirCalculator({
           )}
         </div>
 
-        {/* Kecamatan - Input Manual (untuk alamat lengkap) */}
+        {/* Kecamatan - Auto-fill dari pilihan kota */}
         <div className="compact-field">
           <label className="compact-label">Kecamatan</label>
           <input
             type="text"
             className="compact-input"
-            placeholder="Masukkan kecamatan (contoh: Kalideres)"
+            placeholder="Akan terisi otomatis saat memilih kota"
             value={kecamatan}
             onChange={(e) => setKecamatan(e.target.value)}
           />
           <p className="text-xs text-gray-500 mt-1">
-            Detail alamat untuk pengiriman (tidak mempengaruhi ongkir)
+            {kecamatan ? 'Terisi otomatis dari pilihan kota (bisa diedit)' : 'Akan terisi otomatis saat memilih kota'}
           </p>
         </div>
 
-        {/* Kelurahan/Kabupaten - Input Manual (untuk alamat lengkap) */}
+        {/* Kelurahan/Kabupaten - Auto-fill dari pilihan kota */}
         <div className="compact-field">
           <label className="compact-label">Kelurahan/Kabupaten</label>
           <input
             type="text"
             className="compact-input"
-            placeholder="Masukkan kelurahan/kabupaten (contoh: Pegadungan)"
+            placeholder="Akan terisi otomatis saat memilih kota"
             value={kabupaten}
             onChange={(e) => setKabupaten(e.target.value)}
           />
           <p className="text-xs text-gray-500 mt-1">
-            Detail alamat untuk pengiriman (tidak mempengaruhi ongkir)
+            {kabupaten ? 'Terisi otomatis dari pilihan kota (bisa diedit)' : 'Akan terisi otomatis saat memilih kota'}
           </p>
         </div>
 
-        {/* Kode Pos - Input Manual (untuk alamat lengkap) */}
+        {/* Kode Pos - Auto-fill dari pilihan kota */}
         <div className="compact-field">
           <label className="compact-label">Kode Pos</label>
           <input
             type="text"
             className="compact-input"
-            placeholder="Masukkan kode pos (contoh: 11830)"
+            placeholder="Akan terisi otomatis saat memilih kota"
             value={kodePos}
             onChange={(e) => setKodePos(e.target.value.replace(/\D/g, ''))}
             maxLength={5}
           />
           <p className="text-xs text-gray-500 mt-1">
-            Detail alamat untuk pengiriman (tidak mempengaruhi ongkir)
+            {kodePos ? 'Terisi otomatis dari pilihan kota (bisa diedit)' : 'Akan terisi otomatis saat memilih kota'}
           </p>
         </div>
 

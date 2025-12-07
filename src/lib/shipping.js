@@ -27,7 +27,7 @@ export async function searchDestinations(search = '') {
 
     // Tangani response kosong atau error HTTP
     if (!response || !response.ok) {
-      console.error('[SHIPPING] Search failed:', response?.status, response?.statusText);
+      // Silent error untuk HTTP error - tidak log karena bisa spam console
       return [];
     }
 
@@ -36,7 +36,10 @@ export async function searchDestinations(search = '') {
     // Tangani response bukan JSON atau format tidak sesuai
     // Backend selalu return format: { success, message, data }
     if (!json || !json.success) {
-      console.error('[SHIPPING] Search error:', json?.message || 'Unknown error');
+      // Log error hanya jika bukan error yang umum (seperti "tidak ditemukan")
+      if (json?.message && !json.message.includes('tidak ditemukan') && !json.message.includes('kosong')) {
+        console.warn('[SHIPPING] Search warning:', json?.message);
+      }
       return json?.data || [];
     }
 
