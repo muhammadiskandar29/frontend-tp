@@ -681,7 +681,7 @@ CUSTOMER LOGIN PAGE
   background-size: cover;
   background-position: center;
   padding: clamp(0.5rem, 2vw, 1.5rem);
-  padding-top: clamp(0.5rem, 2vw, 1.5rem);
+  padding-top: clamp(1rem, 2.5vw, 2rem);
   padding-bottom: clamp(0.5rem, 2vw, 1.5rem);
   overflow-y: auto;
 }
