@@ -24,7 +24,7 @@ export default function OngkirCalculator({
   const [selectedCity, setSelectedCity] = useState("");
   const [selectedDistrict, setSelectedDistrict] = useState("");
   const [selectedCourier, setSelectedCourier] = useState(defaultCourier || "jne");
-  const [weight, setWeight] = useState(DEFAULT_WEIGHT);
+  // Weight di-hardcode, tidak perlu state
   
   const [loadingProvinces, setLoadingProvinces] = useState(false);
   const [loadingCities, setLoadingCities] = useState(false);
@@ -85,14 +85,15 @@ export default function OngkirCalculator({
     }
   }, [selectedCity]);
 
-  // Auto calculate when district, courier, or weight changes
+  // Auto calculate when district or courier changes
+  // Weight selalu menggunakan DEFAULT_WEIGHT (hardcode)
   useEffect(() => {
-    if (selectedDistrict && selectedCourier && weight > 0) {
-      calculateCost(selectedDistrict, selectedCourier, weight);
+    if (selectedDistrict && selectedCourier) {
+      calculateCost(selectedDistrict, selectedCourier, DEFAULT_WEIGHT);
     } else {
       setCostResults([]);
     }
-  }, [selectedDistrict, selectedCourier, weight]);
+  }, [selectedDistrict, selectedCourier]);
 
   const loadProvinces = async () => {
     setLoadingProvinces(true);
@@ -286,25 +287,6 @@ export default function OngkirCalculator({
           {loadingDistricts && (
             <p className="text-sm text-blue-600 mt-1">Memuat kecamatan...</p>
           )}
-        </div>
-
-        {/* Weight Input */}
-        <div className="compact-field" style={{ marginTop: "16px" }}>
-          <label className="compact-label">
-            Berat (gram) <span className="required">*</span>
-          </label>
-          <input
-            type="number"
-            className="compact-input"
-            placeholder="1000"
-            value={weight}
-            onChange={(e) => {
-              const val = parseInt(e.target.value, 10) || 0;
-              setWeight(val > 0 ? val : DEFAULT_WEIGHT);
-            }}
-            min="1"
-            disabled={loadingCost}
-          />
         </div>
 
         {/* Courier Dropdown */}
