@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server';
  * 
  * Proxy ke: GET https://rajaongkir.komerce.id/api/v1/destination/province
  */
+const API_KEY = 'mT8nGMeZ4cacc72ba9d93fd4g2xH48Gb';
 const KOMERCE_BASE_URL = 'https://rajaongkir.komerce.id/api/v1';
 
 export async function GET(request) {
@@ -21,7 +22,8 @@ export async function GET(request) {
       response = await fetch(provincesUrl, {
         method: 'GET',
         headers: {
-          'accept': 'application/json'
+          'accept': 'application/json',
+          'key': API_KEY
         },
         signal: controller.signal
       });
