@@ -1,17 +1,20 @@
 import { NextResponse } from 'next/server';
 
 /**
- * Next.js API Route untuk menghitung ongkir domestic menggunakan Komerce API
+ * Next.js API Route untuk menghitung ongkir district domestic menggunakan Komerce API
  * 
  * Endpoint: POST /api/shipping/calculate-domestic
  * 
  * Payload:
  * {
- *   "origin": 73655,
+ *   "origin": 6204,
  *   "destination": <district_id>,
  *   "weight": 1000,
- *   "courier": "jne:jnt:sicepat:anteraja:pos"
+ *   "courier": "jne" atau "jne:sicepat:..." (multiple couriers)
  * }
+ * 
+ * Proxy ke: POST https://rajaongkir.komerce.id/api/v1/calculate/district/domestic-cost
+ * dengan form-urlencoded body
  */
 const API_KEY = 'mT8nGMeZ4cacc72ba9d93fd4g2xH48Gb';
 const KOMERCE_BASE_URL = 'https://rajaongkir.komerce.id/api/v1';
@@ -30,14 +33,15 @@ export async function POST(request) {
       }, { status: 200 });
     }
 
-    // Build URL dengan query parameters
+    // Build form-urlencoded body
     const params = new URLSearchParams();
     params.append('origin', String(origin));
     params.append('destination', String(destination));
     params.append('weight', String(weight));
     params.append('courier', String(courier));
+    params.append('price', 'lowest'); // Default price option
 
-    const costUrl = `${KOMERCE_BASE_URL}/cost/domestic?${params.toString()}`;
+    const costUrl = `${KOMERCE_BASE_URL}/calculate/district/domestic-cost`;
 
     let response;
     try {
@@ -46,11 +50,12 @@ export async function POST(request) {
       const timeoutId = setTimeout(() => controller.abort(), 15000);
 
       response = await fetch(costUrl, {
-        method: 'GET',
+        method: 'POST',
         headers: {
           'key': API_KEY,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/x-www-form-urlencoded'
         },
+        body: params.toString(),
         signal: controller.signal
       });
 
@@ -111,7 +116,7 @@ export async function POST(request) {
     }
 
     // Handle response dari Komerce API
-    // Format: { meta: {...}, data: [...] }
+    // Format dari curl: { meta: {...}, data: [{ name, code, service, description, cost, etd }, ...] }
     let results = [];
 
     if (json.data && Array.isArray(json.data)) {
@@ -130,27 +135,15 @@ export async function POST(request) {
     }
 
     // Normalize data untuk frontend
-    // Format: array of { courier, service, description, etd, cost }
-    const normalizedData = results.flatMap(item => {
-      // Jika item memiliki costs array, flatten
-      if (item.costs && Array.isArray(item.costs)) {
-        return item.costs.map(cost => ({
-          courier: item.courier || item.code || '',
-          service: cost.service || cost.name || '',
-          description: cost.description || '',
-          etd: cost.etd || cost.etd_days || '',
-          cost: cost.cost || cost.price || 0
-        }));
-      }
-      // Jika langsung object
-      return [{
-        courier: item.courier || item.code || '',
-        service: item.service || item.name || '',
-        description: item.description || '',
-        etd: item.etd || item.etd_days || '',
-        cost: item.cost || item.price || 0
-      }];
-    });
+    // Response structure: { name, code, service, description, cost, etd }
+    // Target format: { courier, service, description, etd, cost }
+    const normalizedData = results.map(item => ({
+      courier: item.code || item.courier || '',
+      service: item.service || '',
+      description: item.description || '',
+      etd: item.etd || '',
+      cost: item.cost || 0
+    }));
 
     // Return normalized data
     return NextResponse.json({

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { searchDestinations, calculateDomesticCost } from "@/utils/shippingService";
 import "@/styles/ongkir.css";
 
-const ORIGIN_DISTRICT_ID = 73655;
+const ORIGIN_DISTRICT_ID = 6204; // Kelapa Dua, Kabupaten Tangerang
 const DEFAULT_WEIGHT = 1000;
 const DEFAULT_COURIER = "jne:jnt:sicepat:anteraja:pos";
 
