@@ -54,6 +54,7 @@ export default function LandingPage() {
   });
 
   const [ongkir, setOngkir] = useState(0); // Ongkir dalam rupiah
+  const [ongkirInfo, setOngkirInfo] = useState({ courier: '', service: '' }); // Info courier dan service
   
   // Debug: log ongkir changes
   useEffect(() => {
@@ -895,23 +896,27 @@ export default function LandingPage() {
           generateAlamatLengkap(e.target.value, ongkirAddress);
         }}
       />
-      <p className="text-sm text-gray-500 mt-1">
-        Masukkan alamat lengkap Anda
-      </p>
     </div>
 
     {/* Ongkir Calculator - Tampilkan jika landingpage = "2" (fisik), di dalam card yang sama */}
     {(form.landingpage === "2" || form.landingpage === 2) && (
       <OngkirCalculator
-        onSelectOngkir={(price) => {
-          console.log('[LANDING] onSelectOngkir called with price:', price);
-          setOngkir(price);
+        onSelectOngkir={(info) => {
+          console.log('[LANDING] onSelectOngkir called with info:', info);
+          // Handle both old format (number) and new format (object)
+          if (typeof info === 'object' && info.cost !== undefined) {
+            setOngkir(info.cost);
+            setOngkirInfo({ courier: info.courier || '', service: info.service || '' });
+          } else {
+            setOngkir(info);
+          }
         }}
         onAddressChange={(address) => {
           setOngkirAddress(address);
           generateAlamatLengkap(customerForm.alamat, address);
         }}
         defaultCourier="jne"
+        compact={true}
       />
     )}
   </div>
@@ -946,7 +951,7 @@ export default function LandingPage() {
           </section>
         )}
 
-        {/* Grand Total Card - Tampilkan jika landingpage = "2" dan ongkir sudah dihitung */}
+        {/* Rincian Pesanan Card - Tampilkan jika landingpage = "2" dan ongkir sudah dihitung */}
         {(form.landingpage === "2" || form.landingpage === 2) && ongkir > 0 && (() => {
           // Parse harga produk ke number
           const hargaProduk = typeof form.harga_asli === "string" 
@@ -959,29 +964,48 @@ export default function LandingPage() {
           // Hitung total
           const grandTotal = hargaProduk + ongkirValue;
           
+          // Format courier dan service: "JNE Express - REG"
+          const courierLabel = ongkirInfo.courier ? ongkirInfo.courier.toUpperCase() : 'JNE';
+          const serviceLabel = ongkirInfo.service || 'REG';
+          const ongkirLabel = `${courierLabel} Express - ${serviceLabel}`;
+          
           return (
-            <section className="compact-form-section" aria-label="Grand total">
+            <section className="compact-form-section" aria-label="Rincian Pesanan">
               <div className="compact-form-card">
+                {/* Judul */}
+                <div style={{ marginBottom: "16px" }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#111827', margin: 0 }}>
+                    Rincian Pesanan
+                  </h3>
+                </div>
+                
+                {/* Nama Produk */}
                 <div className="compact-field">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '8px 0' }}>
-                    <span className="compact-label" style={{ margin: 0 }}>Harga Produk</span>
+                    <span className="compact-label" style={{ margin: 0 }}>{form.nama || 'Produk'}</span>
                     <span style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}>
                       Rp {formatPrice(form.harga_asli || "0")}
                     </span>
                   </div>
                 </div>
+                
+                {/* Ongkir */}
                 <div className="compact-field">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '8px 0' }}>
-                    <span className="compact-label" style={{ margin: 0 }}>Ongkir</span>
+                    <span className="compact-label" style={{ margin: 0 }}>Ongkir ({ongkirLabel})</span>
                     <span style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}>
                       Rp {formatPrice(ongkirValue)}
                     </span>
                   </div>
                 </div>
+                
+                {/* Garis Pemisah */}
                 <div style={{ height: '1px', background: '#e5e7eb', margin: '12px 0' }}></div>
+                
+                {/* Total Pesanan */}
                 <div className="compact-field">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '8px 0' }}>
-                    <span className="compact-label" style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#111827' }}>Total</span>
+                    <span className="compact-label" style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#111827' }}>Total Pesanan</span>
                     <span style={{ fontSize: '18px', fontWeight: 700, color: '#111827' }}>
                       Rp {formatPrice(grandTotal)}
                     </span>

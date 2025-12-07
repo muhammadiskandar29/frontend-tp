@@ -160,9 +160,17 @@ export default function OngkirCalculator({
       } else {
         // Call callback jika ada onSelectOngkir
         if (onSelectOngkir && results.length > 0) {
-          // Ambil harga terendah
-          const lowestCost = Math.min(...results.map(r => r.cost || 0));
-          onSelectOngkir(lowestCost);
+          // Ambil harga terendah dan info courier/service
+          const sortedResults = [...results].sort((a, b) => (a.cost || 0) - (b.cost || 0));
+          const cheapest = sortedResults[0];
+          const lowestCost = cheapest.cost || 0;
+          
+          // Kirim info lengkap: { cost, courier, service }
+          onSelectOngkir({
+            cost: lowestCost,
+            courier: cheapest.courier || courier.toUpperCase(),
+            service: cheapest.service || ''
+          });
         }
       }
     } catch (err) {
@@ -188,13 +196,13 @@ export default function OngkirCalculator({
 
   return (
     <>
-      {/* Cascading Dropdown Form */}
+      {/* Cascading Dropdown Form - Always Compact */}
       <div style={{ 
-        background: compact ? "transparent" : "white", 
-        border: compact ? "none" : "1px solid #e5e7eb", 
-        borderRadius: compact ? "0" : "12px", 
-        padding: compact ? "0" : "24px",
-        marginBottom: compact ? "16px" : "24px"
+        background: "transparent", 
+        border: "none", 
+        borderRadius: "0", 
+        padding: "0",
+        marginTop: "16px"
       }}>
         {/* Province Dropdown */}
         <div className="compact-field">
@@ -323,17 +331,6 @@ export default function OngkirCalculator({
           </select>
         </div>
 
-        {/* Info */}
-        <div style={{ marginTop: "16px", padding: "12px", background: "#f3f4f6", borderRadius: "8px" }}>
-          <p style={{ fontSize: "12px", color: "#6b7280", margin: 0 }}>
-            <strong>Origin:</strong> District ID {ORIGIN_DISTRICT_ID} (Kelapa Dua)
-          </p>
-          {selectedDistrict && (
-            <p style={{ fontSize: "12px", color: "#6b7280", margin: "4px 0 0 0" }}>
-              <strong>Destination:</strong> {selectedDistrictName}, {selectedCityName}, {selectedProvinceName}
-            </p>
-          )}
-        </div>
       </div>
 
       {/* Error Message */}
@@ -343,7 +340,7 @@ export default function OngkirCalculator({
           background: "#fee2e2",
           border: "1px solid #fca5a5",
           borderRadius: "8px",
-          marginBottom: "24px"
+          marginTop: "16px"
         }}>
           <p style={{ fontSize: "14px", color: "#991b1b", margin: 0 }}>{error}</p>
         </div>
@@ -352,158 +349,11 @@ export default function OngkirCalculator({
       {/* Loading Cost */}
       {loadingCost && (
         <div style={{
-          padding: "24px",
+          padding: "12px",
           textAlign: "center",
-          background: "white",
-          border: "1px solid #e5e7eb",
-          borderRadius: "12px",
-          marginBottom: "24px"
+          marginTop: "16px"
         }}>
           <p style={{ fontSize: "14px", color: "#6b7280" }}>Menghitung ongkir...</p>
-        </div>
-      )}
-
-      {/* Cost Results Table */}
-      {costResults.length > 0 && !loadingCost && (
-        <div style={{
-          background: "white",
-          border: "1px solid #e5e7eb",
-          borderRadius: "12px",
-          overflow: "hidden"
-        }}>
-          <div style={{ padding: "16px", borderBottom: "1px solid #e5e7eb", background: "#f9fafb" }}>
-            <h2 style={{ fontSize: "18px", fontWeight: 600, color: "#111827", margin: 0 }}>
-              Hasil Ongkir
-            </h2>
-          </div>
-          
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ background: "#f9fafb" }}>
-                  <th style={{
-                    padding: "12px 16px",
-                    textAlign: "left",
-                    fontSize: "12px",
-                    fontWeight: 600,
-                    color: "#6b7280",
-                    textTransform: "uppercase",
-                    borderBottom: "1px solid #e5e7eb"
-                  }}>
-                    Kurir
-                  </th>
-                  <th style={{
-                    padding: "12px 16px",
-                    textAlign: "left",
-                    fontSize: "12px",
-                    fontWeight: 600,
-                    color: "#6b7280",
-                    textTransform: "uppercase",
-                    borderBottom: "1px solid #e5e7eb"
-                  }}>
-                    Layanan
-                  </th>
-                  <th style={{
-                    padding: "12px 16px",
-                    textAlign: "left",
-                    fontSize: "12px",
-                    fontWeight: 600,
-                    color: "#6b7280",
-                    textTransform: "uppercase",
-                    borderBottom: "1px solid #e5e7eb"
-                  }}>
-                    Deskripsi
-                  </th>
-                  <th style={{
-                    padding: "12px 16px",
-                    textAlign: "left",
-                    fontSize: "12px",
-                    fontWeight: 600,
-                    color: "#6b7280",
-                    textTransform: "uppercase",
-                    borderBottom: "1px solid #e5e7eb"
-                  }}>
-                    Estimasi
-                  </th>
-                  <th style={{
-                    padding: "12px 16px",
-                    textAlign: "right",
-                    fontSize: "12px",
-                    fontWeight: 600,
-                    color: "#6b7280",
-                    textTransform: "uppercase",
-                    borderBottom: "1px solid #e5e7eb"
-                  }}>
-                    Ongkir
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {costResults.map((item, index) => (
-                  <tr 
-                    key={index}
-                    style={{
-                      borderBottom: index < costResults.length - 1 ? "1px solid #f3f4f6" : "none"
-                    }}
-                  >
-                    <td style={{
-                      padding: "12px 16px",
-                      fontSize: "14px",
-                      color: "#111827",
-                      fontWeight: 500
-                    }}>
-                      {item.courier?.toUpperCase() || "-"}
-                    </td>
-                    <td style={{
-                      padding: "12px 16px",
-                      fontSize: "14px",
-                      color: "#374151"
-                    }}>
-                      {item.service || "-"}
-                    </td>
-                    <td style={{
-                      padding: "12px 16px",
-                      fontSize: "14px",
-                      color: "#6b7280"
-                    }}>
-                      {item.description || "-"}
-                    </td>
-                    <td style={{
-                      padding: "12px 16px",
-                      fontSize: "14px",
-                      color: "#374151"
-                    }}>
-                      {item.etd ? `${item.etd}` : "-"}
-                    </td>
-                    <td style={{
-                      padding: "12px 16px",
-                      fontSize: "14px",
-                      color: "#111827",
-                      fontWeight: 600,
-                      textAlign: "right"
-                    }}>
-                      {formatPrice(item.cost || 0)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Empty State */}
-      {costResults.length === 0 && !loadingCost && selectedDistrict && (
-        <div style={{
-          padding: "24px",
-          textAlign: "center",
-          background: "white",
-          border: "1px solid #e5e7eb",
-          borderRadius: "12px"
-        }}>
-          <p style={{ fontSize: "14px", color: "#6b7280" }}>
-            Tidak ada data ongkir untuk rute ini
-          </p>
         </div>
       )}
     </>
