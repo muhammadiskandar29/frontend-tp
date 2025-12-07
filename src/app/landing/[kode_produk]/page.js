@@ -947,37 +947,50 @@ export default function LandingPage() {
         )}
 
         {/* Grand Total Card - Tampilkan jika landingpage = "2" dan ongkir sudah dihitung */}
-        {(form.landingpage === "2" || form.landingpage === 2) && ongkir > 0 && (
-          <section className="compact-form-section" aria-label="Grand total">
-            <div className="compact-form-card">
-              <div className="compact-field">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '8px 0' }}>
-                  <span className="compact-label" style={{ margin: 0 }}>Harga Produk</span>
-                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}>
-                    Rp {formatPrice(form.harga_asli || "0")}
-                  </span>
+        {(form.landingpage === "2" || form.landingpage === 2) && ongkir > 0 && (() => {
+          // Parse harga produk ke number
+          const hargaProduk = typeof form.harga_asli === "string" 
+            ? parseInt(form.harga_asli.replace(/[^\d]/g, ""), 10) || 0
+            : (typeof form.harga_asli === "number" ? form.harga_asli : 0);
+          
+          // Pastikan ongkir adalah number
+          const ongkirValue = typeof ongkir === "number" ? ongkir : parseInt(ongkir, 10) || 0;
+          
+          // Hitung total
+          const grandTotal = hargaProduk + ongkirValue;
+          
+          return (
+            <section className="compact-form-section" aria-label="Grand total">
+              <div className="compact-form-card">
+                <div className="compact-field">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '8px 0' }}>
+                    <span className="compact-label" style={{ margin: 0 }}>Harga Produk</span>
+                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}>
+                      Rp {formatPrice(form.harga_asli || "0")}
+                    </span>
+                  </div>
+                </div>
+                <div className="compact-field">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '8px 0' }}>
+                    <span className="compact-label" style={{ margin: 0 }}>Ongkir</span>
+                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}>
+                      Rp {formatPrice(ongkirValue)}
+                    </span>
+                  </div>
+                </div>
+                <div style={{ height: '1px', background: '#e5e7eb', margin: '12px 0' }}></div>
+                <div className="compact-field">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '8px 0' }}>
+                    <span className="compact-label" style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#111827' }}>Total</span>
+                    <span style={{ fontSize: '18px', fontWeight: 700, color: '#111827' }}>
+                      Rp {formatPrice(grandTotal)}
+                    </span>
+                  </div>
                 </div>
               </div>
-              <div className="compact-field">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '8px 0' }}>
-                  <span className="compact-label" style={{ margin: 0 }}>Ongkir</span>
-                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}>
-                    Rp {ongkir.toLocaleString("id-ID")}
-                  </span>
-                </div>
-              </div>
-              <div style={{ height: '1px', background: '#e5e7eb', margin: '12px 0' }}></div>
-              <div className="compact-field">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '8px 0' }}>
-                  <span className="compact-label" style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#111827' }}>Total</span>
-                  <span style={{ fontSize: '18px', fontWeight: 700, color: '#111827' }}>
-                    Rp {(parseInt(form.harga_asli || "0", 10) + ongkir).toLocaleString("id-ID")}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
+            </section>
+          );
+        })()}
 
         {/* Payment - Vertical Layout, Horizontal Items */}
         <section className="payment-section" aria-label="Payment methods">

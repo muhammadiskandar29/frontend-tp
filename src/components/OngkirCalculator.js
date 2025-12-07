@@ -20,20 +20,30 @@ export default function OngkirCalculator({
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [selectedDestination, setSelectedDestination] = useState(null);
+  const [selectedCourier, setSelectedCourier] = useState("all");
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [loadingCost, setLoadingCost] = useState(false);
   const [costResults, setCostResults] = useState([]);
   const [error, setError] = useState("");
   const searchTimeoutRef = useRef(null);
 
-  // Auto calculate when destination selected
+  // Courier options
+  const couriers = [
+    { value: "jne", label: "JNE" },
+    { value: "jnt", label: "JNT" },
+    { value: "sicepat", label: "SiCepat" },
+    { value: "anteraja", label: "AnterAja" },
+    { value: "pos", label: "POS Indonesia" },
+  ];
+
+  // Auto calculate when destination or courier selected
   useEffect(() => {
-    if (selectedDestination && selectedDestination.id) {
-      calculateCost(selectedDestination.id);
+    if (selectedDestination && selectedDestination.id && selectedCourier) {
+      calculateCost(selectedDestination.id, selectedCourier);
     } else {
       setCostResults([]);
     }
-  }, [selectedDestination]);
+  }, [selectedDestination, selectedCourier]);
 
   const handleSearch = async (query) => {
     setSearchQuery(query);
@@ -59,18 +69,16 @@ export default function OngkirCalculator({
         
         if (Array.isArray(results) && results.length > 0) {
           setSearchResults(results);
+          setError(""); // Clear error jika ada hasil
         } else {
           setSearchResults([]);
-          if (query.trim().length >= 2) {
-            setError("Lokasi tidak ditemukan. Coba dengan kata kunci lain.");
-          }
+          // Jangan tampilkan error saat masih mengetik, biarkan user ketik sampai selesai
+          // Error hanya muncul jika user sudah selesai mengetik dan tidak ada hasil
         }
       } catch (err) {
         console.error("Search error:", err);
         setSearchResults([]);
-        if (query.trim().length >= 2) {
-          setError("Gagal mencari lokasi. Silakan coba lagi.");
-        }
+        // Jangan tampilkan error saat masih mengetik
       } finally {
         setLoadingSearch(false);
       }
@@ -93,8 +101,8 @@ export default function OngkirCalculator({
     }
   };
 
-  const calculateCost = async (destinationId) => {
-    if (!destinationId) {
+  const calculateCost = async (destinationId, courier = selectedCourier) => {
+    if (!destinationId || !courier) {
       return;
     }
 
@@ -103,11 +111,17 @@ export default function OngkirCalculator({
     setCostResults([]);
 
     try {
+      // Build courier string dari dropdown selection
+      // Jika "all" pakai semua kurir, jika single pakai kurir itu saja
+      const courierString = courier === "all" 
+        ? DEFAULT_COURIER 
+        : courier;
+
       const results = await calculateDomesticCost({
         origin: ORIGIN_DISTRICT_ID,
         destination: parseInt(destinationId, 10),
         weight: DEFAULT_WEIGHT,
-        courier: DEFAULT_COURIER
+        courier: courierString
       });
 
       setCostResults(results);
@@ -204,12 +218,36 @@ export default function OngkirCalculator({
           )}
         </div>
 
+        {/* Courier Dropdown */}
+        <div className="compact-field" style={{ marginTop: "16px" }}>
+          <label className="compact-label">
+            Kurir <span className="required">*</span>
+          </label>
+          <select
+            className="compact-input"
+            value={selectedCourier}
+            onChange={(e) => setSelectedCourier(e.target.value)}
+            disabled={loadingCost || !selectedDestination}
+            style={{ 
+              appearance: 'auto', 
+              cursor: (loadingCost || !selectedDestination) ? 'not-allowed' : 'pointer',
+              backgroundColor: (loadingCost || !selectedDestination) ? '#f9fafb' : 'white'
+            }}
+          >
+            <option value="all">Semua Kurir (JNE, JNT, SiCepat, AnterAja, POS)</option>
+            {couriers.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {/* Info */}
         <div style={{ marginTop: "16px", padding: "12px", background: "#f3f4f6", borderRadius: "8px" }}>
           <p style={{ fontSize: "12px", color: "#6b7280", margin: 0 }}>
             <strong>Origin:</strong> District ID {ORIGIN_DISTRICT_ID} | 
-            <strong> Berat:</strong> {DEFAULT_WEIGHT} gram | 
-            <strong> Kurir:</strong> JNE, JNT, SiCepat, AnterAja, POS
+            <strong> Berat:</strong> {DEFAULT_WEIGHT} gram
           </p>
         </div>
       </div>
