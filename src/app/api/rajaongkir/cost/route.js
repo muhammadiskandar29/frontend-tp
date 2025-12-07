@@ -1,73 +1,198 @@
-import { NextResponse } from 'next/server'
+import { NextResponse } from 'next/server';
 
-const API_KEY = process.env.RAJAONGKIR_API_KEY
-const BASE_URL = 'https://rajaongkir.komerce.id/api/v1/cost/domestic-cost'
-
-async function callUpstreamCost(bodyObj) {
-  // Validate API key
-  if (!API_KEY) {
-    return { ok: false, status: 500, text: 'API key not configured' }
-  }
-
-  const res = await fetch(BASE_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      key: API_KEY
-    },
-    body: JSON.stringify(bodyObj)
-  })
-  const text = await res.text().catch(() => '')
-  if (!res.ok) return { ok: false, status: res.status, text }
-  let json = null
-  try { json = JSON.parse(text) } catch(e) { return { ok: false, status: res.status, text } }
-  return { ok: true, json }
-}
-
-export async function GET(request) {
-  try {
-    const { searchParams } = new URL(request.url)
-    const origin = searchParams.get('origin') || searchParams.get('shipper_destination_id')
-    const destination = searchParams.get('destination') || searchParams.get('receiver_destination_id')
-    const weight = Number(searchParams.get('weight') || '1000')
-    const courier = searchParams.get('courier') || 'jne'
-
-    if (!origin || !destination) return NextResponse.json({ success: true, data: {} }, { status: 200 })
-
-    const upstream = await callUpstreamCost({ origin: Number(origin), destination: Number(destination), weight, courier })
-    if (!upstream.ok) return NextResponse.json({ success: false, message: `Upstream error ${upstream.status}`, debug: upstream.text || upstream.json }, { status: 200 })
-
-    const data = upstream.json?.data || upstream.json || {}
-    const price = data.price || data.cost || 0
-    const etd = data.etd || data.estimated_delivery || ''
-
-    return NextResponse.json({ success: true, price, etd, data }, { status: 200 })
-  } catch (err) {
-    console.error('[RAJAONGKIR/COST] Error:', err)
-    return NextResponse.json({ success: false, message: err.message, data: {} }, { status: 200 })
-  }
-}
+/**
+ * Backend API Route untuk menghitung ongkir menggunakan RajaOngkir V2 Basic
+ * 
+ * Hardcode untuk testing (nanti bisa pindahkan ke environment variable):
+ * - API_KEY: mT8nGMeZ4cacc72ba9d93fd4g2xH48Gb
+ * - ORIGIN_CITY_ID: 73655 (Kelapa Dua, Tangerang, Banten - alamat kantor)
+ * 
+ * TODO: Pindahkan ke process.env.RAJAONGKIR_API_KEY dan process.env.RAJAONGKIR_ORIGIN_ID
+ */
+const API_KEY = 'mT8nGMeZ4cacc72ba9d93fd4g2xH48Gb';
+const ORIGIN_CITY_ID = '73655'; // Kelapa Dua, Kabupaten Tangerang, Banten
+const RAJAONGKIR_BASE_URL = 'https://api.rajaongkir.com/basic'; // V2 Basic
 
 export async function POST(request) {
   try {
-    const body = await request.json().catch(() => ({}))
-    const origin = body.origin
-    const destination = body.destination
-    const weight = Number(body.weight || 1000)
-    const courier = body.courier || 'jne'
 
-    if (!origin || !destination) return NextResponse.json({ success: true, data: {} }, { status: 200 })
+    const body = await request.json();
+    const { destination, weight, courier } = body;
 
-    const upstream = await callUpstreamCost({ origin: Number(origin), destination: Number(destination), weight, courier })
-    if (!upstream.ok) return NextResponse.json({ success: false, message: `Upstream error ${upstream.status}`, debug: upstream.text || upstream.json }, { status: 200 })
+    // Origin hardcode, tidak perlu dari request
+    const origin = ORIGIN_CITY_ID;
 
-    const data = upstream.json?.data || upstream.json || {}
-    const price = data.price || data.cost || 0
-    const etd = data.etd || data.estimated_delivery || ''
+    // Validasi input
+    // Backend menerima: destination (subdistrict ID atau city ID), weight (gram), courier (optional, default jne)
+    if (!destination || !weight) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'destination dan weight wajib diisi'
+        },
+        { status: 200 } // Return 200 agar frontend tidak throw error
+      );
+    }
 
-    return NextResponse.json({ success: true, price, etd, data }, { status: 200 })
-  } catch (err) {
-    console.error('[RAJAONGKIR/COST] Error:', err)
-    return NextResponse.json({ success: false, message: err.message, data: {} }, { status: 200 })
+    // Validasi destination harus angka (city_id atau subdistrict_id)
+    if (isNaN(parseInt(destination, 10))) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'destination harus berupa ID (angka)'
+        },
+        { status: 200 } // Return 200 agar frontend tidak throw error
+      );
+    }
+
+    // Courier default jne jika tidak dikirim
+    const courierValue = courier || 'jne';
+
+    // Validasi weight
+    const weightNum = parseInt(weight, 10);
+    if (isNaN(weightNum) || weightNum < 1 || weightNum > 50000) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'weight harus antara 1 dan 50000 gram'
+        },
+        { status: 400 }
+      );
+    }
+
+    // Build URL-encoded body (RajaOngkir V2 Basic requires form-urlencoded)
+    // CATATAN: RajaOngkir V2 Basic hanya menerima CITY_ID (bukan subdistrict_id)
+    // Format: origin="73655" (hardcode), destination="23" (city_id), weight=1000, courier="jne"
+    const params = new URLSearchParams();
+    params.append('origin', String(origin));      // Hardcode: 73655 (Kelapa Dua, Kabupaten Tangerang)
+    params.append('destination', String(destination)); // city_id tujuan
+    params.append('weight', String(weightNum));
+    params.append('courier', String(courierValue).toLowerCase());
+
+    console.log('[RAJAONGKIR_COST] Requesting cost (V2 Basic):', {
+      origin: String(origin),      // Hardcode: 73655
+      destination: String(destination), // city_id atau subdistrict_id tujuan
+      weight: weightNum,
+      courier: courierValue.toLowerCase()
+    });
+
+    let response;
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+      response = await fetch(`${RAJAONGKIR_BASE_URL}/cost`, {
+        method: 'POST',
+        headers: {
+          'key': API_KEY,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: params.toString(),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+    } catch (fetchError) {
+      // Handle error dengan baik, jangan lempar error ke frontend
+      console.error('[RAJAONGKIR_COST] Fetch error:', fetchError);
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Gagal terhubung ke API RajaOngkir',
+          price: 0
+        },
+        { status: 200 } // Return 200 agar frontend tidak throw error
+      );
+    }
+
+    const responseText = await response.text();
+    let data;
+
+    try {
+      data = JSON.parse(responseText);
+    } catch (err) {
+      // Handle error dengan baik, jangan lempar error ke frontend
+      console.error('[RAJAONGKIR_COST] JSON parse error:', err.message);
+      console.error('[RAJAONGKIR_COST] Raw response:', responseText.substring(0, 500));
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Response dari RajaOngkir bukan JSON',
+          price: 0
+        },
+        { status: 200 } // Return 200 agar frontend tidak throw error
+      );
+    }
+
+    // Check if RajaOngkir returned an error
+    if (data.rajaongkir?.status?.code !== 200) {
+      // Handle error dengan baik, jangan lempar error ke frontend
+      const errorMsg = data.rajaongkir?.status?.description || 'Gagal menghitung ongkir';
+      console.error('[RAJAONGKIR_COST] RajaOngkir error:', errorMsg);
+      return NextResponse.json(
+        {
+          success: false,
+          message: errorMsg,
+          price: 0
+        },
+        { status: 200 } // Return 200 agar frontend tidak throw error
+      );
+    }
+
+    // Parse RajaOngkir response and normalize
+    const rajaongkir = data.rajaongkir;
+    if (!rajaongkir || !rajaongkir.results || rajaongkir.results.length === 0) {
+      // Handle error dengan baik, jangan lempar error ke frontend
+      console.warn('[RAJAONGKIR_COST] No results from RajaOngkir');
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Tidak ada hasil ongkir untuk rute ini',
+          price: 0
+        },
+        { status: 200 }
+      );
+    }
+
+    const result = rajaongkir.results[0];
+    if (!result.costs || result.costs.length === 0) {
+      // Handle error dengan baik, jangan lempar error ke frontend
+      console.warn('[RAJAONGKIR_COST] No costs available');
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Ongkir tidak tersedia untuk rute ini',
+          price: 0
+        },
+        { status: 200 }
+      );
+    }
+
+    // Ambil cost pertama (biasanya REG)
+    const cost = result.costs[0];
+    const price = parseInt(cost.value || 0, 10);
+    const etd = cost.etd || '';
+
+    // Return normalized JSON - format yang diharapkan frontend
+    return NextResponse.json({
+      success: true,
+      price, // Langsung return price di root level untuk kemudahan frontend
+      etd,
+      data: {
+        price,
+        etd
+      }
+    });
+  } catch (error) {
+    // Handle semua error dengan baik, jangan lempar error ke frontend
+    console.error('[RAJAONGKIR_COST] Unexpected error:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: error.message || 'Terjadi kesalahan saat menghitung ongkir',
+        price: 0
+      },
+      { status: 200 } // Return 200 agar frontend tidak throw error
+    );
   }
 }
