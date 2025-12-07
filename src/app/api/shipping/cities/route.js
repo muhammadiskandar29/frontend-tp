@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 
 /**
- * Next.js API Route untuk mengambil daftar kota berdasarkan province_id dari Komerce API
+ * Next.js API Route untuk mengambil daftar cities
  * 
  * Endpoint: GET /api/shipping/cities?province_id={id}
+ * 
+ * Proxy ke: GET https://rajaongkir.komerce.id/api/v1/destination/city
  */
 const API_KEY = 'mT8nGMeZ4cacc72ba9d93fd4g2xH48Gb';
 const KOMERCE_BASE_URL = 'https://rajaongkir.komerce.id/api/v1';
@@ -11,28 +13,20 @@ const KOMERCE_BASE_URL = 'https://rajaongkir.komerce.id/api/v1';
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const province_id = searchParams.get('province_id') || '';
+    const provinceId = searchParams.get('province_id');
 
-    if (!province_id) {
-      return NextResponse.json({
-        success: false,
-        message: 'province_id wajib diisi',
-        data: []
-      }, { status: 200 });
-    }
-
-    const url = `${KOMERCE_BASE_URL}/destination/city?province_id=${encodeURIComponent(province_id)}`;
+    const citiesUrl = `${KOMERCE_BASE_URL}/destination/city${provinceId ? `?province_id=${provinceId}` : ''}`;
 
     let response;
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-      response = await fetch(url, {
+      response = await fetch(citiesUrl, {
         method: 'GET',
         headers: {
-          'key': API_KEY,
-          'Content-Type': 'application/json'
+          'accept': 'application/json',
+          'key': API_KEY
         },
         signal: controller.signal
       });
@@ -57,46 +51,25 @@ export async function GET(request) {
       }, { status: 200 });
     }
 
-    const responseText = await response.text();
-    let json;
-
-    try {
-      json = JSON.parse(responseText);
-    } catch (parseError) {
-      console.error('[SHIPPING_CITIES] JSON parse error:', parseError.message);
-      return NextResponse.json({
-        success: false,
-        message: 'Format response tidak valid',
-        data: []
-      }, { status: 200 });
-    }
-
-    // Handle response dari Komerce API
+    const json = await response.json();
+    
     let results = [];
-
     if (json.data && Array.isArray(json.data)) {
       results = json.data;
     } else if (Array.isArray(json)) {
       results = json;
-    } else {
-      console.error('[SHIPPING_CITIES] Unknown response format');
-      return NextResponse.json({
-        success: false,
-        message: 'Format response tidak dikenal',
-        data: []
-      }, { status: 200 });
     }
 
     // Normalize data
     const normalizedData = results.map(item => ({
-      id: item.id || item.city_id || '',
-      name: item.name || item.city_name || '',
-      province_id: item.province_id || province_id
+      id: item.id || '',
+      name: item.name || '',
+      province_id: item.province_id || ''
     }));
 
     return NextResponse.json({
       success: true,
-      message: 'Berhasil mengambil data kota',
+      message: 'Berhasil mengambil data cities',
       data: normalizedData
     }, { status: 200 });
 

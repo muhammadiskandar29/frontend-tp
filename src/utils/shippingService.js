@@ -1,23 +1,14 @@
 /**
  * Shipping Service - Helper functions untuk API calls
- * 
- * SOLUSI A: Menggunakan search-based approach
- * Endpoint: GET /api/shipping/search?search=xxx
  */
 
 /**
- * Search destination (kecamatan/kelurahan/nama tempat)
- * Menggunakan endpoint domestic-destination dengan search parameter
- * @param {string} search - Search keyword
- * @returns {Promise<Array>} Array of destination objects dengan lengkap: id, province_name, city_name, district_name, subdistrict_name, zip_code
+ * Get provinces
+ * @returns {Promise<Array>} Array of province objects { id, name }
  */
-export async function searchDestinations(search = '') {
+export async function getProvinces() {
   try {
-    if (!search || search.trim().length === 0) {
-      return [];
-    }
-
-    const response = await fetch(`/api/shipping/search?search=${encodeURIComponent(search.trim())}`);
+    const response = await fetch('/api/shipping/provinces');
     
     if (!response || !response.ok) {
       return [];
@@ -31,7 +22,67 @@ export async function searchDestinations(search = '') {
 
     return Array.isArray(json.data) ? json.data : [];
   } catch (error) {
-    console.error('[SHIPPING_SERVICE] searchDestinations error:', error);
+    console.error('[SHIPPING_SERVICE] getProvinces error:', error);
+    return [];
+  }
+}
+
+/**
+ * Get cities by province ID
+ * @param {number|string} provinceId - Province ID
+ * @returns {Promise<Array>} Array of city objects { id, name, province_id }
+ */
+export async function getCities(provinceId) {
+  try {
+    if (!provinceId) {
+      return [];
+    }
+
+    const response = await fetch(`/api/shipping/cities?province_id=${encodeURIComponent(provinceId)}`);
+    
+    if (!response || !response.ok) {
+      return [];
+    }
+
+    const json = await response.json();
+    
+    if (!json || !json.success) {
+      return [];
+    }
+
+    return Array.isArray(json.data) ? json.data : [];
+  } catch (error) {
+    console.error('[SHIPPING_SERVICE] getCities error:', error);
+    return [];
+  }
+}
+
+/**
+ * Get districts by city ID
+ * @param {number|string} cityId - City ID
+ * @returns {Promise<Array>} Array of district objects { id, district_id, name, city_id }
+ */
+export async function getDistricts(cityId) {
+  try {
+    if (!cityId) {
+      return [];
+    }
+
+    const response = await fetch(`/api/shipping/districts?city_id=${encodeURIComponent(cityId)}`);
+    
+    if (!response || !response.ok) {
+      return [];
+    }
+
+    const json = await response.json();
+    
+    if (!json || !json.success) {
+      return [];
+    }
+
+    return Array.isArray(json.data) ? json.data : [];
+  } catch (error) {
+    console.error('[SHIPPING_SERVICE] getDistricts error:', error);
     return [];
   }
 }
@@ -42,7 +93,7 @@ export async function searchDestinations(search = '') {
  * @param {number} params.origin - Origin district ID
  * @param {number} params.destination - Destination district ID
  * @param {number} params.weight - Berat dalam gram
- * @param {string} params.courier - Courier codes (format: "jne:jnt:sicepat:anteraja:pos")
+ * @param {string} params.courier - Courier code (single courier: "jne", "sicepat", etc)
  * @returns {Promise<Array>} Array of shipping cost objects { courier, service, description, etd, cost }
  */
 export async function calculateDomesticCost({ origin, destination, weight, courier }) {

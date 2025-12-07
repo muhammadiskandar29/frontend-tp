@@ -33,13 +33,14 @@ export async function POST(request) {
       }, { status: 200 });
     }
 
-    // Build form-urlencoded body
-    const params = new URLSearchParams();
-    params.append('origin', String(origin));
-    params.append('destination', String(destination));
-    params.append('weight', String(weight));
-    params.append('courier', String(courier));
-    params.append('price', 'lowest'); // Default price option
+    // Build JSON body
+    const requestBody = {
+      origin: parseInt(origin, 10),
+      destination: parseInt(destination, 10),
+      weight: parseInt(weight, 10),
+      courier: String(courier).toLowerCase(),
+      price: 'lowest'
+    };
 
     const costUrl = `${KOMERCE_BASE_URL}/calculate/district/domestic-cost`;
 
@@ -52,10 +53,11 @@ export async function POST(request) {
       response = await fetch(costUrl, {
         method: 'POST',
         headers: {
+          'accept': 'application/json',
           'key': API_KEY,
-          'Content-Type': 'application/x-www-form-urlencoded'
+          'content-type': 'application/json'
         },
-        body: params.toString(),
+        body: JSON.stringify(requestBody),
         signal: controller.signal
       });
 

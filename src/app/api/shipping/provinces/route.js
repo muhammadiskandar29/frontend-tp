@@ -1,27 +1,27 @@
 import { NextResponse } from 'next/server';
 
 /**
- * Next.js API Route untuk mengambil daftar provinsi dari Komerce API
+ * Next.js API Route untuk mengambil daftar provinces
  * 
  * Endpoint: GET /api/shipping/provinces
+ * 
+ * Proxy ke: GET https://rajaongkir.komerce.id/api/v1/destination/province
  */
-const API_KEY = 'mT8nGMeZ4cacc72ba9d93fd4g2xH48Gb';
 const KOMERCE_BASE_URL = 'https://rajaongkir.komerce.id/api/v1';
 
 export async function GET(request) {
   try {
-    const url = `${KOMERCE_BASE_URL}/destination/province`;
+    const provincesUrl = `${KOMERCE_BASE_URL}/destination/province`;
 
     let response;
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-      response = await fetch(url, {
+      response = await fetch(provincesUrl, {
         method: 'GET',
         headers: {
-          'key': API_KEY,
-          'Content-Type': 'application/json'
+          'accept': 'application/json'
         },
         signal: controller.signal
       });
@@ -46,34 +46,13 @@ export async function GET(request) {
       }, { status: 200 });
     }
 
-    const responseText = await response.text();
-    let json;
-
-    try {
-      json = JSON.parse(responseText);
-    } catch (parseError) {
-      console.error('[SHIPPING_PROVINCES] JSON parse error:', parseError.message);
-      return NextResponse.json({
-        success: false,
-        message: 'Format response tidak valid',
-        data: []
-      }, { status: 200 });
-    }
-
-    // Handle response dari Komerce API
+    const json = await response.json();
+    
     let results = [];
-
     if (json.data && Array.isArray(json.data)) {
       results = json.data;
     } else if (Array.isArray(json)) {
       results = json;
-    } else {
-      console.error('[SHIPPING_PROVINCES] Unknown response format');
-      return NextResponse.json({
-        success: false,
-        message: 'Format response tidak dikenal',
-        data: []
-      }, { status: 200 });
     }
 
     // Normalize data
@@ -84,7 +63,7 @@ export async function GET(request) {
 
     return NextResponse.json({
       success: true,
-      message: 'Berhasil mengambil data provinsi',
+      message: 'Berhasil mengambil data provinces',
       data: normalizedData
     }, { status: 200 });
 
