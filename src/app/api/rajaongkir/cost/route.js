@@ -4,6 +4,11 @@ const API_KEY = process.env.RAJAONGKIR_API_KEY
 const BASE_URL = 'https://rajaongkir.komerce.id/api/v1/cost/domestic-cost'
 
 async function callUpstreamCost(bodyObj) {
+  // Validate API key
+  if (!API_KEY) {
+    return { ok: false, status: 500, text: 'API key not configured' }
+  }
+
   const res = await fetch(BASE_URL, {
     method: 'POST',
     headers: {

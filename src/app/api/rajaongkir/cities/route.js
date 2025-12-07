@@ -5,6 +5,12 @@ const BASE_URL = 'https://rajaongkir.komerce.id/api/v1'
 
 export async function GET(request) {
   try {
+    // Validate API key
+    if (!API_KEY) {
+      console.error('[RAJAONGKIR/CITIES] API_KEY is not set')
+      return NextResponse.json({ success: false, message: 'API key not configured', data: [] }, { status: 200 })
+    }
+
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')?.trim() || ''
     const limit = Number(searchParams.get('limit') || 10)
