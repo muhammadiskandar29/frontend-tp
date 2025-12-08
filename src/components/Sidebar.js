@@ -81,12 +81,14 @@ export default function Sidebar({ role }) {
 
   // === MENU BASED ON ROLE ===
   useEffect(() => {
-    const basePath = isSales ? "/sales" : "/admin";
+    // Default to /sales if pathname starts with /sales, otherwise /admin
+    const pathBasedSales = typeof window !== "undefined" && pathname?.startsWith("/sales");
+    const basePath = (isSales || pathBasedSales) ? "/sales" : "/admin";
     
     const baseMenu = [
       { label: "Dashboard", href: basePath, icon: <Home size={18} /> },
       // Users hanya untuk admin, tidak untuk sales
-      ...(isSales ? [] : [{ label: "Users", href: "/admin/users", icon: <Users size={18} /> }]),
+      ...(isSales || pathBasedSales ? [] : [{ label: "Users", href: "/admin/users", icon: <Users size={18} /> }]),
       { label: "Customers", href: `${basePath}/customers`, icon: <UserCheck size={18} /> },
       {
         label: "Products",
@@ -109,7 +111,7 @@ export default function Sidebar({ role }) {
     ];
 
     setMenu(baseMenu);
-  }, [role, isSales]);
+  }, [role, isSales, pathname]);
 
   // === DETECT SCREEN WIDTH ===
   useEffect(() => {
@@ -142,12 +144,14 @@ export default function Sidebar({ role }) {
 
   // === AUTO OPEN SUBMENU IF CURRENT PAGE IS INSIDE IT ===
   useEffect(() => {
+    if (!pathname) return;
     menu.forEach((item) => {
       if (item.submenu) {
         const activeSub = item.submenu.find((sub) => {
+          if (!sub?.href) return false;
           // Normalize paths for comparison (handle both /admin and /sales)
-          const normalizedPathname = pathname.replace(/^\/sales/, "/admin");
-          const normalizedSubHref = sub.href.replace(/^\/sales/, "/admin");
+          const normalizedPathname = String(pathname).replace(/^\/sales/, "/admin");
+          const normalizedSubHref = String(sub.href).replace(/^\/sales/, "/admin");
           return normalizedPathname.startsWith(normalizedSubHref);
         });
         if (activeSub) setOpenSubmenu(item.label);
@@ -178,14 +182,19 @@ export default function Sidebar({ role }) {
 
   // === CHECK IF MENU OR SUBMENU IS ACTIVE ===
   const isMenuActive = (item) => {
+    if (!pathname || !item) return false;
     // Normalize paths for comparison (handle both /admin and /sales)
-    const normalizedPathname = pathname.replace(/^\/sales/, "/admin");
-    const normalizedItemHref = item.href.replace(/^\/sales/, "/admin");
+    const normalizedPathname = String(pathname).replace(/^\/sales/, "/admin");
     
-    if (normalizedPathname === normalizedItemHref) return true;
+    if (item.href) {
+      const normalizedItemHref = String(item.href).replace(/^\/sales/, "/admin");
+      if (normalizedPathname === normalizedItemHref) return true;
+    }
+    
     if (item.submenu) {
       return item.submenu.some((sub) => {
-        const normalizedSubHref = sub.href.replace(/^\/sales/, "/admin");
+        if (!sub?.href) return false;
+        const normalizedSubHref = String(sub.href).replace(/^\/sales/, "/admin");
         return normalizedPathname.startsWith(normalizedSubHref);
       });
     }
@@ -229,6 +238,8 @@ export default function Sidebar({ role }) {
 
         <ul className="sidebar-menu">
           {menu.map((item) => {
+            if (!item || !item.label) return null;
+            
             const active = isMenuActive(item);
             const isOpen = openSubmenu === item.label;
 
@@ -254,6 +265,7 @@ export default function Sidebar({ role }) {
                     {isOpen && (
                       <ul className="submenu-list" id={`${item.label}-submenu`}>
                         {item.submenu.map((sub) => {
+                          if (!sub || !sub.href || !sub.label) return null;
                           const isSubActive = pathname === sub.href;
                           return (
                             <li key={sub.href}>
@@ -273,14 +285,16 @@ export default function Sidebar({ role }) {
                     )}
                   </>
                 ) : (
-                  <Link
-                    href={item.href}
-                    className={`sidebar-item ${active ? "sidebar-item-active" : ""}`}
-                    onClick={handleLinkClick}
-                  >
-                    {item.icon}
-                    <span>{item.label}</span>
-                  </Link>
+                  item.href ? (
+                    <Link
+                      href={item.href}
+                      className={`sidebar-item ${active ? "sidebar-item-active" : ""}`}
+                      onClick={handleLinkClick}
+                    >
+                      {item.icon}
+                      <span>{item.label}</span>
+                    </Link>
+                  ) : null
                 )}
               </li>
             );
