@@ -41,8 +41,31 @@ export default function Sidebar({ role }) {
   const [isRailExpanded, setIsRailExpanded] = useState(true);
   const [openSubmenu, setOpenSubmenu] = useState(null);
   
+  // Check if user is sales (divisi 3)
+  const [isSales, setIsSales] = useState(false);
+  
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const userData = localStorage.getItem("user");
+      const division = localStorage.getItem("division");
+      if (userData) {
+        try {
+          const user = JSON.parse(userData);
+          // Check if divisi is 3 (Sales) or "3"
+          const userDivisi = user?.divisi || division;
+          setIsSales(userDivisi === 3 || userDivisi === "3");
+        } catch (e) {
+          // Fallback to division from localStorage
+          setIsSales(division === "3");
+        }
+      } else {
+        setIsSales(division === "3");
+      }
+    }
+  }, []);
+  
   // Check if we're on addProducts page - force mobile behavior
-  const isAddProductsPage = pathname.includes('/admin/products/addProducts');
+  const isAddProductsPage = pathname.includes('/admin/products/addProducts') || pathname.includes('/sales/products/addProducts');
   
   // Listen for custom event from addProducts page
   useEffect(() => {
@@ -58,32 +81,35 @@ export default function Sidebar({ role }) {
 
   // === MENU BASED ON ROLE ===
   useEffect(() => {
+    const basePath = isSales ? "/sales" : "/admin";
+    
     const baseMenu = [
-      { label: "Dashboard", href: "/admin", icon: <Home size={18} /> },
-      { label: "Users", href: "/admin/users", icon: <Users size={18} /> },
-      { label: "Customers", href: "/admin/customers", icon: <UserCheck size={18} /> },
+      { label: "Dashboard", href: basePath, icon: <Home size={18} /> },
+      // Users hanya untuk admin, tidak untuk sales
+      ...(isSales ? [] : [{ label: "Users", href: "/admin/users", icon: <Users size={18} /> }]),
+      { label: "Customers", href: `${basePath}/customers`, icon: <UserCheck size={18} /> },
       {
         label: "Products",
         icon: <ShoppingBag size={18} />,
         submenu: [
-          { label: "Kategori Produk", href: "/admin/kategori" },
-          { label: "Produk", href: "/admin/products" },
+          { label: "Kategori Produk", href: `${basePath}/kategori` },
+          { label: "Produk", href: `${basePath}/products` },
         ],
       },
-      { label: "Orders", href: "/admin/orders", icon: <ClipboardList size={18} /> },
+      { label: "Orders", href: `${basePath}/orders`, icon: <ClipboardList size={18} /> },
       {
         label: "Follow Up",
         icon: <Tag size={18} />,
         submenu: [
-          { label: "Report", href: "/admin/followup/report" },
+          { label: "Report", href: `${basePath}/followup/report` },
         ],
       },
-      // { label: "Aktivitas", href: "/admin/aktivitas", icon: <Activity size={18} /> }, // Route belum tersedia
-      // { label: "Settings", href: "/admin/settings", icon: <Settings size={18} /> }, // Route belum tersedia
+      // { label: "Aktivitas", href: `${basePath}/aktivitas`, icon: <Activity size={18} /> }, // Route belum tersedia
+      // { label: "Settings", href: `${basePath}/settings`, icon: <Settings size={18} /> }, // Route belum tersedia
     ];
 
     setMenu(baseMenu);
-  }, [role]);
+  }, [role, isSales]);
 
   // === DETECT SCREEN WIDTH ===
   useEffect(() => {
@@ -118,7 +144,12 @@ export default function Sidebar({ role }) {
   useEffect(() => {
     menu.forEach((item) => {
       if (item.submenu) {
-        const activeSub = item.submenu.find((sub) => pathname.startsWith(sub.href));
+        const activeSub = item.submenu.find((sub) => {
+          // Normalize paths for comparison (handle both /admin and /sales)
+          const normalizedPathname = pathname.replace(/^\/sales/, "/admin");
+          const normalizedSubHref = sub.href.replace(/^\/sales/, "/admin");
+          return normalizedPathname.startsWith(normalizedSubHref);
+        });
         if (activeSub) setOpenSubmenu(item.label);
       }
     });
@@ -147,9 +178,16 @@ export default function Sidebar({ role }) {
 
   // === CHECK IF MENU OR SUBMENU IS ACTIVE ===
   const isMenuActive = (item) => {
-    if (pathname === item.href) return true;
+    // Normalize paths for comparison (handle both /admin and /sales)
+    const normalizedPathname = pathname.replace(/^\/sales/, "/admin");
+    const normalizedItemHref = item.href.replace(/^\/sales/, "/admin");
+    
+    if (normalizedPathname === normalizedItemHref) return true;
     if (item.submenu) {
-      return item.submenu.some((sub) => pathname.startsWith(sub.href));
+      return item.submenu.some((sub) => {
+        const normalizedSubHref = sub.href.replace(/^\/sales/, "/admin");
+        return normalizedPathname.startsWith(normalizedSubHref);
+      });
     }
     return false;
   };
@@ -178,7 +216,7 @@ export default function Sidebar({ role }) {
       <aside className={sidebarClass} aria-label="Navigation sidebar">
         {/* === LOGO GANTI TULISAN === */}
         <div className="sidebar-logo">
-          <Link href="/admin">
+          <Link href={isSales ? "/sales" : "/admin"}>
             <Image
               src="/assets/logo.png"
               alt="Logo"

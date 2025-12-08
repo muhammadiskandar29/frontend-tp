@@ -2,8 +2,7 @@
 
 import "@/styles/dashboard.css";
 import Layout from "@/components/Layout";
-import DashboardTabs from "@/components/DashboardTabs";
-import { useCallback, useEffect, useMemo, useState, memo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   TrendingUp,
   ShoppingCart,
@@ -14,12 +13,6 @@ import {
   Truck,
   Wallet,
   PiggyBank,
-  LayoutDashboard as LayoutIcon,
-  ShoppingBag,
-  Users2,
-  Briefcase,
-  UserPlus,
-  UserMinus,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 
@@ -48,187 +41,49 @@ const LazyCartesianGrid = dynamic(
   () => import("recharts").then((mod) => mod.CartesianGrid),
   { ssr: false }
 );
-// Create motion component wrapper
-const createMotionDiv = () => {
-  let MotionDiv = null;
-  return dynamic(
-    () => import("framer-motion").then((mod) => {
-      MotionDiv = mod.motion.div;
-      return { default: MotionDiv };
-    }),
-    { ssr: false }
-  );
-};
-
-const LazyMotionDiv = createMotionDiv();
-
-const hrMockData = {
-  statistik: {
-    total_penjualan_hari_ini_formatted: "Rp 125.000",
-  },
-  hrMetrics: {
-    activeEmployees: 134,
-    openRoles: 11,
-    newHires30d: 9,
-    attrition30d: 3,
-  },
-  engagement: [
-    { label: "Engagement score", value: "8.4 / 10", delta: "+0.4 QoQ" },
-    { label: "Policy completion", value: "92%", delta: "+5% this week" },
-    { label: "Internal mobility", value: "14%", delta: "+2% YTD" },
-  ],
-  pipelineStages: [
-    { stage: "Sourcing", candidates: 48, status: "+6 vs last week" },
-    { stage: "Screening", candidates: 21, status: "On track" },
-    { stage: "Interviews", candidates: 12, status: "2 offers out" },
-    { stage: "Offers", candidates: 4, status: "75% acceptance" },
-  ],
-  chart_transaksi_order: [
-    { label: "Mon", order: 4, transaksi: 120000 },
-    { label: "Tue", order: 6, transaksi: 150000 },
-    { label: "Wed", order: 5, transaksi: 130000 },
-    { label: "Thu", order: 7, transaksi: 190000 },
-    { label: "Fri", order: 3, transaksi: 90000 },
-    { label: "Sat", order: 2, transaksi: 60000 },
-    { label: "Sun", order: 1, transaksi: 40000 },
-  ],
-  overview: {
-    orders_total: 28,
-    orders_paid: 18,
-    orders_unpaid: 10,
-    paid_ratio_formatted: "64.3%",
-    customers_total: 42,
-    customers_new_today: 3,
-  },
-  financial: {
-    gross_revenue_formatted: "Rp 850.000",
-    shipping_cost_formatted: "Rp 75.000",
-    net_revenue_formatted: "Rp 775.000",
-    gross_profit_formatted: "Rp 620.000",
-    net_profit_formatted: "Rp 520.000",
-  },
-};
-
-const divisionConfigs = {
-  admin: {
-    label: "Admin Overview",
-    title: "Admin Dashboard Overview",
-    description: "Aggregated snapshot across divisions.",
-    endpoint: "/api/admin/sales/dashboard",
-    Icon: LayoutIcon,
-  },
-  sales: {
-    label: "Sales Dashboard",
-    title: "Sales Dashboard Overview",
-    description: "Sales pipeline, revenue, and fulfillment.",
-    endpoint: "/api/admin/sales/dashboard",
-    Icon: ShoppingBag,
-  },
-  hr: {
-    label: "HR Dashboard",
-    title: "HR Dashboard Overview",
-    description: "Workforce health, compliance, and hiring performance.",
-    endpoint: null,
-    mockData: hrMockData,
-    Icon: Users2,
-  },
-};
 
 export default function Dashboard() {
-  const [activeDivision, setActiveDivision] = useState("admin");
-  const [dataMap, setDataMap] = useState({});
-  const [loadingMap, setLoadingMap] = useState({});
-  const [errorMap, setErrorMap] = useState({});
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const loadDivisionData = useCallback(
-    async (division) => {
-      const config = divisionConfigs[division];
-      if (!config || dataMap[division]) return;
+  const loadDashboardData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
 
-      if (config.mockData) {
-        setDataMap((prev) => ({ ...prev, [division]: config.mockData }));
-        setLoadingMap((prev) => ({ ...prev, [division]: false }));
-        setErrorMap((prev) => ({ ...prev, [division]: null }));
-        return;
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch("/api/sales/dashboard", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Gagal memuat data dashboard");
       }
 
-      setLoadingMap((prev) => ({ ...prev, [division]: true }));
-      setErrorMap((prev) => ({ ...prev, [division]: null }));
-
-      try {
-        const token = localStorage.getItem("token");
-        const response = await fetch(config.endpoint, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Gagal memuat data dashboard");
-        }
-
-        const json = await response.json();
-        setDataMap((prev) => ({ ...prev, [division]: json.data }));
-      } catch (err) {
-        setErrorMap((prev) => ({
-          ...prev,
-          [division]: err.message || "Terjadi kesalahan saat memuat data",
-        }));
-      } finally {
-        setLoadingMap((prev) => ({ ...prev, [division]: false }));
-      }
-    },
-    [dataMap]
-  );
+      const json = await response.json();
+      setData(json.data);
+    } catch (err) {
+      setError(err.message || "Terjadi kesalahan saat memuat data");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    loadDivisionData(activeDivision);
-  }, [activeDivision, loadDivisionData]);
+    loadDashboardData();
+  }, [loadDashboardData]);
 
-  const activeData = dataMap[activeDivision];
-  const isLoading = loadingMap[activeDivision] ?? false;
-  // Only show loading if we're actually loading AND don't have data yet
-  const loading = isLoading && !activeData && !errorMap[activeDivision];
-  const error = errorMap[activeDivision];
-  const overview = activeData?.overview;
-  const financial = activeData?.financial;
-  const statistik = activeData?.statistik;
-
-  const isHR = activeDivision === "hr";
+  const overview = data?.overview;
+  const financial = data?.financial;
+  const statistik = data?.statistik;
 
   const summaryCards = useMemo(() => {
-    if (isHR) {
-      return [
-        {
-          title: "Active Employees",
-          value: activeData?.hrMetrics?.activeEmployees ?? (loading ? "…" : "0"),
-          icon: <Users2 size={22} />,
-          color: "accent-indigo",
-        },
-        {
-          title: "Open Requisitions",
-          value: activeData?.hrMetrics?.openRoles ?? (loading ? "…" : "0"),
-          icon: <Briefcase size={22} />,
-          color: "accent-emerald",
-        },
-        {
-          title: "New Hires (30d)",
-          value: activeData?.hrMetrics?.newHires30d ?? (loading ? "…" : "0"),
-          icon: <UserPlus size={22} />,
-          color: "accent-blue",
-        },
-        {
-          title: "Attrition (30d)",
-          value: activeData?.hrMetrics?.attrition30d ?? (loading ? "…" : "0"),
-          icon: <UserMinus size={22} />,
-          color: "accent-red",
-        },
-      ];
-    }
-
     return [
       {
         title: "Total Orders",
@@ -255,13 +110,9 @@ export default function Dashboard() {
         color: "accent-red",
       },
     ];
-  }, [isHR, activeData, overview, loading]);
+  }, [overview, loading]);
 
   const revenueCards = useMemo(() => {
-    if (isHR) {
-      return [];
-    }
-
     return [
       {
         title: "Gross Revenue",
@@ -294,36 +145,29 @@ export default function Dashboard() {
         color: "accent-teal",
       },
     ];
-  }, [isHR, financial, loading]);
+  }, [financial, loading]);
 
   const activityTrend = useMemo(() => {
     return (
-      activeData?.chart_transaksi_order?.map((point) => ({
+      data?.chart_transaksi_order?.map((point) => ({
         label: point.label,
         orders: point.order,
         transactions: point.transaksi,
       })) ?? []
     );
-  }, [activeData]);
+  }, [data]);
 
   const chartHasData = activityTrend.length > 0;
-  const activeConfig = divisionConfigs[activeDivision];
-  const tabs = Object.entries(divisionConfigs).map(([key, config]) => ({
-    key,
-    label: config.label,
-    Icon: config.Icon,
-  }));
 
   return (
-    <Layout title="Dashboard | Admin Panel">
+    <Layout title="Dashboard | Sales Panel">
       <div className="dashboard-shell">
-        <DashboardTabs tabs={tabs} activeKey={activeDivision} onChange={setActiveDivision} />
         {error && <div className="dashboard-alert">{error}</div>}
         <section className="dashboard-hero">
           <div className="dashboard-hero__copy">
             <p className="dashboard-hero__eyebrow">Performance</p>
-            <h2 className="dashboard-hero__title">{activeConfig?.title || "Dashboard Overview"}</h2>
-            <p className="dashboard-hero__subtitle">{activeConfig?.description}</p>
+            <h2 className="dashboard-hero__title">Sales Dashboard Overview</h2>
+            <p className="dashboard-hero__subtitle">Sales pipeline, revenue, and fulfillment.</p>
             <span className="dashboard-hero__meta">
               <span role="img" aria-label="calendar">
                 📅
@@ -352,9 +196,7 @@ export default function Dashboard() {
             <div className="panel__header">
               <div>
                 <p className="panel__eyebrow">Orders vs Transactions</p>
-                <h3 className="panel__title">
-                  {activeDivision === "sales" ? "Sales Activity" : "Division Activity"}
-                </h3>
+                <h3 className="panel__title">Sales Activity</h3>
               </div>
               <span className="panel__meta">Last 30 days</span>
             </div>
@@ -390,52 +232,23 @@ export default function Dashboard() {
           <article className="panel panel--revenue">
             <div className="panel__header">
               <div>
-                <p className="panel__eyebrow">
-                  {isHR ? "Talent health" : "Revenue breakdown"}
-                </p>
-                <h3 className="panel__title">
-                  {isHR ? "People Snapshot" : "Financial Snapshot"}
-                </h3>
+                <p className="panel__eyebrow">Revenue breakdown</p>
+                <h3 className="panel__title">Financial Snapshot</h3>
               </div>
               <span className="panel__meta accent-green">Stable</span>
             </div>
 
-            {isHR ? (
-              <div className="hr-panel-grid">
-                <div className="hr-pipeline">
-                  {activeData?.pipelineStages?.map((stage) => (
-                    <article className="hr-pipeline-card" key={stage.stage}>
-                      <div>
-                        <p className="hr-pipeline-card__label">{stage.stage}</p>
-                        <p className="hr-pipeline-card__value">{stage.candidates} candidates</p>
-                      </div>
-                      <span className="hr-pipeline-card__status">{stage.status}</span>
-                    </article>
-                  ))}
-                </div>
-                <div className="hr-spotlight-grid">
-                  {activeData?.engagement?.map((metric) => (
-                    <article className="hr-spotlight-card" key={metric.label}>
-                      <p className="hr-spotlight-card__label">{metric.label}</p>
-                      <p className="hr-spotlight-card__value">{metric.value}</p>
-                      <span className="hr-spotlight-card__delta">{metric.delta}</span>
-                    </article>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="revenue-grid">
-                {revenueCards.map((card) => (
-                  <article className="revenue-card" key={card.title}>
-                    <div className={`revenue-card__icon ${card.color}`}>{card.icon}</div>
-                    <div>
-                      <p className="revenue-card__label">{card.title}</p>
-                      <p className="revenue-card__value">{card.value}</p>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            )}
+            <div className="revenue-grid">
+              {revenueCards.map((card) => (
+                <article className="revenue-card" key={card.title}>
+                  <div className={`revenue-card__icon ${card.color}`}>{card.icon}</div>
+                  <div>
+                    <p className="revenue-card__label">{card.title}</p>
+                    <p className="revenue-card__value">{card.value}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
           </article>
         </section>
       </div>
