@@ -1,15 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback, memo } from "react";
 import Layout from "@/components/Layout";
-import AddFollowupModal from "./addFollowup";
-import EditFollowupModal from "./editFollowup";
-import DeleteFollowupModal from "./deleteFollowup";
-import ViewFollowup from "./viewFollowup";
+import dynamic from "next/dynamic";
+import { FileText, CheckCircle, Settings } from "lucide-react";
 import { getFollowupTemplates } from "@/lib/followup";
 import "@/styles/dashboard.css";
 import "@/styles/admin.css";
 import "@/styles/followup.css";
+
+// Lazy load modals
+const AddFollowupModal = dynamic(() => import("./addFollowup"), { ssr: false });
+const EditFollowupModal = dynamic(() => import("./editFollowup"), { ssr: false });
+const DeleteFollowupModal = dynamic(() => import("./deleteFollowup"), { ssr: false });
+const ViewFollowup = dynamic(() => import("./viewFollowup"), { ssr: false });
 
 export default function AdminFollowupPage() {
   const [templates, setTemplates] = useState([]);
@@ -114,19 +118,19 @@ useEffect(() => {
       label: "Total templates",
       value: templates.length,
       accent: "accent-indigo",
-      icon: "📄",
+      icon: <FileText size={22} />,
     },
     {
       label: "Active templates",
       value: filteredTemplates.length,
       accent: "accent-emerald",
-      icon: "✅",
+      icon: <CheckCircle size={22} />,
     },
     {
       label: "Pending edits",
       value: templates.filter((t) => t.status !== "1").length,
       accent: "accent-amber",
-      icon: "⚙️",
+      icon: <Settings size={22} />,
     },
   ];
 

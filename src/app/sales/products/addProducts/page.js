@@ -1,799 +1,1426 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import "@/styles/add-products.css";
 import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
-import { Dropdown } from "primereact/dropdown";
-import { MultiSelect } from "primereact/multiselect";
 import { InputNumber } from "primereact/inputnumber";
-import { Button } from "primereact/button";
-import { FileUpload } from "primereact/fileupload";
-import { InputSwitch } from "primereact/inputswitch";
 import { Calendar } from "primereact/calendar";
-import 'primeicons/primeicons.css';
+import { Dropdown } from "primereact/dropdown";
+import { InputSwitch } from "primereact/inputswitch";
+import { Button } from "primereact/button";
+import LandingTemplate from "@/components/LandingTemplate";
+import { MultiSelect } from "primereact/multiselect";
+import { ArrowLeft } from "lucide-react";
+import "@/styles/add-products.css";
 
-
-
-export default function AddProducts({ initialData = null, lists = {} }) {
+export default function Page() {
   const router = useRouter();
 
-  const defaultLists = {
-    categories: [
-      { label: "Buku", value: "1" },
-      { label: "Digital Products", value: "2" },
-      { label: "Elektronik", value: "3" },
-    ],
-    assigns: [
-      { label: "Admin", value: 1 },
-      { label: "Sales", value: 2 },
-      { label: "Support", value: 3 },
-    ],
-    pixels: [
-      { label: "Pixel 3", value: 3 },
-      { label: "Pixel 7", value: 7 },
-    ],
-    gtm: [
-      { label: "GTM 1", value: 1 },
-      { label: "GTM 4", value: 4 },
-    ],
-    ...lists,
+  // ============================
+  // SLUGIFY - Generate kode dari nama dengan dash
+  // Contoh: "webinar ternak properti" -> "webinar-ternak-properti"
+  // ============================
+  const generateKode = (text) => {
+    if (!text) return "";
+    
+    return text
+    .toLowerCase()
+    .trim()
+      // Hapus karakter khusus, hanya simpan huruf, angka, spasi, dan dash
+      .replace(/[^a-z0-9\s-]/g, "")
+      // Ganti multiple spaces dengan single space
+      .replace(/\s+/g, " ")
+      // Ganti spasi dengan dash
+      .replace(/\s/g, "-")
+      // Hapus multiple dash menjadi single dash
+      .replace(/-+/g, "-")
+      // Hapus dash di awal dan akhir
+      .replace(/^-+|-+$/g, "");
   };
 
-  const safeParse = (val) => {
-    if (val == null) return null;
-    if (Array.isArray(val)) return val;
-    try {
-      return JSON.parse(val);
-    } catch {
-      return val;
-    }
+
+
+
+
+// form state
+  // ============================
+  // FORMAT TANGGAL KE BACKEND
+  // ============================
+  const formatDateForBackend = (date) => {
+    if (!date) return "";
+    const d = new Date(date);
+    const pad = (v) => (v < 10 ? `0${v}` : v);
+    const year = d.getFullYear();
+    const month = pad(d.getMonth() + 1);
+    const day = pad(d.getDate());
+    const hours = pad(d.getHours());
+    const minutes = pad(d.getMinutes());
+    const seconds = pad(d.getSeconds());
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
   };
 
-  const defaultRequestedFields = [
-    { nama_field: "Nama", wajib: true, aktif: true, urutan: 1 },
-    { nama_field: "No Handphone/WhatsApp", wajib: true, aktif: true, urutan: 2 },
-    { nama_field: "Email", wajib: false, aktif: true, urutan: 3 },
-    { nama_field: "Jumlah Pesanan", wajib: false, aktif: true, urutan: 4 },
-    { nama_field: "Catatan", wajib: false, aktif: true, urutan: 5 },
-    { nama_field: "Alamat Lengkap", wajib: true, aktif: true, urutan: 6 },
-    { nama_field: "Provinsi", wajib: true, aktif: true, urutan: 7 },
-    { nama_field: "Kota/Kabupaten", wajib: true, aktif: true, urutan: 8 },
-    { nama_field: "Kecamatan", wajib: true, aktif: true, urutan: 9 },
-  ];
-
-  const blankForm = {
-    kategori: "",
-    user_input: null,
-    nama: "",
-    url: "",
-    header: "",
-    harga_coret: "",
-    harga_asli: "",
-    deskripsi: "",
-    tanggal_event: null,
-    gambar: [],
-    landingpage: "",
-    status: 1,
-    assign: [],
-    custom_field: [], // requested fields stored here
-    list_point: [],
-    testimoni: [],
-    fb_pixel: [],
-    event_fb_pixel: [],
-    gtm: [],
-    video: [],
-    id: null,
-    sections_order: [
-      "nama",
-      "url",
-      "header",
-      "harga",
-      "deskripsi",
-      "tanggal_event",
-      "gallery",
-      "video",
-      "list_point",
-      "custom_field",
-      "testimoni",
-      "meta",
-    ],
-  };
-
-  const [form, setForm] = useState(blankForm);
-
-  // initialize - if editing existing product, load data; otherwise seed default requested fields
-  useEffect(() => {
-    if (!initialData) {
-      // if no existing custom_field, seed defaults
-      setForm((f) => ({
-        ...f,
-        custom_field: defaultRequestedFields.map((it) => ({ ...it })), // clone
-      }));
-      return;
-    }
-    const d = initialData;
-    setForm((f) => ({
-      ...f,
-      kategori: d.kategori ?? f.kategori,
-      user_input: d.user_input ?? f.user_input,
-      nama: d.nama ?? f.nama,
-      url: d.url ?? f.url,
-      header: d.header ?? f.header,
-      harga_coret: d.harga_coret ?? f.harga_coret,
-      harga_asli: d.harga_asli ?? f.harga_asli,
-      deskripsi: d.deskripsi ?? f.deskripsi,
-      tanggal_event: d.tanggal_event ? new Date(d.tanggal_event) : f.tanggal_event,
-      gambar: safeParse(d.gambar) ?? f.gambar,
-      landingpage: d.landingpage ?? f.landingpage,
-      status: d.status ?? f.status,
-      assign: safeParse(d.assign) ?? f.assign,
-      custom_field:
-        safeParse(d.custom_field) && safeParse(d.custom_field).length
-          ? safeParse(d.custom_field)
-          : defaultRequestedFields.map((it) => ({ ...it })),
-      list_point: safeParse(d.list_point) ?? f.list_point,
-      testimoni: safeParse(d.testimoni) ?? f.testimoni,
-      fb_pixel: safeParse(d.fb_pixel) ?? f.fb_pixel,
-      event_fb_pixel: safeParse(d.event_fb_pixel) ?? f.event_fb_pixel,
-      gtm: safeParse(d.gtm) ?? f.gtm,
-      video: safeParse(d.video) ?? f.video,
-      id: d.id ?? f.id,
-      sections_order: d.sections_order ?? f.sections_order,
-    }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialData]);
-
-  // generic set
-  const handleChange = (key, value) => setForm((f) => ({ ...f, [key]: value }));
-
-  // requested fields helpers
-  const addRequestedField = (label = "Custom Field") => {
-    setForm((f) => {
-      const next = f.custom_field ? [...f.custom_field] : [];
-      const urutan = next.length ? Math.max(...next.map((x) => Number(x.urutan || 0))) + 1 : 1;
-      next.push({ nama_field: label, wajib: false, aktif: true, urutan });
-      return { ...f, custom_field: next };
-    });
-  };
-
-  const updateRequestedField = (index, patch) => {
-    setForm((f) => {
-      const copy = JSON.parse(JSON.stringify(f.custom_field || []));
-      copy[index] = { ...copy[index], ...patch };
-      // keep urutan numeric
-      return { ...f, custom_field: copy };
-    });
-  };
-
-  const removeRequestedField = (index) => {
-    setForm((f) => {
-      const copy = JSON.parse(JSON.stringify(f.custom_field || []));
-      copy.splice(index, 1);
-      // reassign urutan to keep contiguous order
-      const reclocked = copy.map((c, i) => ({ ...c, urutan: i + 1 }));
-      return { ...f, custom_field: reclocked };
-    });
-  };
-
-  const moveRequestedField = (index, dir) => {
-    // dir: -1 up, +1 down
-    setForm((f) => {
-      const copy = JSON.parse(JSON.stringify(f.custom_field || []));
-      const len = copy.length;
-      const to = index + dir;
-      if (to < 0 || to >= len) return f;
-      const item = copy.splice(index, 1)[0];
-      copy.splice(to, 0, item);
-      // reassign urutan
-      const reclocked = copy.map((c, i) => ({ ...c, urutan: i + 1 }));
-      return { ...f, custom_field: reclocked };
-    });
-  };
-
-  // local file preview helpers
-  const handleLocalFileAdd = (file, listKey = "gambar") => {
-    const url = URL.createObjectURL(file);
-    setForm((f) => ({ ...f, [listKey]: [...(f[listKey] || []), { path: url, caption: "" }] }));
-  };
-
-  const onHeaderSelect = (e) => {
-    if (e?.files?.[0]) {
-      handleChange("header", URL.createObjectURL(e.files[0]));
-    }
-  };
-
-  const onGallerySelect = (e) => {
-    if (e?.files && e.files.length) {
-      for (const f of e.files) handleLocalFileAdd(f, "gambar");
-    }
-  };
-
-  // product lists helpers
-  const addItem = (key, item) => setForm((f) => ({ ...f, [key]: [...(f[key] || []), item] }));
-  const updateItem = (key, idx, field, value) => {
-    const copy = JSON.parse(JSON.stringify(form[key] || []));
-    if (field) copy[idx][field] = value;
-    else copy[idx] = value;
-    setForm((f) => ({ ...f, [key]: copy }));
-  };
-  const removeItem = (key, idx) => {
-    const copy = [...(form[key] || [])];
-    copy.splice(idx, 1);
-    setForm((f) => ({ ...f, [key]: copy }));
-  };
-
-  const formatDateForBackend = (dt) => {
-    if (!dt) return null;
-    const pad = (n) => String(n).padStart(2, "0");
-    const d = new Date(dt);
-    return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()} ${pad(
-      d.getHours()
-    )}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-  };
-
-  const buildPayload = () => {
-    return {
-      kategori: String(form.kategori ?? ""),
-      user_input: form.user_input,
-      nama: form.nama,
-      url: form.url,
-      header: form.header,
-      harga_coret: String(form.harga_coret ?? ""),
-      harga_asli: String(form.harga_asli ?? ""),
-      deskripsi: form.deskripsi,
-      tanggal_event: form.tanggal_event ? formatDateForBackend(form.tanggal_event) : null,
-      gambar: JSON.stringify(form.gambar || []),
-      landingpage: form.landingpage,
-      status: form.status,
-      assign: JSON.stringify(form.assign || []),
-      custom_field: JSON.stringify(form.custom_field || []), // important
-      list_point: JSON.stringify(form.list_point || []),
-      testimoni: JSON.stringify(form.testimoni || []),
-      fb_pixel: JSON.stringify(form.fb_pixel || []),
-      event_fb_pixel: JSON.stringify(form.event_fb_pixel || []),
-      gtm: JSON.stringify(form.gtm || []),
-      video: JSON.stringify(form.video || []),
-      sections_order: JSON.stringify(form.sections_order || []),
-      id: form.id,
-    };
-  };
-
-  const handleSave = async () => {
-    const payload = buildPayload();
-    try {
-      const res = await fetch("/api/products", {
-        method: form.id ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      
-      // Handle response - check if it's JSON first
-      const contentType = res.headers.get("content-type");
-      let json;
-      
-      if (contentType && contentType.includes("application/json")) {
-        try {
-          json = await res.json();
-        } catch (parseError) {
-          const textResponse = await res.text();
-          console.error("❌ Failed to parse JSON response:", textResponse.substring(0, 200));
-          alert("Terjadi kesalahan: Response dari server tidak valid.");
-          return;
-        }
-      } else {
-        const textResponse = await res.text();
-        console.error("❌ Non-JSON response received:", textResponse.substring(0, 200));
-        alert("Terjadi kesalahan: Server mengembalikan response yang tidak valid.");
-        return;
-      }
-      
-      if (!res.ok) throw new Error(json?.message || "Save failed");
-      alert("Produk tersimpan");
-      // router.push("/products") // optional
-    } catch (err) {
-      console.error(err);
-      alert("Gagal menyimpan produk: " + err.message);
-    }
-  };
-
-  // Render product sections (kept simple)
-  const renderSection = (id) => {
-    switch (id) {
-    case "nama":
-      return (
-        <>
-          <label className="block mb-1 font-medium">Product Name</label>
-          <InputText value={form.nama} onChange={(e) => handleChange("nama", e.target.value)} className="w-full" />
-          <small className="text-gray-500">will appear on the cart & invoice</small>
-        </>
-      );
-
-    case "url":
-      return (
-        <>
-          <label className="block mb-1 font-medium">Checkout Page URL</label>
-          <div className="flex items-center">
-            <div className="px-3 py-2 bg-gray-100 border rounded-l">/</div>
-            <InputText className="w-full rounded-r" value={form.url} onChange={(e) => handleChange("url", e.target.value)} />
-          </div>
-        </>
-      );
-
-    case "header":
-      return (
-        <>
-          <label className="block mb-1 font-medium">Header Image URL</label>
-          <div className="flex gap-2">
-            <InputText value={form.header} onChange={(e) => handleChange("header", e.target.value)} className="flex-1" placeholder="Paste image URL or upload" />
-            <FileUpload name="headerFile" mode="basic" accept="image/*" maxFileSize={1000000} chooseLabel="Upload" onSelect={onHeaderSelect} />
-          </div>
-          <small className="text-gray-500">Or paste image URL</small>
-        </>
-      );
-
-    case "harga":
-      return (
-        <>
-          <label className="block mb-1 font-medium">Harga Coret</label>
-          <InputNumber value={form.harga_coret ? Number(form.harga_coret) : null} mode="decimal" onValueChange={(e) => handleChange("harga_coret", e.value)} className="w-full mb-2" />
-          <label className="block mb-1 font-medium">Harga Asli</label>
-          <InputNumber value={form.harga_asli ? Number(form.harga_asli) : null} mode="decimal" onValueChange={(e) => handleChange("harga_asli", e.value)} className="w-full" />
-        </>
-      );
-
-    case "deskripsi":
-      return (
-        <>
-          <label className="block mb-1 font-medium">Deskripsi</label>
-          <InputTextarea value={form.deskripsi} onChange={(e) => handleChange("deskripsi", e.target.value)} rows={4} className="w-full" />
-        </>
-      );
-
-    case "tanggal_event":
-      return (
-        <>
-          <label className="block mb-1 font-medium">Tanggal Event</label>
-          <Calendar showTime value={form.tanggal_event ? new Date(form.tanggal_event) : null} onChange={(e) => handleChange("tanggal_event", e.value)} className="w-full" />
-        </>
-      );
-
-    case "gallery":
-      return (
-        <>
-          <label className="block mb-1 font-medium">Gallery</label>
-          {(form.gambar || []).map((g, i) => (
-            <div key={i} className="flex gap-2 items-center mb-2">
-              <InputText placeholder="Path" value={g.path} onChange={(e) => updateItem("gambar", i, "path", e.target.value)} />
-              <InputText placeholder="Caption" value={g.caption} onChange={(e) => updateItem("gambar", i, "caption", e.target.value)} />
-              <Button icon="pi pi-trash" className="p-button-danger" onClick={() => removeItem("gambar", i)} />
-            </div>
-          ))}
-          <div className="flex gap-2">
-            <Button label="+ Tambah Gambar" onClick={() => addItem("gambar", { path: "", caption: "" })} />
-            <FileUpload name="galleryFiles" mode="basic" accept="image/*" maxFileSize={2000000} chooseLabel="Upload" onSelect={onGallerySelect} />
-          </div>
-        </>
-      );
-
-    case "video":
-      return (
-        <>
-          <label className="block mb-1 font-medium">Video (YouTube)</label>
-          {(form.video || []).map((v, i) => (
-            <div key={i} className="flex gap-2 items-center mb-2">
-              <InputText placeholder="YouTube URL" value={v} onChange={(e) => updateItem("video", i, null, e.target.value)} />
-              <Button icon="pi pi-trash" onClick={() => removeItem("video", i)} />
-            </div>
-          ))}
-          <Button label="+ Tambah Video" onClick={() => addItem("video", "")} />
-        </>
-      );
-
-    case "list_point":
-      return (
-        <>
-          <label className="block mb-1 font-medium">List Point</label>
-          {(form.list_point || []).map((p, i) => (
-            <div key={i} className="flex gap-2 items-center mb-2">
-              <InputText placeholder="Nama Point" value={p.nama} onChange={(e) => updateItem("list_point", i, "nama", e.target.value)} />
-              <Button icon="pi pi-trash" onClick={() => removeItem("list_point", i)} />
-            </div>
-          ))}
-          <Button label="+ Tambah Point" onClick={() => addItem("list_point", { nama: "", urutan: form.list_point.length + 1 })} />
-        </>
-      );
-
-    case "custom_field":
-      return (
-        <>
-          <label className="block mb-2 font-semibold text-gray-800">Custom Fields (Product-level)</label>
-          {(form.custom_field || []).map((c, i) => (
-            <div key={`prod-cf-${i}`} className="border border-gray-200 rounded-lg p-4 mb-4 bg-white shadow-sm hover:shadow-md transition-shadow duration-200">
-              <div className="flex items-center gap-3">
-                <InputText placeholder="Nama Field" value={c.nama_field} className="flex-1" onChange={(e) => updateRequestedField(i, { nama_field: e.target.value })} />
-              </div>
-              <div className="flex items-center gap-3 mt-3">
-                <label className="text-sm text-gray-600 select-none">Wajib</label>
-                <InputSwitch checked={!!c.wajib} onChange={(e) => updateRequestedField(i, { wajib: e.value })} />
-              </div>
-              <Button icon="pi pi-trash" className="p-button-danger" onClick={() => removeRequestedField(i)} />
-            </div>
-          ))}
-          <div className="mt-3">
-            <button type="button" onClick={() => addRequestedField("Custom Field")} className="px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-all duration-200">
-              + Tambah Custom Field
-            </button>
-          </div>
-          <small className="text-gray-500 block mt-2">
-            Requested fields (customer profile) are editable here and will be sent in <code className="bg-gray-100 px-1 rounded">custom_field</code>.
-          </small>
-        </>
-      );
-
-    case "testimoni":
-      return (
-        <>
-          <label className="block mb-1 font-medium">Testimoni</label>
-          {(form.testimoni || []).map((t, i) => (
-            <div key={i} className="mb-2 p-2 border rounded">
-              <div className="flex gap-2">
-                <InputText placeholder="Gambar" value={t.gambar} onChange={(e) => updateItem("testimoni", i, "gambar", e.target.value)} />
-                <InputText placeholder="Nama" value={t.nama} onChange={(e) => updateItem("testimoni", i, "nama", e.target.value)} />
-              </div>
-              <InputTextarea placeholder="Deskripsi" value={t.deskripsi} onChange={(e) => updateItem("testimoni", i, "deskripsi", e.target.value)} rows={2} className="mt-2" />
-              <div className="mt-2">
-                <Button icon="pi pi-trash" className="p-button-danger" onClick={() => removeItem("testimoni", i)} />
-              </div>
-            </div>
-          ))}
-          <Button label="+ Tambah Testimoni" onClick={() => addItem("testimoni", { gambar: "", nama: "", deskripsi: "" })} />
-        </>
-      );
-
-    case "meta":
-      return (
-        <>
-          <label className="block mb-1 font-medium">Meta & Integrations</label>
-          <div className="mb-2">
-            <label className="block text-sm">Kategori</label>
-            <Dropdown value={form.kategori} options={defaultLists.categories} onChange={(e) => handleChange("kategori", e.value)} placeholder="Select Category" className="w-full" />
-          </div>
-          <div className="mb-2">
-            <label className="block text-sm">Assign (users)</label>
-            <MultiSelect value={form.assign} options={defaultLists.assigns} onChange={(e) => handleChange("assign", e.value)} className="w-full" placeholder="Select assign" />
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="block text-sm">FB Pixel</label>
-              <MultiSelect value={form.fb_pixel} options={defaultLists.pixels} onChange={(e) => handleChange("fb_pixel", e.value)} className="w-full" />
-            </div>
-            <div>
-              <label className="block text-sm">Event FB Pixel</label>
-              <MultiSelect value={form.event_fb_pixel} options={defaultLists.eventPixels} onChange={(e) => handleChange("event_fb_pixel", e.value)} className="w-full" />
-            </div>
-            <div>
-              <label className="block text-sm">GTM</label>
-              <MultiSelect value={form.gtm} options={defaultLists.gtm} onChange={(e) => handleChange("gtm", e.value)} className="w-full" />
-            </div>
-          </div>
-          <div className="flex items-center gap-3 mt-3">
-            <label className="text-sm">Status (Live)</label>
-            <InputSwitch checked={form.status === 1} onChange={(e) => handleChange("status", e.value ? 1 : 0)} />
-          </div>
-          <div className="mt-3">
-            <label className="block text-sm">Landingpage</label>
-            <InputText value={form.landingpage} onChange={(e) => handleChange("landingpage", e.target.value)} className="w-full" />
-          </div>
-          <div className="mt-3">
-            <label className="block text-sm">User Input ID</label>
-            <InputNumber value={form.user_input} onValueChange={(e) => handleChange("user_input", e.value)} className="w-full" />
-          </div>
-          <div className="mt-3">
-            <label className="block text-sm">Create At (Read-only)</label>
-            <InputText value={form.create_at} className="w-full" disabled />
-          </div>
-        </>
-      );
-
-    default:
-      return null;
-  }
+  // ============================
+  // DEFAULT FORM
+  // ============================
+  const defaultForm = {
+  id: null,
+  kategori: null, // Changed from "" to null to fix validation
+  nama: "",
+  url: "",
+  kode: "",
+  header: { type: "file", value: null },
+  harga_coret: "",
+  harga_asli: "",
+  deskripsi: "",
+  tanggal_event: "",
+  gambar: [], // [{ path: {type:'file', value:File}, caption }]
+  landingpage: "1", // 1 = non-fisik, 2 = fisik
+  status: 1,
+  assign: [],
+  custom_field: [],   // <--- kosong di awal
+  list_point: [],   
+  testimoni: [],
+  fb_pixel: [],
+  event_fb_pixel: [],
+  gtm: [],
+  video: "",
 };
 
 
-  // render requested fields editor (the "Requested Fields" box)
-  const renderRequestedFieldsEditor = () => {
-    const fields = form.custom_field || [];
-    return (
-      <div className="mt-4 p-4 bg-white border rounded-lg">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-semibold">Requested Fields</span>
-            <span className="text-sm text-gray-500">— customer profile on checkout</span>
-          </div>
-          <Button label="Add Custom Field" onClick={() => addRequestedField("Custom Field")} />
-        </div>
+  const [form, setForm] = useState(defaultForm);
+const [isSubmitting, setIsSubmitting] = useState(false);
+const [submitProgress, setSubmitProgress] = useState("");
 
-        <div className="space-y-2">
-          {fields.map((f, i) => (
-            <div key={`req-${i}`} className="flex items-center gap-2 p-2 border rounded">
-              <div className="flex items-center gap-2 w-1/2">
-                <input
-                  type="checkbox"
-                  checked={!!f.aktif}
-                  onChange={(e) => updateRequestedField(i, { aktif: e.target.checked })}
-                  className="w-4 h-4"
-                />
-                <InputText value={f.nama_field} onChange={(e) => updateRequestedField(i, { nama_field: e.target.value })} className="w-full" />
-                <div className="flex items-center gap-1">
-                  <label className="text-sm">Wajib</label>
-                  <InputSwitch checked={!!f.wajib} onChange={(e) => updateRequestedField(i, { wajib: e.value })} />
-                </div>
-              </div>
-
-              <div className="flex items-center gap-1 ml-auto">
-                <Button icon="pi pi-arrow-up" className="p-button-text" disabled={i === 0} onClick={() => moveRequestedField(i, -1)} />
-                <Button icon="pi pi-arrow-down" className="p-button-text" disabled={i === (fields.length - 1)} onClick={() => moveRequestedField(i, +1)} />
-                <Button icon="pi pi-trash" className="p-button-danger" onClick={() => removeRequestedField(i)} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+  // ============================
+  // HANDLER INPUT
+  // ============================
+  const handleChange = (key, value) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  // preview for requested fields (ordered & only aktif)
-  const renderRequestedFieldsPreview = () => {
-    const fields = (form.custom_field || []).filter((f) => f.aktif);
-    return (
-      <div className="mt-4 p-3 bg-white border rounded-lg">
-        <h3 className="font-semibold mb-2">Form Pembeli</h3>
-        <div className="space-y-2">
-          {fields.map((f, i) => (
-            <div key={`pv-${i}`} className="flex flex-col">
-              <label className="text-sm font-medium">
-                {f.nama_field} {f.wajib ? <span className="text-red-500">*</span> : null}
-              </label>
-              <InputText placeholder={f.nama_field} className="w-full" />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+  const updateArrayItem = (key, i, field, value) => {
+    const arr = [...form[key]];
+    if (field) arr[i][field] = value;
+    else arr[i] = value;
+    setForm((p) => ({ ...p, [key]: arr }));
   };
 
-  // Product preview renderer (simple)
-  const renderPreview = (id) => {
-    switch (id) {
-      case "nama":
-        return <h2 className="text-xl font-bold">{form.nama || "Nama Produk"}</h2>;
-      case "url":
-        return <p className="text-sm text-gray-600">URL: {form.url || "/produk-sample"}</p>;
-      case "header":
-        return form.header ? <img src={form.header} alt="header" className="w-full max-h-48 object-cover rounded mb-3" /> : <div className="w-full h-40 bg-gray-100 rounded flex items-center justify-center text-gray-400">Header preview</div>;
-case "harga":
+  const addArray = (key, value) => {
+    setForm((p) => ({ ...p, [key]: [...p[key], value] }));
+  };
+
+  const removeArray = (key, index) => {
+    const arr = [...form[key]];
+    arr.splice(index, 1);
+    setForm((p) => ({ ...p, [key]: arr }));
+  };
+
+  // ============================
+  // COMPRESS IMAGE BEFORE BASE64
+  // Optimasi: Kompres gambar sebelum konversi untuk mengurangi ukuran
+  // ============================
+  const compressImage = (file, maxWidth = 1600, maxHeight = 1600, quality = 0.75) => {
+    return new Promise((resolve, reject) => {
+      if (!file || !file.type.startsWith('image/')) {
+        resolve(file);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          // Calculate new dimensions
+          if (width > maxWidth || height > maxHeight) {
+            if (width > height) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            } else {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+    
+          // Convert to blob with compression
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                // Create new File object with compressed data
+                const compressedFile = new File([blob], file.name, {
+                  type: 'image/jpeg',
+                  lastModified: Date.now()
+                });
+                resolve(compressedFile);
+              } else {
+                resolve(file);
+              }
+            },
+            'image/jpeg',
+            quality
+          );
+        };
+        img.onerror = () => resolve(file);
+        img.src = e.target.result;
+      };
+      reader.onerror = () => resolve(file);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // ============================
+  // BUILD PRODUCT FORMDATA
+  // Sesuai dokumentasi Postman: multipart/form-data dengan file langsung
+  // Array fields sebagai JSON string
+  // ============================
+  async function buildProductFormData(form, kategoriId, normalizedAssign, onProgress = null) {
+    // SELALU generate kode dari nama (auto generate dengan dash)
+    const kode = generateKode(form.nama) || "produk-baru";
+    
+    const formData = new FormData();
+    
+    // ============================
+    // 1. BASIC FIELDS
+    // ============================
+    formData.append("kategori", String(kategoriId));
+    formData.append("nama", form.nama || "");
+    formData.append("kode", kode);
+    formData.append("url", "/" + kode);
+    formData.append("deskripsi", form.deskripsi || "");
+    formData.append("harga_asli", String(form.harga_asli || 0));
+    formData.append("harga_coret", String(form.harga_coret || 0));
+    formData.append("tanggal_event", formatDateForBackend(form.tanggal_event) || "");
+    formData.append("landingpage", String(form.landingpage || 1));
+    formData.append("status", String(form.status || 1));
+    
+    console.log("[FORMDATA] Basic fields:", {
+      kategori: kategoriId,
+      nama: form.nama,
+      kode: kode,
+      url: "/" + kode
+    });
+    
+    // ============================
+    // 2. HEADER IMAGE (REQUIRED) - File langsung
+    // ============================
+    if (form.header?.type === "file" && form.header.value) {
+      if (onProgress) {
+        onProgress("Mengompresi header image...");
+      }
+      const compressedHeader = await compressImage(form.header.value);
+      formData.append("header", compressedHeader);
+    } else {
+      throw new Error("Header image wajib diisi");
+    }
+    
+    // ============================
+    // 3. GAMBAR GALLERY - File langsung
+    // Format: gambar[0][file], gambar[0][caption], gambar[1][file], gambar[1][caption]
+    // ============================
+    const gambarFiles = (form.gambar || []).filter(g => g.path && g.path.type === "file" && g.path.value);
+    if (onProgress && gambarFiles.length > 0) {
+      onProgress(`Mengompresi ${gambarFiles.length} gambar...`);
+    }
+    
+    for (let i = 0; i < (form.gambar || []).length; i++) {
+      const g = form.gambar[i];
+      if (g.path && g.path.type === "file" && g.path.value) {
+        if (onProgress) {
+          onProgress(`Mengompresi gambar ${i + 1}/${gambarFiles.length}...`);
+        }
+        const compressedGambar = await compressImage(g.path.value);
+        formData.append(`gambar[${i}][file]`, compressedGambar);
+        formData.append(`gambar[${i}][caption]`, g.caption || "");
+      }
+    }
+    
+    // ============================
+    // 4. TESTIMONI - File langsung
+    // Format: testimoni[0][gambar], testimoni[0][nama], testimoni[0][deskripsi]
+    // ============================
+    const testimoniFiles = (form.testimoni || []).filter(t => t.gambar && t.gambar.type === "file" && t.gambar.value);
+    if (onProgress && testimoniFiles.length > 0) {
+      onProgress(`Mengompresi ${testimoniFiles.length} testimoni...`);
+    }
+    
+    for (let i = 0; i < (form.testimoni || []).length; i++) {
+      const t = form.testimoni[i];
+      if (t.gambar && t.gambar.type === "file" && t.gambar.value) {
+        if (onProgress) {
+          onProgress(`Mengompresi testimoni ${i + 1}/${testimoniFiles.length}...`);
+        }
+        const compressedTestimoni = await compressImage(t.gambar.value);
+        formData.append(`testimoni[${i}][gambar]`, compressedTestimoni);
+      }
+      formData.append(`testimoni[${i}][nama]`, t.nama || "");
+      formData.append(`testimoni[${i}][deskripsi]`, t.deskripsi || "");
+    }
+    
+    // ============================
+    // 5. ARRAY FIELDS - Sebagai JSON string (sesuai Postman)
+    // ============================
+    // custom_field - JSON string
+    const customFieldArray = (form.custom_field || []).map((f, idx) => ({
+      nama_field: f.label || f.key || "",
+      urutan: idx + 1,
+    }));
+    formData.append("custom_field", JSON.stringify(customFieldArray));
+    
+    // list_point - JSON string
+    const listPointArray = (form.list_point || []).map((p, idx) => ({
+      nama: p.nama || "",
+      urutan: idx + 1,
+    }));
+    formData.append("list_point", JSON.stringify(listPointArray));
+    
+    // assign - JSON string (array of numbers)
+    formData.append("assign", JSON.stringify(normalizedAssign || []));
+    
+    // fb_pixel - JSON string (array of numbers)
+    const fbPixelArray = (form.fb_pixel || []).map(v => Number(v)).filter(n => !Number.isNaN(n));
+    formData.append("fb_pixel", JSON.stringify(fbPixelArray));
+    
+    // event_fb_pixel - JSON string
+    const eventFbPixelArray = (form.event_fb_pixel || []).map((ev) => ({ 
+      event: ev || "" 
+    }));
+    formData.append("event_fb_pixel", JSON.stringify(eventFbPixelArray));
+    
+    // gtm - JSON string (array of numbers)
+    const gtmArray = (form.gtm || []).map(v => Number(v)).filter(n => !Number.isNaN(n));
+    formData.append("gtm", JSON.stringify(gtmArray));
+    
+    // video - JSON string (array of strings)
+    const videoArray = form.video
+      ? form.video.split(",").map((v) => v.trim()).filter((v) => v)
+      : [];
+    formData.append("video", JSON.stringify(videoArray));
+    
+    // Log semua array fields untuk debugging
+    console.log("[FORMDATA] Array fields:", {
+      assign: normalizedAssign,
+      list_point: listPointArray,
+      custom_field: customFieldArray,
+      event_fb_pixel: eventFbPixelArray,
+      fb_pixel: fbPixelArray,
+      gtm: gtmArray,
+      video: videoArray,
+    });
+    
+    return formData;
+  }
+
+  // ============================
+  // SUBMIT
+  // ============================
+const handleSubmit = async () => {
+  if (isSubmitting) return;
+  setIsSubmitting(true);
+
+  try {
+    // 1) kategori validation - ambil ID dari kategori yang dipilih
+    console.log("[VALIDATION] ========== KATEGORI VALIDATION ==========");
+    console.log("form.kategori raw:", form.kategori);
+    console.log("form.kategori type:", typeof form.kategori);
+    console.log("form.kategori is null:", form.kategori === null);
+    console.log("form.kategori is undefined:", form.kategori === undefined);
+    console.log("form.kategori is empty string:", form.kategori === "");
+    
+    let kategoriId = null;
+    if (form.kategori !== null && form.kategori !== undefined && form.kategori !== "") {
+      // form.kategori adalah string ID dari dropdown (contoh: "7")
+      kategoriId = Number(form.kategori);
+      console.log("Kategori ID parsed:", kategoriId);
+    }
+
+    console.log("[VALIDATION] Kategori check:", {
+      formKategori: form.kategori,
+      kategoriId: kategoriId,
+      type: typeof form.kategori,
+      isValid: !Number.isNaN(kategoriId) && kategoriId > 0,
+      isNull: kategoriId === null,
+      isNaN: Number.isNaN(kategoriId),
+      isZeroOrNegative: kategoriId <= 0
+    });
+    console.log("[VALIDATION] ========================================");
+    
+    if (!kategoriId || Number.isNaN(kategoriId) || kategoriId <= 0) {
+      console.error("[VALIDATION] KATEGORI INVALID!");
+      alert("Kategori wajib dipilih!");
+      setIsSubmitting(false);
+      return;
+    }
+    
+    console.log("[VALIDATION] Kategori valid:", kategoriId);
+
+    // 3) assign normalization
+    const normalizedAssign = Array.isArray(form.assign)
+      ? form.assign.map(a => Number(a)).filter(n => !Number.isNaN(n) && n > 0)
+      : [];
+    if (normalizedAssign.length === 0) {
+      alert("Pilih minimal 1 penanggung jawab (assign).");
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Build FormData dengan progress indicator
+    setSubmitProgress("Mempersiapkan data...");
+    const formData = await buildProductFormData(
+      form, 
+      kategoriId, 
+      normalizedAssign,
+      (message) => setSubmitProgress(message)
+    );
+
+    // DEBUG: Log FormData untuk tracking (detail)
+    console.log("[FORMDATA] ========== DETAIL FORMDATA ==========");
+    const formDataEntries = [];
+    const formDataJSON = {};
+    
+    for (const [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        formDataEntries.push({ key, type: "File", name: value.name, size: `${(value.size / 1024).toFixed(2)} KB` });
+        formDataJSON[key] = {
+          type: "File",
+          name: value.name,
+          size: `${(value.size / 1024).toFixed(2)} KB`,
+          sizeBytes: value.size,
+          mimeType: value.type
+        };
+        console.log(`  ${key}: [File] ${value.name} (${(value.size / 1024).toFixed(2)} KB)`);
+      } else {
+        const str = String(value);
+        formDataEntries.push({ key, type: "String", value: str.length > 200 ? str.substring(0, 200) + "..." : str });
+        
+        // Try to parse JSON strings for better readability
+        let displayValue = str;
+        try {
+          const parsed = JSON.parse(str);
+          formDataJSON[key] = parsed;
+          displayValue = Array.isArray(parsed) 
+            ? `[Array(${parsed.length})] ${JSON.stringify(parsed).substring(0, 200)}...`
+            : typeof parsed === "object"
+            ? `[Object] ${JSON.stringify(parsed).substring(0, 200)}...`
+            : parsed;
+        } catch {
+          formDataJSON[key] = str.length > 200 ? str.substring(0, 200) + "..." : str;
+        }
+        
+        console.log(`  ${key}: ${displayValue.length > 200 ? displayValue.substring(0, 200) + "..." : displayValue}`);
+      }
+    }
+    console.table(formDataEntries);
+    
+    // Tampilkan sebagai JSON yang readable
+    console.log("[FORMDATA] ========== FORMDATA AS JSON ==========");
+    console.log(JSON.stringify(formDataJSON, null, 2));
+    console.log("[FORMDATA] =====================================");
+    
+    // Verify critical fields
+    console.log("[FORMDATA] ========== CRITICAL FIELDS VERIFICATION ==========");
+    const kategoriInFormData = formData.get("kategori");
+    const namaInFormData = formData.get("nama");
+    const assignInFormData = formData.get("assign");
+    const headerInFormData = formData.get("header");
+    
+    console.log({
+      kategori: {
+        value: kategoriInFormData,
+        type: typeof kategoriInFormData,
+        exists: kategoriInFormData !== null,
+        isEmpty: kategoriInFormData === "" || kategoriInFormData === "null" || kategoriInFormData === "undefined"
+      },
+      nama: {
+        value: namaInFormData,
+        type: typeof namaInFormData,
+        exists: namaInFormData !== null,
+        isEmpty: !namaInFormData || namaInFormData === ""
+      },
+      assign: {
+        value: assignInFormData,
+        type: typeof assignInFormData,
+        parsed: assignInFormData ? JSON.parse(assignInFormData) : null
+      },
+      header: {
+        exists: headerInFormData !== null,
+        isFile: headerInFormData instanceof File,
+        name: headerInFormData instanceof File ? headerInFormData.name : null
+      }
+    });
+
+    // Final check sebelum kirim
+    if (!kategoriInFormData || kategoriInFormData === "" || kategoriInFormData === "null" || kategoriInFormData === "undefined") {
+      console.error("[FORMDATA] ❌ KATEGORI TIDAK ADA DI FORMDATA!");
+      throw new Error("Kategori tidak ditemukan di FormData. Pastikan kategori sudah dipilih.");
+    }
+    
+    if (!namaInFormData || namaInFormData === "") {
+      console.error("[FORMDATA] ❌ NAMA TIDAK ADA DI FORMDATA!");
+      throw new Error("Nama produk tidak ditemukan di FormData.");
+      }
+    
+    if (!headerInFormData || !(headerInFormData instanceof File)) {
+      console.error("[FORMDATA] ❌ HEADER TIDAK ADA DI FORMDATA!");
+      throw new Error("Header image tidak ditemukan di FormData.");
+    }
+    
+    console.log("[FORMDATA] All critical fields verified");
+    console.log("[FORMDATA] =================================================");
+
+    // ============================
+    // SIMPAN REQUEST DATA KE LOCALSTORAGE DULU
+    // ============================
+    console.log("[LOCALSTORAGE] ========== SAVING REQUEST DATA ==========");
+    const requestDataToSave = {
+      timestamp: new Date().toISOString(),
+      formData: {}
+    };
+    
+    // Convert FormData ke object untuk disimpan
+    for (const [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        requestDataToSave.formData[key] = {
+          type: "File",
+          name: value.name,
+          size: value.size,
+          sizeKB: `${(value.size / 1024).toFixed(2)} KB`,
+          mimeType: value.type,
+          lastModified: value.lastModified
+        };
+      } else {
+        const strValue = String(value);
+        // Try to parse JSON strings
+        try {
+          const parsed = JSON.parse(strValue);
+          requestDataToSave.formData[key] = parsed;
+        } catch {
+          requestDataToSave.formData[key] = strValue;
+        }
+      }
+    }
+    
+    // Simpan ke localStorage
+    try {
+      localStorage.setItem("last_product_request", JSON.stringify(requestDataToSave, null, 2));
+      console.log("[LOCALSTORAGE] Request data saved to localStorage");
+      console.log("[LOCALSTORAGE] Key: 'last_product_request'");
+      console.log("[LOCALSTORAGE] Data preview:", {
+        timestamp: requestDataToSave.timestamp,
+        fieldsCount: Object.keys(requestDataToSave.formData).length,
+        fields: Object.keys(requestDataToSave.formData)
+      });
+      console.log("[LOCALSTORAGE] Full data:", JSON.stringify(requestDataToSave, null, 2));
+    } catch (error) {
+      console.error("[LOCALSTORAGE] Failed to save to localStorage:", error);
+    }
+    console.log("[LOCALSTORAGE] ==========================================");
+
+    // FETCH dengan FormData (sesuai dokumentasi Postman)
+    setSubmitProgress("Mengirim data ke server...");
+    
+    // Log request untuk network tracking
+    console.log("[NETWORK] ========== REQUEST FORMDATA ==========");
+    console.log("URL:", "/api/admin/produk");
+    console.log("Method:", "POST");
+    console.log("Content-Type:", "multipart/form-data (auto-set by browser)");
+    const token = localStorage.getItem("token") || "";
+    console.log("Headers:", {
+      "Accept": "application/json",
+      "Authorization": token ? `Bearer ${token.substring(0, 20)}...` : "MISSING"
+    });
+    console.log("FormData entries count:", formDataEntries.length);
+    
+    // Verify data sebelum kirim
+    console.log("[NETWORK] ========== PRE-SEND VERIFICATION ==========");
+    const preKategori = formData.get("kategori");
+    const preNama = formData.get("nama");
+    const preAssign = formData.get("assign");
+    const preHeader = formData.get("header");
+    console.log("Kategori:", preKategori);
+    console.log("Nama:", preNama);
+    console.log("Assign:", preAssign);
+    console.log("Header:", preHeader instanceof File ? `File(${preHeader.name}, ${(preHeader.size / 1024).toFixed(2)} KB)` : "NULL");
+    console.log("[NETWORK] ===========================================");
+    console.log("[NETWORK] ======================================");
+    
+    const res = await fetch("/api/admin/produk", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`
+        // Jangan set Content-Type, browser akan set otomatis dengan boundary untuk FormData
+      },
+      body: formData
+    });
+    
+    console.log("[NETWORK] ========== RESPONSE RECEIVED ==========");
+    console.log("Response status:", res.status);
+    console.log("Response statusText:", res.statusText);
+    console.log("Response headers:", Object.fromEntries(res.headers.entries()));
+    console.log("[NETWORK] =======================================");
+
+    const contentType = res.headers.get("content-type") || "";
+    let data;
+    if (contentType.includes("application/json")) {
+      data = await res.json();
+    } else {
+      const text = await res.text();
+      throw new Error("Non-JSON response: " + text.slice(0, 400));
+    }
+
+    if (!res.ok) {
+      console.error("[API ERROR] ========== DETAIL ERROR ==========");
+      console.error("Status:", res.status);
+      console.error("Response:", data);
+      console.error("Full error object:", JSON.stringify(data, null, 2));
+      
+      // Extract detailed error information
+      let errorDetails = "\n\nDetail Error:\n";
+      
+      if (data.errors && typeof data.errors === "object" && Object.keys(data.errors).length > 0) {
+        errorDetails += "Field yang error:\n";
+        for (const [field, messages] of Object.entries(data.errors)) {
+          const msgArray = Array.isArray(messages) ? messages : [messages];
+          errorDetails += `  ❌ ${field}: ${msgArray.join(", ")}\n`;
+        }
+      } else if (data.errorFields && data.errorFields.length > 0) {
+        errorDetails += `Field yang error: ${data.errorFields.join(", ")}\n`;
+      } else {
+        // Parse error dari message jika ada
+        const message = data.message || "";
+        const fieldMatches = message.match(/(\w+)\s+field\s+is\s+required/gi);
+        if (fieldMatches) {
+          errorDetails += "Field yang error (dari message):\n";
+          fieldMatches.forEach(match => {
+            const field = match.match(/(\w+)\s+field/i)?.[1];
+            if (field) {
+              errorDetails += `  ❌ ${field}: wajib diisi\n`;
+            }
+          });
+        }
+      }
+      
+      console.error(errorDetails);
+      
+      // Log debug info jika ada
+      if (data.debug) {
+        console.error("[API ERROR] Debug info:", data.debug);
+      }
+      
+      console.error("[API ERROR] ====================================");
+      
+      setSubmitProgress("");
+      const errorMessage = data.detailedMessage || data.message || "Gagal membuat produk";
+      
+      // Tampilkan alert dengan detail
+      alert(errorMessage);
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Handle success response sesuai format backend
+    console.log("[API SUCCESS]", data);
+    setSubmitProgress("");
+    
+    if (data.success && data.data) {
+      alert(data.message || "Produk berhasil dibuat!");
+      router.push("/admin/products");
+    } else {
+    alert("Produk berhasil dibuat!");
+    router.push("/admin/products");
+    }
+  } catch (err) {
+    console.error("[SUBMIT ERROR]", err);
+    setSubmitProgress("");
+    
+    // Tampilkan error message yang lebih user-friendly
+    let errorMessage = "Terjadi kesalahan saat submit";
+    
+    if (err.message) {
+      if (err.message.includes("NetworkError") || err.message.includes("Failed to fetch")) {
+        errorMessage = "Gagal terhubung ke server. Pastikan koneksi internet stabil dan coba lagi.";
+      } else if (err.message.includes("upload")) {
+        errorMessage = `Gagal upload file: ${err.message}`;
+      } else {
+        errorMessage = err.message;
+      }
+    }
+    
+    alert(errorMessage);
+  } finally {
+    setIsSubmitting(false);
+    setSubmitProgress("");
+  }
+};
+
+const [kategoriOptions, setKategoriOptions] = useState([]);
+const [userOptions, setUserOptions] = useState([]);
+const [currentUser, setCurrentUser] = useState(null); // User yang sedang login
+
+useEffect(() => {
+  async function fetchInitialData() {
+    try {
+      const token = localStorage.getItem("token");
+      const headers = { Authorization: `Bearer ${token}` };
+
+      // Ambil data user yang sedang login
+      const userSession = localStorage.getItem("user");
+      if (userSession) {
+        try {
+          const userData = JSON.parse(userSession);
+          setCurrentUser(userData);
+        } catch (e) {
+          console.error("Error parsing user session:", e);
+        }
+      }
+
+      // 1️⃣ Fetch kategori dan filter hanya yang aktif (status === "1")
+      const kategoriRes = await fetch(
+        "/api/admin/kategori-produk",
+        { headers }
+      );
+      const kategoriData = await kategoriRes.json();
+      
+      // Logging struktur JSON lengkap
+      console.log("Success:", kategoriData.success);
+      console.log("Data:", kategoriData.data);
+      console.table(kategoriData.data);
+      
+      // Filter hanya kategori yang aktif (status === "1")
+      const activeCategories = Array.isArray(kategoriData.data)
+        ? kategoriData.data.filter((k) => k.status === "1")
+        : [];
+      
+      // Create options with ID as value and name as label
+      const kategoriOpts = activeCategories.map((k) => ({
+        label: `${k.id} - ${k.nama}`,
+        value: String(k.id),
+      }));
+      setKategoriOptions(kategoriOpts);
+
+      // 2️⃣ Fetch produk (misal edit mode)
+      const produkRes = await fetch(
+        "/api/admin/produk/1",
+        { headers }
+      );
+      const produkData = await produkRes.json();
+      
+      // Logging struktur JSON lengkap
+      console.log("Success:", produkData.success);
+      console.log("Data:", produkData.data);
+      console.table(produkData.data);
+
+      // 3️⃣ Fetch users - filter hanya status 1
+      const usersRes = await fetch(
+        "/api/admin/users",
+        { headers }
+      );
+      const usersJson = await usersRes.json();
+      
+      // Logging struktur JSON lengkap
+      console.log("Success:", usersJson.success);
+      console.log("Data:", usersJson.data);
+      console.table(usersJson.data);
+      const userOpts = Array.isArray(usersJson.data)
+        ? usersJson.data
+            .filter((u) => u.status === "1" || u.status === 1) // Filter hanya status 1
+            .map((u) => ({ label: u.nama || u.name, value: u.id }))
+        : [];
+      setUserOptions(userOpts);
+
+      // ✅ SELALU generate kode dari nama dengan dash
+      const kodeGenerated = generateKode(produkData.nama || "produk-baru");
+
+      // Handle kategori_id: if kategori_rel exists, use its ID; otherwise use produkData.kategori_id
+      let kategoriId = null;
+      if (produkData.kategori_rel) {
+        kategoriId = produkData.kategori_rel.id ? Number(produkData.kategori_rel.id) : null;
+      } else if (produkData.kategori
+      ) {
+        kategoriId = Number(produkData.kategori
+        );
+      } else if (produkData.kategori) {
+        // Backward compatibility: if kategori is string (name), try to find ID
+        // This should not happen in new implementation, but handle for old data
+        const found = activeCategories.find(k => k.nama === produkData.kategori);
+        kategoriId = found ? Number(found.id) : null;
+      }
+      
+      setForm((f) => ({
+        ...f,
+        // Removed kategori: null to prevent overwriting user selection
+        assign: [],
+        custom_field: [],
+        kode: "",
+        url: "/",
+        landingpage: "1",
+      }));
+    } catch (err) {
+      console.error("Fetch initial data error:", err);
+    }
+  }
+
+  fetchInitialData();
+}, []);
+
+
+  // ============================
+  // UI
+  // ============================
   return (
-    <div className="flex items-center gap-2 text-lg">
-      {form.harga_coret && (
-        <span className="line-through text-gray-500">Rp {form.harga_coret}</span>
-      )}
-      {form.harga_asli ? (
-        <span className="font-semibold">Rp {form.harga_asli}</span>
-      ) : (
-        <span className="text-gray-500">Harga</span>
-      )}
-    </div>
-  );
-
-      case "deskripsi":
-        return <p className="text-gray-700">{form.deskripsi || "Deskripsi produk akan muncul di sini."}</p>;
-      case "tanggal_event":
-        return form.tanggal_event ? <p className="text-sm text-gray-600">Event: {new Date(form.tanggal_event).toLocaleString()}</p> : null;
-      case "gallery":
-        return (
-          <div className="grid grid-cols-3 gap-2">
-  {(form.gambar || []).map((g, i) => {
-    if (!g.path) return null; // jangan render kalau belum ada gambar
-    return (
-      <img
-        key={i}
-        src={g.path}
-        alt={g.caption || ""}
-        className="w-full h-24 object-cover rounded"
-      />
-    );
-  })}
-</div>
-        );
-      case "video":
-        return (
-          <div className="space-y-2">
-            {(form.video || []).map((v, i) => {
-              const src = (v || "").replace("youtu.be/", "www.youtube.com/embed/");
-              return src ? <iframe key={i} src={src} className="w-full h-48" title={`video-${i}`} allowFullScreen /> : null;
-            })}
+    <div className="produk-container produk-builder-layout">
+      <div className="produk-form" style={{ position: "relative" }}>
+      {isSubmitting && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "rgba(255,255,255,0.95)",
+            zIndex: 10,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "16px",
+            backdropFilter: "blur(4px)",
+          }}
+        >
+          <div className="spinner" style={{ width: "48px", height: "48px", border: "4px solid #3b82f6", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+          <div style={{ textAlign: "center" }}>
+            <p style={{ color: "#1f2937", fontWeight: 600, fontSize: "16px", marginBottom: "8px" }}>
+              {submitProgress || "Menyimpan produk, mohon tunggu..."}
+            </p>
+            <p style={{ color: "#6b7280", fontSize: "14px" }}>
+              Proses ini mungkin memakan waktu beberapa saat
+            </p>
           </div>
-        );
-      case "list_point":
-        return <ul className="list-disc pl-5">{(form.list_point || []).map((p, i) => <li key={i}>{p.nama}</li>)}</ul>;
-      case "custom_field":
-        // we'll show requested fields preview separately
-        return null;
-      case "testimoni":
-        return (
-          <div className="space-y-3">
-            {(form.testimoni || []).map((t, i) => (
-              <div key={i} className="p-2 border rounded flex gap-3 items-start">
-                {t.gambar ? <img src={t.gambar} alt={t.nama} className="w-12 h-12 object-cover rounded-full" /> : <div className="w-12 h-12 bg-gray-200 rounded-full" />}
-                <div>
-                  <div className="font-semibold">{t.nama}</div>
-                  <div className="text-sm text-gray-600">{t.deskripsi}</div>
+        </div>
+      )}
+      {/* Header Section */}
+      <div className="form-header-section">
+        <button
+          className="back-to-products-btn"
+          onClick={() => router.push("/admin/products")}
+          aria-label="Back to products list"
+        >
+          <ArrowLeft size={18} />
+          <span>Back to Products</span>
+        </button>
+        <div className="form-title-wrapper">
+          <h2 className="form-title">Tambah Produk Baru</h2>
+          <p className="form-subtitle">Lengkapi informasi produk di bawah ini</p>
+        </div>
+      </div>
+
+      {/* SECTION 1: Informasi Dasar */}
+      <div className="form-section-card">
+        <div className="section-header">
+          <h3 className="section-title">Informasi Dasar</h3>
+          <p className="section-description">Data utama produk yang akan ditampilkan</p>
+        </div>
+        <div className="section-content">
+          {/* NAMA PRODUK */}
+          <div className="form-field-group">
+            <label className="form-label">
+              Nama Produk <span className="required">*</span>
+            </label>
+            <InputText
+              className="w-full form-input"
+              value={form.nama}
+              placeholder="Masukkan nama produk"
+              onChange={(e) => {
+                const nama = e.target.value;
+                // SELALU auto-generate kode dari nama dengan dash
+                // Contoh: "webinar ternak properti" -> "webinar-ternak-properti"
+                const kode = generateKode(nama) || "";
+                setForm({ 
+                  ...form, 
+                  nama, 
+                  kode: kode,
+                  url: "/" + (kode || "produk-baru")
+                });
+              }}
+            />
+          </div>
+
+          {/* KATEGORI */}
+          <div className="form-field-group">
+            <label className="form-label">
+              Kategori <span className="required">*</span>
+            </label>
+            <Dropdown
+              className="w-full form-input"
+              value={form.kategori || null}
+              options={kategoriOptions}
+              optionLabel="label"
+              optionValue="value"
+              onChange={(e) => {
+                const selectedValue = e.value;
+                console.log("[KATEGORI] Dropdown onChange:", {
+                  selectedValue: selectedValue,
+                  type: typeof selectedValue,
+                  isNull: selectedValue === null,
+                  isUndefined: selectedValue === undefined,
+                  isEmpty: selectedValue === ""
+                });
+                // Ensure value is set as string ID (PrimeReact returns value directly from optionValue)
+                // optionValue adalah String(k.id), jadi sudah string
+                const finalValue = selectedValue !== null && selectedValue !== undefined && selectedValue !== ""
+                  ? String(selectedValue) 
+                  : null;
+                console.log("[KATEGORI] Setting kategori to:", finalValue);
+                handleChange("kategori", finalValue);
+              }}
+              placeholder="Pilih Kategori"
+              showClear
+              filter
+              filterPlaceholder="Cari kategori..."
+            />
+            {!form.kategori && (
+              <small className="field-hint" style={{ color: "#ef4444" }}>
+                Kategori wajib dipilih
+              </small>
+            )}
+          </div>
+
+          {/* KODE & URL */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="form-field-group">
+              <label className="form-label">
+                Kode Produk
+              </label>
+              <InputText
+                className="w-full form-input"
+                value={form.kode || generateKode(form.nama) || ""}
+                onChange={(e) => {
+                  const kode = e.target.value;
+                  setForm({
+                    ...form,
+                    kode,
+                    url: "/" + (kode || "produk-baru"),
+                  });
+                }}
+                placeholder="Kode otomatis dari nama (contoh: webinar-ternak-properti)"
+                title="Kode akan otomatis di-generate dari nama produk dengan format dash"
+              />
+            </div>
+            <div className="form-field-group">
+              <label className="form-label">
+                URL
+              </label>
+              <InputText
+                className="w-full form-input"
+                value={form.url || ""}
+                onChange={(e) => handleChange("url", e.target.value)}
+                placeholder="/kode-produk"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* SECTION 2: Media & Konten */}
+      <div className="form-section-card">
+        <div className="section-header">
+          <h3 className="section-title">Media & Konten</h3>
+          <p className="section-description">Gambar, deskripsi, dan konten produk</p>
+        </div>
+        <div className="section-content">
+          {/* HEADER IMAGE */}
+          <div className="form-field-group">
+            <label className="form-label">
+              Header Image
+            </label>
+            <div className="file-upload-card">
+              <label className="file-upload-label">Upload File</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleChange("header", { type: "file", value: e.target.files[0] })}
+                className="file-input"
+              />
+              {form.header?.type === "file" && form.header.value && (
+                <div className="file-preview">
+                  <img 
+                    src={URL.createObjectURL(form.header.value)} 
+                    alt="Preview" 
+                    className="preview-thumbnail"
+                  />
                 </div>
+              )}
+            </div>
+          </div>
+
+          {/* DESKRIPSI */}
+          <div className="form-field-group">
+            <label className="form-label">
+              Deskripsi Produk
+            </label>
+            <InputTextarea
+              className="w-full form-input"
+              rows={5}
+              value={form.deskripsi}
+              placeholder="Masukkan deskripsi lengkap produk"
+              onChange={(e) => handleChange("deskripsi", e.target.value)}
+            />
+          </div>
+
+          {/* HARGA */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="form-field-group">
+              <label className="form-label">
+                Harga Asli
+              </label>
+              <InputNumber
+                className="w-full form-input"
+                value={Number(form.harga_coret)}
+                onValueChange={(e) => handleChange("harga_coret", e.value)}
+                placeholder="Harga sebelum diskon"
+                mode="currency"
+                currency="IDR"
+                locale="id-ID"
+              />
+            </div>
+            <div className="form-field-group">
+              <label className="form-label">
+                Harga Promo <span className="required">*</span>
+              </label>
+              <InputNumber
+                className="w-full form-input"
+                value={Number(form.harga_asli)}
+                onValueChange={(e) => handleChange("harga_asli", e.value)}
+                placeholder="Harga setelah diskon"
+                mode="currency"
+                currency="IDR"
+                locale="id-ID"
+              />
+            </div>
+          </div>
+
+          {/* TANGGAL EVENT */}
+          <div className="form-field-group">
+            <label className="form-label">
+              Tanggal Event
+            </label>
+            <Calendar
+              className="w-full form-input"
+              showTime
+              value={form.tanggal_event ? new Date(form.tanggal_event) : null}
+              onChange={(e) => handleChange("tanggal_event", e.value)}
+              placeholder="Pilih tanggal event"
+            />
+          </div>
+
+          {/* LANDING PAGE TYPE */}
+          <div className="form-field-group">
+            <label className="form-label">
+              Tipe Landing Page <span className="required">*</span>
+            </label>
+            <Dropdown
+              className="w-full form-input"
+              value={form.landingpage}
+              onChange={(e) => handleChange("landingpage", e.value)}
+              options={[
+                { label: "Non-Fisik (Seminar, Webinar, dll)", value: "1" },
+                { label: "Fisik (Buku, Baju, dll)", value: "2" }
+              ]}
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Pilih tipe landing page"
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              Non-Fisik: tanpa ongkir | Fisik: dengan form cek ongkir
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* SECTION 3: Gallery */}
+      <div className="form-section-card">
+        <div className="section-header">
+          <h3 className="section-title">Gallery Produk</h3>
+          <p className="section-description">Tambah gambar produk dengan caption</p>
+        </div>
+        <div className="section-content">
+          {form.gambar.map((g, i) => (
+            <div key={i} className="gallery-item-card">
+              <div className="gallery-item-header">
+                <span className="gallery-item-number">Gambar {i + 1}</span>
+                <Button
+                  icon="pi pi-trash"
+                  severity="danger"
+                  className="p-button-danger p-button-sm"
+                  onClick={() => removeArray("gambar", i)}
+                  tooltip="Hapus gambar"
+                />
+              </div>
+              <div className="gallery-item-content">
+                <div className="form-field-group">
+                  <label className="form-label-small">Upload Gambar</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) =>
+                      updateArrayItem("gambar", i, "path", { type: "file", value: e.target.files[0] })
+                    }
+                    className="file-input"
+                  />
+                  {g.path?.type === "file" && g.path.value && (
+                    <div className="file-preview">
+                      <img 
+                        src={URL.createObjectURL(g.path.value)} 
+                        alt={`Preview ${i + 1}`}
+                        className="preview-thumbnail"
+                      />
+                    </div>
+                  )}
+                </div>
+                <div className="form-field-group">
+                  <label className="form-label-small">Caption</label>
+                  <InputText
+                    className="w-full form-input"
+                    placeholder="Masukkan caption gambar"
+                    value={g.caption}
+                    onChange={(e) => updateArrayItem("gambar", i, "caption", e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+          <Button
+            icon="pi pi-plus"
+            label="Tambah Gambar"
+            className="add-item-btn"
+            onClick={() => addArray("gambar", { path: { type: "file", value: null }, caption: "" })}
+          />
+        </div>
+      </div>
+
+      {/* SECTION 4: Testimoni */}
+      <div className="form-section-card">
+        <div className="section-header">
+          <h3 className="section-title">Testimoni</h3>
+          <p className="section-description">Tambah testimoni dari pembeli</p>
+        </div>
+        <div className="section-content">
+          {form.testimoni.map((t, i) => (
+            <div key={i} className="testimoni-item-card">
+              <div className="testimoni-item-header">
+                <span className="testimoni-item-number">Testimoni {i + 1}</span>
+                <Button
+                  icon="pi pi-trash"
+                  severity="danger"
+                  className="p-button-danger p-button-sm"
+                  onClick={() => removeArray("testimoni", i)}
+                  tooltip="Hapus testimoni"
+                />
+              </div>
+              <div className="testimoni-item-content">
+                <div className="form-field-group">
+                  <label className="form-label-small">Upload Foto</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) =>
+                      updateArrayItem("testimoni", i, "gambar", { type: "file", value: e.target.files[0] })
+                    }
+                    className="file-input"
+                  />
+                  {t.gambar?.type === "file" && t.gambar.value && (
+                    <div className="file-preview">
+                      <img 
+                        src={URL.createObjectURL(t.gambar.value)} 
+                        alt={`Testimoni ${i + 1}`}
+                        className="preview-thumbnail"
+                      />
+                    </div>
+                  )}
+                </div>
+                <div className="form-field-group">
+                  <label className="form-label-small">Nama</label>
+                  <InputText
+                    className="w-full form-input"
+                    placeholder="Masukkan nama testimoni"
+                    value={t.nama}
+                    onChange={(e) => updateArrayItem("testimoni", i, "nama", e.target.value)}
+                  />
+                </div>
+                <div className="form-field-group">
+                  <label className="form-label-small">Deskripsi</label>
+                  <InputTextarea
+                    className="w-full form-input"
+                    rows={3}
+                    placeholder="Masukkan deskripsi testimoni"
+                    value={t.deskripsi}
+                    onChange={(e) => updateArrayItem("testimoni", i, "deskripsi", e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+          <Button
+            icon="pi pi-plus"
+            label="Tambah Testimoni"
+            className="add-item-btn"
+            onClick={() =>
+              addArray("testimoni", { gambar: { type: "file", value: null }, nama: "", deskripsi: "" })
+            }
+          />
+        </div>
+      </div>
+
+      {/* SECTION 5: Konten Tambahan */}
+      <div className="form-section-card">
+        <div className="section-header">
+          <h3 className="section-title">Konten Tambahan</h3>
+          <p className="section-description">Video, list point, dan konten pendukung</p>
+        </div>
+        <div className="section-content">
+          {/* VIDEO */}
+          <div className="form-field-group">
+            <label className="form-label">
+              Video (URL, pisahkan dengan koma)
+            </label>
+            <InputTextarea
+              className="w-full form-input"
+              rows={3}
+              value={form.video}
+              placeholder="https://youtube.com/watch?v=..., https://youtube.com/watch?v=..."
+              onChange={(e) => handleChange("video", e.target.value)}
+            />
+            <p className="field-hint">Masukkan URL video YouTube, pisahkan dengan koma jika lebih dari satu</p>
+          </div>
+
+          {/* LIST POINT */}
+          <div className="form-field-group">
+            <label className="form-label">
+              List Point (Benefit)
+            </label>
+            {form.list_point.map((p, i) => (
+              <div key={i} className="list-point-item">
+                <div className="list-point-number">{i + 1}</div>
+                <InputText
+                  className="flex-1 form-input"
+                  value={p.nama}
+                  placeholder={`Point ${i + 1}`}
+                  onChange={(e) => updateArrayItem("list_point", i, "nama", e.target.value)}
+                />
+                <Button 
+                  icon="pi pi-trash" 
+                  severity="danger" 
+                  className="p-button-danger p-button-sm"
+                  onClick={() => removeArray("list_point", i)}
+                />
               </div>
             ))}
+            <Button
+              icon="pi pi-plus"
+              label="Tambah List Point"
+              className="add-item-btn"
+              onClick={() => addArray("list_point", { nama: "" })}
+            />
           </div>
-        );
-      case "meta":
-        return (
-          <div className="text-sm text-gray-600">
-            <div>Kategori: {defaultLists.categories.find(c => c.value == form.kategori)?.label || "-"}</div>
-            <div>Assign: {(form.assign || []).join(", ") || "-"}</div>
+        </div>
+      </div>
+
+      {/* SECTION 6: Form Fields - Compact Style */}
+      <section className="compact-form-section-preview" aria-label="Order form">
+        <h2 className="compact-form-title-preview">Lengkapi Data:</h2>
+        
+        <div className="compact-form-card-preview">
+          {/* Nama Lengkap */}
+          <div className="compact-field-preview">
+            <label className="compact-label-preview">
+              Nama Lengkap <span className="required-preview">*</span>
+            </label>
+            <input
+              type="text"
+              placeholder="Contoh: Krisdayanti"
+              className="compact-input-preview"
+              disabled
+            />
           </div>
-        );
-      default:
-        return null;
-    }
-  };
 
- return (
-  <div className="produk-container">
-    {/* === KIRI: FORM INPUT === */}
-    <div className="produk-form">
-  <h2 className="title">Tambah Produk</h2>
-  {form.sections_order.map((sec) => (
-    <div key={sec} className="form-section">
-      <h3>{sec.toUpperCase()}</h3>
-      {renderSection(sec)}
-    </div>
-  ))}
-
-  <Button label="Simpan Produk" onClick={handleSave} />
-</div>
-
-
-<div className="produk-preview">
-  {/* Judul Produk */}
-  <div className="promo-text">
-    Tawaran Terbatas! <br />
-    <strong>Isi Form Hari Ini, Langsung Dapat Akses Group Exclusive sebelum Ditutup!</strong>
-  </div>
-  <h4 className="preview-title">{form.nama || "Nama Produk"}</h4>
-
-  {/* Gambar Header 200x200px */}
-  <div className="header-wrapper">
-    {form.header ? (
-      <img src={form.header} alt="Header" className="preview-header-img" />
-    ) : (
-      <div className="preview-header-img" style={{ background: "#e5e7eb" }} />
-    )}
-
-    {/* Hardcode Promo Text */}
-    <div className="promo-text">
-TEMPAT TERBAIK UNTUK BELAJAR DARI PRAKTISI PROPERTI
-    </div>
-  </div>
-
-  {/* Konten Preview */}
-  <div className="preview-content">
-    {/* Harga */}
-    {(form.harga_coret || form.harga_asli) && (
-      <div className="preview-price">
-        {form.harga_coret && <span className="old">Rp {form.harga_coret}</span>}
-        {form.harga_asli && <span className="new">Rp {form.harga_asli}</span>}
-      </div>
-    )}
-
-    {/* Deskripsi */}
-    {form.deskripsi && <div className="preview-description">{form.deskripsi}</div>}
-
-    {/* List Point */}
-    {form.list_point?.length > 0 && (
-      <div className="preview-points">
-        <ul>
-          {form.list_point.map((p, i) => (
-            <li key={i}>{p.nama}</li>
-          ))}
-        </ul>
-      </div>
-    )}
-
-    {/* Gallery */}
-{form.gambar?.length > 0 && (
-  <div className="preview-gallery">
-    <div className="images">
-      {form.gambar.map((g, i) => 
-        g.path ? (  // <- cek path tidak kosong
-          <img key={i} src={g.path} alt={`Gallery ${i}`} />
-        ) : null
-      )}
-    </div>
-  </div>
-)}
-
-
-    {/* Video */}
-{form.video?.length > 0 && (
-  <div className="preview-video">
-    {form.video.map((v, i) => {
-      if (!v) return null; // skip jika kosong
-      const embedUrl = v.replace("watch?v=", "embed/");
-      return <iframe key={i} src={embedUrl} allowFullScreen></iframe>;
-    })}
-  </div>
-)}
-
-
-    {/* Testimoni */}
-    {form.testimoni?.length > 0 && (
-      <div className="preview-testimonials">
-        <h3>Testimoni Pembeli</h3>
-        {form.testimoni.map((t, i) => (
-          <div key={i} className="testi-item">
-            {t.gambar && <img src={t.gambar} alt={t.nama} />}
-            <div className="info">
-              <div className="name">{t.nama}</div>
-              <div className="desc">{t.deskripsi}</div>
+          {/* No. WhatsApp */}
+          <div className="compact-field-preview">
+            <label className="compact-label-preview">
+              No. WhatsApp <span className="required-preview">*</span>
+            </label>
+            <div className="wa-input-wrapper-preview">
+              <div className="wa-prefix-preview">
+                <span className="flag">🇮🇩</span>
+                <span className="code">+62</span>
+              </div>
+              <input
+                type="tel"
+                placeholder="812345678"
+                className="compact-input-preview wa-input-preview"
+                disabled
+              />
             </div>
           </div>
-        ))}
-      </div>
-    )}
 
-    {/* Form Pemesan */}
-    <div className="preview-form">
-      <h3>Lengkapi Data:</h3>
-      {(form.custom_field || []).map((f, i) =>
-        f.aktif ? (
-          <div key={i}>
-            <label>
-              {f.nama_field}
-              {f.wajib && " *"}
+          {/* Email */}
+          <div className="compact-field-preview">
+            <label className="compact-label-preview">
+              Email <span className="required-preview">*</span>
             </label>
-            <input type="text" placeholder={`Masukkan ${f.nama_field}`} />
+            <input
+              type="email"
+              placeholder="email@example.com"
+              className="compact-input-preview"
+              disabled
+            />
           </div>
-        ) : null
-      )}
+
+          {/* Alamat */}
+          <div className="compact-field-preview">
+            <label className="compact-label-preview">Alamat</label>
+            <textarea
+              placeholder="Alamat lengkap (opsional)"
+              className="compact-input-preview compact-textarea-preview"
+              rows={2}
+              disabled
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 7: Custom Fields */}
+      <div className="form-section-card">
+        <div className="section-header">
+          <h3 className="section-title">Custom Fields</h3>
+          <p className="section-description">Tambah field tambahan untuk form pembeli</p>
+        </div>
+        <div className="section-content">
+          {form.custom_field.map((f, i) => (
+            <div key={i} className="custom-field-item-card">
+              <div className="custom-field-header">
+                <span className="custom-field-number">Field {i + 1}</span>
+                {!f.required && (
+                  <Button
+                    icon="pi pi-trash"
+                    severity="danger"
+                    className="p-button-danger p-button-sm"
+                    onClick={() => removeArray("custom_field", i)}
+                  />
+                )}
+              </div>
+              <div className="custom-field-content">
+                <div className="form-field-group">
+                  <label className="form-label-small">Nama Field</label>
+                  <InputText
+                    className="w-full form-input"
+                    value={f.label}
+                    placeholder="Contoh: Nomor HP, Instansi, dll"
+                    onChange={(e) => updateArrayItem("custom_field", i, "label", e.target.value)}
+                  />
+                </div>
+                <div className="form-field-group">
+                  <label className="form-label-small">Placeholder / Contoh</label>
+                  <InputText
+                    className="w-full form-input"
+                    value={f.value}
+                    placeholder={(f.label || "Contoh isian") + (f.required ? " *" : "")}
+                    onChange={(e) => updateArrayItem("custom_field", i, "value", e.target.value)}
+                  />
+                </div>
+                <div className="custom-field-required">
+                  <input
+                    type="checkbox"
+                    id={`required-${i}`}
+                    checked={f.required}
+                    onChange={(e) => updateArrayItem("custom_field", i, "required", e.target.checked)}
+                  />
+                  <label htmlFor={`required-${i}`} className="checkbox-label">
+                    Field wajib diisi
+                  </label>
+                </div>
+              </div>
+            </div>
+          ))}
+          <Button
+            icon="pi pi-plus"
+            label="Tambah Custom Field"
+            className="add-item-btn"
+            onClick={() => addArray("custom_field", { key: "", label: "", value: "", required: false })}
+          />
+        </div>
+      </div>
+
+
+      {/* SECTION 8: Pengaturan */}
+      <div className="form-section-card">
+        <div className="section-header">
+          <h3 className="section-title">Pengaturan</h3>
+          <p className="section-description">Assign user, landing page, dan status produk</p>
+        </div>
+        <div className="section-content">
+          {/* CREATED BY - Read Only */}
+          {/* ASSIGN BY - Penanggung Jawab */}
+          <div className="form-field-group">
+            <label className="form-label">
+              Penanggung Jawab (Assign By) <span className="required">*</span>
+            </label>
+            <MultiSelect
+              className="w-full form-input"
+              value={form.assign}
+              options={userOptions}
+              onChange={(e) => handleChange("assign", e.value || [])}
+              placeholder="Pilih penanggung jawab produk"
+              display="chip"
+              showClear
+              filter
+              filterPlaceholder="Cari user..."
+            />
+            <p className="field-hint">Pilih user yang bertanggung jawab menangani produk ini</p>
+          </div>
+
+          {/* LANDING PAGE */}
+          <div className="form-field-group">
+            <label className="form-label">
+              Landing Page
+            </label>
+            <InputText
+              className="w-full form-input"
+              value={form.landingpage || "1"}
+              onChange={(e) => handleChange("landingpage", e.target.value)}
+              placeholder="Masukkan nama landing page atau kode"
+            />
+            <p className="field-hint">Default: 1</p>
+          </div>
+        </div>
+      </div>
+
+      {/* SUBMIT BUTTON */}
+      <div className="submit-section">
+        <Button 
+          label="Simpan Produk" 
+          icon="pi pi-save"
+          className="p-button-primary submit-btn" 
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+        />
+        <p className="submit-hint">
+          {isSubmitting 
+            ? (submitProgress || "Sedang mengunggah data ke server...") 
+            : "Pastikan semua data sudah lengkap sebelum menyimpan"}
+        </p>
+      </div>
+      </div>
+      {/* ================= RIGHT: PREVIEW ================= */}
+      <div className="builder-preview-card">
+        <LandingTemplate form={form} />
+      </div>
     </div>
-    <div className="preview-payment-method">
-  <h3>Metode Pembayaran</h3>
-
-  <div className="payment-group">
-    <h4>E-Payment</h4>
-    <ul>
-      <li>QRIS (Dana, OVO, LinkAja)</li>
-      <li>Virtual Account (BCA, Mandiri, BNI, Permata)</li>
-    </ul>
-  </div>
-
-  <div className="payment-group">
-    <h4>Bank Transfer (Manual)</h4>
-    <p>Klik → Halaman Notifikasi Bayar</p>
-  </div>
-
-  <div className="payment-group">
-    <h4>Credit Card (Midtrans)</h4>
-    <p>Visa, Mastercard, dll</p>
-  </div>
-</div>
-
-  </div>
-        <button className="cta-button">Pesan Sekarang</button>
-
-</div>
-  </div>
-);
-
+  );
 }

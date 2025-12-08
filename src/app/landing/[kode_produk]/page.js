@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
-import Loading from "@/app/loading";
 import OngkirCalculator from "@/components/OngkirCalculator";
 import "@/styles/landing.css";
 

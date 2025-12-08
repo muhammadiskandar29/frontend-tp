@@ -1,20 +1,27 @@
 "use client";
 
 import Layout from "@/components/Layout";
-import { useEffect, useMemo, useState } from "react";
-import AddUserModal from "./addUsers";
-import EditUserModal from "./editUsers";
-import DeleteUserModal from "./deleteUsers";
-import ViewUserModal from "./viewUsers";
+import { useEffect, useMemo, useState, memo, useCallback } from "react";
+import dynamic from "next/dynamic";
+import { Users2, FolderOpen, Pause } from "lucide-react";
 import { createUser, deleteUser, getUsers, updateUser } from "@/lib/users";
 import "@/styles/dashboard.css";
 import "@/styles/admin.css";
 
+// Lazy load modals
+const AddUserModal = dynamic(() => import("./addUsers"), { ssr: false });
+const EditUserModal = dynamic(() => import("./editUsers"), { ssr: false });
+const DeleteUserModal = dynamic(() => import("./deleteUsers"), { ssr: false });
+const ViewUserModal = dynamic(() => import("./viewUsers"), { ssr: false });
+const EmailSyncWarningModal = dynamic(() => import("./emailSyncWarning"), { ssr: false });
+
 const DIVISI_MAP = {
-  1: "Admin",
-  2: "Sales",
-  3: "Multimedia",
+  1: "Admin Super",
+  2: "Owner",
+  3: "Sales",
   4: "Finance",
+  5: "HR",
+  11: "Trainer",
 };
 
 const LEVEL_MAP = {
@@ -35,6 +42,14 @@ const DEFAULT_TOAST = { show: false, message: "", type: "success" };
 
 const formatDate = (value) => {
   if (!value) return "-";
+  
+  // Handle format dd-mm-yyyy dari backend
+  if (/^\d{2}-\d{2}-\d{4}$/.test(value)) {
+    const [day, month, year] = value.split("-");
+    return `${day}/${month}/${year}`;
+  }
+  
+  // Handle format lain (ISO, dll)
   const normalized = value.toString().replace(/-/g, "/");
   const parsed = new Date(normalized);
   if (Number.isNaN(parsed.getTime())) return value;
@@ -56,6 +71,8 @@ export default function AdminUsersPage() {
   const [showDelete, setShowDelete] = useState(false);
   const [showView, setShowView] = useState(false);
   const [toast, setToast] = useState(DEFAULT_TOAST);
+  const [showEmailWarning, setShowEmailWarning] = useState(false);
+  const [emailWarningData, setEmailWarningData] = useState(null);
 
   useEffect(() => {
     const loadUsers = async () => {
@@ -91,19 +108,19 @@ const summaryCards = useMemo(
         label: "Active users",
         value: filteredUsers.length,
         accent: "accent-emerald",
-        icon: "👥",
+        icon: <Users2 size={22} />,
       },
       {
         label: "Directory size",
         value: users.length,
         accent: "accent-indigo",
-        icon: "📁",
+        icon: <FolderOpen size={22} />,
       },
       {
         label: "Inactive",
         value: Math.max(users.length - filteredUsers.length, 0),
         accent: "accent-amber",
-        icon: "⏸️",
+        icon: <Pause size={22} />,
       },
     ],
     [filteredUsers.length, users.length]
@@ -121,12 +138,27 @@ const summaryCards = useMemo(
 
   const handleSaveAdd = async (newUser) => {
     try {
-      await createUser(newUser);
+      console.log("[CREATE_USER] Creating user with payload:", newUser);
+      const result = await createUser(newUser);
+      console.log("[CREATE_USER] Create result:", result);
+      
+      if (!result.success) {
+        throw new Error(result.message || "Gagal menambahkan user");
+      }
+      
       await refreshUsers();
-      showToast("✅ User berhasil ditambahkan!");
+      showToast("User berhasil ditambahkan!");
     } catch (err) {
-      console.error("Error creating user:", err);
-      showToast("❌ Gagal menambahkan user", "error");
+      console.error("[CREATE_USER] Error creating user:", err);
+      console.error("[CREATE_USER] Error details:", {
+        message: err.message,
+        status: err.status,
+        data: err.data,
+        validationErrors: err.validationErrors
+      });
+      
+      // Re-throw error dengan detail untuk ditampilkan di modal
+      throw err;
     } finally {
       setShowAdd(false);
     }
@@ -136,11 +168,47 @@ const summaryCards = useMemo(
     if (!selectedUser) return;
 
     try {
-      await updateUser(selectedUser.id, updatedData);
+      console.log("[UPDATE_USER] Updating user:", {
+        id: selectedUser.id,
+        oldEmail: selectedUser.email,
+        newEmail: updatedData.email,
+        data: updatedData
+      });
+      
+      const result = await updateUser(selectedUser.id, updatedData);
+      
+      console.log("[UPDATE_USER] Update result:", result);
+      
+      // ⚠️ PERINGATAN: Jika email berubah, backend harus update email di tabel authentication juga
+      if (selectedUser.email !== updatedData.email) {
+        // Set warning modal data
+        setEmailWarningData({
+          userId: selectedUser.id,
+          oldEmail: selectedUser.email,
+          newEmail: updatedData.email,
+        });
+        setShowEmailWarning(true);
+        
+        showToast(
+          `Email berubah! User harus login dengan email lama sampai backend di-fix.`,
+          "warning"
+        );
+        
+        // Log untuk debugging
+        console.warn("[EMAIL_CHANGE] Email changed but backend must update authentication table:", {
+          userId: selectedUser.id,
+          oldEmail: selectedUser.email,
+          newEmail: updatedData.email,
+          note: "Backend harus sync email ke tabel authentication/login",
+          sqlFix: `UPDATE auth_table SET email = '${updatedData.email}' WHERE user_id = ${selectedUser.id};`
+        });
+      } else {
+        showToast("Perubahan berhasil disimpan!");
+      }
+      
       await refreshUsers();
-      showToast("Perubahan berhasil disimpan!");
     } catch (err) {
-      console.error("Error updating user:", err);
+      console.error("[UPDATE_USER] Error updating user:", err);
       showToast("Gagal menyimpan perubahan", "error");
     } finally {
       setShowEdit(false);
@@ -154,10 +222,10 @@ const summaryCards = useMemo(
     try {
       await deleteUser(selectedUser.id);
       await refreshUsers();
-      showToast("🚫 User berhasil dinonaktifkan!", "warning");
+      showToast("User berhasil dinonaktifkan!", "warning");
     } catch (err) {
       console.error("Error deleting user:", err);
-      showToast("❌ Gagal menonaktifkan user", "error");
+      showToast("Gagal menonaktifkan user", "error");
     } finally {
       setShowDelete(false);
       setSelectedUser(null);
@@ -221,14 +289,14 @@ const handleCloseModals = () => {
             <span className="panel__meta">{filteredUsers.length} active members</span>
           </div>
 
-          <div className="users-table__wrapper">
-            <div className="users-table">
-              <div className="users-table__head">
+          <div className="users-tables__wrapper">
+            <div className="users-tables">
+              <div className="users-tables__head">
                 {TABLE_COLUMNS.map((column) => (
                   <span key={column}>{column}</span>
                 ))}
               </div>
-              <div className="users-table__body">
+              <div className="users-tables__body">
                 {filteredUsers.length > 0 ? (
                   filteredUsers.map((user, index) => {
                     const divisionLabel = DIVISI_MAP[user.divisi] || user.divisi || "-";
@@ -237,27 +305,27 @@ const handleCloseModals = () => {
                     const phoneText = user.no_telp?.trim() || "Phone not provided";
 
                     return (
-                      <div className="users-table__row" key={user.id || `${user.email}-${index}`}>
-                        <div className="users-table__cell" data-label="#">
+                      <div className="users-tables__row" key={user.id || `${user.email}-${index}`}>
+                        <div className="users-tables__cell" data-label="#">
                           {index + 1}
                         </div>
-                        <div className="users-table__cell users-table__cell--profile" data-label="Member">
+                        <div className="users-tables__cell users-tables__cell--strong" data-label="Member">
                           <div className="users-meta">
                             <p className="users-name">{user.nama || "Unnamed user"}</p>
                             <p className="users-email">{user.email || "Email unavailable"}</p>
                           </div>
                         </div>
-                        <div className="users-table__cell users-table__cell--division" data-label="Division">
+                        <div className="users-tables__cell" data-label="Division">
                           <span className={`users-pill ${divisionClass}`}>{divisionLabel}</span>
                         </div>
-                        <div className="users-table__cell users-table__cell--contact" data-label="Contact">
+                        <div className="users-tables__cell" data-label="Contact">
                           <p className="users-contact-line">{phoneText}</p>
                           <p className="users-contact-line">{getAddressPreview(addressText)}</p>
                           <span className="users-contact-line users-contact-line--muted">
                             Joined {formatDate(user.tanggal_join)}
                           </span>
                         </div>
-                        <div className="users-table__cell users-table__cell--timeline" data-label="Timeline">
+                        <div className="users-tables__cell" data-label="Timeline">
                           <div className="users-timeline-item">
                             <span className="users-label">
                               <i className="pi pi-calendar" /> Birth
@@ -265,7 +333,7 @@ const handleCloseModals = () => {
                             <span className="users-value">{formatDate(user.tanggal_lahir)}</span>
                           </div>
                         </div>
-                        <div className="users-table__cell users-table__cell--actions" data-label="Actions">
+                        <div className="users-tables__cell users-tables__cell--actions" data-label="Actions">
                           <button
                             className="users-action-btn users-action-btn--ghost"
                             title="View user"
@@ -355,6 +423,19 @@ const handleCloseModals = () => {
           >
             {toast.message}
           </div>
+        )}
+
+        {/* Email Warning Modal */}
+        {showEmailWarning && emailWarningData && (
+          <EmailSyncWarningModal
+            userId={emailWarningData.userId}
+            oldEmail={emailWarningData.oldEmail}
+            newEmail={emailWarningData.newEmail}
+            onClose={() => {
+              setShowEmailWarning(false);
+              setEmailWarningData(null);
+            }}
+          />
         )}
       </div>
     </Layout>

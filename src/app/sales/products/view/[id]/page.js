@@ -2,21 +2,58 @@
 
 import { useEffect, useState } from "react";
 import React from "react";
+import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import { getProductById } from "@/lib/products";
 import FollowupSection from "./FollowupSection";
+import LinkZoomSection from "./LinkZoomSection";
+import TrainerSection from "./TrainerSection";
+import "@/styles/product-detail.css";
 
 // Helper function untuk build image URL via proxy
 const buildImageUrl = (path) => {
-  if (!path) return "/placeholder-image.png";
+  if (!path) return null;
+  
+  // Jika path sudah full URL, return langsung
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+  
   // Bersihkan path dari prefix yang tidak diperlukan
-  const cleanPath = path.replace(/^\/?(storage\/)?/, "");
+  let cleanPath = path.replace(/^\/?(storage\/)?/, "");
+  
+  // Pastikan path tidak kosong
+  if (!cleanPath || cleanPath.trim() === "") {
+    return null;
+  }
+  
   return `/api/image?path=${encodeURIComponent(cleanPath)}`;
+};
+
+// Safe parse JSON dengan fallback
+const safeParse = (value, fallback = []) => {
+  if (!value) return fallback;
+  if (typeof value === "string") {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return fallback;
+    }
+  }
+  if (Array.isArray(value)) return value;
+  return fallback;
+};
+
+// Format currency
+const formatCurrency = (value) => {
+  if (!value) return "0";
+  return Number(value).toLocaleString("id-ID");
 };
 
 export default function DetailProdukPage({ params }) {
   const resolved = React.use(params);
   const { id } = resolved;
+  const router = useRouter();
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -28,6 +65,17 @@ export default function DetailProdukPage({ params }) {
     async function fetchData() {
       try {
         const data = await getProductById(id);
+        console.log("📦 [VIEW PRODUCT] Fetched data:", data);
+        console.log("📦 [VIEW PRODUCT] Data type:", Array.isArray(data) ? "array" : typeof data);
+        console.log("📦 [VIEW PRODUCT] Nama produk:", data?.nama);
+        console.log("📦 [VIEW PRODUCT] Header:", data?.header);
+        console.log("📦 [VIEW PRODUCT] Gambar:", data?.gambar);
+        
+        if (!data) {
+          console.error("❌ [VIEW PRODUCT] No data received");
+          return;
+        }
+        
         setProduct(data);
       } catch (err) {
         console.error("❌ Error fetching detail:", err);
@@ -41,12 +89,28 @@ export default function DetailProdukPage({ params }) {
   if (loading) return <Layout>Memuat detail produk...</Layout>;
   if (!product) return <Layout>Produk tidak ditemukan.</Layout>;
 
-  const gallery = product.gambar ? JSON.parse(product.gambar) : [];
+  // Parse JSON fields dengan safe parse
+  const gallery = safeParse(product.gambar, []);
+  const testimoni = safeParse(product.testimoni, []);
+  const listPoint = safeParse(product.list_point, []);
+  const video = safeParse(product.video, []);
+  const customField = safeParse(product.custom_field, []);
 
   return (
     <Layout title={`Detail Produk - ${product.nama}`}>
       <div className="product-detail-container">
-<div className="analytics-box">
+        {/* Back Button */}
+        <div className="product-detail-header">
+          <button
+            className="back-to-list-btn"
+            onClick={() => router.push("/admin/products")}
+          >
+            <i className="pi pi-arrow-left" />
+            <span>Back to Product List</span>
+          </button>
+        </div>
+
+        <div className="analytics-box">
           <div className="analytics-item">
             <h3>Sales Page View</h3>
             <p>43</p>
@@ -78,6 +142,18 @@ export default function DetailProdukPage({ params }) {
           >
             Followup Text
           </button>
+          <button
+            className={`tab ${activeTab === "link-zoom" ? "active" : ""}`}
+            onClick={() => setActiveTab("link-zoom")}
+          >
+            Link Zoom
+          </button>
+          <button
+            className={`tab ${activeTab === "trainer" ? "active" : ""}`}
+            onClick={() => setActiveTab("trainer")}
+          >
+            Trainer
+          </button>
         </div>
 
         {/* === TAB DETAIL === */}
@@ -85,18 +161,32 @@ export default function DetailProdukPage({ params }) {
           <>
             {/* HEADER IMAGE */}
             <div className="header-section">
-              <img
-                src={buildImageUrl(product.header)}
-                className="header-image"
-                alt={product.nama}
-              />
+              {product.header ? (
+                <img
+                  src={buildImageUrl(product.header)}
+                  className="header-image"
+                  alt={product.nama || "Product header"}
+                  onError={(e) => {
+                    e.target.src = "/placeholder-image.png";
+                  }}
+                />
+              ) : (
+                <div className="header-image-placeholder">
+                  <span>No Image</span>
+                </div>
+              )}
 
               <div className="header-info">
-                <h1>{product.nama}</h1>
-                <p className="category-tag">{product.kategori_rel?.nama}</p>
-                <p className="price">Rp {product.harga_asli}</p>
-                {product.harga_coret && (
-                  <p className="price-coret">Rp {product.harga_coret}</p>
+                <h1>{product.nama || "-"}</h1>
+                <p className="category-tag">{product.kategori_rel?.nama || product.kategori || "-"}</p>
+                <div className="price-group">
+                  {product.harga_coret && (
+                    <p className="price-coret">Rp {formatCurrency(product.harga_coret)}</p>
+                  )}
+                  <p className="price">Rp {formatCurrency(product.harga_asli)}</p>
+                </div>
+                {product.kode && (
+                  <p className="product-code">Kode: {product.kode}</p>
                 )}
               </div>
             </div>
@@ -109,33 +199,74 @@ export default function DetailProdukPage({ params }) {
 
                 <div className="info-row">
                   <span>Nama Produk:</span>
-                  <p>{product.nama}</p>
+                  <p>{product.nama || "-"}</p>
                 </div>
+
+                {product.kode && (
+                  <div className="info-row">
+                    <span>Kode Produk:</span>
+                    <p>{product.kode}</p>
+                  </div>
+                )}
+
+                <div className="info-row">
+                  <span>Harga Asli:</span>
+                  <p>Rp {formatCurrency(product.harga_asli)}</p>
+                </div>
+
+                {product.harga_coret && (
+                  <div className="info-row">
+                    <span>Harga Coret:</span>
+                    <p>Rp {formatCurrency(product.harga_coret)}</p>
+                  </div>
+                )}
 
                 <div className="info-row">
                   <span>Deskripsi:</span>
-                  <p>{product.deskripsi}</p>
+                  <p>{product.deskripsi || "-"}</p>
                 </div>
 
-                <div className="info-row">
-                  <span>Tanggal Event:</span>
-                  <p>{product.tanggal_event}</p>
-                </div>
+                {product.tanggal_event && (
+                  <div className="info-row">
+                    <span>Tanggal Event:</span>
+                    <p>
+                      {new Date(product.tanggal_event).toLocaleString("id-ID", {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit"
+                      })}
+                    </p>
+                  </div>
+                )}
 
-                <div className="info-row">
-                  <span>URL:</span>
-                  <p>{product.url}</p>
-                </div>
+                {product.url && (
+                  <div className="info-row">
+                    <span>URL:</span>
+                    <p>{product.url}</p>
+                  </div>
+                )}
 
-                <div className="info-row">
-                  <span>User Input:</span>
-                  <p>{product.user_rel?.nama}</p>
-                </div>
+                {product.user_rel?.nama && (
+                  <div className="info-row">
+                    <span>User Input:</span>
+                    <p>{product.user_rel.nama}</p>
+                  </div>
+                )}
 
                 <div className="info-row">
                   <span>Status:</span>
                   <p>{product.status === "1" ? "Aktif" : "Nonaktif"}</p>
                 </div>
+
+                {product.landingpage && (
+                  <div className="info-row">
+                    <span>Landing Page:</span>
+                    <p>{product.landingpage === "1" ? "Aktif" : "Nonaktif"}</p>
+                  </div>
+                )}
               </div>
 
               {/* GALLERY */}
@@ -146,222 +277,130 @@ export default function DetailProdukPage({ params }) {
                   <p>Tidak ada gambar gallery</p>
                 ) : (
                   <div className="gallery-list">
-                    {gallery.map((g, i) => (
-                      <div key={i} className="gallery-item">
-                        <img
-                          src={buildImageUrl(g.path)}
-                          alt={g.caption}
-                        />
-                        <p>{g.caption}</p>
-                      </div>
-                    ))}
+                    {gallery.map((g, i) => {
+                      const imageUrl = buildImageUrl(g.path);
+                      return (
+                        <div key={i} className="gallery-item">
+                          {imageUrl ? (
+                            <img
+                              src={imageUrl}
+                              alt={g.caption || `Gallery ${i + 1}`}
+                              onError={(e) => {
+                                e.target.src = "/placeholder-image.png";
+                              }}
+                            />
+                          ) : (
+                            <div className="gallery-placeholder">
+                              <span>No Image</span>
+                            </div>
+                          )}
+                          {g.caption && <p>{g.caption}</p>}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
             </div>
+
+            {/* LIST POINT */}
+            {listPoint.length > 0 && (
+              <div className="detail-card">
+                <h2>List Point</h2>
+                <ul className="list-point-list">
+                  {listPoint.map((point, i) => (
+                    <li key={i}>{point.nama || point}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* TESTIMONI */}
+            {testimoni.length > 0 && (
+              <div className="detail-card">
+                <h2>Testimoni</h2>
+                <div className="testimoni-list">
+                  {testimoni.map((testi, i) => {
+                    const imageUrl = buildImageUrl(testi.gambar);
+                    return (
+                      <div key={i} className="testimoni-item">
+                        {imageUrl ? (
+                          <img
+                            src={imageUrl}
+                            alt={testi.nama || `Testimoni ${i + 1}`}
+                            className="testimoni-image"
+                            onError={(e) => {
+                              e.target.src = "/placeholder-image.png";
+                            }}
+                          />
+                        ) : (
+                          <div className="testimoni-image-placeholder">
+                            <span>No Image</span>
+                          </div>
+                        )}
+                        <div className="testimoni-content">
+                          {testi.nama && <h4>{testi.nama}</h4>}
+                          {testi.deskripsi && <p>{testi.deskripsi}</p>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* VIDEO */}
+            {video.length > 0 && (
+              <div className="detail-card">
+                <h2>Video</h2>
+                <div className="video-list">
+                  {video.map((url, i) => (
+                    <div key={i} className="video-item">
+                      <a href={url} target="_blank" rel="noopener noreferrer">
+                        {url}
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* CUSTOM FIELD */}
+            {customField.length > 0 && (
+              <div className="detail-card">
+                <h2>Custom Field</h2>
+                <div className="custom-field-list">
+                  {customField.map((field, i) => (
+                    <div key={i} className="custom-field-item">
+                      <span className="field-label">{field.nama_field || field.label}:</span>
+                      <span className="field-value">{field.value || "-"}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         )}
 
         {/* === TAB FOLLOWUP TEXT === */}
-        {activeTab === "followup" && (
-  <FollowupSection productId={id} />
-)}
+        {activeTab === "followup" && <FollowupSection productId={id} />}
 
+        {/* === TAB LINK ZOOM === */}
+        {activeTab === "link-zoom" && (
+          <LinkZoomSection productId={id} productName={product.nama} />
+        )}
+
+        {/* === TAB TRAINER === */}
+        {activeTab === "trainer" && (
+          <TrainerSection
+            productId={id}
+            product={product}
+            onProductUpdate={(updatedProduct) => {
+              setProduct(updatedProduct);
+            }}
+          />
+        )}
       </div>
-
-      <style>{`
-
-        /* LIMIT WIDTH */
-        .product-detail-container {
-          max-width: 900px;
-          margin: 0 auto;
-          padding: 20px;
-          animation: fadeIn 0.3s ease;
-          margin-right: 20px;
-margin-left: 275px;
-margin-top: 20px;
-        }
-
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(5px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* ======= ANALYTICS STYLE (TAMBAHAN) ======= */
-        .analytics-box {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 15px;
-          margin-bottom: 20px;
-        }
-
-        .analytics-item {
-          background: white;
-          padding: 15px;
-          border-radius: 12px;
-          box-shadow: 0 3px 12px rgba(0,0,0,0.06);
-          text-align: center;
-        }
-
-        .analytics-item h3 {
-          font-weight: 600;
-          color: #555;
-          margin-bottom: 4px;
-        }
-
-        .analytics-item p {
-          font-size: 20px;
-          font-weight: bold;
-          margin: 0;
-        }
-
-        /* ===================== */
-        /*        TABS           */
-        /* ===================== */
-        .top-tabs {
-          display: flex;
-          gap: 10px;
-          margin-bottom: 20px;
-        }
-
-        .tab {
-          padding: 10px 16px;
-          border-radius: 8px;
-          background: #f3f4f6;
-          border: 1px solid #e5e7eb;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          font-weight: 500;
-        }
-
-        .tab:hover {
-          background: #e5e7eb;
-        }
-
-        .tab.active {
-          background: #3b82f6;
-          color: white;
-          border-color: #3b82f6;
-        }
-
-        /* ===================== */
-        /*      HEADER AREA      */
-        /* ===================== */
-        .header-section {
-          display: flex;
-          background: white;
-          padding: 20px;
-          border-radius: 16px;
-          box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-          gap: 20px;
-          margin-bottom: 25px;
-          align-items: center;
-        }
-
-        .header-image {
-          width: 180px;
-          height: 180px;
-          object-fit: cover;
-          border-radius: 12px;
-        }
-
-        .header-info h1 {
-          font-size: 24px;
-          font-weight: bold;
-          margin-bottom: 6px;
-        }
-
-        .category-tag {
-          display: inline-block;
-          background: #EEF4FF;
-          color: #3B82F6;
-          padding: 5px 12px;
-          border-radius: 8px;
-          font-size: 14px;
-          margin-bottom: 10px;
-        }
-
-        .price {
-          font-size: 22px;
-          font-weight: bold;
-          color: #10B981;
-        }
-
-        .price-coret {
-          text-decoration: line-through;
-          color: #888;
-          margin-top: 4px;
-        }
-
-        /* ===================== */
-        /*       GRID AREA       */
-        /* ===================== */
-        .detail-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 20px;
-        }
-
-        .detail-card {
-          background: white;
-          padding: 20px;
-          border-radius: 16px;
-          box-shadow: 0 3px 12px rgba(0,0,0,0.06);
-        }
-
-        .detail-card h2 {
-          margin-bottom: 15px;
-          font-size: 20px;
-          font-weight: bold;
-        }
-
-        .info-row {
-          margin-bottom: 12px;
-        }
-
-        .info-row span {
-          display: block;
-          font-weight: 600;
-          color: #555;
-        }
-
-        /* ===================== */
-        /*       GALLERY         */
-        /* ===================== */
-
-        .gallery-list {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 12px;
-        }
-
-        .gallery-item img {
-          width: 100%;
-          height: 150px;
-          object-fit: cover;
-          border-radius: 10px;
-        }
-
-        .gallery-item p {
-          text-align: center;
-          margin-top: 6px;
-          font-size: 14px;
-        }
-
-        @media (max-width: 900px) {
-          .detail-grid {
-            grid-template-columns: 1fr;
-          }
-          .header-section {
-            flex-direction: column;
-            text-align: center;
-          }
-          .header-image {
-            width: 100%;
-            height: 200px;
-          }
-        }
-      `}</style>
     </Layout>
   );
 }

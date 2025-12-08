@@ -3,10 +3,12 @@
 import "@/styles/admin.css";
 
 const DIVISI_MAP = {
-  1: "Admin",
-  2: "Sales",
-  3: "Multimedia",
+  1: "Admin Super",
+  2: "Owner",
+  3: "Sales",
   4: "Finance",
+  5: "HR",
+  11: "Trainer",
 };
 
 const LEVEL_MAP = {
@@ -16,6 +18,14 @@ const LEVEL_MAP = {
 
 const formatDate = (value) => {
   if (!value) return "-";
+  
+  // Handle format dd-mm-yyyy dari backend
+  if (/^\d{2}-\d{2}-\d{4}$/.test(value)) {
+    const [day, month, year] = value.split("-");
+    return `${day}/${month}/${year}`;
+  }
+  
+  // Handle format lain (ISO, dll)
   const normalized = value.toString().replace(/-/g, "/");
   const parsed = new Date(normalized);
   if (Number.isNaN(parsed.getTime())) return value;
@@ -28,8 +38,13 @@ const formatDate = (value) => {
 export default function ViewUserModal({ user, onClose }) {
   if (!user) return null;
 
-  const divisiLabel = DIVISI_MAP[user.divisi] || user.divisi || "-";
-  const levelLabel = LEVEL_MAP[user.level] || user.level || "-";
+  // Handle divisi bisa string atau integer dari backend
+  const divisiKey = String(user.divisi);
+  const divisiLabel = DIVISI_MAP[divisiKey] || DIVISI_MAP[user.divisi] || user.divisi || "-";
+  
+  // Handle level bisa string atau integer dari backend
+  const levelKey = String(user.level);
+  const levelLabel = LEVEL_MAP[levelKey] || LEVEL_MAP[user.level] || user.level || "-";
 
   return (
     <div className="modal-overlay">

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import "@/styles/admin.css";
-import { createOrderAdmin } from "@/lib/orders";
 
 export default function AddUserModal({ onClose, onSave }) {
   const [formData, setFormData] = useState({
@@ -48,13 +47,43 @@ export default function AddUserModal({ onClose, onSave }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // validasi wajib diisi
-    if (!formData.nama || !formData.email || !formData.divisi || !formData.level) {
-      showToast("Semua field wajib diisi!", "warning");
+    // Validasi field wajib sesuai dokumentasi
+    if (!formData.nama || !formData.nama.trim()) {
+      showToast("Nama wajib diisi!", "warning");
       return;
     }
 
-    // validasi no telp minimal 10 digit
+    if (!formData.email || !formData.email.trim()) {
+      showToast("Email wajib diisi!", "warning");
+      return;
+    }
+
+    if (!formData.tanggal_lahir) {
+      showToast("Tanggal lahir wajib diisi!", "warning");
+      return;
+    }
+
+    if (!formData.tanggal_join) {
+      showToast("Tanggal join wajib diisi!", "warning");
+      return;
+    }
+
+    if (!formData.alamat || !formData.alamat.trim()) {
+      showToast("Alamat wajib diisi!", "warning");
+      return;
+    }
+
+    if (!formData.divisi) {
+      showToast("Divisi wajib dipilih!", "warning");
+      return;
+    }
+
+    if (!formData.level) {
+      showToast("Level wajib dipilih!", "warning");
+      return;
+    }
+
+    // Validasi no telp minimal 10 digit
     if (!formData.no_telp || formData.no_telp.trim().length < 10) {
       showToast("Nomor telepon minimal 10 digit!", "error");
       return;
@@ -66,12 +95,12 @@ export default function AddUserModal({ onClose, onSave }) {
       tanggal_lahir: normalizeTanggal(formData.tanggal_lahir),
       tanggal_join: normalizeTanggal(formData.tanggal_join),
       alamat: formData.alamat.trim(),
-      divisi: formData.divisi.toString(),
-      level: formData.level.toString(),
+      divisi: String(formData.divisi), // String sesuai backend
+      level: String(formData.level), // String sesuai backend
       no_telp: formData.no_telp.trim(),
     };
 
-    console.log("🟢 Payload dikirim ke API:", payload);
+    console.log("Payload dikirim ke API:", payload);
 
     try {
       await onSave(payload);
@@ -82,17 +111,7 @@ export default function AddUserModal({ onClose, onSave }) {
       showToast(err.message || "Terjadi kesalahan saat menyimpan data", "error");
     }
   };
-async function handleSaveOrder(payload) {
-  try {
-    const res = await createOrderAdmin(payload);
-    console.log("✅ Order berhasil dibuat:", res);
-    showToast("Order berhasil dibuat!");
-    onClose();
-  } catch (err) {
-    console.error("❌ Gagal simpan order:", err);
-    showToast(err.message || "Terjadi kesalahan saat menyimpan data", "error");
-  }
-}
+
   return (
     <div className="modal-overlay">
       <div className="modal-card">
@@ -174,10 +193,12 @@ async function handleSaveOrder(payload) {
                 <label>Divisi</label>
                 <select name="divisi" value={formData.divisi} onChange={handleChange}>
                   <option value="">Pilih Divisi</option>
-                  <option value="1">Admin</option>
-                  <option value="2">Sales</option>
-                  <option value="3">Multimedia</option>
+                  <option value="1">Admin Super</option>
+                  <option value="2">Owner</option>
+                  <option value="3">Sales</option>
                   <option value="4">Finance</option>
+                  <option value="5">HR</option>
+                  <option value="11">Trainer</option>
                 </select>
               </div>
 

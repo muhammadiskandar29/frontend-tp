@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import useOrders from "@/hooks/useOrders";
-import { api } from "@/lib/api"; // ✅ supaya handleSearchCustomer & handleSearchProduct ikut pakai api()
+import { api } from "@/lib/api"; // supaya handleSearchCustomer & handleSearchProduct ikut pakai api()
+import "@/styles/pesanan.css";
 
-export default function AddOrders({ onClose, onAdd, setToast }) {
+export default function AddOrders({ onClose, onAdd, showToast }) {
   const [formData, setFormData] = useState({
     nama: "",
     wa: "",
@@ -19,7 +20,7 @@ export default function AddOrders({ onClose, onAdd, setToast }) {
     notif: true,
   });
 
-  const [showCustomerForm, setShowCustomerForm] = useState(false);
+  const [showCustomerForm, setShowCustomerForm] = useState(true);
   const [customerSearch, setCustomerSearch] = useState("");
   const [productSearch, setProductSearch] = useState("");
   const [customerResults, setCustomerResults] = useState([]);
@@ -28,7 +29,7 @@ export default function AddOrders({ onClose, onAdd, setToast }) {
   const [message, setMessage] = useState("");
   const { createOrder } = useOrders();
 
-  // === 🔍 Search Customer pakai api() ===
+  // === Search Customer pakai api() ===
   const handleSearchCustomer = async (keyword) => {
     setCustomerSearch(keyword);
     if (!keyword.trim()) return setCustomerResults([]);
@@ -45,7 +46,7 @@ export default function AddOrders({ onClose, onAdd, setToast }) {
     }
   };
 
-  // === 🔍 Search Produk pakai api() ===
+  // === Search Produk pakai api() ===
   const handleSearchProduct = async (keyword) => {
     setProductSearch(keyword);
     if (!keyword.trim()) return setProductResults([]);
@@ -86,7 +87,21 @@ export default function AddOrders({ onClose, onAdd, setToast }) {
     setShowCustomerForm(false);
   };
 
-  // === 📦 Pilih Produk ===
+  const resetCustomerSelection = () => {
+    setFormData((prev) => ({
+      ...prev,
+      customer: "",
+      nama: "",
+      wa: "",
+      email: "",
+      alamat: "",
+    }));
+    setCustomerSearch("");
+    setCustomerResults([]);
+    setShowCustomerForm(true);
+  };
+
+  // === Pilih Produk ===
   const handleSelectProduct = (prod) => {
     setFormData((prev) => ({
       ...prev,
@@ -98,7 +113,7 @@ export default function AddOrders({ onClose, onAdd, setToast }) {
     setProductResults([]);
   };
 
-  // === ✏️ Handle Change ===
+  // === Handle Change ===
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
@@ -118,235 +133,427 @@ export default function AddOrders({ onClose, onAdd, setToast }) {
   };
 
   // === 💾 Submit ===
-  // === 💾 Submit ===
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  setMessage("");
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage("");
 
-  // 🧩 ubah angka ke string hanya saat kirim ke backend
-  const payload = {
-    ...formData,
-    harga: String(formData.harga ?? "0"),
-    ongkir: String(formData.ongkir ?? "0"),
-    total_harga: String(formData.total_harga ?? "0"),
+    // Validasi alamat (required untuk order)
+    if (!formData.alamat?.trim()) {
+      setMessage("Alamat pengiriman wajib diisi untuk order");
+      setLoading(false);
+      return;
+    }
+
+    const payload = {
+      ...formData,
+      harga: String(formData.harga ?? "0"),
+      ongkir: String(formData.ongkir ?? "0"),
+      total_harga: String(formData.total_harga ?? "0"),
+    };
+
+    console.log("[ADD_ORDERS] Payload sebelum kirim:", JSON.stringify(payload, null, 2));
+
+    const res = await createOrder(payload);
+
+    if (res?.success) {
+      // Sukses tanpa warning
+      showToast?.(res?.message || "Order berhasil dibuat!", "success");
+      onAdd?.(res.data);
+      onClose?.();
+    } else if (res?.warning && res?.data) {
+      // Sukses dengan warning (tetap lanjut, tapi beri tahu)
+      console.warn("Order warning:", res.warning);
+      showToast?.("Order berhasil dibuat!", "success");
+      onAdd?.(res.data);
+      onClose?.();
+    } else {
+      showToast?.(res?.message || "Gagal membuat order.", "error");
+    }
+
+    setLoading(false);
   };
 
-  const res = await createOrder(payload);
-
-  if (res?.success) {
-    onAdd?.(res.data);
-    setToast?.({
-      show: true,
-      type: "success",
-      message: res.message || "✅ Order berhasil dibuat!",
-    });
-    setTimeout(() => {
-      setToast?.((prev) => ({ ...prev, show: false }));
-      onClose();
-    }, 1000);
-  } else {
-    setToast?.({
-      show: true,
-      type: "error",
-      message: res.message || "❌ Gagal membuat order.",
-    });
-  }
-
-  setLoading(false);
-};
-
+  const customerId = formData.customer;
+  const hasSelectedCustomer = Boolean(customerId);
+  const isSearchActive = customerSearch.trim().length >= 2;
+  const noCustomerFound = isSearchActive && customerResults.length === 0;
+  const displayCustomerForm = showCustomerForm || !hasSelectedCustomer || noCustomerFound;
 
   return (
-    <div className="update-modal-overlay">
-      <div className="update-modal-card" style={{ width: "100%", maxWidth: 650 }}>
-        <div className="update-modal-header">
+    <div
+      className="modal-overlay"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        className="modal-card"
+        style={{
+          width: "min(920px, 95vw)",
+          maxHeight: "90vh",
+          display: "flex",
+          flexDirection: "column",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="modal-header">
           <h2>Tambah Order</h2>
-          <button className="close-btn" onClick={onClose}>✕</button>
+          <button type="button" className="modal-close" onClick={onClose} aria-label="Tutup modal">
+            <i className="pi pi-times" />
+          </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="update-modal-body">
-          {/* ==== CUSTOMER ==== */}
-          <div className="update-section">
-            <h4>Informasi Customer</h4>
-
-            <label>
-              Cari Customer (Nama / WA)
-              <input
-                type="text"
-                value={customerSearch}
-                onChange={(e) => {
-                  setCustomerSearch(e.target.value);
-                  setShowCustomerForm(false);
-                }}
-                placeholder="Ketik minimal 2 huruf..."
-              />
-            </label>
-
-            {customerResults.length > 0 && (
-              <div style={{ border: "1px solid #ccc", borderRadius: 6, marginTop: 4 }}>
-                {customerResults.map((c) => (
-                  <div
-                    key={c.id}
-                    onClick={() => handleSelectCustomer(c)}
-                    style={{
-                      padding: "6px 10px",
-                      cursor: "pointer",
-                      borderBottom: "1px solid #eee",
-                    }}
-                  >
-                    {c.nama} | {c.wa}
+        <div
+          className="modal-body orders-modal-scroll"
+          style={{ paddingBottom: "1.75rem", overflowY: "auto", flex: 1 }}
+        >
+          <form onSubmit={handleSubmit} className="orders-form-grid">
+            <div className="orders-columns">
+              <section className="orders-section orders-section--customer">
+                <div className="orders-panel-header">
+                  <div>
+                    <h4>Data Customer</h4>
+                    <p>Temukan customer atau tambah data baru.</p>
                   </div>
-                ))}
-              </div>
-            )}
+                  {hasSelectedCustomer && (
+                    <button
+                      type="button"
+                      className="orders-link-btn"
+                      onClick={resetCustomerSelection}
+                    >
+                      Ganti Customer
+                    </button>
+                  )}
+                </div>
 
-            {customerResults.length === 0 && customerSearch && !showCustomerForm && (
-              <button
-                type="button"
-                onClick={() => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    nama: "",
-                    wa: "",
-                    email: "",
-                    alamat: "",
-                    customer: "",
-                  }));
-                  setShowCustomerForm(true);
-                }}
-                style={{
-                  marginTop: 8,
-                  color: "#2563eb",
-                  fontSize: 14,
-                  cursor: "pointer",
-                  background: "none",
-                  border: "none",
-                  textAlign: "left",
-                }}
-              >
-                + Tambah Customer Baru
-              </button>
-            )}
-
-            {showCustomerForm && (
-              <div
-                style={{
-                  marginTop: 10,
-                  padding: 12,
-                  border: "1px solid #ddd",
-                  borderRadius: 8,
-                  background: "#fafafa",
-                }}
-              >
-                <h5 style={{ marginBottom: 8 }}>Tambah Customer Baru</h5>
-                <label>
-                  Nama
-                  <input type="text" name="nama" value={formData.nama} onChange={handleChange} />
-                </label>
-                <label>
-                  Nomor WA
-                  <input type="text" name="wa" value={formData.wa} onChange={handleChange} />
-                </label>
-                <label>
-                  Email
-                  <input type="email" name="email" value={formData.email} onChange={handleChange} />
-                </label>
-                <label>
-                  Alamat
-                  <textarea name="alamat" rows="2" value={formData.alamat} onChange={handleChange} />
-                </label>
-              </div>
-            )}
-          </div>
-
-          {/* ==== PRODUK ==== */}
-          <div className="update-section">
-            <h4>Detail Order</h4>
-
-            <label>
-              Cari Produk
-              <input
-                type="text"
-                value={productSearch}
-                onChange={(e) => setProductSearch(e.target.value)}
-                placeholder="Ketik minimal 2 huruf..."
-              />
-            </label>
-
-            {productResults.length > 0 && (
-              <div style={{ border: "1px solid #ccc", borderRadius: 6, marginTop: 4 }}>
-                {productResults.map((p) => (
-                  <div
-                    key={p.id}
-                    onClick={() => handleSelectProduct(p)}
-                    style={{
-                      padding: "6px 10px",
-                      cursor: "pointer",
-                      borderBottom: "1px solid #eee",
+                <label className="orders-field">
+                  Cari Customer (Nama / WA)
+                  <input
+                    type="text"
+                    value={customerSearch}
+                    onChange={(e) => {
+                      setCustomerSearch(e.target.value);
+                      setShowCustomerForm(false);
                     }}
-                  >
-                    {p.nama} (Rp{p.harga})
+                    placeholder="Ketik minimal 2 huruf..."
+                  />
+                </label>
+
+                {customerResults.length > 0 && (
+                  <div className="orders-suggestion">
+                    {customerResults.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        className="orders-suggestion-item"
+                        onClick={() => handleSelectCustomer(c)}
+                      >
+                        <strong>{c.nama}</strong>
+                        <span>{c.wa}</span>
+                      </button>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
+                )}
 
-            <label>
-              Harga Produk
-              <input type="number" name="harga" value={formData.harga ?? ""} onChange={handleChange} />
-            </label>
+                {noCustomerFound && (
+                  <div className="orders-empty-state">
+                    Customer tidak ditemukan. Isi formulir di bawah untuk menambah data baru.
+                  </div>
+                )}
 
-            <label>
-              Ongkir
-              <input type="number" name="ongkir" value={formData.ongkir ?? ""} onChange={handleChange} />
-            </label>
+                {hasSelectedCustomer && (
+                  <div className="customer-selected-card">
+                    <div>
+                      <span>Customer Terpilih</span>
+                      <strong>{formData.nama || "-"}</strong>
+                    </div>
+                    <ul>
+                      <li>WA: {formData.wa || "-"}</li>
+                      <li>Email: {formData.email || "-"}</li>
+                      <li>Alamat: {formData.alamat || "-"}</li>
+                    </ul>
+                    <button
+                      type="button"
+                      className="orders-link-btn"
+                      onClick={() => setShowCustomerForm(true)}
+                    >
+                      Ubah Data Customer
+                    </button>
+                  </div>
+                )}
 
-            <label>
-              Total Harga
-              <input type="number" name="total_harga" value={formData.total_harga ?? ""} readOnly />
-            </label>
+                {/* Field alamat selalu ditampilkan (required untuk order) */}
+                {hasSelectedCustomer && (
+                  <label className="orders-field" style={{ marginTop: "12px" }}>
+                    Alamat Pengiriman *
+                    <textarea
+                      name="alamat"
+                      rows={2}
+                      value={formData.alamat}
+                      onChange={handleChange}
+                      placeholder="Alamat lengkap untuk pengiriman order (wajib diisi)"
+                      required
+                    />
+                    <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                      Alamat ini digunakan untuk order, bisa berbeda dengan alamat customer
+                    </small>
+                  </label>
+                )}
 
-            <label>
-              Sumber Order
-              <input
-                type="text"
-                name="sumber"
-                value={formData.sumber}
-                onChange={handleChange}
-                placeholder="Instagram, Website, dll"
-              />
-            </label>
+                {displayCustomerForm && (
+                  <div className="customer-form-card">
+                    <label className="orders-field">
+                      Nama
+                      <input
+                        type="text"
+                        name="nama"
+                        value={formData.nama}
+                        onChange={handleChange}
+                        placeholder="Nama customer"
+                      />
+                    </label>
 
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
-              <input type="checkbox" name="notif" id="notif" checked={formData.notif} onChange={handleChange} />
-              <label htmlFor="notif" style={{ fontSize: 14 }}>Kirim notifikasi WhatsApp ke customer</label>
+                    <div className="orders-dual-grid">
+                      <label className="orders-field">
+                        WA (gunakan 62)
+                        <input type="text" name="wa" value={formData.wa} onChange={handleChange} />
+                      </label>
+                      <label className="orders-field">
+                        Email
+                        <input
+                          type="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleChange}
+                        />
+                      </label>
+                    </div>
+
+                    <label className="orders-field">
+                      Alamat
+                      <textarea
+                        name="alamat"
+                        rows={2}
+                        value={formData.alamat}
+                        onChange={handleChange}
+                        placeholder="Alamat lengkap customer"
+                      />
+                    </label>
+
+                    {!hasSelectedCustomer && (
+                      <p className="customer-hint">
+                        Simpan order akan otomatis menambahkan customer baru.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </section>
+
+              <section className="orders-section orders-section--order">
+                <div className="orders-panel-header">
+                  <div>
+                    <h4>Detail Order</h4>
+                    <p>Pilih produk dan lengkapi informasi order.</p>
+                  </div>
+                </div>
+
+                <label className="orders-field">
+                  Cari Produk
+                  <input
+                    type="text"
+                    value={productSearch}
+                    onChange={(e) => setProductSearch(e.target.value)}
+                    placeholder="Ketik minimal 2 huruf..."
+                  />
+                </label>
+
+                {productResults.length > 0 && (
+                  <div className="orders-suggestion">
+                    {productResults.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        className="orders-suggestion-item"
+                        onClick={() => handleSelectProduct(p)}
+                      >
+                        <strong>{p.nama}</strong>
+                        <span>Rp {Number(p.harga).toLocaleString("id-ID")}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <label className="orders-field">
+                  Produk (ID)
+                  <input
+                    type="text"
+                    name="produk"
+                    value={formData.produk}
+                    onChange={handleChange}
+                    placeholder="ID produk"
+                    readOnly
+                  />
+                </label>
+
+                <div className="orders-dual-grid">
+                  <label className="orders-field">
+                    Harga Produk
+                    <input
+                      type="number"
+                      name="harga"
+                      value={formData.harga ?? ""}
+                      onChange={handleChange}
+                      min={0}
+                      required
+                    />
+                  </label>
+                  <label className="orders-field">
+                    Ongkir
+                    <input
+                      type="number"
+                      name="ongkir"
+                      value={formData.ongkir ?? ""}
+                      onChange={handleChange}
+                      min={0}
+                    />
+                  </label>
+                </div>
+
+                <label className="orders-field">
+                  Total Harga
+                  <input type="number" name="total_harga" value={formData.total_harga ?? ""} readOnly />
+                </label>
+
+                <label className="orders-field">
+                  Sumber Order
+                  <select name="sumber" value={formData.sumber} onChange={handleChange}>
+                    <option value="">Pilih sumber</option>
+                    <option value="website">Website</option>
+                    <option value="instagram">Instagram</option>
+                    <option value="tiktok">TikTok</option>
+                    <option value="whatsapp">WhatsApp</option>
+                    <option value="sales">Sales</option>
+                    <option value="event">Event</option>
+                  </select>
+                </label>
+
+                <label className="orders-checkbox">
+                  <input
+                    type="checkbox"
+                    name="notif"
+                    checked={formData.notif}
+                    onChange={handleChange}
+                  />
+                  Kirim notifikasi WhatsApp ke customer
+                </label>
+              </section>
             </div>
-          </div>
 
-          {message && (
-            <p
-              style={{
-                marginTop: 8,
-                fontSize: 14,
-                textAlign: "center",
-                color: message.startsWith("✅") ? "green" : "red",
-              }}
-            >
-              {message}
-            </p>
-          )}
+            {message && <p className="orders-error">{message}</p>}
 
-          <div className="update-modal-footer">
-            <button type="button" onClick={onClose} className="btn-cancel" disabled={loading}>
-              Batal
-            </button>
-            <button type="submit" className="btn-save" disabled={loading}>
-              {loading ? "Menyimpan..." : "Simpan Order"}
-            </button>
-          </div>
-        </form>
+            <div className="orders-modal-footer">
+              <button type="button" className="orders-btn orders-btn--ghost" onClick={onClose} disabled={loading}>
+                Batal
+              </button>
+              <button type="submit" className="orders-btn orders-btn--primary" disabled={loading}>
+                {loading ? "Menyimpan..." : "Simpan Order"}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
+      <style jsx>{`
+        .orders-columns {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+          gap: 20px;
+        }
+        .orders-section--customer,
+        .orders-section--order {
+          border: 1px solid #eef2ff;
+          border-radius: 16px;
+          padding: 20px;
+          background: #fff;
+        }
+        .orders-panel-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 12px;
+          margin-bottom: 16px;
+        }
+        .orders-panel-header h4 {
+          margin: 0;
+        }
+        .orders-panel-header p {
+          margin: 4px 0 0;
+          color: #6b7280;
+          font-size: 13px;
+        }
+        .orders-link-btn {
+          border: none;
+          background: transparent;
+          color: #2563eb;
+          font-weight: 600;
+          cursor: pointer;
+        }
+        .orders-empty-state {
+          background: #fef3c7;
+          border: 1px solid #fde68a;
+          color: #92400e;
+          border-radius: 10px;
+          padding: 10px 12px;
+          font-size: 13px;
+          margin-bottom: 12px;
+        }
+        .customer-form-card {
+          margin-top: 12px;
+          padding: 16px;
+          border-radius: 12px;
+          border: 1px solid #e5e7eb;
+          background: #f9fafb;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .customer-selected-card {
+          margin: 16px 0;
+          padding: 16px;
+          border-radius: 12px;
+          background: #eef2ff;
+          border: 1px solid #c7d2fe;
+        }
+        .customer-selected-card span {
+          font-size: 13px;
+          color: #6366f1;
+        }
+        .customer-selected-card strong {
+          display: block;
+          font-size: 18px;
+          margin-top: 4px;
+        }
+        .customer-selected-card ul {
+          margin: 12px 0;
+          padding-left: 18px;
+          color: #374151;
+          font-size: 14px;
+        }
+        .customer-selected-card ul li {
+          margin-bottom: 4px;
+        }
+        .customer-hint {
+          margin: 0;
+          font-size: 13px;
+          color: #6b7280;
+        }
+        @media (max-width: 640px) {
+          .orders-section--customer,
+          .orders-section--order {
+            padding: 16px;
+          }
+        }
+      `}</style>
     </div>
   );
 }

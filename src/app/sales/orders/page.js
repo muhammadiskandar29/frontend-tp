@@ -1,13 +1,17 @@
 "use client";
 
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback, memo } from "react";
 import Layout from "@/components/Layout";
+import dynamic from "next/dynamic";
+import { ShoppingCart, Clock, CheckCircle, PartyPopper, XCircle } from "lucide-react";
 import "@/styles/dashboard.css";
 import "@/styles/admin.css";
-import ViewOrders from "./viewOrders";
-import UpdateOrders from "./updateOrders";
 import { getOrders, updateOrderAdmin } from "@/lib/orders";
-import AddOrders from "./addOrders";
+
+// Lazy load modals
+const ViewOrders = dynamic(() => import("./viewOrders"), { ssr: false });
+const UpdateOrders = dynamic(() => import("./updateOrders"), { ssr: false });
+const AddOrders = dynamic(() => import("./addOrders"), { ssr: false });
 
 // Use Next.js proxy to avoid CORS
 const BASE_URL = "/api";
@@ -79,83 +83,49 @@ export default function DaftarPesanan() {
     };
   }, []);
 
-  // 🔹 Load data dari backend
-  useEffect(() => {
-    if (!needsRefresh) return;
-    const loadData = async () => {
-      try {
-        const token = localStorage.getItem("token");
+  // 🔹 Load data dari backend - Optimized dengan useCallback dan prevent duplicate fetch
+  const loadData = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.warn("No token found");
+        setNeedsRefresh(false);
+        return;
+      }
 
-        // Ambil produk
-        const resProduk = await fetch(`${BASE_URL}/admin/produk`, {
+      // Fetch produk dan orders secara parallel untuk optimasi
+      const [produkResponse, ordersResult] = await Promise.all([
+        // Ambil produk melalui Next.js proxy
+        fetch("/api/admin/produk", {
           headers: {
             "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
           },
-        });
-        const produkResult = await resProduk.json();
-        const produkList = Array.isArray(produkResult.data) ? produkResult.data : [];
+        }).then(res => res.json()).catch(err => {
+          console.error("Error fetching produk:", err);
+          return { success: false, data: [] };
+        }),
+        // Ambil orders
+        getOrders().catch(err => {
+          console.error("Error fetching orders:", err);
+          return [];
+        })
+      ]);
+      
+      // Handle produk data
+      if (produkResponse.success && Array.isArray(produkResponse.data)) {
         const mapProduk = {};
-        produkList.forEach((p) => {
+        produkResponse.data.forEach((p) => {
           mapProduk[p.id] = p.nama;
         });
         setProdukMap(mapProduk);
-
-        // Ambil orders
-        const ordersResult = await getOrders();
-        const finalOrders = Array.isArray(ordersResult)
-          ? ordersResult
-          : ordersResult.data || [];
-
-        // Map customer
-        const mapCustomer = {};
-        finalOrders.forEach((o) => {
-          if (o.customer_rel?.id) {
-            mapCustomer[o.customer_rel.id] = o.customer_rel.nama;
-          } else if (o.customer && typeof o.customer === "object" && o.customer.id) {
-            mapCustomer[o.customer.id] = o.customer.nama || "-";
-          } else if (o.customer && typeof o.customer === "number") {
-            // If customer is just an ID, we'll need to fetch it or leave it
-            // The customer_rel should handle most cases
-          }
-        });
-        setCustomers(mapCustomer);
-        setOrders(finalOrders);
-      } catch (err) {
-        console.error("❌ Error load data:", err);
-        showToast("Gagal memuat data", "error");
-      } finally {
-        setNeedsRefresh(false);
       }
-    };
-    loadData();
-  }, [needsRefresh, refreshKey]);
-
-  // 🔹 Direct refresh function that loads data immediately
-  const refreshData = async () => {
-    try {
-      const token = localStorage.getItem("token");
-
-      // Ambil produk
-      const resProduk = await fetch(`${BASE_URL}/admin/produk`, {
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
-      const produkResult = await resProduk.json();
-      const produkList = Array.isArray(produkResult.data) ? produkResult.data : [];
-      const mapProduk = {};
-      produkList.forEach((p) => {
-        mapProduk[p.id] = p.nama;
-      });
-      setProdukMap(mapProduk);
-
-      // Ambil orders
-      const ordersResult = await getOrders();
+      
+      // Handle orders data
       const finalOrders = Array.isArray(ordersResult)
         ? ordersResult
-        : ordersResult.data || [];
+        : ordersResult?.data || [];
 
       // Map customer
       const mapCustomer = {};
@@ -164,20 +134,30 @@ export default function DaftarPesanan() {
           mapCustomer[o.customer_rel.id] = o.customer_rel.nama;
         } else if (o.customer && typeof o.customer === "object" && o.customer.id) {
           mapCustomer[o.customer.id] = o.customer.nama || "-";
-        } else if (o.customer && typeof o.customer === "number") {
-          // If customer is just an ID, we'll need to fetch it or leave it
-          // The customer_rel should handle most cases
         }
       });
       
-      // Update all state at once to ensure UI updates immediately
       setCustomers(mapCustomer);
       setOrders(finalOrders);
+      setNeedsRefresh(false);
     } catch (err) {
-      console.error("❌ Error refresh data:", err);
+      console.error("Error load data:", err);
       showToast("Gagal memuat data", "error");
+      setNeedsRefresh(false);
     }
-  };
+  }, []); // Empty dependency array - hanya load sekali saat mount
+
+  useEffect(() => {
+    if (needsRefresh) {
+      loadData();
+    }
+  }, [needsRefresh]); // Hanya trigger saat needsRefresh berubah
+
+  // 🔹 Direct refresh function that loads data immediately - Reuse loadData
+  const refreshData = useCallback(async () => {
+    setNeedsRefresh(true);
+    await loadData();
+  }, [loadData]);
 
   const requestRefresh = async (message, type = "success") => {
     // Immediately refresh data first, then show message
@@ -338,31 +318,31 @@ export default function DaftarPesanan() {
               label: "Total orders",
               value: totalOrders,
               accent: "accent-indigo",
-              icon: "📦",
+              icon: <ShoppingCart size={22} />,
             },
             {
               label: "Unpaid",
               value: unpaidOrders,
               accent: "accent-amber",
-              icon: "⏳",
+              icon: <Clock size={22} />,
             },
             {
               label: "Paid",
               value: paidOrders,
               accent: "accent-emerald",
-              icon: "✅",
+              icon: <CheckCircle size={22} />,
             },
             {
               label: "Sukses",
               value: suksesOrders,
               accent: "accent-blue",
-              icon: "🎉",
+              icon: <PartyPopper size={22} />,
             },
             {
               label: "Gagal",
               value: gagalOrders,
               accent: "accent-red",
-              icon: "❌",
+              icon: <XCircle size={22} />,
             },
           ].map((card) => (
             <article className="summary-card" key={card.label}>
@@ -511,58 +491,6 @@ export default function DaftarPesanan() {
           )}
         </section>
 
-        {/* MODALS */}
-        {showAdd && (
-          <AddOrders
-            onClose={() => setShowAdd(false)}
-            onAdd={async () => {
-              setShowAdd(false);
-              // Refresh data and show success message
-              await requestRefresh("Pesanan baru berhasil ditambahkan!");
-            }}
-          />
-        )}
-
-        {showView && selectedOrder && (
-          <ViewOrders
-            order={{
-              ...selectedOrder,
-              customer:
-                selectedOrder.customer_rel?.nama ||
-                (typeof selectedOrder.customer === "object"
-                  ? selectedOrder.customer?.nama
-                  : customers[selectedOrder.customer]) ||
-                "-",
-            }}
-            onClose={() => {
-              setShowView(false);
-              setSelectedOrder(null);
-            }}
-          />
-        )}
-
-        {showEdit && selectedOrder && (
-          <UpdateOrders
-            order={{
-              ...selectedOrder,
-              customer:
-                selectedOrder.customer_rel?.nama ||
-                (typeof selectedOrder.customer === "object"
-                  ? selectedOrder.customer?.nama
-                  : customers[selectedOrder.customer]) ||
-                "-",
-            }}
-            onClose={() => {
-              setShowEdit(false);
-              setSelectedOrder(null);
-              setNeedsRefresh(true);  // ⬅️ ini auto refresh
-            }}
-            onSave={handleSuccessEdit}
-            setToast={setToast}
-            refreshOrders={() => setNeedsRefresh(true)}
-          />
-        )}
-
         {/* TOAST */}
         {toast.show && (
           <div
@@ -574,6 +502,59 @@ export default function DaftarPesanan() {
           </div>
         )}
       </div>
+
+      {/* MODALS - Render di luar main content untuk memastikan z-index bekerja */}
+      {showAdd && (
+        <AddOrders
+          onClose={() => setShowAdd(false)}
+          onAdd={async () => {
+            setShowAdd(false);
+            // Refresh data and show success message
+            await requestRefresh("Pesanan baru berhasil ditambahkan!");
+          }}
+          showToast={showToast}
+        />
+      )}
+
+      {showView && selectedOrder && (
+        <ViewOrders
+          order={{
+            ...selectedOrder,
+            customer:
+              selectedOrder.customer_rel?.nama ||
+              (typeof selectedOrder.customer === "object"
+                ? selectedOrder.customer?.nama
+                : customers[selectedOrder.customer]) ||
+              "-",
+          }}
+          onClose={() => {
+            setShowView(false);
+            setSelectedOrder(null);
+          }}
+        />
+      )}
+
+      {showEdit && selectedOrder && (
+        <UpdateOrders
+          order={{
+            ...selectedOrder,
+            customer:
+              selectedOrder.customer_rel?.nama ||
+              (typeof selectedOrder.customer === "object"
+                ? selectedOrder.customer?.nama
+                : customers[selectedOrder.customer]) ||
+              "-",
+          }}
+          onClose={() => {
+            setShowEdit(false);
+            setSelectedOrder(null);
+            setNeedsRefresh(true);  // ⬅️ ini auto refresh
+          }}
+          onSave={handleSuccessEdit}
+          setToast={setToast}
+          refreshOrders={() => setNeedsRefresh(true)}
+        />
+      )}
     </Layout>
   );
 }

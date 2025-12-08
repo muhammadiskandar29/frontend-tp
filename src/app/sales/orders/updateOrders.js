@@ -76,6 +76,11 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
     }
   };
 
+  const getPaymentStatus = (orderData) => {
+    if (orderData.bukti_pembayaran && orderData.waktu_pembayaran && orderData.metode_bayar) return 1;
+    return Number(orderData.status_pembayaran) || 0;
+  };
+
   const handleKonfirmasiSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg("");
@@ -154,7 +159,7 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
       setToast?.({
         show: true,
         type: "success",
-        message: "✅ Pembayaran berhasil dikonfirmasi!",
+        message: "Pembayaran berhasil dikonfirmasi!",
       });
 
       // Tutup modal dan redirect ke halaman orders setelah delay
@@ -162,17 +167,17 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
         setToast?.((prev) => ({ ...prev, show: false }));
         onClose();
         // Redirect ke halaman orders
-        router.push("/sales/orders");
+        router.push("/admin/orders");
       }, 1200);
     } catch (err) {
-      console.error("❌ [KONFIRMASI] Error:", err);
+      console.error("[KONFIRMASI] Error:", err);
       setErrorMsg("Terjadi kesalahan saat konfirmasi pembayaran.");
       setSubmitting(false);
 
       setToast?.({
         show: true,
         type: "error",
-        message: "❌ Gagal mengkonfirmasi pembayaran.",
+        message: "Gagal mengkonfirmasi pembayaran.",
       });
 
       setTimeout(() => {
@@ -181,33 +186,36 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
     }
   };
 
-  const handleSubmitUpdate = async (e) => {
-    e.preventDefault();
 
-    try {
-      const token = localStorage.getItem("token");
+const handleSubmitUpdate = async (e) => {
+  e.preventDefault();
 
-      const res = await fetch(`${BASE_URL}/admin/order/${order.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          ...updatedOrder,
-          metode_bayar: metodeBayar,
-        }),
-      });
+  try {
+    const token = localStorage.getItem("token");
 
-      const json = await res.json();
-      const newOrder = json.data;
+    const res = await fetch(`${BASE_URL}/admin/order/${order.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        ...updatedOrder,
+        metode_bayar: metodeBayar,
+      }),
+    });
 
-      onSave(newOrder);
-      onClose();
-    } catch (err) {
-      console.error(err);
-    }
-  };
+    const json = await res.json();
+    const newOrder = json.data;   // ⬅️ full data
+
+    onSave(newOrder);             // ⬅️ langsung update parent
+    onClose();
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+
 
   // Helper untuk build URL gambar via proxy
   const buildImageUrl = (path) => {
@@ -218,21 +226,21 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
 
   return (
     <>
-      <div className="update-modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-        <div className="update-modal-card" style={{ width: "min(960px, 95vw)", maxHeight: "90vh", display: "flex", flexDirection: "column" }}>
+      <div className="orders-modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+        <div className="orders-modal-card" style={{ width: "min(960px, 95vw)", maxHeight: "90vh", display: "flex", flexDirection: "column" }}>
           {/* Header */}
-          <div className="update-modal-header">
+          <div className="orders-modal-header">
             <div>
-              <p className="update-modal-eyebrow">Kelola Pesanan</p>
+              <p className="orders-modal-eyebrow">Kelola Pesanan</p>
               <h2>Update Pesanan #{order?.id}</h2>
             </div>
-            <button className="close-btn" onClick={onClose} type="button" aria-label="Tutup modal">
-              ✕
+            <button className="orders-modal-close" onClick={onClose} type="button" aria-label="Tutup modal">
+              <i className="pi pi-times" />
             </button>
           </div>
 
           {/* Body */}
-          <form className="update-modal-body" onSubmit={handleSubmitUpdate} style={{ overflowY: "auto", flex: 1, padding: "1.5rem" }}>
+          <form className="orders-modal-body" onSubmit={handleSubmitUpdate} style={{ overflowY: "auto", flex: 1, padding: "1.5rem" }}>
             <div className="update-orders-grid">
               {/* KOLOM KIRI - Informasi Order */}
               <div className="update-orders-section">
@@ -412,15 +420,15 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
             </div>
 
             {errorMsg && (
-              <div className="update-error">⚠️ {errorMsg}</div>
+              <div className="orders-error orders-error--inline">⚠️ {errorMsg}</div>
             )}
 
             {/* Footer */}
-            <div className="update-modal-footer">
-              <button type="button" onClick={onClose} className="btn-cancel">
+            <div className="orders-modal-footer">
+              <button type="button" onClick={onClose} className="orders-btn orders-btn--ghost">
                 Batal
               </button>
-              <button type="submit" className="btn-save">
+              <button type="submit" className="orders-btn orders-btn--primary">
                 <i className="pi pi-save" style={{ marginRight: 6 }} />
                 Simpan Perubahan
               </button>
@@ -431,14 +439,6 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
 
       {/* Inline Styles */}
       <style jsx>{`
-        .update-modal-eyebrow {
-          font-size: 12px;
-          color: #6b7280;
-          margin: 0 0 4px 0;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-
         .update-orders-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -671,14 +671,6 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
           object-fit: contain;
         }
 
-        .update-error {
-          background: #fee2e2;
-          color: #991b1b;
-          padding: 12px 16px;
-          border-radius: 8px;
-          margin-bottom: 16px;
-        }
-
         @media (max-width: 768px) {
           .update-orders-grid {
             grid-template-columns: 1fr;
@@ -698,7 +690,7 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
 
       {/* Modal Konfirmasi Pembayaran */}
       {showKonfirmasiModal && (
-        <div className="update-modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowKonfirmasiModal(false)}>
+        <div className="orders-modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowKonfirmasiModal(false)}>
           <div className="konfirmasi-modal">
             <div className="konfirmasi-header">
               <div className="konfirmasi-icon">💳</div>
@@ -711,7 +703,7 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
                 onClick={() => setShowKonfirmasiModal(false)}
                 type="button"
               >
-                ✕
+                <i className="pi pi-times" />
               </button>
             </div>
 
@@ -755,13 +747,17 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
               <div className="konfirmasi-footer">
                 <button
                   type="button"
-                  className="btn-cancel"
+                  className="orders-btn orders-btn--ghost"
                   onClick={() => setShowKonfirmasiModal(false)}
                   disabled={submitting}
                 >
                   Batal
                 </button>
-                <button type="submit" className="btn-success" disabled={submitting}>
+                <button 
+                  type="submit" 
+                  className="orders-btn orders-btn--success"
+                  disabled={submitting}
+                >
                   {submitting ? (
                     <>
                       <i className="pi pi-spin pi-spinner" style={{ marginRight: 6 }} />
@@ -828,7 +824,6 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
           align-items: center;
           justify-content: center;
           transition: all 0.2s;
-          font-size: 16px;
         }
 
         .konfirmasi-close:hover {
@@ -933,7 +928,7 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
           justify-content: flex-end;
         }
 
-        .btn-success {
+        .orders-btn--success {
           background: linear-gradient(135deg, #10b981 0%, #059669 100%);
           color: white;
           border: none;
@@ -946,7 +941,7 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
           transition: all 0.2s;
         }
 
-        .btn-success:hover {
+        .orders-btn--success:hover {
           transform: translateY(-1px);
           box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
         }
