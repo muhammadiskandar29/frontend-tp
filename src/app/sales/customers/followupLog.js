@@ -68,7 +68,7 @@ export default function FollowupLogModal({ customer, onClose }) {
         body: JSON.stringify(requestBody)
       });
 
-      const res = await fetch("/api/sales/logs-follup", {
+      const res = await fetch("/api/admin/logs-follup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
