@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useCallback, memo } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
-import { getCustomers, deleteCustomer } from "@/lib/customer";
+import { getCustomers, deleteCustomer } from "@/lib/sales/customer";
 import { Users, CheckCircle, Filter } from "lucide-react";
 import dynamic from "next/dynamic";
 import "@/styles/dashboard.css";
