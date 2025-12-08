@@ -32,14 +32,15 @@ export const API_ENDPOINTS = {
     dashboard: '/admin/sales/dashboard',
   },
 
-  // Sales (bisa pakai endpoint yang sama dengan admin)
+  // Sales
   sales: {
     users: '/admin/users',
-    customers: '/admin/customer',
+    customers: '/sales/customer',
     products: '/admin/produk',
-    categories: '/admin/kategori-produk',
+    categories: '/sales/kategori-produk',
+    categoryById: (id) => `/sales/kategori-produk/${id}`,
     orders: '/admin/order',
-    dashboard: '/admin/sales/dashboard',
+    dashboard: '/sales/dashboard',
   },
 
   // Customer

@@ -5,7 +5,7 @@ import {
   addKategori as addKategoriAPI,
   updateKategori as updateKategoriAPI,
   deleteKategori as deleteKategoriAPI,
-} from "@/lib/kategori";
+} from "@/lib/sales/kategori";
 
 export default function useKategori() {
   const [kategori, setKategori] = useState([]);
