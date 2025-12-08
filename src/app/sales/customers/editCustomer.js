@@ -56,7 +56,7 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
     const token = localStorage.getItem("token");
 
     try {
-      const res = await fetch(`${BASE_URL}/admin/customer/${customer.id}`, {
+      const res = await fetch(`${BASE_URL}/sales/customer/${customer.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

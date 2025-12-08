@@ -200,7 +200,7 @@ export default function AdminCustomerPage() {
             <div className="customers-toolbar-buttons">
               <button 
                 className="customers-button customers-button--secondary" 
-                onClick={() => router.push("/admin/followup/report")}
+                onClick={() => router.push("/sales/followup/report")}
               >
                 <i className="pi pi-chart-bar" style={{ marginRight: "6px" }} />
                 Report Follow Up

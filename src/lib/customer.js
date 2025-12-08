@@ -10,7 +10,7 @@ export async function getCustomers() {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };
 
-    const res = await fetch(`${BASE_URL}/admin/customer`, { headers });
+    const res = await fetch(`${BASE_URL}/sales/customer`, { headers });
     if (!res.ok) throw new Error("Gagal mengambil data customer");
 
     const result = await res.json();
@@ -29,7 +29,7 @@ export async function deleteCustomer(id) {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };
 
-    const res = await fetch(`${BASE_URL}/admin/customer/${id}`, {
+    const res = await fetch(`${BASE_URL}/sales/customer/${id}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",

@@ -71,7 +71,7 @@ export default function AddCustomerModal({ onClose, onSuccess }) {
     const token = localStorage.getItem("token");
 
     try {
-      const res = await fetch(`${BASE_URL}/admin/customer`, {
+      const res = await fetch(`${BASE_URL}/sales/customer`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -78,7 +78,7 @@ export default function HistoryCustomerModal({ customer, onClose }) {
     setError("");
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const res = await fetch(`/api/admin/customer/riwayat-order/${customer.id}`, {
+      const res = await fetch(`/api/sales/customer/riwayat-order/${customer.id}`, {
         headers: {
           Accept: "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
