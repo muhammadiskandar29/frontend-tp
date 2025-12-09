@@ -123,12 +123,8 @@ export default function DaftarPesanan() {
       
       // Handle response dengan struktur: { success: true, data: [...] }
       if (json.success && json.data && Array.isArray(json.data)) {
-        // Page 1: replace data, Page > 1: append data
-        if (pageNumber === 1) {
-          setOrders(json.data);
-        } else {
-          setOrders(prev => [...prev, ...json.data]);
-        }
+        // Selalu replace data (bukan append) - setiap page menampilkan data yang berbeda
+        setOrders(json.data);
 
         // Fallback pagination: cek jumlah data untuk menentukan hasMore
         if (json.data.length < perPage) {
@@ -162,15 +158,33 @@ export default function DaftarPesanan() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Hanya sekali saat mount
 
-  // 🔹 Load More function
-  const loadMore = useCallback(() => {
+  // Fetch data saat page berubah
+  useEffect(() => {
+    if (page > 0 && !loading) {
+      fetchOrders(page);
+      // Scroll ke atas saat page berubah
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]); // Hanya depend pada page
+
+  // 🔹 Next page
+  const handleNextPage = useCallback(() => {
     if (loading || !hasMore) return; // Jangan load jika sedang loading atau sudah habis
     
     const nextPage = page + 1;
-    console.log("🔄 Load More clicked, loading page:", nextPage);
+    console.log("🔄 Next page clicked, loading page:", nextPage);
     setPage(nextPage);
-    fetchOrders(nextPage);
-  }, [page, hasMore, loading, fetchOrders]);
+  }, [page, hasMore, loading]);
+
+  // 🔹 Previous page
+  const handlePrevPage = useCallback(() => {
+    if (loading || page <= 1) return; // Jangan load jika sedang loading atau sudah di page 1
+    
+    const prevPage = page - 1;
+    console.log("🔄 Previous page clicked, loading page:", prevPage);
+    setPage(prevPage);
+  }, [page, loading]);
 
   // 🔹 Refresh all data (reset to page 1)
   const requestRefresh = async (message, type = "success") => {
@@ -435,61 +449,81 @@ export default function DaftarPesanan() {
             </div>
           </div>
 
-          {/* Load More Button dengan Fallback Pagination */}
-          {hasMore && (
-            <div className="orders-pagination" style={{ display: "flex", justifyContent: "center", padding: "1.5rem" }}>
-              <button
-                className="orders-pagination__btn orders-pagination__btn--load-more"
-                onClick={loadMore}
-                disabled={loading}
-                aria-label="Load more orders"
-                style={{
-                  padding: "0.75rem 1.5rem",
-                  fontSize: "0.95rem",
-                  fontWeight: 600,
-                  background: loading ? "#9ca3af" : "#f1a124",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "0.5rem",
-                  cursor: loading ? "not-allowed" : "pointer",
-                  opacity: loading ? 0.7 : 1,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  justifyContent: "center",
-                  transition: "all 0.2s ease",
-                  boxShadow: loading ? "none" : "0 2px 8px rgba(241, 161, 36, 0.3)",
-                  minWidth: "150px"
-                }}
-              >
-                {loading ? (
-                  <>
-                    <i className="pi pi-spin pi-spinner" />
-                    Loading...
-                  </>
-                ) : (
-                  <>
-                    <i className="pi pi-chevron-down" />
-                    Load More
-                  </>
-                )}
-              </button>
-            </div>
-          )}
+          {/* Pagination dengan Next/Previous Button */}
+          <div className="orders-pagination" style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "1rem", padding: "1.5rem", flexWrap: "wrap" }}>
+            {/* Previous Button */}
+            <button
+              className="orders-pagination__btn"
+              onClick={handlePrevPage}
+              disabled={page === 1 || loading}
+              aria-label="Previous page"
+              style={{
+                padding: "0.75rem 1rem",
+                minWidth: "100px",
+                background: page === 1 || loading ? "#e5e7eb" : "#f1a124",
+                color: page === 1 || loading ? "#9ca3af" : "#fff",
+                border: "none",
+                borderRadius: "0.5rem",
+                cursor: page === 1 || loading ? "not-allowed" : "pointer",
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                justifyContent: "center",
+                transition: "all 0.2s ease"
+              }}
+            >
+              <i className="pi pi-chevron-left" />
+              Previous
+            </button>
 
-          {/* Info jika sudah habis */}
-          {!hasMore && orders.length > 0 && (
+            {/* Page Info */}
             <div style={{ 
               display: "flex", 
-              justifyContent: "center", 
-              padding: "1.5rem",
-              color: "var(--dash-muted-strong)",
-              fontSize: "0.9rem",
+              alignItems: "center", 
+              gap: "0.5rem",
+              fontSize: "0.95rem",
+              color: "var(--dash-text)",
               fontWeight: 500
             }}>
-              Semua data sudah ditampilkan ({orders.length} orders)
+              {loading ? (
+                <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <i className="pi pi-spin pi-spinner" />
+                  Loading...
+                </span>
+              ) : (
+                <span>
+                  Page {page}
+                </span>
+              )}
             </div>
-          )}
+
+            {/* Next Button */}
+            <button
+              className="orders-pagination__btn"
+              onClick={handleNextPage}
+              disabled={!hasMore || loading}
+              aria-label="Next page"
+              style={{
+                padding: "0.75rem 1rem",
+                minWidth: "100px",
+                background: !hasMore || loading ? "#e5e7eb" : "#f1a124",
+                color: !hasMore || loading ? "#9ca3af" : "#fff",
+                border: "none",
+                borderRadius: "0.5rem",
+                cursor: !hasMore || loading ? "not-allowed" : "pointer",
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                justifyContent: "center",
+                transition: "all 0.2s ease"
+              }}
+            >
+              Next
+              <i className="pi pi-chevron-right" />
+            </button>
+          </div>
         </section>
 
         {/* TOAST */}
