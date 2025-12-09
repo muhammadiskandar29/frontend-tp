@@ -355,12 +355,6 @@ export default function DaftarPesanan() {
               Track and manage all customer orders and payments.
             </span>
           </div>
-
-          <div className="orders-toolbar">
-            <button className="orders-button orders-button--primary" onClick={() => setShowAdd(true)}>
-              + Tambah Pesanan
-            </button>
-          </div>
         </section>
 
         <section className="dashboard-summary orders-summary">
@@ -414,7 +408,11 @@ export default function DaftarPesanan() {
             </div>
             <span className="panel__meta">{filteredOrders.length} orders</span>
           </div>
-
+          <div className="orders-toolbar">
+            <button className="orders-button orders-button--primary" onClick={() => setShowAdd(true)}>
+              + Tambah Pesanan
+            </button>
+          </div>
           {/* Search and Filter Section */}
           <div style={{ 
             padding: "1rem 1.5rem", 
