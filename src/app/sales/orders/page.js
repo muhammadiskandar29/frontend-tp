@@ -425,7 +425,6 @@ export default function DaftarPesanan() {
               <h3 className="panel__title">Order roster</h3>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-              <span className="panel__meta">{filteredOrders.length} orders</span>
               {/* Date Filter - Rata Kanan */}
               <div style={{ 
                 display: "flex",
