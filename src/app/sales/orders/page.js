@@ -355,6 +355,52 @@ export default function DaftarPesanan() {
               Track and manage all customer orders and payments.
             </span>
           </div>
+          {/* Search Input */}
+        <div style={{ flex: "1", minWidth: "250px" }}>
+              <label style={{ 
+                display: "block", 
+                marginBottom: "0.5rem", 
+                fontSize: "0.875rem",
+                fontWeight: 500,
+                color: "var(--dash-text)"
+              }}>
+                Cari Order
+              </label>
+              <div style={{ position: "relative" }}>
+                <i className="pi pi-search" style={{
+                  position: "absolute",
+                  left: "0.75rem",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: "var(--dash-muted-strong)",
+                  fontSize: "0.875rem"
+                }} />
+                <input
+                  type="text"
+                  placeholder="Cari customer, produk, alamat..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "0.625rem 0.75rem 0.625rem 2.5rem",
+                    border: "1px solid var(--dash-border)",
+                    borderRadius: "0.5rem",
+                    fontSize: "0.875rem",
+                    background: "var(--dash-surface)",
+                    color: "var(--dash-text)",
+                    outline: "none",
+                    transition: "border-color 0.2s ease"
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = "#f1a124"}
+                  onBlur={(e) => e.target.style.borderColor = "var(--dash-border)"}
+                />
+              </div>
+            </div>
+        <div className="orders-toolbar">
+            <button className="orders-button orders-button--primary" onClick={() => setShowAdd(true)}>
+              + Tambah Pesanan
+            </button>
+          </div>
         </section>
 
         <section className="dashboard-summary orders-summary">
@@ -399,11 +445,7 @@ export default function DaftarPesanan() {
             </article>
           ))}
         </section>
-        <div className="orders-toolbar">
-            <button className="orders-button orders-button--primary" onClick={() => setShowAdd(true)}>
-              + Tambah Pesanan
-            </button>
-          </div>
+        
           {/* Search and Filter Section */}
           <div style={{ 
             padding: "1rem 1.5rem", 
@@ -414,48 +456,6 @@ export default function DaftarPesanan() {
             alignItems: "flex-end",
             background: "var(--dash-surface)"
           }}>
-            {/* Search Input */}
-            <div style={{ flex: "1", minWidth: "250px" }}>
-              <label style={{ 
-                display: "block", 
-                marginBottom: "0.5rem", 
-                fontSize: "0.875rem",
-                fontWeight: 500,
-                color: "var(--dash-text)"
-              }}>
-                Cari Order
-              </label>
-              <div style={{ position: "relative" }}>
-                <i className="pi pi-search" style={{
-                  position: "absolute",
-                  left: "0.75rem",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  color: "var(--dash-muted-strong)",
-                  fontSize: "0.875rem"
-                }} />
-                <input
-                  type="text"
-                  placeholder="Cari customer, produk, alamat..."
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "0.625rem 0.75rem 0.625rem 2.5rem",
-                    border: "1px solid var(--dash-border)",
-                    borderRadius: "0.5rem",
-                    fontSize: "0.875rem",
-                    background: "var(--dash-surface)",
-                    color: "var(--dash-text)",
-                    outline: "none",
-                    transition: "border-color 0.2s ease"
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = "#f1a124"}
-                  onBlur={(e) => e.target.style.borderColor = "var(--dash-border)"}
-                />
-              </div>
-            </div>
-
             {/* Date From */}
             <div style={{ minWidth: "130px" }}>
               <label style={{ 
