@@ -228,15 +228,16 @@ export default function DaftarPesanan() {
   }, [currentPage, itemsPerPage, statistics]); // Include statistics untuk fallback pagination calculation
 
   // Load statistics on mount
-  // Load statistics on mount
+  // Load statistics FIRST, then load data
   useEffect(() => {
-    loadStatistics();
+    const initializeData = async () => {
+      // Load statistics first
+      await loadStatistics();
+      // Then load data (which will use statistics for pagination)
+      setNeedsRefresh(true);
+    };
+    initializeData();
   }, [loadStatistics]);
-
-  // Initial load: set needsRefresh to true on mount
-  useEffect(() => {
-    setNeedsRefresh(true);
-  }, []);
 
   // Load data when needsRefresh is true
   useEffect(() => {
@@ -311,6 +312,26 @@ export default function DaftarPesanan() {
       setCurrentPage(1);
     }
   }, [debouncedSearch]);
+
+  // Update totalPages when statistics changes (if API doesn't provide pagination metadata)
+  // This ensures pagination works even when API response doesn't include pagination metadata
+  useEffect(() => {
+    if (statistics && statistics.total_order !== undefined && statistics.total_order > 0) {
+      const calculatedPages = Math.ceil(statistics.total_order / itemsPerPage);
+      // Always update if calculated pages is greater than current totalPages
+      // This ensures statistics is used to calculate pagination
+      if (calculatedPages > totalPages) {
+        setTotalPages(calculatedPages);
+        setTotalOrdersCount(statistics.total_order);
+        console.log("🔄 Updated pagination from statistics:", {
+          total: statistics.total_order,
+          last_page: calculatedPages,
+          current_page: currentPage,
+          previous_totalPages: totalPages
+        });
+      }
+    }
+  }, [statistics, itemsPerPage]);
 
   // Reload data saat currentPage berubah (server-side pagination)
   // Setiap kali page berubah, fetch data baru dari API dengan page yang sesuai
@@ -599,14 +620,33 @@ export default function DaftarPesanan() {
                 const maxPage = totalPages || 1;
                 const newPage = Math.min(maxPage, currentPage + 1);
                 console.log("➡️ Next page clicked, going to page:", newPage, "of", maxPage);
+                console.log("📊 Current state:", { 
+                  currentPage, 
+                  totalPages, 
+                  totalOrdersCount, 
+                  ordersLength: orders.length,
+                  itemsPerPage,
+                  canGoNext: currentPage < maxPage
+                });
                 setCurrentPage(newPage);
               }}
-              disabled={
-                // Disable jika sudah di page terakhir
-                // Atau jika kita dapat kurang dari itemsPerPage (berarti sudah di page terakhir)
-                currentPage >= (totalPages || 1) || 
-                (orders.length < itemsPerPage && currentPage >= 1)
-              }
+              disabled={(() => {
+                // Simple: disable if we're on the last page
+                // totalPages should be calculated from statistics.total_order (128 / 15 = 9 pages)
+                const maxPage = totalPages || 1;
+                const isDisabled = currentPage >= maxPage;
+                
+                console.log("🔘 Next button state:", { 
+                  currentPage, 
+                  maxPage, 
+                  totalPages,
+                  totalOrdersCount,
+                  isDisabled,
+                  ordersLength: orders.length
+                });
+                
+                return isDisabled;
+              })()}
               aria-label="Next page"
             >
               <i className="pi pi-chevron-right" />
