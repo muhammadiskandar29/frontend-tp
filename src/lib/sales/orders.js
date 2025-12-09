@@ -5,9 +5,15 @@ import { api } from "../api";
 ====================== */
 
 /** 📘 GET Semua Order (Admin) */
-export async function getOrders() {
+export async function getOrders(page = 1, per_page = 15) {
   try {
-    const res = await api("/sales/order", { method: "GET" });
+    // Build query string for pagination
+    const queryParams = new URLSearchParams({
+      page: String(page),
+      per_page: String(per_page),
+    });
+    
+    const res = await api(`/sales/order?${queryParams.toString()}`, { method: "GET" });
     
     // Logging struktur JSON lengkap sesuai requirement
     console.log("📦 getOrders() - Success:", res.success);

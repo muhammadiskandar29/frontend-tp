@@ -34,7 +34,7 @@ export default function AddOrders({ onClose, onAdd, showToast }) {
     setCustomerSearch(keyword);
     if (!keyword.trim()) return setCustomerResults([]);
 
-    const res = await api("/admin/customer", { method: "GET" });
+    const res = await api("/sales/customer", { method: "GET" });
     if (res?.success && Array.isArray(res.data)) {
       const filtered = res.data.filter((cust) =>
         cust.nama?.toLowerCase().split(" ").some((w) => w.startsWith(keyword.toLowerCase())) ||
@@ -51,7 +51,7 @@ export default function AddOrders({ onClose, onAdd, showToast }) {
     setProductSearch(keyword);
     if (!keyword.trim()) return setProductResults([]);
 
-    const res = await api("/admin/produk", { method: "GET" });
+    const res = await api("/sales/produk", { method: "GET" });
     if (res?.success && Array.isArray(res.data)) {
       const filtered = res.data.filter((prod) =>
         // Filter hanya produk AKTIF (status === "1" atau status === 1)

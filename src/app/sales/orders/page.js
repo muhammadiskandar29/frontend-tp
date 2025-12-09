@@ -64,7 +64,7 @@ export default function DaftarPesanan() {
   const [showView, setShowView] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 25;
+  const itemsPerPage = 15;
 
   const [toast, setToast] = useState(DEFAULT_TOAST);
   const toastTimeoutRef = useRef(null);
@@ -106,8 +106,9 @@ export default function DaftarPesanan() {
           console.error("Error fetching produk:", err);
           return { success: false, data: [] };
         }),
-        // Ambil orders
-        getOrders().catch(err => {
+        // Ambil orders dengan pagination
+        // Selalu gunakan server-side pagination dengan page dan per_page
+        getOrders(currentPage, itemsPerPage).catch(err => {
           console.error("Error fetching orders:", err);
           return [];
         })
@@ -145,19 +146,19 @@ export default function DaftarPesanan() {
       showToast("Gagal memuat data", "error");
       setNeedsRefresh(false);
     }
-  }, []); // Empty dependency array - hanya load sekali saat mount
+  }, [currentPage, itemsPerPage]); // Include currentPage dan itemsPerPage untuk pagination
 
   useEffect(() => {
     if (needsRefresh) {
       loadData();
     }
-  }, [needsRefresh]); // Hanya trigger saat needsRefresh berubah
+  }, [needsRefresh, currentPage]); // Trigger saat needsRefresh atau currentPage berubah
 
   // 🔹 Direct refresh function that loads data immediately - Reuse loadData
   const refreshData = useCallback(async () => {
     setNeedsRefresh(true);
     await loadData();
-  }, [loadData]);
+  }, [loadData, currentPage]);
 
   const requestRefresh = async (message, type = "success") => {
     // Immediately refresh data first, then show message
@@ -203,16 +204,36 @@ export default function DaftarPesanan() {
   }, [orders, debouncedSearch, produkMap, customers]);
 
   // === PAGINATION ===
+  // Note: Pagination dilakukan di server-side dengan parameter page dan per_page
+  // Untuk search, tetap filter client-side dari data yang sudah di-fetch
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
   const paginatedData = useMemo(() => {
-    return filteredOrders.slice(startIndex, endIndex);
-  }, [filteredOrders, startIndex, endIndex]);
+    // Data sudah di-paginate dari server, tapi jika ada search perlu filter dulu
+    // Jika tidak ada search, langsung gunakan data dari server
+    if (debouncedSearch.trim()) {
+      // Client-side filtering dan pagination untuk hasil search
+      const endIndex = startIndex + itemsPerPage;
+      return filteredOrders.slice(startIndex, endIndex);
+    }
+    // Server-side pagination - data sudah di-paginate dari API
+    return filteredOrders;
+  }, [filteredOrders, startIndex, itemsPerPage, debouncedSearch]);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [debouncedSearch]);
+
+  // Reload data saat currentPage berubah (untuk server-side pagination)
+  useEffect(() => {
+    // Reset ke page 1 saat search berubah
+    if (debouncedSearch.trim() && currentPage !== 1) {
+      setCurrentPage(1);
+    } else if (!debouncedSearch.trim()) {
+      // Reload data saat page berubah (hanya jika tidak ada search)
+      setNeedsRefresh(true);
+    }
+  }, [currentPage, debouncedSearch]);
 
   // === EVENT HANDLERS ===
   const handleView = (order) => {
