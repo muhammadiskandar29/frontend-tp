@@ -4,6 +4,9 @@ import { useEffect, useState, useRef, useMemo, useCallback, memo } from "react";
 import Layout from "@/components/Layout";
 import dynamic from "next/dynamic";
 import { ShoppingCart, Clock, CheckCircle, PartyPopper, XCircle } from "lucide-react";
+import { Calendar } from "primereact/calendar";
+import "primereact/resources/themes/lara-light-cyan/theme.css";
+import "primereact/resources/primereact.min.css";
 import "@/styles/dashboard.css";
 import "@/styles/admin.css";
 import { getOrders, updateOrderAdmin, getOrderStatistics } from "@/lib/sales/orders";
@@ -50,8 +53,7 @@ export default function DaftarPesanan() {
   
   // Filter state
   const [searchInput, setSearchInput] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [dateRange, setDateRange] = useState(null); // [startDate, endDate] atau null
   
   // State lainnya
   const [statistics, setStatistics] = useState(null);
@@ -206,6 +208,21 @@ export default function DaftarPesanan() {
     if (message) showToast(message, type);
   };
 
+  // 🔹 Format date range untuk display
+  const formatDateRange = (range) => {
+    if (!range || !Array.isArray(range) || range.length !== 2 || !range[0] || !range[1]) {
+      return "Pilih tanggal";
+    }
+    
+    const formatDate = (date) => {
+      const d = new Date(date);
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+    };
+    
+    return `${formatDate(range[0])} - ${formatDate(range[1])}`;
+  };
+
   // === Helper ===
   function computeStatusBayar(o) {
     if (
@@ -243,28 +260,20 @@ export default function DaftarPesanan() {
     }
 
     // Filter by date range
-    if (dateFrom) {
+    if (dateRange && Array.isArray(dateRange) && dateRange.length === 2 && dateRange[0] && dateRange[1]) {
       filtered = filtered.filter((order) => {
         if (!order.tanggal) return false;
         const orderDate = new Date(order.tanggal);
-        const fromDate = new Date(dateFrom);
+        const fromDate = new Date(dateRange[0]);
         fromDate.setHours(0, 0, 0, 0);
-        return orderDate >= fromDate;
-      });
-    }
-
-    if (dateTo) {
-      filtered = filtered.filter((order) => {
-        if (!order.tanggal) return false;
-        const orderDate = new Date(order.tanggal);
-        const toDate = new Date(dateTo);
+        const toDate = new Date(dateRange[1]);
         toDate.setHours(23, 59, 59, 999);
-        return orderDate <= toDate;
+        return orderDate >= fromDate && orderDate <= toDate;
       });
     }
 
     return filtered;
-  }, [orders, searchInput, dateFrom, dateTo]);
+  }, [orders, searchInput, dateRange]);
 
   // === SUMMARY ===
   // Gunakan data dari statistics API
@@ -425,106 +434,85 @@ export default function DaftarPesanan() {
               <h3 className="panel__title">Order roster</h3>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-              {/* Date Filter - Rata Kanan */}
-              <div style={{ 
-                display: "flex",
-                gap: "0.75rem",
-                alignItems: "flex-end"
-              }}>
-                <div style={{ minWidth: "130px" }}>
-                  <label style={{ 
-                    display: "block", 
-                    marginBottom: "0.375rem", 
-                    fontSize: "0.75rem",
-                    fontWeight: 500,
-                    color: "var(--dash-muted-strong)"
-                  }}>
-                    Dari Tanggal
-                  </label>
-                  <input
-                    type="date"
-                    value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
+              <span className="panel__meta">{filteredOrders.length} orders</span>
+              {/* Date Range Picker - Rata Kanan */}
+              <div style={{ position: "relative" }}>
+                <label style={{ 
+                  display: "block", 
+                  marginBottom: "0.5rem", 
+                  fontSize: "0.875rem",
+                  fontWeight: 500,
+                  color: "var(--dash-text)"
+                }}>
+                  Waktu Pesanan Dibuat
+                </label>
+                <div style={{ position: "relative" }}>
+                  <Calendar
+                    value={dateRange}
+                    onChange={(e) => setDateRange(e.value)}
+                    selectionMode="range"
+                    readOnlyInput
+                    showIcon
+                    icon="pi pi-calendar"
+                    placeholder="Pilih tanggal"
+                    dateFormat="dd M yyyy"
+                    monthNavigator
+                    yearNavigator
+                    yearRange="2020:2030"
                     style={{
                       width: "100%",
-                      padding: "0.5rem 0.625rem",
-                      border: "1px solid var(--dash-border)",
-                      borderRadius: "0.375rem",
-                      fontSize: "0.8125rem",
-                      background: "var(--dash-surface)",
-                      color: "var(--dash-text)",
-                      outline: "none",
-                      transition: "border-color 0.2s ease"
+                      minWidth: "300px"
                     }}
-                    onFocus={(e) => e.target.style.borderColor = "#f1a124"}
-                    onBlur={(e) => e.target.style.borderColor = "var(--dash-border)"}
-                  />
-                </div>
-
-                <div style={{ minWidth: "130px" }}>
-                  <label style={{ 
-                    display: "block", 
-                    marginBottom: "0.375rem", 
-                    fontSize: "0.75rem",
-                    fontWeight: 500,
-                    color: "var(--dash-muted-strong)"
-                  }}>
-                    Sampai Tanggal
-                  </label>
-                  <input
-                    type="date"
-                    value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
-                    min={dateFrom || undefined}
-                    style={{
+                    inputStyle={{
                       width: "100%",
-                      padding: "0.5rem 0.625rem",
-                      border: "1px solid var(--dash-border)",
-                      borderRadius: "0.375rem",
-                      fontSize: "0.8125rem",
-                      background: "var(--dash-surface)",
-                      color: "var(--dash-text)",
-                      outline: "none",
-                      transition: "border-color 0.2s ease"
+                      padding: "0.75rem 2.5rem 0.75rem 1rem",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "0.5rem",
+                      fontSize: "0.875rem",
+                      background: "#ffffff",
+                      color: "#1f2937",
+                      boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
+                      cursor: "pointer"
                     }}
-                    onFocus={(e) => e.target.style.borderColor = "#f1a124"}
-                    onBlur={(e) => e.target.style.borderColor = "var(--dash-border)"}
+                    panelStyle={{
+                      background: "#ffffff",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "0.5rem",
+                      boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)"
+                    }}
                   />
                 </div>
-
-                {/* Clear Filters Button */}
-                {(dateFrom || dateTo) && (
-                  <button
-                    onClick={() => {
-                      setDateFrom("");
-                      setDateTo("");
-                    }}
-                    style={{
-                      padding: "0.5rem 0.75rem",
-                      background: "#e5e7eb",
-                      color: "#6b7280",
-                      border: "none",
-                      borderRadius: "0.375rem",
-                      cursor: "pointer",
-                      fontSize: "0.75rem",
-                      fontWeight: 500,
-                      transition: "all 0.2s ease",
-                      whiteSpace: "nowrap",
-                      height: "fit-content",
-                      marginBottom: "0.375rem"
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.background = "#d1d5db";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.background = "#e5e7eb";
-                    }}
-                  >
-                    <i className="pi pi-times" style={{ marginRight: "0.25rem", fontSize: "0.75rem" }} />
-                    Reset
-                  </button>
-                )}
               </div>
+
+              {/* Clear Filter Button */}
+              {dateRange && Array.isArray(dateRange) && dateRange.length === 2 && dateRange[0] && dateRange[1] && (
+                <button
+                  onClick={() => setDateRange(null)}
+                  style={{
+                    padding: "0.5rem 0.75rem",
+                    background: "#e5e7eb",
+                    color: "#6b7280",
+                    border: "none",
+                    borderRadius: "0.375rem",
+                    cursor: "pointer",
+                    fontSize: "0.75rem",
+                    fontWeight: 500,
+                    transition: "all 0.2s ease",
+                    whiteSpace: "nowrap",
+                    height: "fit-content",
+                    marginTop: "1.75rem"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = "#d1d5db";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = "#e5e7eb";
+                  }}
+                >
+                  <i className="pi pi-times" style={{ marginRight: "0.25rem", fontSize: "0.75rem" }} />
+                  Reset
+                </button>
+              )}
             </div>
           </div>
           <div className="orders-table__wrapper">
