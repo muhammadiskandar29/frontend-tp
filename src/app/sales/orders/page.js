@@ -86,7 +86,7 @@ export default function DaftarPesanan() {
     }
   }, []);
 
-  // 🔹 Fetch orders - append data ke existing orders
+  // 🔹 Fetch orders - replace data per page (bukan append)
   const fetchOrders = useCallback(async (pageNumber) => {
     setLoading(true);
     try {
@@ -113,18 +113,8 @@ export default function DaftarPesanan() {
       
       // Handle response dengan struktur: { success: true, data: [...], pagination: { current_page, last_page, per_page, total } }
       if (json.success && json.data && Array.isArray(json.data)) {
-        // Page 1: replace data, Page > 1: append data
-        setOrders(prev => {
-          if (pageNumber === 1) {
-            // Page 1: replace semua data
-            return json.data;
-          } else {
-            // Page > 1: append data baru, hindari duplikasi berdasarkan ID
-            const existingIds = new Set(prev.map(o => o.id));
-            const uniqueNewOrders = json.data.filter(o => !existingIds.has(o.id));
-            return [...prev, ...uniqueNewOrders];
-          }
-        });
+        // Replace data (bukan append) - setiap page menampilkan data yang berbeda
+        setOrders(json.data);
 
         // Update pagination info dari pagination object
         if (json.pagination && json.pagination.last_page !== undefined) {
@@ -147,31 +137,42 @@ export default function DaftarPesanan() {
 
   // Initial load: fetch page 1
   useEffect(() => {
-    // Reset orders dan fetch page 1
-    setOrders([]);
     setPage(1);
-    setLastPage(null);
-    fetchOrders(1);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
-  // 🔹 Load More function - increment page dan fetch data berikutnya
-  const loadMore = useCallback(() => {
-    if (loading) return; // Jangan load jika sedang loading
-    if (lastPage !== null && page >= lastPage) return; // Jangan load jika sudah di halaman terakhir
-    
-    const nextPage = page + 1;
-    console.log("🔄 Load More clicked, loading page:", nextPage);
-    setPage(nextPage);
-    fetchOrders(nextPage);
-  }, [page, lastPage, loading, fetchOrders]);
+  // Fetch data saat page berubah
+  useEffect(() => {
+    if (page > 0) {
+      fetchOrders(page);
+    }
+  }, [page, fetchOrders]);
 
   // 🔹 Refresh all data (reset to page 1)
   const requestRefresh = async (message, type = "success") => {
-    setOrders([]);
     setPage(1);
-    setLastPage(null);
     await Promise.all([loadStatistics(), fetchOrders(1)]);
     if (message) showToast(message, type);
+  };
+
+  // 🔹 Handle page change - Next/Previous
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= lastPage && newPage !== page && !loading) {
+      setPage(newPage);
+    }
+  };
+
+  // 🔹 Next page
+  const handleNextPage = () => {
+    if (page < lastPage && !loading) {
+      handlePageChange(page + 1);
+    }
+  };
+
+  // 🔹 Previous page
+  const handlePrevPage = () => {
+    if (page > 1 && !loading) {
+      handlePageChange(page - 1);
+    }
   };
 
   // === Helper ===
@@ -358,7 +359,7 @@ export default function DaftarPesanan() {
                     return (
                       <div className="orders-table__row" key={order.id || `${order.id}-${i}`}>
                         <div className="orders-table__cell" data-label="#">
-                          {i + 1}
+                          {(page - 1) * 15 + i + 1}
                         </div>
                         <div className="orders-table__cell orders-table__cell--strong" data-label="Customer">
                           {customerNama}
@@ -428,51 +429,83 @@ export default function DaftarPesanan() {
             </div>
           </div>
 
-          {/* Load More Button */}
-          <div className="orders-pagination" style={{ display: "flex", justifyContent: "center", padding: "1rem" }}>
-            {lastPage !== null && page < lastPage ? (
+          {/* Pagination dengan Next/Previous Button */}
+          {lastPage !== null && lastPage > 1 && (
+            <div className="orders-pagination" style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "1rem", padding: "1.5rem", flexWrap: "wrap" }}>
+              {/* Previous Button */}
               <button
-                className="orders-pagination__btn orders-pagination__btn--load-more"
-                onClick={loadMore}
-                disabled={loading}
-                aria-label="Load more orders"
+                className="orders-pagination__btn"
+                onClick={handlePrevPage}
+                disabled={page === 1 || loading}
+                aria-label="Previous page"
                 style={{
-                  padding: "0.75rem 1.5rem",
-                  fontSize: "0.95rem",
-                  fontWeight: 600,
-                  background: loading ? "#9ca3af" : "#f1a124",
-                  color: "#fff",
+                  padding: "0.75rem 1rem",
+                  minWidth: "100px",
+                  background: page === 1 || loading ? "#e5e7eb" : "#f1a124",
+                  color: page === 1 || loading ? "#9ca3af" : "#fff",
                   border: "none",
                   borderRadius: "0.5rem",
-                  cursor: loading ? "not-allowed" : "pointer",
-                  opacity: loading ? 0.7 : 1,
+                  cursor: page === 1 || loading ? "not-allowed" : "pointer",
+                  fontWeight: 600,
                   display: "flex",
                   alignItems: "center",
                   gap: "0.5rem",
-                  transition: "all 0.2s ease",
-                  boxShadow: loading ? "none" : "0 2px 8px rgba(241, 161, 36, 0.3)"
+                  justifyContent: "center",
+                  transition: "all 0.2s ease"
                 }}
               >
+                <i className="pi pi-chevron-left" />
+                Previous
+              </button>
+
+              {/* Page Info */}
+              <div style={{ 
+                display: "flex", 
+                alignItems: "center", 
+                gap: "0.5rem",
+                fontSize: "0.95rem",
+                color: "var(--dash-text)",
+                fontWeight: 500
+              }}>
                 {loading ? (
-                  <>
+                  <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                     <i className="pi pi-spin pi-spinner" />
                     Loading...
-                  </>
+                  </span>
                 ) : (
-                  <>
-                    <i className="pi pi-chevron-down" />
-                    Load More
-                  </>
+                  <span>
+                    Page {page} of {lastPage}
+                  </span>
                 )}
-              </button>
-            ) : lastPage !== null && page >= lastPage ? (
-              <div className="orders-pagination__info">
-                <p style={{ color: "var(--dash-muted-strong)", fontSize: "0.9rem", fontWeight: 500 }}>
-                  Semua data sudah ditampilkan ({orders.length} orders)
-                </p>
               </div>
-            ) : null}
-          </div>
+
+              {/* Next Button */}
+              <button
+                className="orders-pagination__btn"
+                onClick={handleNextPage}
+                disabled={page >= lastPage || loading}
+                aria-label="Next page"
+                style={{
+                  padding: "0.75rem 1rem",
+                  minWidth: "100px",
+                  background: page >= lastPage || loading ? "#e5e7eb" : "#f1a124",
+                  color: page >= lastPage || loading ? "#9ca3af" : "#fff",
+                  border: "none",
+                  borderRadius: "0.5rem",
+                  cursor: page >= lastPage || loading ? "not-allowed" : "pointer",
+                  fontWeight: 600,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  justifyContent: "center",
+                  transition: "all 0.2s ease"
+                }}
+              >
+                Next
+                <i className="pi pi-chevron-right" />
+              </button>
+            </div>
+          )}
         </section>
 
         {/* TOAST */}
