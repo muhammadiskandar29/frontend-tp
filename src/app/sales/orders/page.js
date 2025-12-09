@@ -144,12 +144,26 @@ export default function DaftarPesanan() {
       const finalOrders = Array.isArray(ordersResult.data) ? ordersResult.data : [];
       
       // Update pagination info from response
-      if (ordersResult.total !== undefined) {
+      console.log("📊 Orders Result:", ordersResult);
+      if (ordersResult.total !== undefined && ordersResult.total > 0) {
         setTotalOrdersCount(ordersResult.total);
-        setTotalPages(ordersResult.last_page || Math.ceil(ordersResult.total / itemsPerPage));
-      } else {
-        // Fallback jika tidak ada pagination info
+        const calculatedPages = Math.ceil(ordersResult.total / itemsPerPage);
+        const lastPage = ordersResult.last_page || calculatedPages || 1;
+        setTotalPages(lastPage);
+        console.log("📊 Pagination Info:", {
+          total: ordersResult.total,
+          last_page: lastPage,
+          current_page: ordersResult.current_page || currentPage,
+          per_page: itemsPerPage
+        });
+      } else if (finalOrders.length > 0) {
+        // Jika ada data tapi tidak ada pagination info, set minimal 1 page
         setTotalOrdersCount(finalOrders.length);
+        setTotalPages(1);
+        console.log("⚠️ No pagination info, using fallback");
+      } else {
+        // Tidak ada data
+        setTotalOrdersCount(0);
         setTotalPages(1);
       }
 
@@ -254,8 +268,9 @@ export default function DaftarPesanan() {
   // Reload data saat currentPage berubah (server-side pagination)
   // Setiap kali page berubah, fetch data baru dari API dengan page yang sesuai
   useEffect(() => {
-    // Hanya reload jika bukan initial load (untuk menghindari double fetch)
+    // Reload data saat currentPage berubah (kecuali saat initial mount)
     if (currentPage > 0) {
+      console.log("🔄 Page changed to:", currentPage, "- Fetching data...");
       setNeedsRefresh(true);
     }
   }, [currentPage]);
@@ -514,27 +529,37 @@ export default function DaftarPesanan() {
             </div>
           </div>
 
-          {totalPages > 1 && (
-            <div className="orders-pagination">
-              <button
-                className="orders-pagination__btn"
-                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-              >
-                <i className="pi pi-chevron-left" />
-              </button>
-              <span className="orders-pagination__info">
-                Page {currentPage} of {totalPages} ({totalOrdersCount || filteredOrders.length} total)
-              </span>
-              <button
-                className="orders-pagination__btn"
-                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-              >
-                <i className="pi pi-chevron-right" />
-              </button>
-            </div>
-          )}
+          {/* Pagination - Always show pagination controls */}
+          <div className="orders-pagination">
+            <button
+              className="orders-pagination__btn"
+              onClick={() => {
+                const newPage = Math.max(1, currentPage - 1);
+                console.log("⬅️ Previous page clicked, going to page:", newPage);
+                setCurrentPage(newPage);
+              }}
+              disabled={currentPage === 1}
+              aria-label="Previous page"
+            >
+              <i className="pi pi-chevron-left" />
+            </button>
+            <span className="orders-pagination__info">
+              Page {currentPage} of {totalPages || 1} ({totalOrdersCount > 0 ? totalOrdersCount : (filteredOrders.length || orders.length)} total)
+            </span>
+            <button
+              className="orders-pagination__btn"
+              onClick={() => {
+                const maxPage = totalPages || 1;
+                const newPage = Math.min(maxPage, currentPage + 1);
+                console.log("➡️ Next page clicked, going to page:", newPage, "of", maxPage);
+                setCurrentPage(newPage);
+              }}
+              disabled={currentPage >= (totalPages || 1)}
+              aria-label="Next page"
+            >
+              <i className="pi pi-chevron-right" />
+            </button>
+          </div>
         </section>
 
         {/* TOAST */}
