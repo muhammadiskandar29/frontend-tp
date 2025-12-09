@@ -52,22 +52,21 @@ function useDebouncedValue(value, delay = 250) {
 const DEFAULT_TOAST = { show: false, message: "", type: "success" };
 
 export default function DaftarPesanan() {
-  // Client-side pagination state
-  const [orders, setOrders] = useState([]); // Array gabungan semua data
-  const [page, setPage] = useState(1); // Current page untuk fetch
-  const [isLoading, setIsLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  
+  // Server-side pagination state
+  const [orders, setOrders] = useState([]);
   const [customers, setCustomers] = useState({});
   const [produkMap, setProdukMap] = useState({});
   const [statistics, setStatistics] = useState(null);
+  const [needsRefresh, setNeedsRefresh] = useState(true);
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearch = useDebouncedValue(searchInput);
   const [showAdd, setShowAdd] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showView, setShowView] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalOrdersCount, setTotalOrdersCount] = useState(0);
   const itemsPerPage = 15;
 
   const [toast, setToast] = useState(DEFAULT_TOAST);
@@ -102,23 +101,35 @@ export default function DaftarPesanan() {
     }
   }, []);
 
-  // 🔹 Load produk data (one-time fetch)
-  const loadProduk = useCallback(async () => {
+  // 🔹 Load data dari backend - Server-side pagination
+  const loadData = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
-      if (!token) return;
+      if (!token) {
+        console.warn("No token found");
+        setNeedsRefresh(false);
+        return;
+      }
 
-      const produkResponse = await fetch("/api/sales/produk", {
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      }).then(res => res.json()).catch(err => {
-        console.error("Error fetching produk:", err);
-        return { success: false, data: [] };
-      });
-
+      // Fetch produk dan orders secara parallel
+      const [produkResponse, ordersResult] = await Promise.all([
+        fetch("/api/sales/produk", {
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }).then(res => res.json()).catch(err => {
+          console.error("Error fetching produk:", err);
+          return { success: false, data: [] };
+        }),
+        getOrders(currentPage, itemsPerPage).catch(err => {
+          console.error("Error fetching orders:", err);
+          return { data: [], total: 0, last_page: 1 };
+        })
+      ]);
+      
+      // Handle produk data
       if (produkResponse.success && Array.isArray(produkResponse.data)) {
         const mapProduk = {};
         produkResponse.data.forEach((p) => {
@@ -126,102 +137,78 @@ export default function DaftarPesanan() {
         });
         setProdukMap(mapProduk);
       }
-    } catch (err) {
-      console.error("Error loading produk:", err);
-    }
-  }, []);
-
-  // 🔹 Fetch orders untuk page tertentu - Client-side pagination dengan append
-  const fetchOrders = useCallback(async (pageNumber) => {
-    try {
-      setIsLoading(true);
-      const token = localStorage.getItem("token");
-      if (!token) {
-        console.warn("No token found");
-        setIsLoading(false);
-        return;
+      
+      // Handle orders data
+      const finalOrders = Array.isArray(ordersResult.data) ? ordersResult.data : [];
+      
+      // Update pagination info from response
+      if (ordersResult.total !== undefined && ordersResult.total > 0) {
+        setTotalOrdersCount(ordersResult.total);
+        const calculatedPages = Math.ceil(ordersResult.total / itemsPerPage);
+        const lastPage = ordersResult.last_page || calculatedPages || 1;
+        setTotalPages(lastPage);
+      } else if (statistics && statistics.total_order !== undefined && statistics.total_order > 0) {
+        const totalFromStats = statistics.total_order;
+        setTotalOrdersCount(totalFromStats);
+        const calculatedPages = Math.ceil(totalFromStats / itemsPerPage);
+        setTotalPages(calculatedPages);
+      } else if (finalOrders.length >= itemsPerPage) {
+        setTotalOrdersCount(finalOrders.length);
+        setTotalPages(2);
+      } else {
+        setTotalOrdersCount(finalOrders.length);
+        setTotalPages(1);
       }
 
-      // Fetch orders dengan pagination
-      const ordersResult = await getOrders(pageNumber, itemsPerPage).catch(err => {
-        console.error("Error fetching orders:", err);
-        return { data: [] };
-      });
-
-      const newOrders = Array.isArray(ordersResult.data) ? ordersResult.data : [];
-      
-      console.log(`📦 Fetched page ${pageNumber}:`, {
-        newOrdersCount: newOrders.length,
-        totalOrdersBefore: orders.length,
-        totalOrdersAfter: orders.length + newOrders.length
-      });
-
-      // Merge data lama + baru (append)
-      setOrders(prevOrders => {
-        // Avoid duplicates by checking IDs
-        const existingIds = new Set(prevOrders.map(o => o.id));
-        const uniqueNewOrders = newOrders.filter(o => !existingIds.has(o.id));
-        const merged = [...prevOrders, ...uniqueNewOrders];
-        
-        // Set hasMore = false jika data < 15 (berarti sudah di page terakhir)
-        if (newOrders.length < itemsPerPage) {
-          setHasMore(false);
-          console.log("✅ No more data available. Total orders loaded:", merged.length);
-        }
-        
-        return merged;
-      });
-
-      // Update customer map
+      // Map customer
       const mapCustomer = {};
-      newOrders.forEach((o) => {
+      finalOrders.forEach((o) => {
         if (o.customer_rel?.id) {
           mapCustomer[o.customer_rel.id] = o.customer_rel.nama;
         } else if (o.customer && typeof o.customer === "object" && o.customer.id) {
           mapCustomer[o.customer.id] = o.customer.nama || "-";
         }
       });
-      setCustomers(prev => ({ ...prev, ...mapCustomer }));
-
-      setIsLoading(false);
+      
+      setCustomers(mapCustomer);
+      setOrders(finalOrders);
+      setNeedsRefresh(false);
     } catch (err) {
-      console.error("Error fetching orders:", err);
+      console.error("Error load data:", err);
       showToast("Gagal memuat data", "error");
-      setIsLoading(false);
+      setNeedsRefresh(false);
     }
-  }, [itemsPerPage, showToast]);
+  }, [currentPage, itemsPerPage, statistics]);
 
-  // 🔹 Load More function
-  const loadMore = useCallback(() => {
-    if (isLoading || !hasMore) return;
-    
-    const nextPage = page + 1;
-    console.log("🔄 Loading more data, page:", nextPage);
-    setPage(nextPage);
-    fetchOrders(nextPage);
-  }, [page, isLoading, hasMore, fetchOrders]);
-
-  // Initial load: Fetch statistics, produk, and first page of orders
+  // Load statistics on mount
   useEffect(() => {
-    const initializeData = async () => {
-      // Load statistics and produk in parallel
-      await Promise.all([loadStatistics(), loadProduk()]);
-      // Then load first page of orders
-      fetchOrders(1);
-    };
-    initializeData();
-  }, [loadStatistics, loadProduk, fetchOrders]);
+    loadStatistics();
+  }, [loadStatistics]);
+
+  // Initial load
+  useEffect(() => {
+    setNeedsRefresh(true);
+  }, []);
+
+  // Load data when needsRefresh is true
+  useEffect(() => {
+    if (needsRefresh) {
+      loadData();
+    }
+  }, [needsRefresh, loadData]);
+
+  // Reload data saat currentPage berubah
+  useEffect(() => {
+    if (currentPage > 0) {
+      setNeedsRefresh(true);
+    }
+  }, [currentPage]);
 
   // 🔹 Refresh all data (reset to page 1)
   const requestRefresh = async (message, type = "success") => {
-    // Reset state
-    setOrders([]);
-    setPage(1);
-    setHasMore(true);
-    
-    // Refresh statistics and fetch first page
-    await Promise.all([loadStatistics(), fetchOrders(1)]);
-    showToast(message, type);
+    setCurrentPage(1);
+    await Promise.all([loadStatistics(), loadData()]);
+    if (message) showToast(message, type);
   };
 
   // === Helper ===
@@ -246,7 +233,7 @@ export default function DaftarPesanan() {
   const ditolakOrders = statistics?.total_order_ditolak || 0;
 
   // === FILTER SEARCH ===
-  // Search dilakukan client-side dari semua data yang sudah di-fetch
+  // Search dilakukan client-side dari data current page
   const filteredOrders = useMemo(() => {
     const term = debouncedSearch.trim().toLowerCase();
     if (!term) return orders;
@@ -259,6 +246,13 @@ export default function DaftarPesanan() {
       );
     });
   }, [orders, debouncedSearch, produkMap, customers]);
+
+  // Reset ke page 1 saat search berubah
+  useEffect(() => {
+    if (debouncedSearch.trim() && currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [debouncedSearch]);
 
 
   // === EVENT HANDLERS ===
@@ -407,7 +401,7 @@ export default function DaftarPesanan() {
               <p className="panel__eyebrow">Directory</p>
               <h3 className="panel__title">Order roster</h3>
             </div>
-            <span className="panel__meta">{filteredOrders.length} orders</span>
+            <span className="panel__meta">{totalOrdersCount || filteredOrders.length} orders</span>
           </div>
 
           <div className="orders-table__wrapper">
@@ -418,8 +412,8 @@ export default function DaftarPesanan() {
                 ))}
               </div>
               <div className="orders-table__body">
-                {paginatedData.length > 0 ? (
-                  paginatedData.map((order, i) => {
+                {filteredOrders.length > 0 ? (
+                  filteredOrders.map((order, i) => {
                     // Handle produk name - ensure it's always a string
                     let produkNama = "-";
                     if (order.produk_rel?.nama) {
@@ -444,7 +438,7 @@ export default function DaftarPesanan() {
                     return (
                       <div className="orders-table__row" key={order.id || `${order.id}-${i}`}>
                         <div className="orders-table__cell" data-label="#">
-                          {i + 1}
+                          {(currentPage - 1) * itemsPerPage + i + 1}
                         </div>
                         <div className="orders-table__cell orders-table__cell--strong" data-label="Customer">
                           {customerNama}
@@ -514,35 +508,30 @@ export default function DaftarPesanan() {
             </div>
           </div>
 
-          {/* Load More Button - Client-side pagination */}
-          <div className="orders-pagination">
-            {hasMore ? (
+          {/* Server-side Pagination */}
+          {totalPages > 1 && (
+            <div className="orders-pagination">
               <button
-                className="orders-pagination__btn orders-pagination__btn--load-more"
-                onClick={loadMore}
-                disabled={isLoading}
-                aria-label="Load more orders"
+                className="orders-pagination__btn"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                aria-label="Previous page"
               >
-                {isLoading ? (
-                  <>
-                    <i className="pi pi-spin pi-spinner" style={{ marginRight: "0.5rem" }} />
-                    Loading...
-                  </>
-                ) : (
-                  <>
-                    <i className="pi pi-chevron-down" style={{ marginRight: "0.5rem" }} />
-                    Load More
-                  </>
-                )}
+                <i className="pi pi-chevron-left" />
               </button>
-            ) : (
-              <div className="orders-pagination__info">
-                <p style={{ color: "var(--dash-muted-strong)", fontSize: "0.9rem", fontWeight: 500 }}>
-                  Semua data sudah ditampilkan ({filteredOrders.length} orders)
-                </p>
-              </div>
-            )}
-          </div>
+              <span className="orders-pagination__info">
+                Page {currentPage} of {totalPages} ({totalOrdersCount || filteredOrders.length} total)
+              </span>
+              <button
+                className="orders-pagination__btn"
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={currentPage >= totalPages}
+                aria-label="Next page"
+              >
+                <i className="pi pi-chevron-right" />
+              </button>
+            </div>
+          )}
         </section>
 
         {/* TOAST */}
