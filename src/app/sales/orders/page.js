@@ -399,16 +399,7 @@ export default function DaftarPesanan() {
             </article>
           ))}
         </section>
-
-        <section className="panel orders-panel">
-          <div className="panel__header">
-            <div>
-              <p className="panel__eyebrow">Directory</p>
-              <h3 className="panel__title">Order roster</h3>
-            </div>
-            <span className="panel__meta">{filteredOrders.length} orders</span>
-          </div>
-          <div className="orders-toolbar">
+        <div className="orders-toolbar">
             <button className="orders-button orders-button--primary" onClick={() => setShowAdd(true)}>
               + Tambah Pesanan
             </button>
@@ -560,6 +551,14 @@ export default function DaftarPesanan() {
                 Reset
               </button>
             )}
+          </div>
+        <section className="panel orders-panel">
+          <div className="panel__header">
+            <div>
+              <p className="panel__eyebrow">Directory</p>
+              <h3 className="panel__title">Order roster</h3>
+            </div>
+            <span className="panel__meta">{filteredOrders.length} orders</span>
           </div>
 
           <div className="orders-table__wrapper">
