@@ -214,6 +214,53 @@ export default function DaftarPesanan() {
     return 0; // Unpaid
   }
 
+  // === FILTER ===
+  // Filter orders berdasarkan search dan date range
+  const filteredOrders = useMemo(() => {
+    let filtered = [...orders];
+
+    // Filter by search (customer name, product name, alamat, total harga)
+    if (searchInput.trim()) {
+      const searchLower = searchInput.toLowerCase().trim();
+      filtered = filtered.filter((order) => {
+        const customerName = order.customer_rel?.nama?.toLowerCase() || "";
+        const productName = order.produk_rel?.nama?.toLowerCase() || "";
+        const alamat = order.alamat?.toLowerCase() || "";
+        const totalHarga = order.total_harga?.toString() || "";
+        
+        return (
+          customerName.includes(searchLower) ||
+          productName.includes(searchLower) ||
+          alamat.includes(searchLower) ||
+          totalHarga.includes(searchLower)
+        );
+      });
+    }
+
+    // Filter by date range
+    if (dateFrom) {
+      filtered = filtered.filter((order) => {
+        if (!order.tanggal) return false;
+        const orderDate = new Date(order.tanggal);
+        const fromDate = new Date(dateFrom);
+        fromDate.setHours(0, 0, 0, 0);
+        return orderDate >= fromDate;
+      });
+    }
+
+    if (dateTo) {
+      filtered = filtered.filter((order) => {
+        if (!order.tanggal) return false;
+        const orderDate = new Date(order.tanggal);
+        const toDate = new Date(dateTo);
+        toDate.setHours(23, 59, 59, 999);
+        return orderDate <= toDate;
+      });
+    }
+
+    return filtered;
+  }, [orders, searchInput, dateFrom, dateTo]);
+
   // === SUMMARY ===
   // Gunakan data dari statistics API
   const totalOrders = statistics?.total_order || 0;
@@ -360,7 +407,156 @@ export default function DaftarPesanan() {
               <p className="panel__eyebrow">Directory</p>
               <h3 className="panel__title">Order roster</h3>
             </div>
-            <span className="panel__meta">{orders.length} orders</span>
+            <span className="panel__meta">{filteredOrders.length} orders</span>
+          </div>
+
+          {/* Search and Filter Section */}
+          <div style={{ 
+            padding: "1rem 1.5rem", 
+            borderBottom: "1px solid var(--dash-border)",
+            display: "flex",
+            gap: "1rem",
+            flexWrap: "wrap",
+            alignItems: "flex-end",
+            background: "var(--dash-surface)"
+          }}>
+            {/* Search Input */}
+            <div style={{ flex: "1", minWidth: "250px" }}>
+              <label style={{ 
+                display: "block", 
+                marginBottom: "0.5rem", 
+                fontSize: "0.875rem",
+                fontWeight: 500,
+                color: "var(--dash-text)"
+              }}>
+                Cari Order
+              </label>
+              <div style={{ position: "relative" }}>
+                <i className="pi pi-search" style={{
+                  position: "absolute",
+                  left: "0.75rem",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: "var(--dash-muted-strong)",
+                  fontSize: "0.875rem"
+                }} />
+                <input
+                  type="text"
+                  placeholder="Cari customer, produk, alamat..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "0.625rem 0.75rem 0.625rem 2.5rem",
+                    border: "1px solid var(--dash-border)",
+                    borderRadius: "0.5rem",
+                    fontSize: "0.875rem",
+                    background: "var(--dash-surface)",
+                    color: "var(--dash-text)",
+                    outline: "none",
+                    transition: "border-color 0.2s ease"
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = "#f1a124"}
+                  onBlur={(e) => e.target.style.borderColor = "var(--dash-border)"}
+                />
+              </div>
+            </div>
+
+            {/* Date From */}
+            <div style={{ minWidth: "130px" }}>
+              <label style={{ 
+                display: "block", 
+                marginBottom: "0.375rem", 
+                fontSize: "0.75rem",
+                fontWeight: 500,
+                color: "var(--dash-muted-strong)"
+              }}>
+                Dari Tanggal
+              </label>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "0.5rem 0.625rem",
+                  border: "1px solid var(--dash-border)",
+                  borderRadius: "0.375rem",
+                  fontSize: "0.8125rem",
+                  background: "var(--dash-surface)",
+                  color: "var(--dash-text)",
+                  outline: "none",
+                  transition: "border-color 0.2s ease"
+                }}
+                onFocus={(e) => e.target.style.borderColor = "#f1a124"}
+                onBlur={(e) => e.target.style.borderColor = "var(--dash-border)"}
+              />
+            </div>
+
+            {/* Date To */}
+            <div style={{ minWidth: "130px" }}>
+              <label style={{ 
+                display: "block", 
+                marginBottom: "0.375rem", 
+                fontSize: "0.75rem",
+                fontWeight: 500,
+                color: "var(--dash-muted-strong)"
+              }}>
+                Sampai Tanggal
+              </label>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                min={dateFrom || undefined}
+                style={{
+                  width: "100%",
+                  padding: "0.5rem 0.625rem",
+                  border: "1px solid var(--dash-border)",
+                  borderRadius: "0.375rem",
+                  fontSize: "0.8125rem",
+                  background: "var(--dash-surface)",
+                  color: "var(--dash-text)",
+                  outline: "none",
+                  transition: "border-color 0.2s ease"
+                }}
+                onFocus={(e) => e.target.style.borderColor = "#f1a124"}
+                onBlur={(e) => e.target.style.borderColor = "var(--dash-border)"}
+              />
+            </div>
+
+            {/* Clear Filters Button */}
+            {(searchInput || dateFrom || dateTo) && (
+              <button
+                onClick={() => {
+                  setSearchInput("");
+                  setDateFrom("");
+                  setDateTo("");
+                }}
+                style={{
+                  padding: "0.625rem 1rem",
+                  background: "#e5e7eb",
+                  color: "#6b7280",
+                  border: "none",
+                  borderRadius: "0.5rem",
+                  cursor: "pointer",
+                  fontSize: "0.875rem",
+                  fontWeight: 500,
+                  transition: "all 0.2s ease",
+                  whiteSpace: "nowrap",
+                  height: "fit-content"
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = "#d1d5db";
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = "#e5e7eb";
+                }}
+              >
+                <i className="pi pi-times" style={{ marginRight: "0.25rem" }} />
+                Reset
+              </button>
+            )}
           </div>
 
           <div className="orders-table__wrapper">
@@ -371,8 +567,8 @@ export default function DaftarPesanan() {
                 ))}
               </div>
               <div className="orders-table__body">
-                {orders.length > 0 ? (
-                  orders.map((order, i) => {
+                {filteredOrders.length > 0 ? (
+                  filteredOrders.map((order, i) => {
                     // Handle produk name - dari produk_rel
                     const produkNama = order.produk_rel?.nama || "-";
 
