@@ -170,8 +170,21 @@ export default function DaftarPesanan() {
         }
       });
       
-      setCustomers(mapCustomer);
-      setOrders(finalOrders);
+      setCustomers(prev => ({ ...prev, ...mapCustomer }));
+      
+      // Append data untuk page > 1, replace untuk page 1
+      setOrders(prev => {
+        if (currentPage === 1) {
+          // Page 1: replace semua data
+          return finalOrders;
+        } else {
+          // Page > 1: append data baru, hindari duplikasi berdasarkan ID
+          const existingIds = new Set(prev.map(o => o.id));
+          const uniqueNewOrders = finalOrders.filter(o => !existingIds.has(o.id));
+          return [...prev, ...uniqueNewOrders];
+        }
+      });
+      
       setNeedsRefresh(false);
     } catch (err) {
       console.error("Error load data:", err);
@@ -206,8 +219,11 @@ export default function DaftarPesanan() {
 
   // 🔹 Refresh all data (reset to page 1)
   const requestRefresh = async (message, type = "success") => {
+    // Clear orders first, then reset to page 1
+    setOrders([]);
     setCurrentPage(1);
-    await Promise.all([loadStatistics(), loadData()]);
+    setNeedsRefresh(true);
+    await loadStatistics();
     if (message) showToast(message, type);
   };
 
@@ -438,7 +454,7 @@ export default function DaftarPesanan() {
                     return (
                       <div className="orders-table__row" key={order.id || `${order.id}-${i}`}>
                         <div className="orders-table__cell" data-label="#">
-                          {(currentPage - 1) * itemsPerPage + i + 1}
+                          {i + 1}
                         </div>
                         <div className="orders-table__cell orders-table__cell--strong" data-label="Customer">
                           {customerNama}
