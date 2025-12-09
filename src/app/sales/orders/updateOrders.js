@@ -104,7 +104,7 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
       formData.append("metode_pembayaran", metodeBayar);
 
       const token = localStorage.getItem("token");
-      const url = `${BASE_URL}/admin/order-konfirmasi/${order.id}`;
+      const url = `${BASE_URL}/sales/order-konfirmasi/${order.id}`;
 
       const res = await fetch(url, {
         method: "POST",
@@ -167,7 +167,7 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
         setToast?.((prev) => ({ ...prev, show: false }));
         onClose();
         // Redirect ke halaman orders
-        router.push("/admin/orders");
+        router.push("/sales/orders");
       }, 1200);
     } catch (err) {
       console.error("[KONFIRMASI] Error:", err);
@@ -193,7 +193,7 @@ const handleSubmitUpdate = async (e) => {
   try {
     const token = localStorage.getItem("token");
 
-    const res = await fetch(`${BASE_URL}/admin/order/${order.id}`, {
+    const res = await fetch(`${BASE_URL}/sales/order/${order.id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",

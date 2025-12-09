@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import { ShoppingCart, Clock, CheckCircle, PartyPopper, XCircle } from "lucide-react";
 import "@/styles/dashboard.css";
 import "@/styles/admin.css";
-import { getOrders, updateOrderAdmin } from "@/lib/orders";
+import { getOrders, updateOrderAdmin } from "@/lib/sales/orders";
 
 // Lazy load modals
 const ViewOrders = dynamic(() => import("./viewOrders"), { ssr: false });

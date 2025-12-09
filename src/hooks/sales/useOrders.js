@@ -6,7 +6,7 @@ import {
   createOrderCustomer,
   updateOrderAdmin,
   confirmOrderPayment,
-} from "@/lib/orders";
+} from "@/lib/sales/orders";
 
 export default function useOrders({ mode = "admin" } = {}) {
   const [orders, setOrders] = useState([]);

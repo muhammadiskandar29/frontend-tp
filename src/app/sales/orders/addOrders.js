@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import useOrders from "@/hooks/useOrders";
+import useOrders from "@/hooks/sales/useOrders";
 import { api } from "@/lib/api"; // supaya handleSearchCustomer & handleSearchProduct ikut pakai api()
 import "@/styles/pesanan.css";
 

@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import Layout from "@/components/Layout";
 import dynamic from "next/dynamic";
 import { FolderOpen, Search } from "lucide-react";
-import useKategori from "@/hooks/useKategori";
+import useKategori from "@/hooks/sales/useKategori";
 import { toast } from "react-hot-toast";
 import "@/styles/dashboard.css";
 import "@/styles/admin.css";

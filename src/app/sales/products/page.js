@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, memo, useCallback } from "react";
 import Layout from "@/components/Layout";
-import { useProducts } from "@/hooks/useProducts";
+import { useProducts } from "@/hooks/sales/useProducts";
 import { useRouter } from "next/navigation";
 import { Package, CheckCircle, Search } from "lucide-react";
 import DeleteProductModal from "./deleteProductModal";

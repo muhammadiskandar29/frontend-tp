@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import { ShoppingCart, Clock, CheckCircle, PartyPopper, XCircle } from "lucide-react";
 import "@/styles/dashboard.css";
 import "@/styles/admin.css";
-import { getOrders, updateOrderAdmin } from "@/lib/orders";
+import { getOrders, updateOrderAdmin } from "@/lib/sales/orders";
 
 // Lazy load modals
 const ViewOrders = dynamic(() => import("./viewOrders"), { ssr: false });
@@ -96,7 +96,7 @@ export default function DaftarPesanan() {
       // Fetch produk dan orders secara parallel untuk optimasi
       const [produkResponse, ordersResult] = await Promise.all([
         // Ambil produk melalui Next.js proxy
-        fetch("/api/admin/produk", {
+        fetch("/api/sales/produk", {
           headers: {
             "Content-Type": "application/json",
             Accept: "application/json",

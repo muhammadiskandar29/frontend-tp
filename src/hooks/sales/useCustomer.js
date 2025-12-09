@@ -1,6 +1,6 @@
 // /hooks/useOrders.js
 import { useState, useEffect } from "react";
-import { getOrders } from "@/lib/orders";
+import { getOrders } from "@/lib/sales/orders";
 
 export default function useOrders() {
   const [orders, setOrders] = useState([]);
