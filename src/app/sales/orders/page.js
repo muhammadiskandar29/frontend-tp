@@ -210,12 +210,14 @@ export default function DaftarPesanan() {
     }
   }, [needsRefresh, loadData]);
 
-  // Reload data saat currentPage berubah
-  useEffect(() => {
-    if (currentPage > 0) {
-      setNeedsRefresh(true);
-    }
-  }, [currentPage]);
+  // Load More function - untuk load data berikutnya (append)
+  const loadMore = useCallback(() => {
+    if (currentPage >= totalPages || needsRefresh) return; // Jangan load jika sudah di page terakhir atau sedang loading
+    const nextPage = currentPage + 1;
+    console.log("🔄 Load More clicked, loading page:", nextPage);
+    setCurrentPage(nextPage);
+    setNeedsRefresh(true);
+  }, [currentPage, totalPages, needsRefresh]);
 
   // 🔹 Refresh all data (reset to page 1)
   const requestRefresh = async (message, type = "success") => {
@@ -524,30 +526,35 @@ export default function DaftarPesanan() {
             </div>
           </div>
 
-          {/* Server-side Pagination */}
-          {totalPages > 1 && (
-            <div className="orders-pagination">
+          {/* Load More Button - Load data berikutnya (append) */}
+          <div className="orders-pagination">
+            {currentPage < totalPages ? (
               <button
-                className="orders-pagination__btn"
-                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                aria-label="Previous page"
+                className="orders-pagination__btn orders-pagination__btn--load-more"
+                onClick={loadMore}
+                disabled={needsRefresh}
+                aria-label="Load more orders"
               >
-                <i className="pi pi-chevron-left" />
+                {needsRefresh ? (
+                  <>
+                    <i className="pi pi-spin pi-spinner" style={{ marginRight: "0.5rem" }} />
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <i className="pi pi-chevron-down" style={{ marginRight: "0.5rem" }} />
+                    Load More ({orders.length} of {totalOrdersCount || "?"} loaded)
+                  </>
+                )}
               </button>
-              <span className="orders-pagination__info">
-                Page {currentPage} of {totalPages} ({totalOrdersCount || filteredOrders.length} total)
-              </span>
-              <button
-                className="orders-pagination__btn"
-                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                disabled={currentPage >= totalPages}
-                aria-label="Next page"
-              >
-                <i className="pi pi-chevron-right" />
-              </button>
-            </div>
-          )}
+            ) : (
+              <div className="orders-pagination__info">
+                <p style={{ color: "var(--dash-muted-strong)", fontSize: "0.9rem", fontWeight: 500 }}>
+                  Semua data sudah ditampilkan ({orders.length} orders)
+                </p>
+              </div>
+            )}
+          </div>
         </section>
 
         {/* TOAST */}
