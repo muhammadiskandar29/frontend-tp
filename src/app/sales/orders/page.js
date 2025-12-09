@@ -48,6 +48,11 @@ export default function DaftarPesanan() {
   const [loading, setLoading] = useState(false);
   const perPage = 15; // Data per halaman
   
+  // Filter state
+  const [searchInput, setSearchInput] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  
   // State lainnya
   const [statistics, setStatistics] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
@@ -220,7 +225,7 @@ export default function DaftarPesanan() {
     let filtered = [...orders];
 
     // Filter by search (customer name, product name, alamat, total harga)
-    if (searchInput.trim()) {
+    if (searchInput && searchInput.trim()) {
       const searchLower = searchInput.toLowerCase().trim();
       filtered = filtered.filter((order) => {
         const customerName = order.customer_rel?.nama?.toLowerCase() || "";
