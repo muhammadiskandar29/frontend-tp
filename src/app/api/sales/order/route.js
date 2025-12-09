@@ -5,10 +5,17 @@ export async function GET(request) {
   try {
     const authHeader = request.headers.get("authorization");
     
-    const backendUrl = `${BACKEND_URL}/api/sales/order`;
+    // Extract query parameters from request
+    const { searchParams } = new URL(request.url);
+    const page = searchParams.get('page') || '1';
+    const perPage = searchParams.get('per_page') || '15';
+    
+    // Build backend URL with query parameters
+    const backendUrl = `${BACKEND_URL}/api/sales/order?page=${page}&per_page=${perPage}`;
     
     console.log("🔍 Fetching orders from:", backendUrl);
     console.log("🔑 Auth header present:", !!authHeader);
+    console.log("📄 Query params - page:", page, "per_page:", perPage);
     
     const response = await fetch(backendUrl, {
       method: "GET",
@@ -73,12 +80,13 @@ export async function GET(request) {
       });
     }
 
-    // If backend returns { success, data }, use it as is
+    // If backend returns { success, data, pagination }, use it as is
     if (json.success !== undefined) {
       return NextResponse.json({
         success: json.success,
         data: json.data || json || [],
         message: json.message,
+        pagination: json.pagination, // Forward pagination object if exists
       });
     }
 

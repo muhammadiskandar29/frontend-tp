@@ -121,16 +121,23 @@ export default function DaftarPesanan() {
 
       const json = await res.json();
       
-      // Handle response dengan struktur: { success: true, data: [...] }
+      // Handle response dengan struktur: { success: true, data: [...], pagination: {...} }
       if (json.success && json.data && Array.isArray(json.data)) {
         // Selalu replace data (bukan append) - setiap page menampilkan data yang berbeda
         setOrders(json.data);
 
-        // Fallback pagination: cek jumlah data untuk menentukan hasMore
-        if (json.data.length < perPage) {
-          setHasMore(false); // sudah halaman terakhir
+        // Gunakan pagination object jika tersedia, jika tidak gunakan fallback
+        if (json.pagination && json.pagination.last_page !== undefined) {
+          // Gunakan pagination object dari backend
+          const isLastPage = json.pagination.current_page >= json.pagination.last_page;
+          setHasMore(!isLastPage);
         } else {
-          setHasMore(true); // masih ada halaman berikutnya
+          // Fallback pagination: cek jumlah data untuk menentukan hasMore
+          if (json.data.length < perPage) {
+            setHasMore(false); // sudah halaman terakhir
+          } else {
+            setHasMore(true); // masih ada halaman berikutnya
+          }
         }
       }
       
