@@ -355,51 +355,23 @@ export default function DaftarPesanan() {
               Track and manage all customer orders and payments.
             </span>
           </div>
-          {/* Search Input */}
-        <div style={{ flex: "1", minWidth: "250px" }}>
-              <label style={{ 
-                display: "block", 
-                marginBottom: "0.5rem", 
-                fontSize: "0.875rem",
-                fontWeight: 500,
-                color: "var(--dash-text)"
-              }}>
-                Cari Order
-              </label>
-              <div style={{ position: "relative" }}>
-                <i className="pi pi-search" style={{
-                  position: "absolute",
-                  left: "0.75rem",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  color: "var(--dash-muted-strong)",
-                  fontSize: "0.875rem"
-                }} />
-                <input
-                  type="text"
-                  placeholder="Cari customer, produk, alamat..."
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "0.625rem 0.75rem 0.625rem 2.5rem",
-                    border: "1px solid var(--dash-border)",
-                    borderRadius: "0.5rem",
-                    fontSize: "0.875rem",
-                    background: "var(--dash-surface)",
-                    color: "var(--dash-text)",
-                    outline: "none",
-                    transition: "border-color 0.2s ease"
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = "#f1a124"}
-                  onBlur={(e) => e.target.style.borderColor = "var(--dash-border)"}
-                />
-              </div>
+
+          <div className="orders-toolbar">
+            <div className="orders-search">
+              <input
+                type="search"
+                placeholder="Cari customer, produk, alamat..."
+                className="orders-search__input"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+              />
+              <span className="orders-search__icon pi pi-search" />
             </div>
-        <div className="orders-toolbar">
-            <button className="orders-button orders-button--primary" onClick={() => setShowAdd(true)}>
-              + Tambah Pesanan
-            </button>
+            <div className="orders-toolbar-buttons">
+              <button className="orders-button orders-button--primary" onClick={() => setShowAdd(true)}>
+                + Tambah Pesanan
+              </button>
+            </div>
           </div>
         </section>
 
@@ -446,121 +418,116 @@ export default function DaftarPesanan() {
           ))}
         </section>
         
-          {/* Search and Filter Section */}
-          <div style={{ 
-            padding: "1rem 1.5rem", 
-            borderBottom: "1px solid var(--dash-border)",
-            display: "flex",
-            gap: "1rem",
-            flexWrap: "wrap",
-            alignItems: "flex-end",
-            background: "var(--dash-surface)"
-          }}>
-            {/* Date From */}
-            <div style={{ minWidth: "130px" }}>
-              <label style={{ 
-                display: "block", 
-                marginBottom: "0.375rem", 
-                fontSize: "0.75rem",
-                fontWeight: 500,
-                color: "var(--dash-muted-strong)"
-              }}>
-                Dari Tanggal
-              </label>
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "0.5rem 0.625rem",
-                  border: "1px solid var(--dash-border)",
-                  borderRadius: "0.375rem",
-                  fontSize: "0.8125rem",
-                  background: "var(--dash-surface)",
-                  color: "var(--dash-text)",
-                  outline: "none",
-                  transition: "border-color 0.2s ease"
-                }}
-                onFocus={(e) => e.target.style.borderColor = "#f1a124"}
-                onBlur={(e) => e.target.style.borderColor = "var(--dash-border)"}
-              />
-            </div>
-
-            {/* Date To */}
-            <div style={{ minWidth: "130px" }}>
-              <label style={{ 
-                display: "block", 
-                marginBottom: "0.375rem", 
-                fontSize: "0.75rem",
-                fontWeight: 500,
-                color: "var(--dash-muted-strong)"
-              }}>
-                Sampai Tanggal
-              </label>
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                min={dateFrom || undefined}
-                style={{
-                  width: "100%",
-                  padding: "0.5rem 0.625rem",
-                  border: "1px solid var(--dash-border)",
-                  borderRadius: "0.375rem",
-                  fontSize: "0.8125rem",
-                  background: "var(--dash-surface)",
-                  color: "var(--dash-text)",
-                  outline: "none",
-                  transition: "border-color 0.2s ease"
-                }}
-                onFocus={(e) => e.target.style.borderColor = "#f1a124"}
-                onBlur={(e) => e.target.style.borderColor = "var(--dash-border)"}
-              />
-            </div>
-
-            {/* Clear Filters Button */}
-            {(searchInput || dateFrom || dateTo) && (
-              <button
-                onClick={() => {
-                  setSearchInput("");
-                  setDateFrom("");
-                  setDateTo("");
-                }}
-                style={{
-                  padding: "0.625rem 1rem",
-                  background: "#e5e7eb",
-                  color: "#6b7280",
-                  border: "none",
-                  borderRadius: "0.5rem",
-                  cursor: "pointer",
-                  fontSize: "0.875rem",
-                  fontWeight: 500,
-                  transition: "all 0.2s ease",
-                  whiteSpace: "nowrap",
-                  height: "fit-content"
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.background = "#d1d5db";
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.background = "#e5e7eb";
-                }}
-              >
-                <i className="pi pi-times" style={{ marginRight: "0.25rem" }} />
-                Reset
-              </button>
-            )}
-          </div>
         <section className="panel orders-panel">
-          <div className="panel__header">
+          <div className="panel__header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
             <div>
               <p className="panel__eyebrow">Directory</p>
               <h3 className="panel__title">Order roster</h3>
             </div>
-            <span className="panel__meta">{filteredOrders.length} orders</span>
-          </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+              <span className="panel__meta">{filteredOrders.length} orders</span>
+              {/* Date Filter - Rata Kanan */}
+              <div style={{ 
+                display: "flex",
+                gap: "0.75rem",
+                alignItems: "flex-end"
+              }}>
+                <div style={{ minWidth: "130px" }}>
+                  <label style={{ 
+                    display: "block", 
+                    marginBottom: "0.375rem", 
+                    fontSize: "0.75rem",
+                    fontWeight: 500,
+                    color: "var(--dash-muted-strong)"
+                  }}>
+                    Dari Tanggal
+                  </label>
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "0.5rem 0.625rem",
+                      border: "1px solid var(--dash-border)",
+                      borderRadius: "0.375rem",
+                      fontSize: "0.8125rem",
+                      background: "var(--dash-surface)",
+                      color: "var(--dash-text)",
+                      outline: "none",
+                      transition: "border-color 0.2s ease"
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = "#f1a124"}
+                    onBlur={(e) => e.target.style.borderColor = "var(--dash-border)"}
+                  />
+                </div>
 
+                <div style={{ minWidth: "130px" }}>
+                  <label style={{ 
+                    display: "block", 
+                    marginBottom: "0.375rem", 
+                    fontSize: "0.75rem",
+                    fontWeight: 500,
+                    color: "var(--dash-muted-strong)"
+                  }}>
+                    Sampai Tanggal
+                  </label>
+                  <input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    min={dateFrom || undefined}
+                    style={{
+                      width: "100%",
+                      padding: "0.5rem 0.625rem",
+                      border: "1px solid var(--dash-border)",
+                      borderRadius: "0.375rem",
+                      fontSize: "0.8125rem",
+                      background: "var(--dash-surface)",
+                      color: "var(--dash-text)",
+                      outline: "none",
+                      transition: "border-color 0.2s ease"
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = "#f1a124"}
+                    onBlur={(e) => e.target.style.borderColor = "var(--dash-border)"}
+                  />
+                </div>
+
+                {/* Clear Filters Button */}
+                {(dateFrom || dateTo) && (
+                  <button
+                    onClick={() => {
+                      setDateFrom("");
+                      setDateTo("");
+                    }}
+                    style={{
+                      padding: "0.5rem 0.75rem",
+                      background: "#e5e7eb",
+                      color: "#6b7280",
+                      border: "none",
+                      borderRadius: "0.375rem",
+                      cursor: "pointer",
+                      fontSize: "0.75rem",
+                      fontWeight: 500,
+                      transition: "all 0.2s ease",
+                      whiteSpace: "nowrap",
+                      height: "fit-content",
+                      marginBottom: "0.375rem"
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.background = "#d1d5db";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.background = "#e5e7eb";
+                    }}
+                  >
+                    <i className="pi pi-times" style={{ marginRight: "0.25rem", fontSize: "0.75rem" }} />
+                    Reset
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
           <div className="orders-table__wrapper">
             <div className="orders-table">
               <div className="orders-table__head">
