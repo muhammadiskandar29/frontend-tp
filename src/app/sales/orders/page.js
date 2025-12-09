@@ -56,6 +56,7 @@ export default function DaftarPesanan() {
 
   const [toast, setToast] = useState(DEFAULT_TOAST);
   const toastTimeoutRef = useRef(null);
+  const fetchingRef = useRef(false); // Prevent multiple simultaneous fetches
 
   const showToast = (message, type = "success") => {
     setToast({ show: true, message, type });
@@ -88,12 +89,20 @@ export default function DaftarPesanan() {
 
   // 🔹 Fetch orders - replace data per page (bukan append)
   const fetchOrders = useCallback(async (pageNumber) => {
+    // Prevent multiple simultaneous calls using ref
+    if (fetchingRef.current) {
+      console.log("⏸️ Already fetching, skipping duplicate request for page", pageNumber);
+      return;
+    }
+
+    fetchingRef.current = true;
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
       if (!token) {
         console.warn("No token found");
         setLoading(false);
+        fetchingRef.current = false;
         return;
       }
 
@@ -123,10 +132,12 @@ export default function DaftarPesanan() {
       }
       
       setLoading(false);
+      fetchingRef.current = false;
     } catch (err) {
       console.error("Error fetching orders:", err);
       showToast("Gagal memuat data", "error");
       setLoading(false);
+      fetchingRef.current = false;
     }
   }, [showToast]);
 
@@ -142,10 +153,11 @@ export default function DaftarPesanan() {
 
   // Fetch data saat page berubah
   useEffect(() => {
-    if (page > 0) {
+    if (page > 0 && !loading) {
       fetchOrders(page);
     }
-  }, [page, fetchOrders]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]); // Hanya depend pada page, fetchOrders sudah handle loading check
 
   // 🔹 Refresh all data (reset to page 1)
   const requestRefresh = async (message, type = "success") => {
