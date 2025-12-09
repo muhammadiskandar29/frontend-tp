@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import { ShoppingCart, Clock, CheckCircle, PartyPopper, XCircle } from "lucide-react";
 import "@/styles/dashboard.css";
 import "@/styles/admin.css";
-import { getOrders, updateOrderAdmin } from "@/lib/sales/orders";
+import { getOrders, updateOrderAdmin, getOrderStatistics } from "@/lib/sales/orders";
 
 // Lazy load modals
 const ViewOrders = dynamic(() => import("./viewOrders"), { ssr: false });
@@ -55,6 +55,7 @@ export default function DaftarPesanan() {
   const [orders, setOrders] = useState([]);
   const [customers, setCustomers] = useState({});
   const [produkMap, setProdukMap] = useState({});
+  const [statistics, setStatistics] = useState(null);
   const [needsRefresh, setNeedsRefresh] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [searchInput, setSearchInput] = useState("");
@@ -64,6 +65,8 @@ export default function DaftarPesanan() {
   const [showView, setShowView] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalOrdersCount, setTotalOrdersCount] = useState(0);
   const itemsPerPage = 15;
 
   const [toast, setToast] = useState(DEFAULT_TOAST);
@@ -83,6 +86,21 @@ export default function DaftarPesanan() {
     };
   }, []);
 
+  // 🔹 Load statistics
+  const loadStatistics = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const stats = await getOrderStatistics();
+      if (stats) {
+        setStatistics(stats);
+      }
+    } catch (err) {
+      console.error("Error loading statistics:", err);
+    }
+  }, []);
+
   // 🔹 Load data dari backend - Optimized dengan useCallback dan prevent duplicate fetch
   const loadData = useCallback(async () => {
     try {
@@ -93,7 +111,7 @@ export default function DaftarPesanan() {
         return;
       }
 
-      // Fetch produk dan orders secara parallel untuk optimasi
+      // Fetch produk, orders, dan statistics secara parallel untuk optimasi
       const [produkResponse, ordersResult] = await Promise.all([
         // Ambil produk melalui Next.js proxy
         fetch("/api/sales/produk", {
@@ -106,11 +124,10 @@ export default function DaftarPesanan() {
           console.error("Error fetching produk:", err);
           return { success: false, data: [] };
         }),
-        // Ambil orders dengan pagination
-        // Selalu gunakan server-side pagination dengan page dan per_page
+        // Ambil orders dengan pagination - server-side pagination
         getOrders(currentPage, itemsPerPage).catch(err => {
           console.error("Error fetching orders:", err);
-          return [];
+          return { data: [], total: 0, last_page: 1 };
         })
       ]);
       
@@ -123,10 +140,18 @@ export default function DaftarPesanan() {
         setProdukMap(mapProduk);
       }
       
-      // Handle orders data
-      const finalOrders = Array.isArray(ordersResult)
-        ? ordersResult
-        : ordersResult?.data || [];
+      // Handle orders data - response sudah dalam format { data, total, last_page, current_page, per_page }
+      const finalOrders = Array.isArray(ordersResult.data) ? ordersResult.data : [];
+      
+      // Update pagination info from response
+      if (ordersResult.total !== undefined) {
+        setTotalOrdersCount(ordersResult.total);
+        setTotalPages(ordersResult.last_page || Math.ceil(ordersResult.total / itemsPerPage));
+      } else {
+        // Fallback jika tidak ada pagination info
+        setTotalOrdersCount(finalOrders.length);
+        setTotalPages(1);
+      }
 
       // Map customer
       const mapCustomer = {};
@@ -148,11 +173,16 @@ export default function DaftarPesanan() {
     }
   }, [currentPage, itemsPerPage]); // Include currentPage dan itemsPerPage untuk pagination
 
+  // Load statistics on mount
+  useEffect(() => {
+    loadStatistics();
+  }, [loadStatistics]);
+
   useEffect(() => {
     if (needsRefresh) {
       loadData();
     }
-  }, [needsRefresh, currentPage]); // Trigger saat needsRefresh atau currentPage berubah
+  }, [needsRefresh]); // Trigger saat needsRefresh berubah
 
   // 🔹 Direct refresh function that loads data immediately - Reuse loadData
   const refreshData = useCallback(async () => {
@@ -161,10 +191,10 @@ export default function DaftarPesanan() {
   }, [loadData, currentPage]);
 
   const requestRefresh = async (message, type = "success") => {
-    // Immediately refresh data first, then show message
-    await refreshData();
-    // Reset to first page to show updated data
+    // Reset to first page first
     setCurrentPage(1);
+    // Refresh statistics and data
+    await Promise.all([loadStatistics(), refreshData()]);
     // Show success message after refresh completes
     showToast(message, type);
   };
@@ -183,19 +213,21 @@ export default function DaftarPesanan() {
   }
 
   // === SUMMARY ===
-  const totalOrders = orders.length;
-  const gagalOrders = orders.filter((o) => String(o.status_pembayaran) === "3").length;
-  const unpaidOrders = orders.filter((o) => computeStatusBayar(o) === 0).length;
-  const paidOrders = orders.filter((o) => computeStatusBayar(o) === 1).length;
-  const suksesOrders = orders.filter((o) => String(o.status_pembayaran) === "2").length;
+  // Gunakan data dari statistics API
+  const totalOrders = statistics?.total_order || 0;
+  const unpaidOrders = statistics?.total_order_unpaid || 0;
+  const menungguOrders = statistics?.total_order_menunggu || 0;
+  const approvedOrders = statistics?.total_order_sudah_diapprove || 0;
+  const ditolakOrders = statistics?.total_order_ditolak || 0;
 
   // === FILTER SEARCH ===
+  // Note: Search dilakukan client-side dari data yang sudah di-fetch per page
   const filteredOrders = useMemo(() => {
     const term = debouncedSearch.trim().toLowerCase();
+    if (!term) return orders;
     return orders.filter((o) => {
       const prod = (o.produk_rel?.nama || produkMap[o.produk] || "").toString();
       const cust = (o.customer_rel?.nama || customers[o.customer] || "").toString();
-      if (!term) return true;
       return (
         prod.toLowerCase().includes(term) ||
         cust.toLowerCase().includes(term)
@@ -204,36 +236,29 @@ export default function DaftarPesanan() {
   }, [orders, debouncedSearch, produkMap, customers]);
 
   // === PAGINATION ===
-  // Note: Pagination dilakukan di server-side dengan parameter page dan per_page
-  // Untuk search, tetap filter client-side dari data yang sudah di-fetch
-  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
+  // Pagination dilakukan di server-side dengan parameter page dan per_page
+  // Setiap perubahan page akan trigger fetch baru dari API
   const paginatedData = useMemo(() => {
-    // Data sudah di-paginate dari server, tapi jika ada search perlu filter dulu
-    // Jika tidak ada search, langsung gunakan data dari server
-    if (debouncedSearch.trim()) {
-      // Client-side filtering dan pagination untuk hasil search
-      const endIndex = startIndex + itemsPerPage;
-      return filteredOrders.slice(startIndex, endIndex);
-    }
-    // Server-side pagination - data sudah di-paginate dari API
+    // Jika ada search, filter data yang sudah di-fetch dari current page
+    // Jika tidak ada search, langsung gunakan data dari server (sudah di-paginate)
     return filteredOrders;
-  }, [filteredOrders, startIndex, itemsPerPage, debouncedSearch]);
+  }, [filteredOrders]);
 
+  // Reset ke page 1 saat search berubah
   useEffect(() => {
-    setCurrentPage(1);
-  }, [debouncedSearch]);
-
-  // Reload data saat currentPage berubah (untuk server-side pagination)
-  useEffect(() => {
-    // Reset ke page 1 saat search berubah
     if (debouncedSearch.trim() && currentPage !== 1) {
       setCurrentPage(1);
-    } else if (!debouncedSearch.trim()) {
-      // Reload data saat page berubah (hanya jika tidak ada search)
+    }
+  }, [debouncedSearch]);
+
+  // Reload data saat currentPage berubah (server-side pagination)
+  // Setiap kali page berubah, fetch data baru dari API dengan page yang sesuai
+  useEffect(() => {
+    // Hanya reload jika bukan initial load (untuk menghindari double fetch)
+    if (currentPage > 0) {
       setNeedsRefresh(true);
     }
-  }, [currentPage, debouncedSearch]);
+  }, [currentPage]);
 
   // === EVENT HANDLERS ===
   const handleView = (order) => {
@@ -282,9 +307,9 @@ export default function DaftarPesanan() {
         setSelectedOrder(null);
   
         showToast(result.message || "Order berhasil diupdate!", "success");
-  
-        // Refresh background (opsional)
-        refreshData().catch(() => {});
+
+        // Refresh statistics and data
+        await Promise.all([loadStatistics(), refreshData()]);
       } else {
         showToast(result.message || "Gagal mengupdate order", "error");
       }
@@ -348,20 +373,20 @@ export default function DaftarPesanan() {
               icon: <Clock size={22} />,
             },
             {
-              label: "Paid",
-              value: paidOrders,
+              label: "Menunggu",
+              value: menungguOrders,
+              accent: "accent-blue",
+              icon: <Clock size={22} />,
+            },
+            {
+              label: "Sudah Approve",
+              value: approvedOrders,
               accent: "accent-emerald",
               icon: <CheckCircle size={22} />,
             },
             {
-              label: "Sukses",
-              value: suksesOrders,
-              accent: "accent-blue",
-              icon: <PartyPopper size={22} />,
-            },
-            {
-              label: "Gagal",
-              value: gagalOrders,
+              label: "Ditolak",
+              value: ditolakOrders,
               accent: "accent-red",
               icon: <XCircle size={22} />,
             },
@@ -382,7 +407,7 @@ export default function DaftarPesanan() {
               <p className="panel__eyebrow">Directory</p>
               <h3 className="panel__title">Order roster</h3>
             </div>
-            <span className="panel__meta">{filteredOrders.length} orders</span>
+            <span className="panel__meta">{totalOrdersCount || filteredOrders.length} orders</span>
           </div>
 
           <div className="orders-table__wrapper">
@@ -419,7 +444,7 @@ export default function DaftarPesanan() {
                     return (
                       <div className="orders-table__row" key={order.id || `${order.id}-${i}`}>
                         <div className="orders-table__cell" data-label="#">
-                          {startIndex + i + 1}
+                          {(currentPage - 1) * itemsPerPage + i + 1}
                         </div>
                         <div className="orders-table__cell orders-table__cell--strong" data-label="Customer">
                           {customerNama}
@@ -499,7 +524,7 @@ export default function DaftarPesanan() {
                 <i className="pi pi-chevron-left" />
               </button>
               <span className="orders-pagination__info">
-                Page {currentPage} of {totalPages} ({filteredOrders.length} total)
+                Page {currentPage} of {totalPages} ({totalOrdersCount || filteredOrders.length} total)
               </span>
               <button
                 className="orders-pagination__btn"
