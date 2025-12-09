@@ -37,37 +37,23 @@ const ORDERS_COLUMNS = [
   "Actions",
 ];
 
-/**
- * Simple debounce hook to avoid rerunning expensive computations
- */
-function useDebouncedValue(value, delay = 250) {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const id = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(id);
-  }, [value, delay]);
-  return debounced;
-}
 
 const DEFAULT_TOAST = { show: false, message: "", type: "success" };
 
 export default function DaftarPesanan() {
-  // Server-side pagination state
+  // Pagination state
   const [orders, setOrders] = useState([]);
-  const [customers, setCustomers] = useState({});
-  const [produkMap, setProdukMap] = useState({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalOrdersCount, setTotalOrdersCount] = useState(0);
+  const [needsRefresh, setNeedsRefresh] = useState(false);
+  
+  // State lainnya
   const [statistics, setStatistics] = useState(null);
-  const [needsRefresh, setNeedsRefresh] = useState(true);
-  const [searchInput, setSearchInput] = useState("");
-  const debouncedSearch = useDebouncedValue(searchInput);
   const [showAdd, setShowAdd] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showView, setShowView] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalOrdersCount, setTotalOrdersCount] = useState(0);
-  const itemsPerPage = 15;
 
   const [toast, setToast] = useState(DEFAULT_TOAST);
   const toastTimeoutRef = useRef(null);
@@ -101,8 +87,9 @@ export default function DaftarPesanan() {
     }
   }, []);
 
-  // 🔹 Load data dari backend - Server-side pagination
-  const loadData = useCallback(async () => {
+  // 🔹 Fetch orders dengan struktur response baru (dengan pagination object)
+  const fetchOrders = useCallback(async (pageNumber) => {
+    setNeedsRefresh(true);
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -111,142 +98,69 @@ export default function DaftarPesanan() {
         return;
       }
 
-      // Fetch produk dan orders secara parallel
-      const [produkResponse, ordersResult] = await Promise.all([
-        fetch("/api/sales/produk", {
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }).then(res => res.json()).catch(err => {
-          console.error("Error fetching produk:", err);
-          return { success: false, data: [] };
-        }),
-        getOrders(currentPage, itemsPerPage).catch(err => {
-          console.error("Error fetching orders:", err);
-          return { data: [], total: 0, last_page: 1 };
-        })
-      ]);
-      
-      // Handle produk data
-      if (produkResponse.success && Array.isArray(produkResponse.data)) {
-        const mapProduk = {};
-        produkResponse.data.forEach((p) => {
-          mapProduk[p.id] = p.nama;
-        });
-        setProdukMap(mapProduk);
-      }
-      
-      // Handle orders data
-      const finalOrders = Array.isArray(ordersResult.data) ? ordersResult.data : [];
-      
-      // Update pagination info from response
-      if (ordersResult.total !== undefined && ordersResult.total > 0) {
-        setTotalOrdersCount(ordersResult.total);
-        const calculatedPages = Math.ceil(ordersResult.total / itemsPerPage);
-        const lastPage = ordersResult.last_page || calculatedPages || 1;
-        setTotalPages(lastPage);
-      } else if (statistics && statistics.total_order !== undefined && statistics.total_order > 0) {
-        const totalFromStats = statistics.total_order;
-        setTotalOrdersCount(totalFromStats);
-        const calculatedPages = Math.ceil(totalFromStats / itemsPerPage);
-        setTotalPages(calculatedPages);
-      } else if (finalOrders.length >= itemsPerPage) {
-        // Jika dapat 15 data (full page), kemungkinan masih ada data
-        // Set totalPages minimal 2 agar button Load More muncul
-        setTotalPages(2);
-        // Jika statistics tersedia, gunakan untuk totalOrdersCount
-        if (statistics && statistics.total_order) {
-          setTotalOrdersCount(statistics.total_order);
-          const calculatedPages = Math.ceil(statistics.total_order / itemsPerPage);
-          setTotalPages(calculatedPages);
-        } else {
-          // Fallback: set totalOrdersCount lebih besar dari current untuk trigger button
-          setTotalOrdersCount(finalOrders.length + 1);
-        }
-      } else {
-        // Kurang dari 15 data, berarti sudah di page terakhir
-        setTotalOrdersCount(finalOrders.length);
-        setTotalPages(1);
+      const res = await fetch(`/api/sales/order?page=${pageNumber}&per_page=15`, {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
       }
 
-      // Map customer
-      const mapCustomer = {};
-      finalOrders.forEach((o) => {
-        if (o.customer_rel?.id) {
-          mapCustomer[o.customer_rel.id] = o.customer_rel.nama;
-        } else if (o.customer && typeof o.customer === "object" && o.customer.id) {
-          mapCustomer[o.customer.id] = o.customer.nama || "-";
-        }
-      });
+      const json = await res.json();
       
-      setCustomers(prev => ({ ...prev, ...mapCustomer }));
-      
-      // Append data untuk page > 1, replace untuk page 1
-      setOrders(prev => {
-        if (currentPage === 1) {
-          // Page 1: replace semua data
-          return finalOrders;
-        } else {
-          // Page > 1: append data baru, hindari duplikasi berdasarkan ID
-          const existingIds = new Set(prev.map(o => o.id));
-          const uniqueNewOrders = finalOrders.filter(o => !existingIds.has(o.id));
-          const merged = [...prev, ...uniqueNewOrders];
-          
-          // Jika data yang diterima < itemsPerPage, berarti sudah di page terakhir
-          // Update totalOrdersCount dan totalPages
-          if (finalOrders.length < itemsPerPage) {
-            setTotalOrdersCount(merged.length);
-            setTotalPages(currentPage);
-          }
-          
-          return merged;
+      // Handle response dengan struktur: { success: true, data: [...], pagination: { current_page, last_page, per_page, total } }
+      if (json.success && json.data && Array.isArray(json.data)) {
+        // Replace data (bukan append) karena ini pagination dengan nomor halaman
+        setOrders(json.data);
+
+        // Update pagination info dari pagination object
+        if (json.pagination) {
+          setTotalPages(json.pagination.last_page || 1);
+          setTotalOrdersCount(json.pagination.total || 0);
         }
-      });
+      }
       
       setNeedsRefresh(false);
     } catch (err) {
-      console.error("Error load data:", err);
+      console.error("Error fetching orders:", err);
       showToast("Gagal memuat data", "error");
       setNeedsRefresh(false);
     }
-  }, [currentPage, itemsPerPage, statistics]);
+  }, [showToast]);
 
   // Load statistics on mount
   useEffect(() => {
     loadStatistics();
   }, [loadStatistics]);
 
-  // Initial load
+  // Initial load: fetch page 1
   useEffect(() => {
-    setNeedsRefresh(true);
-  }, []);
+    fetchOrders(1);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Load data when needsRefresh is true
+  // Fetch data saat currentPage berubah
   useEffect(() => {
-    if (needsRefresh) {
-      loadData();
+    if (currentPage > 0) {
+      fetchOrders(currentPage);
     }
-  }, [needsRefresh, loadData]);
-
-  // Load More function - untuk load data berikutnya (append)
-  const loadMore = useCallback(() => {
-    if (currentPage >= totalPages || needsRefresh) return; // Jangan load jika sudah di page terakhir atau sedang loading
-    const nextPage = currentPage + 1;
-    console.log("🔄 Load More clicked, loading page:", nextPage);
-    setCurrentPage(nextPage);
-    setNeedsRefresh(true);
-  }, [currentPage, totalPages, needsRefresh]);
+  }, [currentPage, fetchOrders]);
 
   // 🔹 Refresh all data (reset to page 1)
   const requestRefresh = async (message, type = "success") => {
-    // Clear orders first, then reset to page 1
-    setOrders([]);
     setCurrentPage(1);
-    setNeedsRefresh(true);
-    await loadStatistics();
+    await Promise.all([loadStatistics(), fetchOrders(1)]);
     if (message) showToast(message, type);
+  };
+
+  // Handle page change
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages && newPage !== currentPage) {
+      setCurrentPage(newPage);
+    }
   };
 
   // === Helper ===
@@ -270,27 +184,6 @@ export default function DaftarPesanan() {
   const approvedOrders = statistics?.total_order_sudah_diapprove || 0;
   const ditolakOrders = statistics?.total_order_ditolak || 0;
 
-  // === FILTER SEARCH ===
-  // Search dilakukan client-side dari data current page
-  const filteredOrders = useMemo(() => {
-    const term = debouncedSearch.trim().toLowerCase();
-    if (!term) return orders;
-    return orders.filter((o) => {
-      const prod = (o.produk_rel?.nama || produkMap[o.produk] || "").toString();
-      const cust = (o.customer_rel?.nama || customers[o.customer] || "").toString();
-      return (
-        prod.toLowerCase().includes(term) ||
-        cust.toLowerCase().includes(term)
-      );
-    });
-  }, [orders, debouncedSearch, produkMap, customers]);
-
-  // Reset ke page 1 saat search berubah
-  useEffect(() => {
-    if (debouncedSearch.trim() && currentPage !== 1) {
-      setCurrentPage(1);
-    }
-  }, [debouncedSearch]);
 
 
   // === EVENT HANDLERS ===
@@ -374,16 +267,6 @@ export default function DaftarPesanan() {
           </div>
 
           <div className="orders-toolbar">
-            <div className="orders-search">
-              <input
-                type="search"
-                placeholder="Cari customer atau produk..."
-                className="orders-search__input"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-              />
-              <span className="orders-search__icon pi pi-search" />
-            </div>
             <button className="orders-button orders-button--primary" onClick={() => setShowAdd(true)}>
               + Tambah Pesanan
             </button>
@@ -439,7 +322,7 @@ export default function DaftarPesanan() {
               <p className="panel__eyebrow">Directory</p>
               <h3 className="panel__title">Order roster</h3>
             </div>
-            <span className="panel__meta">{totalOrdersCount || filteredOrders.length} orders</span>
+            <span className="panel__meta">{totalOrdersCount || orders.length} orders</span>
           </div>
 
           <div className="orders-table__wrapper">
@@ -450,25 +333,13 @@ export default function DaftarPesanan() {
                 ))}
               </div>
               <div className="orders-table__body">
-                {filteredOrders.length > 0 ? (
-                  filteredOrders.map((order, i) => {
-                    // Handle produk name - ensure it's always a string
-                    let produkNama = "-";
-                    if (order.produk_rel?.nama) {
-                      produkNama = String(order.produk_rel.nama);
-                    } else if (order.produk) {
-                      const produkId = typeof order.produk === "object" ? order.produk?.id : order.produk;
-                      produkNama = produkMap[produkId] || (typeof order.produk === "object" ? order.produk?.nama : String(order.produk)) || "-";
-                    }
+                {orders.length > 0 ? (
+                  orders.map((order, i) => {
+                    // Handle produk name - dari produk_rel
+                    const produkNama = order.produk_rel?.nama || "-";
 
-                    // Handle customer name - ensure it's always a string
-                    let customerNama = "-";
-                    if (order.customer_rel?.nama) {
-                      customerNama = String(order.customer_rel.nama);
-                    } else if (order.customer) {
-                      const customerId = typeof order.customer === "object" ? order.customer?.id : order.customer;
-                      customerNama = customers[customerId] || (typeof order.customer === "object" ? order.customer?.nama : String(order.customer)) || "-";
-                    }
+                    // Handle customer name - dari customer_rel
+                    const customerNama = order.customer_rel?.nama || "-";
 
                     const statusBayar = computeStatusBayar(order);
                     const statusLabel = STATUS_MAP[statusBayar] || "Unpaid";
@@ -476,7 +347,7 @@ export default function DaftarPesanan() {
                     return (
                       <div className="orders-table__row" key={order.id || `${order.id}-${i}`}>
                         <div className="orders-table__cell" data-label="#">
-                          {i + 1}
+                          {(currentPage - 1) * 15 + i + 1}
                         </div>
                         <div className="orders-table__cell orders-table__cell--strong" data-label="Customer">
                           {customerNama}
@@ -546,67 +417,123 @@ export default function DaftarPesanan() {
             </div>
           </div>
 
-          {/* Load More Button - Load data berikutnya (append) */}
-          <div className="orders-pagination" style={{ display: "flex", justifyContent: "center", padding: "1rem" }}>
-            {/* Selalu tampilkan button jika orders.length >= itemsPerPage (kemungkinan masih ada data)
-                Atau jika orders.length < totalOrdersCount (masih ada data yang belum di-load)
-            */}
-            {(orders.length >= itemsPerPage || orders.length < totalOrdersCount || currentPage < totalPages) && 
-             !(orders.length >= totalOrdersCount && totalOrdersCount > 0) ? (
+          {/* Pagination dengan nomor halaman */}
+          {totalPages > 1 && (
+            <div className="orders-pagination" style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "0.5rem", padding: "1rem", flexWrap: "wrap" }}>
+              {/* Previous Button */}
               <button
-                className="orders-pagination__btn orders-pagination__btn--load-more"
-                onClick={loadMore}
-                disabled={needsRefresh}
-                aria-label="Load more orders"
+                className="orders-pagination__btn"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1 || needsRefresh}
+                aria-label="Previous page"
                 style={{
-                  padding: "0.75rem 1.5rem",
-                  fontSize: "0.95rem",
-                  fontWeight: 600,
-                  background: "#f1a124",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "0.5rem",
-                  cursor: needsRefresh ? "not-allowed" : "pointer",
-                  opacity: needsRefresh ? 0.7 : 1,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  transition: "all 0.2s ease",
-                  boxShadow: "0 2px 8px rgba(241, 161, 36, 0.3)"
-                }}
-                onMouseEnter={(e) => {
-                  if (!needsRefresh) {
-                    e.target.style.background = "#df9620";
-                    e.target.style.transform = "translateY(-1px)";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!needsRefresh) {
-                    e.target.style.background = "#f1a124";
-                    e.target.style.transform = "translateY(0)";
-                  }
+                  padding: "0.5rem 0.75rem",
+                  minWidth: "40px"
                 }}
               >
-                {needsRefresh ? (
-                  <>
-                    <i className="pi pi-spin pi-spinner" />
-                    Loading...
-                  </>
-                ) : (
-                  <>
-                    <i className="pi pi-chevron-down" />
-                    Load More ({orders.length} of {totalOrdersCount || "?"} loaded)
-                  </>
-                )}
+                <i className="pi pi-chevron-left" />
               </button>
-            ) : (
-              <div className="orders-pagination__info">
-                <p style={{ color: "var(--dash-muted-strong)", fontSize: "0.9rem", fontWeight: 500 }}>
-                  Semua data sudah ditampilkan ({orders.length} orders)
-                </p>
-              </div>
-            )}
-          </div>
+
+              {/* Page Numbers */}
+              {(() => {
+                const pages = [];
+                const maxVisible = 5; // Tampilkan maksimal 5 nomor halaman
+                let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+                let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+                
+                // Adjust startPage jika endPage sudah di akhir
+                if (endPage - startPage < maxVisible - 1) {
+                  startPage = Math.max(1, endPage - maxVisible + 1);
+                }
+
+                // First page
+                if (startPage > 1) {
+                  pages.push(
+                    <button
+                      key={1}
+                      className={`orders-pagination__btn ${currentPage === 1 ? "orders-pagination__btn--active" : ""}`}
+                      onClick={() => handlePageChange(1)}
+                      disabled={needsRefresh}
+                    >
+                      1
+                    </button>
+                  );
+                  if (startPage > 2) {
+                    pages.push(
+                      <span key="ellipsis-start" className="orders-pagination__ellipsis">
+                        ...
+                      </span>
+                    );
+                  }
+                }
+
+                // Page numbers
+                for (let i = startPage; i <= endPage; i++) {
+                  pages.push(
+                    <button
+                      key={i}
+                      className={`orders-pagination__btn ${currentPage === i ? "orders-pagination__btn--active" : ""}`}
+                      onClick={() => handlePageChange(i)}
+                      disabled={needsRefresh}
+                      style={{
+                        fontWeight: currentPage === i ? 600 : 400,
+                        background: currentPage === i ? "#f1a124" : "var(--dash-surface)",
+                        color: currentPage === i ? "#fff" : "var(--dash-text)",
+                        minWidth: "40px"
+                      }}
+                    >
+                      {i}
+                    </button>
+                  );
+                }
+
+                // Last page
+                if (endPage < totalPages) {
+                  if (endPage < totalPages - 1) {
+                    pages.push(
+                      <span key="ellipsis-end" style={{ padding: "0 0.5rem", color: "var(--dash-muted-strong)" }}>
+                        ...
+                      </span>
+                    );
+                  }
+                  pages.push(
+                    <button
+                      key={totalPages}
+                      className={`orders-pagination__btn ${currentPage === totalPages ? "orders-pagination__btn--active" : ""}`}
+                      onClick={() => handlePageChange(totalPages)}
+                      disabled={needsRefresh}
+                    >
+                      {totalPages}
+                    </button>
+                  );
+                }
+
+                return pages;
+              })()}
+
+              {/* Next Button */}
+              <button
+                className="orders-pagination__btn"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage >= totalPages || needsRefresh}
+                aria-label="Next page"
+                style={{
+                  padding: "0.5rem 0.75rem",
+                  minWidth: "40px"
+                }}
+              >
+                <i className="pi pi-chevron-right" />
+              </button>
+
+              {/* Loading indicator */}
+              {needsRefresh && (
+                <span className="orders-pagination__loading" style={{ marginLeft: "0.5rem", fontSize: "0.875rem", color: "var(--dash-muted-strong)" }}>
+                  <i className="pi pi-spin pi-spinner" style={{ marginRight: "0.25rem" }} />
+                  Loading...
+                </span>
+              )}
+            </div>
+          )}
         </section>
 
         {/* TOAST */}
@@ -638,12 +565,7 @@ export default function DaftarPesanan() {
         <ViewOrders
           order={{
             ...selectedOrder,
-            customer:
-              selectedOrder.customer_rel?.nama ||
-              (typeof selectedOrder.customer === "object"
-                ? selectedOrder.customer?.nama
-                : customers[selectedOrder.customer]) ||
-              "-",
+            customer: selectedOrder.customer_rel?.nama || "-",
           }}
           onClose={() => {
             setShowView(false);
@@ -656,17 +578,12 @@ export default function DaftarPesanan() {
         <UpdateOrders
           order={{
             ...selectedOrder,
-            customer:
-              selectedOrder.customer_rel?.nama ||
-              (typeof selectedOrder.customer === "object"
-                ? selectedOrder.customer?.nama
-                : customers[selectedOrder.customer]) ||
-              "-",
+            customer: selectedOrder.customer_rel?.nama || "-",
           }}
           onClose={() => {
             setShowEdit(false);
             setSelectedOrder(null);
-            setNeedsRefresh(true);  // ⬅️ ini auto refresh
+            requestRefresh(""); // Auto refresh setelah edit
           }}
           onSave={handleSuccessEdit}
           setToast={setToast}
