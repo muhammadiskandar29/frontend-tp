@@ -52,21 +52,22 @@ function useDebouncedValue(value, delay = 250) {
 const DEFAULT_TOAST = { show: false, message: "", type: "success" };
 
 export default function DaftarPesanan() {
-  const [orders, setOrders] = useState([]);
+  // Client-side pagination state
+  const [orders, setOrders] = useState([]); // Array gabungan semua data
+  const [page, setPage] = useState(1); // Current page untuk fetch
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  
   const [customers, setCustomers] = useState({});
   const [produkMap, setProdukMap] = useState({});
   const [statistics, setStatistics] = useState(null);
-  const [needsRefresh, setNeedsRefresh] = useState(true);
-  const [refreshKey, setRefreshKey] = useState(0);
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearch = useDebouncedValue(searchInput);
   const [showAdd, setShowAdd] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showView, setShowView] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalOrdersCount, setTotalOrdersCount] = useState(0);
+  
   const itemsPerPage = 15;
 
   const [toast, setToast] = useState(DEFAULT_TOAST);
@@ -101,37 +102,23 @@ export default function DaftarPesanan() {
     }
   }, []);
 
-  // 🔹 Load data dari backend - Optimized dengan useCallback dan prevent duplicate fetch
-  const loadData = useCallback(async () => {
+  // 🔹 Load produk data (one-time fetch)
+  const loadProduk = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
-      if (!token) {
-        console.warn("No token found");
-        setNeedsRefresh(false);
-        return;
-      }
+      if (!token) return;
 
-      // Fetch produk, orders, dan statistics secara parallel untuk optimasi
-      const [produkResponse, ordersResult] = await Promise.all([
-        // Ambil produk melalui Next.js proxy
-        fetch("/api/sales/produk", {
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }).then(res => res.json()).catch(err => {
-          console.error("Error fetching produk:", err);
-          return { success: false, data: [] };
-        }),
-        // Ambil orders dengan pagination - server-side pagination
-        getOrders(currentPage, itemsPerPage).catch(err => {
-          console.error("Error fetching orders:", err);
-          return { data: [], total: 0, last_page: 1 };
-        })
-      ]);
-      
-      // Handle produk data
+      const produkResponse = await fetch("/api/sales/produk", {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }).then(res => res.json()).catch(err => {
+        console.error("Error fetching produk:", err);
+        return { success: false, data: [] };
+      });
+
       if (produkResponse.success && Array.isArray(produkResponse.data)) {
         const mapProduk = {};
         produkResponse.data.forEach((p) => {
@@ -139,125 +126,101 @@ export default function DaftarPesanan() {
         });
         setProdukMap(mapProduk);
       }
-      
-      // Handle orders data - response sudah dalam format { data, total, last_page, current_page, per_page }
-      const finalOrders = Array.isArray(ordersResult.data) ? ordersResult.data : [];
-      
-      // Update pagination info from response
-      console.log("📊 Orders Result:", ordersResult);
-      
-      // Priority 1: Use pagination info from API response if available
-      if (ordersResult.total !== undefined && ordersResult.total > 0) {
-        setTotalOrdersCount(ordersResult.total);
-        const calculatedPages = Math.ceil(ordersResult.total / itemsPerPage);
-        const lastPage = ordersResult.last_page || calculatedPages || 1;
-        setTotalPages(lastPage);
-        console.log("📊 Pagination Info from API:", {
-          total: ordersResult.total,
-          last_page: lastPage,
-          current_page: ordersResult.current_page || currentPage,
-          per_page: itemsPerPage
-        });
-      } 
-      // Priority 2: Use statistics.total_order if available (fallback when API doesn't return pagination metadata)
-      else if (statistics && statistics.total_order !== undefined && statistics.total_order > 0) {
-        const totalFromStats = statistics.total_order;
-        setTotalOrdersCount(totalFromStats);
-        const calculatedPages = Math.ceil(totalFromStats / itemsPerPage);
-        setTotalPages(calculatedPages);
-        console.log("📊 Pagination Info from Statistics:", {
-          total: totalFromStats,
-          last_page: calculatedPages,
-          current_page: currentPage,
-          per_page: itemsPerPage,
-          note: "Using statistics API as fallback"
-        });
-      }
-      // Priority 3: If we have 15 items (full page), use statistics to calculate total pages
-      else if (finalOrders.length >= itemsPerPage) {
-        // If we got a full page (15 items), there's likely more data
-        // Try to use statistics.total_order if available, otherwise assume at least 2 pages
-        if (statistics && statistics.total_order !== undefined && statistics.total_order > 0) {
-          const totalFromStats = statistics.total_order;
-          setTotalOrdersCount(totalFromStats);
-          const calculatedPages = Math.ceil(totalFromStats / itemsPerPage);
-          setTotalPages(calculatedPages);
-          console.log("📊 Pagination Info from Statistics (full page detected):", {
-            total: totalFromStats,
-            last_page: calculatedPages,
-            current_page: currentPage,
-            per_page: itemsPerPage
-          });
-        } else {
-          // Fallback: assume at least 2 pages if we got full page
-          setTotalOrdersCount(finalOrders.length);
-          setTotalPages(2);
-          console.log("⚠️ No pagination info and no statistics, but got full page. Assuming at least 2 pages.");
-        }
-      }
-      // Priority 4: Less than full page, probably last page
-      else if (finalOrders.length > 0) {
-        setTotalOrdersCount(finalOrders.length);
-        setTotalPages(1);
-        console.log("⚠️ No pagination info, using fallback (less than full page)");
-      } 
-      // No data
-      else {
-        setTotalOrdersCount(0);
-        setTotalPages(1);
+    } catch (err) {
+      console.error("Error loading produk:", err);
+    }
+  }, []);
+
+  // 🔹 Fetch orders untuk page tertentu - Client-side pagination dengan append
+  const fetchOrders = useCallback(async (pageNumber) => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.warn("No token found");
+        setIsLoading(false);
+        return;
       }
 
-      // Map customer
+      // Fetch orders dengan pagination
+      const ordersResult = await getOrders(pageNumber, itemsPerPage).catch(err => {
+        console.error("Error fetching orders:", err);
+        return { data: [] };
+      });
+
+      const newOrders = Array.isArray(ordersResult.data) ? ordersResult.data : [];
+      
+      console.log(`📦 Fetched page ${pageNumber}:`, {
+        newOrdersCount: newOrders.length,
+        totalOrdersBefore: orders.length,
+        totalOrdersAfter: orders.length + newOrders.length
+      });
+
+      // Merge data lama + baru (append)
+      setOrders(prevOrders => {
+        // Avoid duplicates by checking IDs
+        const existingIds = new Set(prevOrders.map(o => o.id));
+        const uniqueNewOrders = newOrders.filter(o => !existingIds.has(o.id));
+        const merged = [...prevOrders, ...uniqueNewOrders];
+        
+        // Set hasMore = false jika data < 15 (berarti sudah di page terakhir)
+        if (newOrders.length < itemsPerPage) {
+          setHasMore(false);
+          console.log("✅ No more data available. Total orders loaded:", merged.length);
+        }
+        
+        return merged;
+      });
+
+      // Update customer map
       const mapCustomer = {};
-      finalOrders.forEach((o) => {
+      newOrders.forEach((o) => {
         if (o.customer_rel?.id) {
           mapCustomer[o.customer_rel.id] = o.customer_rel.nama;
         } else if (o.customer && typeof o.customer === "object" && o.customer.id) {
           mapCustomer[o.customer.id] = o.customer.nama || "-";
         }
       });
-      
-      setCustomers(mapCustomer);
-      setOrders(finalOrders);
-      setNeedsRefresh(false);
-    } catch (err) {
-      console.error("Error load data:", err);
-      showToast("Gagal memuat data", "error");
-      setNeedsRefresh(false);
-    }
-  }, [currentPage, itemsPerPage, statistics]); // Include statistics untuk fallback pagination calculation
+      setCustomers(prev => ({ ...prev, ...mapCustomer }));
 
-  // Load statistics on mount
-  // Load statistics FIRST, then load data
+      setIsLoading(false);
+    } catch (err) {
+      console.error("Error fetching orders:", err);
+      showToast("Gagal memuat data", "error");
+      setIsLoading(false);
+    }
+  }, [itemsPerPage, showToast]);
+
+  // 🔹 Load More function
+  const loadMore = useCallback(() => {
+    if (isLoading || !hasMore) return;
+    
+    const nextPage = page + 1;
+    console.log("🔄 Loading more data, page:", nextPage);
+    setPage(nextPage);
+    fetchOrders(nextPage);
+  }, [page, isLoading, hasMore, fetchOrders]);
+
+  // Initial load: Fetch statistics, produk, and first page of orders
   useEffect(() => {
     const initializeData = async () => {
-      // Load statistics first
-      await loadStatistics();
-      // Then load data (which will use statistics for pagination)
-      setNeedsRefresh(true);
+      // Load statistics and produk in parallel
+      await Promise.all([loadStatistics(), loadProduk()]);
+      // Then load first page of orders
+      fetchOrders(1);
     };
     initializeData();
-  }, [loadStatistics]);
+  }, [loadStatistics, loadProduk, fetchOrders]);
 
-  // Load data when needsRefresh is true
-  useEffect(() => {
-    if (needsRefresh) {
-      loadData();
-    }
-  }, [needsRefresh, loadData]); // Include loadData in dependencies
-
-  // 🔹 Direct refresh function that loads data immediately - Reuse loadData
-  const refreshData = useCallback(async () => {
-    setNeedsRefresh(true);
-    await loadData();
-  }, [loadData, currentPage]);
-
+  // 🔹 Refresh all data (reset to page 1)
   const requestRefresh = async (message, type = "success") => {
-    // Reset to first page first
-    setCurrentPage(1);
-    // Refresh statistics and data
-    await Promise.all([loadStatistics(), refreshData()]);
-    // Show success message after refresh completes
+    // Reset state
+    setOrders([]);
+    setPage(1);
+    setHasMore(true);
+    
+    // Refresh statistics and fetch first page
+    await Promise.all([loadStatistics(), fetchOrders(1)]);
     showToast(message, type);
   };
 
@@ -283,7 +246,7 @@ export default function DaftarPesanan() {
   const ditolakOrders = statistics?.total_order_ditolak || 0;
 
   // === FILTER SEARCH ===
-  // Note: Search dilakukan client-side dari data yang sudah di-fetch per page
+  // Search dilakukan client-side dari semua data yang sudah di-fetch
   const filteredOrders = useMemo(() => {
     const term = debouncedSearch.trim().toLowerCase();
     if (!term) return orders;
@@ -297,51 +260,6 @@ export default function DaftarPesanan() {
     });
   }, [orders, debouncedSearch, produkMap, customers]);
 
-  // === PAGINATION ===
-  // Pagination dilakukan di server-side dengan parameter page dan per_page
-  // Setiap perubahan page akan trigger fetch baru dari API
-  const paginatedData = useMemo(() => {
-    // Jika ada search, filter data yang sudah di-fetch dari current page
-    // Jika tidak ada search, langsung gunakan data dari server (sudah di-paginate)
-    return filteredOrders;
-  }, [filteredOrders]);
-
-  // Reset ke page 1 saat search berubah
-  useEffect(() => {
-    if (debouncedSearch.trim() && currentPage !== 1) {
-      setCurrentPage(1);
-    }
-  }, [debouncedSearch]);
-
-  // Update totalPages when statistics changes (if API doesn't provide pagination metadata)
-  // This ensures pagination works even when API response doesn't include pagination metadata
-  useEffect(() => {
-    if (statistics && statistics.total_order !== undefined && statistics.total_order > 0) {
-      const calculatedPages = Math.ceil(statistics.total_order / itemsPerPage);
-      // Always update if calculated pages is greater than current totalPages
-      // This ensures statistics is used to calculate pagination
-      if (calculatedPages > totalPages) {
-        setTotalPages(calculatedPages);
-        setTotalOrdersCount(statistics.total_order);
-        console.log("🔄 Updated pagination from statistics:", {
-          total: statistics.total_order,
-          last_page: calculatedPages,
-          current_page: currentPage,
-          previous_totalPages: totalPages
-        });
-      }
-    }
-  }, [statistics, itemsPerPage]);
-
-  // Reload data saat currentPage berubah (server-side pagination)
-  // Setiap kali page berubah, fetch data baru dari API dengan page yang sesuai
-  useEffect(() => {
-    // Reload data saat currentPage berubah (kecuali saat initial mount)
-    if (currentPage > 0) {
-      console.log("🔄 Page changed to:", currentPage, "- Fetching data...");
-      setNeedsRefresh(true);
-    }
-  }, [currentPage]);
 
   // === EVENT HANDLERS ===
   const handleView = (order) => {
@@ -391,15 +309,14 @@ export default function DaftarPesanan() {
   
         showToast(result.message || "Order berhasil diupdate!", "success");
 
-        // Refresh statistics and data
-        await Promise.all([loadStatistics(), refreshData()]);
+        // Refresh statistics
+        await loadStatistics();
       } else {
         showToast(result.message || "Gagal mengupdate order", "error");
       }
     } catch (err) {
       console.error("Error updating order:", err);
       showToast("Terjadi kesalahan saat mengupdate order", "error");
-      await refreshData();
     }
   };
   
@@ -490,7 +407,7 @@ export default function DaftarPesanan() {
               <p className="panel__eyebrow">Directory</p>
               <h3 className="panel__title">Order roster</h3>
             </div>
-            <span className="panel__meta">{totalOrdersCount || filteredOrders.length} orders</span>
+            <span className="panel__meta">{filteredOrders.length} orders</span>
           </div>
 
           <div className="orders-table__wrapper">
@@ -527,7 +444,7 @@ export default function DaftarPesanan() {
                     return (
                       <div className="orders-table__row" key={order.id || `${order.id}-${i}`}>
                         <div className="orders-table__cell" data-label="#">
-                          {(currentPage - 1) * itemsPerPage + i + 1}
+                          {i + 1}
                         </div>
                         <div className="orders-table__cell orders-table__cell--strong" data-label="Customer">
                           {customerNama}
@@ -597,60 +514,34 @@ export default function DaftarPesanan() {
             </div>
           </div>
 
-          {/* Pagination - Always show pagination controls */}
+          {/* Load More Button - Client-side pagination */}
           <div className="orders-pagination">
-            <button
-              className="orders-pagination__btn"
-              onClick={() => {
-                const newPage = Math.max(1, currentPage - 1);
-                console.log("⬅️ Previous page clicked, going to page:", newPage);
-                setCurrentPage(newPage);
-              }}
-              disabled={currentPage === 1}
-              aria-label="Previous page"
-            >
-              <i className="pi pi-chevron-left" />
-            </button>
-            <span className="orders-pagination__info">
-              Page {currentPage} of {totalPages || 1} ({totalOrdersCount > 0 ? totalOrdersCount : (filteredOrders.length || orders.length)} total)
-            </span>
-            <button
-              className="orders-pagination__btn"
-              onClick={() => {
-                const maxPage = totalPages || 1;
-                const newPage = Math.min(maxPage, currentPage + 1);
-                console.log("➡️ Next page clicked, going to page:", newPage, "of", maxPage);
-                console.log("📊 Current state:", { 
-                  currentPage, 
-                  totalPages, 
-                  totalOrdersCount, 
-                  ordersLength: orders.length,
-                  itemsPerPage,
-                  canGoNext: currentPage < maxPage
-                });
-                setCurrentPage(newPage);
-              }}
-              disabled={(() => {
-                // Simple: disable if we're on the last page
-                // totalPages should be calculated from statistics.total_order (128 / 15 = 9 pages)
-                const maxPage = totalPages || 1;
-                const isDisabled = currentPage >= maxPage;
-                
-                console.log("🔘 Next button state:", { 
-                  currentPage, 
-                  maxPage, 
-                  totalPages,
-                  totalOrdersCount,
-                  isDisabled,
-                  ordersLength: orders.length
-                });
-                
-                return isDisabled;
-              })()}
-              aria-label="Next page"
-            >
-              <i className="pi pi-chevron-right" />
-            </button>
+            {hasMore ? (
+              <button
+                className="orders-pagination__btn orders-pagination__btn--load-more"
+                onClick={loadMore}
+                disabled={isLoading}
+                aria-label="Load more orders"
+              >
+                {isLoading ? (
+                  <>
+                    <i className="pi pi-spin pi-spinner" style={{ marginRight: "0.5rem" }} />
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <i className="pi pi-chevron-down" style={{ marginRight: "0.5rem" }} />
+                    Load More
+                  </>
+                )}
+              </button>
+            ) : (
+              <div className="orders-pagination__info">
+                <p style={{ color: "var(--dash-muted-strong)", fontSize: "0.9rem", fontWeight: 500 }}>
+                  Semua data sudah ditampilkan ({filteredOrders.length} orders)
+                </p>
+              </div>
+            )}
           </div>
         </section>
 
@@ -715,7 +606,7 @@ export default function DaftarPesanan() {
           }}
           onSave={handleSuccessEdit}
           setToast={setToast}
-          refreshOrders={() => setNeedsRefresh(true)}
+          refreshOrders={() => requestRefresh("")}
         />
       )}
     </Layout>
