@@ -145,24 +145,64 @@ export default function DaftarPesanan() {
       
       // Update pagination info from response
       console.log("📊 Orders Result:", ordersResult);
+      
+      // Priority 1: Use pagination info from API response if available
       if (ordersResult.total !== undefined && ordersResult.total > 0) {
         setTotalOrdersCount(ordersResult.total);
         const calculatedPages = Math.ceil(ordersResult.total / itemsPerPage);
         const lastPage = ordersResult.last_page || calculatedPages || 1;
         setTotalPages(lastPage);
-        console.log("📊 Pagination Info:", {
+        console.log("📊 Pagination Info from API:", {
           total: ordersResult.total,
           last_page: lastPage,
           current_page: ordersResult.current_page || currentPage,
           per_page: itemsPerPage
         });
-      } else if (finalOrders.length > 0) {
-        // Jika ada data tapi tidak ada pagination info, set minimal 1 page
+      } 
+      // Priority 2: Use statistics.total_order if available (fallback when API doesn't return pagination metadata)
+      else if (statistics && statistics.total_order !== undefined && statistics.total_order > 0) {
+        const totalFromStats = statistics.total_order;
+        setTotalOrdersCount(totalFromStats);
+        const calculatedPages = Math.ceil(totalFromStats / itemsPerPage);
+        setTotalPages(calculatedPages);
+        console.log("📊 Pagination Info from Statistics:", {
+          total: totalFromStats,
+          last_page: calculatedPages,
+          current_page: currentPage,
+          per_page: itemsPerPage,
+          note: "Using statistics API as fallback"
+        });
+      }
+      // Priority 3: If we have 15 items (full page), use statistics to calculate total pages
+      else if (finalOrders.length >= itemsPerPage) {
+        // If we got a full page (15 items), there's likely more data
+        // Try to use statistics.total_order if available, otherwise assume at least 2 pages
+        if (statistics && statistics.total_order !== undefined && statistics.total_order > 0) {
+          const totalFromStats = statistics.total_order;
+          setTotalOrdersCount(totalFromStats);
+          const calculatedPages = Math.ceil(totalFromStats / itemsPerPage);
+          setTotalPages(calculatedPages);
+          console.log("📊 Pagination Info from Statistics (full page detected):", {
+            total: totalFromStats,
+            last_page: calculatedPages,
+            current_page: currentPage,
+            per_page: itemsPerPage
+          });
+        } else {
+          // Fallback: assume at least 2 pages if we got full page
+          setTotalOrdersCount(finalOrders.length);
+          setTotalPages(2);
+          console.log("⚠️ No pagination info and no statistics, but got full page. Assuming at least 2 pages.");
+        }
+      }
+      // Priority 4: Less than full page, probably last page
+      else if (finalOrders.length > 0) {
         setTotalOrdersCount(finalOrders.length);
         setTotalPages(1);
-        console.log("⚠️ No pagination info, using fallback");
-      } else {
-        // Tidak ada data
+        console.log("⚠️ No pagination info, using fallback (less than full page)");
+      } 
+      // No data
+      else {
         setTotalOrdersCount(0);
         setTotalPages(1);
       }
@@ -185,18 +225,25 @@ export default function DaftarPesanan() {
       showToast("Gagal memuat data", "error");
       setNeedsRefresh(false);
     }
-  }, [currentPage, itemsPerPage]); // Include currentPage dan itemsPerPage untuk pagination
+  }, [currentPage, itemsPerPage, statistics]); // Include statistics untuk fallback pagination calculation
 
+  // Load statistics on mount
   // Load statistics on mount
   useEffect(() => {
     loadStatistics();
   }, [loadStatistics]);
 
+  // Initial load: set needsRefresh to true on mount
+  useEffect(() => {
+    setNeedsRefresh(true);
+  }, []);
+
+  // Load data when needsRefresh is true
   useEffect(() => {
     if (needsRefresh) {
       loadData();
     }
-  }, [needsRefresh]); // Trigger saat needsRefresh berubah
+  }, [needsRefresh, loadData]); // Include loadData in dependencies
 
   // 🔹 Direct refresh function that loads data immediately - Reuse loadData
   const refreshData = useCallback(async () => {
@@ -554,7 +601,12 @@ export default function DaftarPesanan() {
                 console.log("➡️ Next page clicked, going to page:", newPage, "of", maxPage);
                 setCurrentPage(newPage);
               }}
-              disabled={currentPage >= (totalPages || 1)}
+              disabled={
+                // Disable jika sudah di page terakhir
+                // Atau jika kita dapat kurang dari itemsPerPage (berarti sudah di page terakhir)
+                currentPage >= (totalPages || 1) || 
+                (orders.length < itemsPerPage && currentPage >= 1)
+              }
               aria-label="Next page"
             >
               <i className="pi pi-chevron-right" />
