@@ -5,7 +5,6 @@ import Layout from "@/components/Layout";
 import dynamic from "next/dynamic";
 import { ShoppingCart, Clock, CheckCircle, PartyPopper, XCircle } from "lucide-react";
 import { Calendar } from "primereact/calendar";
-import { Dropdown } from "primereact/dropdown";
 import "primereact/resources/themes/lara-light-cyan/theme.css";
 import "primereact/resources/primereact.min.css";
 import "@/styles/dashboard.css";
@@ -55,8 +54,6 @@ export default function DaftarPesanan() {
   // Filter state
   const [searchInput, setSearchInput] = useState("");
   const [dateRange, setDateRange] = useState(null); // [startDate, endDate] atau null
-  const [statusOrder, setStatusOrder] = useState(""); // 1=Proses, 2=Sukses, 3=Failed, 4=Upselling, N=Dihapus
-  const [statusPembayaran, setStatusPembayaran] = useState(""); // 0/null=Unpaid, 1=Menunggu Approve, 2=Paid, 3=Reject, 4=DP
   
   // State lainnya
   const [statistics, setStatistics] = useState(null);
@@ -275,28 +272,8 @@ export default function DaftarPesanan() {
       });
     }
 
-    // Filter by Status Order
-    if (statusOrder) {
-      filtered = filtered.filter((order) => {
-        const orderStatus = order.status_order?.toString() || "";
-        return orderStatus === statusOrder;
-      });
-    }
-
-    // Filter by Status Pembayaran
-    if (statusPembayaran !== "") {
-      filtered = filtered.filter((order) => {
-        const pembayaranStatus = order.status_pembayaran?.toString() || (order.status_pembayaran === null ? "0" : "");
-        // Handle null/0 sebagai "Belum Pembayaran"
-        if (statusPembayaran === "0") {
-          return pembayaranStatus === "0" || pembayaranStatus === "" || order.status_pembayaran === null;
-        }
-        return pembayaranStatus === statusPembayaran;
-      });
-    }
-
     return filtered;
-  }, [orders, searchInput, dateRange, statusOrder, statusPembayaran]);
+  }, [orders, searchInput, dateRange]);
 
   // === SUMMARY ===
   // Gunakan data dari statistics API
@@ -457,78 +434,6 @@ export default function DaftarPesanan() {
               <h3 className="panel__title">Order roster</h3>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-              <span className="panel__meta">{filteredOrders.length} orders</span>
-              
-              {/* Status Order Filter */}
-              <div style={{ position: "relative" }}>
-                <label style={{ 
-                  display: "block", 
-                  marginBottom: "0.5rem", 
-                  fontSize: "0.875rem",
-                  fontWeight: 500,
-                  color: "var(--dash-text)"
-                }}>
-                  Status Order
-                </label>
-                <Dropdown
-                  value={statusOrder}
-                  onChange={(e) => setStatusOrder(e.value)}
-                  options={[
-                    { label: "Semua", value: "" },
-                    { label: "Proses", value: "1" },
-                    { label: "Sukses", value: "2" },
-                    { label: "Failed", value: "3" },
-                    { label: "Upselling", value: "4" },
-                    { label: "Dihapus", value: "N" }
-                  ]}
-                  placeholder="Pilih Status Order"
-                  style={{
-                    width: "180px"
-                  }}
-                  panelStyle={{
-                    background: "#ffffff",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "0.5rem",
-                    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)"
-                  }}
-                />
-              </div>
-
-              {/* Status Pembayaran Filter */}
-              <div style={{ position: "relative" }}>
-                <label style={{ 
-                  display: "block", 
-                  marginBottom: "0.5rem", 
-                  fontSize: "0.875rem",
-                  fontWeight: 500,
-                  color: "var(--dash-text)"
-                }}>
-                  Status Pembayaran
-                </label>
-                <Dropdown
-                  value={statusPembayaran}
-                  onChange={(e) => setStatusPembayaran(e.value)}
-                  options={[
-                    { label: "Semua", value: "" },
-                    { label: "Belum Pembayaran (Unpaid)", value: "0" },
-                    { label: "Menunggu Approve Finance", value: "1" },
-                    { label: "Finance Approved (Paid)", value: "2" },
-                    { label: "Reject Finance", value: "3" },
-                    { label: "DP", value: "4" }
-                  ]}
-                  placeholder="Pilih Status Pembayaran"
-                  style={{
-                    width: "220px"
-                  }}
-                  panelStyle={{
-                    background: "#ffffff",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "0.5rem",
-                    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)"
-                  }}
-                />
-              </div>
-
               {/* Date Range Picker - Rata Kanan */}
               <div style={{ position: "relative" }}>
                 <label style={{ 
@@ -579,13 +484,9 @@ export default function DaftarPesanan() {
               </div>
 
               {/* Clear Filter Button */}
-              {(dateRange || statusOrder || statusPembayaran) && (
+              {dateRange && Array.isArray(dateRange) && dateRange.length === 2 && dateRange[0] && dateRange[1] && (
                 <button
-                  onClick={() => {
-                    setDateRange(null);
-                    setStatusOrder("");
-                    setStatusPembayaran("");
-                  }}
+                  onClick={() => setDateRange(null)}
                   style={{
                     padding: "0.5rem 0.75rem",
                     background: "#e5e7eb",
