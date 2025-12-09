@@ -52,18 +52,22 @@ function useDebouncedValue(value, delay = 250) {
 const DEFAULT_TOAST = { show: false, message: "", type: "success" };
 
 export default function DaftarPesanan() {
-  // Pagination state sesuai requirement
+  // Server-side pagination state
   const [orders, setOrders] = useState([]);
-  const [page, setPage] = useState(1);
-  const [lastPage, setLastPage] = useState(null);
-  const [loading, setLoading] = useState(false);
-  
-  // State lainnya
+  const [customers, setCustomers] = useState({});
+  const [produkMap, setProdukMap] = useState({});
   const [statistics, setStatistics] = useState(null);
+  const [needsRefresh, setNeedsRefresh] = useState(true);
+  const [searchInput, setSearchInput] = useState("");
+  const debouncedSearch = useDebouncedValue(searchInput);
   const [showAdd, setShowAdd] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showView, setShowView] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalOrdersCount, setTotalOrdersCount] = useState(0);
+  const itemsPerPage = 15;
 
   const [toast, setToast] = useState(DEFAULT_TOAST);
   const toastTimeoutRef = useRef(null);
@@ -97,98 +101,151 @@ export default function DaftarPesanan() {
     }
   }, []);
 
-  // 🔹 Fetch orders dengan struktur response baru
-  const fetchOrders = useCallback(async (pageNumber) => {
-    // Validasi: jangan fetch jika page > lastPage
-    if (lastPage !== null && pageNumber > lastPage) {
-      console.log("⚠️ Page sudah melebihi lastPage, skip fetch");
-      return;
-    }
-
-    setLoading(true);
+  // 🔹 Load data dari backend - Server-side pagination
+  const loadData = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
         console.warn("No token found");
-        setLoading(false);
+        setNeedsRefresh(false);
         return;
       }
 
-      const res = await fetch(`/api/sales/order?page=${pageNumber}`, {
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-
-      const json = await res.json();
+      // Fetch produk dan orders secara parallel
+      const [produkResponse, ordersResult] = await Promise.all([
+        fetch("/api/sales/produk", {
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }).then(res => res.json()).catch(err => {
+          console.error("Error fetching produk:", err);
+          return { success: false, data: [] };
+        }),
+        getOrders(currentPage, itemsPerPage).catch(err => {
+          console.error("Error fetching orders:", err);
+          return { data: [], total: 0, last_page: 1 };
+        })
+      ]);
       
-      // Handle response dengan struktur: { data: [...], pagination: { current_page, last_page, per_page, total } }
-      if (json.data && Array.isArray(json.data)) {
-        // Page 1: replace data, Page > 1: append data
-        setOrders(prev => {
-          if (pageNumber === 1) {
-            // Page 1: replace semua data
-            return json.data;
-          } else {
-            // Page > 1: append data baru, hindari duplikasi berdasarkan ID
-            const existingIds = new Set(prev.map(o => o.id));
-            const uniqueNewOrders = json.data.filter(o => !existingIds.has(o.id));
-            return [...prev, ...uniqueNewOrders];
-          }
+      // Handle produk data
+      if (produkResponse.success && Array.isArray(produkResponse.data)) {
+        const mapProduk = {};
+        produkResponse.data.forEach((p) => {
+          mapProduk[p.id] = p.nama;
         });
-
-        // Update lastPage dari pagination object
-        if (json.pagination && json.pagination.last_page !== undefined) {
-          setLastPage(json.pagination.last_page);
+        setProdukMap(mapProduk);
+      }
+      
+      // Handle orders data
+      const finalOrders = Array.isArray(ordersResult.data) ? ordersResult.data : [];
+      
+      // Update pagination info from response
+      if (ordersResult.total !== undefined && ordersResult.total > 0) {
+        setTotalOrdersCount(ordersResult.total);
+        const calculatedPages = Math.ceil(ordersResult.total / itemsPerPage);
+        const lastPage = ordersResult.last_page || calculatedPages || 1;
+        setTotalPages(lastPage);
+      } else if (statistics && statistics.total_order !== undefined && statistics.total_order > 0) {
+        const totalFromStats = statistics.total_order;
+        setTotalOrdersCount(totalFromStats);
+        const calculatedPages = Math.ceil(totalFromStats / itemsPerPage);
+        setTotalPages(calculatedPages);
+      } else if (finalOrders.length >= itemsPerPage) {
+        // Jika dapat 15 data (full page), kemungkinan masih ada data
+        // Set totalPages minimal 2 agar button Load More muncul
+        setTotalPages(2);
+        // Jika statistics tersedia, gunakan untuk totalOrdersCount
+        if (statistics && statistics.total_order) {
+          setTotalOrdersCount(statistics.total_order);
+          const calculatedPages = Math.ceil(statistics.total_order / itemsPerPage);
+          setTotalPages(calculatedPages);
+        } else {
+          // Fallback: set totalOrdersCount lebih besar dari current untuk trigger button
+          setTotalOrdersCount(finalOrders.length + 1);
         }
+      } else {
+        // Kurang dari 15 data, berarti sudah di page terakhir
+        setTotalOrdersCount(finalOrders.length);
+        setTotalPages(1);
       }
 
-      setLoading(false);
+      // Map customer
+      const mapCustomer = {};
+      finalOrders.forEach((o) => {
+        if (o.customer_rel?.id) {
+          mapCustomer[o.customer_rel.id] = o.customer_rel.nama;
+        } else if (o.customer && typeof o.customer === "object" && o.customer.id) {
+          mapCustomer[o.customer.id] = o.customer.nama || "-";
+        }
+      });
+      
+      setCustomers(prev => ({ ...prev, ...mapCustomer }));
+      
+      // Append data untuk page > 1, replace untuk page 1
+      setOrders(prev => {
+        if (currentPage === 1) {
+          // Page 1: replace semua data
+          return finalOrders;
+        } else {
+          // Page > 1: append data baru, hindari duplikasi berdasarkan ID
+          const existingIds = new Set(prev.map(o => o.id));
+          const uniqueNewOrders = finalOrders.filter(o => !existingIds.has(o.id));
+          const merged = [...prev, ...uniqueNewOrders];
+          
+          // Jika data yang diterima < itemsPerPage, berarti sudah di page terakhir
+          // Update totalOrdersCount dan totalPages
+          if (finalOrders.length < itemsPerPage) {
+            setTotalOrdersCount(merged.length);
+            setTotalPages(currentPage);
+          }
+          
+          return merged;
+        }
+      });
+      
+      setNeedsRefresh(false);
     } catch (err) {
-      console.error("Error fetching orders:", err);
+      console.error("Error load data:", err);
       showToast("Gagal memuat data", "error");
-      setLoading(false);
+      setNeedsRefresh(false);
     }
-  }, [lastPage, showToast]);
+  }, [currentPage, itemsPerPage, statistics]);
 
   // Load statistics on mount
   useEffect(() => {
     loadStatistics();
   }, [loadStatistics]);
 
-  // Initial load: fetch page 1
+  // Initial load
   useEffect(() => {
-    const loadInitialData = async () => {
-      await fetchOrders(1);
-    };
-    loadInitialData();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    setNeedsRefresh(true);
+  }, []);
 
-  // Load More function
+  // Load data when needsRefresh is true
+  useEffect(() => {
+    if (needsRefresh) {
+      loadData();
+    }
+  }, [needsRefresh, loadData]);
+
+  // Load More function - untuk load data berikutnya (append)
   const loadMore = useCallback(() => {
-    if (loading) return; // Jangan load jika sedang loading
-    if (lastPage !== null && page >= lastPage) return; // Jangan load jika sudah di page terakhir
-    
-    const nextPage = page + 1;
+    if (currentPage >= totalPages || needsRefresh) return; // Jangan load jika sudah di page terakhir atau sedang loading
+    const nextPage = currentPage + 1;
     console.log("🔄 Load More clicked, loading page:", nextPage);
-    setPage(nextPage);
-    fetchOrders(nextPage);
-  }, [page, lastPage, loading, fetchOrders]);
+    setCurrentPage(nextPage);
+    setNeedsRefresh(true);
+  }, [currentPage, totalPages, needsRefresh]);
 
   // 🔹 Refresh all data (reset to page 1)
   const requestRefresh = async (message, type = "success") => {
     // Clear orders first, then reset to page 1
     setOrders([]);
-    setPage(1);
-    setLastPage(null);
+    setCurrentPage(1);
+    setNeedsRefresh(true);
     await loadStatistics();
-    await fetchOrders(1);
     if (message) showToast(message, type);
   };
 
@@ -213,6 +270,27 @@ export default function DaftarPesanan() {
   const approvedOrders = statistics?.total_order_sudah_diapprove || 0;
   const ditolakOrders = statistics?.total_order_ditolak || 0;
 
+  // === FILTER SEARCH ===
+  // Search dilakukan client-side dari data current page
+  const filteredOrders = useMemo(() => {
+    const term = debouncedSearch.trim().toLowerCase();
+    if (!term) return orders;
+    return orders.filter((o) => {
+      const prod = (o.produk_rel?.nama || produkMap[o.produk] || "").toString();
+      const cust = (o.customer_rel?.nama || customers[o.customer] || "").toString();
+      return (
+        prod.toLowerCase().includes(term) ||
+        cust.toLowerCase().includes(term)
+      );
+    });
+  }, [orders, debouncedSearch, produkMap, customers]);
+
+  // Reset ke page 1 saat search berubah
+  useEffect(() => {
+    if (debouncedSearch.trim() && currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [debouncedSearch]);
 
 
   // === EVENT HANDLERS ===
@@ -296,6 +374,16 @@ export default function DaftarPesanan() {
           </div>
 
           <div className="orders-toolbar">
+            <div className="orders-search">
+              <input
+                type="search"
+                placeholder="Cari customer atau produk..."
+                className="orders-search__input"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+              />
+              <span className="orders-search__icon pi pi-search" />
+            </div>
             <button className="orders-button orders-button--primary" onClick={() => setShowAdd(true)}>
               + Tambah Pesanan
             </button>
@@ -345,130 +433,175 @@ export default function DaftarPesanan() {
           ))}
         </section>
 
-        {/* Orders List - Simple UI dengan Tailwind */}
         <section className="panel orders-panel">
           <div className="panel__header">
             <div>
               <p className="panel__eyebrow">Directory</p>
               <h3 className="panel__title">Order roster</h3>
             </div>
-            <span className="panel__meta">{orders.length} orders</span>
+            <span className="panel__meta">{totalOrdersCount || filteredOrders.length} orders</span>
           </div>
 
-          <div className="p-6">
-            {orders.length > 0 ? (
-              <div className="space-y-4">
-                {orders.map((order, i) => {
-                  const customerName = order.customer_rel?.nama || "-";
-                  const produkName = order.produk_rel?.nama || "-";
-                  const totalHarga = Number(order.total_harga || 0).toLocaleString("id-ID");
-                  const statusPembayaran = order.status_pembayaran === "1" || order.status_pembayaran === 1 ? "Paid" : "Unpaid";
-                  
-                  return (
-                    <div
-                      key={order.id || i}
-                      className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
-                    >
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div>
-                          <p className="text-sm text-gray-500 mb-1">Customer</p>
-                          <p className="font-semibold text-gray-900">{customerName}</p>
+          <div className="orders-table__wrapper">
+            <div className="orders-table">
+              <div className="orders-table__head">
+                {ORDERS_COLUMNS.map((column) => (
+                  <span key={column}>{column}</span>
+                ))}
+              </div>
+              <div className="orders-table__body">
+                {filteredOrders.length > 0 ? (
+                  filteredOrders.map((order, i) => {
+                    // Handle produk name - ensure it's always a string
+                    let produkNama = "-";
+                    if (order.produk_rel?.nama) {
+                      produkNama = String(order.produk_rel.nama);
+                    } else if (order.produk) {
+                      const produkId = typeof order.produk === "object" ? order.produk?.id : order.produk;
+                      produkNama = produkMap[produkId] || (typeof order.produk === "object" ? order.produk?.nama : String(order.produk)) || "-";
+                    }
+
+                    // Handle customer name - ensure it's always a string
+                    let customerNama = "-";
+                    if (order.customer_rel?.nama) {
+                      customerNama = String(order.customer_rel.nama);
+                    } else if (order.customer) {
+                      const customerId = typeof order.customer === "object" ? order.customer?.id : order.customer;
+                      customerNama = customers[customerId] || (typeof order.customer === "object" ? order.customer?.nama : String(order.customer)) || "-";
+                    }
+
+                    const statusBayar = computeStatusBayar(order);
+                    const statusLabel = STATUS_MAP[statusBayar] || "Unpaid";
+
+                    return (
+                      <div className="orders-table__row" key={order.id || `${order.id}-${i}`}>
+                        <div className="orders-table__cell" data-label="#">
+                          {i + 1}
                         </div>
-                        <div>
-                          <p className="text-sm text-gray-500 mb-1">Produk</p>
-                          <p className="text-gray-900">{produkName}</p>
+                        <div className="orders-table__cell orders-table__cell--strong" data-label="Customer">
+                          {customerNama}
                         </div>
-                        <div>
-                          <p className="text-sm text-gray-500 mb-1">Total Harga</p>
-                          <p className="font-semibold text-gray-900">Rp {totalHarga}</p>
+                        <div className="orders-table__cell" data-label="Produk">
+                          {produkNama}
                         </div>
-                        <div>
-                          <p className="text-sm text-gray-500 mb-1">Status Pembayaran</p>
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              statusPembayaran === "Paid"
-                                ? "bg-green-100 text-green-800"
-                                : "bg-red-100 text-red-800"
-                            }`}
-                          >
-                            {statusPembayaran}
+                        <div className="orders-table__cell" data-label="Total Harga">
+                          Rp {Number(order.total_harga || 0).toLocaleString()}
+                        </div>
+                        <div className="orders-table__cell" data-label="Status Pesanan">
+                          <span className={`orders-status-badge orders-status-badge--${statusLabel.toLowerCase()}`}>
+                            {statusLabel}
                           </span>
                         </div>
+                        <div className="orders-table__cell" data-label="Tanggal">
+                          {order.tanggal || "-"}
+                        </div>
+                        <div className="orders-table__cell" data-label="Sumber">
+                          {order.sumber ? `#${order.sumber}` : "-"}
+                        </div>
+                        <div className="orders-table__cell" data-label="Waktu Pembayaran">
+                          {order.waktu_pembayaran || "-"}
+                        </div>
+                        <div className="orders-table__cell" data-label="Metode Bayar">
+                          {order.metode_bayar || "-"}
+                        </div>
+                        <div className="orders-table__cell" data-label="Bukti Bayar">
+                          {order.bukti_pembayaran ? (
+                            <a
+                              href={`${BASE_URL.replace("/api", "")}/storage/${order.bukti_pembayaran}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="orders-link"
+                            >
+                              Lihat Bukti
+                            </a>
+                          ) : (
+                            "-"
+                          )}
+                        </div>
+                        <div className="orders-table__cell orders-table__cell--actions" data-label="Actions">
+                          <button
+                            className="orders-action-btn"
+                            title="View"
+                            onClick={() => handleView(order)}
+                          >
+                            <i className="pi pi-eye" />
+                          </button>
+                          <button
+                            className="orders-action-btn orders-action-btn--ghost"
+                            title="Edit"
+                            onClick={() => handleEdit(order)}
+                          >
+                            <i className="pi pi-pencil" />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                ) : (
+                  <p className="orders-empty">
+                    {orders.length ? "Tidak ada hasil pencarian." : "Loading data..."}
+                  </p>
+                )}
               </div>
+            </div>
+          </div>
+
+          {/* Load More Button - Load data berikutnya (append) */}
+          <div className="orders-pagination" style={{ display: "flex", justifyContent: "center", padding: "1rem" }}>
+            {/* Selalu tampilkan button jika orders.length >= itemsPerPage (kemungkinan masih ada data)
+                Atau jika orders.length < totalOrdersCount (masih ada data yang belum di-load)
+            */}
+            {(orders.length >= itemsPerPage || orders.length < totalOrdersCount || currentPage < totalPages) && 
+             !(orders.length >= totalOrdersCount && totalOrdersCount > 0) ? (
+              <button
+                className="orders-pagination__btn orders-pagination__btn--load-more"
+                onClick={loadMore}
+                disabled={needsRefresh}
+                aria-label="Load more orders"
+                style={{
+                  padding: "0.75rem 1.5rem",
+                  fontSize: "0.95rem",
+                  fontWeight: 600,
+                  background: "#f1a124",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "0.5rem",
+                  cursor: needsRefresh ? "not-allowed" : "pointer",
+                  opacity: needsRefresh ? 0.7 : 1,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  transition: "all 0.2s ease",
+                  boxShadow: "0 2px 8px rgba(241, 161, 36, 0.3)"
+                }}
+                onMouseEnter={(e) => {
+                  if (!needsRefresh) {
+                    e.target.style.background = "#df9620";
+                    e.target.style.transform = "translateY(-1px)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!needsRefresh) {
+                    e.target.style.background = "#f1a124";
+                    e.target.style.transform = "translateY(0)";
+                  }
+                }}
+              >
+                {needsRefresh ? (
+                  <>
+                    <i className="pi pi-spin pi-spinner" />
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <i className="pi pi-chevron-down" />
+                    Load More ({orders.length} of {totalOrdersCount || "?"} loaded)
+                  </>
+                )}
+              </button>
             ) : (
-              <div className="text-center py-12">
-                <p className="text-gray-500">
-                  {loading ? "Loading data..." : "Tidak ada data"}
-                </p>
-              </div>
-            )}
-
-            {/* Load More Button */}
-            {lastPage !== null && page < lastPage && (
-              <div className="mt-6 flex justify-center">
-                <button
-                  onClick={loadMore}
-                  disabled={loading}
-                  className={`px-6 py-3 rounded-lg font-semibold text-white transition-all ${
-                    loading
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-orange-500 hover:bg-orange-600 hover:shadow-lg"
-                  } flex items-center gap-2`}
-                >
-                  {loading ? (
-                    <>
-                      <svg
-                        className="animate-spin h-5 w-5 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Loading...
-                    </>
-                  ) : (
-                    <>
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 9l-7 7-7-7"
-                        />
-                      </svg>
-                      Load More
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
-
-            {/* Info jika semua data sudah ditampilkan */}
-            {lastPage !== null && page >= lastPage && (
-              <div className="mt-6 text-center">
-                <p className="text-gray-500 text-sm">
+              <div className="orders-pagination__info">
+                <p style={{ color: "var(--dash-muted-strong)", fontSize: "0.9rem", fontWeight: 500 }}>
                   Semua data sudah ditampilkan ({orders.length} orders)
                 </p>
               </div>
@@ -505,7 +638,12 @@ export default function DaftarPesanan() {
         <ViewOrders
           order={{
             ...selectedOrder,
-            customer: selectedOrder.customer_rel?.nama || "-",
+            customer:
+              selectedOrder.customer_rel?.nama ||
+              (typeof selectedOrder.customer === "object"
+                ? selectedOrder.customer?.nama
+                : customers[selectedOrder.customer]) ||
+              "-",
           }}
           onClose={() => {
             setShowView(false);
@@ -518,12 +656,17 @@ export default function DaftarPesanan() {
         <UpdateOrders
           order={{
             ...selectedOrder,
-            customer: selectedOrder.customer_rel?.nama || "-",
+            customer:
+              selectedOrder.customer_rel?.nama ||
+              (typeof selectedOrder.customer === "object"
+                ? selectedOrder.customer?.nama
+                : customers[selectedOrder.customer]) ||
+              "-",
           }}
           onClose={() => {
             setShowEdit(false);
             setSelectedOrder(null);
-            requestRefresh(""); // Auto refresh setelah edit
+            setNeedsRefresh(true);  // ⬅️ ini auto refresh
           }}
           onSave={handleSuccessEdit}
           setToast={setToast}
