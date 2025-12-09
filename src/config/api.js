@@ -34,12 +34,11 @@ export const API_ENDPOINTS = {
 
   // Sales
   sales: {
-    users: '/admin/users',
     customers: '/sales/customer',
-    products: '/admin/produk',
+    products: '/sales/produk',
     categories: '/sales/kategori-produk',
     categoryById: (id) => `/sales/kategori-produk/${id}`,
-    orders: '/admin/order',
+    orders: '/sales/order',
     dashboard: '/sales/dashboard',
   },
 
