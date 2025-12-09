@@ -608,6 +608,43 @@ export default function DaftarPesanan() {
             )}
           </div>
         </section>
+{/* Pagination Buttons */}
+<div style={{
+  display: "flex",
+  justifyContent: "center",
+  gap: "10px",
+  marginBottom: "1rem"
+}}>
+  <button
+    onClick={() => {
+      if (currentPage > 1) {
+        setCurrentPage(currentPage - 1);
+        setNeedsRefresh(true);
+      }
+    }}
+    disabled={currentPage === 1 || needsRefresh}
+    className="orders-pagination__btn"
+  >
+    ← Prev
+  </button>
+
+  <span style={{ fontWeight: 600 }}>
+    Page {currentPage} / {totalPages}
+  </span>
+
+  <button
+    onClick={() => {
+      if (currentPage < totalPages) {
+        setCurrentPage(currentPage + 1);
+        setNeedsRefresh(true);
+      }
+    }}
+    disabled={currentPage === totalPages || needsRefresh}
+    className="orders-pagination__btn"
+  >
+    Next →
+  </button>
+</div>
 
         {/* TOAST */}
         {toast.show && (
