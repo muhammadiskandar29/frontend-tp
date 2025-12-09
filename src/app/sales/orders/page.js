@@ -169,8 +169,7 @@ export default function DaftarPesanan() {
   useEffect(() => {
     if (page > 0 && !loading) {
       fetchOrders(page);
-      // Scroll ke atas saat page berubah
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Tidak scroll ke atas, tetap di posisi saat ini
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]); // Hanya depend pada page
@@ -386,7 +385,7 @@ export default function DaftarPesanan() {
                     return (
                       <div className="orders-table__row" key={order.id || `${order.id}-${i}`}>
                         <div className="orders-table__cell" data-label="#">
-                          {i + 1}
+                          {(page - 1) * perPage + i + 1}
                         </div>
                         <div className="orders-table__cell orders-table__cell--strong" data-label="Customer">
                           {customerNama}
