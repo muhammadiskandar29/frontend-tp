@@ -65,7 +65,7 @@ export default function Sidebar({ role }) {
   }, []);
   
   // Check if we're on addProducts page - force mobile behavior
-  const isAddProductsPage = pathname.includes('/admin/products/addProducts') || pathname.includes('/sales/products/addProducts');
+  const isAddProductsPage = pathname.includes('/sales/products/addProducts') || pathname.includes('/sales/products/addProducts');
   
   // Listen for custom event from addProducts page
   useEffect(() => {

@@ -7,7 +7,7 @@ import { api } from "../api";
 /** 📘 GET Semua Order (Admin) */
 export async function getOrders() {
   try {
-    const res = await api("/admin/order", { method: "GET" });
+    const res = await api("/api\/admin\/order/order", { method: "GET" });
     
     // Logging struktur JSON lengkap sesuai requirement
     console.log("📦 getOrders() - Success:", res.success);
@@ -40,7 +40,7 @@ export async function getOrders() {
 
 /** 📘 GET Order by ID (Admin) */
 export async function getOrderById(id) {
-  const res = await api(`/admin/order/${id}`, { method: "GET" });
+  const res = await api(`/sales/order/${id}`, { method: "GET" });
   return res.data?.[0] || null;
 }
 
@@ -55,7 +55,7 @@ export async function createOrderAdmin(data) {
 
   console.log("📦 Payload dikirim ke backend:", payload);
 
-  return api("/admin/order-admin", {
+  return api("/sales/order-admin", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -63,7 +63,7 @@ export async function createOrderAdmin(data) {
 
 /** 🟡 PUT Update Order (Admin) */
 export async function updateOrderAdmin(id, updateData) {
-  const res = await api(`/admin/order/${id}`, {
+  const res = await api(`/sales/order/${id}`, {
     method: "PUT",
     body: JSON.stringify(updateData),
   });
@@ -87,7 +87,7 @@ export async function confirmOrderPayment(id, { bukti_pembayaran, metode_pembaya
   formData.append("waktu_pembayaran", waktu_pembayaran);
   formData.append("metode_pembayaran", metode_pembayaran);
 
-  const res = await api(`/admin/order-konfirmasi/${id}`, {
+  const res = await api(`/sales/order-konfirmasi/${id}`, {
     method: "POST",
     body: formData,
   });
