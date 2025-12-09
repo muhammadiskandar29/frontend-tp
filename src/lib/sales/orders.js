@@ -7,7 +7,7 @@ import { api } from "../api";
 /** 📘 GET Semua Order (Admin) */
 export async function getOrders() {
   try {
-    const res = await api("/api\/admin\/order/order", { method: "GET" });
+    const res = await api("/sales/order", { method: "GET" });
     
     // Logging struktur JSON lengkap sesuai requirement
     console.log("📦 getOrders() - Success:", res.success);
