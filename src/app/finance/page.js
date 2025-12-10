@@ -48,30 +48,31 @@ export default function FinanceDashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Dummy data untuk finance dashboard
+  // Dummy data untuk finance dashboard - Data finansial, bukan order
   const DUMMY_DATA = {
     overview: {
-      orders_pending: 25,
-      orders_approved: 128,
-      orders_rejected: 5,
-      orders_dp: 12,
-      approval_ratio: 85.5,
+      total_pemasukan: 250000000,
+      total_pengeluaran: 180000000,
+      net_profit: 70000000,
+      cash_flow: 45000000,
     },
     financial: {
-      total_revenue: 125000000,
-      total_approved_amount: 98000000,
-      total_pending_amount: 15000000,
-      total_rejected_amount: 5000000,
-      total_dp_amount: 7000000,
+      pemasukan_bulan_ini: 85000000,
+      pemasukan_bulan_lalu: 72000000,
+      pengeluaran_bulan_ini: 55000000,
+      pengeluaran_bulan_lalu: 48000000,
+      outstanding_payments: 35000000,
+      pending_approvals: 15000000,
     },
     statistik: {
-      approval_today: 8,
+      profit_margin: 28.0,
+      growth_rate: 18.5,
     },
-    chart_transaksi_order: [
-      { label: "Week 1", order: 45, transaksi: 38 },
-      { label: "Week 2", order: 52, transaksi: 45 },
-      { label: "Week 3", order: 38, transaksi: 32 },
-      { label: "Week 4", order: 61, transaksi: 55 },
+    chart_financial: [
+      { label: "Week 1", pemasukan: 45000000, pengeluaran: 32000000 },
+      { label: "Week 2", pemasukan: 52000000, pengeluaran: 38000000 },
+      { label: "Week 3", pemasukan: 48000000, pengeluaran: 35000000 },
+      { label: "Week 4", pemasukan: 61000000, pengeluaran: 42000000 },
     ],
   };
 
@@ -153,50 +154,50 @@ export default function FinanceDashboard() {
   const revenueCards = useMemo(() => {
     return [
       {
-        title: "Total Revenue",
-        value: financial?.total_revenue ? formatCurrency(financial.total_revenue) : (loading ? "…" : "Rp0"),
-        icon: <DollarSign size={22} />,
+        title: "Pemasukan Bulan Ini",
+        value: financial?.pemasukan_bulan_ini ? formatCurrency(financial.pemasukan_bulan_ini) : (loading ? "…" : "Rp0"),
+        icon: <TrendingUp size={22} />,
         color: "accent-emerald",
       },
       {
-        title: "Approved Amount",
-        value: financial?.total_approved_amount ? formatCurrency(financial.total_approved_amount) : (loading ? "…" : "Rp0"),
-        icon: <CheckCircle size={22} />,
+        title: "Pemasukan Bulan Lalu",
+        value: financial?.pemasukan_bulan_lalu ? formatCurrency(financial.pemasukan_bulan_lalu) : (loading ? "…" : "Rp0"),
+        icon: <DollarSign size={22} />,
         color: "accent-green",
       },
       {
-        title: "Pending Amount",
-        value: financial?.total_pending_amount ? formatCurrency(financial.total_pending_amount) : (loading ? "…" : "Rp0"),
-        icon: <Clock size={22} />,
-        color: "accent-amber",
-      },
-      {
-        title: "Rejected Amount",
-        value: financial?.total_rejected_amount ? formatCurrency(financial.total_rejected_amount) : (loading ? "…" : "Rp0"),
-        icon: <XCircle size={22} />,
+        title: "Pengeluaran Bulan Ini",
+        value: financial?.pengeluaran_bulan_ini ? formatCurrency(financial.pengeluaran_bulan_ini) : (loading ? "…" : "Rp0"),
+        icon: <Wallet size={22} />,
         color: "accent-red",
       },
       {
-        title: "DP Amount",
-        value: financial?.total_dp_amount ? formatCurrency(financial.total_dp_amount) : (loading ? "…" : "Rp0"),
+        title: "Pengeluaran Bulan Lalu",
+        value: financial?.pengeluaran_bulan_lalu ? formatCurrency(financial.pengeluaran_bulan_lalu) : (loading ? "…" : "Rp0"),
         icon: <CreditCard size={22} />,
+        color: "accent-amber",
+      },
+      {
+        title: "Outstanding Payments",
+        value: financial?.outstanding_payments ? formatCurrency(financial.outstanding_payments) : (loading ? "…" : "Rp0"),
+        icon: <AlertCircle size={22} />,
         color: "accent-purple",
       },
       {
-        title: "Approval Ratio",
-        value: overview?.approval_ratio ? `${overview.approval_ratio}%` : (loading ? "…" : "0%"),
-        icon: <TrendingUp size={22} />,
+        title: "Pending Approvals",
+        value: financial?.pending_approvals ? formatCurrency(financial.pending_approvals) : (loading ? "…" : "Rp0"),
+        icon: <Clock size={22} />,
         color: "accent-indigo",
       },
     ];
-  }, [financial, overview, loading]);
+  }, [financial, loading]);
 
   const activityTrend = useMemo(() => {
     return (
-      data?.chart_transaksi_order?.map((point) => ({
+      data?.chart_financial?.map((point) => ({
         label: point.label,
-        orders: point.order,
-        transactions: point.transaksi,
+        pemasukan: point.pemasukan / 1000000, // Convert to millions for display
+        pengeluaran: point.pengeluaran / 1000000,
       })) ?? []
     );
   }, [data]);
@@ -216,8 +217,8 @@ export default function FinanceDashboard() {
               <span role="img" aria-label="calendar">
                 📅
               </span>{" "}
-              {statistik?.approval_today
-                ? `Hari ini: ${statistik.approval_today} approvals`
+              {statistik?.profit_margin
+                ? `Profit Margin: ${statistik.profit_margin}% | Growth: ${statistik.growth_rate}%`
                 : "Last 30 Days"}
             </span>
           </div>
@@ -239,29 +240,32 @@ export default function FinanceDashboard() {
           <article className="panel panel--chart">
             <div className="panel__header">
               <div>
-                <p className="panel__eyebrow">Orders vs Transactions</p>
-                <h3 className="panel__title">Approval Activity</h3>
+                <p className="panel__eyebrow">Pemasukan vs Pengeluaran</p>
+                <h3 className="panel__title">Financial Activity</h3>
               </div>
               <span className="panel__meta">Last 30 days</span>
             </div>
 
             {LazyResponsiveContainer && LazyChart && LazyLine && LazyXAxis && LazyTooltip && LazyCartesianGrid ? (
               <LazyResponsiveContainer width="100%" height={280}>
-                <LazyChart data={chartHasData ? activityTrend : [{ label: "-", orders: 0, transactions: 0 }]}>
+                <LazyChart data={chartHasData ? activityTrend : [{ label: "-", pemasukan: 0, pengeluaran: 0 }]}>
                   <LazyCartesianGrid stroke="#F1F5F9" vertical={false} />
                   <LazyXAxis dataKey="label" stroke="#94A3B8" fontSize={12} tickMargin={12} />
                   <LazyTooltip
                     contentStyle={{ borderRadius: 12, border: "1px solid #E2E8F0" }}
-                    formatter={(value, name) => [value, name === "orders" ? "Order" : "Transaksi"]}
+                    formatter={(value, name) => [
+                      `Rp${Number(value).toLocaleString("id-ID")}M`,
+                      name === "pemasukan" ? "Pemasukan" : "Pengeluaran"
+                    ]}
                   />
-                  <LazyLine type="monotone" dataKey="orders" stroke="#6366F1" strokeWidth={3} dot={false} name="orders" />
+                  <LazyLine type="monotone" dataKey="pemasukan" stroke="#10b981" strokeWidth={3} dot={false} name="pemasukan" />
                   <LazyLine
                     type="monotone"
-                    dataKey="transactions"
-                    stroke="#F97316"
+                    dataKey="pengeluaran"
+                    stroke="#ef4444"
                     strokeWidth={3}
                     dot={false}
-                    name="transactions"
+                    name="pengeluaran"
                   />
                 </LazyChart>
               </LazyResponsiveContainer>
@@ -270,7 +274,7 @@ export default function FinanceDashboard() {
                 Loading chart...
               </div>
             )}
-            {!chartHasData && <p className="panel__empty">Belum ada data transaksi untuk periode ini.</p>}
+            {!chartHasData && <p className="panel__empty">Belum ada data finansial untuk periode ini.</p>}
           </article>
 
           <article className="panel panel--revenue">
