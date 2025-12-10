@@ -252,18 +252,6 @@ export default function FinanceDashboard() {
                 : "Last 30 Days"}
             </span>
           </div>
-
-          <div className="dashboard-summary">
-            {summaryCards.map((card, index) => (
-              <article className="summary-card" key={card.title}>
-                <div className={`summary-card__icon ${card.color}`}>{card.icon}</div>
-                <div>
-                  <p className="summary-card__label">{card.title}</p>
-                  <p className="summary-card__value">{card.value}</p>
-                </div>
-              </article>
-            ))}
-          </div>
         </section>
 
         <section className="dashboard-panels">
@@ -288,35 +276,14 @@ export default function FinanceDashboard() {
               ))}
             </div>
           </article>
-
-          <article className="panel panel--summary">
-            <div className="panel__header">
-              <div>
-                <p className="panel__eyebrow">Order Summary</p>
-                <h3 className="panel__title">Orders Overview</h3>
-              </div>
-            </div>
-
-            <div className="revenue-grid">
-              {orderSummaryCards.map((card) => (
-                <article className="revenue-card" key={card.title}>
-                  <div className={`revenue-card__icon ${card.color}`}>{card.icon}</div>
-                  <div>
-                    <p className="revenue-card__label">{card.title}</p>
-                    <p className="revenue-card__value">{card.value}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </article>
         </section>
 
         <section className="dashboard-panels">
           <article className="panel panel--chart">
             <div className="panel__header">
               <div>
-                <p className="panel__eyebrow">Pemasukan vs Pengeluaran</p>
-                <h3 className="panel__title">Financial Activity</h3>
+                <p className="panel__eyebrow">Financial Activity</p>
+                <h3 className="panel__title">S-Curve Chart</h3>
               </div>
               <span className="panel__meta">Last 30 days</span>
             </div>
@@ -350,6 +317,27 @@ export default function FinanceDashboard() {
               </div>
             )}
             {!chartHasData && <p className="panel__empty">Belum ada data finansial untuk periode ini.</p>}
+          </article>
+
+          <article className="panel panel--summary">
+            <div className="panel__header">
+              <div>
+                <p className="panel__eyebrow">Order Summary</p>
+                <h3 className="panel__title">Orders Overview</h3>
+              </div>
+            </div>
+
+            <div className="revenue-grid">
+              {orderSummaryCards.map((card) => (
+                <article className="revenue-card" key={card.title}>
+                  <div className={`revenue-card__icon ${card.color}`}>{card.icon}</div>
+                  <div>
+                    <p className="revenue-card__label">{card.title}</p>
+                    <p className="revenue-card__value">{card.value}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
           </article>
         </section>
       </div>
