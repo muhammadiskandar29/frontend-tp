@@ -246,7 +246,6 @@ export default function FinanceDashboard() {
         </section>
 
         <section className="dashboard-panels dashboard-panels--full">
-          <article className="panel panel--revenue">
             <div className="panel__header">
               <div>
                 <p className="panel__eyebrow">Revenue breakdown</p>
@@ -266,7 +265,6 @@ export default function FinanceDashboard() {
                 </article>
               ))}
             </div>
-          </article>
         </section>
 
         <section className="dashboard-panels">
