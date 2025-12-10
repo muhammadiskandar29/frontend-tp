@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getCustomerSession } from "@/lib/customerAuth";
-import "@/styles/cstdashboard.css";
+import "@/styles/customer/cstdashboard.css";
 
 const navLinks = [
   { label: "Dashboard", href: "/customer/dashboard" },

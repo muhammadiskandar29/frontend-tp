@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getCustomerSession } from "@/lib/customerAuth";
 import { fetchCustomerDashboard } from "@/lib/customerDashboard";
-import "@/styles/webinar-gateway.css";
+import "@/styles/customer/webinar-gateway.css";
 
 export default function WebinarGatewayPage() {
   const params = useParams();

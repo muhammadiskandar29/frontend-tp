@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import "@/styles/landing.css";
+import "@/styles/sales/landing.css";
 
 const resolveMediaSource = (input) => {
   if (!input) return null;

@@ -18,7 +18,7 @@ import {
   ClipboardList,
   UserCheck,
 } from "lucide-react";
-import "@/styles/sidebar.css";
+import "@/styles/sales/sidebar.css";
 
 const VIEWPORT = {
   DESKTOP: "desktop",

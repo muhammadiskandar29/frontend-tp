@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import OngkirCalculator from "@/components/OngkirCalculator";
-import "@/styles/landing.css";
+import "@/styles/sales/landing.css";
 
 // FAQ Component
 function FAQItem({ question, answer }) {

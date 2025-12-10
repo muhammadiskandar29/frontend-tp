@@ -5,8 +5,8 @@ import { useEffect, useMemo, useState, memo, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { Users2, FolderOpen, Pause } from "lucide-react";
 import { createUser, deleteUser, getUsers, updateUser } from "@/lib/users";
-import "@/styles/dashboard.css";
-import "@/styles/admin.css";
+import "@/styles/sales/dashboard.css";
+import "@/styles/sales/admin.css";
 
 // Lazy load modals
 const AddUserModal = dynamic(() => import("./addUsers"), { ssr: false });

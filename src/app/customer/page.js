@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import "@/styles/cstlogin.css";
+import "@/styles/customer/cstlogin.css";
 import { loginCustomer, getCustomerSession } from "@/lib/customerAuth";
 
 // === FOUNDER IMAGES ===

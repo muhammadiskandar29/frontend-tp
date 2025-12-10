@@ -1,6 +1,6 @@
 "use client";
 
-import "@/styles/dashboard-tabs.css";
+import "@/styles/sales/dashboard-tabs.css";
 
 export default function DashboardTabs({ tabs = [], activeKey, onChange }) {
   return (

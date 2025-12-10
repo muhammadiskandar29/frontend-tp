@@ -1,6 +1,6 @@
 "use client";
 
-import "@/styles/admin.css";
+import "@/styles/sales/admin.css";
 
 const DIVISI_MAP = {
   1: "Admin Super",

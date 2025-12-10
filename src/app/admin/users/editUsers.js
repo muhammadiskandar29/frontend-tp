@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import "@/styles/admin.css";
+import "@/styles/sales/admin.css";
 
 // Whitelist domain email yang valid
 const VALID_EMAIL_DOMAINS = [

@@ -1,6 +1,6 @@
 "use client";
 
-import "@/styles/dashboard.css";
+import "@/styles/sales/dashboard.css";
 import Layout from "@/components/Layout";
 import DashboardTabs from "@/components/DashboardTabs";
 import { useCallback, useEffect, useMemo, useState, memo } from "react";

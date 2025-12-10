@@ -1,6 +1,6 @@
 "use client";
 
-import "@/styles/admin.css";
+import "@/styles/sales/admin.css";
 
 export default function DeleteUserModal({ user, onClose, onConfirm }) {
   if (!user) return null;

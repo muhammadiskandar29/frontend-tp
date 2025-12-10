@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
 import Sidebar from "@/components/Sidebar";
-import "@/styles/layout.css";
+import "@/styles/sales/layout.css";
 import "../app/globals.css";
 import "primereact/resources/themes/lara-light-amber/theme.css";
 import "primereact/resources/primereact.min.css";
