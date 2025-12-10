@@ -230,27 +230,45 @@
 
 .revenue-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(5, 1fr);
   gap: 1rem;
 }
 
+@media (max-width: 1200px) {
+  .revenue-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .revenue-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .revenue-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .revenue-card {
-  background: var(--dash-bg);
-  border: 1px solid var(--dash-border);
-  border-radius: var(--dash-radius-sm);
-  padding: 1rem;
   display: flex;
-  flex-direction: column;
   gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  border: 1px dashed var(--dash-border);
+  align-items: center;
 }
 
 .revenue-card__icon {
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 0.65rem;
-  display: flex;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 1rem;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .revenue-card__icon.accent-blue {
@@ -299,17 +317,14 @@
 }
 
 .revenue-card__label {
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   color: var(--dash-muted);
   margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
 .revenue-card__value {
   font-size: 1.1rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--dash-text);
   margin: 0;
-  line-height: 1.2;
 }
