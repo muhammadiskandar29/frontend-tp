@@ -177,6 +177,27 @@
   }
 }
 
+/* Full width panel for Financial Snapshot */
+.dashboard-panels--full {
+  display: block;
+  width: calc(100% + (clamp(1.25rem, 3vw, 2rem) * 2));
+  max-width: calc(100% + (clamp(1.25rem, 3vw, 2rem) * 2));
+  margin-left: calc(-1 * clamp(1.25rem, 3vw, 2rem));
+  margin-right: calc(-1 * clamp(1.25rem, 3vw, 2rem));
+  box-sizing: border-box;
+}
+
+.dashboard-panels--full .panel {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.dashboard-panels--full .panel--revenue {
+  width: 100%;
+  max-width: 100%;
+}
+
 .panel--chart {
   min-width: 0;
   overflow: hidden;
@@ -250,6 +271,13 @@
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.85rem;
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.dashboard-panels--full .revenue-grid {
+  width: 100%;
+  max-width: 100%;
 }
 
 @media (max-width: 1400px) {

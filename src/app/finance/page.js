@@ -254,7 +254,7 @@ export default function FinanceDashboard() {
           </div>
         </section>
 
-        <section className="dashboard-panels">
+        <section className="dashboard-panels dashboard-panels--full">
           <article className="panel panel--revenue">
             <div className="panel__header">
               <div>
