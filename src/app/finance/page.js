@@ -17,7 +17,6 @@ import {
   ShoppingCart,
   Percent,
   Package,
-  Truck,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 
@@ -66,10 +65,10 @@ export default function FinanceDashboard() {
     },
     financial: {
       gross_revenue: 2500000,
-      shipping_cost: 0,
       net_revenue: 2500000,
       gross_profit: 2500000,
       net_profit: 2500000,
+      cash_flow: 1800000,
     },
     statistik: {
       profit_margin: 28.0,
@@ -167,12 +166,6 @@ export default function FinanceDashboard() {
         color: "accent-emerald",
       },
       {
-        title: "Shipping Cost",
-        value: financial?.shipping_cost ? formatCurrency(financial.shipping_cost) : (loading ? "…" : "Rp0"),
-        icon: <Truck size={22} />,
-        color: "accent-purple",
-      },
-      {
         title: "Net Revenue",
         value: financial?.net_revenue ? formatCurrency(financial.net_revenue) : (loading ? "…" : "Rp0"),
         icon: <TrendingUp size={22} />,
@@ -189,6 +182,12 @@ export default function FinanceDashboard() {
         value: financial?.net_profit ? formatCurrency(financial.net_profit) : (loading ? "…" : "Rp0"),
         icon: <TrendingUp size={22} />,
         color: "accent-teal",
+      },
+      {
+        title: "Cash Flow",
+        value: financial?.cash_flow ? formatCurrency(financial.cash_flow) : (loading ? "…" : "Rp0"),
+        icon: <Wallet size={22} />,
+        color: "accent-blue",
       },
     ];
   }, [financial, loading]);
