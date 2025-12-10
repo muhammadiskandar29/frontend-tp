@@ -998,6 +998,53 @@ ADMIN USERS PAGE (Scoped Styles)
   color: #991b1b;
 }
 
+/* Status Order Badge Styles */
+.orders-status-badge--proses {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.orders-status-badge--sukses {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.orders-status-badge--failed {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.orders-status-badge--upselling {
+  background-color: #e0e7ff;
+  color: #3730a3;
+}
+
+.orders-status-badge--dihapus {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+.orders-status-badge--default {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+/* Status Pembayaran Badge Styles */
+.orders-status-badge--menunggu {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.orders-status-badge--reject {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.orders-status-badge--dp {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
 .orders-link {
   color: #2563eb;
   text-decoration: underline;

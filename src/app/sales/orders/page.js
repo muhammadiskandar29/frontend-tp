@@ -19,11 +19,23 @@ const AddOrders = dynamic(() => import("./addOrders"), { ssr: false });
 // Use Next.js proxy to avoid CORS
 const BASE_URL = "/api";
 
-const STATUS_MAP = {
-  0: "Unpaid",
-  1: "Paid",
-  2: "Sukses",
-  3: "Gagal",
+// Status Pembayaran Mapping
+const STATUS_PEMBAYARAN_MAP = {
+  0: { label: "Belum Pembayaran (Unpaid)", class: "unpaid" },
+  null: { label: "Belum Pembayaran (Unpaid)", class: "unpaid" },
+  1: { label: "Menunggu Approve Finance", class: "menunggu" },
+  2: { label: "Finance Approved (Paid)", class: "paid" },
+  3: { label: "Reject Finance", class: "reject" },
+  4: { label: "DP", class: "dp" },
+};
+
+// Status Order Mapping
+const STATUS_ORDER_MAP = {
+  "1": { label: "Proses", class: "proses" },
+  "2": { label: "Sukses", class: "sukses" },
+  "3": { label: "Failed", class: "failed" },
+  "4": { label: "Upselling", class: "upselling" },
+  "N": { label: "Dihapus", class: "dihapus" },
 };
 
 const ORDERS_COLUMNS = [
@@ -31,7 +43,8 @@ const ORDERS_COLUMNS = [
   "Customer",
   "Produk",
   "Total Harga",
-  "Status Pesanan",
+  "Status Order",
+  "Status Pembayaran",
   "Tanggal",
   "Sumber",
   "Waktu Pembayaran",
@@ -530,8 +543,16 @@ export default function DaftarPesanan() {
                     // Handle customer name - dari customer_rel
                     const customerNama = order.customer_rel?.nama || "-";
 
-                    const statusBayar = computeStatusBayar(order);
-                    const statusLabel = STATUS_MAP[statusBayar] || "Unpaid";
+                    // Get Status Order
+                    const statusOrderValue = order.status_order?.toString() || "";
+                    const statusOrderInfo = STATUS_ORDER_MAP[statusOrderValue] || { label: "-", class: "default" };
+
+                    // Get Status Pembayaran
+                    let statusPembayaranValue = order.status_pembayaran;
+                    if (statusPembayaranValue === null || statusPembayaranValue === undefined) {
+                      statusPembayaranValue = 0;
+                    }
+                    const statusPembayaranInfo = STATUS_PEMBAYARAN_MAP[statusPembayaranValue] || STATUS_PEMBAYARAN_MAP[0];
 
                     return (
                       <div className="orders-table__row" key={order.id || `${order.id}-${i}`}>
@@ -547,9 +568,14 @@ export default function DaftarPesanan() {
                         <div className="orders-table__cell" data-label="Total Harga">
                           Rp {Number(order.total_harga || 0).toLocaleString()}
                         </div>
-                        <div className="orders-table__cell" data-label="Status Pesanan">
-                          <span className={`orders-status-badge orders-status-badge--${statusLabel.toLowerCase()}`}>
-                            {statusLabel}
+                        <div className="orders-table__cell" data-label="Status Order">
+                          <span className={`orders-status-badge orders-status-badge--${statusOrderInfo.class}`}>
+                            {statusOrderInfo.label}
+                          </span>
+                        </div>
+                        <div className="orders-table__cell" data-label="Status Pembayaran">
+                          <span className={`orders-status-badge orders-status-badge--${statusPembayaranInfo.class}`}>
+                            {statusPembayaranInfo.label}
                           </span>
                         </div>
                         <div className="orders-table__cell" data-label="Tanggal">
