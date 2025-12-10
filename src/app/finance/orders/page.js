@@ -257,11 +257,12 @@ export default function FinanceOrders() {
 
   // === SUMMARY ===
   // Gunakan data dari statistics API
-  const totalOrders = statistics?.total_order || 0;
-  const unpaidOrders = statistics?.total_order_unpaid || 0;
-  const menungguOrders = statistics?.total_order_menunggu || 0;
-  const approvedOrders = statistics?.total_order_sudah_diapprove || 0;
-  const ditolakOrders = statistics?.total_order_ditolak || 0;
+  // Response structure: { menunggu_validasi, sudah_diapprove, ditolak, total_nilai_menunggu, total_nilai_menunggu_formatted }
+  const menungguOrders = statistics?.menunggu_validasi || 0;
+  const approvedOrders = statistics?.sudah_diapprove || 0;
+  const ditolakOrders = statistics?.ditolak || 0;
+  const totalOrders = menungguOrders + approvedOrders + ditolakOrders;
+  const unpaidOrders = 0; // Tidak ada di response API finance
 
   // === EVENT HANDLERS ===
   const handleView = (order) => {

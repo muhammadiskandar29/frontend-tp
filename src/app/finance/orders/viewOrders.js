@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import "@/styles/finance/pesanan.css";
 
 // Helper function untuk build image URL via proxy
@@ -11,6 +11,8 @@ const buildImageUrl = (path) => {
 };
 
 export default function ViewOrders({ order, onClose }) {
+  const [showImageModal, setShowImageModal] = useState(false);
+  
   if (!order) return null;
 
   // 🔧 Tentukan URL gambar via proxy
@@ -110,6 +112,7 @@ export default function ViewOrders({ order, onClose }) {
                   <img
                     src={buktiUrl}
                     alt={`Bukti Pembayaran ${order.customer_rel?.nama || "-"}`}
+                    onClick={() => setShowImageModal(true)}
                     style={{
                       maxWidth: 150,
                       maxHeight: 120,
@@ -117,6 +120,16 @@ export default function ViewOrders({ order, onClose }) {
                       marginTop: 4,
                       borderRadius: 6,
                       border: "1px solid #e5e7eb",
+                      cursor: "pointer",
+                      transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.transform = "scale(1.05)";
+                      e.target.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.transform = "scale(1)";
+                      e.target.style.boxShadow = "none";
                     }}
                     onError={(e) => {
                       e.target.style.display = "none";
@@ -171,6 +184,68 @@ export default function ViewOrders({ order, onClose }) {
           </button>
         </div>
       </div>
+
+      {/* Image Viewer Modal */}
+      {showImageModal && buktiUrl && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.9)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10000,
+            padding: "2rem",
+          }}
+          onClick={() => setShowImageModal(false)}
+        >
+          <button
+            onClick={() => setShowImageModal(false)}
+            style={{
+              position: "absolute",
+              top: "1rem",
+              right: "1rem",
+              background: "rgba(255, 255, 255, 0.2)",
+              border: "none",
+              borderRadius: "50%",
+              width: "40px",
+              height: "40px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              color: "#fff",
+              fontSize: "1.5rem",
+              transition: "background 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = "rgba(255, 255, 255, 0.3)";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = "rgba(255, 255, 255, 0.2)";
+            }}
+            aria-label="Tutup"
+          >
+            <i className="pi pi-times" />
+          </button>
+          <img
+            src={buktiUrl}
+            alt={`Bukti Pembayaran ${order.customer_rel?.nama || "-"}`}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: "90%",
+              maxHeight: "90%",
+              objectFit: "contain",
+              borderRadius: "8px",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+            }}
+            onError={(e) => {
+              console.error("Gagal memuat gambar:", buktiUrl);
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

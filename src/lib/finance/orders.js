@@ -7,7 +7,7 @@ import { api } from "../api";
 /** 📊 GET Order Statistics (Finance) */
 export async function getOrderStatistics() {
   try {
-    const res = await api("/finance/order-validation/statistic", { method: "GET" });
+    const res = await api("/finance/order-validation/statistics", { method: "GET" });
     if (res.success && res.data) {
       return res.data;
     }
