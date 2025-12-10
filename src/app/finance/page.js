@@ -256,7 +256,7 @@ export default function FinanceDashboard() {
 
           <div className="revenue-grid">
             {revenueCards.map((card) => (
-              <article className="revenue-card" key={card.title}>
+              <article className="revenue-card revenue-card--solid" key={card.title}>
                 <div className={`revenue-card__icon ${card.color}`}>{card.icon}</div>
                 <div>
                   <p className="revenue-card__label">{card.title}</p>

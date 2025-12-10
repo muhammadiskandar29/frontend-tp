@@ -332,6 +332,13 @@
   overflow: hidden;
 }
 
+/* Solid style for Financial Snapshot cards */
+.revenue-card--solid {
+  background: var(--dash-surface);
+  border: 1px solid var(--dash-border);
+  box-shadow: var(--dash-shadow);
+}
+
 .revenue-card > div:last-child {
   min-width: 0;
   flex: 1;
