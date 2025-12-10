@@ -14,6 +14,10 @@ import {
   CreditCard,
   FileCheck,
   AlertCircle,
+  ShoppingCart,
+  Percent,
+  Package,
+  Truck,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 
@@ -48,21 +52,24 @@ export default function FinanceDashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Dummy data untuk finance dashboard - Data finansial, bukan order
+  // Dummy data untuk finance dashboard
   const DUMMY_DATA = {
     overview: {
-      total_pemasukan: 250000000,
-      total_pengeluaran: 180000000,
-      net_profit: 70000000,
-      cash_flow: 45000000,
+      orders_pending: 0,
+      orders_approved: 0,
+      orders_rejected: 0,
+      orders_dp: 0,
+      orders_total: 129,
+      orders_paid: 26,
+      paid_ratio: 20.16,
+      orders_unpaid: 103,
     },
     financial: {
-      pemasukan_bulan_ini: 85000000,
-      pemasukan_bulan_lalu: 72000000,
-      pengeluaran_bulan_ini: 55000000,
-      pengeluaran_bulan_lalu: 48000000,
-      outstanding_payments: 35000000,
-      pending_approvals: 15000000,
+      gross_revenue: 2500000,
+      shipping_cost: 0,
+      net_revenue: 2500000,
+      gross_profit: 2500000,
+      net_profit: 2500000,
     },
     statistik: {
       profit_margin: 28.0,
@@ -154,43 +161,66 @@ export default function FinanceDashboard() {
   const revenueCards = useMemo(() => {
     return [
       {
-        title: "Pemasukan Bulan Ini",
-        value: financial?.pemasukan_bulan_ini ? formatCurrency(financial.pemasukan_bulan_ini) : (loading ? "…" : "Rp0"),
-        icon: <TrendingUp size={22} />,
+        title: "Gross Revenue",
+        value: financial?.gross_revenue ? formatCurrency(financial.gross_revenue) : (loading ? "…" : "Rp0"),
+        icon: <DollarSign size={22} />,
         color: "accent-emerald",
       },
       {
-        title: "Pemasukan Bulan Lalu",
-        value: financial?.pemasukan_bulan_lalu ? formatCurrency(financial.pemasukan_bulan_lalu) : (loading ? "…" : "Rp0"),
-        icon: <DollarSign size={22} />,
-        color: "accent-green",
-      },
-      {
-        title: "Pengeluaran Bulan Ini",
-        value: financial?.pengeluaran_bulan_ini ? formatCurrency(financial.pengeluaran_bulan_ini) : (loading ? "…" : "Rp0"),
-        icon: <Wallet size={22} />,
-        color: "accent-red",
-      },
-      {
-        title: "Pengeluaran Bulan Lalu",
-        value: financial?.pengeluaran_bulan_lalu ? formatCurrency(financial.pengeluaran_bulan_lalu) : (loading ? "…" : "Rp0"),
-        icon: <CreditCard size={22} />,
-        color: "accent-amber",
-      },
-      {
-        title: "Outstanding Payments",
-        value: financial?.outstanding_payments ? formatCurrency(financial.outstanding_payments) : (loading ? "…" : "Rp0"),
-        icon: <AlertCircle size={22} />,
+        title: "Shipping Cost",
+        value: financial?.shipping_cost ? formatCurrency(financial.shipping_cost) : (loading ? "…" : "Rp0"),
+        icon: <Truck size={22} />,
         color: "accent-purple",
       },
       {
-        title: "Pending Approvals",
-        value: financial?.pending_approvals ? formatCurrency(financial.pending_approvals) : (loading ? "…" : "Rp0"),
-        icon: <Clock size={22} />,
+        title: "Net Revenue",
+        value: financial?.net_revenue ? formatCurrency(financial.net_revenue) : (loading ? "…" : "Rp0"),
+        icon: <TrendingUp size={22} />,
         color: "accent-indigo",
+      },
+      {
+        title: "Gross Profit",
+        value: financial?.gross_profit ? formatCurrency(financial.gross_profit) : (loading ? "…" : "Rp0"),
+        icon: <PiggyBank size={22} />,
+        color: "accent-pink",
+      },
+      {
+        title: "Net Profit",
+        value: financial?.net_profit ? formatCurrency(financial.net_profit) : (loading ? "…" : "Rp0"),
+        icon: <TrendingUp size={22} />,
+        color: "accent-teal",
       },
     ];
   }, [financial, loading]);
+
+  const orderSummaryCards = useMemo(() => {
+    return [
+      {
+        title: "Total Orders",
+        value: overview?.orders_total?.toLocaleString("id-ID") ?? (loading ? "…" : "0"),
+        icon: <ShoppingCart size={22} />,
+        color: "accent-blue",
+      },
+      {
+        title: "Total Paid",
+        value: overview?.orders_paid?.toLocaleString("id-ID") ?? (loading ? "…" : "0"),
+        icon: <CreditCard size={22} />,
+        color: "accent-emerald",
+      },
+      {
+        title: "Paid Ratio",
+        value: overview?.paid_ratio ? `${overview.paid_ratio}%` : (loading ? "…" : "0%"),
+        icon: <Percent size={22} />,
+        color: "accent-amber",
+      },
+      {
+        title: "Unpaid Orders",
+        value: overview?.orders_unpaid?.toLocaleString("id-ID") ?? (loading ? "…" : "0"),
+        icon: <Package size={22} />,
+        color: "accent-red",
+      },
+    ];
+  }, [overview, loading]);
 
   const activityTrend = useMemo(() => {
     return (
@@ -237,6 +267,51 @@ export default function FinanceDashboard() {
         </section>
 
         <section className="dashboard-panels">
+          <article className="panel panel--revenue">
+            <div className="panel__header">
+              <div>
+                <p className="panel__eyebrow">Revenue breakdown</p>
+                <h3 className="panel__title">Financial Snapshot</h3>
+              </div>
+              <span className="panel__meta accent-green">Stable</span>
+            </div>
+
+            <div className="revenue-grid">
+              {revenueCards.map((card) => (
+                <article className="revenue-card" key={card.title}>
+                  <div className={`revenue-card__icon ${card.color}`}>{card.icon}</div>
+                  <div>
+                    <p className="revenue-card__label">{card.title}</p>
+                    <p className="revenue-card__value">{card.value}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </article>
+
+          <article className="panel panel--summary">
+            <div className="panel__header">
+              <div>
+                <p className="panel__eyebrow">Order Summary</p>
+                <h3 className="panel__title">Orders Overview</h3>
+              </div>
+            </div>
+
+            <div className="revenue-grid">
+              {orderSummaryCards.map((card) => (
+                <article className="revenue-card" key={card.title}>
+                  <div className={`revenue-card__icon ${card.color}`}>{card.icon}</div>
+                  <div>
+                    <p className="revenue-card__label">{card.title}</p>
+                    <p className="revenue-card__value">{card.value}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </article>
+        </section>
+
+        <section className="dashboard-panels">
           <article className="panel panel--chart">
             <div className="panel__header">
               <div>
@@ -275,28 +350,6 @@ export default function FinanceDashboard() {
               </div>
             )}
             {!chartHasData && <p className="panel__empty">Belum ada data finansial untuk periode ini.</p>}
-          </article>
-
-          <article className="panel panel--revenue">
-            <div className="panel__header">
-              <div>
-                <p className="panel__eyebrow">Financial breakdown</p>
-                <h3 className="panel__title">Financial Snapshot</h3>
-              </div>
-              <span className="panel__meta accent-green">Stable</span>
-            </div>
-
-            <div className="revenue-grid">
-              {revenueCards.map((card) => (
-                <article className="revenue-card" key={card.title}>
-                  <div className={`revenue-card__icon ${card.color}`}>{card.icon}</div>
-                  <div>
-                    <p className="revenue-card__label">{card.title}</p>
-                    <p className="revenue-card__value">{card.value}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
           </article>
         </section>
       </div>
