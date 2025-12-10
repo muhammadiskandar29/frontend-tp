@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import "@/styles/pesanan.css";
+import "@/styles/sales/pesanan.css";
 
 const STATUS_MAP = {
   0: "Unpaid",

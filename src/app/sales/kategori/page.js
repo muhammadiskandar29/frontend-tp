@@ -6,8 +6,8 @@ import dynamic from "next/dynamic";
 import { FolderOpen, Search } from "lucide-react";
 import useKategori from "@/hooks/sales/useKategori";
 import { toast } from "react-hot-toast";
-import "@/styles/dashboard.css";
-import "@/styles/admin.css";
+import "@/styles/sales/dashboard.css";
+import "@/styles/sales/admin.css";
 
 // Lazy load modals
 const AddKategoriModal = dynamic(() => import("./addKategori"), { ssr: false });

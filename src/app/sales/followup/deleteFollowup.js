@@ -1,6 +1,6 @@
 "use client";
 
-import "@/styles/followup.css";
+import "@/styles/sales/followup.css";
 
 export default function DeleteFollowupModal({ template, onClose, onConfirm }) {
   return (

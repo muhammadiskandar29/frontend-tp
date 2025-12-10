@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layout";
 import { FileText, Clock, CheckCircle, XCircle } from "lucide-react";
-import "@/styles/dashboard.css";
-import "@/styles/admin.css";
-import "@/styles/customer.css";
+import "@/styles/sales/dashboard.css";
+import "@/styles/sales/admin.css";
+import "@/styles/sales/customer.css";
 import { getLogsFollowUp } from "@/lib/logsFollowUp";
 
 function useDebouncedValue(value, delay = 250) {

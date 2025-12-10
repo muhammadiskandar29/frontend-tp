@@ -6,8 +6,8 @@ import { useProducts } from "@/hooks/sales/useProducts";
 import { useRouter } from "next/navigation";
 import { Package, CheckCircle, Search } from "lucide-react";
 import DeleteProductModal from "./deleteProductModal";
-import "@/styles/dashboard.css";
-import "@/styles/admin.css";
+import "@/styles/sales/dashboard.css";
+import "@/styles/sales/admin.css";
 
 function useDebouncedValue(value, delay = 250) {
   const [debounced, setDebounced] = useState(value);

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import "@/styles/otp.css";
+import "@/styles/sales/otp.css";
 import { getCustomerSession, verifyCustomerOTP, resendCustomerOTP } from "@/lib/customerAuth";
 import UpdateCustomerModal from "@/app/customer/dashboard/updateCustomer";
 

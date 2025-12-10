@@ -1,6 +1,6 @@
 "use client";
 
-import "@/styles/customer.css";
+import "@/styles/sales/customer.css";
 
 // Helper untuk display pendapatan dalam format readable
 const formatPendapatan = (value) => {

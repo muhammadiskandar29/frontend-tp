@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import "@/styles/customer.css";
+import "@/styles/sales/customer.css";
 
 const formatCurrency = (value) => {
   if (value == null) return "-";

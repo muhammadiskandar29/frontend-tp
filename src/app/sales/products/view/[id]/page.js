@@ -8,7 +8,7 @@ import { getProductById } from "@/lib/products";
 import FollowupSection from "./FollowupSection";
 import LinkZoomSection from "./LinkZoomSection";
 import TrainerSection from "./TrainerSection";
-import "@/styles/product-detail.css";
+import "@/styles/sales/product-detail.css";
 
 // Helper function untuk build image URL via proxy
 const buildImageUrl = (path) => {

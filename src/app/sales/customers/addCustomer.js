@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import "@/styles/customer.css";
+import "@/styles/sales/customer.css";
 
 // Use Next.js proxy to avoid CORS
 const BASE_URL = "/api";

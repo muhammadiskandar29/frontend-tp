@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import "@/styles/admin.css";
+import "@/styles/sales/admin.css";
 
 export default function AddKategoriModal({ onClose, onSave }) {
   const handleSubmit = (e) => {

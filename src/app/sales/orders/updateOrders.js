@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import "@/styles/pesanan.css";
+import "@/styles/sales/pesanan.css";
 
 // Use Next.js proxy to avoid CORS
 const BASE_URL = "/api";

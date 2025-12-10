@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import "@/styles/followup.css";
+import "@/styles/sales/followup.css";
 
 export default function AddFollowupModal({ onClose, onSave }) {
   const [formData, setFormData] = useState({ kode: "", event: "", text: "" });

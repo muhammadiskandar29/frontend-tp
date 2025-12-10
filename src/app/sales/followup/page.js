@@ -5,9 +5,9 @@ import Layout from "@/components/Layout";
 import dynamic from "next/dynamic";
 import { FileText, CheckCircle, Settings } from "lucide-react";
 import { getFollowupTemplates } from "@/lib/followup";
-import "@/styles/dashboard.css";
-import "@/styles/admin.css";
-import "@/styles/followup.css";
+import "@/styles/sales/dashboard.css";
+import "@/styles/sales/admin.css";
+import "@/styles/sales/followup.css";
 
 // Lazy load modals
 const AddFollowupModal = dynamic(() => import("./addFollowup"), { ssr: false });

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import "@/styles/admin.css";
+import "@/styles/sales/admin.css";
 
 export default function EditKategoriModal({ kategori, onClose, onSave }) {
   const [nama, setNama] = useState(kategori.nama);

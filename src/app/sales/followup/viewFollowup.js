@@ -1,6 +1,6 @@
 "use client";
 
-import "@/styles/followup.css";
+import "@/styles/sales/followup.css";
 
 export default function ViewFollowup({ template, onClose }) {
   return (

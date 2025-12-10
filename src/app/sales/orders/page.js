@@ -7,8 +7,8 @@ import { ShoppingCart, Clock, CheckCircle, PartyPopper, XCircle } from "lucide-r
 import { Calendar } from "primereact/calendar";
 import "primereact/resources/themes/lara-light-cyan/theme.css";
 import "primereact/resources/primereact.min.css";
-import "@/styles/dashboard.css";
-import "@/styles/admin.css";
+import "@/styles/sales/dashboard.css";
+import "@/styles/sales/admin.css";
 import { getOrders, updateOrderAdmin, getOrderStatistics } from "@/lib/sales/orders";
 
 // Lazy load modals

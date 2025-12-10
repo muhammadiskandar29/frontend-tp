@@ -6,9 +6,9 @@ import Layout from "@/components/Layout";
 import { getCustomers, deleteCustomer } from "@/lib/sales/customer";
 import { Users, CheckCircle, Filter } from "lucide-react";
 import dynamic from "next/dynamic";
-import "@/styles/dashboard.css";
-import "@/styles/admin.css";
-import "@/styles/customer.css";
+import "@/styles/sales/dashboard.css";
+import "@/styles/sales/admin.css";
+import "@/styles/sales/customer.css";
 
 // Lazy load modals
 const EditCustomerModal = dynamic(() => import("./editCustomer"), { ssr: false });

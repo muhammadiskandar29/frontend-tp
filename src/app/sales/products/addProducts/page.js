@@ -12,7 +12,7 @@ import { Button } from "primereact/button";
 import LandingTemplate from "@/components/LandingTemplate";
 import { MultiSelect } from "primereact/multiselect";
 import { ArrowLeft } from "lucide-react";
-import "@/styles/add-products.css";
+import "@/styles/sales/add-products.css";
 
 export default function Page() {
   const router = useRouter();

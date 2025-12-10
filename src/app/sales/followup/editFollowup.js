@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import "@/styles/followup.css";
+import "@/styles/sales/followup.css";
 
 export default function EditFollowupModal({ template, onClose, onSave }) {
   const [formData, setFormData] = useState({
