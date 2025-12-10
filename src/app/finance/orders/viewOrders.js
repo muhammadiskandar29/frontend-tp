@@ -1,26 +1,6 @@
 "use client";
 import React from "react";
-import "@/styles/sales/pesanan.css";
-
-const STATUS_MAP = {
-  0: "Unpaid",
-  1: "Paid",
-  2: "Sukses",
-  3: "Gagal",
-};
-
-// 🔹 Helper untuk menentukan status bayar otomatis
-const computeStatusBayar = (order) => {
-  if (
-    order.bukti_pembayaran &&
-    order.bukti_pembayaran !== "" &&
-    order.waktu_pembayaran &&
-    order.waktu_pembayaran !== ""
-  ) {
-    return 1; // Paid
-  }
-  return 0; // Unpaid
-};
+import "@/styles/finance/pesanan.css";
 
 // Helper function untuk build image URL via proxy
 const buildImageUrl = (path) => {
@@ -32,15 +12,6 @@ const buildImageUrl = (path) => {
 
 export default function ViewOrders({ order, onClose }) {
   if (!order) return null;
-
-  // Debug log untuk memastikan datanya benar
-  console.log("Order Detail:", order);
-  console.log("Bukti Pembayaran Path:", order.bukti_pembayaran);
-  console.log("🧾 Waktu Pembayaran:", order.waktu_pembayaran);
-  console.log("Status Pembayaran:", order.status_pembayaran);
-
-  const statusBayar = computeStatusBayar(order);
-  const statusLabel = STATUS_MAP[statusBayar];
 
   // 🔧 Tentukan URL gambar via proxy
   const buktiUrl = buildImageUrl(order.bukti_pembayaran);
@@ -104,8 +75,18 @@ export default function ViewOrders({ order, onClose }) {
             <h4>Informasi Pembayaran</h4>
             <div className="orders-row">
               <p>Status Pembayaran</p>
-              <span className={`status-badge ${statusLabel}`}>
-                {statusLabel}
+              <span>
+                {order.status_pembayaran === 0 || order.status_pembayaran === null
+                  ? "Unpaid"
+                  : order.status_pembayaran === 1
+                  ? "Menunggu"
+                  : order.status_pembayaran === 2
+                  ? "Paid"
+                  : order.status_pembayaran === 3
+                  ? "Ditolak"
+                  : order.status_pembayaran === 4
+                  ? "DP"
+                  : "-"}
               </span>
             </div>
             <div className="orders-row">
@@ -138,7 +119,7 @@ export default function ViewOrders({ order, onClose }) {
                       border: "1px solid #e5e7eb",
                     }}
                     onError={(e) => {
-                      e.target.style.display = "none"; 
+                      e.target.style.display = "none";
                       console.error("Gagal memuat gambar:", buktiUrl);
                     }}
                   />
@@ -163,6 +144,22 @@ export default function ViewOrders({ order, onClose }) {
             <div className="orders-row">
               <p>Order ID</p>
               <span>#{order.id}</span>
+            </div>
+            <div className="orders-row">
+              <p>Status Order</p>
+              <span>
+                {order.status_order === "1"
+                  ? "Proses"
+                  : order.status_order === "2"
+                  ? "Sukses"
+                  : order.status_order === "3"
+                  ? "Failed"
+                  : order.status_order === "4"
+                  ? "Upselling"
+                  : order.status_order === "N"
+                  ? "Dihapus"
+                  : "-"}
+              </span>
             </div>
           </div>
         </div>

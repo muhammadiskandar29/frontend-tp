@@ -235,12 +235,7 @@ export default function FinanceDashboard() {
             <h2 className="dashboard-hero__title">Finance Dashboard Overview</h2>
             <p className="dashboard-hero__subtitle">Payment approvals, revenue tracking, and financial insights.</p>
             <span className="dashboard-hero__meta">
-              <span role="img" aria-label="calendar">
-                📅
-              </span>{" "}
-              {statistik?.profit_margin
-                ? `Profit Margin: ${statistik.profit_margin}% | Growth: ${statistik.growth_rate}%`
-                : "Last 30 Days"}
+              
             </span>
           </div>
         </section>

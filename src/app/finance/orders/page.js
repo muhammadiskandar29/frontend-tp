@@ -1,13 +1,20 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import Layout from "@/components/Layout";
+import dynamic from "next/dynamic";
 import { ShoppingCart, Clock, CheckCircle, PartyPopper, XCircle } from "lucide-react";
 import { Calendar } from "primereact/calendar";
 import "primereact/resources/themes/lara-light-cyan/theme.css";
 import "primereact/resources/primereact.min.css";
 import "@/styles/finance/dashboard.css";
 import "@/styles/finance/admin.css";
+import { getOrderStatistics } from "@/lib/finance/orders";
+
+// Lazy load modals
+const ViewOrders = dynamic(() => import("./viewOrders"), { ssr: false });
+const ApproveOrder = dynamic(() => import("./approveOrder"), { ssr: false });
+const RejectOrder = dynamic(() => import("./rejectOrder"), { ssr: false });
 
 // Status Pembayaran Mapping
 const STATUS_PEMBAYARAN_MAP = {
@@ -28,75 +35,6 @@ const STATUS_ORDER_MAP = {
   "N": { label: "Dihapus", class: "dihapus" },
 };
 
-// Dummy Data
-const DUMMY_ORDERS = [
-  {
-    id: 1,
-    customer_rel: { nama: "John Doe" },
-    produk_rel: { nama: "Product A" },
-    total_harga: 500000,
-    status_order: "1",
-    status_pembayaran: 1,
-    tanggal: "2025-01-15",
-    sumber: "website",
-    waktu_pembayaran: "2025-01-15 10:30:00",
-    metode_bayar: "Transfer Bank",
-    bukti_pembayaran: null,
-  },
-  {
-    id: 2,
-    customer_rel: { nama: "Jane Smith" },
-    produk_rel: { nama: "Product B" },
-    total_harga: 750000,
-    status_order: "1",
-    status_pembayaran: 2,
-    tanggal: "2025-01-16",
-    sumber: "instagram",
-    waktu_pembayaran: "2025-01-16 14:20:00",
-    metode_bayar: "E-Wallet",
-    bukti_pembayaran: "bukti1.jpg",
-  },
-  {
-    id: 3,
-    customer_rel: { nama: "Bob Johnson" },
-    produk_rel: { nama: "Product C" },
-    total_harga: 1200000,
-    status_order: "2",
-    status_pembayaran: 2,
-    tanggal: "2025-01-17",
-    sumber: "website",
-    waktu_pembayaran: "2025-01-17 09:15:00",
-    metode_bayar: "Transfer Bank",
-    bukti_pembayaran: "bukti2.jpg",
-  },
-  {
-    id: 4,
-    customer_rel: { nama: "Alice Brown" },
-    produk_rel: { nama: "Product D" },
-    total_harga: 300000,
-    status_order: "1",
-    status_pembayaran: 4,
-    tanggal: "2025-01-18",
-    sumber: "website",
-    waktu_pembayaran: "2025-01-18 11:45:00",
-    metode_bayar: "Transfer Bank",
-    bukti_pembayaran: "bukti3.jpg",
-  },
-  {
-    id: 5,
-    customer_rel: { nama: "Charlie Wilson" },
-    produk_rel: { nama: "Product E" },
-    total_harga: 900000,
-    status_order: "1",
-    status_pembayaran: 3,
-    tanggal: "2025-01-19",
-    sumber: "instagram",
-    waktu_pembayaran: null,
-    metode_bayar: null,
-    bukti_pembayaran: null,
-  },
-];
-
 const ORDERS_COLUMNS = [
   "#",
   "Customer",
@@ -112,27 +50,172 @@ const ORDERS_COLUMNS = [
   "Actions",
 ];
 
-// Dummy Statistics (akan diganti dengan data real nanti)
-const DUMMY_STATISTICS = {
-  total_order: 150,
-  total_order_unpaid: 25,
-  total_order_menunggu: 15,
-  total_order_sudah_diapprove: 100,
-  total_order_ditolak: 10,
-};
+const DEFAULT_TOAST = { show: false, message: "", type: "success" };
 
 export default function FinanceOrders() {
-  // State untuk search dan filter
-  const [searchInput, setSearchInput] = useState("");
-  const [dateRange, setDateRange] = useState(null);
-  const [orders] = useState(DUMMY_ORDERS);
-  const [statistics] = useState(DUMMY_STATISTICS);
-  
-  // State untuk pagination (placeholder, akan diisi fungsi nanti)
+  // Pagination state dengan fallback pagination
   const [page, setPage] = useState(1);
-  const [loading] = useState(false);
-  const [hasMore] = useState(true);
-  const perPage = 15;
+  const [orders, setOrders] = useState([]);
+  const [hasMore, setHasMore] = useState(true); // penentu masih ada halaman berikutnya
+  const [loading, setLoading] = useState(false);
+  const perPage = 15; // Data per halaman
+  
+  // Filter state
+  const [searchInput, setSearchInput] = useState("");
+  const [dateRange, setDateRange] = useState(null); // [startDate, endDate] atau null
+  
+  // State lainnya
+  const [statistics, setStatistics] = useState(null);
+  const [showView, setShowView] = useState(false);
+  const [showApprove, setShowApprove] = useState(false);
+  const [showReject, setShowReject] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+
+  const [toast, setToast] = useState(DEFAULT_TOAST);
+  const toastTimeoutRef = useRef(null);
+  const fetchingRef = useRef(false); // Prevent multiple simultaneous fetches
+
+  const showToast = (message, type = "success") => {
+    setToast({ show: true, message, type });
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = setTimeout(() => {
+      setToast({ show: false, message: "", type });
+    }, 2500);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    };
+  }, []);
+
+  // 🔹 Load statistics
+  const loadStatistics = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const stats = await getOrderStatistics();
+      if (stats) {
+        setStatistics(stats);
+      }
+    } catch (err) {
+      console.error("Error loading statistics:", err);
+    }
+  }, []);
+
+  // 🔹 Fetch orders dengan fallback pagination
+  const fetchOrders = useCallback(async (pageNumber = 1) => {
+    // Prevent multiple simultaneous calls using ref
+    if (fetchingRef.current) {
+      console.log("⏸️ Already fetching, skipping duplicate request for page", pageNumber);
+      return;
+    }
+
+    fetchingRef.current = true;
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.warn("No token found");
+        setLoading(false);
+        fetchingRef.current = false;
+        return;
+      }
+
+      const res = await fetch(`/api/finance/order-validation?page=${pageNumber}&per_page=${perPage}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      const json = await res.json();
+      
+      // Handle response dengan struktur: { success: true, data: [...], pagination: {...} }
+      if (json.success && json.data && Array.isArray(json.data)) {
+        // Selalu replace data (bukan append) - setiap page menampilkan data yang berbeda
+        setOrders(json.data);
+
+        // Gunakan pagination object jika tersedia, jika tidak gunakan fallback
+        if (json.pagination && json.pagination.last_page !== undefined) {
+          // Gunakan pagination object dari backend
+          const isLastPage = json.pagination.current_page >= json.pagination.last_page;
+          setHasMore(!isLastPage);
+        } else {
+          // Fallback pagination: cek jumlah data untuk menentukan hasMore
+          if (json.data.length < perPage) {
+            setHasMore(false); // sudah halaman terakhir
+          } else {
+            setHasMore(true); // masih ada halaman berikutnya
+          }
+        }
+      }
+      
+      setLoading(false);
+      fetchingRef.current = false;
+    } catch (err) {
+      console.error("Error fetching orders:", err);
+      showToast("Gagal memuat data", "error");
+      setLoading(false);
+      fetchingRef.current = false;
+    }
+  }, [showToast, perPage]);
+
+  // Load statistics on mount
+  useEffect(() => {
+    loadStatistics();
+  }, [loadStatistics]);
+
+  // Initial load: fetch page 1
+  useEffect(() => {
+    setPage(1);
+    setOrders([]);
+    setHasMore(true);
+    fetchOrders(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Hanya sekali saat mount
+
+  // Fetch data saat page berubah
+  useEffect(() => {
+    if (page > 0 && !loading) {
+      fetchOrders(page);
+      // Tidak scroll ke atas, tetap di posisi saat ini
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]); // Hanya depend pada page
+
+  // 🔹 Next page
+  const handleNextPage = useCallback(() => {
+    if (loading || !hasMore) return; // Jangan load jika sedang loading atau sudah habis
+    
+    const nextPage = page + 1;
+    console.log("🔄 Next page clicked, loading page:", nextPage);
+    setPage(nextPage);
+  }, [page, hasMore, loading]);
+
+  // 🔹 Previous page
+  const handlePrevPage = useCallback(() => {
+    if (loading || page <= 1) return; // Jangan load jika sedang loading atau sudah di page 1
+    
+    const prevPage = page - 1;
+    console.log("🔄 Previous page clicked, loading page:", prevPage);
+    setPage(prevPage);
+  }, [page, loading]);
+
+  // 🔹 Refresh all data (reset to page 1)
+  const requestRefresh = async (message, type = "success") => {
+    setPage(1);
+    setOrders([]);
+    setHasMore(true);
+    await Promise.all([loadStatistics(), fetchOrders(1)]);
+    if (message) showToast(message, type);
+  };
 
   // Filter orders berdasarkan search dan date range
   const filteredOrders = useMemo(() => {
@@ -172,24 +255,111 @@ export default function FinanceOrders() {
     return filtered;
   }, [orders, searchInput, dateRange]);
 
-  // Summary data
+  // === SUMMARY ===
+  // Gunakan data dari statistics API
   const totalOrders = statistics?.total_order || 0;
   const unpaidOrders = statistics?.total_order_unpaid || 0;
   const menungguOrders = statistics?.total_order_menunggu || 0;
   const approvedOrders = statistics?.total_order_sudah_diapprove || 0;
   const ditolakOrders = statistics?.total_order_ditolak || 0;
 
-  // Placeholder handlers (akan diisi fungsi nanti)
-  const handleNextPage = () => {
-    // Fungsi akan diisi nanti
-  };
-
-  const handlePrevPage = () => {
-    // Fungsi akan diisi nanti
-  };
-
+  // === EVENT HANDLERS ===
   const handleView = (order) => {
-    // Fungsi akan diisi nanti
+    setSelectedOrder(order);
+    setShowView(true);
+  };
+
+  const handleApprove = (order) => {
+    setSelectedOrder(order);
+    setShowApprove(true);
+  };
+
+  const handleReject = (order) => {
+    setSelectedOrder(order);
+    setShowReject(true);
+  };
+
+  // Handler untuk approve action
+  const onApprove = async (order) => {
+    try {
+      if (!order?.id) {
+        showToast("Order ID tidak valid", "error");
+        return;
+      }
+
+      const token = localStorage.getItem("token");
+      if (!token) {
+        showToast("Token tidak ditemukan", "error");
+        return;
+      }
+
+      const res = await fetch(`/api/finance/order-validation/${order.id}/approve`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({}),
+      });
+
+      const json = await res.json();
+
+      if (json.success) {
+        setShowApprove(false);
+        setSelectedOrder(null);
+        await requestRefresh("Order berhasil diapprove!", "success");
+      } else {
+        showToast(json.message || "Gagal approve order", "error");
+      }
+    } catch (err) {
+      console.error("Error approving order:", err);
+      showToast("Terjadi kesalahan saat approve order", "error");
+    }
+  };
+
+  // Handler untuk reject action
+  const onReject = async (order, reason) => {
+    try {
+      if (!order?.id) {
+        showToast("Order ID tidak valid", "error");
+        return;
+      }
+
+      if (!reason || !reason.trim()) {
+        showToast("Mohon isi alasan penolakan", "error");
+        return;
+      }
+
+      const token = localStorage.getItem("token");
+      if (!token) {
+        showToast("Token tidak ditemukan", "error");
+        return;
+      }
+
+      const res = await fetch(`/api/finance/order-validation/${order.id}/reject`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ reason }),
+      });
+
+      const json = await res.json();
+
+      if (json.success) {
+        setShowReject(false);
+        setSelectedOrder(null);
+        await requestRefresh("Order berhasil ditolak!", "success");
+      } else {
+        showToast(json.message || "Gagal reject order", "error");
+      }
+    } catch (err) {
+      console.error("Error rejecting order:", err);
+      showToast("Terjadi kesalahan saat reject order", "error");
+    }
   };
 
   return (
@@ -436,6 +606,30 @@ export default function FinanceOrders() {
                           >
                             <i className="pi pi-eye" />
                           </button>
+                          <button
+                            className="orders-action-btn"
+                            title="Approve"
+                            onClick={() => handleApprove(order)}
+                            style={{
+                              background: "#10b981",
+                              color: "#fff",
+                              borderColor: "#10b981",
+                            }}
+                          >
+                            <i className="pi pi-check" />
+                          </button>
+                          <button
+                            className="orders-action-btn"
+                            title="Reject"
+                            onClick={() => handleReject(order)}
+                            style={{
+                              background: "#ef4444",
+                              color: "#fff",
+                              borderColor: "#ef4444",
+                            }}
+                          >
+                            <i className="pi pi-times" />
+                          </button>
                         </div>
                       </div>
                     );
@@ -525,7 +719,51 @@ export default function FinanceOrders() {
             </button>
           </div>
         </section>
+
+        {/* TOAST */}
+        {toast.show && (
+          <div
+            className={`toast ${toast.type === "error" ? "toast-error" : ""} ${
+              toast.type === "warning" ? "toast-warning" : ""
+            }`}
+          >
+            {toast.message}
+          </div>
+        )}
       </div>
+
+      {/* MODALS */}
+      {showView && selectedOrder && (
+        <ViewOrders
+          order={selectedOrder}
+          onClose={() => {
+            setShowView(false);
+            setSelectedOrder(null);
+          }}
+        />
+      )}
+
+      {showApprove && selectedOrder && (
+        <ApproveOrder
+          order={selectedOrder}
+          onClose={() => {
+            setShowApprove(false);
+            setSelectedOrder(null);
+          }}
+          onApprove={onApprove}
+        />
+      )}
+
+      {showReject && selectedOrder && (
+        <RejectOrder
+          order={selectedOrder}
+          onClose={() => {
+            setShowReject(false);
+            setSelectedOrder(null);
+          }}
+          onReject={onReject}
+        />
+      )}
     </Layout>
   );
 }
