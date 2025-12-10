@@ -184,3 +184,406 @@
 .finance-action-btn:hover {
   background: #2563eb;
 }
+
+/* === ORDERS SECTION (Matching Sales Style) === */
+.orders-shell {
+  gap: 2rem;
+}
+
+.orders-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.orders-search {
+  position: relative;
+  flex: 1 1 320px;
+  max-width: 460px;
+}
+
+.orders-search__input {
+  width: 100%;
+  border: 1px solid var(--dash-border);
+  border-radius: 1rem;
+  background: var(--dash-surface);
+  color: var(--dash-text);
+  padding: 0.8rem 2.6rem 0.8rem 1rem;
+  font-size: 0.95rem;
+  transition: border 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.orders-search__input::placeholder {
+  color: var(--dash-muted);
+}
+
+.orders-search__input:focus {
+  outline: none;
+  border-color: var(--accent-indigo);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  background: #fff;
+}
+
+.orders-search__icon {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--dash-muted);
+  font-size: 0.95rem;
+}
+
+.orders-button {
+  border: none;
+  border-radius: 999px;
+  padding: 0.85rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.orders-button:focus-visible {
+  outline: 2px solid var(--accent-indigo);
+  outline-offset: 2px;
+}
+
+.orders-button--primary {
+  background: #f1a124;
+  color: #fff;
+  box-shadow: 0 12px 25px rgba(241, 161, 36, 0.25);
+}
+
+.orders-button--primary:hover {
+  background: #df9620;
+  transform: translateY(-1px);
+}
+
+.orders-panel {
+  overflow: hidden;
+}
+
+.orders-table__wrapper {
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.orders-table__wrapper::-webkit-scrollbar {
+  height: 6px;
+}
+
+.orders-table__wrapper::-webkit-scrollbar-thumb {
+  background: var(--dash-border);
+  border-radius: 999px;
+}
+
+.orders-table__wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.orders-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  min-width: fit-content;
+}
+
+.orders-table__head,
+.orders-table__row {
+  display: grid;
+  grid-template-columns: 
+    40px                                    /* # */
+    minmax(120px, 1.1fr)                    /* Customer */
+    minmax(140px, 1.2fr)                    /* Produk */
+    minmax(100px, 0.9fr)                    /* Total Harga */
+    minmax(100px, 0.8fr)                    /* Status Order */
+    minmax(100px, 0.9fr)                    /* Status Pembayaran */
+    minmax(85px, 0.7fr)                     /* Tanggal */
+    minmax(120px, 1fr)                      /* Sumber */
+    minmax(100px, 0.8fr)                    /* Waktu Pembayaran */
+    minmax(100px, 0.8fr)                    /* Metode Bayar */
+    minmax(120px, 0.9fr)                    /* Bukti Bayar */
+    minmax(80px, 0.6fr);                    /* Actions */
+  gap: 0.3rem;
+  align-items: center;
+  min-width: 1300px;
+}
+
+.orders-table__head {
+  padding: 0.6rem 0.75rem;
+  color: var(--dash-muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.orders-table__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.orders-table__row {
+  background: var(--dash-surface);
+  border: 1px solid var(--dash-border);
+  border-radius: 1rem;
+  padding: 0.5rem 0.65rem;
+  box-shadow: var(--dash-shadow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.orders-table__row:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 24px 45px rgba(15, 23, 42, 0.14);
+}
+
+.orders-table__cell {
+  font-size: 0.8rem;
+  color: var(--dash-text);
+  min-width: 0;
+  word-break: break-word;
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+}
+
+.orders-table__cell--strong {
+  font-weight: 600;
+  color: var(--dash-text);
+}
+
+.orders-status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.55rem;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  min-width: 60px;
+  text-align: center;
+}
+
+.orders-status-badge--unpaid {
+  background-color: #fef2f2;
+  color: #b91c1c;
+}
+
+.orders-status-badge--paid {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.orders-status-badge--sukses {
+  background-color: #e0f2fe;
+  color: #0369a1;
+}
+
+.orders-status-badge--gagal {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+/* Status Order Badge Styles */
+.orders-status-badge--proses {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.orders-status-badge--failed {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.orders-status-badge--upselling {
+  background-color: #e0e7ff;
+  color: #3730a3;
+}
+
+.orders-status-badge--dihapus {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+.orders-status-badge--default {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+/* Status Pembayaran Badge Styles */
+.orders-status-badge--pending {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.orders-status-badge--rejected {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.orders-status-badge--dp {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.orders-link {
+  color: #2563eb;
+  text-decoration: underline;
+  font-size: 0.75rem;
+  transition: color 0.2s ease;
+}
+
+.orders-link:hover {
+  color: #1d4ed8;
+}
+
+.orders-table__cell--actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.orders-action-btn {
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  padding: 0.25rem 0.45rem;
+  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease, border 0.2s ease;
+  gap: 0.2rem;
+  min-height: 28px;
+  background: #f0f9ff;
+  color: #0369a1;
+  border-color: #bae6fd;
+}
+
+.orders-action-btn:hover {
+  background: #bae6fd;
+  transform: translateY(-1px);
+}
+
+.orders-action-btn--ghost {
+  background: #eef2ff;
+  color: #4338ca;
+  border-color: #c7d2fe;
+}
+
+.orders-action-btn--ghost:hover {
+  background: #c7d2fe;
+  transform: translateY(-1px);
+}
+
+.orders-action-btn--danger {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fecdd3;
+}
+
+.orders-action-btn--danger:hover {
+  background: #fecaca;
+  transform: translateY(-1px);
+}
+
+.orders-empty {
+  text-align: center;
+  color: var(--dash-muted-strong);
+  padding: 1.5rem;
+  border: 1px dashed var(--dash-border);
+  border-radius: 1rem;
+  margin: 1rem 0;
+}
+
+.orders-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  margin-top: 0.75rem;
+  border-top: 1px solid var(--dash-border);
+}
+
+.orders-pagination__btn {
+  border: 1px solid var(--dash-border);
+  background: var(--dash-surface);
+  color: var(--dash-text);
+  border-radius: 0.5rem;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.orders-pagination__btn:hover:not(:disabled) {
+  background: var(--dash-border);
+  transform: translateY(-1px);
+}
+
+.orders-pagination__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.orders-pagination__info {
+  font-size: 0.8rem;
+  color: var(--dash-muted-strong);
+  font-weight: 500;
+}
+
+/* === TOAST === */
+.toast {
+  position: fixed;
+  top: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #22c55e;
+  color: white;
+  padding: 14px 22px;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  font-weight: 500;
+  font-size: 15px;
+  z-index: 9999;
+  animation: slideDown 0.4s ease, fadeOut 0.4s ease 2s forwards;
+}
+
+.toast-error {
+  background: #ef4444;
+}
+
+.toast-warning {
+  background: #facc15;
+  color: #473a00;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes fadeOut {
+  to {
+    opacity: 0;
+    transform: translate(-50%, -15px);
+  }
+}

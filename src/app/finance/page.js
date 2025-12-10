@@ -245,26 +245,26 @@ export default function FinanceDashboard() {
           </div>
         </section>
 
-        <section className="dashboard-panels dashboard-panels--full">
-            <div className="panel__header">
-              <div>
-                <p className="panel__eyebrow">Revenue breakdown</p>
-                <h3 className="panel__title">Financial Snapshot</h3>
-              </div>
-              <span className="panel__meta accent-green">Stable</span>
+        <section className="financial-snapshot-section">
+          <div className="financial-snapshot-header">
+            <div>
+              <p className="panel__eyebrow">Revenue breakdown</p>
+              <h3 className="panel__title">Financial Snapshot</h3>
             </div>
+            <span className="panel__meta accent-green">Stable</span>
+          </div>
 
-            <div className="revenue-grid">
-              {revenueCards.map((card) => (
-                <article className="revenue-card" key={card.title}>
-                  <div className={`revenue-card__icon ${card.color}`}>{card.icon}</div>
-                  <div>
-                    <p className="revenue-card__label">{card.title}</p>
-                    <p className="revenue-card__value">{card.value}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
+          <div className="revenue-grid">
+            {revenueCards.map((card) => (
+              <article className="revenue-card" key={card.title}>
+                <div className={`revenue-card__icon ${card.color}`}>{card.icon}</div>
+                <div>
+                  <p className="revenue-card__label">{card.title}</p>
+                  <p className="revenue-card__value">{card.value}</p>
+                </div>
+              </article>
+            ))}
+          </div>
         </section>
 
         <section className="dashboard-panels">
