@@ -8,7 +8,6 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  DollarSign,
   Wallet,
   PiggyBank,
   CreditCard,
@@ -64,11 +63,10 @@ export default function FinanceDashboard() {
       orders_unpaid: 103,
     },
     financial: {
-      gross_revenue: 2500000,
       net_revenue: 2500000,
-      gross_profit: 2500000,
       net_profit: 2500000,
       cash_flow: 1800000,
+      outstanding_payments: 3500000,
     },
     statistik: {
       profit_margin: 28.0,
@@ -160,27 +158,15 @@ export default function FinanceDashboard() {
   const revenueCards = useMemo(() => {
     return [
       {
-        title: "Gross Revenue",
-        value: financial?.gross_revenue ? formatCurrency(financial.gross_revenue) : (loading ? "…" : "Rp0"),
-        icon: <DollarSign size={22} />,
-        color: "accent-emerald",
-      },
-      {
         title: "Net Revenue",
         value: financial?.net_revenue ? formatCurrency(financial.net_revenue) : (loading ? "…" : "Rp0"),
         icon: <TrendingUp size={22} />,
         color: "accent-indigo",
       },
       {
-        title: "Gross Profit",
-        value: financial?.gross_profit ? formatCurrency(financial.gross_profit) : (loading ? "…" : "Rp0"),
-        icon: <PiggyBank size={22} />,
-        color: "accent-pink",
-      },
-      {
         title: "Net Profit",
         value: financial?.net_profit ? formatCurrency(financial.net_profit) : (loading ? "…" : "Rp0"),
-        icon: <TrendingUp size={22} />,
+        icon: <PiggyBank size={22} />,
         color: "accent-teal",
       },
       {
@@ -188,6 +174,12 @@ export default function FinanceDashboard() {
         value: financial?.cash_flow ? formatCurrency(financial.cash_flow) : (loading ? "…" : "Rp0"),
         icon: <Wallet size={22} />,
         color: "accent-blue",
+      },
+      {
+        title: "Outstanding Payments",
+        value: financial?.outstanding_payments ? formatCurrency(financial.outstanding_payments) : (loading ? "…" : "Rp0"),
+        icon: <AlertCircle size={22} />,
+        color: "accent-amber",
       },
     ];
   }, [financial, loading]);
