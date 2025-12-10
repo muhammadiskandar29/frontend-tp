@@ -1,0 +1,186 @@
+/* === FINANCE ADMIN STYLES === */
+
+/* Finance Orders Table */
+.finance-orders {
+  padding: 2rem;
+  min-height: 100vh;
+  background: var(--dash-bg, #f8fafc);
+}
+
+.finance-orders__header {
+  margin-bottom: 2rem;
+}
+
+.finance-orders__header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--dash-text, #0f172a);
+  margin: 0 0 0.5rem 0;
+}
+
+.finance-orders__header p {
+  font-size: 1rem;
+  color: var(--dash-muted, #64748b);
+  margin: 0;
+}
+
+.finance-orders__table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.finance-orders__table {
+  width: 100%;
+  min-width: 1200px;
+}
+
+.finance-orders__table-head,
+.finance-orders__table-row {
+  display: grid;
+  grid-template-columns: 
+    40px 
+    minmax(120px, 1.1fr) 
+    minmax(140px, 1.2fr) 
+    minmax(100px, 0.9fr) 
+    minmax(100px, 0.8fr)
+    minmax(100px, 0.9fr) 
+    minmax(85px, 0.7fr) 
+    minmax(120px, 1fr) 
+    minmax(100px, 0.8fr) 
+    minmax(100px, 0.8fr) 
+    minmax(120px, 0.9fr) 
+    minmax(80px, 0.6fr);
+  gap: 0.3rem;
+  align-items: center;
+}
+
+.finance-orders__table-head {
+  padding: 0.6rem 0.75rem;
+  background: #f1f5f9;
+  color: var(--dash-muted, #64748b);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.finance-orders__table-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem;
+}
+
+.finance-orders__table-row {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.finance-orders__table-row:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.finance-orders__table-cell {
+  font-size: 0.85rem;
+  color: var(--dash-text, #0f172a);
+  min-width: 0;
+  word-break: break-word;
+}
+
+/* Status Badges */
+.finance-status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.55rem;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.finance-status-badge--proses {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.finance-status-badge--sukses {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.finance-status-badge--failed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.finance-status-badge--upselling {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.finance-status-badge--dihapus {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.finance-status-badge--unpaid {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.finance-status-badge--pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.finance-status-badge--paid {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.finance-status-badge--rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.finance-status-badge--dp {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+/* Links */
+.finance-link {
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.finance-link:hover {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+/* Action Buttons */
+.finance-action-btn {
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.finance-action-btn:hover {
+  background: #2563eb;
+}

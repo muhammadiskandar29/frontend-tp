@@ -1,0 +1,27 @@
+/* === FINANCE DASHBOARD === */
+.finance-dashboard {
+  padding: 2rem;
+  min-height: 100vh;
+  background: var(--dash-bg, #f8fafc);
+}
+
+.finance-dashboard__header {
+  margin-bottom: 2rem;
+}
+
+.finance-dashboard__header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--dash-text, #0f172a);
+  margin: 0 0 0.5rem 0;
+}
+
+.finance-dashboard__header p {
+  font-size: 1rem;
+  color: var(--dash-muted, #64748b);
+  margin: 0;
+}
+
+.finance-dashboard__content {
+  /* Content styles akan ditambahkan nanti */
+}

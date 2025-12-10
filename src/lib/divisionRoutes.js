@@ -3,14 +3,14 @@ const divisionRouteMap = {
   "1": "/admin", // Admin Super
   "2": "/admin", // Owner
   "3": "/sales", // Sales
-  "4": "/admin", // Finance (default ke admin untuk sementara)
+  "4": "/finance", // Finance
   "5": "/hr/dashboard", // HR
   "11": "/admin", // Trainer (default ke admin untuk sementara)
   sales: "/sales",
   hr: "/hr/dashboard",
   "human resources": "/hr/dashboard",
   "human_resources": "/hr/dashboard",
-  finance: "/admin",
+  finance: "/finance",
   trainer: "/admin",
 };
 

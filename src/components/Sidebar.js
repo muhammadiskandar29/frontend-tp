@@ -41,8 +41,9 @@ export default function Sidebar({ role }) {
   const [isRailExpanded, setIsRailExpanded] = useState(true);
   const [openSubmenu, setOpenSubmenu] = useState(null);
   
-  // Check if user is sales (divisi 3)
+  // Check if user is sales (divisi 3) or finance (divisi 4)
   const [isSales, setIsSales] = useState(false);
+  const [isFinance, setIsFinance] = useState(false);
   
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -51,15 +52,17 @@ export default function Sidebar({ role }) {
       if (userData) {
         try {
           const user = JSON.parse(userData);
-          // Check if divisi is 3 (Sales) or "3"
           const userDivisi = user?.divisi || division;
           setIsSales(userDivisi === 3 || userDivisi === "3");
+          setIsFinance(userDivisi === 4 || userDivisi === "4");
         } catch (e) {
           // Fallback to division from localStorage
           setIsSales(division === "3");
+          setIsFinance(division === "4");
         }
       } else {
         setIsSales(division === "3");
+        setIsFinance(division === "4");
       }
     }
   }, []);
@@ -81,10 +84,29 @@ export default function Sidebar({ role }) {
 
   // === MENU BASED ON ROLE ===
   useEffect(() => {
-    // Default to /sales if pathname starts with /sales, otherwise /admin
+    // Check pathname for finance
+    const pathBasedFinance = typeof window !== "undefined" && pathname?.startsWith("/finance");
     const pathBasedSales = typeof window !== "undefined" && pathname?.startsWith("/sales");
-    const basePath = (isSales || pathBasedSales) ? "/sales" : "/admin";
     
+    // Determine base path
+    let basePath = "/admin";
+    if (isFinance || pathBasedFinance) {
+      basePath = "/finance";
+    } else if (isSales || pathBasedSales) {
+      basePath = "/sales";
+    }
+    
+    // Finance menu - hanya Orders
+    if (isFinance || pathBasedFinance) {
+      const financeMenu = [
+        { label: "Dashboard", href: "/finance", icon: <Home size={18} /> },
+        { label: "Orders", href: "/finance/orders", icon: <ClipboardList size={18} /> },
+      ];
+      setMenu(financeMenu);
+      return;
+    }
+    
+    // Sales menu
     const baseMenu = [
       { label: "Dashboard", href: basePath, icon: <Home size={18} /> },
       // Users hanya untuk admin, tidak untuk sales
@@ -111,7 +133,7 @@ export default function Sidebar({ role }) {
     ];
 
     setMenu(baseMenu);
-  }, [role, isSales, pathname]);
+  }, [role, isSales, isFinance, pathname]);
 
   // === DETECT SCREEN WIDTH ===
   useEffect(() => {
