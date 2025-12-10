@@ -300,7 +300,6 @@ export default function FinanceOrders() {
           Accept: "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({}),
       });
 
       const json = await res.json();
@@ -308,7 +307,7 @@ export default function FinanceOrders() {
       if (json.success) {
         setShowApprove(false);
         setSelectedOrder(null);
-        await requestRefresh("Order berhasil diapprove!", "success");
+        await requestRefresh(json.message || "Order berhasil disetujui", "success");
       } else {
         showToast(json.message || "Gagal approve order", "error");
       }
@@ -614,9 +613,10 @@ export default function FinanceOrders() {
                               background: "#10b981",
                               color: "#fff",
                               borderColor: "#10b981",
+                              padding: "0.4rem 0.8rem",
                             }}
                           >
-                            <i className="pi pi-check" />
+                            Approve
                           </button>
                           <button
                             className="orders-action-btn"
@@ -626,9 +626,10 @@ export default function FinanceOrders() {
                               background: "#ef4444",
                               color: "#fff",
                               borderColor: "#ef4444",
+                              padding: "0.4rem 0.8rem",
                             }}
                           >
-                            <i className="pi pi-times" />
+                            Reject
                           </button>
                         </div>
                       </div>

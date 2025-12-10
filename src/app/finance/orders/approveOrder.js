@@ -2,14 +2,25 @@
 import React, { useState } from "react";
 import "@/styles/finance/pesanan.css";
 
+// Helper function untuk build image URL via proxy
+const buildImageUrl = (path) => {
+  if (!path) return null;
+  // Bersihkan path dari prefix yang tidak diperlukan
+  const cleanPath = path.replace(/^\/?(storage\/)?/, "");
+  return `/api/image?path=${encodeURIComponent(cleanPath)}`;
+};
+
 export default function ApproveOrder({ order, onClose, onApprove }) {
   const [loading, setLoading] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
-  const handleApprove = async () => {
-    // Fungsi akan diisi nanti
+  const handleApproveClick = () => {
+    setShowConfirm(true);
+  };
+
+  const handleConfirmApprove = async () => {
     setLoading(true);
     try {
-      // Placeholder - akan diisi fungsi approve nanti
       if (onApprove) {
         await onApprove(order);
       }
@@ -21,7 +32,14 @@ export default function ApproveOrder({ order, onClose, onApprove }) {
     }
   };
 
+  const handleCancelConfirm = () => {
+    setShowConfirm(false);
+  };
+
   if (!order) return null;
+
+  // 🔧 Tentukan URL gambar via proxy
+  const buktiUrl = buildImageUrl(order.bukti_pembayaran);
 
   return (
     <div className="orders-modal-overlay">
@@ -39,71 +57,198 @@ export default function ApproveOrder({ order, onClose, onApprove }) {
 
         {/* Body */}
         <div className="orders-modal-body">
-          <div className="orders-section">
-            <p style={{ marginBottom: "1rem", color: "var(--dash-text)" }}>
-              Apakah Anda yakin ingin menyetujui pesanan ini?
-            </p>
-            
-            <div className="orders-row">
-              <p>Customer</p>
-              <span>{order.customer_rel?.nama || "-"}</span>
+          {!showConfirm ? (
+            <>
+              {/* Informasi Pelanggan */}
+              <div className="orders-section">
+                <h4>Informasi Pelanggan</h4>
+                <div className="orders-row">
+                  <p>Nama</p>
+                  <span>{order.customer_rel?.nama || "-"}</span>
+                </div>
+                <div className="orders-row">
+                  <p>No. WhatsApp</p>
+                  <span>{order.customer_rel?.wa || "-"}</span>
+                </div>
+                <div className="orders-row">
+                  <p>Alamat</p>
+                  <span>{order.alamat || "-"}</span>
+                </div>
+              </div>
+
+              {/* Detail Produk */}
+              <div className="orders-section">
+                <h4>Detail Produk</h4>
+                <div className="orders-row">
+                  <p>Nama Produk</p>
+                  <span>{order.produk_rel?.nama || "-"}</span>
+                </div>
+                <div className="orders-row">
+                  <p>Harga</p>
+                  <span>Rp {Number(order.harga || 0).toLocaleString()}</span>
+                </div>
+                <div className="orders-row">
+                  <p>Ongkir</p>
+                  <span>Rp {Number(order.ongkir || 0).toLocaleString()}</span>
+                </div>
+                <div className="orders-row">
+                  <p>Total Harga</p>
+                  <span>Rp {Number(order.total_harga || 0).toLocaleString()}</span>
+                </div>
+              </div>
+
+              {/* Pembayaran */}
+              <div className="orders-section">
+                <h4>Informasi Pembayaran</h4>
+                <div className="orders-row">
+                  <p>Status Pembayaran</p>
+                  <span>
+                    {order.status_pembayaran === 0 || order.status_pembayaran === null
+                      ? "Unpaid"
+                      : order.status_pembayaran === 1
+                      ? "Menunggu"
+                      : order.status_pembayaran === 2
+                      ? "Paid"
+                      : order.status_pembayaran === 3
+                      ? "Ditolak"
+                      : order.status_pembayaran === 4
+                      ? "DP"
+                      : "-"}
+                  </span>
+                </div>
+                <div className="orders-row">
+                  <p>Metode Pembayaran</p>
+                  <span>{order.metode_bayar || "-"}</span>
+                </div>
+                <div className="orders-row">
+                  <p>Waktu Pembayaran</p>
+                  <span>{order.waktu_pembayaran || "-"}</span>
+                </div>
+                <div
+                  className="orders-row"
+                  style={{ flexDirection: "column", alignItems: "flex-start" }}
+                >
+                  <p>Bukti Pembayaran</p>
+                  {buktiUrl ? (
+                    <>
+                      <p style={{ fontSize: "0.85rem", color: "#374151" }}>
+                        📎 Bukti Pembayaran ({order.customer_rel?.nama || "-"})
+                      </p>
+                      <img
+                        src={buktiUrl}
+                        alt={`Bukti Pembayaran ${order.customer_rel?.nama || "-"}`}
+                        style={{
+                          maxWidth: 150,
+                          maxHeight: 120,
+                          objectFit: "cover",
+                          marginTop: 4,
+                          borderRadius: 6,
+                          border: "1px solid #e5e7eb",
+                        }}
+                        onError={(e) => {
+                          e.target.style.display = "none";
+                          console.error("Gagal memuat gambar:", buktiUrl);
+                        }}
+                      />
+                    </>
+                  ) : (
+                    <span>-</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Informasi Tambahan */}
+              <div className="orders-section">
+                <h4>Informasi Tambahan</h4>
+                <div className="orders-row">
+                  <p>Tanggal Pesanan</p>
+                  <span>{order.tanggal || "-"}</span>
+                </div>
+                <div className="orders-row">
+                  <p>Sumber Pesanan</p>
+                  <span>{order.sumber || "-"}</span>
+                </div>
+                <div className="orders-row">
+                  <p>Order ID</p>
+                  <span>#{order.id}</span>
+                </div>
+                <div className="orders-row">
+                  <p>Status Order</p>
+                  <span>
+                    {order.status_order === "1"
+                      ? "Proses"
+                      : order.status_order === "2"
+                      ? "Sukses"
+                      : order.status_order === "3"
+                      ? "Failed"
+                      : order.status_order === "4"
+                      ? "Upselling"
+                      : order.status_order === "N"
+                      ? "Dihapus"
+                      : "-"}
+                  </span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="orders-section">
+              <p style={{ marginBottom: "1rem", color: "var(--dash-text)", fontSize: "1rem", textAlign: "center" }}>
+                Apakah anda yakin ingin approve Orderan ini?
+              </p>
             </div>
-            <div className="orders-row">
-              <p>Produk</p>
-              <span>{order.produk_rel?.nama || "-"}</span>
-            </div>
-            <div className="orders-row">
-              <p>Total Harga</p>
-              <span>Rp {Number(order.total_harga || 0).toLocaleString()}</span>
-            </div>
-            <div className="orders-row">
-              <p>Status Pembayaran</p>
-              <span>
-                {order.status_pembayaran === 0 || order.status_pembayaran === null
-                  ? "Unpaid"
-                  : order.status_pembayaran === 1
-                  ? "Menunggu"
-                  : order.status_pembayaran === 2
-                  ? "Paid"
-                  : order.status_pembayaran === 3
-                  ? "Ditolak"
-                  : order.status_pembayaran === 4
-                  ? "DP"
-                  : "-"}
-              </span>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Footer */}
         <div className="orders-modal-footer">
-          <button
-            className="orders-btn orders-btn--ghost"
-            onClick={onClose}
-            type="button"
-            disabled={loading}
-          >
-            Batal
-          </button>
-          <button
-            className="orders-btn orders-btn--primary"
-            onClick={handleApprove}
-            type="button"
-            disabled={loading}
-            style={{ background: "#10b981", color: "#fff" }}
-          >
-            {loading ? (
-              <>
-                <i className="pi pi-spin pi-spinner" style={{ marginRight: "0.5rem" }} />
-                Memproses...
-              </>
-            ) : (
-              <>
-                <i className="pi pi-check" style={{ marginRight: "0.5rem" }} />
+          {!showConfirm ? (
+            <>
+              <button
+                className="orders-btn orders-btn--ghost"
+                onClick={onClose}
+                type="button"
+                disabled={loading}
+              >
+                Batal
+              </button>
+              <button
+                className="orders-btn orders-btn--primary"
+                onClick={handleApproveClick}
+                type="button"
+                disabled={loading}
+                style={{ background: "#10b981", color: "#fff" }}
+              >
                 Approve
-              </>
-            )}
-          </button>
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                className="orders-btn orders-btn--ghost"
+                onClick={handleCancelConfirm}
+                type="button"
+                disabled={loading}
+              >
+                Tidak
+              </button>
+              <button
+                className="orders-btn orders-btn--primary"
+                onClick={handleConfirmApprove}
+                type="button"
+                disabled={loading}
+                style={{ background: "#10b981", color: "#fff" }}
+              >
+                {loading ? (
+                  <>
+                    <i className="pi pi-spin pi-spinner" style={{ marginRight: "0.5rem" }} />
+                    Memproses...
+                  </>
+                ) : (
+                  "Ya"
+                )}
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>
