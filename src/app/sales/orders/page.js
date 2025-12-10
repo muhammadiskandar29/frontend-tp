@@ -21,12 +21,12 @@ const BASE_URL = "/api";
 
 // Status Pembayaran Mapping
 const STATUS_PEMBAYARAN_MAP = {
-  0: { label: "Belum Pembayaran (Unpaid)", class: "unpaid" },
-  null: { label: "Belum Pembayaran (Unpaid)", class: "unpaid" },
-  1: { label: "Menunggu Approve Finance", class: "menunggu" },
-  2: { label: "Finance Approved (Paid)", class: "paid" },
-  3: { label: "Reject Finance", class: "reject" },
-  4: { label: "DP", class: "dp" },
+  0:    { label: "Unpaid", class: "unpaid" },
+  null: { label: "Unpaid", class: "unpaid" },
+  1:    { label: "Menunggu", class: "pending" },
+  2:    { label: "Paid", class: "paid" },
+  3:    { label: "Ditolak", class: "rejected" },
+  4:    { label: "DP", class: "dp" },
 };
 
 // Status Order Mapping

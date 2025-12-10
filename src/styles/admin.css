@@ -1030,12 +1030,12 @@ ADMIN USERS PAGE (Scoped Styles)
 }
 
 /* Status Pembayaran Badge Styles */
-.orders-status-badge--menunggu {
+.orders-status-badge--pending {
   background-color: #dbeafe;
   color: #1e40af;
 }
 
-.orders-status-badge--reject {
+.orders-status-badge--rejected {
   background-color: #fee2e2;
   color: #991b1b;
 }
