@@ -173,8 +173,23 @@
 
 @media (min-width: 1024px) {
   .dashboard-panels {
-    grid-template-columns: 1.5fr 1fr;
+    grid-template-columns: 2fr 1fr;
   }
+}
+
+.panel--chart {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.panel--summary {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.panel--revenue {
+  min-width: 0;
+  overflow: hidden;
 }
 
 .panel {
@@ -183,6 +198,8 @@
   border-radius: var(--dash-radius);
   padding: 1.5rem;
   box-shadow: var(--dash-shadow);
+  min-width: 0;
+  overflow: hidden;
 }
 
 .panel__header {
@@ -230,8 +247,15 @@
 
 .revenue-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 1rem;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.85rem;
+  width: 100%;
+}
+
+@media (max-width: 1400px) {
+  .revenue-grid {
+    grid-template-columns: repeat(5, minmax(140px, 1fr));
+  }
 }
 
 @media (max-width: 1200px) {
@@ -252,6 +276,17 @@
   }
 }
 
+/* Orders Overview - Vertical stacking */
+.panel--summary .revenue-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.panel--summary .revenue-card {
+  width: 100%;
+}
+
 .revenue-card {
   display: flex;
   gap: 0.75rem;
@@ -259,6 +294,14 @@
   border-radius: 1rem;
   border: 1px dashed var(--dash-border);
   align-items: center;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.revenue-card > div:last-child {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
 }
 
 .revenue-card__icon {
@@ -320,6 +363,9 @@
   font-size: 0.85rem;
   color: var(--dash-muted);
   margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .revenue-card__value {
@@ -327,4 +373,7 @@
   font-weight: 600;
   color: var(--dash-text);
   margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

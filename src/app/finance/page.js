@@ -289,7 +289,7 @@ export default function FinanceDashboard() {
             </div>
 
             {LazyResponsiveContainer && LazyChart && LazyLine && LazyXAxis && LazyTooltip && LazyCartesianGrid ? (
-              <LazyResponsiveContainer width="100%" height={280}>
+              <LazyResponsiveContainer width="100%" height={400}>
                 <LazyChart data={chartHasData ? activityTrend : [{ label: "-", pemasukan: 0, pengeluaran: 0 }]}>
                   <LazyCartesianGrid stroke="#F1F5F9" vertical={false} />
                   <LazyXAxis dataKey="label" stroke="#94A3B8" fontSize={12} tickMargin={12} />
@@ -312,7 +312,7 @@ export default function FinanceDashboard() {
                 </LazyChart>
               </LazyResponsiveContainer>
             ) : (
-              <div style={{ height: '280px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}>
+              <div style={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}>
                 Loading chart...
               </div>
             )}
