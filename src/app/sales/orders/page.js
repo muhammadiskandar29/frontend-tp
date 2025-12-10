@@ -15,6 +15,7 @@ import { getOrders, updateOrderAdmin, getOrderStatistics } from "@/lib/sales/ord
 const ViewOrders = dynamic(() => import("./viewOrders"), { ssr: false });
 const UpdateOrders = dynamic(() => import("./updateOrders"), { ssr: false });
 const AddOrders = dynamic(() => import("./addOrders"), { ssr: false });
+const AddCicilan = dynamic(() => import("./addCicilan"), { ssr: false });
 
 // Use Next.js proxy to avoid CORS
 const BASE_URL = "/api";
@@ -73,6 +74,7 @@ export default function DaftarPesanan() {
   const [showAdd, setShowAdd] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showView, setShowView] = useState(false);
+  const [showCicilan, setShowCicilan] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
 
   const [toast, setToast] = useState(DEFAULT_TOAST);
@@ -307,6 +309,11 @@ export default function DaftarPesanan() {
   const handleEdit = (order) => {
     setSelectedOrder(order);
     setShowEdit(true);
+  };
+
+  const handleCicilan = (order) => {
+    setSelectedOrder(order);
+    setShowCicilan(true);
   };
 
   const handleSuccessEdit = async (updatedFromForm) => {
@@ -619,6 +626,21 @@ export default function DaftarPesanan() {
                           >
                             <i className="pi pi-pencil" />
                           </button>
+                          {/* Button Input Cicilan - hanya muncul jika status_pembayaran === 4 (DP) */}
+                          {statusPembayaranValue === 4 && (
+                            <button
+                              className="orders-action-btn"
+                              title="Input Cicilan"
+                              onClick={() => handleCicilan(order)}
+                              style={{
+                                background: "#10b981",
+                                color: "#fff",
+                                marginTop: "0.25rem"
+                              }}
+                            >
+                              <i className="pi pi-money-bill" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     );
@@ -761,6 +783,25 @@ export default function DaftarPesanan() {
           onSave={handleSuccessEdit}
           setToast={setToast}
           refreshOrders={() => requestRefresh("")}
+        />
+      )}
+
+      {showCicilan && selectedOrder && (
+        <AddCicilan
+          order={{
+            ...selectedOrder,
+            customer: selectedOrder.customer_rel?.nama || "-",
+          }}
+          onClose={() => {
+            setShowCicilan(false);
+            setSelectedOrder(null);
+          }}
+          onSave={async () => {
+            // Fungsi save akan diisi nanti
+            setShowCicilan(false);
+            setSelectedOrder(null);
+            await requestRefresh("Cicilan berhasil ditambahkan!");
+          }}
         />
       )}
     </Layout>

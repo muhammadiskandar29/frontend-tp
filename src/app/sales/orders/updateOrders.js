@@ -53,6 +53,12 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
   }, [order]);
 
   const computedStatus = () => {
+    // Gunakan status_pembayaran dari order jika ada, jika tidak hitung dari bukti
+    const statusPembayaran = updatedOrder.status_pembayaran ?? order?.status_pembayaran;
+    if (statusPembayaran !== null && statusPembayaran !== undefined) {
+      return Number(statusPembayaran);
+    }
+    // Fallback: hitung dari bukti pembayaran
     if (
       updatedOrder.bukti_pembayaran &&
       updatedOrder.waktu_pembayaran &&
@@ -140,8 +146,8 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
         bukti_pembayaran: konfirmasiOrder.bukti_pembayaran || bukti.name,
         waktu_pembayaran: konfirmasiOrder.waktu_pembayaran || waktuPembayaran,
         metode_bayar: konfirmasiOrder.metode_bayar || metodeBayar,
-        status_pembayaran: konfirmasiOrder.status_pembayaran ?? 1,
-        status_order: konfirmasiOrder.status_order || "2",
+        status_pembayaran: konfirmasiOrder.status_pembayaran ?? 1, // 1 = Menunggu Approve Finance
+        status_order: order.status_order || "1", // Tetap Proses (1), tidak berubah saat konfirmasi pembayaran
       };
 
       setUpdatedOrder(finalOrder);
