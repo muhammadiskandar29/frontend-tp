@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
-import "@/styles/otp.css";
+import "@/styles/sales/otp.css";
 
 const OTP_VALID_DURATION = 5 * 60; // 5 menit
 
