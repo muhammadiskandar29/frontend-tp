@@ -8,7 +8,6 @@ import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 import "@/styles/sales/dashboard.css";
 import "@/styles/sales/admin.css";
-import "@/styles/sales/broadcast.css";
 
 // Lazy load modal
 const ViewPenerima = dynamic(() => import("./viewPenerima"), { ssr: false });
@@ -112,10 +111,10 @@ export default function BroadcastPage() {
             </span>
           </div>
 
-          <div className="broadcast-toolbar">
+          <div className="orders-toolbar">
             <div></div>
-            <div className="broadcast-toolbar-buttons">
-              <button className="broadcast-button broadcast-button--primary">
+            <div className="orders-toolbar-buttons">
+              <button type="button" className="orders-button orders-button--primary">
                 + Tambah Broadcast
               </button>
             </div>
@@ -136,7 +135,7 @@ export default function BroadcastPage() {
             </div>
           </div>
 
-          <div className="broadcast-table__wrapper">
+          <div className="orders-table__wrapper">
             {loading ? (
               <div style={{ padding: "2rem", textAlign: "center", color: "var(--dash-muted)" }}>
                 Memuat data...
@@ -146,8 +145,8 @@ export default function BroadcastPage() {
                 Belum ada data broadcast
               </div>
             ) : (
-              <div className="broadcast-table">
-                <div className="broadcast-table__head">
+              <div className="orders-table broadcast-table">
+                <div className="orders-table__head">
                   <span>#</span>
                   <span>Nama</span>
                   <span>Pesan</span>
@@ -158,7 +157,7 @@ export default function BroadcastPage() {
                   <span>Dibuat</span>
                   <span>Actions</span>
                 </div>
-                <div className="broadcast-table__body">
+                <div className="orders-table__body">
                   {broadcasts.map((broadcast, i) => {
                     let targetData = {};
                     try {
@@ -170,44 +169,44 @@ export default function BroadcastPage() {
                     }
 
                     return (
-                      <div className="broadcast-table__row" key={broadcast.id}>
-                        <div className="broadcast-table__cell" data-label="#">
+                      <div className="orders-table__row" key={broadcast.id}>
+                        <div className="orders-table__cell" data-label="#">
                           {i + 1}
                         </div>
-                        <div className="broadcast-table__cell broadcast-table__cell--strong" data-label="Nama">
+                        <div className="orders-table__cell orders-table__cell--strong" data-label="Nama">
                           {broadcast.nama || "-"}
                         </div>
-                        <div className="broadcast-table__cell" data-label="Pesan">
+                        <div className="orders-table__cell" data-label="Pesan">
                           {broadcast.pesan || "-"}
                         </div>
-                        <div className="broadcast-table__cell" data-label="Tanggal Kirim">
+                        <div className="orders-table__cell" data-label="Tanggal Kirim">
                           {formatDate(broadcast.tanggal_kirim)}
                         </div>
-                        <div className="broadcast-table__cell" data-label="Target">
+                        <div className="orders-table__cell" data-label="Target">
                           {targetData.produk ? `Produk: ${targetData.produk.join(", ")}` : "-"}
                           {targetData.status_order ? ` | Status: ${targetData.status_order}` : ""}
                         </div>
-                        <div className="broadcast-table__cell" data-label="Total Target">
+                        <div className="orders-table__cell" data-label="Total Target">
                           {broadcast.total_target || "0"}
                         </div>
-                        <div className="broadcast-table__cell" data-label="Status">
+                        <div className="orders-table__cell" data-label="Status">
                           <span className={`orders-status-badge orders-status-badge--${getStatusClass(broadcast.status)}`}>
                             {getStatusLabel(broadcast.status)}
                           </span>
                         </div>
-                        <div className="broadcast-table__cell" data-label="Dibuat">
+                        <div className="orders-table__cell" data-label="Dibuat">
                           {formatDate(broadcast.create_at)}
                         </div>
-                        <div className="broadcast-table__cell broadcast-table__cell--actions" data-label="Actions">
+                        <div className="orders-table__cell orders-table__cell--actions" data-label="Actions">
                           <button
-                            className="broadcast-action-btn"
+                            className="orders-action-btn"
                             title="View Penerima"
                             onClick={() => {
                               setSelectedBroadcast(broadcast);
                               setShowViewPenerima(true);
                             }}
                           >
-                            <i className="pi pi-eye" style={{ fontSize: "0.9rem" }} />
+                            <i className="pi pi-eye" />
                             View
                           </button>
                         </div>

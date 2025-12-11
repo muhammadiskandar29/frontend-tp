@@ -872,13 +872,13 @@ ADMIN USERS PAGE (Scoped Styles)
 }
 
 .orders-button--primary {
-  background: #f1a124;
-  color: #fff;
-  box-shadow: 0 12px 25px rgba(241, 161, 36, 0.25);
+  background: #f1a124 !important;
+  color: #fff !important;
+  box-shadow: 0 12px 25px rgba(241, 161, 36, 0.25) !important;
 }
 
 .orders-button--primary:hover {
-  background: #df9620;
+  background: #df9620 !important;
   transform: translateY(-1px);
 }
 
@@ -1065,6 +1065,22 @@ ADMIN USERS PAGE (Scoped Styles)
 
 .orders-link:hover {
   color: #1d4ed8;
+}
+
+/* === BROADCAST TABLE (9 columns) === */
+.broadcast-table.orders-table .orders-table__head,
+.broadcast-table.orders-table .orders-table__row {
+  grid-template-columns: 
+    40px                                    /* # */
+    minmax(150px, 1.2fr)                   /* Nama */
+    minmax(200px, 1.5fr)                   /* Pesan */
+    minmax(160px, 1.2fr)                   /* Tanggal Kirim */
+    minmax(180px, 1.3fr)                   /* Target */
+    minmax(100px, 0.9fr)                   /* Total Target */
+    minmax(100px, 0.9fr)                   /* Status */
+    minmax(160px, 1.2fr)                   /* Dibuat */
+    minmax(100px, 0.8fr) !important;       /* Actions */
+  min-width: 1200px !important;
 }
 
 /* === PRODUCTS TABLE (Similar to Orders Table) === */
