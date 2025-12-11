@@ -17,6 +17,7 @@ import {
   Activity,
   ClipboardList,
   UserCheck,
+  Radio,
 } from "lucide-react";
 import "@/styles/sales/sidebar.css";
 
@@ -121,6 +122,7 @@ export default function Sidebar({ role }) {
         ],
       },
       { label: "Orders", href: `${basePath}/orders`, icon: <ClipboardList size={18} /> },
+      { label: "Broadcast", href: `${basePath}/broadcast`, icon: <Radio size={18} /> },
       {
         label: "Follow Up",
         icon: <Tag size={18} />,
