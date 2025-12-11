@@ -349,6 +349,13 @@ export default function FinanceOrders() {
         return;
       }
 
+      // Log untuk debugging
+      console.log("🔴 Reject Order Request:", {
+        orderId: order.id,
+        catatan: catatan,
+        orderStatus: order.status_pembayaran,
+      });
+
       const res = await fetch(`/api/finance/order-validation/${order.id}/reject`, {
         method: "POST",
         headers: {
@@ -356,10 +363,13 @@ export default function FinanceOrders() {
           Accept: "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ catatan }),
+        body: JSON.stringify({ catatan: catatan.trim() }),
       });
 
       const json = await res.json();
+
+      // Log response untuk debugging
+      console.log("🔴 Reject Order Response:", json);
 
       if (json.success) {
         setShowReject(false);

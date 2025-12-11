@@ -16,11 +16,12 @@ export default function RejectOrder({ order, onClose, onReject }) {
     try {
       if (onReject) {
         await onReject(order, catatan);
+        // onClose akan dipanggil di onReject jika berhasil
+      } else {
+        onClose();
       }
-      onClose();
     } catch (error) {
       console.error("Error rejecting order:", error);
-    } finally {
       setLoading(false);
     }
   };
