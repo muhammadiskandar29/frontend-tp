@@ -33,21 +33,29 @@ export async function POST(request, { params }) {
       );
     }
 
+    const requestBody = { catatan: catatan.trim() };
+    const backendUrl = `${BACKEND_URL}/api/finance/order-validation/${id}/reject`;
+    
     console.log(`🔴 [FINANCE-REJECT] Rejecting order: ${id}`);
-    console.log(`🔴 [FINANCE-REJECT] Catatan: ${catatan}`);
+    console.log(`🔴 [FINANCE-REJECT] Backend URL: ${backendUrl}`);
+    console.log(`🔴 [FINANCE-REJECT] Request body:`, requestBody);
+    console.log(`🔴 [FINANCE-REJECT] Token present:`, !!token);
 
     // Forward request to backend
-    const response = await fetch(`${BACKEND_URL}/api/finance/order-validation/${id}/reject`, {
+    const response = await fetch(backendUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ catatan: catatan.trim() }),
+      body: JSON.stringify(requestBody),
     });
 
     const text = await response.text();
+    console.log(`📥 [FINANCE-REJECT] Response status: ${response.status}`);
+    console.log(`📥 [FINANCE-REJECT] Response text:`, text);
+    
     let json;
 
     try {
@@ -59,16 +67,21 @@ export async function POST(request, { params }) {
           success: false,
           message: "Backend mengembalikan response yang tidak valid",
           error: "Invalid JSON response",
+          rawResponse: text.substring(0, 500),
         },
         { status: 500 }
       );
     }
 
-    console.log(`📥 [FINANCE-REJECT] Response status: ${response.status}`);
-    console.log(`📥 [FINANCE-REJECT] Response:`, json);
+    console.log(`📥 [FINANCE-REJECT] Parsed response:`, json);
 
-    // Return response from backend
-    return NextResponse.json(json, { status: response.status });
+    // Return response from backend (forward as-is)
+    return NextResponse.json(json, { 
+      status: response.status,
+      headers: {
+        "Content-Type": "application/json",
+      }
+    });
   } catch (error) {
     console.error("❌ [FINANCE-REJECT] Error:", error);
     return NextResponse.json(
