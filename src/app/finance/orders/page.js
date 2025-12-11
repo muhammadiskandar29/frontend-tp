@@ -624,8 +624,17 @@ export default function FinanceOrders() {
                             Detail
                           </button>
                           
-                          {/* Conditional buttons berdasarkan status pembayaran */}
+                          {/* Conditional buttons berdasarkan waktu_pembayaran dan status pembayaran */}
                           {(() => {
+                            // Cek apakah sudah ada waktu_pembayaran
+                            const hasWaktuPembayaran = order.waktu_pembayaran && order.waktu_pembayaran.trim() !== "";
+                            
+                            // Jika belum ada waktu_pembayaran, jangan tampilkan Approve dan Reject
+                            if (!hasWaktuPembayaran) {
+                              return null;
+                            }
+                            
+                            // Jika sudah ada waktu_pembayaran, tampilkan button sesuai status
                             const statusPembayaran = order.status_pembayaran ?? 0;
                             
                             // Jika sudah approved (status = 2), tampilkan Reject saja
