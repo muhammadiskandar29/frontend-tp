@@ -121,10 +121,10 @@ export async function approveOrder(id, data = {}) {
 }
 
 /** 🔴 POST Reject Order (Finance) */
-export async function rejectOrder(id, { reason }) {
+export async function rejectOrder(id, { catatan }) {
   const res = await api(`/finance/order-validation/${id}/reject`, {
     method: "POST",
-    body: JSON.stringify({ reason }),
+    body: JSON.stringify({ catatan }),
   });
   return {
     success: res.success !== false,

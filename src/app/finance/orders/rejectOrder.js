@@ -4,20 +4,18 @@ import "@/styles/finance/pesanan.css";
 
 export default function RejectOrder({ order, onClose, onReject }) {
   const [loading, setLoading] = useState(false);
-  const [reason, setReason] = useState("");
+  const [catatan, setCatatan] = useState("");
 
   const handleReject = async () => {
-    // Fungsi akan diisi nanti
-    if (!reason.trim()) {
-      alert("Mohon isi alasan penolakan");
+    if (!catatan.trim()) {
+      alert("Mohon isi catatan penolakan");
       return;
     }
 
     setLoading(true);
     try {
-      // Placeholder - akan diisi fungsi reject nanti
       if (onReject) {
-        await onReject(order, reason);
+        await onReject(order, catatan);
       }
       onClose();
     } catch (error) {
@@ -80,12 +78,12 @@ export default function RejectOrder({ order, onClose, onReject }) {
             </div>
 
             <div className="orders-field" style={{ marginTop: "1rem" }}>
-              <label htmlFor="reject-reason">Alasan Penolakan *</label>
+              <label htmlFor="reject-catatan">Catatan Penolakan *</label>
               <textarea
-                id="reject-reason"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                placeholder="Masukkan alasan penolakan pesanan..."
+                id="reject-catatan"
+                value={catatan}
+                onChange={(e) => setCatatan(e.target.value)}
+                placeholder="Masukkan catatan penolakan pesanan..."
                 rows={4}
                 style={{
                   width: "100%",
@@ -115,7 +113,7 @@ export default function RejectOrder({ order, onClose, onReject }) {
             className="orders-btn orders-btn--primary"
             onClick={handleReject}
             type="button"
-            disabled={loading || !reason.trim()}
+            disabled={loading || !catatan.trim()}
             style={{ background: "#ef4444", color: "#fff" }}
           >
             {loading ? (

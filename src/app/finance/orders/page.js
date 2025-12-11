@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import Layout from "@/components/Layout";
 import dynamic from "next/dynamic";
-import { ShoppingCart, Clock, CheckCircle, PartyPopper, XCircle } from "lucide-react";
+import { ShoppingCart, Clock, CheckCircle, PartyPopper, XCircle, DollarSign } from "lucide-react";
 import { Calendar } from "primereact/calendar";
 import "primereact/resources/themes/lara-light-cyan/theme.css";
 import "primereact/resources/primereact.min.css";
@@ -217,6 +217,19 @@ export default function FinanceOrders() {
     if (message) showToast(message, type);
   };
 
+  // Reset page ke 1 dan fetch ulang ketika filter berubah
+  useEffect(() => {
+    // Skip pada initial mount (sudah ada useEffect untuk initial load)
+    if (orders.length === 0) return;
+    
+    // Reset ke page 1 dan fetch ulang data
+    setPage(1);
+    setOrders([]);
+    setHasMore(true);
+    fetchOrders(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchInput, dateRange]); // Reset page ketika search atau date range berubah
+
   // Filter orders berdasarkan search dan date range
   const filteredOrders = useMemo(() => {
     let filtered = [...orders];
@@ -261,8 +274,7 @@ export default function FinanceOrders() {
   const menungguOrders = statistics?.menunggu_validasi || 0;
   const approvedOrders = statistics?.sudah_diapprove || 0;
   const ditolakOrders = statistics?.ditolak || 0;
-  const totalOrders = menungguOrders + approvedOrders + ditolakOrders;
-  const unpaidOrders = 0; // Tidak ada di response API finance
+  const totalNilaiMenunggu = statistics?.total_nilai_menunggu_formatted || "Rp 0";
 
   // === EVENT HANDLERS ===
   const handleView = (order) => {
@@ -319,15 +331,15 @@ export default function FinanceOrders() {
   };
 
   // Handler untuk reject action
-  const onReject = async (order, reason) => {
+  const onReject = async (order, catatan) => {
     try {
       if (!order?.id) {
         showToast("Order ID tidak valid", "error");
         return;
       }
 
-      if (!reason || !reason.trim()) {
-        showToast("Mohon isi alasan penolakan", "error");
+      if (!catatan || !catatan.trim()) {
+        showToast("Mohon isi catatan penolakan", "error");
         return;
       }
 
@@ -344,7 +356,7 @@ export default function FinanceOrders() {
           Accept: "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ reason }),
+        body: JSON.stringify({ catatan }),
       });
 
       const json = await res.json();
@@ -394,21 +406,9 @@ export default function FinanceOrders() {
         <section className="dashboard-summary orders-summary">
           {[
             {
-              label: "Total orders",
-              value: totalOrders,
-              accent: "accent-indigo",
-              icon: <ShoppingCart size={22} />,
-            },
-            {
-              label: "Unpaid",
-              value: unpaidOrders,
-              accent: "accent-amber",
-              icon: <Clock size={22} />,
-            },
-            {
-              label: "Menunggu",
+              label: "Menunggu Validasi",
               value: menungguOrders,
-              accent: "accent-blue",
+              accent: "accent-amber",
               icon: <Clock size={22} />,
             },
             {
@@ -422,6 +422,12 @@ export default function FinanceOrders() {
               value: ditolakOrders,
               accent: "accent-red",
               icon: <XCircle size={22} />,
+            },
+            {
+              label: "Total Nilai Menunggu",
+              value: totalNilaiMenunggu,
+              accent: "accent-indigo",
+              icon: <DollarSign size={22} />,
             },
           ].map((card) => (
             <article className="summary-card" key={card.label}>
@@ -551,7 +557,7 @@ export default function FinanceOrders() {
                     return (
                       <div className="orders-table__row" key={order.id || `${order.id}-${i}`}>
                         <div className="orders-table__cell" data-label="#">
-                          {(page - 1) * perPage + i + 1}
+                          {i + 1}
                         </div>
                         <div className="orders-table__cell orders-table__cell--strong" data-label="Customer">
                           {customerNama}
@@ -599,39 +605,89 @@ export default function FinanceOrders() {
                           )}
                         </div>
                         <div className="orders-table__cell orders-table__cell--actions" data-label="Actions">
+                          {/* Detail button - selalu tampil */}
                           <button
                             className="orders-action-btn"
                             title="View"
                             onClick={() => handleView(order)}
                           >
-                            <i className="pi pi-eye" />
+                            Detail
                           </button>
-                          <button
-                            className="orders-action-btn"
-                            title="Approve"
-                            onClick={() => handleApprove(order)}
-                            style={{
-                              background: "#10b981",
-                              color: "#fff",
-                              borderColor: "#10b981",
-                              padding: "0.4rem 0.8rem",
-                            }}
-                          >
-                            Approve
-                          </button>
-                          <button
-                            className="orders-action-btn"
-                            title="Reject"
-                            onClick={() => handleReject(order)}
-                            style={{
-                              background: "#ef4444",
-                              color: "#fff",
-                              borderColor: "#ef4444",
-                              padding: "0.4rem 0.8rem",
-                            }}
-                          >
-                            Reject
-                          </button>
+                          
+                          {/* Conditional buttons berdasarkan status pembayaran */}
+                          {(() => {
+                            const statusPembayaran = order.status_pembayaran ?? 0;
+                            
+                            // Jika sudah approved (status = 2), tampilkan Reject saja
+                            if (statusPembayaran === 2) {
+                              return (
+                                <button
+                                  className="orders-action-btn"
+                                  title="Reject"
+                                  onClick={() => handleReject(order)}
+                                  style={{
+                                    background: "#ef4444",
+                                    color: "#fff",
+                                    borderColor: "#ef4444",
+                                    padding: "0.4rem 0.8rem",
+                                  }}
+                                >
+                                  Reject
+                                </button>
+                              );
+                            }
+                            
+                            // Jika sudah rejected (status = 3), tampilkan Approve saja
+                            if (statusPembayaran === 3) {
+                              return (
+                                <button
+                                  className="orders-action-btn"
+                                  title="Approve"
+                                  onClick={() => handleApprove(order)}
+                                  style={{
+                                    background: "#10b981",
+                                    color: "#fff",
+                                    borderColor: "#10b981",
+                                    padding: "0.4rem 0.8rem",
+                                  }}
+                                >
+                                  Approve
+                                </button>
+                              );
+                            }
+                            
+                            // Jika masih pending/menunggu (status = 1) atau lainnya, tampilkan semua
+                            return (
+                              <>
+                                <button
+                                  className="orders-action-btn"
+                                  title="Approve"
+                                  onClick={() => handleApprove(order)}
+                                  style={{
+                                    background: "#10b981",
+                                    color: "#fff",
+                                    borderColor: "#10b981",
+                                    padding: "0.4rem 0.8rem",
+                                  }}
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  className="orders-action-btn"
+                                  title="Reject"
+                                  onClick={() => handleReject(order)}
+                                  style={{
+                                    background: "#ef4444",
+                                    color: "#fff",
+                                    borderColor: "#ef4444",
+                                    padding: "0.4rem 0.8rem",
+                                  }}
+                                >
+                                  Reject
+                                </button>
+                              </>
+                            );
+                          })()}
                         </div>
                       </div>
                     );
