@@ -85,7 +85,12 @@ export default function BroadcastPage() {
     }
   };
 
-  const getStatusLabel = (status) => {
+  const getStatusLabel = (status, broadcast) => {
+    // Jika status "1" (Draft) tapi sudah ada sent_to_queue, berarti sedang diproses
+    if (status?.trim() === "1" && broadcast?.sent_to_queue > 0) {
+      return "Sedang Diproses";
+    }
+    
     const statusMap = {
       "1": "Draft",
       "2": "Terjadwal",
@@ -95,7 +100,12 @@ export default function BroadcastPage() {
     return statusMap[status?.trim()] || status || "-";
   };
 
-  const getStatusClass = (status) => {
+  const getStatusClass = (status, broadcast) => {
+    // Jika status "1" (Draft) tapi sudah ada sent_to_queue, gunakan class "processing"
+    if (status?.trim() === "1" && broadcast?.sent_to_queue > 0) {
+      return "processing";
+    }
+    
     const statusMap = {
       "1": "pending",
       "2": "pending",
@@ -285,8 +295,8 @@ export default function BroadcastPage() {
                           {broadcast.total_target || "0"}
                         </div>
                         <div className="orders-table__cell" data-label="Status">
-                          <span className={`orders-status-badge orders-status-badge--${getStatusClass(broadcast.status)}`}>
-                            {getStatusLabel(broadcast.status)}
+                          <span className={`orders-status-badge orders-status-badge--${getStatusClass(broadcast.status, broadcast)}`}>
+                            {getStatusLabel(broadcast.status, broadcast)}
                           </span>
                         </div>
                         <div className="orders-table__cell" data-label="Dibuat">
