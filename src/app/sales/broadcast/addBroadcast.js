@@ -51,6 +51,8 @@ export default function AddBroadcast({ onClose, onAdd }) {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [estimatedTarget, setEstimatedTarget] = useState(null);
+  const [checkingTarget, setCheckingTarget] = useState(false);
 
   // Fetch products and orders data on mount
   useEffect(() => {
@@ -289,6 +291,31 @@ export default function AddBroadcast({ onClose, onAdd }) {
       }
 
       console.log("✅ [BROADCAST] Success:", json);
+
+      // Check if total_target is 0
+      if (json.data?.total_target === 0) {
+        const filterInfo = [];
+        if (requestBody.target.produk?.length > 0) {
+          const productNames = requestBody.target.produk
+            .map((id) => getSelectedProductName(id))
+            .join(", ");
+          filterInfo.push(`Produk: ${productNames}`);
+        }
+        if (requestBody.target.status_order) {
+          filterInfo.push(`Status Order: ${getStatusOrderLabel(requestBody.target.status_order)}`);
+        }
+        if (requestBody.target.status_pembayaran) {
+          filterInfo.push(`Status Pembayaran: ${getStatusPembayaranLabel(requestBody.target.status_pembayaran)}`);
+        }
+
+        const warningMessage = `⚠️ Broadcast berhasil dibuat, tetapi tidak ada customer yang sesuai dengan filter:\n\n${filterInfo.join("\n")}\n\nSilakan kurangi filter atau pilih kombinasi filter yang berbeda.`;
+        
+        alert(warningMessage);
+      } else {
+        // Show success message if there are targets
+        alert(`✅ Broadcast berhasil dibuat!\nTotal Target: ${json.data?.total_target || 0} customer`);
+      }
+
       if (onAdd) onAdd(json.data);
       onClose();
     } catch (err) {
@@ -310,6 +337,49 @@ export default function AddBroadcast({ onClose, onAdd }) {
 
   const getStatusPembayaranLabel = (value) => {
     return STATUS_PEMBAYARAN_MAP[value] || value;
+  };
+
+  // Check estimated target count (optional helper function)
+  const checkEstimatedTarget = async () => {
+    if (!formData.target.produk || formData.target.produk.length === 0) {
+      setEstimatedTarget(null);
+      return;
+    }
+
+    setCheckingTarget(true);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      // Create a test payload to check target
+      const testPayload = normalizeBroadcastPayload({
+        ...formData,
+        nama: "test",
+        pesan: "test",
+      });
+
+      // Call backend to get estimated count (if backend supports it)
+      // For now, we'll just show a message based on filters
+      const filterInfo = [];
+      if (testPayload.target.produk?.length > 0) {
+        filterInfo.push(`${testPayload.target.produk.length} produk`);
+      }
+      if (testPayload.target.status_order) {
+        filterInfo.push(`Status Order: ${getStatusOrderLabel(testPayload.target.status_order)}`);
+      }
+      if (testPayload.target.status_pembayaran) {
+        filterInfo.push(`Status Pembayaran: ${getStatusPembayaranLabel(testPayload.target.status_pembayaran)}`);
+      }
+
+      setEstimatedTarget({
+        filters: filterInfo,
+        note: "Estimasi akan muncul setelah broadcast dibuat",
+      });
+    } catch (err) {
+      console.error("Error checking target:", err);
+    } finally {
+      setCheckingTarget(false);
+    }
   };
 
   return (
@@ -591,6 +661,43 @@ export default function AddBroadcast({ onClose, onAdd }) {
               </div>
             )}
           </div>
+
+          {/* Info Box: Summary Filter yang Dipilih */}
+          {(formData.target.produk.length > 0 || 
+            formData.target.status_order.length > 0 || 
+            formData.target.status_pembayaran.length > 0) && (
+            <div style={{ 
+              marginTop: "1.5rem", 
+              padding: "1rem", 
+              background: "#f0f9ff", 
+              borderRadius: "8px",
+              border: "1px solid #bae6fd"
+            }}>
+              <strong style={{ fontSize: "0.875rem", color: "#0369a1", display: "block", marginBottom: "0.5rem" }}>
+                📋 Filter yang Dipilih:
+              </strong>
+              <div style={{ fontSize: "0.875rem", color: "#0369a1" }}>
+                {formData.target.produk.length > 0 && (
+                  <div style={{ marginBottom: "0.25rem" }}>
+                    • Produk: {formData.target.produk.map((id) => getSelectedProductName(id)).join(", ")}
+                  </div>
+                )}
+                {formData.target.status_order.length > 0 && (
+                  <div style={{ marginBottom: "0.25rem" }}>
+                    • Status Order: {formData.target.status_order.map((s) => getStatusOrderLabel(s)).join(", ")}
+                  </div>
+                )}
+                {formData.target.status_pembayaran.length > 0 && (
+                  <div style={{ marginBottom: "0.25rem" }}>
+                    • Status Pembayaran: {formData.target.status_pembayaran.map((s) => getStatusPembayaranLabel(s)).join(", ")}
+                  </div>
+                )}
+                <div style={{ marginTop: "0.5rem", paddingTop: "0.5rem", borderTop: "1px solid #bae6fd", fontStyle: "italic" }}>
+                  💡 Semua filter harus terpenuhi (AND logic). Jika tidak ada customer yang match, total_target akan 0.
+                </div>
+              </div>
+            </div>
+          )}
         </form>
 
         <div className="orders-modal-footer">
