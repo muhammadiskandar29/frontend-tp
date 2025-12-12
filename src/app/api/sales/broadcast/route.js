@@ -46,33 +46,58 @@ export async function POST(request) {
     const token = authHeader.replace("Bearer ", "");
     const body = await request.json();
 
-    console.log("📤 [BROADCAST-POST] Request body:", body);
+    console.log("📤 [BROADCAST-POST] Request body from frontend:", JSON.stringify(body, null, 2));
+
+    // Validate required fields
+    if (!body.nama || !body.pesan) {
+      return NextResponse.json(
+        { success: false, message: "Nama dan pesan wajib diisi" },
+        { status: 400 }
+      );
+    }
+
+    // Validate produk is present and not empty
+    if (!body.target?.produk || !Array.isArray(body.target.produk) || body.target.produk.length === 0) {
+      return NextResponse.json(
+        { success: false, message: "Pilih minimal satu produk" },
+        { status: 400 }
+      );
+    }
 
     // Prepare request body for backend
+    // Frontend sudah mengirim payload yang sudah dinormalisasi, jadi kita hanya perlu memastikan format benar
     const requestBody = {
-      nama: body.nama,
-      pesan: body.pesan,
-      langsung_kirim: body.langsung_kirim,
-      tanggal_kirim: body.tanggal_kirim,
-      target: body.target || {},
+      nama: String(body.nama).trim(),
+      pesan: String(body.pesan).trim(),
+      langsung_kirim: Boolean(body.langsung_kirim),
+      tanggal_kirim: body.tanggal_kirim || null,
+      target: {
+        // Produk: always array of integers (wajib)
+        produk: Array.isArray(body.target.produk)
+          ? body.target.produk.map((id) => Number(id)).filter((id) => !isNaN(id) && id > 0)
+          : [],
+      },
     };
 
-    // Ensure produk is an array of numbers (not strings)
-    if (requestBody.target.produk && Array.isArray(requestBody.target.produk)) {
-      requestBody.target.produk = requestBody.target.produk.map((id) => Number(id));
+    // Only include status_order if it exists and is not empty (optional)
+    if (body.target?.status_order !== undefined && body.target?.status_order !== null && body.target?.status_order !== "") {
+      requestBody.target.status_order = String(body.target.status_order).trim();
     }
 
-    // Convert status_order to string if it exists
-    if (requestBody.target.status_order !== undefined && requestBody.target.status_order !== null) {
-      requestBody.target.status_order = String(requestBody.target.status_order);
+    // Only include status_pembayaran if it exists and is not empty (optional)
+    if (body.target?.status_pembayaran !== undefined && body.target?.status_pembayaran !== null && body.target?.status_pembayaran !== "") {
+      requestBody.target.status_pembayaran = String(body.target.status_pembayaran).trim();
     }
 
-    // Convert status_pembayaran to string if it exists
-    if (requestBody.target.status_pembayaran !== undefined && requestBody.target.status_pembayaran !== null) {
-      requestBody.target.status_pembayaran = String(requestBody.target.status_pembayaran);
+    // Final validation: produk must not be empty
+    if (!requestBody.target.produk || requestBody.target.produk.length === 0) {
+      return NextResponse.json(
+        { success: false, message: "Pilih minimal satu produk" },
+        { status: 400 }
+      );
     }
 
-    console.log("📤 [BROADCAST-POST] Final request body:", requestBody);
+    console.log("📤 [BROADCAST-POST] Final request body to backend:", JSON.stringify(requestBody, null, 2));
 
     const response = await fetch(`${BACKEND_URL}/api/sales/broadcast`, {
       method: "POST",

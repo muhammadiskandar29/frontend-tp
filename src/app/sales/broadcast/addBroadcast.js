@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Calendar } from "primereact/calendar";
+import { normalizeBroadcastPayload } from "@/lib/sales/broadcast";
 import "@/styles/sales/pesanan.css";
 import "primereact/resources/themes/lara-light-cyan/theme.css";
 import "primereact/resources/primereact.min.css";
@@ -257,44 +258,19 @@ export default function AddBroadcast({ onClose, onAdd }) {
         return;
       }
 
-      // Prepare request body
-      const targetObj = {};
-      
-      // Produk: array of IDs (bisa lebih dari 1)
-      if (formData.target.produk && formData.target.produk.length > 0) {
-        targetObj.produk = formData.target.produk;
-      }
-      
-      // Status Order: string (hanya satu nilai, ambil yang pertama jika ada)
-      if (formData.target.status_order && formData.target.status_order.length > 0) {
-        targetObj.status_order = formData.target.status_order[0];
-      }
-      
-      // Status Pembayaran: string (hanya satu nilai, ambil yang pertama jika ada)
-      if (formData.target.status_pembayaran && formData.target.status_pembayaran.length > 0) {
-        targetObj.status_pembayaran = formData.target.status_pembayaran[0];
+      // Validate produk is selected
+      if (!formData.target.produk || formData.target.produk.length === 0) {
+        setError("Pilih minimal satu produk");
+        return;
       }
 
-      // Format tanggal_kirim: convert Date to ISO string or null
-      let tanggalKirim = null;
-      if (!formData.langsung_kirim && formData.tanggal_kirim) {
-        if (formData.tanggal_kirim instanceof Date) {
-          // Convert to ISO string format
-          tanggalKirim = formData.tanggal_kirim.toISOString();
-        } else {
-          tanggalKirim = formData.tanggal_kirim;
-        }
-      }
+      // Normalize payload using helper function
+      const requestBody = normalizeBroadcastPayload(formData);
 
-      const requestBody = {
-        nama: formData.nama.trim(),
-        pesan: formData.pesan.trim(),
-        langsung_kirim: formData.langsung_kirim,
-        tanggal_kirim: tanggalKirim,
-        target: targetObj,
-      };
-
-      console.log("📤 [BROADCAST] Submitting:", requestBody);
+      console.log("📤 [BROADCAST] Normalized payload:", requestBody);
+      console.log("📤 [BROADCAST] Target produk:", requestBody.target.produk);
+      console.log("📤 [BROADCAST] Target status_order:", requestBody.target.status_order);
+      console.log("📤 [BROADCAST] Target status_pembayaran:", requestBody.target.status_pembayaran);
 
       const res = await fetch("/api/sales/broadcast", {
         method: "POST",

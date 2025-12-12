@@ -16,9 +16,13 @@ export async function DELETE(request, { params }) {
 
     const token = authHeader.replace("Bearer ", "");
 
-    console.log(`🗑️ [BROADCAST-DELETE] Deleting broadcast: ${id}`);
+    // Hard delete dengan force=true agar benar-benar dihapus, bukan hanya ubah status
+    const deleteUrl = `${BACKEND_URL}/api/sales/broadcast/${id}?force=true`;
 
-    const response = await fetch(`${BACKEND_URL}/api/sales/broadcast/${id}`, {
+    console.log(`🗑️ [BROADCAST-DELETE] Hard deleting broadcast: ${id}`);
+    console.log(`🗑️ [BROADCAST-DELETE] Delete URL: ${deleteUrl}`);
+
+    const response = await fetch(deleteUrl, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
