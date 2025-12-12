@@ -7,22 +7,29 @@ import "primereact/resources/themes/lara-light-cyan/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 
-// Status Order Options
-const STATUS_ORDER_OPTIONS = [
-  { value: "1", label: "Proses" },
-  { value: "2", label: "Sukses" },
-  { value: "3", label: "Failed" },
-  { value: "4", label: "Upselling" },
-];
+// Status Order Mapping
+const STATUS_ORDER_MAP = {
+  "1": "Proses",
+  "2": "Sukses",
+  "3": "Failed",
+  "4": "Upselling",
+  "N": "Dihapus",
+};
 
-// Status Pembayaran Options
-const STATUS_PEMBAYARAN_OPTIONS = [
-  { value: "0", label: "Unpaid" },
-  { value: "1", label: "Menunggu" },
-  { value: "2", label: "Paid" },
-  { value: "3", label: "Ditolak" },
-  { value: "4", label: "DP" },
-];
+// Status Pembayaran Mapping
+const STATUS_PEMBAYARAN_MAP = {
+  0: "Unpaid",
+  null: "Unpaid",
+  "0": "Unpaid",
+  "1": "Menunggu",
+  1: "Menunggu",
+  "2": "Paid",
+  2: "Paid",
+  "3": "Ditolak",
+  3: "Ditolak",
+  "4": "DP",
+  4: "DP",
+};
 
 export default function AddBroadcast({ onClose, onAdd }) {
   const [formData, setFormData] = useState({
@@ -38,13 +45,15 @@ export default function AddBroadcast({ onClose, onAdd }) {
   });
 
   const [products, setProducts] = useState([]);
+  const [statusOrderOptions, setStatusOrderOptions] = useState([]);
+  const [statusPembayaranOptions, setStatusPembayaranOptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // Fetch products on mount
+  // Fetch products and orders data on mount
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         const token = localStorage.getItem("token");
@@ -54,7 +63,8 @@ export default function AddBroadcast({ onClose, onAdd }) {
           return;
         }
 
-        const res = await fetch("/api/sales/produk", {
+        // Fetch products
+        const productsRes = await fetch("/api/sales/produk", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -63,29 +73,88 @@ export default function AddBroadcast({ onClose, onAdd }) {
           },
         });
 
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
+        if (!productsRes.ok) {
+          throw new Error(`HTTP error! status: ${productsRes.status}`);
         }
 
-        const json = await res.json();
+        const productsJson = await productsRes.json();
 
-        if (json.success && json.data) {
+        if (productsJson.success && productsJson.data) {
           // Filter hanya produk aktif (status === "1" atau status === 1)
-          const activeProducts = Array.isArray(json.data)
-            ? json.data.filter((p) => p.status === "1" || p.status === 1)
+          const activeProducts = Array.isArray(productsJson.data)
+            ? productsJson.data.filter((p) => p.status === "1" || p.status === 1)
             : [];
           setProducts(activeProducts);
-        } else {
-          setError(json.message || "Gagal memuat daftar produk");
+        }
+
+        // Fetch orders to get unique status_order and status_pembayaran
+        const ordersRes = await fetch("/api/sales/order?page=1&per_page=1000", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (ordersRes.ok) {
+          const ordersJson = await ordersRes.json();
+
+          if (ordersJson.success && ordersJson.data && Array.isArray(ordersJson.data)) {
+            // Extract unique status_order
+            const uniqueStatusOrder = new Set();
+            ordersJson.data.forEach((order) => {
+              if (order.status_order) {
+                const status = String(order.status_order);
+                if (status && status !== "null" && status !== "undefined") {
+                  uniqueStatusOrder.add(status);
+                }
+              }
+            });
+
+            // Extract unique status_pembayaran
+            const uniqueStatusPembayaran = new Set();
+            ordersJson.data.forEach((order) => {
+              let status = order.status_pembayaran;
+              if (status === null || status === undefined) {
+                status = 0;
+              }
+              const statusStr = String(status);
+              if (statusStr && statusStr !== "null" && statusStr !== "undefined") {
+                uniqueStatusPembayaran.add(statusStr);
+              }
+            });
+
+            // Convert to options array
+            const statusOrderOpts = Array.from(uniqueStatusOrder)
+              .sort()
+              .map((value) => ({
+                value,
+                label: STATUS_ORDER_MAP[value] || value,
+              }));
+
+            const statusPembayaranOpts = Array.from(uniqueStatusPembayaran)
+              .sort((a, b) => Number(a) - Number(b))
+              .map((value) => ({
+                value,
+                label: STATUS_PEMBAYARAN_MAP[value] || value,
+              }));
+
+            setStatusOrderOptions(statusOrderOpts);
+            setStatusPembayaranOptions(statusPembayaranOpts);
+
+            console.log("📊 Status Order Options:", statusOrderOpts);
+            console.log("📊 Status Pembayaran Options:", statusPembayaranOpts);
+          }
         }
       } catch (err) {
-        console.error("Error fetching products:", err);
-        setError("Gagal memuat daftar produk");
+        console.error("Error fetching data:", err);
+        setError("Gagal memuat data");
       } finally {
         setLoading(false);
       }
     };
-    fetchProducts();
+    fetchData();
   }, []);
 
   const handleChange = (e) => {
@@ -260,13 +329,11 @@ export default function AddBroadcast({ onClose, onAdd }) {
   };
 
   const getStatusOrderLabel = (value) => {
-    const option = STATUS_ORDER_OPTIONS.find((opt) => opt.value === value);
-    return option ? option.label : value;
+    return STATUS_ORDER_MAP[value] || value;
   };
 
   const getStatusPembayaranLabel = (value) => {
-    const option = STATUS_PEMBAYARAN_OPTIONS.find((opt) => opt.value === value);
-    return option ? option.label : value;
+    return STATUS_PEMBAYARAN_MAP[value] || value;
   };
 
   return (
@@ -431,31 +498,37 @@ export default function AddBroadcast({ onClose, onAdd }) {
                 (Pilih status, kosongkan untuk semua status)
               </small>
             </label>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
-              {STATUS_ORDER_OPTIONS.map((option) => {
-                const isSelected = formData.target.status_order.includes(option.value);
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => toggleStatusOrder(option.value)}
-                    style={{
-                      padding: "0.5rem 1rem",
-                      borderRadius: "999px",
-                      border: `2px solid ${isSelected ? "#f1a124" : "#e5e7eb"}`,
-                      background: isSelected ? "#fef3e2" : "#fff",
-                      color: isSelected ? "#f1a124" : "#374151",
-                      fontWeight: isSelected ? 600 : 400,
-                      cursor: "pointer",
-                      transition: "all 0.2s",
-                      fontSize: "0.875rem",
-                    }}
-                  >
-                    {option.label}
-                  </button>
-                );
-              })}
-            </div>
+            {statusOrderOptions.length === 0 ? (
+              <div style={{ padding: "1rem", textAlign: "center", color: "#6b7280" }}>
+                Memuat status order...
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+                {statusOrderOptions.map((option) => {
+                  const isSelected = formData.target.status_order.includes(option.value);
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => toggleStatusOrder(option.value)}
+                      style={{
+                        padding: "0.5rem 1rem",
+                        borderRadius: "999px",
+                        border: `2px solid ${isSelected ? "#f1a124" : "#e5e7eb"}`,
+                        background: isSelected ? "#fef3e2" : "#fff",
+                        color: isSelected ? "#f1a124" : "#374151",
+                        fontWeight: isSelected ? 600 : 400,
+                        cursor: "pointer",
+                        transition: "all 0.2s",
+                        fontSize: "0.875rem",
+                      }}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
             {formData.target.status_order.length > 0 && (
               <div style={{ marginTop: "0.5rem", padding: "0.75rem", background: "#f9fafb", borderRadius: "8px" }}>
                 <strong style={{ fontSize: "0.875rem", color: "#374151" }}>Status Terpilih:</strong>
@@ -488,31 +561,37 @@ export default function AddBroadcast({ onClose, onAdd }) {
                 (Pilih status, kosongkan untuk semua status)
               </small>
             </label>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
-              {STATUS_PEMBAYARAN_OPTIONS.map((option) => {
-                const isSelected = formData.target.status_pembayaran.includes(option.value);
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => toggleStatusPembayaran(option.value)}
-                    style={{
-                      padding: "0.5rem 1rem",
-                      borderRadius: "999px",
-                      border: `2px solid ${isSelected ? "#f1a124" : "#e5e7eb"}`,
-                      background: isSelected ? "#fef3e2" : "#fff",
-                      color: isSelected ? "#f1a124" : "#374151",
-                      fontWeight: isSelected ? 600 : 400,
-                      cursor: "pointer",
-                      transition: "all 0.2s",
-                      fontSize: "0.875rem",
-                    }}
-                  >
-                    {option.label}
-                  </button>
-                );
-              })}
-            </div>
+            {statusPembayaranOptions.length === 0 ? (
+              <div style={{ padding: "1rem", textAlign: "center", color: "#6b7280" }}>
+                Memuat status pembayaran...
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+                {statusPembayaranOptions.map((option) => {
+                  const isSelected = formData.target.status_pembayaran.includes(option.value);
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => toggleStatusPembayaran(option.value)}
+                      style={{
+                        padding: "0.5rem 1rem",
+                        borderRadius: "999px",
+                        border: `2px solid ${isSelected ? "#f1a124" : "#e5e7eb"}`,
+                        background: isSelected ? "#fef3e2" : "#fff",
+                        color: isSelected ? "#f1a124" : "#374151",
+                        fontWeight: isSelected ? 600 : 400,
+                        cursor: "pointer",
+                        transition: "all 0.2s",
+                        fontSize: "0.875rem",
+                      }}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
             {formData.target.status_pembayaran.length > 0 && (
               <div style={{ marginTop: "0.5rem", padding: "0.75rem", background: "#f9fafb", borderRadius: "8px" }}>
                 <strong style={{ fontSize: "0.875rem", color: "#374151" }}>Status Terpilih:</strong>
