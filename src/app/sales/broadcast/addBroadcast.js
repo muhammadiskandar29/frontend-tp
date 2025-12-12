@@ -200,7 +200,7 @@ export default function AddBroadcast({ onClose, onAdd }) {
     });
   };
 
-  // Toggle status order selection (single select - radio-like)
+  // Toggle status order selection (multi-select - like produk)
   const toggleStatusOrder = (status) => {
     setFormData((prev) => {
       const currentStatus = prev.target.status_order || [];
@@ -209,15 +209,15 @@ export default function AddBroadcast({ onClose, onAdd }) {
         ...prev,
         target: {
           ...prev.target,
-          // If clicking the same status, deselect it (allow none)
-          // Otherwise, replace with new selection (single select)
-          status_order: isSelected ? [] : [status],
+          status_order: isSelected
+            ? currentStatus.filter((s) => s !== status)
+            : [...currentStatus, status],
         },
       };
     });
   };
 
-  // Toggle status pembayaran selection (single select - radio-like)
+  // Toggle status pembayaran selection (multi-select - like produk)
   const toggleStatusPembayaran = (status) => {
     setFormData((prev) => {
       const currentStatus = prev.target.status_pembayaran || [];
@@ -226,9 +226,9 @@ export default function AddBroadcast({ onClose, onAdd }) {
         ...prev,
         target: {
           ...prev.target,
-          // If clicking the same status, deselect it (allow none)
-          // Otherwise, replace with new selection (single select)
-          status_pembayaran: isSelected ? [] : [status],
+          status_pembayaran: isSelected
+            ? currentStatus.filter((s) => s !== status)
+            : [...currentStatus, status],
         },
       };
     });
@@ -269,7 +269,7 @@ export default function AddBroadcast({ onClose, onAdd }) {
       // Normalize payload using helper function
       const requestBody = normalizeBroadcastPayload(formData);
 
-      console.log("📤 [BROADCAST] Normalized payload:", requestBody);
+      console.log("📤 [BROADCAST] Normalized payload:", JSON.stringify(requestBody, null, 2));
       console.log("📤 [BROADCAST] Target produk:", requestBody.target.produk);
       console.log("📤 [BROADCAST] Target status_order:", requestBody.target.status_order);
       console.log("📤 [BROADCAST] Target status_pembayaran:", requestBody.target.status_pembayaran);
@@ -301,11 +301,17 @@ export default function AddBroadcast({ onClose, onAdd }) {
             .join(", ");
           filterInfo.push(`Produk: ${productNames}`);
         }
-        if (requestBody.target.status_order) {
-          filterInfo.push(`Status Order: ${getStatusOrderLabel(requestBody.target.status_order)}`);
+        if (requestBody.target.status_order && Array.isArray(requestBody.target.status_order) && requestBody.target.status_order.length > 0) {
+          const statusLabels = requestBody.target.status_order
+            .map((s) => getStatusOrderLabel(s))
+            .join(", ");
+          filterInfo.push(`Status Order: ${statusLabels}`);
         }
-        if (requestBody.target.status_pembayaran) {
-          filterInfo.push(`Status Pembayaran: ${getStatusPembayaranLabel(requestBody.target.status_pembayaran)}`);
+        if (requestBody.target.status_pembayaran && Array.isArray(requestBody.target.status_pembayaran) && requestBody.target.status_pembayaran.length > 0) {
+          const statusLabels = requestBody.target.status_pembayaran
+            .map((s) => getStatusPembayaranLabel(s))
+            .join(", ");
+          filterInfo.push(`Status Pembayaran: ${statusLabels}`);
         }
 
         const warningMessage = `⚠️ Broadcast berhasil dibuat, tetapi tidak ada customer yang sesuai dengan filter:\n\n${filterInfo.join("\n")}\n\nSilakan kurangi filter atau pilih kombinasi filter yang berbeda.`;
@@ -684,12 +690,12 @@ export default function AddBroadcast({ onClose, onAdd }) {
                 )}
                 {formData.target.status_order.length > 0 && (
                   <div style={{ marginBottom: "0.25rem" }}>
-                    • Status Order: {formData.target.status_order.map((s) => getStatusOrderLabel(s)).join(", ")}
+                    • Status Order: {formData.target.status_order.map((s) => getStatusOrderLabel(s)).join(", ")} ({formData.target.status_order.length} dipilih)
                   </div>
                 )}
                 {formData.target.status_pembayaran.length > 0 && (
                   <div style={{ marginBottom: "0.25rem" }}>
-                    • Status Pembayaran: {formData.target.status_pembayaran.map((s) => getStatusPembayaranLabel(s)).join(", ")}
+                    • Status Pembayaran: {formData.target.status_pembayaran.map((s) => getStatusPembayaranLabel(s)).join(", ")} ({formData.target.status_pembayaran.length} dipilih)
                   </div>
                 )}
                 <div style={{ marginTop: "0.5rem", paddingTop: "0.5rem", borderTop: "1px solid #bae6fd", fontStyle: "italic" }}>
