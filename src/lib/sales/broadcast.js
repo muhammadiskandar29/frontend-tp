@@ -84,40 +84,46 @@ export function normalizeBroadcastPayload(payload) {
   }
 
   // Status Order: only include if selected (string) - OPTIONAL
-  if (payload.target?.status_order) {
+  // Use explicit check to handle edge cases
+  const so = payload.target?.status_order;
+  if (so !== null && so !== undefined && so !== "") {
     let statusValue = null;
     
-    if (typeof payload.target.status_order === "string" && payload.target.status_order.trim()) {
-      statusValue = payload.target.status_order.trim();
-    } else if (Array.isArray(payload.target.status_order) && payload.target.status_order.length > 0) {
+    if (typeof so === "string" && so.trim()) {
+      statusValue = so.trim();
+    } else if (Array.isArray(so) && so.length > 0) {
       // If array provided, take first element
-      statusValue = String(payload.target.status_order[0]).trim();
-    } else if (payload.target.status_order !== null && payload.target.status_order !== undefined && payload.target.status_order !== "") {
-      statusValue = String(payload.target.status_order).trim();
+      statusValue = String(so[0]).trim();
+    } else {
+      // Handle other types - convert to string
+      statusValue = String(so).trim();
     }
     
     // Only include if we have a valid non-empty string
-    if (statusValue && statusValue !== "") {
+    if (statusValue !== null && statusValue !== undefined && statusValue !== "") {
       normalized.target.status_order = statusValue;
     }
     // If empty string, null, or undefined, don't include it (will be absent from target)
   }
 
   // Status Pembayaran: only include if selected (string) - OPTIONAL
-  if (payload.target?.status_pembayaran) {
+  // Handle 0 as valid value (Unpaid) - use explicit check instead of truthy check
+  const sp = payload.target?.status_pembayaran;
+  if (sp !== null && sp !== undefined && sp !== "") {
     let statusValue = null;
     
-    if (typeof payload.target.status_pembayaran === "string" && payload.target.status_pembayaran.trim()) {
-      statusValue = payload.target.status_pembayaran.trim();
-    } else if (Array.isArray(payload.target.status_pembayaran) && payload.target.status_pembayaran.length > 0) {
+    if (typeof sp === "string" && sp.trim()) {
+      statusValue = sp.trim();
+    } else if (Array.isArray(sp) && sp.length > 0) {
       // If array provided, take first element
-      statusValue = String(payload.target.status_pembayaran[0]).trim();
-    } else if (payload.target.status_pembayaran !== null && payload.target.status_pembayaran !== undefined && payload.target.status_pembayaran !== "") {
-      statusValue = String(payload.target.status_pembayaran).trim();
+      statusValue = String(sp[0]).trim();
+    } else {
+      // Handle number 0 as valid value - convert to string
+      statusValue = String(sp).trim();
     }
     
-    // Only include if we have a valid non-empty string
-    if (statusValue && statusValue !== "") {
+    // Only include if we have a valid non-empty string (0 becomes "0" which is valid)
+    if (statusValue !== null && statusValue !== undefined && statusValue !== "") {
       normalized.target.status_pembayaran = statusValue;
     }
     // If empty string, null, or undefined, don't include it (will be absent from target)

@@ -80,40 +80,46 @@ export async function POST(request) {
     };
 
     // Only include status_order if it exists and is not empty (optional - string)
-    if (body.target?.status_order !== undefined && body.target?.status_order !== null && body.target?.status_order !== "") {
+    // Use explicit check to handle edge cases
+    const so = body.target?.status_order;
+    if (so !== null && so !== undefined && so !== "") {
       let statusValue = null;
       
-      if (typeof body.target.status_order === "string" && body.target.status_order.trim()) {
-        statusValue = body.target.status_order.trim();
-      } else if (Array.isArray(body.target.status_order) && body.target.status_order.length > 0) {
+      if (typeof so === "string" && so.trim()) {
+        statusValue = so.trim();
+      } else if (Array.isArray(so) && so.length > 0) {
         // If array provided, take first element
-        statusValue = String(body.target.status_order[0]).trim();
+        statusValue = String(so[0]).trim();
       } else {
-        statusValue = String(body.target.status_order).trim();
+        // Handle other types - convert to string
+        statusValue = String(so).trim();
       }
       
       // Only include if we have a valid non-empty string
-      if (statusValue && statusValue !== "") {
+      if (statusValue !== null && statusValue !== undefined && statusValue !== "") {
         requestBody.target.status_order = statusValue;
       }
       // If empty string after trim, don't include it
     }
 
     // Only include status_pembayaran if it exists and is not empty (optional - string)
-    if (body.target?.status_pembayaran !== undefined && body.target?.status_pembayaran !== null && body.target?.status_pembayaran !== "") {
+    // Handle 0 as valid value (Unpaid) - use explicit check instead of truthy check
+    const sp = body.target?.status_pembayaran;
+    if (sp !== null && sp !== undefined && sp !== "") {
       let statusValue = null;
       
-      if (typeof body.target.status_pembayaran === "string" && body.target.status_pembayaran.trim()) {
-        statusValue = body.target.status_pembayaran.trim();
-      } else if (Array.isArray(body.target.status_pembayaran) && body.target.status_pembayaran.length > 0) {
+      if (typeof sp === "string" && sp.trim()) {
+        statusValue = sp.trim();
+      } else if (Array.isArray(sp) && sp.length > 0) {
         // If array provided, take first element
-        statusValue = String(body.target.status_pembayaran[0]).trim();
+        statusValue = String(sp[0]).trim();
       } else {
-        statusValue = String(body.target.status_pembayaran).trim();
+        // Handle number 0 as valid value - convert to string
+        statusValue = String(sp).trim();
       }
       
-      // Only include if we have a valid non-empty string
-      if (statusValue && statusValue !== "") {
+      // Only include if we have a valid non-empty string (0 becomes "0" which is valid)
+      if (statusValue !== null && statusValue !== undefined && statusValue !== "") {
         requestBody.target.status_pembayaran = statusValue;
       }
       // If empty string after trim, don't include it

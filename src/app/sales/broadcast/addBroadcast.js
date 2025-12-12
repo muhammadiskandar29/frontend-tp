@@ -20,21 +20,14 @@ const STATUS_ORDER_MAP = {
 // Status Pembayaran Mapping
 const STATUS_PEMBAYARAN_MAP = {
   null: "Unpaid",
-  "0": "Unpaid",   // string
-  0: "Unpaid",     // number (untuk jaga-jaga)
+  0: "Unpaid",
 
-  "1": "Menunggu",
   1: "Menunggu",
-
-  "2": "Paid",
   2: "Paid",
-
-  "3": "Ditolak",
   3: "Ditolak",
-
-  "4": "DP",
   4: "DP",
 };
+
 
 
 export default function AddBroadcast({ onClose, onAdd }) {
@@ -124,13 +117,10 @@ export default function AddBroadcast({ onClose, onAdd }) {
             const uniqueStatusPembayaran = new Set();
             ordersJson.data.forEach((order) => {
               let status = order.status_pembayaran;
-              if (status === null || status === undefined) {
-                status = 0;
-              }
-              const statusStr = String(status);
-              if (statusStr && statusStr !== "null" && statusStr !== "undefined") {
-                uniqueStatusPembayaran.add(statusStr);
-              }
+if (status === null || status === undefined) {
+  status = 0; // null dianggap 0
+}
+uniqueStatusPembayaran.add(status);
             });
 
             // Convert to options array
@@ -145,7 +135,7 @@ export default function AddBroadcast({ onClose, onAdd }) {
               .sort((a, b) => Number(a) - Number(b))
               .map((value) => ({
                 value,
-                label: STATUS_PEMBAYARAN_MAP[value] || value,
+                label: STATUS_PEMBAYARAN_MAP[value] || value
               }));
 
             setStatusOrderOptions(statusOrderOpts);
@@ -307,7 +297,8 @@ export default function AddBroadcast({ onClose, onAdd }) {
         if (requestBody.target.status_order) {
           filterInfo.push(`Status Order: ${getStatusOrderLabel(requestBody.target.status_order)}`);
         }
-        if (requestBody.target.status_pembayaran) {
+        // Handle 0 as valid value (Unpaid) - use explicit check
+        if (requestBody.target.status_pembayaran !== null && requestBody.target.status_pembayaran !== undefined && requestBody.target.status_pembayaran !== "") {
           filterInfo.push(`Status Pembayaran: ${getStatusPembayaranLabel(requestBody.target.status_pembayaran)}`);
         }
 
@@ -370,7 +361,8 @@ export default function AddBroadcast({ onClose, onAdd }) {
       if (testPayload.target.status_order) {
         filterInfo.push(`Status Order: ${getStatusOrderLabel(testPayload.target.status_order)}`);
       }
-      if (testPayload.target.status_pembayaran) {
+      // Handle 0 as valid value (Unpaid) - use explicit check
+      if (testPayload.target.status_pembayaran !== null && testPayload.target.status_pembayaran !== undefined && testPayload.target.status_pembayaran !== "") {
         filterInfo.push(`Status Pembayaran: ${getStatusPembayaranLabel(testPayload.target.status_pembayaran)}`);
       }
 
@@ -638,7 +630,8 @@ export default function AddBroadcast({ onClose, onAdd }) {
                 })}
               </div>
             )}
-            {formData.target.status_pembayaran && (
+            {/* Handle 0 as valid value (Unpaid) - use explicit check */}
+            {(formData.target.status_pembayaran !== null && formData.target.status_pembayaran !== undefined && formData.target.status_pembayaran !== "") && (
               <div style={{ marginTop: "0.5rem", padding: "0.75rem", background: "#f9fafb", borderRadius: "8px" }}>
                 <strong style={{ fontSize: "0.875rem", color: "#374151" }}>Status Terpilih:</strong>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginTop: "0.5rem" }}>
@@ -660,9 +653,10 @@ export default function AddBroadcast({ onClose, onAdd }) {
           </div>
 
           {/* Info Box: Summary Filter yang Dipilih */}
+          {/* Handle 0 as valid value (Unpaid) - use explicit check */}
           {(formData.target.produk.length > 0 || 
             formData.target.status_order || 
-            formData.target.status_pembayaran) && (
+            (formData.target.status_pembayaran !== null && formData.target.status_pembayaran !== undefined && formData.target.status_pembayaran !== "")) && (
             <div style={{ 
               marginTop: "1.5rem", 
               padding: "1rem", 
@@ -684,7 +678,8 @@ export default function AddBroadcast({ onClose, onAdd }) {
                     • Status Order: {getStatusOrderLabel(formData.target.status_order)}
                   </div>
                 )}
-                {formData.target.status_pembayaran && (
+                {/* Handle 0 as valid value (Unpaid) - use explicit check */}
+                {(formData.target.status_pembayaran !== null && formData.target.status_pembayaran !== undefined && formData.target.status_pembayaran !== "") && (
                   <div style={{ marginBottom: "0.25rem" }}>
                     • Status Pembayaran: {getStatusPembayaranLabel(formData.target.status_pembayaran)}
                   </div>
