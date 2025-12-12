@@ -51,6 +51,9 @@ export default function AddBroadcast({ onClose, onAdd }) {
   const [error, setError] = useState("");
   const [estimatedTarget, setEstimatedTarget] = useState(null);
   const [checkingTarget, setCheckingTarget] = useState(false);
+  // State untuk search produk
+  const [produkSearchQuery, setProdukSearchQuery] = useState("");
+  const [showProdukDropdown, setShowProdukDropdown] = useState(false);
 
   // Fetch products and orders data on mount
   useEffect(() => {
@@ -114,13 +117,16 @@ export default function AddBroadcast({ onClose, onAdd }) {
             });
 
             // Extract unique status_pembayaran
+            // Keep null as null (Unpaid), don't convert to 0
             const uniqueStatusPembayaran = new Set();
             ordersJson.data.forEach((order) => {
               let status = order.status_pembayaran;
-if (status === null || status === undefined) {
-  status = 0; // null dianggap 0
-}
-uniqueStatusPembayaran.add(status);
+              // Keep null as null, undefined as null
+              if (status === undefined) {
+                status = null;
+              }
+              // Use null for Unpaid instead of 0
+              uniqueStatusPembayaran.add(status);
             });
 
             // Convert to options array
@@ -132,7 +138,13 @@ uniqueStatusPembayaran.add(status);
               }));
 
             const statusPembayaranOpts = Array.from(uniqueStatusPembayaran)
-              .sort((a, b) => Number(a) - Number(b))
+              .sort((a, b) => {
+                // Handle null first (Unpaid should be first)
+                if (a === null) return -1;
+                if (b === null) return 1;
+                // Then sort numbers
+                return Number(a) - Number(b);
+              })
               .map((value) => ({
                 value,
                 label: STATUS_PEMBAYARAN_MAP[value] || value
@@ -193,7 +205,20 @@ uniqueStatusPembayaran.add(status);
         },
       };
     });
+    // Reset search dan tutup dropdown setelah pilih
+    setProdukSearchQuery("");
+    setShowProdukDropdown(false);
   };
+
+  // Filter produk berdasarkan search query
+  const filteredProducts = products.filter((product) => {
+    const query = produkSearchQuery.toLowerCase();
+    const isSelected = formData.target.produk.includes(product.id);
+    // Jangan tampilkan produk yang sudah dipilih
+    if (isSelected) return false;
+    // Filter berdasarkan nama produk
+    return product.nama.toLowerCase().includes(query);
+  });
 
   // Toggle status order selection (single select - radio-like)
   const toggleStatusOrder = (status) => {
@@ -297,8 +322,8 @@ uniqueStatusPembayaran.add(status);
         if (requestBody.target.status_order) {
           filterInfo.push(`Status Order: ${getStatusOrderLabel(requestBody.target.status_order)}`);
         }
-        // Handle 0 as valid value (Unpaid) - use explicit check
-        if (requestBody.target.status_pembayaran !== null && requestBody.target.status_pembayaran !== undefined && requestBody.target.status_pembayaran !== "") {
+        // Handle null as valid value (Unpaid) - null should be included
+        if (requestBody.target.status_pembayaran !== undefined && requestBody.target.status_pembayaran !== "") {
           filterInfo.push(`Status Pembayaran: ${getStatusPembayaranLabel(requestBody.target.status_pembayaran)}`);
         }
 
@@ -361,8 +386,8 @@ uniqueStatusPembayaran.add(status);
       if (testPayload.target.status_order) {
         filterInfo.push(`Status Order: ${getStatusOrderLabel(testPayload.target.status_order)}`);
       }
-      // Handle 0 as valid value (Unpaid) - use explicit check
-      if (testPayload.target.status_pembayaran !== null && testPayload.target.status_pembayaran !== undefined && testPayload.target.status_pembayaran !== "") {
+      // Handle null as valid value (Unpaid) - null should be included
+      if (testPayload.target.status_pembayaran !== undefined && testPayload.target.status_pembayaran !== "") {
         filterInfo.push(`Status Pembayaran: ${getStatusPembayaranLabel(testPayload.target.status_pembayaran)}`);
       }
 
@@ -467,11 +492,12 @@ uniqueStatusPembayaran.add(status);
           {/* Filter Produk */}
           <div className="orders-field">
             <label style={{ display: "block", marginBottom: "0.75rem", fontWeight: 600 }}>
-              Target Produk
+              Target Produk *
               <small style={{ fontWeight: 400, color: "#6b7280", marginLeft: "0.5rem" }}>
-                (Pilih satu atau lebih produk, kosongkan untuk semua produk)
+                (Pilih satu atau lebih produk)
               </small>
             </label>
+            
             {loading ? (
               <div style={{ padding: "1rem", textAlign: "center", color: "#6b7280" }}>
                 Memuat produk...
@@ -481,53 +507,151 @@ uniqueStatusPembayaran.add(status);
                 Tidak ada produk tersedia
               </div>
             ) : (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                {products.map((product) => {
-                  const isSelected = formData.target.produk.includes(product.id);
-                  return (
-                    <button
-                      key={product.id}
-                      type="button"
-                      onClick={() => toggleProduk(product.id)}
+              <>
+                {/* Input Search Produk */}
+                <div style={{ position: "relative", marginBottom: "0.75rem" }}>
+                  <input
+                    type="text"
+                    placeholder="Cari produk..."
+                    value={produkSearchQuery}
+                    onChange={(e) => {
+                      setProdukSearchQuery(e.target.value);
+                      setShowProdukDropdown(true);
+                    }}
+                    onFocus={() => setShowProdukDropdown(true)}
+                    style={{
+                      width: "100%",
+                      padding: "0.75rem",
+                      border: "1px solid #d1d5db",
+                      borderRadius: "8px",
+                      fontSize: "0.875rem",
+                      outline: "none",
+                      transition: "border-color 0.2s",
+                    }}
+                    onBlur={() => {
+                      // Delay untuk allow click on dropdown items
+                      setTimeout(() => setShowProdukDropdown(false), 200);
+                    }}
+                  />
+                  
+                  {/* Dropdown Hasil Search */}
+                  {showProdukDropdown && produkSearchQuery && filteredProducts.length > 0 && (
+                    <div
                       style={{
-                        padding: "0.5rem 1rem",
-                        borderRadius: "999px",
-                        border: `2px solid ${isSelected ? "#f1a124" : "#e5e7eb"}`,
-                        background: isSelected ? "#fef3e2" : "#fff",
-                        color: isSelected ? "#f1a124" : "#374151",
-                        fontWeight: isSelected ? 600 : 400,
-                        cursor: "pointer",
-                        transition: "all 0.2s",
+                        position: "absolute",
+                        top: "100%",
+                        left: 0,
+                        right: 0,
+                        marginTop: "0.25rem",
+                        background: "#fff",
+                        border: "1px solid #d1d5db",
+                        borderRadius: "8px",
+                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                        maxHeight: "200px",
+                        overflowY: "auto",
+                        zIndex: 1000,
+                      }}
+                    >
+                      {filteredProducts.map((product) => (
+                        <div
+                          key={product.id}
+                          onClick={() => toggleProduk(product.id)}
+                          style={{
+                            padding: "0.75rem 1rem",
+                            cursor: "pointer",
+                            transition: "background-color 0.2s",
+                            borderBottom: "1px solid #f3f4f6",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = "#f9fafb";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = "#fff";
+                          }}
+                        >
+                          {product.nama}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Pesan jika tidak ada hasil */}
+                  {showProdukDropdown && produkSearchQuery && filteredProducts.length === 0 && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "100%",
+                        left: 0,
+                        right: 0,
+                        marginTop: "0.25rem",
+                        background: "#fff",
+                        border: "1px solid #d1d5db",
+                        borderRadius: "8px",
+                        padding: "0.75rem 1rem",
+                        color: "#6b7280",
                         fontSize: "0.875rem",
+                        zIndex: 1000,
                       }}
                     >
-                      {product.nama}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            {formData.target.produk.length > 0 && (
-              <div style={{ marginTop: "0.5rem", padding: "0.75rem", background: "#f9fafb", borderRadius: "8px" }}>
-                <strong style={{ fontSize: "0.875rem", color: "#374151" }}>Produk Terpilih:</strong>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginTop: "0.5rem" }}>
-                  {formData.target.produk.map((productId) => (
-                    <span
-                      key={productId}
-                      style={{
-                        padding: "0.25rem 0.75rem",
-                        background: "#f1a124",
-                        color: "#fff",
-                        borderRadius: "999px",
-                        fontSize: "0.75rem",
-                        fontWeight: 500,
-                      }}
-                    >
-                      {getSelectedProductName(productId)}
-                    </span>
-                  ))}
+                      Tidak ada produk ditemukan
+                    </div>
+                  )}
                 </div>
-              </div>
+
+                {/* Produk Terpilih (Chips dengan tombol X) */}
+                {formData.target.produk.length > 0 && (
+                  <div style={{ marginTop: "0.75rem" }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+                      {formData.target.produk.map((productId) => (
+                        <span
+                          key={productId}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "0.5rem",
+                            padding: "0.5rem 0.75rem",
+                            background: "#f1a124",
+                            color: "#fff",
+                            borderRadius: "999px",
+                            fontSize: "0.875rem",
+                            fontWeight: 500,
+                          }}
+                        >
+                          {getSelectedProductName(productId)}
+                          <button
+                            type="button"
+                            onClick={() => toggleProduk(productId)}
+                            style={{
+                              background: "rgba(255, 255, 255, 0.2)",
+                              border: "none",
+                              borderRadius: "50%",
+                              width: "20px",
+                              height: "20px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: "pointer",
+                              color: "#fff",
+                              fontSize: "0.875rem",
+                              lineHeight: 1,
+                              padding: 0,
+                              transition: "background-color 0.2s",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.3)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.2)";
+                            }}
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
@@ -605,11 +729,11 @@ uniqueStatusPembayaran.add(status);
               </div>
             ) : (
               <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
-                {statusPembayaranOptions.map((option) => {
+                {statusPembayaranOptions.map((option, index) => {
                   const isSelected = formData.target.status_pembayaran === option.value;
                   return (
                     <button
-                      key={option.value}
+                      key={option.value !== null ? option.value : `null-${index}`}
                       type="button"
                       onClick={() => toggleStatusPembayaran(option.value)}
                       style={{
@@ -630,8 +754,8 @@ uniqueStatusPembayaran.add(status);
                 })}
               </div>
             )}
-            {/* Handle 0 as valid value (Unpaid) - use explicit check */}
-            {(formData.target.status_pembayaran !== null && formData.target.status_pembayaran !== undefined && formData.target.status_pembayaran !== "") && (
+            {/* Handle null as valid value (Unpaid) - null should be displayed */}
+            {(formData.target.status_pembayaran !== undefined && formData.target.status_pembayaran !== "") && (
               <div style={{ marginTop: "0.5rem", padding: "0.75rem", background: "#f9fafb", borderRadius: "8px" }}>
                 <strong style={{ fontSize: "0.875rem", color: "#374151" }}>Status Terpilih:</strong>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginTop: "0.5rem" }}>
@@ -653,10 +777,10 @@ uniqueStatusPembayaran.add(status);
           </div>
 
           {/* Info Box: Summary Filter yang Dipilih */}
-          {/* Handle 0 as valid value (Unpaid) - use explicit check */}
+          {/* Handle null as valid value (Unpaid) - null should be included */}
           {(formData.target.produk.length > 0 || 
             formData.target.status_order || 
-            (formData.target.status_pembayaran !== null && formData.target.status_pembayaran !== undefined && formData.target.status_pembayaran !== "")) && (
+            (formData.target.status_pembayaran !== undefined && formData.target.status_pembayaran !== "")) && (
             <div style={{ 
               marginTop: "1.5rem", 
               padding: "1rem", 
@@ -678,8 +802,8 @@ uniqueStatusPembayaran.add(status);
                     • Status Order: {getStatusOrderLabel(formData.target.status_order)}
                   </div>
                 )}
-                {/* Handle 0 as valid value (Unpaid) - use explicit check */}
-                {(formData.target.status_pembayaran !== null && formData.target.status_pembayaran !== undefined && formData.target.status_pembayaran !== "") && (
+                {/* Handle null as valid value (Unpaid) - null should be included */}
+                {(formData.target.status_pembayaran !== undefined && formData.target.status_pembayaran !== "") && (
                   <div style={{ marginBottom: "0.25rem" }}>
                     • Status Pembayaran: {getStatusPembayaranLabel(formData.target.status_pembayaran)}
                   </div>

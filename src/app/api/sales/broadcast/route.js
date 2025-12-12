@@ -102,27 +102,37 @@ export async function POST(request) {
       // If empty string after trim, don't include it
     }
 
-    // Only include status_pembayaran if it exists and is not empty (optional - string)
-    // Handle 0 as valid value (Unpaid) - use explicit check instead of truthy check
+    // Only include status_pembayaran if it exists and is not empty (optional)
+    // Convert 0 to null (Unpaid uses null, not 0)
     const sp = body.target?.status_pembayaran;
     if (sp !== null && sp !== undefined && sp !== "") {
       let statusValue = null;
       
-      if (typeof sp === "string" && sp.trim()) {
+      // Convert 0 or "0" to null (Unpaid)
+      if (sp === 0 || sp === "0") {
+        statusValue = null;
+      } else if (typeof sp === "string" && sp.trim()) {
         statusValue = sp.trim();
       } else if (Array.isArray(sp) && sp.length > 0) {
         // If array provided, take first element
-        statusValue = String(sp[0]).trim();
+        const firstVal = sp[0];
+        if (firstVal === 0 || firstVal === "0") {
+          statusValue = null;
+        } else {
+          statusValue = String(firstVal).trim();
+        }
       } else {
-        // Handle number 0 as valid value - convert to string
+        // Handle other types - convert to string
         statusValue = String(sp).trim();
       }
       
-      // Only include if we have a valid non-empty string (0 becomes "0" which is valid)
-      if (statusValue !== null && statusValue !== undefined && statusValue !== "") {
+      // Include null for Unpaid, or other valid non-empty string values
+      if (statusValue === null) {
+        requestBody.target.status_pembayaran = null;
+      } else if (statusValue !== undefined && statusValue !== "") {
         requestBody.target.status_pembayaran = statusValue;
       }
-      // If empty string after trim, don't include it
+      // If empty string or undefined, don't include it
     }
 
     // Final validation: produk must not be empty
