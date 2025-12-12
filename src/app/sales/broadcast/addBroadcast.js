@@ -19,18 +19,23 @@ const STATUS_ORDER_MAP = {
 
 // Status Pembayaran Mapping
 const STATUS_PEMBAYARAN_MAP = {
-  0: "Unpaid",
   null: "Unpaid",
-  "0": "Unpaid",
+  "0": "Unpaid",   // string
+  0: "Unpaid",     // number (untuk jaga-jaga)
+
   "1": "Menunggu",
   1: "Menunggu",
+
   "2": "Paid",
   2: "Paid",
+
   "3": "Ditolak",
   3: "Ditolak",
+
   "4": "DP",
   4: "DP",
 };
+
 
 export default function AddBroadcast({ onClose, onAdd }) {
   const [formData, setFormData] = useState({
