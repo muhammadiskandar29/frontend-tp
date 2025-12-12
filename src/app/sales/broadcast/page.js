@@ -9,15 +9,21 @@ import "primeicons/primeicons.css";
 import "@/styles/sales/dashboard.css";
 import "@/styles/sales/admin.css";
 
-// Lazy load modal
+// Lazy load modals
 const ViewPenerima = dynamic(() => import("./viewPenerima"), { ssr: false });
+const AddBroadcast = dynamic(() => import("./addBroadcast"), { ssr: false });
+const SendBroadcast = dynamic(() => import("./sendBroadcast"), { ssr: false });
 
 export default function BroadcastPage() {
   const [broadcasts, setBroadcasts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showViewPenerima, setShowViewPenerima] = useState(false);
+  const [showAddBroadcast, setShowAddBroadcast] = useState(false);
+  const [showSendBroadcast, setShowSendBroadcast] = useState(false);
   const [selectedBroadcast, setSelectedBroadcast] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [sendingId, setSendingId] = useState(null);
 
   const fetchBroadcasts = useCallback(async () => {
     setLoading(true);
@@ -99,6 +105,91 @@ export default function BroadcastPage() {
     return statusMap[status?.trim()] || "default";
   };
 
+  // Handle Delete Broadcast
+  const handleDelete = async (broadcastId, broadcastNama) => {
+    if (!confirm(`Apakah Anda yakin ingin menghapus broadcast "${broadcastNama}"?`)) {
+      return;
+    }
+
+    setDeletingId(broadcastId);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setError("Token tidak ditemukan");
+        return;
+      }
+
+      const res = await fetch(`/api/sales/broadcast/${broadcastId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const json = await res.json();
+
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || "Gagal menghapus broadcast");
+      }
+
+      // Refresh list
+      fetchBroadcasts();
+    } catch (err) {
+      console.error("Error deleting broadcast:", err);
+      setError(err.message || "Terjadi kesalahan saat menghapus broadcast");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  // Handle Send Broadcast
+  const handleSend = async (broadcastId) => {
+    setSendingId(broadcastId);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setError("Token tidak ditemukan");
+        setSendingId(null);
+        return;
+      }
+
+      const res = await fetch(`/api/sales/broadcast/${broadcastId}/send`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const json = await res.json();
+
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || "Gagal mengirim broadcast");
+      }
+
+      // Show success message
+      alert(`Broadcast berhasil dikirim!\nTotal Target: ${json.data?.total_target || 0}\nSent to Queue: ${json.data?.sent_to_queue || 0}\nFailed: ${json.data?.failed || 0}`);
+
+      // Refresh list
+      fetchBroadcasts();
+    } catch (err) {
+      console.error("Error sending broadcast:", err);
+      setError(err.message || "Terjadi kesalahan saat mengirim broadcast");
+      throw err; // Re-throw untuk ditangani di modal
+    } finally {
+      setSendingId(null);
+    }
+  };
+
+  // Handle open send modal
+  const handleOpenSend = (broadcast) => {
+    setSelectedBroadcast(broadcast);
+    setShowSendBroadcast(true);
+  };
+
   return (
     <Layout title="Broadcast | Sales Dashboard">
       <div className="dashboard-shell orders-shell">
@@ -114,7 +205,11 @@ export default function BroadcastPage() {
           <div className="orders-toolbar">
             <div></div>
             <div className="orders-toolbar-buttons">
-              <button type="button" className="orders-button orders-button--primary">
+              <button
+                type="button"
+                className="orders-button orders-button--primary"
+                onClick={() => setShowAddBroadcast(true)}
+              >
                 + Tambah Broadcast
               </button>
             </div>
@@ -198,17 +293,37 @@ export default function BroadcastPage() {
                           {formatDate(broadcast.create_at)}
                         </div>
                         <div className="orders-table__cell orders-table__cell--actions" data-label="Actions">
-                          <button
-                            className="orders-action-btn"
-                            title="View Penerima"
-                            onClick={() => {
-                              setSelectedBroadcast(broadcast);
-                              setShowViewPenerima(true);
-                            }}
-                          >
-                            <i className="pi pi-eye" />
-                            View
-                          </button>
+                          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                            <button
+                              className="orders-action-btn"
+                              title="View Penerima"
+                              onClick={() => {
+                                setSelectedBroadcast(broadcast);
+                                setShowViewPenerima(true);
+                              }}
+                            >
+                              <i className="pi pi-eye" />
+                              View
+                            </button>
+                            <button
+                              className="orders-action-btn orders-action-btn--ghost"
+                              title="Send Broadcast"
+                              onClick={() => handleOpenSend(broadcast)}
+                              disabled={sendingId === broadcast.id}
+                            >
+                              <i className="pi pi-send" />
+                              Send
+                            </button>
+                            <button
+                              className="orders-action-btn orders-action-btn--danger"
+                              title="Hapus Broadcast"
+                              onClick={() => handleDelete(broadcast.id, broadcast.nama)}
+                              disabled={deletingId === broadcast.id}
+                            >
+                              <i className="pi pi-trash" />
+                              {deletingId === broadcast.id ? "Deleting..." : "Hapus"}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );
@@ -228,6 +343,30 @@ export default function BroadcastPage() {
             setShowViewPenerima(false);
             setSelectedBroadcast(null);
           }}
+        />
+      )}
+
+      {/* Modal Add Broadcast */}
+      {showAddBroadcast && (
+        <AddBroadcast
+          onClose={() => setShowAddBroadcast(false)}
+          onAdd={(newBroadcast) => {
+            // Refresh broadcasts list
+            fetchBroadcasts();
+            setShowAddBroadcast(false);
+          }}
+        />
+      )}
+
+      {/* Modal Send Broadcast */}
+      {showSendBroadcast && selectedBroadcast && (
+        <SendBroadcast
+          broadcast={selectedBroadcast}
+          onClose={() => {
+            setShowSendBroadcast(false);
+            setSelectedBroadcast(null);
+          }}
+          onSend={handleSend}
         />
       )}
     </Layout>
