@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Calendar } from "primereact/calendar";
-import { getProducts } from "@/lib/products";
 import "@/styles/sales/pesanan.css";
 import "primereact/resources/themes/lara-light-cyan/theme.css";
 import "primereact/resources/primereact.min.css";
@@ -48,8 +47,37 @@ export default function AddBroadcast({ onClose, onAdd }) {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const productsList = await getProducts();
-        setProducts(productsList || []);
+        const token = localStorage.getItem("token");
+        if (!token) {
+          setError("Token tidak ditemukan");
+          setLoading(false);
+          return;
+        }
+
+        const res = await fetch("/api/sales/produk", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+
+        const json = await res.json();
+
+        if (json.success && json.data) {
+          // Filter hanya produk aktif (status === "1" atau status === 1)
+          const activeProducts = Array.isArray(json.data)
+            ? json.data.filter((p) => p.status === "1" || p.status === 1)
+            : [];
+          setProducts(activeProducts);
+        } else {
+          setError(json.message || "Gagal memuat daftar produk");
+        }
       } catch (err) {
         console.error("Error fetching products:", err);
         setError("Gagal memuat daftar produk");
