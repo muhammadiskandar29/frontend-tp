@@ -11,9 +11,9 @@
  *   tanggal_kirim: null | "yyyy-mm-dd hh:mm:ss",
  *   langsung_kirim: boolean,
  *   target: {
- *     produk: [integer],                    // array wajib
- *     status_order?: [string],              // optional array
- *     status_pembayaran?: [string]          // optional array
+ *     produk: [integer],           // array wajib
+ *     status_order?: string,        // optional string
+ *     status_pembayaran?: string    // optional string
  *   }
  * }
  */
@@ -83,42 +83,44 @@ export function normalizeBroadcastPayload(payload) {
     normalized.target.produk = [];
   }
 
-  // Status Order: only include if array is not empty - OPTIONAL (multi-select)
+  // Status Order: only include if selected (string) - OPTIONAL
   if (payload.target?.status_order) {
-    if (Array.isArray(payload.target.status_order) && payload.target.status_order.length > 0) {
-      // Convert to array of strings, filter out empty values
-      const statusArray = payload.target.status_order
-        .map((s) => String(s).trim())
-        .filter((s) => s && s !== "");
-      
-      if (statusArray.length > 0) {
-        normalized.target.status_order = statusArray;
-      }
-      // If array becomes empty after filtering, don't include it
-    } else if (typeof payload.target.status_order === "string" && payload.target.status_order.trim()) {
-      // Legacy: single string value, convert to array
-      normalized.target.status_order = [payload.target.status_order.trim()];
+    let statusValue = null;
+    
+    if (typeof payload.target.status_order === "string" && payload.target.status_order.trim()) {
+      statusValue = payload.target.status_order.trim();
+    } else if (Array.isArray(payload.target.status_order) && payload.target.status_order.length > 0) {
+      // If array provided, take first element
+      statusValue = String(payload.target.status_order[0]).trim();
+    } else if (payload.target.status_order !== null && payload.target.status_order !== undefined && payload.target.status_order !== "") {
+      statusValue = String(payload.target.status_order).trim();
     }
-    // If empty array or null/undefined, don't include it (will be absent from target)
+    
+    // Only include if we have a valid non-empty string
+    if (statusValue && statusValue !== "") {
+      normalized.target.status_order = statusValue;
+    }
+    // If empty string, null, or undefined, don't include it (will be absent from target)
   }
 
-  // Status Pembayaran: only include if array is not empty - OPTIONAL (multi-select)
+  // Status Pembayaran: only include if selected (string) - OPTIONAL
   if (payload.target?.status_pembayaran) {
-    if (Array.isArray(payload.target.status_pembayaran) && payload.target.status_pembayaran.length > 0) {
-      // Convert to array of strings, filter out empty values
-      const statusArray = payload.target.status_pembayaran
-        .map((s) => String(s).trim())
-        .filter((s) => s && s !== "");
-      
-      if (statusArray.length > 0) {
-        normalized.target.status_pembayaran = statusArray;
-      }
-      // If array becomes empty after filtering, don't include it
-    } else if (typeof payload.target.status_pembayaran === "string" && payload.target.status_pembayaran.trim()) {
-      // Legacy: single string value, convert to array
-      normalized.target.status_pembayaran = [payload.target.status_pembayaran.trim()];
+    let statusValue = null;
+    
+    if (typeof payload.target.status_pembayaran === "string" && payload.target.status_pembayaran.trim()) {
+      statusValue = payload.target.status_pembayaran.trim();
+    } else if (Array.isArray(payload.target.status_pembayaran) && payload.target.status_pembayaran.length > 0) {
+      // If array provided, take first element
+      statusValue = String(payload.target.status_pembayaran[0]).trim();
+    } else if (payload.target.status_pembayaran !== null && payload.target.status_pembayaran !== undefined && payload.target.status_pembayaran !== "") {
+      statusValue = String(payload.target.status_pembayaran).trim();
     }
-    // If empty array or null/undefined, don't include it (will be absent from target)
+    
+    // Only include if we have a valid non-empty string
+    if (statusValue && statusValue !== "") {
+      normalized.target.status_pembayaran = statusValue;
+    }
+    // If empty string, null, or undefined, don't include it (will be absent from target)
   }
 
   return normalized;

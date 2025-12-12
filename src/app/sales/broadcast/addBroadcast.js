@@ -40,8 +40,8 @@ export default function AddBroadcast({ onClose, onAdd }) {
     tanggal_kirim: null,
     target: {
       produk: [],
-      status_order: [],
-      status_pembayaran: [],
+      status_order: "",
+      status_pembayaran: "",
     },
   });
 
@@ -200,35 +200,33 @@ export default function AddBroadcast({ onClose, onAdd }) {
     });
   };
 
-  // Toggle status order selection (multi-select - like produk)
+  // Toggle status order selection (single select - radio-like)
   const toggleStatusOrder = (status) => {
     setFormData((prev) => {
-      const currentStatus = prev.target.status_order || [];
-      const isSelected = currentStatus.includes(status);
+      const currentStatus = prev.target.status_order || "";
       return {
         ...prev,
         target: {
           ...prev.target,
-          status_order: isSelected
-            ? currentStatus.filter((s) => s !== status)
-            : [...currentStatus, status],
+          // If clicking the same status, deselect it (allow none)
+          // Otherwise, replace with new selection (single select)
+          status_order: currentStatus === status ? "" : status,
         },
       };
     });
   };
 
-  // Toggle status pembayaran selection (multi-select - like produk)
+  // Toggle status pembayaran selection (single select - radio-like)
   const toggleStatusPembayaran = (status) => {
     setFormData((prev) => {
-      const currentStatus = prev.target.status_pembayaran || [];
-      const isSelected = currentStatus.includes(status);
+      const currentStatus = prev.target.status_pembayaran || "";
       return {
         ...prev,
         target: {
           ...prev.target,
-          status_pembayaran: isSelected
-            ? currentStatus.filter((s) => s !== status)
-            : [...currentStatus, status],
+          // If clicking the same status, deselect it (allow none)
+          // Otherwise, replace with new selection (single select)
+          status_pembayaran: currentStatus === status ? "" : status,
         },
       };
     });
@@ -301,17 +299,11 @@ export default function AddBroadcast({ onClose, onAdd }) {
             .join(", ");
           filterInfo.push(`Produk: ${productNames}`);
         }
-        if (requestBody.target.status_order && Array.isArray(requestBody.target.status_order) && requestBody.target.status_order.length > 0) {
-          const statusLabels = requestBody.target.status_order
-            .map((s) => getStatusOrderLabel(s))
-            .join(", ");
-          filterInfo.push(`Status Order: ${statusLabels}`);
+        if (requestBody.target.status_order) {
+          filterInfo.push(`Status Order: ${getStatusOrderLabel(requestBody.target.status_order)}`);
         }
-        if (requestBody.target.status_pembayaran && Array.isArray(requestBody.target.status_pembayaran) && requestBody.target.status_pembayaran.length > 0) {
-          const statusLabels = requestBody.target.status_pembayaran
-            .map((s) => getStatusPembayaranLabel(s))
-            .join(", ");
-          filterInfo.push(`Status Pembayaran: ${statusLabels}`);
+        if (requestBody.target.status_pembayaran) {
+          filterInfo.push(`Status Pembayaran: ${getStatusPembayaranLabel(requestBody.target.status_pembayaran)}`);
         }
 
         const warningMessage = `⚠️ Broadcast berhasil dibuat, tetapi tidak ada customer yang sesuai dengan filter:\n\n${filterInfo.join("\n")}\n\nSilakan kurangi filter atau pilih kombinasi filter yang berbeda.`;
@@ -557,7 +549,7 @@ export default function AddBroadcast({ onClose, onAdd }) {
             ) : (
               <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
                 {statusOrderOptions.map((option) => {
-                  const isSelected = formData.target.status_order.includes(option.value);
+                  const isSelected = formData.target.status_order === option.value;
                   return (
                     <button
                       key={option.value}
@@ -581,25 +573,22 @@ export default function AddBroadcast({ onClose, onAdd }) {
                 })}
               </div>
             )}
-            {formData.target.status_order.length > 0 && (
+            {formData.target.status_order && (
               <div style={{ marginTop: "0.5rem", padding: "0.75rem", background: "#f9fafb", borderRadius: "8px" }}>
                 <strong style={{ fontSize: "0.875rem", color: "#374151" }}>Status Terpilih:</strong>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginTop: "0.5rem" }}>
-                  {formData.target.status_order.map((status) => (
-                    <span
-                      key={status}
-                      style={{
-                        padding: "0.25rem 0.75rem",
-                        background: "#f1a124",
-                        color: "#fff",
-                        borderRadius: "999px",
-                        fontSize: "0.75rem",
-                        fontWeight: 500,
-                      }}
-                    >
-                      {getStatusOrderLabel(status)}
-                    </span>
-                  ))}
+                  <span
+                    style={{
+                      padding: "0.25rem 0.75rem",
+                      background: "#f1a124",
+                      color: "#fff",
+                      borderRadius: "999px",
+                      fontSize: "0.75rem",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {getStatusOrderLabel(formData.target.status_order)}
+                  </span>
                 </div>
               </div>
             )}
@@ -620,7 +609,7 @@ export default function AddBroadcast({ onClose, onAdd }) {
             ) : (
               <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
                 {statusPembayaranOptions.map((option) => {
-                  const isSelected = formData.target.status_pembayaran.includes(option.value);
+                  const isSelected = formData.target.status_pembayaran === option.value;
                   return (
                     <button
                       key={option.value}
@@ -644,25 +633,22 @@ export default function AddBroadcast({ onClose, onAdd }) {
                 })}
               </div>
             )}
-            {formData.target.status_pembayaran.length > 0 && (
+            {formData.target.status_pembayaran && (
               <div style={{ marginTop: "0.5rem", padding: "0.75rem", background: "#f9fafb", borderRadius: "8px" }}>
                 <strong style={{ fontSize: "0.875rem", color: "#374151" }}>Status Terpilih:</strong>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginTop: "0.5rem" }}>
-                  {formData.target.status_pembayaran.map((status) => (
-                    <span
-                      key={status}
-                      style={{
-                        padding: "0.25rem 0.75rem",
-                        background: "#f1a124",
-                        color: "#fff",
-                        borderRadius: "999px",
-                        fontSize: "0.75rem",
-                        fontWeight: 500,
-                      }}
-                    >
-                      {getStatusPembayaranLabel(status)}
-                    </span>
-                  ))}
+                  <span
+                    style={{
+                      padding: "0.25rem 0.75rem",
+                      background: "#f1a124",
+                      color: "#fff",
+                      borderRadius: "999px",
+                      fontSize: "0.75rem",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {getStatusPembayaranLabel(formData.target.status_pembayaran)}
+                  </span>
                 </div>
               </div>
             )}
@@ -670,8 +656,8 @@ export default function AddBroadcast({ onClose, onAdd }) {
 
           {/* Info Box: Summary Filter yang Dipilih */}
           {(formData.target.produk.length > 0 || 
-            formData.target.status_order.length > 0 || 
-            formData.target.status_pembayaran.length > 0) && (
+            formData.target.status_order || 
+            formData.target.status_pembayaran) && (
             <div style={{ 
               marginTop: "1.5rem", 
               padding: "1rem", 
@@ -688,14 +674,14 @@ export default function AddBroadcast({ onClose, onAdd }) {
                     • Produk: {formData.target.produk.map((id) => getSelectedProductName(id)).join(", ")}
                   </div>
                 )}
-                {formData.target.status_order.length > 0 && (
+                {formData.target.status_order && (
                   <div style={{ marginBottom: "0.25rem" }}>
-                    • Status Order: {formData.target.status_order.map((s) => getStatusOrderLabel(s)).join(", ")} ({formData.target.status_order.length} dipilih)
+                    • Status Order: {getStatusOrderLabel(formData.target.status_order)}
                   </div>
                 )}
-                {formData.target.status_pembayaran.length > 0 && (
+                {formData.target.status_pembayaran && (
                   <div style={{ marginBottom: "0.25rem" }}>
-                    • Status Pembayaran: {formData.target.status_pembayaran.map((s) => getStatusPembayaranLabel(s)).join(", ")} ({formData.target.status_pembayaran.length} dipilih)
+                    • Status Pembayaran: {getStatusPembayaranLabel(formData.target.status_pembayaran)}
                   </div>
                 )}
                 <div style={{ marginTop: "0.5rem", paddingTop: "0.5rem", borderTop: "1px solid #bae6fd", fontStyle: "italic" }}>

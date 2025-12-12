@@ -79,42 +79,44 @@ export async function POST(request) {
       },
     };
 
-    // Only include status_order if it exists and is not empty (optional - array)
-    if (body.target?.status_order) {
-      if (Array.isArray(body.target.status_order) && body.target.status_order.length > 0) {
-        // Convert to array of strings
-        requestBody.target.status_order = body.target.status_order
-          .map((s) => String(s).trim())
-          .filter((s) => s && s !== "");
-        
-        // Only include if array is not empty after filtering
-        if (requestBody.target.status_order.length === 0) {
-          delete requestBody.target.status_order;
-        }
-      } else if (typeof body.target.status_order === "string" && body.target.status_order.trim()) {
-        // Legacy: single string, convert to array
-        requestBody.target.status_order = [body.target.status_order.trim()];
+    // Only include status_order if it exists and is not empty (optional - string)
+    if (body.target?.status_order !== undefined && body.target?.status_order !== null && body.target?.status_order !== "") {
+      let statusValue = null;
+      
+      if (typeof body.target.status_order === "string" && body.target.status_order.trim()) {
+        statusValue = body.target.status_order.trim();
+      } else if (Array.isArray(body.target.status_order) && body.target.status_order.length > 0) {
+        // If array provided, take first element
+        statusValue = String(body.target.status_order[0]).trim();
+      } else {
+        statusValue = String(body.target.status_order).trim();
       }
-      // If empty array or null/undefined, don't include it
+      
+      // Only include if we have a valid non-empty string
+      if (statusValue && statusValue !== "") {
+        requestBody.target.status_order = statusValue;
+      }
+      // If empty string after trim, don't include it
     }
 
-    // Only include status_pembayaran if it exists and is not empty (optional - array)
-    if (body.target?.status_pembayaran) {
-      if (Array.isArray(body.target.status_pembayaran) && body.target.status_pembayaran.length > 0) {
-        // Convert to array of strings
-        requestBody.target.status_pembayaran = body.target.status_pembayaran
-          .map((s) => String(s).trim())
-          .filter((s) => s && s !== "");
-        
-        // Only include if array is not empty after filtering
-        if (requestBody.target.status_pembayaran.length === 0) {
-          delete requestBody.target.status_pembayaran;
-        }
-      } else if (typeof body.target.status_pembayaran === "string" && body.target.status_pembayaran.trim()) {
-        // Legacy: single string, convert to array
-        requestBody.target.status_pembayaran = [body.target.status_pembayaran.trim()];
+    // Only include status_pembayaran if it exists and is not empty (optional - string)
+    if (body.target?.status_pembayaran !== undefined && body.target?.status_pembayaran !== null && body.target?.status_pembayaran !== "") {
+      let statusValue = null;
+      
+      if (typeof body.target.status_pembayaran === "string" && body.target.status_pembayaran.trim()) {
+        statusValue = body.target.status_pembayaran.trim();
+      } else if (Array.isArray(body.target.status_pembayaran) && body.target.status_pembayaran.length > 0) {
+        // If array provided, take first element
+        statusValue = String(body.target.status_pembayaran[0]).trim();
+      } else {
+        statusValue = String(body.target.status_pembayaran).trim();
       }
-      // If empty array or null/undefined, don't include it
+      
+      // Only include if we have a valid non-empty string
+      if (statusValue && statusValue !== "") {
+        requestBody.target.status_pembayaran = statusValue;
+      }
+      // If empty string after trim, don't include it
     }
 
     // Final validation: produk must not be empty
