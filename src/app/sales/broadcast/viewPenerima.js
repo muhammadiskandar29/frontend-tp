@@ -92,7 +92,111 @@ export default function ViewPenerima({ broadcast, onClose }) {
   if (!broadcast) return null;
 
   return (
-    <div className="orders-modal-overlay">
+    <>
+      <style>{`
+        /* Responsive Styles untuk ViewPenerima */
+        @media (max-width: 768px) {
+          .view-penerima-modal .orders-modal-card {
+            max-width: 95vw !important;
+            max-height: 95vh !important;
+            margin: 1rem !important;
+          }
+          
+          .view-penerima-modal table {
+            font-size: 0.875rem !important;
+          }
+          
+          .view-penerima-modal th,
+          .view-penerima-modal td {
+            padding: 0.5rem !important;
+            font-size: 0.8125rem !important;
+          }
+        }
+        
+        @media (max-width: 480px) {
+          .view-penerima-modal .orders-modal-card {
+            max-width: 100vw !important;
+            max-height: 100vh !important;
+            margin: 0 !important;
+            border-radius: 0 !important;
+          }
+          
+          .view-penerima-modal .orders-modal-header {
+            padding: 1rem !important;
+          }
+          
+          .view-penerima-modal .orders-modal-body {
+            padding: 1rem !important;
+          }
+          
+          .view-penerima-modal .orders-modal-footer {
+            padding: 1rem !important;
+          }
+          
+          .view-penerima-modal .orders-modal-footer button {
+            width: 100% !important;
+          }
+          
+          .view-penerima-modal table {
+            display: block !important;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+          }
+          
+          .view-penerima-modal thead {
+            display: none !important;
+          }
+          
+          .view-penerima-modal tbody {
+            display: block !important;
+          }
+          
+          .view-penerima-modal tr {
+            display: block !important;
+            margin-bottom: 1rem !important;
+            border: 1px solid #e5e7eb !important;
+            border-radius: 8px !important;
+            padding: 0.75rem !important;
+          }
+          
+          .view-penerima-modal td {
+            display: flex !important;
+            justify-content: space-between !important;
+            padding: 0.5rem 0 !important;
+            border: none !important;
+            text-align: left !important;
+          }
+          
+          .view-penerima-modal td::before {
+            content: attr(data-label) ": " !important;
+            font-weight: 600 !important;
+            margin-right: 0.5rem !important;
+          }
+        }
+        
+        @media (max-width: 200px) {
+          .view-penerima-modal .orders-modal-card {
+            padding: 0.5rem !important;
+          }
+          
+          .view-penerima-modal .orders-modal-header {
+            padding: 0.5rem !important;
+          }
+          
+          .view-penerima-modal .orders-modal-body {
+            padding: 0.5rem !important;
+          }
+          
+          .view-penerima-modal .orders-modal-footer {
+            padding: 0.5rem !important;
+          }
+          
+          .view-penerima-modal td {
+            font-size: 0.75rem !important;
+          }
+        }
+      `}</style>
+      <div className="orders-modal-overlay view-penerima-modal">
       <div className="orders-modal-card" style={{ maxWidth: "900px", maxHeight: "90vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
         {/* Header */}
         <div className="orders-modal-header">
@@ -143,25 +247,25 @@ export default function ViewPenerima({ broadcast, onClose }) {
                   <tbody>
                     {penerima.map((item, i) => (
                       <tr key={item.id} style={{ borderBottom: "1px solid #e5e7eb" }}>
-                        <td style={{ padding: "0.75rem", fontSize: "0.875rem" }}>{i + 1}</td>
-                        <td style={{ padding: "0.75rem", fontSize: "0.875rem" }}>
+                        <td data-label="#" style={{ padding: "0.75rem", fontSize: "0.875rem" }}>{i + 1}</td>
+                        <td data-label="Customer" style={{ padding: "0.75rem", fontSize: "0.875rem" }}>
                           {item.customer_rel?.nama || "-"}
                         </td>
-                        <td style={{ padding: "0.75rem", fontSize: "0.875rem" }}>
+                        <td data-label="No. Telp" style={{ padding: "0.75rem", fontSize: "0.875rem" }}>
                           {item.notelp || item.customer_rel?.wa || "-"}
                         </td>
-                        <td style={{ padding: "0.75rem", fontSize: "0.875rem", maxWidth: "200px", wordBreak: "break-word" }}>
+                        <td data-label="Pesan" style={{ padding: "0.75rem", fontSize: "0.875rem", maxWidth: "200px", wordBreak: "break-word" }}>
                           {item.pesan || "-"}
                         </td>
-                        <td style={{ padding: "0.75rem", fontSize: "0.875rem", maxWidth: "200px", wordBreak: "break-word" }}>
+                        <td data-label="Response" style={{ padding: "0.75rem", fontSize: "0.875rem", maxWidth: "200px", wordBreak: "break-word" }}>
                           {item.response && item.response !== "null" ? item.response : "-"}
                         </td>
-                        <td style={{ padding: "0.75rem", fontSize: "0.875rem" }}>
+                        <td data-label="Status" style={{ padding: "0.75rem", fontSize: "0.875rem" }}>
                           <span className={`orders-status-badge orders-status-badge--${getStatusClass(item.status)}`}>
                             {getStatusLabel(item.status)}
                           </span>
                         </td>
-                        <td style={{ padding: "0.75rem", fontSize: "0.875rem" }}>
+                        <td data-label="Dikirim" style={{ padding: "0.75rem", fontSize: "0.875rem" }}>
                           {formatDate(item.send_at)}
                         </td>
                       </tr>
@@ -185,5 +289,6 @@ export default function ViewPenerima({ broadcast, onClose }) {
         </div>
       </div>
     </div>
+    </>
   );
 }
