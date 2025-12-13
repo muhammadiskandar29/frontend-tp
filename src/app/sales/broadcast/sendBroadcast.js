@@ -68,69 +68,7 @@ export default function SendBroadcast({ broadcast, onClose, onSend }) {
   if (!broadcast) return null;
 
   return (
-    <>
-      <style>{`
-        /* Responsive Styles untuk SendBroadcast */
-        @media (max-width: 768px) {
-          .send-broadcast-modal .orders-modal-card {
-            max-width: 95vw !important;
-            max-height: 95vh !important;
-            margin: 1rem !important;
-          }
-        }
-        
-        @media (max-width: 480px) {
-          .send-broadcast-modal .orders-modal-card {
-            max-width: 100vw !important;
-            max-height: 100vh !important;
-            margin: 0 !important;
-            border-radius: 0 !important;
-          }
-          
-          .send-broadcast-modal .orders-modal-header {
-            padding: 1rem !important;
-          }
-          
-          .send-broadcast-modal .orders-modal-body {
-            padding: 1rem !important;
-          }
-          
-          .send-broadcast-modal .orders-modal-footer {
-            flex-direction: column !important;
-            gap: 0.5rem !important;
-            padding: 1rem !important;
-          }
-          
-          .send-broadcast-modal .orders-modal-footer button {
-            width: 100% !important;
-          }
-          
-          .send-broadcast-modal .orders-row {
-            flex-direction: column !important;
-            align-items: flex-start !important;
-            gap: 0.25rem !important;
-          }
-        }
-        
-        @media (max-width: 200px) {
-          .send-broadcast-modal .orders-modal-card {
-            padding: 0.5rem !important;
-          }
-          
-          .send-broadcast-modal .orders-modal-header {
-            padding: 0.5rem !important;
-          }
-          
-          .send-broadcast-modal .orders-modal-body {
-            padding: 0.5rem !important;
-          }
-          
-          .send-broadcast-modal .orders-modal-footer {
-            padding: 0.5rem !important;
-          }
-        }
-      `}</style>
-      <div className="orders-modal-overlay send-broadcast-modal" onClick={onClose}>
+    <div className="orders-modal-overlay" onClick={onClose}>
       <div className="orders-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "700px", maxHeight: "90vh" }}>
         <div className="orders-modal-header">
           <h2>Kirim Broadcast</h2>
@@ -237,6 +175,5 @@ export default function SendBroadcast({ broadcast, onClose, onSend }) {
         </div>
       </div>
     </div>
-    </>
   );
 }
