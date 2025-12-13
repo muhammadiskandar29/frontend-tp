@@ -1,12 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Calendar } from "primereact/calendar";
 import { normalizeBroadcastPayload } from "@/lib/sales/broadcast";
+import dynamic from "next/dynamic";
 import "@/styles/sales/pesanan.css";
 import "primereact/resources/themes/lara-light-cyan/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
+
+// Dynamic import untuk EmojiPicker
+const EmojiPicker = dynamic(() => import("emoji-picker-react"), {
+  ssr: false,
+});
 
 // Status Order Mapping
 const STATUS_ORDER_MAP = {
@@ -28,7 +34,14 @@ const STATUS_PEMBAYARAN_MAP = {
   4: "DP",
 };
 
-
+// Autotext Options untuk variable
+const AUTOTEXT_OPTIONS = [
+  { label: "Pilih Variable", value: "" },
+  { label: "{{customer_name}}", value: "{{customer_name}}" },
+  { label: "{{product_name}}", value: "{{product_name}}" },
+  { label: "{{order_date}}", value: "{{order_date}}" },
+  { label: "{{order_total}}", value: "{{order_total}}" },
+];
 
 export default function AddBroadcast({ onClose, onAdd }) {
   const [formData, setFormData] = useState({
@@ -54,6 +67,11 @@ export default function AddBroadcast({ onClose, onAdd }) {
   // State untuk search produk
   const [produkSearchQuery, setProdukSearchQuery] = useState("");
   const [showProdukDropdown, setShowProdukDropdown] = useState(false);
+  // State untuk autotext dan emoji
+  const [selectedAutotext, setSelectedAutotext] = useState("");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  
+  const textareaRef = useRef(null);
 
   // Fetch products and orders data on mount
   useEffect(() => {
@@ -252,6 +270,50 @@ export default function AddBroadcast({ onClose, onAdd }) {
     });
   };
 
+  // Insert text at cursor position
+  const insertAtCursor = (value) => {
+    if (!value) return;
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      setFormData((prev) => ({
+        ...prev,
+        pesan: (prev.pesan || "") + value,
+      }));
+      return;
+    }
+    const start = textarea.selectionStart ?? textarea.value.length;
+    const end = textarea.selectionEnd ?? textarea.value.length;
+    const before = formData.pesan.slice(0, start);
+    const after = formData.pesan.slice(end);
+    const newValue = `${before}${value}${after}`;
+    setFormData((prev) => ({
+      ...prev,
+      pesan: newValue,
+    }));
+    requestAnimationFrame(() => {
+      const newPos = start + value.length;
+      textarea.focus();
+      textarea.setSelectionRange(newPos, newPos);
+    });
+  };
+
+  // Handle insert autotext variable
+  const handleInsertAutotext = () => {
+    if (!selectedAutotext) {
+      return;
+    }
+    insertAtCursor(selectedAutotext);
+    setSelectedAutotext(""); // Reset selection after insert
+  };
+
+  // Handle emoji click
+  const handleEmojiClick = (emojiData) => {
+    const emoji = emojiData?.emoji;
+    if (emoji) {
+      insertAtCursor(emoji);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -436,14 +498,140 @@ export default function AddBroadcast({ onClose, onAdd }) {
           <label className="orders-field">
             Pesan Broadcast *
             <textarea
+              ref={textareaRef}
               name="pesan"
               value={formData.pesan}
               onChange={handleChange}
-              rows={4}
+              rows={6}
               placeholder="Tulis pesan yang akan dikirim ke customer..."
               required
+              style={{
+                width: "100%",
+                padding: "0.75rem",
+                border: "1px solid #d1d5db",
+                borderRadius: "8px",
+                fontSize: "0.875rem",
+                fontFamily: "inherit",
+                resize: "vertical",
+              }}
             />
           </label>
+
+          {/* Control Row: Autotext & Emoji */}
+          <div style={{ 
+            display: "flex", 
+            gap: "0.75rem", 
+            marginTop: "-0.5rem",
+            marginBottom: "1rem",
+            flexWrap: "wrap",
+            alignItems: "flex-start",
+            position: "relative",
+          }}>
+            {/* Autotext Group */}
+            <div style={{ 
+              display: "flex", 
+              gap: "0.5rem", 
+              flexWrap: "wrap",
+              alignItems: "center",
+            }}>
+              <select
+                value={selectedAutotext}
+                onChange={(e) => setSelectedAutotext(e.target.value)}
+                style={{
+                  padding: "0.5rem 0.75rem",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "8px",
+                  fontSize: "0.875rem",
+                  background: "#fff",
+                  cursor: "pointer",
+                  outline: "none",
+                  minWidth: "180px",
+                }}
+              >
+                {AUTOTEXT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleInsertAutotext}
+                disabled={!selectedAutotext}
+                style={{
+                  padding: "0.5rem 1rem",
+                  borderRadius: "8px",
+                  border: "1px solid #d1d5db",
+                  background: selectedAutotext ? "#f1a124" : "#f3f4f6",
+                  color: selectedAutotext ? "#fff" : "#9ca3af",
+                  cursor: selectedAutotext ? "pointer" : "not-allowed",
+                  fontWeight: 500,
+                  fontSize: "0.875rem",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  if (selectedAutotext) {
+                    e.currentTarget.style.background = "#e69100";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (selectedAutotext) {
+                    e.currentTarget.style.background = "#f1a124";
+                  }
+                }}
+              >
+                Insert
+              </button>
+            </div>
+
+            {/* Emoji Picker */}
+            <div style={{ position: "relative" }}>
+              <button
+                type="button"
+                onClick={() => setShowEmojiPicker((prev) => !prev)}
+                style={{
+                  padding: "0.5rem 1rem",
+                  borderRadius: "8px",
+                  border: `1px solid ${showEmojiPicker ? "#f1a124" : "#d1d5db"}`,
+                  background: showEmojiPicker ? "#fef3e2" : "#fff",
+                  color: showEmojiPicker ? "#f1a124" : "#374151",
+                  cursor: "pointer",
+                  fontWeight: 500,
+                  fontSize: "0.875rem",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  transition: "all 0.2s",
+                }}
+              >
+                😊
+                <span>Emoticon</span>
+              </button>
+              {showEmojiPicker && (
+                <div style={{
+                  position: "absolute",
+                  top: "100%",
+                  right: 0,
+                  marginTop: "0.5rem",
+                  zIndex: 1000,
+                  background: "#fff",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "12px",
+                  boxShadow: "0 20px 45px rgba(15, 23, 42, 0.15)",
+                  padding: "6px",
+                }}>
+                  <EmojiPicker
+                    onEmojiClick={handleEmojiClick}
+                    height={320}
+                    width={280}
+                    searchDisabled={false}
+                    previewConfig={{ showPreview: false }}
+                    skinTonesDisabled
+                  />
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Radio: Kirim Sekarang / Kirim Nanti */}
           <div className="orders-field">
