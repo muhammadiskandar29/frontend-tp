@@ -82,19 +82,21 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
     return 0;
   };
 
-  // Cek apakah masih bisa konfirmasi pembayaran (untuk DP)
+  // Cek apakah masih bisa konfirmasi pembayaran
   const canConfirmPayment = () => {
     const statusPembayaran = computedStatus();
     const totalHarga = Number(updatedOrder.total_harga || order?.total_harga || 0);
     const totalPaid = Number(updatedOrder.total_paid || order?.total_paid || 0);
-    
-    // Jika status DP (4), bisa konfirmasi selama total_paid < total_harga
-    if (statusPembayaran === 4) {
-      return totalPaid < totalHarga;
+
+    // Selama belum lunas (totalPaid < totalHarga) dan status bukan Paid/Rejected,
+    // tombol konfirmasi pembayaran tetap ditampilkan.
+    // Ini mencakup kasus DP (status 4) dan juga Unpaid/Pending yang masih ada sisa pembayaran.
+    if (totalHarga > 0 && totalPaid < totalHarga) {
+      return statusPembayaran !== 2 && statusPembayaran !== 3;
     }
-    
-    // Jika status 0 (Unpaid), bisa konfirmasi
-    return statusPembayaran === 0;
+
+    // Jika sudah lunas, tidak perlu konfirmasi lagi
+    return false;
   };
 
   const handleChange = (e) => {
