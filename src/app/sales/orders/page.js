@@ -347,7 +347,7 @@ export default function DaftarPesanan() {
         return;
       }
 
-      const res = await fetch(`/api/order-payment/by-order/${orderId}`, {
+      const res = await fetch(`/api/sales/order-payment/by-order/${orderId}`, {
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
