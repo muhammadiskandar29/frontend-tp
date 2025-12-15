@@ -848,13 +848,16 @@ export default function DaftarPesanan() {
         .payment-details {
           display: flex;
           flex-direction: column;
-          gap: 8px;
-          min-width: 200px;
+          gap: 0.5rem;
+          width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
         }
 
         .payment-main {
-          font-size: 14px;
+          font-size: 0.875rem;
           color: #111827;
+          word-wrap: break-word;
         }
 
         .payment-main strong {
@@ -865,35 +868,42 @@ export default function DaftarPesanan() {
         .payment-list {
           display: flex;
           flex-direction: column;
-          gap: 4px;
-          margin-top: 4px;
-          padding: 8px;
+          gap: 0.25rem;
+          margin-top: 0.25rem;
+          padding: 0.5rem;
           background: #f9fafb;
-          border-radius: 6px;
+          border-radius: 0.375rem;
           border: 1px solid #e5e7eb;
+          width: 100%;
+          box-sizing: border-box;
         }
 
         .payment-list-item {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 4px 0;
-          font-size: 12px;
+          padding: 0.25rem 0;
+          font-size: 0.75rem;
+          gap: 0.5rem;
+          flex-wrap: wrap;
         }
 
         .payment-number {
           color: #6b7280;
           font-weight: 500;
+          flex-shrink: 0;
         }
 
         .payment-amount {
           color: #059669;
           font-weight: 600;
+          flex-shrink: 0;
+          white-space: nowrap;
         }
 
         .payment-list-placeholder {
-          padding: 4px 0;
-          font-size: 12px;
+          padding: 0.25rem 0;
+          font-size: 0.75rem;
         }
 
         .payment-hint {
@@ -904,26 +914,33 @@ export default function DaftarPesanan() {
         .payment-breakdown {
           display: flex;
           flex-direction: column;
-          gap: 4px;
-          margin-top: 6px;
-          padding-top: 6px;
+          gap: 0.25rem;
+          margin-top: 0.375rem;
+          padding-top: 0.375rem;
           border-top: 1px solid #e5e7eb;
+          width: 100%;
+          box-sizing: border-box;
         }
 
         .payment-item {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          font-size: 12px;
+          font-size: 0.75rem;
+          gap: 0.5rem;
+          flex-wrap: wrap;
         }
 
         .payment-label {
           color: #6b7280;
           font-weight: 500;
+          flex-shrink: 0;
         }
 
         .payment-value {
           font-weight: 600;
+          flex-shrink: 0;
+          white-space: nowrap;
         }
 
         .payment-value.paid {
@@ -936,12 +953,22 @@ export default function DaftarPesanan() {
 
         @media (max-width: 768px) {
           .payment-details {
-            min-width: 150px;
+            gap: 0.375rem;
+          }
+
+          .payment-main {
+            font-size: 0.8125rem;
           }
 
           .payment-list,
           .payment-breakdown {
-            font-size: 11px;
+            font-size: 0.6875rem;
+            padding: 0.375rem;
+          }
+
+          .payment-list-item,
+          .payment-item {
+            font-size: 0.6875rem;
           }
         }
       `}</style>
