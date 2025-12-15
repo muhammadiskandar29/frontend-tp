@@ -848,6 +848,7 @@ export default function DaftarPesanan() {
         .payment-details {
           display: flex;
           flex-direction: column;
+          align-items: center;
           gap: 0.5rem;
           width: 100%;
           max-width: 100%;
@@ -858,6 +859,8 @@ export default function DaftarPesanan() {
           font-size: 0.875rem;
           color: #111827;
           word-wrap: break-word;
+          text-align: center;
+          width: 100%;
         }
 
         .payment-main strong {
@@ -868,6 +871,7 @@ export default function DaftarPesanan() {
         .payment-list {
           display: flex;
           flex-direction: column;
+          align-items: center;
           gap: 0.25rem;
           margin-top: 0.25rem;
           padding: 0.5rem;
@@ -875,17 +879,19 @@ export default function DaftarPesanan() {
           border-radius: 0.375rem;
           border: 1px solid #e5e7eb;
           width: 100%;
+          max-width: 100%;
           box-sizing: border-box;
         }
 
         .payment-list-item {
           display: flex;
-          justify-content: space-between;
+          justify-content: center;
           align-items: center;
           padding: 0.25rem 0;
           font-size: 0.75rem;
           gap: 0.5rem;
           flex-wrap: wrap;
+          width: 100%;
         }
 
         .payment-number {
@@ -904,6 +910,8 @@ export default function DaftarPesanan() {
         .payment-list-placeholder {
           padding: 0.25rem 0;
           font-size: 0.75rem;
+          text-align: center;
+          width: 100%;
         }
 
         .payment-hint {
@@ -914,21 +922,24 @@ export default function DaftarPesanan() {
         .payment-breakdown {
           display: flex;
           flex-direction: column;
+          align-items: center;
           gap: 0.25rem;
           margin-top: 0.375rem;
           padding-top: 0.375rem;
           border-top: 1px solid #e5e7eb;
           width: 100%;
+          max-width: 100%;
           box-sizing: border-box;
         }
 
         .payment-item {
           display: flex;
-          justify-content: space-between;
+          justify-content: center;
           align-items: center;
           font-size: 0.75rem;
           gap: 0.5rem;
           flex-wrap: wrap;
+          width: 100%;
         }
 
         .payment-label {
