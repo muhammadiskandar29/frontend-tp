@@ -606,8 +606,13 @@ export default function DaftarPesanan() {
                             </div>
                             
                             
-                            {/* Total Paid & Remaining - tampil jika status DP atau ada pembayaran */}
-                            {(statusPembayaranValue === 4 || order.total_paid > 0 || (order.remaining !== undefined && order.remaining < order.total_harga)) && (
+                            {/* Total Paid & Remaining
+                                NOTE:
+                                - Hanya tampil untuk order dengan status pembayaran DP (4)
+                                - Untuk pembayaran full (bukan DP), meskipun total_paid > 0,
+                                  tidak menampilkan breakdown agar hanya terlihat total harga saja
+                            */}
+                            {statusPembayaranValue === 4 && (
                               <div className="payment-breakdown">
                                 <div className="payment-item">
                                   <span 
