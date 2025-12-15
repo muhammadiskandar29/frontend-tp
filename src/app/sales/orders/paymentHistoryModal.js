@@ -235,7 +235,49 @@ export default function PaymentHistoryModal({ orderId, isOpen, onClose }) {
                   <h3 style={{ margin: "0 0 1rem", fontSize: "1rem", fontWeight: 600, color: "#111827" }}>Daftar Pembayaran</h3>
                   {paymentHistoryData.payments && paymentHistoryData.payments.length > 0 ? (
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                      {paymentHistoryData.payments.map((payment, idx) => (
+                      {paymentHistoryData.payments.map((payment, idx) => {
+                        const rawPaymentStatus = payment.status;
+                        const paymentStatusStr =
+                          rawPaymentStatus === null || rawPaymentStatus === undefined
+                            ? ""
+                            : String(rawPaymentStatus);
+                        const orderStatusPemb = paymentHistoryData.order?.status_pembayaran;
+                        const orderStatusPembStr =
+                          orderStatusPemb === null || orderStatusPemb === undefined
+                            ? ""
+                            : String(orderStatusPemb);
+
+                        const isRejected = paymentStatusStr === "3";
+                        const isExplicitApproved = paymentStatusStr === "2";
+                        const isOrderPaidOrDp =
+                          orderStatusPembStr === "2" ||
+                          orderStatusPembStr === "4";
+
+                        // Label dan style:
+                        // - Rejected (3) -> "Rejected"
+                        // - Jika payment.status = 2 ATAU (status kosong/1 tapi order sudah Paid/DP) -> "Valid"
+                        // - Selain itu -> "Pending"
+                        const isValid = isExplicitApproved || (!isRejected && isOrderPaidOrDp);
+
+                        const statusLabel = isRejected
+                          ? "Rejected"
+                          : isValid
+                          ? "Valid"
+                          : "Pending";
+
+                        const statusBg = isRejected
+                          ? "#fee2e2"
+                          : isValid
+                          ? "#d1fae5"
+                          : "#fef3c7";
+
+                        const statusColor = isRejected
+                          ? "#991b1b"
+                          : isValid
+                          ? "#065f46"
+                          : "#92400e";
+
+                        return (
                         <div key={payment.id || idx} style={{ padding: "1rem", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
                             <div>
@@ -257,26 +299,12 @@ export default function PaymentHistoryModal({ orderId, isOpen, onClose }) {
                                   style={{
                                     padding: "0.25rem 0.5rem",
                                     borderRadius: "4px",
-                                    background:
-                                      payment.status === "2"
-                                        ? "#d1fae5"
-                                        : payment.status === "3"
-                                        ? "#fee2e2"
-                                        : "#fef3c7",
-                                    color:
-                                      payment.status === "2"
-                                        ? "#065f46"
-                                        : payment.status === "3"
-                                        ? "#991b1b"
-                                        : "#92400e",
+                                    background: statusBg,
+                                    color: statusColor,
                                     fontWeight: 600,
                                   }}
                                 >
-                                  {payment.status === "2"
-                                    ? "Valid"
-                                    : payment.status === "3"
-                                    ? "Rejected"
-                                    : "Pending"}
+                                  {statusLabel}
                                 </span>
                               </div>
                             </div>
@@ -307,7 +335,7 @@ export default function PaymentHistoryModal({ orderId, isOpen, onClose }) {
                             )}
                           </div>
                         </div>
-                      ))}
+                      )})}
                     </div>
                   ) : (
                     <div style={{ textAlign: "center", padding: "2rem", color: "#6b7280" }}>
