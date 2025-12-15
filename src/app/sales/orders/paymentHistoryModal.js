@@ -253,14 +253,30 @@ export default function PaymentHistoryModal({ orderId, isOpen, onClose }) {
                             <div style={{ textAlign: "right" }}>
                               <strong style={{ fontSize: "1.1rem", color: "#059669" }}>Rp {Number(payment.amount || 0).toLocaleString("id-ID")}</strong>
                               <div style={{ fontSize: "0.75rem", marginTop: "0.25rem" }}>
-                                <span style={{
-                                  padding: "0.25rem 0.5rem",
-                                  borderRadius: "4px",
-                                  background: payment.status === "2" ? "#d1fae5" : payment.status === "3" ? "#fee2e2" : "#fef3c7",
-                                  color: payment.status === "2" ? "#065f46" : payment.status === "3" ? "#991b1b" : "#92400e",
-                                  fontWeight: 600
-                                }}>
-                                  {payment.status === "2" ? "Approved" : payment.status === "3" ? "Rejected" : "Pending"}
+                                <span
+                                  style={{
+                                    padding: "0.25rem 0.5rem",
+                                    borderRadius: "4px",
+                                    background:
+                                      payment.status === "2"
+                                        ? "#d1fae5"
+                                        : payment.status === "3"
+                                        ? "#fee2e2"
+                                        : "#fef3c7",
+                                    color:
+                                      payment.status === "2"
+                                        ? "#065f46"
+                                        : payment.status === "3"
+                                        ? "#991b1b"
+                                        : "#92400e",
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  {payment.status === "2"
+                                    ? "Valid"
+                                    : payment.status === "3"
+                                    ? "Rejected"
+                                    : "Pending"}
                                 </span>
                               </div>
                             </div>

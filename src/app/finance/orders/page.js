@@ -633,8 +633,9 @@ export default function FinanceOrders() {
                         class: "default",
                       };
 
-                    const canApproveReject =
-                      statusCode === 0 || statusCode === 1;
+                    // Finance harus bisa koreksi (salah approve / salah reject),
+                    // jadi tombol Approve & Reject selalu tersedia untuk setiap pembayaran
+                    const canApproveReject = true;
 
                     return (
                       <div
