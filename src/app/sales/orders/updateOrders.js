@@ -82,6 +82,21 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
     return 0;
   };
 
+  // Cek apakah masih bisa konfirmasi pembayaran (untuk DP)
+  const canConfirmPayment = () => {
+    const statusPembayaran = computedStatus();
+    const totalHarga = Number(updatedOrder.total_harga || order?.total_harga || 0);
+    const totalPaid = Number(updatedOrder.total_paid || order?.total_paid || 0);
+    
+    // Jika status DP (4), bisa konfirmasi selama total_paid < total_harga
+    if (statusPembayaran === 4) {
+      return totalPaid < totalHarga;
+    }
+    
+    // Jika status 0 (Unpaid), bisa konfirmasi
+    return statusPembayaran === 0;
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setUpdatedOrder((prev) => ({ ...prev, [name]: value }));
@@ -109,6 +124,19 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
     if (!bukti?.file) return setErrorMsg("Harap upload bukti pembayaran baru.");
     if (!metodeBayar) return setErrorMsg("Isi metode pembayaran terlebih dahulu.");
     if (!amount || parseFloat(amount) <= 0) return setErrorMsg("Jumlah pembayaran harus diisi dan lebih dari 0.");
+
+    // Validasi untuk DP: amount tidak boleh melebihi remaining
+    const statusPembayaran = computedStatus();
+    if (statusPembayaran === 4) {
+      const totalHarga = Number(updatedOrder.total_harga || order?.total_harga || 0);
+      const totalPaid = Number(updatedOrder.total_paid || order?.total_paid || 0);
+      const remaining = totalHarga - totalPaid;
+      const amountValue = parseFloat(amount);
+      
+      if (amountValue > remaining) {
+        return setErrorMsg(`Jumlah pembayaran tidak boleh melebihi sisa yang harus dibayar (Rp ${remaining.toLocaleString("id-ID")})`);
+      }
+    }
 
     setSubmitting(true);
 
@@ -155,6 +183,23 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
       const konfirmasiOrder = data.data || data;
 
       // Update local state dengan data dari backend
+      const newTotalPaid = konfirmasiOrder.total_paid !== undefined ? konfirmasiOrder.total_paid : (order.total_paid || 0);
+      const totalHarga = Number(updatedOrder.total_harga || order?.total_harga || 0);
+      const isFullyPaid = newTotalPaid >= totalHarga;
+      
+      // Untuk DP: jika sudah lunas (total_paid >= total_harga), status menjadi 2 (Paid)
+      // Jika belum lunas, tetap status 4 (DP) atau sesuai response dari backend
+      let newStatusPembayaran = konfirmasiOrder.status_pembayaran;
+      if (statusPembayaran === 4) {
+        if (isFullyPaid) {
+          newStatusPembayaran = 2; // Paid (lunas)
+        } else {
+          newStatusPembayaran = 4; // Tetap DP jika belum lunas
+        }
+      } else {
+        newStatusPembayaran = konfirmasiOrder.status_pembayaran ?? 1; // 1 = Menunggu Approve Finance
+      }
+
       const finalOrder = {
         ...order,
         ...konfirmasiOrder,
@@ -162,26 +207,46 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
         bukti_pembayaran: konfirmasiOrder.bukti_pembayaran || bukti.name,
         waktu_pembayaran: konfirmasiOrder.waktu_pembayaran || waktuPembayaran,
         metode_bayar: konfirmasiOrder.metode_bayar || metodeBayar,
-        status_pembayaran: konfirmasiOrder.status_pembayaran ?? 1, // 1 = Menunggu Approve Finance
+        status_pembayaran: newStatusPembayaran,
         status_order: order.status_order || "1", // Tetap Proses (1), tidak berubah saat konfirmasi pembayaran
+        // Update total_paid dan remaining dari response
+        total_paid: newTotalPaid,
+        remaining: konfirmasiOrder.remaining !== undefined ? konfirmasiOrder.remaining : (totalHarga - newTotalPaid),
       };
 
       setUpdatedOrder(finalOrder);
-      setBukti((prev) => ({ 
-        ...prev, 
-        existing: true, 
-        url: konfirmasiOrder.bukti_pembayaran || bukti.name 
-      }));
       
       // Update parent component
       onSave(finalOrder);
       setShowKonfirmasiModal(false);
 
+      // Reset form untuk pembayaran berikutnya (jika DP dan belum lunas)
+      if (statusPembayaran === 4 && !isFullyPaid) {
+        // Untuk DP yang belum lunas, reset bukti dan amount untuk pembayaran berikutnya
+        setBukti(null);
+        const newRemaining = totalHarga - newTotalPaid;
+        setAmount(newRemaining > 0 ? newRemaining.toString() : "");
+        setIsDP(true);
+      } else {
+        // Jika sudah lunas atau bukan DP, reset semua
+        setBukti((prev) => ({ 
+          ...prev, 
+          existing: true, 
+          url: konfirmasiOrder.bukti_pembayaran || bukti.name 
+        }));
+        setAmount("");
+        setIsDP(false);
+      }
+
       // Tampilkan toast sukses
+      const successMessage = isFullyPaid 
+        ? "Pembayaran berhasil dikonfirmasi! Order sudah lunas." 
+        : `Pembayaran berhasil dikonfirmasi! Sisa yang harus dibayar: Rp ${(totalHarga - newTotalPaid).toLocaleString("id-ID")}`;
+      
       setToast?.({
         show: true,
         type: "success",
-        message: "Pembayaran berhasil dikonfirmasi!",
+        message: successMessage,
       });
 
       // Tutup modal dan redirect ke halaman orders setelah delay
@@ -398,32 +463,53 @@ const handleSubmitUpdate = async (e) => {
                 </label>
 
                 {/* Status Pembayaran Card */}
-                <div className={`payment-status-card ${computedStatus() === 1 ? "paid" : "unpaid"}`}>
+                <div className={`payment-status-card ${computedStatus() === 1 || computedStatus() === 2 ? "paid" : "unpaid"}`}>
                   <div className="status-info">
                     <span className="status-label">Status Pembayaran</span>
-                    <span className={`status-badge ${computedStatus() === 1 ? "badge-paid" : "badge-unpaid"}`}>
-                      {computedStatus() === 1 ? "✅ Paid" : "⏳ Unpaid"}
+                    <span className={`status-badge ${computedStatus() === 1 || computedStatus() === 2 ? "badge-paid" : computedStatus() === 4 ? "badge-dp" : "badge-unpaid"}`}>
+                      {computedStatus() === 4 ? "💰 DP" : computedStatus() === 1 ? "✅ Paid" : computedStatus() === 2 ? "✅ Paid" : "⏳ Unpaid"}
                     </span>
                   </div>
                   
-                  {computedStatus() === 0 ? (
-                <button
-                  type="button"
-                  className="btn-konfirmasi"
-                  disabled={!metodeBayar}
-                  onClick={() => {
-                    // Set amount ke total_harga saat modal dibuka
-                    const totalHarga = updatedOrder.total_harga || order?.total_harga || 0;
-                    setAmount(totalHarga.toString());
-                    setIsDP(false);
-                    setShowKonfirmasiModal(true);
-                  }}
-                >
-                  <i className="pi pi-check-circle" />
-                  Konfirmasi Pembayaran
-                </button>
+                  {/* Tampilkan Total Paid & Remaining jika status DP atau ada pembayaran */}
+                  {(computedStatus() === 4 || (updatedOrder.total_paid > 0 || order?.total_paid > 0)) && (
+                    <div style={{ marginTop: "0.5rem", fontSize: "0.85rem", color: "#6b7280" }}>
+                      <div>Total Paid: <strong style={{ color: "#059669" }}>Rp {Number(updatedOrder.total_paid || order?.total_paid || 0).toLocaleString("id-ID")}</strong></div>
+                      <div>Remaining: <strong style={{ color: "#dc2626" }}>Rp {Number(updatedOrder.remaining || order?.remaining || (Number(updatedOrder.total_harga || order?.total_harga || 0) - Number(updatedOrder.total_paid || order?.total_paid || 0))).toLocaleString("id-ID")}</strong></div>
+                    </div>
+                  )}
+                  
+                  {canConfirmPayment() ? (
+                    <button
+                      type="button"
+                      className="btn-konfirmasi"
+                      disabled={!metodeBayar}
+                      onClick={() => {
+                        // Set amount ke total_harga saat modal dibuka (jika bukan DP)
+                        // Jika DP, biarkan kosong untuk input manual
+                        const statusPembayaran = computedStatus();
+                        if (statusPembayaran !== 4) {
+                          const totalHarga = updatedOrder.total_harga || order?.total_harga || 0;
+                          setAmount(totalHarga.toString());
+                          setIsDP(false);
+                        } else {
+                          // Untuk DP, set amount ke remaining atau kosong
+                          const totalHarga = Number(updatedOrder.total_harga || order?.total_harga || 0);
+                          const totalPaid = Number(updatedOrder.total_paid || order?.total_paid || 0);
+                          const remaining = totalHarga - totalPaid;
+                          setAmount(remaining > 0 ? remaining.toString() : "");
+                          setIsDP(true);
+                        }
+                        setShowKonfirmasiModal(true);
+                      }}
+                    >
+                      <i className="pi pi-check-circle" />
+                      {computedStatus() === 4 ? "Konfirmasi Pembayaran Lanjutan" : "Konfirmasi Pembayaran"}
+                    </button>
                   ) : (
-                    <span className="status-confirmed">Pembayaran Terkonfirmasi</span>
+                    computedStatus() === 2 && (
+                      <span className="status-confirmed">Pembayaran Lunas</span>
+                    )
                   )}
                 </div>
 
@@ -640,6 +726,11 @@ const handleSubmitUpdate = async (e) => {
 
         .badge-paid {
           background: #10b981;
+          color: white;
+        }
+
+        .badge-dp {
+          background: #3b82f6;
           color: white;
         }
 
