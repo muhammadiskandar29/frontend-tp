@@ -643,36 +643,20 @@ export default function DaftarPesanan() {
                               <strong>Rp {Number(order.total_harga || 0).toLocaleString("id-ID")}</strong>
                             </div>
                             
-                            {/* Listing Pembayaran - hanya tampil jika status DP atau ada pembayaran */}
-                            {(statusPembayaranValue === 4 || order.total_paid > 0) && (
-                              <div className="payment-list">
-                                {paymentHistory[order.id] && paymentHistory[order.id].length > 0 ? (
-                                  paymentHistory[order.id].map((payment, idx) => (
-                                    <div key={idx} className="payment-list-item">
-                                      <span className="payment-number">Pembayaran ke {payment.payment_ke || idx + 1}:</span>
-                                      <span className="payment-amount">Rp {Number(payment.amount || 0).toLocaleString("id-ID")}</span>
-                                    </div>
-                                  ))
-                                ) : (
-                                  // Placeholder jika belum ada data payment history
-                                  <div className="payment-list-placeholder">
-                                    <span className="payment-hint">Belum ada riwayat pembayaran</span>
-                                  </div>
-                                )}
-                              </div>
-                            )}
                             
                             {/* Total Paid & Remaining - tampil jika status DP atau ada pembayaran */}
                             {(statusPembayaranValue === 4 || order.total_paid > 0 || (order.remaining !== undefined && order.remaining < order.total_harga)) && (
                               <div className="payment-breakdown">
                                 <div className="payment-item">
-                                  <span className="payment-label">Total Paid:</span>
                                   <span 
-                                    className="payment-value paid payment-clickable" 
+                                    className="payment-label payment-clickable" 
                                     onClick={() => handleShowPaymentHistory(order)}
                                     style={{ cursor: "pointer", textDecoration: "underline" }}
                                     title="Klik untuk melihat riwayat pembayaran"
                                   >
+                                    Total Paid:
+                                  </span>
+                                  <span className="payment-value paid">
                                     Rp {Number(order.total_paid || 0).toLocaleString("id-ID")}
                                   </span>
                                 </div>
@@ -999,6 +983,17 @@ export default function DaftarPesanan() {
           color: #6b7280;
           font-weight: 500;
           flex-shrink: 0;
+        }
+
+        .payment-label.payment-clickable {
+          cursor: pointer;
+          transition: opacity 0.2s ease, color 0.2s ease;
+        }
+
+        .payment-label.payment-clickable:hover {
+          opacity: 0.8;
+          color: #3b82f6;
+          text-decoration: underline;
         }
 
         .payment-value {
