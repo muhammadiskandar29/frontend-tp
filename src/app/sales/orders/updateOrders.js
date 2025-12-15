@@ -881,29 +881,6 @@ const handleSubmitUpdate = async (e) => {
                 </div>
               </div>
 
-              {/* Checkbox DP */}
-              <label className="dp-checkbox-wrapper">
-                <input
-                  type="checkbox"
-                  checked={isDP}
-                  onChange={(e) => {
-                    setIsDP(e.target.checked);
-                    if (!e.target.checked) {
-                      // Reset amount ke total_harga jika uncheck DP
-                      const totalHarga = updatedOrder.total_harga || order?.total_harga || 0;
-                      setAmount(totalHarga.toString());
-                    } else {
-                      // Jika check DP, biarkan user input manual
-                      if (!amount || amount === (updatedOrder.total_harga || order?.total_harga || 0).toString()) {
-                        setAmount("");
-                      }
-                    }
-                  }}
-                  className="dp-checkbox"
-                />
-                <span className="dp-checkbox-label">Pembayaran DP (Down Payment)</span>
-              </label>
-
               {/* Input Amount */}
               <label className="form-field">
                 <span className="field-label">
@@ -927,7 +904,7 @@ const handleSubmitUpdate = async (e) => {
                   <span className="field-hint">Jumlah otomatis sesuai total order (tidak dapat diubah)</span>
                 )}
                 {isDP && (
-                  <span className="field-hint">Masukkan jumlah DP yang dibayar</span>
+                  <span className="field-hint">Masukkan jumlah DP yang dibayar (Status Pembayaran: DP)</span>
                 )}
               </label>
 
