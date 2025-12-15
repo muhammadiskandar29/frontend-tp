@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import React from "react";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
-import { getProductById } from "@/lib/products";
+import { getProductById } from "@/lib/sales/products";
 import FollowupSection from "./FollowupSection";
 import LinkZoomSection from "./LinkZoomSection";
 import TrainerSection from "./TrainerSection";

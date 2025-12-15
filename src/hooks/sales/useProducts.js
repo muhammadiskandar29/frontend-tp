@@ -9,7 +9,7 @@ import {
   deleteProduct, 
   duplicateProduct,
   updateProductStatus
-} from "@/lib/products";
+} from "@/lib/sales/products";
 
 export function useProducts() {
   const [products, setProducts] = useState([]);

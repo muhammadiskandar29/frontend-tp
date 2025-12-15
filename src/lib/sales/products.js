@@ -1,12 +1,12 @@
 // src/lib/products.js
-import { api } from "./api";
+import { api } from "../api";
 
 /* =====================================================
    🔍 GET: Ambil semua produk (exclude yang sudah soft-deleted)
    ===================================================== */
 export async function getProducts(includeDeleted = false) {
   try {
-    const res = await api("/admin/produk", { method: "GET" });
+    const res = await api("/sales/produk", { method: "GET" });
 
     // Check if response has success property
     if (res && res.success === false) {
@@ -50,7 +50,7 @@ export async function getProducts(includeDeleted = false) {
    ===================================================== */
 export async function deleteProduct(id, force = true) {
   try {
-    const url = force ? `/admin/produk/${id}?force=true` : `/admin/produk/${id}`;
+    const url = force ? `/sales/produk/${id}?force=true` : `/sales/produk/${id}`;
     const res = await api(url, { method: "DELETE" });
 
     if (!res?.success) {
@@ -71,7 +71,7 @@ export async function deleteProduct(id, force = true) {
    ===================================================== */
 export async function duplicateProduct(id) {
   try {
-    const res = await api(`/admin/produk/${id}/duplicate`, { method: "POST" });
+    const res = await api(`/sales/produk/${id}/duplicate`, { method: "POST" });
 
     if (!res?.success) {
       throw new Error(res?.message || "Gagal menduplikasi produk");
@@ -91,7 +91,7 @@ export async function duplicateProduct(id) {
    ===================================================== */
 export async function getProductById(id) {
   try {
-    const res = await api(`/admin/produk/${id}`, { method: "GET" });
+    const res = await api(`/sales/produk/${id}`, { method: "GET" });
 
     if (!res?.success) {
       throw new Error(res?.message || "Gagal mengambil detail produk");
@@ -117,7 +117,7 @@ export async function getProductById(id) {
 }
 export async function createProduct(payload) {
   try {
-    const res = await api("/admin/produk", {
+    const res = await api("/sales/produk", {
       method: "POST",
       body: JSON.stringify(payload),
     });
@@ -138,7 +138,7 @@ export async function createProduct(payload) {
    ===================================================== */
 export async function updateProductStatus(id, status) {
   try {
-    const res = await api(`/admin/produk/${id}`, {
+    const res = await api(`/sales/produk/${id}`, {
       method: "POST",
       body: JSON.stringify({ status: String(status) }),
     });

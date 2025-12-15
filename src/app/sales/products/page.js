@@ -115,7 +115,7 @@ export default function AdminProductsPage() {
             </div>
             <button
               className="customers-button customers-button--primary"
-              onClick={() => router.push("/admin/products/addProducts")}
+              onClick={() => router.push("/sales/products/addProducts")}
             >
               + Tambah Produk
             </button>
@@ -212,7 +212,7 @@ export default function AdminProductsPage() {
                         <div className="product-table__info">
                           <span
                             className="product-table__name"
-                            onClick={() => router.push(`/admin/products/view/${p.id}`)}
+                            onClick={() => router.push(`/sales/products/view/${p.id}`)}
                           >
                             {p.nama || "-"}
                           </span>
@@ -249,7 +249,7 @@ export default function AdminProductsPage() {
                             <button
                               className="product-table__action-link"
                               onClick={() => {
-                                router.push(`/admin/products/editProducts/${p.id}`);
+                                router.push(`/sales/products/editProducts/${p.id}`);
                               }}
                             >
                               Edit

@@ -238,10 +238,10 @@ export default function FinanceOrders() {
     if (searchInput && searchInput.trim()) {
       const searchLower = searchInput.toLowerCase().trim();
       filtered = filtered.filter((order) => {
-        const customerName = order.customer_rel?.nama?.toLowerCase() || "";
-        const productName = order.produk_rel?.nama?.toLowerCase() || "";
-        const alamat = order.alamat?.toLowerCase() || "";
-        const totalHarga = order.total_harga?.toString() || "";
+        const customerName = order.order_rel?.customer_rel?.nama?.toLowerCase() || "";
+        const productName = order.order_rel?.produk_rel?.nama?.toLowerCase() || "";
+        const alamat = order.order_rel?.alamat?.toLowerCase() || "";
+        const totalHarga = order.order_rel?.total_harga?.toString() || "";
         
         return (
           customerName.includes(searchLower) ||
@@ -353,7 +353,7 @@ export default function FinanceOrders() {
       console.log("🔴 Reject Order Request:", {
         orderId: order.id,
         catatan: catatan,
-        orderStatus: order.status_pembayaran,
+        orderStatus: order.status,
       });
 
       const res = await fetch(`/api/finance/order-validation/${order.id}/reject`, {
@@ -547,27 +547,42 @@ export default function FinanceOrders() {
               <div className="orders-table__body">
                 {filteredOrders.length > 0 ? (
                   filteredOrders.map((order, i) => {
-                    // Handle produk name - dari produk_rel
-                    const produkNama = order.produk_rel?.nama || "-";
+                    // Handle produk name - dari order_rel.produk_rel
+                    const produkNama = order.order_rel?.produk_rel?.nama || "-";
 
-                    // Handle customer name - dari customer_rel
-                    const customerNama = order.customer_rel?.nama || "-";
+                    // Handle customer name - dari order_rel.customer_rel
+                    const customerNama = order.order_rel?.customer_rel?.nama || "-";
 
-                    // Get Status Order
-                    const statusOrderValue = order.status_order?.toString() || "";
+                    // Get Status Order - dari order_rel (jika ada)
+                    const statusOrderValue = order.order_rel?.status_order?.toString() || "";
                     const statusOrderInfo = STATUS_ORDER_MAP[statusOrderValue] || { label: "-", class: "default" };
 
-                    // Get Status Pembayaran
-                    let statusPembayaranValue = order.status_pembayaran;
+                    // Get Status Pembayaran - dari field status (bukan status_pembayaran)
+                    let statusPembayaranValue = order.status;
                     if (statusPembayaranValue === null || statusPembayaranValue === undefined) {
                       statusPembayaranValue = 0;
                     }
                     const statusPembayaranInfo = STATUS_PEMBAYARAN_MAP[statusPembayaranValue] || STATUS_PEMBAYARAN_MAP[0];
 
+                    // Format tanggal
+                    const tanggalFormatted = order.tanggal ? new Date(order.tanggal).toLocaleDateString('id-ID', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    }) : "-";
+
+                    // Payment method
+                    const paymentMethod = order.payment_method || "-";
+
+                    // Bukti pembayaran URL
+                    const buktiUrl = order.bukti_pembayaran 
+                      ? `${process.env.NEXT_PUBLIC_API_URL || ''}/storage/${order.bukti_pembayaran}`
+                      : null;
+
                     return (
                       <div className="orders-table__row" key={order.id || `${order.id}-${i}`}>
                         <div className="orders-table__cell" data-label="#">
-                          {i + 1}
+                          {(page - 1) * perPage + i + 1}
                         </div>
                         <div className="orders-table__cell orders-table__cell--strong" data-label="Customer">
                           {customerNama}
@@ -576,7 +591,7 @@ export default function FinanceOrders() {
                           {produkNama}
                         </div>
                         <div className="orders-table__cell" data-label="Total Harga">
-                          Rp {Number(order.total_harga || 0).toLocaleString()}
+                          Rp {Number(order.order_rel?.total_harga || 0).toLocaleString('id-ID')}
                         </div>
                         <div className="orders-table__cell" data-label="Status Order">
                           <span className={`orders-status-badge orders-status-badge--${statusOrderInfo.class}`}>
@@ -589,21 +604,21 @@ export default function FinanceOrders() {
                           </span>
                         </div>
                         <div className="orders-table__cell" data-label="Tanggal">
-                          {order.tanggal || "-"}
+                          {tanggalFormatted}
                         </div>
                         <div className="orders-table__cell" data-label="Sumber">
-                          {order.sumber ? `#${order.sumber}` : "-"}
+                          {order.order_rel?.sumber ? `#${order.order_rel.sumber}` : "-"}
                         </div>
                         <div className="orders-table__cell" data-label="Waktu Pembayaran">
-                          {order.waktu_pembayaran || "-"}
+                          {order.create_at ? new Date(order.create_at).toLocaleString('id-ID') : "-"}
                         </div>
                         <div className="orders-table__cell" data-label="Metode Bayar">
-                          {order.metode_bayar || "-"}
+                          {paymentMethod.toUpperCase()}
                         </div>
                         <div className="orders-table__cell" data-label="Bukti Bayar">
-                          {order.bukti_pembayaran ? (
+                          {buktiUrl ? (
                             <a
-                              href="#"
+                              href={buktiUrl}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="orders-link"
@@ -624,18 +639,10 @@ export default function FinanceOrders() {
                             Detail
                           </button>
                           
-                          {/* Conditional buttons berdasarkan waktu_pembayaran dan status pembayaran */}
+                          {/* Conditional buttons berdasarkan status pembayaran */}
                           {(() => {
-                            // Cek apakah sudah ada waktu_pembayaran
-                            const hasWaktuPembayaran = order.waktu_pembayaran && order.waktu_pembayaran.trim() !== "";
-                            
-                            // Jika belum ada waktu_pembayaran, jangan tampilkan Approve dan Reject
-                            if (!hasWaktuPembayaran) {
-                              return null;
-                            }
-                            
-                            // Jika sudah ada waktu_pembayaran, tampilkan button sesuai status
-                            const statusPembayaran = order.status_pembayaran ?? 0;
+                            // Status pembayaran dari field status
+                            const statusPembayaran = order.status ?? 0;
                             
                             // Jika sudah approved (status = 2), tampilkan Reject saja
                             if (statusPembayaran === 2) {
