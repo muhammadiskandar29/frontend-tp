@@ -16,6 +16,7 @@ const ViewOrders = dynamic(() => import("./viewOrders"), { ssr: false });
 const UpdateOrders = dynamic(() => import("./updateOrders"), { ssr: false });
 const AddOrders = dynamic(() => import("./addOrders"), { ssr: false });
 const AddCicilan = dynamic(() => import("./addCicilan"), { ssr: false });
+const PaymentHistoryModal = dynamic(() => import("./paymentHistoryModal"), { ssr: false });
 
 // Use Next.js proxy to avoid CORS
 const BASE_URL = "/api";
@@ -78,8 +79,7 @@ export default function DaftarPesanan() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [paymentHistory, setPaymentHistory] = useState({}); // { orderId: [payments] }
   const [showPaymentHistory, setShowPaymentHistory] = useState(false);
-  const [paymentHistoryData, setPaymentHistoryData] = useState(null);
-  const [paymentHistoryLoading, setPaymentHistoryLoading] = useState(false);
+  const [selectedOrderIdForHistory, setSelectedOrderIdForHistory] = useState(null);
 
   const [toast, setToast] = useState(DEFAULT_TOAST);
   const toastTimeoutRef = useRef(null);
@@ -333,51 +333,10 @@ export default function DaftarPesanan() {
     setShowCicilan(true);
   };
 
-  // Fetch payment history untuk order
-  const fetchPaymentHistory = async (orderId) => {
-    if (!orderId) return;
-    
-    setPaymentHistoryLoading(true);
-    setPaymentHistoryData(null);
-    
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        showToast("Token tidak ditemukan", "error");
-        return;
-      }
-
-      const res = await fetch(`/api/sales/order-payment/by-order/${orderId}`, {
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-
-      const json = await res.json();
-      
-      if (json.success && json.data) {
-        setPaymentHistoryData(json.data);
-        setShowPaymentHistory(true);
-      } else {
-        showToast(json.message || "Gagal memuat riwayat pembayaran", "error");
-      }
-    } catch (err) {
-      console.error("Error fetching payment history:", err);
-      showToast("Terjadi kesalahan saat memuat riwayat pembayaran", "error");
-    } finally {
-      setPaymentHistoryLoading(false);
-    }
-  };
-
   const handleShowPaymentHistory = (order) => {
     if (order?.id) {
-      fetchPaymentHistory(order.id);
+      setSelectedOrderIdForHistory(order.id);
+      setShowPaymentHistory(true);
     }
   };
 
@@ -1053,159 +1012,14 @@ export default function DaftarPesanan() {
       `}</style>
 
       {/* Modal Payment History */}
-      {showPaymentHistory && (
-        <div className="orders-modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowPaymentHistory(false)}>
-          <div className="orders-modal-card" style={{ width: "min(800px, 95vw)", maxHeight: "90vh", display: "flex", flexDirection: "column" }}>
-            {/* Header */}
-            <div className="orders-modal-header">
-              <div>
-                <p className="orders-modal-eyebrow">Riwayat Pembayaran</p>
-                <h2>Data Pembayaran Order #{paymentHistoryData?.order?.id || "-"}</h2>
-              </div>
-              <button className="orders-modal-close" onClick={() => setShowPaymentHistory(false)} type="button" aria-label="Tutup modal">
-                <i className="pi pi-times" />
-              </button>
-            </div>
-
-            {/* Body */}
-            <div className="orders-modal-body" style={{ overflowY: "auto", flex: 1, padding: "1.5rem" }}>
-              {paymentHistoryLoading ? (
-                <div style={{ textAlign: "center", padding: "3rem" }}>
-                  <i className="pi pi-spin pi-spinner" style={{ fontSize: "2rem", color: "#3b82f6" }} />
-                  <p style={{ marginTop: "1rem", color: "#6b7280" }}>Memuat data...</p>
-                </div>
-              ) : paymentHistoryData ? (
-                <>
-                  {/* Order Info */}
-                  <div style={{ marginBottom: "1.5rem", padding: "1rem", background: "#f9fafb", borderRadius: "8px" }}>
-                    <h3 style={{ margin: "0 0 0.75rem", fontSize: "1rem", fontWeight: 600, color: "#111827" }}>Informasi Order</h3>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.75rem", fontSize: "0.875rem" }}>
-                      <div>
-                        <span style={{ color: "#6b7280" }}>Customer:</span>
-                        <strong style={{ display: "block", color: "#111827" }}>{paymentHistoryData.order?.customer_rel?.nama || "-"}</strong>
-                      </div>
-                      <div>
-                        <span style={{ color: "#6b7280" }}>Produk:</span>
-                        <strong style={{ display: "block", color: "#111827" }}>{paymentHistoryData.order?.produk_rel?.nama || "-"}</strong>
-                      </div>
-                      <div>
-                        <span style={{ color: "#6b7280" }}>Total Harga:</span>
-                        <strong style={{ display: "block", color: "#111827" }}>Rp {Number(paymentHistoryData.order?.total_harga || 0).toLocaleString("id-ID")}</strong>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Summary */}
-                  {paymentHistoryData.summary && (
-                    <div style={{ marginBottom: "1.5rem", padding: "1rem", background: "#eff6ff", borderRadius: "8px", border: "1px solid #bfdbfe" }}>
-                      <h3 style={{ margin: "0 0 0.75rem", fontSize: "1rem", fontWeight: 600, color: "#111827" }}>Ringkasan</h3>
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "0.75rem", fontSize: "0.875rem" }}>
-                        <div>
-                          <span style={{ color: "#6b7280" }}>Total Amount:</span>
-                          <strong style={{ display: "block", color: "#111827" }}>Rp {Number(paymentHistoryData.summary.total_amount || 0).toLocaleString("id-ID")}</strong>
-                        </div>
-                        <div>
-                          <span style={{ color: "#6b7280" }}>Total Paid:</span>
-                          <strong style={{ display: "block", color: "#059669" }}>Rp {Number(paymentHistoryData.summary.total_paid || 0).toLocaleString("id-ID")}</strong>
-                        </div>
-                        <div>
-                          <span style={{ color: "#6b7280" }}>Remaining:</span>
-                          <strong style={{ display: "block", color: "#dc2626" }}>Rp {Number(paymentHistoryData.summary.remaining || 0).toLocaleString("id-ID")}</strong>
-                        </div>
-                        <div>
-                          <span style={{ color: "#6b7280" }}>Jumlah Pembayaran:</span>
-                          <strong style={{ display: "block", color: "#111827" }}>{paymentHistoryData.summary.count_payments || 0}x</strong>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Payments List */}
-                  <div>
-                    <h3 style={{ margin: "0 0 1rem", fontSize: "1rem", fontWeight: 600, color: "#111827" }}>Daftar Pembayaran</h3>
-                    {paymentHistoryData.payments && paymentHistoryData.payments.length > 0 ? (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                        {paymentHistoryData.payments.map((payment, idx) => (
-                          <div key={payment.id || idx} style={{ padding: "1rem", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
-                              <div>
-                                <strong style={{ fontSize: "0.95rem", color: "#111827" }}>Pembayaran ke {payment.payment_ke || idx + 1}</strong>
-                                <div style={{ fontSize: "0.875rem", color: "#6b7280", marginTop: "0.25rem" }}>
-                                  {payment.tanggal ? new Date(payment.tanggal).toLocaleString("id-ID", {
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric",
-                                    hour: "2-digit",
-                                    minute: "2-digit"
-                                  }) : "-"}
-                                </div>
-                              </div>
-                              <div style={{ textAlign: "right" }}>
-                                <strong style={{ fontSize: "1.1rem", color: "#059669" }}>Rp {Number(payment.amount || 0).toLocaleString("id-ID")}</strong>
-                                <div style={{ fontSize: "0.75rem", marginTop: "0.25rem" }}>
-                                  <span style={{
-                                    padding: "0.25rem 0.5rem",
-                                    borderRadius: "4px",
-                                    background: payment.status === "2" ? "#d1fae5" : payment.status === "3" ? "#fee2e2" : "#fef3c7",
-                                    color: payment.status === "2" ? "#065f46" : payment.status === "3" ? "#991b1b" : "#92400e",
-                                    fontWeight: 600
-                                  }}>
-                                    {payment.status === "2" ? "Approved" : payment.status === "3" ? "Rejected" : "Pending"}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "0.5rem", fontSize: "0.875rem", marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px solid #e5e7eb" }}>
-                              <div>
-                                <span style={{ color: "#6b7280" }}>Metode:</span>
-                                <strong style={{ display: "block", color: "#111827" }}>{payment.payment_method?.toUpperCase() || "-"}</strong>
-                              </div>
-                              {payment.bukti_pembayaran && (
-                                <div>
-                                  <span style={{ color: "#6b7280" }}>Bukti:</span>
-                                  <a 
-                                    href={`${process.env.NEXT_PUBLIC_API_URL || ''}/storage/${payment.bukti_pembayaran}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    style={{ display: "block", color: "#3b82f6", textDecoration: "underline" }}
-                                  >
-                                    Lihat Bukti
-                                  </a>
-                                </div>
-                              )}
-                              {payment.catatan && (
-                                <div style={{ gridColumn: "1 / -1" }}>
-                                  <span style={{ color: "#6b7280" }}>Catatan:</span>
-                                  <p style={{ margin: "0.25rem 0 0", color: "#111827" }}>{payment.catatan}</p>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div style={{ textAlign: "center", padding: "2rem", color: "#6b7280" }}>
-                        <p>Belum ada riwayat pembayaran</p>
-                      </div>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <div style={{ textAlign: "center", padding: "3rem", color: "#6b7280" }}>
-                  <p>Gagal memuat data</p>
-                </div>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div className="orders-modal-footer">
-              <button type="button" onClick={() => setShowPaymentHistory(false)} className="orders-btn orders-btn--primary">
-                Tutup
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <PaymentHistoryModal
+        orderId={selectedOrderIdForHistory}
+        isOpen={showPaymentHistory}
+        onClose={() => {
+          setShowPaymentHistory(false);
+          setSelectedOrderIdForHistory(null);
+        }}
+      />
     </Layout>
   );
 }
