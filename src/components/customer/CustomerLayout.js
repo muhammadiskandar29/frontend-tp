@@ -15,6 +15,7 @@ const navLinks = [
 export default function CustomerLayout({ children }) {
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [customerInfo, setCustomerInfo] = useState(null);
 
   useEffect(() => {
     console.log("🔵 [CUSTOMER_LAYOUT] Checking authentication...");
@@ -25,6 +26,20 @@ export default function CustomerLayout({ children }) {
       hasToken: !!session.token,
       user: session.user
     });
+    
+    // Set customer info untuk ditampilkan di navbar
+    if (session.user) {
+      const customerName = session.user.nama_panggilan || session.user.nama || "User";
+      setCustomerInfo({
+        name: customerName,
+        initials: customerName
+          .split(" ")
+          .map((n) => n[0])
+          .join("")
+          .toUpperCase()
+          .slice(0, 2)
+      });
+    }
     
     // Tampilkan debug log dari localStorage jika ada
     const debugLog = localStorage.getItem("customer_login_debug");
@@ -102,13 +117,12 @@ export default function CustomerLayout({ children }) {
           <img src="/assets/logo.png" alt="Ternak Properti" />
         </div>
 
-        <button 
-          onClick={handleLogout}
-          className="customer-navbar__logout"
-          style={{ background: "none", border: "none", cursor: "pointer" }}
-        >
-          Logout
-        </button>
+        <div className="customer-navbar__right">
+          <div className="customer-navbar__profile">
+            <div className="customer-navbar__avatar">{customerInfo?.initials || "U"}</div>
+            <span className="customer-navbar__name">{customerInfo?.name || "User"}</span>
+          </div>
+        </div>
       </header>
 
       <main className="dashboard-content">{children}</main>

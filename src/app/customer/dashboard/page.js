@@ -632,42 +632,16 @@ export default function DashboardPage() {
           transition: "all 0.3s ease",
         }}
       >
-        <header className="customer-dashboard__hero" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div>
+        <div className="customer-dashboard__hero-wrapper">
+          <div className="customer-dashboard__hero-background"></div>
+          <div className="customer-dashboard__hero-card">
             <p className="customer-dashboard__subtitle">Kelola dan akses order Anda di sini</p>
             <h1>
               Selamat Datang,{" "}
               <span>{(customerInfo?.nama_panggilan || customerInfo?.nama || "Member") + "!"}</span>
             </h1>
           </div>
-          <button 
-            onClick={handleLogout}
-            style={{
-              padding: "10px 24px",
-              backgroundColor: "#dc3545",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: "500",
-              transition: "all 0.3s ease",
-              boxShadow: "0 2px 8px rgba(220, 53, 69, 0.2)"
-            }}
-            onMouseOver={(e) => {
-              e.target.style.backgroundColor = "#c82333";
-              e.target.style.transform = "translateY(-2px)";
-              e.target.style.boxShadow = "0 4px 12px rgba(220, 53, 69, 0.3)";
-            }}
-            onMouseOut={(e) => {
-              e.target.style.backgroundColor = "#dc3545";
-              e.target.style.transform = "translateY(0)";
-              e.target.style.boxShadow = "0 2px 8px rgba(220, 53, 69, 0.2)";
-            }}
-          >
-            Logout
-          </button>
-        </header>
+        </div>
 
         {!dashboardLoading && dashboardError && (
           <div

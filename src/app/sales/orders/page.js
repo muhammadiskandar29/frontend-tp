@@ -63,6 +63,7 @@ export default function DaftarPesanan() {
   const [orders, setOrders] = useState([]);
   const [hasMore, setHasMore] = useState(true); // penentu masih ada halaman berikutnya
   const [loading, setLoading] = useState(false);
+  const [paginationInfo, setPaginationInfo] = useState(null); // Store pagination info from backend
   const perPage = 15; // Data per halaman
   
   // Filter state
@@ -143,17 +144,25 @@ export default function DaftarPesanan() {
 
       const json = await res.json();
       
-      // Handle response dengan struktur: { success: true, data: [...], pagination: {...} }
+      // Handle response dengan struktur baru: { success: true, message: "...", data: [...], pagination: {...} }
       if (json.success && json.data && Array.isArray(json.data)) {
         // Selalu replace data (bukan append) - setiap page menampilkan data yang berbeda
         setOrders(json.data);
 
-        // Gunakan pagination object jika tersedia, jika tidak gunakan fallback
-        if (json.pagination && json.pagination.last_page !== undefined) {
-          // Gunakan pagination object dari backend
+        // Gunakan pagination object jika tersedia
+        if (json.pagination && typeof json.pagination === 'object') {
+          // Struktur pagination: { current_page, last_page, per_page, total }
           const isLastPage = json.pagination.current_page >= json.pagination.last_page;
           setHasMore(!isLastPage);
+          setPaginationInfo(json.pagination);
+          console.log("📄 Pagination info:", {
+            current_page: json.pagination.current_page,
+            last_page: json.pagination.last_page,
+            total: json.pagination.total,
+            hasMore: !isLastPage
+          });
         } else {
+          setPaginationInfo(null);
           // Fallback pagination: cek jumlah data untuk menentukan hasMore
           if (json.data.length < perPage) {
             setHasMore(false); // sudah halaman terakhir
@@ -161,6 +170,11 @@ export default function DaftarPesanan() {
             setHasMore(true); // masih ada halaman berikutnya
           }
         }
+      } else {
+        // Jika response tidak sesuai format yang diharapkan
+        console.warn("⚠️ Unexpected response format:", json);
+        setOrders([]);
+        setHasMore(false);
       }
       
       setLoading(false);
@@ -698,7 +712,8 @@ export default function DaftarPesanan() {
                 </span>
               ) : (
                 <span>
-                  Page {page}
+                  Page {paginationInfo?.current_page || page} of {paginationInfo?.last_page || "?"}
+                  {paginationInfo?.total && ` (${paginationInfo.total} total)`}
                 </span>
               )}
             </div>
