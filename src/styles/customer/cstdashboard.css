@@ -21,10 +21,11 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1rem 2.5rem;
+  padding: 1rem 0;
   background: #fff;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  width: 100%;
 }
 
 .customer-navbar__brand {
@@ -33,6 +34,7 @@
   gap: 0.6rem;
   font-weight: 600;
   color: #ff8c32;
+  padding-left: 2.5rem;
 }
 
 .customer-navbar__brand img {
@@ -44,6 +46,7 @@
   display: flex;
   align-items: center;
   gap: 1rem;
+  padding-right: 2.5rem;
 }
 
 .customer-navbar__profile {
@@ -165,14 +168,15 @@
 
 .customer-dashboard__hero-wrapper {
   position: relative;
-  width: 100vw;
-  margin-left: calc(-50vw + 50%);
+  width: 100%;
+  margin-left: 0;
   min-height: 300px;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 3rem 2.5rem;
   margin-bottom: 2rem;
+  box-sizing: border-box;
 }
 
 .customer-dashboard__hero-background {
@@ -194,7 +198,8 @@
   z-index: 1;
   width: 100%;
   max-width: 100%;
-  padding: 0 2.5rem;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 .customer-dashboard__hero-card {
@@ -408,7 +413,7 @@
   
   .customer-dashboard__hero-content {
     width: 100%;
-    padding: 0 1.5rem;
+    padding: 0;
   }
   
   .customer-dashboard__hero-card {
@@ -420,7 +425,15 @@
   }
   
   .customer-navbar {
-    padding: 1rem 1.5rem;
+    padding: 1rem 0;
+  }
+  
+  .customer-navbar__brand {
+    padding-left: 1.5rem;
+  }
+  
+  .customer-navbar__right {
+    padding-right: 1.5rem;
   }
   
   .customer-navbar__name {
