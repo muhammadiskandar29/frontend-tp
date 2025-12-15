@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { BACKEND_URL } from "@/config/env";
 
 export default function PaymentHistoryModal({ orderId, isOpen, onClose }) {
   const [paymentHistoryData, setPaymentHistoryData] = useState(null);
@@ -273,7 +274,7 @@ export default function PaymentHistoryModal({ orderId, isOpen, onClose }) {
                               <div>
                                 <span style={{ color: "#6b7280" }}>Bukti:</span>
                                 <a 
-                                  href={`${process.env.NEXT_PUBLIC_API_URL || ''}/storage/${payment.bukti_pembayaran}`}
+                                  href={`${BACKEND_URL}/storage/${payment.bukti_pembayaran}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   style={{ display: "block", color: "#3b82f6", textDecoration: "underline" }}
