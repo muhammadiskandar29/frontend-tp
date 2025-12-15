@@ -21,6 +21,9 @@ export default function DashboardPage() {
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [dashboardError, setDashboardError] = useState("");
   const [currentTime, setCurrentTime] = useState(() => Date.now());
+  const [products, setProducts] = useState([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [currentSlide, setCurrentSlide] = useState(0);
   
   // CATATAN: Semua state dan fungsi terkait OTP sudah dihapus
   // Validasi hanya menggunakan verifikasi form customer (verifikasi = 1 berarti sudah isi form)
@@ -32,6 +35,58 @@ export default function DashboardPage() {
 
     return () => clearInterval(interval);
   }, []);
+
+  // Fetch products untuk carousel
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const session = getCustomerSession();
+      if (!session.token) {
+        setProductsLoading(false);
+        return;
+      }
+
+      try {
+        setProductsLoading(true);
+        const response = await fetch("/api/sales/produk", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: `Bearer ${session.token}`,
+          },
+        });
+
+        const data = await response.json();
+        
+        if (data.success && data.data && Array.isArray(data.data)) {
+          // Filter hanya produk aktif (status === "1" atau status === 1)
+          const activeProducts = data.data.filter((p) => p.status === "1" || p.status === 1);
+          setProducts(activeProducts);
+        } else {
+          setProducts([]);
+        }
+      } catch (error) {
+        console.error("[DASHBOARD] Failed to fetch products:", error);
+        setProducts([]);
+      } finally {
+        setProductsLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  // Auto-slide carousel
+  useEffect(() => {
+    if (products.length <= 4) return; // Tidak perlu slide jika produk <= 4
+
+    const totalSlides = Math.ceil(products.length / 4);
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % totalSlides);
+    }, 5000); // Slide setiap 5 detik
+
+    return () => clearInterval(interval);
+  }, [products]);
 
   // Lock dashboard saat modal update muncul
   useEffect(() => {
@@ -46,6 +101,36 @@ export default function DashboardPage() {
       currency: "IDR",
       minimumFractionDigits: 0,
     }).format(numberValue || 0);
+  };
+
+  const formatPrice = (price) => {
+    if (!price) return "Rp 0";
+    return `Rp ${parseInt(price).toLocaleString("id-ID")}`;
+  };
+
+  const handleViewProduct = (product) => {
+    // Generate slug dari nama jika kode tidak ada atau tidak valid
+    const generateSlug = (text) =>
+      (text || "")
+        .toString()
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9 -]/g, "")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-");
+    
+    let kodeProduk = product.kode || (product.url ? product.url.replace(/^\//, '') : null);
+    
+    // Jika kode mengandung spasi atau karakter tidak valid, generate ulang dari nama
+    if (!kodeProduk || kodeProduk.includes(' ') || kodeProduk.includes('%20')) {
+      kodeProduk = generateSlug(product.nama);
+    }
+    
+    if (kodeProduk) {
+      window.open(`/landing/${kodeProduk}`, '_blank');
+    } else {
+      alert('Kode produk tidak tersedia');
+    }
   };
 
   const parseDateFromString = (value) => {
@@ -744,6 +829,85 @@ export default function DashboardPage() {
               ))}
           </div>
         </section>
+
+        {/* Products Carousel Section */}
+        {products.length > 0 && (
+          <section className="products-carousel-section">
+            <div className="products-carousel-section__header">
+              <h2>Produk Lainnya</h2>
+              <p>Jelajahi produk dan paket menarik lainnya untuk Anda</p>
+            </div>
+
+            {productsLoading ? (
+              <div className="products-carousel-loading">
+                <p>Memuat produk...</p>
+              </div>
+            ) : (
+              <div className="products-carousel-wrapper">
+                <div 
+                  className="products-carousel-track"
+                  style={{
+                    transform: `translateX(-${currentSlide * 100}%)`,
+                  }}
+                >
+                  {products.map((product) => (
+                    <div key={product.id} className="product-carousel-card">
+                      <div className="product-carousel-card__image">
+                        {product.header ? (
+                          <img
+                            src={`/api/image?path=${encodeURIComponent(product.header)}`}
+                            alt={product.nama}
+                            onError={(e) => {
+                              e.target.style.display = "none";
+                              e.target.nextElementSibling.style.display = "flex";
+                            }}
+                          />
+                        ) : null}
+                        <div
+                          className="product-carousel-card__image-placeholder"
+                          style={{ display: product.header ? "none" : "flex" }}
+                        >
+                          <i className="pi pi-box" />
+                        </div>
+                      </div>
+                      <div className="product-carousel-card__body">
+                        <div className="product-carousel-card__category">
+                          {product.kategori_rel?.nama || "Produk"}
+                        </div>
+                        <h3 className="product-carousel-card__title">
+                          {product.nama || "-"}
+                        </h3>
+                        <div className="product-carousel-card__price">
+                          {formatPrice(product.harga_asli)}
+                        </div>
+                        <button
+                          className="product-carousel-card__button"
+                          onClick={() => handleViewProduct(product)}
+                        >
+                          View
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Carousel Indicators */}
+            {products.length > 4 && (
+              <div className="products-carousel-indicators">
+                {Array.from({ length: Math.ceil(products.length / 4) }).map((_, index) => (
+                  <button
+                    key={index}
+                    className={`products-carousel-indicator ${currentSlide === index ? 'active' : ''}`}
+                    onClick={() => setCurrentSlide(index)}
+                    aria-label={`Go to slide ${index + 1}`}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        )}
       </div>
     </CustomerLayout>
   );

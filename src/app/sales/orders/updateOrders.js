@@ -38,6 +38,8 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
   const [metodeBayar, setMetodeBayar] = useState(order?.metode_bayar ?? "");
   const [errorMsg, setErrorMsg] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [isDP, setIsDP] = useState(false);
+  const [amount, setAmount] = useState("");
 
   useEffect(() => {
     if (order) {
@@ -49,8 +51,20 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
       );
       setMetodeBayar(order.metode_bayar ?? "");
       setErrorMsg("");
+      setIsDP(false);
+      setAmount("");
     }
   }, [order]);
+
+  // Update amount ketika isDP atau total_harga berubah
+  useEffect(() => {
+    if (!isDP) {
+      // Jika bukan DP, amount otomatis dari total_harga
+      const totalHarga = updatedOrder.total_harga || order?.total_harga || 0;
+      setAmount(totalHarga.toString());
+    }
+    // Jika DP, biarkan user input manual (tidak diubah otomatis)
+  }, [isDP, updatedOrder.total_harga, order?.total_harga]);
 
   const computedStatus = () => {
     // Gunakan status_pembayaran dari order jika ada, jika tidak hitung dari bukti
@@ -94,6 +108,7 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
     if (!order?.id) return setErrorMsg("Order ID tidak valid.");
     if (!bukti?.file) return setErrorMsg("Harap upload bukti pembayaran baru.");
     if (!metodeBayar) return setErrorMsg("Isi metode pembayaran terlebih dahulu.");
+    if (!amount || parseFloat(amount) <= 0) return setErrorMsg("Jumlah pembayaran harus diisi dan lebih dari 0.");
 
     setSubmitting(true);
 
@@ -108,6 +123,7 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
       formData.append("bukti_pembayaran", bukti.file);
       formData.append("waktu_pembayaran", waktuPembayaran);
       formData.append("metode_pembayaran", metodeBayar);
+      formData.append("amount", amount);
 
       const token = localStorage.getItem("token");
       const url = `${BASE_URL}/sales/order-konfirmasi/${order.id}`;
@@ -391,15 +407,21 @@ const handleSubmitUpdate = async (e) => {
                   </div>
                   
                   {computedStatus() === 0 ? (
-                    <button
-                      type="button"
-                      className="btn-konfirmasi"
-                      disabled={!metodeBayar}
-                      onClick={() => setShowKonfirmasiModal(true)}
-                    >
-                      <i className="pi pi-check-circle" />
-                      Konfirmasi Pembayaran
-                    </button>
+                <button
+                  type="button"
+                  className="btn-konfirmasi"
+                  disabled={!metodeBayar}
+                  onClick={() => {
+                    // Set amount ke total_harga saat modal dibuka
+                    const totalHarga = updatedOrder.total_harga || order?.total_harga || 0;
+                    setAmount(totalHarga.toString());
+                    setIsDP(false);
+                    setShowKonfirmasiModal(true);
+                  }}
+                >
+                  <i className="pi pi-check-circle" />
+                  Konfirmasi Pembayaran
+                </button>
                   ) : (
                     <span className="status-confirmed">Pembayaran Terkonfirmasi</span>
                   )}
@@ -741,10 +763,60 @@ const handleSubmitUpdate = async (e) => {
                   <strong>{metodeBayar || "-"}</strong>
                 </div>
                 <div className="konfirmasi-info-row">
-                  <span>Total Bayar</span>
+                  <span>Total Order</span>
                   <strong>Rp {Number(updatedOrder.total_harga || order.total_harga || 0).toLocaleString("id-ID")}</strong>
                 </div>
               </div>
+
+              {/* Checkbox DP */}
+              <label className="dp-checkbox-wrapper">
+                <input
+                  type="checkbox"
+                  checked={isDP}
+                  onChange={(e) => {
+                    setIsDP(e.target.checked);
+                    if (!e.target.checked) {
+                      // Reset amount ke total_harga jika uncheck DP
+                      const totalHarga = updatedOrder.total_harga || order?.total_harga || 0;
+                      setAmount(totalHarga.toString());
+                    } else {
+                      // Jika check DP, biarkan user input manual
+                      if (!amount || amount === (updatedOrder.total_harga || order?.total_harga || 0).toString()) {
+                        setAmount("");
+                      }
+                    }
+                  }}
+                  className="dp-checkbox"
+                />
+                <span className="dp-checkbox-label">Pembayaran DP (Down Payment)</span>
+              </label>
+
+              {/* Input Amount */}
+              <label className="form-field">
+                <span className="field-label">
+                  💰 Jumlah Pembayaran {isDP && <span className="dp-badge">(DP)</span>}
+                </span>
+                <div className="field-input-wrapper">
+                  <span className="input-prefix">Rp</span>
+                  <input
+                    type="number"
+                    className="field-input"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    disabled={!isDP}
+                    placeholder={isDP ? "Masukkan jumlah DP" : "Jumlah pembayaran"}
+                    min="0"
+                    step="0.01"
+                    required
+                  />
+                </div>
+                {!isDP && (
+                  <span className="field-hint">Jumlah otomatis sesuai total order (tidak dapat diubah)</span>
+                )}
+                {isDP && (
+                  <span className="field-hint">Masukkan jumlah DP yang dibayar</span>
+                )}
+              </label>
 
               {errorMsg && (
                 <div className="konfirmasi-error">⚠️ {errorMsg}</div>
@@ -950,6 +1022,96 @@ const handleSubmitUpdate = async (e) => {
         .orders-btn--success:hover {
           transform: translateY(-1px);
           box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .dp-checkbox-wrapper {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 12px;
+          background: #f9fafb;
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          margin-bottom: 16px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .dp-checkbox-wrapper:hover {
+          background: #f3f4f6;
+          border-color: #d1d5db;
+        }
+
+        .dp-checkbox {
+          width: 18px;
+          height: 18px;
+          cursor: pointer;
+          accent-color: #3b82f6;
+        }
+
+        .dp-checkbox-label {
+          font-size: 14px;
+          font-weight: 500;
+          color: #374151;
+          cursor: pointer;
+          user-select: none;
+        }
+
+        .dp-badge {
+          display: inline-block;
+          padding: 2px 8px;
+          background: #fef3c7;
+          color: #92400e;
+          border-radius: 4px;
+          font-size: 11px;
+          font-weight: 600;
+          margin-left: 6px;
+        }
+
+        .field-hint {
+          font-size: 12px;
+          color: #6b7280;
+          margin-top: 4px;
+        }
+
+        .field-input:disabled {
+          background: #f3f4f6;
+          cursor: not-allowed;
+          color: #6b7280;
+        }
+
+        .konfirmasi-form .form-field {
+          margin-bottom: 16px;
+        }
+
+        .konfirmasi-form .field-input-wrapper {
+          position: relative;
+          display: flex;
+          align-items: center;
+        }
+
+        .konfirmasi-form .input-prefix {
+          position: absolute;
+          left: 12px;
+          color: #6b7280;
+          font-size: 14px;
+          z-index: 1;
+        }
+
+        .konfirmasi-form .field-input-wrapper .field-input {
+          padding-left: 36px;
+          width: 100%;
+          padding: 10px 12px;
+          border: 1px solid #d1d5db;
+          border-radius: 8px;
+          font-size: 14px;
+          transition: all 0.2s;
+        }
+
+        .konfirmasi-form .field-input-wrapper .field-input:focus {
+          outline: none;
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
       `}</style>
     </>
