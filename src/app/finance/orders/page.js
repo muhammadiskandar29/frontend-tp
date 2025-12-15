@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import Layout from "@/components/Layout";
 import dynamic from "next/dynamic";
-import { ShoppingCart, Clock, CheckCircle, PartyPopper, XCircle, DollarSign } from "lucide-react";
+import { Clock, CheckCircle, XCircle, DollarSign } from "lucide-react";
 import { Calendar } from "primereact/calendar";
 import "primereact/resources/themes/lara-light-cyan/theme.css";
 import "primereact/resources/primereact.min.css";
@@ -15,38 +15,27 @@ import { getOrderStatistics } from "@/lib/finance/orders";
 const ViewOrders = dynamic(() => import("./viewOrders"), { ssr: false });
 const ApproveOrder = dynamic(() => import("./approveOrder"), { ssr: false });
 const RejectOrder = dynamic(() => import("./rejectOrder"), { ssr: false });
-const PaymentHistoryModal = dynamic(() => import("./paymentHistoryModal"), { ssr: false });
 
-// Status Pembayaran Mapping
-const STATUS_PEMBAYARAN_MAP = {
-  0:    { label: "Unpaid", class: "unpaid" },
-  null: { label: "Unpaid", class: "unpaid" },
-  1:    { label: "Menunggu", class: "pending" },
-  2:    { label: "Paid", class: "paid" },
-  3:    { label: "Ditolak", class: "rejected" },
-  4:    { label: "DP", class: "dp" },
-};
-
-// Status Order Mapping
-const STATUS_ORDER_MAP = {
-  "1": { label: "Proses", class: "proses" },
-  "2": { label: "Sukses", class: "sukses" },
-  "3": { label: "Failed", class: "failed" },
-  "4": { label: "Upselling", class: "upselling" },
-  "N": { label: "Dihapus", class: "dihapus" },
+// Status Validasi Mapping (berdasarkan field `status`)
+const VALIDATION_STATUS_MAP = {
+  0: { label: "Menunggu", class: "pending" },
+  1: { label: "Menunggu", class: "pending" },
+  2: { label: "Valid", class: "valid" },
+  3: { label: "Ditolak", class: "rejected" },
 };
 
 const ORDERS_COLUMNS = [
   "#",
+  "Order ID",
   "Customer",
   "Produk",
-  "Total Harga",
-  "Status Order",
-  "Status Pembayaran",
-  "Tanggal",
-  "Sumber",
-  "Waktu Pembayaran",
+  "Total Order",
+  "Total Dibayar",
+  "Sisa Tagihan",
+  "Pembayaran ke-",
   "Metode Bayar",
+  "Tanggal Bayar",
+  "Status Validasi",
   "Actions",
 ];
 
@@ -71,8 +60,6 @@ export default function FinanceOrders() {
   const [showApprove, setShowApprove] = useState(false);
   const [showReject, setShowReject] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [showPaymentHistory, setShowPaymentHistory] = useState(false);
-  const [paymentHistoryOrderId, setPaymentHistoryOrderId] = useState(null);
 
   const [toast, setToast] = useState(DEFAULT_TOAST);
   const toastTimeoutRef = useRef(null);
@@ -255,14 +242,16 @@ export default function FinanceOrders() {
       filtered = filtered.filter((order) => {
         const customerName = order.order_rel?.customer_rel?.nama?.toLowerCase() || "";
         const productName = order.order_rel?.produk_rel?.nama?.toLowerCase() || "";
-        const alamat = order.order_rel?.alamat?.toLowerCase() || "";
-        const totalHarga = order.order_rel?.total_harga?.toString() || "";
+        const totalOrder = order.order_rel?.total_harga?.toString() || "";
+        const totalPaid = order.total_paid?.toString() || "";
+        const remaining = order.remaining?.toString() || "";
         
         return (
           customerName.includes(searchLower) ||
           productName.includes(searchLower) ||
-          alamat.includes(searchLower) ||
-          totalHarga.includes(searchLower)
+          totalOrder.includes(searchLower) ||
+          totalPaid.includes(searchLower) ||
+          remaining.includes(searchLower)
         );
       });
     }
@@ -300,16 +289,6 @@ export default function FinanceOrders() {
   const handleApprove = (order) => {
     setSelectedOrder(order);
     setShowApprove(true);
-  };
-
-  const handleShowPaymentHistory = (order) => {
-    const orderId = order?.order_rel?.id || order?.order_id || order?.id;
-    if (!orderId) {
-      showToast("Order ID tidak ditemukan", "error");
-      return;
-    }
-    setPaymentHistoryOrderId(orderId);
-    setShowPaymentHistory(true);
   };
 
   const handleReject = (order) => {
@@ -414,10 +393,10 @@ export default function FinanceOrders() {
       <div className="dashboard-shell orders-shell">
         <section className="dashboard-hero orders-hero">
           <div className="dashboard-hero__copy">
-            <p className="dashboard-hero__eyebrow">Orders</p>
-            <h2 className="dashboard-hero__title">Order Management</h2>
+            <p className="dashboard-hero__eyebrow">Finance</p>
+            <h2 className="dashboard-hero__title">Dashboard Finance</h2>
             <span className="dashboard-hero__meta">
-              Track and manage all customer orders and payments.
+              Validasi dan monitoring pembayaran (DP & pelunasan) untuk setiap order.
             </span>
           </div>
 
@@ -425,7 +404,7 @@ export default function FinanceOrders() {
             <div className="orders-search">
               <input
                 type="search"
-                placeholder="Cari customer, produk, alamat..."
+                placeholder="Cari customer, produk, atau nominal..."
                 className="orders-search__input"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
@@ -476,22 +455,49 @@ export default function FinanceOrders() {
         </section>
         
         <section className="panel orders-panel">
-          <div className="panel__header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
+          <div
+            className="panel__header"
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+              flexWrap: "wrap",
+              gap: "1rem",
+            }}
+          >
             <div>
-              <p className="panel__eyebrow">Directory</p>
-              <h3 className="panel__title">Order roster</h3>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-              {/* Date Range Picker - Rata Kanan */}
-              <div style={{ position: "relative" }}>
-                <label style={{ 
-                  display: "block", 
-                  marginBottom: "0.5rem", 
+              <p className="panel__eyebrow">Validasi Pembayaran</p>
+              <h3 className="panel__title">Daftar Pembayaran Order</h3>
+              <p
+                style={{
+                  marginTop: "0.25rem",
                   fontSize: "0.875rem",
-                  fontWeight: 500,
-                  color: "var(--dash-text)"
-                }}>
-                  Waktu Pesanan Dibuat
+                  color: "var(--dash-muted)",
+                }}
+              >
+                Setiap baris = 1 transaksi pembayaran (DP / pelunasan) yang perlu divalidasi oleh tim finance.
+              </p>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "1rem",
+                flexWrap: "wrap",
+              }}
+            >
+              {/* Date Range Picker - filter berdasarkan tanggal bayar */}
+              <div style={{ position: "relative" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "0.5rem",
+                    fontSize: "0.875rem",
+                    fontWeight: 500,
+                    color: "var(--dash-text)",
+                  }}
+                >
+                  Tanggal Bayar
                 </label>
                 <div style={{ position: "relative" }}>
                   <Calendar
@@ -508,7 +514,7 @@ export default function FinanceOrders() {
                     yearRange="2020:2030"
                     style={{
                       width: "100%",
-                      minWidth: "300px"
+                      minWidth: "300px",
                     }}
                     inputStyle={{
                       width: "100%",
@@ -519,49 +525,57 @@ export default function FinanceOrders() {
                       background: "#ffffff",
                       color: "#1f2937",
                       boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-                      cursor: "pointer"
+                      cursor: "pointer",
                     }}
                     panelStyle={{
                       background: "#ffffff",
                       border: "1px solid #e5e7eb",
                       borderRadius: "0.5rem",
-                      boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)"
+                      boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
                     }}
                   />
                 </div>
               </div>
 
               {/* Clear Filter Button */}
-              {dateRange && Array.isArray(dateRange) && dateRange.length === 2 && dateRange[0] && dateRange[1] && (
-                <button
-                  onClick={() => setDateRange(null)}
-                  style={{
-                    padding: "0.5rem 0.75rem",
-                    background: "#e5e7eb",
-                    color: "#6b7280",
-                    border: "none",
-                    borderRadius: "0.375rem",
-                    cursor: "pointer",
-                    fontSize: "0.75rem",
-                    fontWeight: 500,
-                    transition: "all 0.2s ease",
-                    whiteSpace: "nowrap",
-                    height: "fit-content",
-                    marginTop: "1.75rem"
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.background = "#d1d5db";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.background = "#e5e7eb";
-                  }}
-                >
-                  <i className="pi pi-times" style={{ marginRight: "0.25rem", fontSize: "0.75rem" }} />
-                  Reset
-                </button>
-              )}
+              {dateRange &&
+                Array.isArray(dateRange) &&
+                dateRange.length === 2 &&
+                dateRange[0] &&
+                dateRange[1] && (
+                  <button
+                    onClick={() => setDateRange(null)}
+                    style={{
+                      padding: "0.5rem 0.75rem",
+                      background: "#e5e7eb",
+                      color: "#6b7280",
+                      border: "none",
+                      borderRadius: "0.375rem",
+                      cursor: "pointer",
+                      fontSize: "0.75rem",
+                      fontWeight: 500,
+                      transition: "all 0.2s ease",
+                      whiteSpace: "nowrap",
+                      height: "fit-content",
+                      marginTop: "1.75rem",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.background = "#d1d5db";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.background = "#e5e7eb";
+                    }}
+                  >
+                    <i
+                      className="pi pi-times"
+                      style={{ marginRight: "0.25rem", fontSize: "0.75rem" }}
+                    />
+                    Reset
+                  </button>
+                )}
             </div>
           </div>
+
           <div className="orders-table__wrapper">
             <div className="orders-table">
               <div className="orders-table__head">
@@ -571,216 +585,168 @@ export default function FinanceOrders() {
               </div>
               <div className="orders-table__body">
                 {filteredOrders.length > 0 ? (
-                  filteredOrders.map((order, i) => {
-                    // Handle produk name - dari order_rel.produk_rel
-                    const produkNama = order.order_rel?.produk_rel?.nama || "-";
+                  filteredOrders.map((payment, i) => {
+                    const orderRel = payment.order_rel || {};
 
-                    // Handle customer name - dari order_rel.customer_rel
-                    const customerNama = order.order_rel?.customer_rel?.nama || "-";
+                    const orderId =
+                      orderRel.id ?? payment.order_id ?? payment.id ?? "-";
+                    const customerNama =
+                      orderRel.customer_rel?.nama || "-";
+                    const produkNama = orderRel.produk_rel?.nama || "-";
 
-                    // Get Status Order - dari order_rel (jika ada)
-                    const statusOrderValue = order.order_rel?.status_order?.toString() || "";
-                    const statusOrderInfo = STATUS_ORDER_MAP[statusOrderValue] || { label: "-", class: "default" };
+                    const totalOrder = Number(orderRel.total_harga || 0);
+                    const totalPaid = Number(payment.total_paid || 0);
+                    const remaining =
+                      payment.remaining !== undefined &&
+                      payment.remaining !== null
+                        ? Number(payment.remaining)
+                        : Math.max(totalOrder - totalPaid, 0);
 
-                    // Get Status Pembayaran - dari field status (bukan status_pembayaran)
-                    // Hitung status pembayaran dengan logika DP:
-                    // - Tetap DP (4) selama total_paid < total_harga
-                    // - Jadi Paid (2) jika total_paid >= total_harga
-                    const totalHargaNumber = Number(order.order_rel?.total_harga || 0);
-                    const totalPaidNumber = Number(order.total_paid || 0);
-                    const remainingNumber =
-                      order.remaining !== undefined && order.remaining !== null
-                        ? Number(order.remaining)
-                        : Math.max(totalHargaNumber - totalPaidNumber, 0);
+                    const paymentKe =
+                      payment.payment_ke !== undefined &&
+                      payment.payment_ke !== null
+                        ? payment.payment_ke
+                        : "-";
 
-                    let statusPembayaranValue = Number(
-                      order.status === null || order.status === undefined ? 0 : order.status
+                    const paymentMethod = (
+                      payment.payment_method || "-"
+                    ).toUpperCase();
+
+                    const tanggalBayar = payment.tanggal
+                      ? new Date(payment.tanggal).toLocaleString("id-ID", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : "-";
+
+                    const statusCode = Number(
+                      payment.status === null || payment.status === undefined
+                        ? 0
+                        : payment.status
                     );
+                    const validationInfo =
+                      VALIDATION_STATUS_MAP[statusCode] || {
+                        label: "-",
+                        class: "default",
+                      };
 
-                    if (totalHargaNumber > 0) {
-                      if (totalPaidNumber >= totalHargaNumber || remainingNumber <= 0) {
-                        statusPembayaranValue = 2; // Paid
-                      } else if (totalPaidNumber > 0 && totalPaidNumber < totalHargaNumber) {
-                        statusPembayaranValue = 4; // DP
-                      }
-                    }
-
-                    const statusPembayaranInfo =
-                      STATUS_PEMBAYARAN_MAP[statusPembayaranValue] || STATUS_PEMBAYARAN_MAP[0];
-
-                    // Format tanggal
-                    const tanggalFormatted = order.tanggal ? new Date(order.tanggal).toLocaleDateString('id-ID', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    }) : "-";
-
-                    // Payment method
-                    const paymentMethod = order.payment_method || "-";
+                    const canApproveReject =
+                      statusCode === 0 || statusCode === 1;
 
                     return (
-                      <div className="orders-table__row" key={order.id || `${order.id}-${i}`}>
+                      <div
+                        className="orders-table__row"
+                        key={payment.id || `${payment.id}-${i}`}
+                      >
                         <div className="orders-table__cell" data-label="#">
                           {(page - 1) * perPage + i + 1}
                         </div>
-                        <div className="orders-table__cell orders-table__cell--strong" data-label="Customer">
+                        <div className="orders-table__cell" data-label="Order ID">
+                          {orderId}
+                        </div>
+                        <div
+                          className="orders-table__cell orders-table__cell--strong"
+                          data-label="Customer"
+                        >
                           {customerNama}
                         </div>
                         <div className="orders-table__cell" data-label="Produk">
                           {produkNama}
                         </div>
-                        <div className="orders-table__cell" data-label="Total Harga">
-                          <div className="payment-details">
-                            <div className="payment-main">
-                              <strong>Rp {Number(order.order_rel?.total_harga || 0).toLocaleString("id-ID")}</strong>
-                            </div>
-
-                            {/* Total Paid & Remaining - tampil jika status DP atau ada pembayaran */}
-                            {(statusPembayaranValue === 4 ||
-                              order.total_paid > 0 ||
-                              (order.remaining !== undefined && order.remaining < order.order_rel?.total_harga)) && (
-                              <div className="payment-breakdown">
-                                <div className="payment-item">
-                                  <span
-                                    className="payment-label payment-clickable"
-                                    onClick={() => handleShowPaymentHistory(order)}
-                                    style={{ cursor: "pointer", textDecoration: "underline" }}
-                                    title="Klik untuk melihat riwayat pembayaran"
-                                  >
-                                    Total Paid:
-                                  </span>
-                                  <span className="payment-value paid">
-                                    Rp {Number(order.total_paid || 0).toLocaleString("id-ID")}
-                                  </span>
-                                </div>
-                                <div className="payment-item">
-                                  <span className="payment-label">Remaining:</span>
-                                  <span className="payment-value remaining">
-                                    Rp {Number(
-                                      order.remaining !== undefined
-                                        ? order.remaining
-                                        : Number(order.order_rel?.total_harga || 0) - Number(order.total_paid || 0)
-                                    ).toLocaleString("id-ID")}
-                                  </span>
-                                </div>
-                              </div>
-                            )}
-                          </div>
+                        <div
+                          className="orders-table__cell orders-table__cell--numeric"
+                          data-label="Total Order"
+                        >
+                          Rp {totalOrder.toLocaleString("id-ID")}
                         </div>
-                        <div className="orders-table__cell" data-label="Status Order">
-                          <span className={`orders-status-badge orders-status-badge--${statusOrderInfo.class}`}>
-                            {statusOrderInfo.label}
-                          </span>
+                        <div
+                          className="orders-table__cell orders-table__cell--numeric"
+                          data-label="Total Dibayar"
+                        >
+                          Rp {totalPaid.toLocaleString("id-ID")}
                         </div>
-                        <div className="orders-table__cell" data-label="Status Pembayaran">
-                          <span className={`orders-status-badge orders-status-badge--${statusPembayaranInfo.class}`}>
-                            {statusPembayaranInfo.label}
-                          </span>
+                        <div
+                          className="orders-table__cell orders-table__cell--numeric"
+                          data-label="Sisa Tagihan"
+                        >
+                          {remaining <= 0 ? (
+                            <span className="status-badge status-badge--valid">
+                              Lunas
+                            </span>
+                          ) : (
+                            <>Rp {remaining.toLocaleString("id-ID")}</>
+                          )}
                         </div>
-                        <div className="orders-table__cell" data-label="Tanggal">
-                          {tanggalFormatted}
-                        </div>
-                        <div className="orders-table__cell" data-label="Sumber">
-                          {order.order_rel?.sumber ? `#${order.order_rel.sumber}` : "-"}
-                        </div>
-                        <div className="orders-table__cell" data-label="Waktu Pembayaran">
-                          {order.create_at ? new Date(order.create_at).toLocaleString('id-ID') : "-"}
+                        <div className="orders-table__cell" data-label="Pembayaran ke-">
+                          {paymentKe}
                         </div>
                         <div className="orders-table__cell" data-label="Metode Bayar">
-                          {paymentMethod.toUpperCase()}
+                          {paymentMethod}
                         </div>
-                        <div className="orders-table__cell orders-table__cell--actions" data-label="Actions">
-                          {/* Detail button - selalu tampil */}
+                        <div className="orders-table__cell" data-label="Tanggal Bayar">
+                          {tanggalBayar}
+                        </div>
+                        <div className="orders-table__cell" data-label="Status Validasi">
+                          <span
+                            className={`status-badge status-badge--${validationInfo.class}`}
+                          >
+                            {validationInfo.label}
+                          </span>
+                        </div>
+                        <div
+                          className="orders-table__cell orders-table__cell--actions"
+                          data-label="Actions"
+                        >
                           <button
                             className="orders-action-btn"
-                            title="View"
-                            onClick={() => handleView(order)}
+                            title="Detail pembayaran"
+                            onClick={() => handleView(payment)}
                           >
                             Detail
                           </button>
-                          
-                          {/* Conditional buttons berdasarkan status pembayaran */}
-                          {(() => {
-                            // Status pembayaran dari field status
-                            const statusPembayaran = statusPembayaranValue;
-                            
-                            // Jika sudah approved (status = 2), tampilkan Reject saja
-                            if (statusPembayaran === 2) {
-                              return (
-                                <button
-                                  className="orders-action-btn"
-                                  title="Reject"
-                                  onClick={() => handleReject(order)}
-                                  style={{
-                                    background: "#ef4444",
-                                    color: "#fff",
-                                    borderColor: "#ef4444",
-                                    padding: "0.4rem 0.8rem",
-                                  }}
-                                >
-                                  Reject
-                                </button>
-                              );
-                            }
-                            
-                            // Jika sudah rejected (status = 3), tampilkan Approve saja
-                            if (statusPembayaran === 3) {
-                              return (
-                                <button
-                                  className="orders-action-btn"
-                                  title="Approve"
-                                  onClick={() => handleApprove(order)}
-                                  style={{
-                                    background: "#10b981",
-                                    color: "#fff",
-                                    borderColor: "#10b981",
-                                    padding: "0.4rem 0.8rem",
-                                  }}
-                                >
-                                  Approve
-                                </button>
-                              );
-                            }
-                            
-                            // Jika masih pending/menunggu (status = 1) atau lainnya, tampilkan semua
-                            return (
-                              <>
-                                <button
-                                  className="orders-action-btn"
-                                  title="Approve"
-                                  onClick={() => handleApprove(order)}
-                                  style={{
-                                    background: "#10b981",
-                                    color: "#fff",
-                                    borderColor: "#10b981",
-                                    padding: "0.4rem 0.8rem",
-                                  }}
-                                >
-                                  Approve
-                                </button>
-                                <button
-                                  className="orders-action-btn"
-                                  title="Reject"
-                                  onClick={() => handleReject(order)}
-                                  style={{
-                                    background: "#ef4444",
-                                    color: "#fff",
-                                    borderColor: "#ef4444",
-                                    padding: "0.4rem 0.8rem",
-                                  }}
-                                >
-                                  Reject
-                                </button>
-                              </>
-                            );
-                          })()}
+
+                          {canApproveReject && (
+                            <>
+                              <button
+                                className="orders-action-btn"
+                                title="Approve"
+                                onClick={() => handleApprove(payment)}
+                                style={{
+                                  background: "#10b981",
+                                  color: "#fff",
+                                  borderColor: "#10b981",
+                                  padding: "0.4rem 0.8rem",
+                                }}
+                              >
+                                Approve
+                              </button>
+                              <button
+                                className="orders-action-btn"
+                                title="Reject"
+                                onClick={() => handleReject(payment)}
+                                style={{
+                                  background: "#ef4444",
+                                  color: "#fff",
+                                  borderColor: "#ef4444",
+                                  padding: "0.4rem 0.8rem",
+                                }}
+                              >
+                                Reject
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
                     );
                   })
                 ) : (
                   <p className="orders-empty">
-                    {orders.length ? "Tidak ada hasil pencarian." : "Loading data..."}
+                    {orders.length
+                      ? "Tidak ada hasil pencarian."
+                      : "Loading data pembayaran..."}
                   </p>
                 )}
               </div>
@@ -788,7 +754,17 @@ export default function FinanceOrders() {
           </div>
 
           {/* Pagination dengan Next/Previous Button */}
-          <div className="orders-pagination" style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "1rem", padding: "1.5rem", flexWrap: "wrap" }}>
+          <div
+            className="orders-pagination"
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: "1rem",
+              padding: "1.5rem",
+              flexWrap: "wrap",
+            }}
+          >
             {/* Previous Button */}
             <button
               className="orders-pagination__btn"
@@ -798,17 +774,19 @@ export default function FinanceOrders() {
               style={{
                 padding: "0.75rem 1rem",
                 minWidth: "100px",
-                background: page === 1 || loading ? "#e5e7eb" : "#f1a124",
+                background:
+                  page === 1 || loading ? "#e5e7eb" : "#f1a124",
                 color: page === 1 || loading ? "#9ca3af" : "#fff",
                 border: "none",
                 borderRadius: "0.5rem",
-                cursor: page === 1 || loading ? "not-allowed" : "pointer",
+                cursor:
+                  page === 1 || loading ? "not-allowed" : "pointer",
                 fontWeight: 600,
                 display: "flex",
                 alignItems: "center",
                 gap: "0.5rem",
                 justifyContent: "center",
-                transition: "all 0.2s ease"
+                transition: "all 0.2s ease",
               }}
             >
               <i className="pi pi-chevron-left" />
@@ -816,23 +794,34 @@ export default function FinanceOrders() {
             </button>
 
             {/* Page Info */}
-            <div style={{ 
-              display: "flex", 
-              alignItems: "center", 
-              gap: "0.5rem",
-              fontSize: "0.95rem",
-              color: "var(--dash-text)",
-              fontWeight: 500
-            }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                fontSize: "0.95rem",
+                color: "var(--dash-text)",
+                fontWeight: 500,
+              }}
+            >
               {loading ? (
-                <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <span
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                  }}
+                >
                   <i className="pi pi-spin pi-spinner" />
                   Loading...
                 </span>
               ) : (
                 <span>
-                  Page {paginationInfo?.current_page || page} of {paginationInfo?.last_page || "?"}
-                  {paginationInfo?.total ? ` (${paginationInfo.total} total)` : ""}
+                  Page {paginationInfo?.current_page || page} of{" "}
+                  {paginationInfo?.last_page || "?"}
+                  {paginationInfo?.total
+                    ? ` (${paginationInfo.total} total)`
+                    : ""}
                 </span>
               )}
             </div>
@@ -846,17 +835,19 @@ export default function FinanceOrders() {
               style={{
                 padding: "0.75rem 1rem",
                 minWidth: "100px",
-                background: !hasMore || loading ? "#e5e7eb" : "#f1a124",
+                background:
+                  !hasMore || loading ? "#e5e7eb" : "#f1a124",
                 color: !hasMore || loading ? "#9ca3af" : "#fff",
                 border: "none",
                 borderRadius: "0.5rem",
-                cursor: !hasMore || loading ? "not-allowed" : "pointer",
+                cursor:
+                  !hasMore || loading ? "not-allowed" : "pointer",
                 fontWeight: 600,
                 display: "flex",
                 alignItems: "center",
                 gap: "0.5rem",
                 justifyContent: "center",
-                transition: "all 0.2s ease"
+                transition: "all 0.2s ease",
               }}
             >
               Next
@@ -906,18 +897,12 @@ export default function FinanceOrders() {
             setShowReject(false);
             setSelectedOrder(null);
           }}
-          onReject={onReject}
-        />
-      )}
-
-      {showPaymentHistory && paymentHistoryOrderId && (
-        <PaymentHistoryModal
-          orderId={paymentHistoryOrderId}
-          isOpen={showPaymentHistory}
-          onClose={() => {
-            setShowPaymentHistory(false);
-            setPaymentHistoryOrderId(null);
+          onCloseWithRefresh={async () => {
+            setShowReject(false);
+            setSelectedOrder(null);
+            await requestRefresh();
           }}
+          onReject={onReject}
         />
       )}
     </Layout>
