@@ -15,6 +15,7 @@ import { getOrderStatistics } from "@/lib/finance/orders";
 const ViewOrders = dynamic(() => import("./viewOrders"), { ssr: false });
 const ApproveOrder = dynamic(() => import("./approveOrder"), { ssr: false });
 const RejectOrder = dynamic(() => import("./rejectOrder"), { ssr: false });
+const PaymentHistoryModal = dynamic(() => import("./paymentHistoryModal"), { ssr: false });
 
 // Status Pembayaran Mapping
 const STATUS_PEMBAYARAN_MAP = {
@@ -46,7 +47,6 @@ const ORDERS_COLUMNS = [
   "Sumber",
   "Waktu Pembayaran",
   "Metode Bayar",
-  "Bukti Bayar",
   "Actions",
 ];
 
@@ -71,6 +71,8 @@ export default function FinanceOrders() {
   const [showApprove, setShowApprove] = useState(false);
   const [showReject, setShowReject] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [showPaymentHistory, setShowPaymentHistory] = useState(false);
+  const [paymentHistoryOrderId, setPaymentHistoryOrderId] = useState(null);
 
   const [toast, setToast] = useState(DEFAULT_TOAST);
   const toastTimeoutRef = useRef(null);
@@ -298,6 +300,16 @@ export default function FinanceOrders() {
   const handleApprove = (order) => {
     setSelectedOrder(order);
     setShowApprove(true);
+  };
+
+  const handleShowPaymentHistory = (order) => {
+    const orderId = order?.order_rel?.id || order?.order_id || order?.id;
+    if (!orderId) {
+      showToast("Order ID tidak ditemukan", "error");
+      return;
+    }
+    setPaymentHistoryOrderId(orderId);
+    setShowPaymentHistory(true);
   };
 
   const handleReject = (order) => {
@@ -606,11 +618,6 @@ export default function FinanceOrders() {
                     // Payment method
                     const paymentMethod = order.payment_method || "-";
 
-                    // Bukti pembayaran URL
-                    const buktiUrl = order.bukti_pembayaran 
-                      ? `${process.env.NEXT_PUBLIC_API_URL || ''}/storage/${order.bukti_pembayaran}`
-                      : null;
-
                     return (
                       <div className="orders-table__row" key={order.id || `${order.id}-${i}`}>
                         <div className="orders-table__cell" data-label="#">
@@ -623,7 +630,42 @@ export default function FinanceOrders() {
                           {produkNama}
                         </div>
                         <div className="orders-table__cell" data-label="Total Harga">
-                          Rp {Number(order.order_rel?.total_harga || 0).toLocaleString('id-ID')}
+                          <div className="payment-details">
+                            <div className="payment-main">
+                              <strong>Rp {Number(order.order_rel?.total_harga || 0).toLocaleString("id-ID")}</strong>
+                            </div>
+
+                            {/* Total Paid & Remaining - tampil jika status DP atau ada pembayaran */}
+                            {(statusPembayaranValue === 4 ||
+                              order.total_paid > 0 ||
+                              (order.remaining !== undefined && order.remaining < order.order_rel?.total_harga)) && (
+                              <div className="payment-breakdown">
+                                <div className="payment-item">
+                                  <span
+                                    className="payment-label payment-clickable"
+                                    onClick={() => handleShowPaymentHistory(order)}
+                                    style={{ cursor: "pointer", textDecoration: "underline" }}
+                                    title="Klik untuk melihat riwayat pembayaran"
+                                  >
+                                    Total Paid:
+                                  </span>
+                                  <span className="payment-value paid">
+                                    Rp {Number(order.total_paid || 0).toLocaleString("id-ID")}
+                                  </span>
+                                </div>
+                                <div className="payment-item">
+                                  <span className="payment-label">Remaining:</span>
+                                  <span className="payment-value remaining">
+                                    Rp {Number(
+                                      order.remaining !== undefined
+                                        ? order.remaining
+                                        : Number(order.order_rel?.total_harga || 0) - Number(order.total_paid || 0)
+                                    ).toLocaleString("id-ID")}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
                         <div className="orders-table__cell" data-label="Status Order">
                           <span className={`orders-status-badge orders-status-badge--${statusOrderInfo.class}`}>
@@ -646,20 +688,6 @@ export default function FinanceOrders() {
                         </div>
                         <div className="orders-table__cell" data-label="Metode Bayar">
                           {paymentMethod.toUpperCase()}
-                        </div>
-                        <div className="orders-table__cell" data-label="Bukti Bayar">
-                          {buktiUrl ? (
-                            <a
-                              href={buktiUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="orders-link"
-                            >
-                              Lihat Bukti
-                            </a>
-                          ) : (
-                            "-"
-                          )}
                         </div>
                         <div className="orders-table__cell orders-table__cell--actions" data-label="Actions">
                           {/* Detail button - selalu tampil */}
@@ -879,6 +907,17 @@ export default function FinanceOrders() {
             setSelectedOrder(null);
           }}
           onReject={onReject}
+        />
+      )}
+
+      {showPaymentHistory && paymentHistoryOrderId && (
+        <PaymentHistoryModal
+          orderId={paymentHistoryOrderId}
+          isOpen={showPaymentHistory}
+          onClose={() => {
+            setShowPaymentHistory(false);
+            setPaymentHistoryOrderId(null);
+          }}
         />
       )}
     </Layout>

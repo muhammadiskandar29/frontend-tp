@@ -575,7 +575,10 @@ export default function DaftarPesanan() {
                     const customerNama = order.customer_rel?.nama || "-";
 
                     // Get Status Order
-                    const statusOrderValue = order.status_order?.toString() || "";
+                    const statusOrderRaw = order.status_order ?? order.status; // fallback ke order.status jika status_order kosong
+                    const statusOrderValue = statusOrderRaw !== undefined && statusOrderRaw !== null
+                      ? statusOrderRaw.toString()
+                      : "";
                     const statusOrderInfo = STATUS_ORDER_MAP[statusOrderValue] || { label: "-", class: "default" };
 
                     // Get Status Pembayaran
