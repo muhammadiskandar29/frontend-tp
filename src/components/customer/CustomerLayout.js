@@ -16,6 +16,7 @@ export default function CustomerLayout({ children }) {
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [customerInfo, setCustomerInfo] = useState(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   useEffect(() => {
     console.log("🔵 [CUSTOMER_LAYOUT] Checking authentication...");
@@ -100,6 +101,23 @@ export default function CustomerLayout({ children }) {
     setIsAuthorized(true);
   }, [router]);
 
+  // Handle dropdown click outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownOpen && !event.target.closest('.customer-navbar__profile')) {
+        setDropdownOpen(false);
+      }
+    };
+    
+    if (dropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [dropdownOpen]);
+
   const handleLogout = () => {
     localStorage.removeItem("customer_token");
     localStorage.removeItem("customer_user");
@@ -118,9 +136,33 @@ export default function CustomerLayout({ children }) {
         </div>
 
         <div className="customer-navbar__right">
-          <div className="customer-navbar__profile">
+          <div 
+            className="customer-navbar__profile"
+            onClick={() => setDropdownOpen(!dropdownOpen)}
+          >
             <div className="customer-navbar__avatar">{customerInfo?.initials || "U"}</div>
             <span className="customer-navbar__name">{customerInfo?.name || "User"}</span>
+            <svg 
+              className={`customer-navbar__dropdown-icon ${dropdownOpen ? 'open' : ''}`}
+              width="12" 
+              height="12" 
+              viewBox="0 0 12 12" 
+              fill="none" 
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            
+            {dropdownOpen && (
+              <div className="customer-navbar__dropdown">
+                <button 
+                  className="customer-navbar__dropdown-item"
+                  onClick={handleLogout}
+                >
+                  Logout
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </header>

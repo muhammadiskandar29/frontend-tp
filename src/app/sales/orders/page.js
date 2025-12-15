@@ -50,7 +50,6 @@ const ORDERS_COLUMNS = [
   "Sumber",
   "Waktu Pembayaran",
   "Metode Bayar",
-  "Bukti Bayar",
   "Actions",
 ];
 
@@ -77,6 +76,7 @@ export default function DaftarPesanan() {
   const [showView, setShowView] = useState(false);
   const [showCicilan, setShowCicilan] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [paymentHistory, setPaymentHistory] = useState({}); // { orderId: [payments] }
 
   const [toast, setToast] = useState(DEFAULT_TOAST);
   const toastTimeoutRef = useRef(null);
@@ -587,7 +587,44 @@ export default function DaftarPesanan() {
                           {produkNama}
                         </div>
                         <div className="orders-table__cell" data-label="Total Harga">
-                          Rp {Number(order.total_harga || 0).toLocaleString()}
+                          <div className="payment-details">
+                            <div className="payment-main">
+                              <strong>Rp {Number(order.total_harga || 0).toLocaleString("id-ID")}</strong>
+                            </div>
+                            
+                            {/* Listing Pembayaran - hanya tampil jika status DP atau ada pembayaran */}
+                            {(statusPembayaranValue === 4 || order.total_paid > 0) && (
+                              <div className="payment-list">
+                                {paymentHistory[order.id] && paymentHistory[order.id].length > 0 ? (
+                                  paymentHistory[order.id].map((payment, idx) => (
+                                    <div key={idx} className="payment-list-item">
+                                      <span className="payment-number">Pembayaran ke {payment.payment_ke || idx + 1}:</span>
+                                      <span className="payment-amount">Rp {Number(payment.amount || 0).toLocaleString("id-ID")}</span>
+                                    </div>
+                                  ))
+                                ) : (
+                                  // Placeholder jika belum ada data payment history
+                                  <div className="payment-list-placeholder">
+                                    <span className="payment-hint">Belum ada riwayat pembayaran</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            
+                            {/* Total Paid & Remaining - tampil jika ada pembayaran */}
+                            {(order.total_paid > 0 || order.remaining < order.total_harga) && (
+                              <div className="payment-breakdown">
+                                <div className="payment-item">
+                                  <span className="payment-label">Total Paid:</span>
+                                  <span className="payment-value paid">Rp {Number(order.total_paid || 0).toLocaleString("id-ID")}</span>
+                                </div>
+                                <div className="payment-item">
+                                  <span className="payment-label">Remaining:</span>
+                                  <span className="payment-value remaining">Rp {Number(order.remaining || order.total_harga || 0).toLocaleString("id-ID")}</span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
                         <div className="orders-table__cell" data-label="Status Order">
                           <span className={`orders-status-badge orders-status-badge--${statusOrderInfo.class}`}>
@@ -610,20 +647,6 @@ export default function DaftarPesanan() {
                         </div>
                         <div className="orders-table__cell" data-label="Metode Bayar">
                           {order.metode_bayar || "-"}
-                        </div>
-                        <div className="orders-table__cell" data-label="Bukti Bayar">
-                          {order.bukti_pembayaran ? (
-                            <a
-                              href={`${BASE_URL.replace("/api", "")}/storage/${order.bukti_pembayaran}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="orders-link"
-                            >
-                              Lihat Bukti
-                            </a>
-                          ) : (
-                            "-"
-                          )}
                         </div>
                         <div className="orders-table__cell orders-table__cell--actions" data-label="Actions">
                           <button
@@ -819,6 +842,109 @@ export default function DaftarPesanan() {
           }}
         />
       )}
+
+      {/* Payment Details Styles */}
+      <style jsx>{`
+        .payment-details {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          min-width: 200px;
+        }
+
+        .payment-main {
+          font-size: 14px;
+          color: #111827;
+        }
+
+        .payment-main strong {
+          font-weight: 600;
+          color: #1f2937;
+        }
+
+        .payment-list {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          margin-top: 4px;
+          padding: 8px;
+          background: #f9fafb;
+          border-radius: 6px;
+          border: 1px solid #e5e7eb;
+        }
+
+        .payment-list-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 4px 0;
+          font-size: 12px;
+        }
+
+        .payment-number {
+          color: #6b7280;
+          font-weight: 500;
+        }
+
+        .payment-amount {
+          color: #059669;
+          font-weight: 600;
+        }
+
+        .payment-list-placeholder {
+          padding: 4px 0;
+          font-size: 12px;
+        }
+
+        .payment-hint {
+          color: #9ca3af;
+          font-style: italic;
+        }
+
+        .payment-breakdown {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          margin-top: 6px;
+          padding-top: 6px;
+          border-top: 1px solid #e5e7eb;
+        }
+
+        .payment-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 12px;
+        }
+
+        .payment-label {
+          color: #6b7280;
+          font-weight: 500;
+        }
+
+        .payment-value {
+          font-weight: 600;
+        }
+
+        .payment-value.paid {
+          color: #059669;
+        }
+
+        .payment-value.remaining {
+          color: #dc2626;
+        }
+
+        @media (max-width: 768px) {
+          .payment-details {
+            min-width: 150px;
+          }
+
+          .payment-list,
+          .payment-breakdown {
+            font-size: 11px;
+          }
+        }
+      `}</style>
     </Layout>
   );
 }

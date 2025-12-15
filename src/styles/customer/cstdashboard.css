@@ -54,9 +54,53 @@
   padding: 0.5rem 1rem;
   border-radius: 8px;
   transition: background-color 0.2s ease;
+  position: relative;
+  outline: none;
 }
 
 .customer-navbar__profile:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.customer-navbar__dropdown-icon {
+  width: 12px;
+  height: 12px;
+  color: #6b7280;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.customer-navbar__dropdown-icon.open {
+  transform: rotate(180deg);
+}
+
+.customer-navbar__dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 150px;
+  z-index: 1000;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.customer-navbar__dropdown-item {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  background: none;
+  border: none;
+  color: #1f1b16;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-weight: 500;
+}
+
+.customer-navbar__dropdown-item:hover {
   background-color: rgba(0, 0, 0, 0.04);
 }
 
@@ -121,7 +165,8 @@
 
 .customer-dashboard__hero-wrapper {
   position: relative;
-  width: 100%;
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
   min-height: 300px;
   display: flex;
   align-items: center;
@@ -136,7 +181,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, #ff8c32, #ff6c00);
+  background: #ff8c32;
   background-image: url('/assets/cstbg.png');
   background-size: cover;
   background-position: center;
@@ -144,16 +189,21 @@
   z-index: 0;
 }
 
-.customer-dashboard__hero-card {
+.customer-dashboard__hero-content {
   position: relative;
   z-index: 1;
+  width: 100%;
+  max-width: 100%;
+  padding: 0 2.5rem;
+}
+
+.customer-dashboard__hero-card {
   background: #fff;
   border-radius: 16px;
   padding: 2.5rem 3rem;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-  max-width: 800px;
   width: 100%;
-  margin: 0 auto;
+  max-width: 100%;
 }
 
 .customer-dashboard__hero-card h1 {
@@ -354,6 +404,11 @@
     padding: 2rem 1.5rem;
     min-height: 250px;
     margin-bottom: 1.5rem;
+  }
+  
+  .customer-dashboard__hero-content {
+    width: 100%;
+    padding: 0 1.5rem;
   }
   
   .customer-dashboard__hero-card {
