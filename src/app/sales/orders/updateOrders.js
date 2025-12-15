@@ -82,21 +82,19 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
     return 0;
   };
 
-  // Cek apakah masih bisa konfirmasi pembayaran
+  // Cek apakah masih bisa konfirmasi pembayaran (untuk DP)
   const canConfirmPayment = () => {
     const statusPembayaran = computedStatus();
     const totalHarga = Number(updatedOrder.total_harga || order?.total_harga || 0);
     const totalPaid = Number(updatedOrder.total_paid || order?.total_paid || 0);
 
-    // Selama belum lunas (totalPaid < totalHarga) dan status bukan Paid/Rejected,
-    // tombol konfirmasi pembayaran tetap ditampilkan.
-    // Ini mencakup kasus DP (status 4) dan juga Unpaid/Pending yang masih ada sisa pembayaran.
-    if (totalHarga > 0 && totalPaid < totalHarga) {
-      return statusPembayaran !== 2 && statusPembayaran !== 3;
+    // Jika status DP (4), bisa konfirmasi selama total_paid < total_harga
+    if (statusPembayaran === 4) {
+      return totalPaid < totalHarga;
     }
 
-    // Jika sudah lunas, tidak perlu konfirmasi lagi
-    return false;
+    // Jika status 0 (Unpaid), bisa konfirmasi
+    return statusPembayaran === 0;
   };
 
   const handleChange = (e) => {
@@ -476,8 +474,8 @@ const handleSubmitUpdate = async (e) => {
                     </span>
                   </div>
                   
-                  {/* Tampilkan Total Paid & Remaining hanya untuk DP (status 4) */}
-                  {computedStatus() === 4 && (updatedOrder.total_paid > 0 || order?.total_paid > 0) && (
+                  {/* Tampilkan Total Paid & Remaining jika status DP atau ada pembayaran */}
+                  {(computedStatus() === 4 || (updatedOrder.total_paid > 0 || order?.total_paid > 0)) && (
                     <div style={{ marginTop: "0.5rem", fontSize: "0.85rem", color: "#6b7280" }}>
                       <div>Total Paid: <strong style={{ color: "#059669" }}>Rp {Number(updatedOrder.total_paid || order?.total_paid || 0).toLocaleString("id-ID")}</strong></div>
                       <div>Remaining: <strong style={{ color: "#dc2626" }}>Rp {Number(updatedOrder.remaining || order?.remaining || (Number(updatedOrder.total_harga || order?.total_harga || 0) - Number(updatedOrder.total_paid || order?.total_paid || 0))).toLocaleString("id-ID")}</strong></div>
