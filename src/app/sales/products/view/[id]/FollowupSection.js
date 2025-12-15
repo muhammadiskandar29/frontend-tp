@@ -130,7 +130,7 @@ export default function FollowupSection() {
     setLoading(true);
     const token = localStorage.getItem("token");
     
-    fetch(`${BASE_URL}/admin/template-follup`, {
+    fetch(`${BASE_URL}/sales/template-follup`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -240,7 +240,7 @@ export default function FollowupSection() {
     console.log("🔵 [FOLLOWUP] Saving template:", payload);
 
     try {
-      const res = await fetch(`${BASE_URL}/admin/template-follup/store`, {
+      const res = await fetch(`${BASE_URL}/sales/template-follup/store`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

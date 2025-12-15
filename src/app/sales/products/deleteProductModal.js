@@ -16,7 +16,7 @@ export default function DeleteProductModal({ product, onClose, onDeleted }) {
       const token = localStorage.getItem("token");
       
       // Kirim dengan parameter force=true untuk hard delete
-      const res = await fetch(`/api/admin/produk/${product.id}?force=true`, {
+      const res = await fetch(`/api/sales/produk/${product.id}?force=true`, {
         method: "DELETE",
         headers: {
           Accept: "application/json",

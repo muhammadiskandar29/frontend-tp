@@ -130,7 +130,7 @@ export default function Page() {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`/api/admin/produk/${productId}/gambar/${index}`, {
+      const res = await fetch(`/api/sales/produk/${productId}/gambar/${index}`, {
         method: "DELETE",
         headers: {
           Accept: "application/json",
@@ -165,7 +165,7 @@ export default function Page() {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`/api/admin/produk/${productId}/testimoni/${index}`, {
+      const res = await fetch(`/api/sales/produk/${productId}/testimoni/${index}`, {
         method: "DELETE",
         headers: {
           Accept: "application/json",
@@ -208,7 +208,7 @@ export default function Page() {
       setSubmitStatus("Menghapus produk...");
 
       const token = localStorage.getItem("token");
-      const res = await fetch(`/api/admin/produk/${productId}`, {
+      const res = await fetch(`/api/sales/produk/${productId}`, {
         method: "DELETE",
         headers: {
           Accept: "application/json",
@@ -227,7 +227,7 @@ export default function Page() {
 
       alert("Produk berhasil dihapus");
       // Redirect ke halaman products
-      router.push("/admin/products");
+      router.push("/sales/products");
     } catch (error) {
       console.error("Delete product error:", error);
       alert("Terjadi kesalahan saat menghapus produk");
@@ -755,7 +755,7 @@ export default function Page() {
       
       // Log request untuk network tracking
       console.log("[NETWORK] ========== REQUEST FORMDATA ==========");
-      console.log("URL:", `/api/admin/produk/${productId}`);
+      console.log("URL:", `/api/sales/produk/${productId}`);
       console.log("Method:", "POST (with _method=PUT in FormData)");
       console.log("Content-Type:", "multipart/form-data (auto-set by browser)");
       const token = localStorage.getItem("token") || "";
@@ -780,7 +780,7 @@ export default function Page() {
       console.log("[NETWORK] ===========================================");
       console.log("[NETWORK] ======================================");
       
-      const res = await fetch(`/api/admin/produk/${productId}`, {
+      const res = await fetch(`/api/sales/produk/${productId}`, {
         method: "POST", // WAJIB POST untuk FormData, dengan _method=PUT di FormData
         headers: {
           Accept: "application/json",
@@ -869,12 +869,12 @@ export default function Page() {
         alert(data.message || "Produk berhasil diperbarui!");
         // Refresh data produk untuk memastikan data ter-update
         await fetchProductData(false);
-        router.push("/admin/products");
+        router.push("/sales/products");
       } else {
         alert("Produk berhasil diperbarui!");
         // Refresh data produk untuk memastikan data ter-update
         await fetchProductData(false);
-        router.push("/admin/products");
+        router.push("/sales/products");
       }
     } catch (err) {
       console.error("[SUBMIT ERROR]", err);
@@ -919,7 +919,7 @@ export default function Page() {
 
       // Fetch produk berdasarkan ID
       const produkRes = await fetch(
-        `/api/admin/produk/${productId}`,
+        `/api/sales/produk/${productId}`,
         { headers }
       );
       const produkResponse = await produkRes.json();
@@ -966,7 +966,7 @@ export default function Page() {
 
       // Fetch kategori untuk mendapatkan kategori_id
       const kategoriRes = await fetch(
-        "/api/admin/kategori-produk",
+        "/api/sales/kategori-produk",
         { headers }
       );
       const kategoriData = await kategoriRes.json();
@@ -1184,7 +1184,7 @@ export default function Page() {
 
         // 1️⃣ Fetch kategori dan filter hanya yang aktif (status === "1")
         const kategoriRes = await fetch(
-          "/api/admin/kategori-produk",
+          "/api/sales/kategori-produk",
           { headers }
         );
         const kategoriData = await kategoriRes.json();
@@ -1211,7 +1211,7 @@ export default function Page() {
 
         // 3️⃣ Fetch users - filter hanya status 1
         const usersRes = await fetch(
-          "/api/admin/users",
+          "/api/sales/users",
           { headers }
         );
         const usersJson = await usersRes.json();
@@ -1282,7 +1282,7 @@ export default function Page() {
       <div className="form-header-section">
         <button
           className="back-to-products-btn"
-          onClick={() => router.push("/admin/products")}
+          onClick={() => router.push("/sales/products")}
           aria-label="Back to products list"
         >
           <ArrowLeft size={18} />

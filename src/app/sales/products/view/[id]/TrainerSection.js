@@ -82,7 +82,7 @@ export default function TrainerSection({ productId, product, onProductUpdate }) 
     const token = localStorage.getItem("token");
 
     try {
-      const res = await fetch(`${BASE_URL}/admin/produk/${id}/trainer`, {
+      const res = await fetch(`${BASE_URL}/sales/produk/${id}/trainer`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -176,7 +176,7 @@ export default function TrainerSection({ productId, product, onProductUpdate }) 
 
     try {
       // Set trainer to null or 0 to remove
-      const res = await fetch(`${BASE_URL}/admin/produk/${id}/trainer`, {
+      const res = await fetch(`${BASE_URL}/sales/produk/${id}/trainer`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

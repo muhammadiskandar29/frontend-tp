@@ -530,7 +530,7 @@ const handleSubmit = async () => {
     
     // Log request untuk network tracking
     console.log("[NETWORK] ========== REQUEST FORMDATA ==========");
-    console.log("URL:", "/api/admin/produk");
+    console.log("URL:", "/api/sales/produk");
     console.log("Method:", "POST");
     console.log("Content-Type:", "multipart/form-data (auto-set by browser)");
     const token = localStorage.getItem("token") || "";
@@ -553,7 +553,7 @@ const handleSubmit = async () => {
     console.log("[NETWORK] ===========================================");
     console.log("[NETWORK] ======================================");
     
-    const res = await fetch("/api/admin/produk", {
+    const res = await fetch("/api/sales/produk", {
       method: "POST",
       headers: {
         Accept: "application/json",
@@ -634,10 +634,10 @@ const handleSubmit = async () => {
     
     if (data.success && data.data) {
       alert(data.message || "Produk berhasil dibuat!");
-      router.push("/admin/products");
+      router.push("/sales/products");
     } else {
     alert("Produk berhasil dibuat!");
-    router.push("/admin/products");
+    router.push("/sales/products");
     }
   } catch (err) {
     console.error("[SUBMIT ERROR]", err);
@@ -686,7 +686,7 @@ useEffect(() => {
 
       // 1️⃣ Fetch kategori dan filter hanya yang aktif (status === "1")
       const kategoriRes = await fetch(
-        "/api/admin/kategori-produk",
+        "/api/sales/kategori-produk",
         { headers }
       );
       const kategoriData = await kategoriRes.json();
@@ -710,7 +710,7 @@ useEffect(() => {
 
       // 2️⃣ Fetch produk (misal edit mode)
       const produkRes = await fetch(
-        "/api/admin/produk/1",
+        "/api/sales/produk/1",
         { headers }
       );
       const produkData = await produkRes.json();
@@ -722,7 +722,7 @@ useEffect(() => {
 
       // 3️⃣ Fetch users - filter hanya status 1
       const usersRes = await fetch(
-        "/api/admin/users",
+        "/api/sales/users",
         { headers }
       );
       const usersJson = await usersRes.json();
@@ -810,7 +810,7 @@ useEffect(() => {
       <div className="form-header-section">
         <button
           className="back-to-products-btn"
-          onClick={() => router.push("/admin/products")}
+          onClick={() => router.push("/sales/products")}
           aria-label="Back to products list"
         >
           <ArrowLeft size={18} />

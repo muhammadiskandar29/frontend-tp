@@ -103,7 +103,7 @@ export default function DetailProdukPage({ params }) {
         <div className="product-detail-header">
           <button
             className="back-to-list-btn"
-            onClick={() => router.push("/admin/products")}
+            onClick={() => router.push("/sales/products")}
           >
             <i className="pi pi-arrow-left" />
             <span>Back to Product List</span>
