@@ -58,6 +58,7 @@ export default function FinanceOrders() {
   const [orders, setOrders] = useState([]);
   const [hasMore, setHasMore] = useState(true); // penentu masih ada halaman berikutnya
   const [loading, setLoading] = useState(false);
+  const [paginationInfo, setPaginationInfo] = useState(null); // info pagination dari backend
   const perPage = 15; // Data per halaman
   
   // Filter state
@@ -143,11 +144,18 @@ export default function FinanceOrders() {
         setOrders(json.data);
 
         // Gunakan pagination object jika tersedia, jika tidak gunakan fallback
-        if (json.pagination && json.pagination.last_page !== undefined) {
-          // Gunakan pagination object dari backend
+        if (json.pagination && typeof json.pagination === "object") {
           const isLastPage = json.pagination.current_page >= json.pagination.last_page;
           setHasMore(!isLastPage);
+          setPaginationInfo(json.pagination);
+          console.log("📄 Pagination info (finance):", {
+            current_page: json.pagination.current_page,
+            last_page: json.pagination.last_page,
+            total: json.pagination.total,
+            hasMore: !isLastPage,
+          });
         } else {
+          setPaginationInfo(null);
           // Fallback pagination: cek jumlah data untuk menentukan hasMore
           if (json.data.length < perPage) {
             setHasMore(false); // sudah halaman terakhir
@@ -155,6 +163,11 @@ export default function FinanceOrders() {
             setHasMore(true); // masih ada halaman berikutnya
           }
         }
+      } else {
+        console.warn("⚠️ Unexpected response format (finance/orders):", json);
+        setOrders([]);
+        setHasMore(false);
+        setPaginationInfo(null);
       }
       
       setLoading(false);
@@ -558,11 +571,30 @@ export default function FinanceOrders() {
                     const statusOrderInfo = STATUS_ORDER_MAP[statusOrderValue] || { label: "-", class: "default" };
 
                     // Get Status Pembayaran - dari field status (bukan status_pembayaran)
-                    let statusPembayaranValue = order.status;
-                    if (statusPembayaranValue === null || statusPembayaranValue === undefined) {
-                      statusPembayaranValue = 0;
+                    // Hitung status pembayaran dengan logika DP:
+                    // - Tetap DP (4) selama total_paid < total_harga
+                    // - Jadi Paid (2) jika total_paid >= total_harga
+                    const totalHargaNumber = Number(order.order_rel?.total_harga || 0);
+                    const totalPaidNumber = Number(order.total_paid || 0);
+                    const remainingNumber =
+                      order.remaining !== undefined && order.remaining !== null
+                        ? Number(order.remaining)
+                        : Math.max(totalHargaNumber - totalPaidNumber, 0);
+
+                    let statusPembayaranValue = Number(
+                      order.status === null || order.status === undefined ? 0 : order.status
+                    );
+
+                    if (totalHargaNumber > 0) {
+                      if (totalPaidNumber >= totalHargaNumber || remainingNumber <= 0) {
+                        statusPembayaranValue = 2; // Paid
+                      } else if (totalPaidNumber > 0 && totalPaidNumber < totalHargaNumber) {
+                        statusPembayaranValue = 4; // DP
+                      }
                     }
-                    const statusPembayaranInfo = STATUS_PEMBAYARAN_MAP[statusPembayaranValue] || STATUS_PEMBAYARAN_MAP[0];
+
+                    const statusPembayaranInfo =
+                      STATUS_PEMBAYARAN_MAP[statusPembayaranValue] || STATUS_PEMBAYARAN_MAP[0];
 
                     // Format tanggal
                     const tanggalFormatted = order.tanggal ? new Date(order.tanggal).toLocaleDateString('id-ID', {
@@ -642,7 +674,7 @@ export default function FinanceOrders() {
                           {/* Conditional buttons berdasarkan status pembayaran */}
                           {(() => {
                             // Status pembayaran dari field status
-                            const statusPembayaran = order.status ?? 0;
+                            const statusPembayaran = statusPembayaranValue;
                             
                             // Jika sudah approved (status = 2), tampilkan Reject saja
                             if (statusPembayaran === 2) {
@@ -771,7 +803,8 @@ export default function FinanceOrders() {
                 </span>
               ) : (
                 <span>
-                  Page {page}
+                  Page {paginationInfo?.current_page || page} of {paginationInfo?.last_page || "?"}
+                  {paginationInfo?.total ? ` (${paginationInfo.total} total)` : ""}
                 </span>
               )}
             </div>
