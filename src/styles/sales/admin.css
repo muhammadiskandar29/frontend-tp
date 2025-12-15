@@ -920,18 +920,17 @@ ADMIN USERS PAGE (Scoped Styles)
     40px                                    /* # */
     minmax(120px, 1.1fr)                    /* Customer */
     minmax(140px, 1.2fr)                    /* Produk */
-    minmax(100px, 0.9fr)                    /* Total Harga */
-    minmax(100px, 0.8fr)                    /* Status Order */
-    minmax(100px, 0.9fr)                    /* Status Pembayaran */
-    minmax(85px, 0.7fr)                     /* Tanggal */
-    minmax(120px, 1fr)                      /* Sumber */
-    minmax(100px, 0.8fr)                    /* Waktu Pembayaran */
-    minmax(100px, 0.8fr)                    /* Metode Bayar */
-    minmax(120px, 0.9fr)                    /* Bukti Bayar */
-    minmax(80px, 0.6fr);                    /* Actions */
+    minmax(150px, 1.1fr)                    /* Total Harga */
+    minmax(100px, 0.9fr)                    /* Status Order */
+    minmax(110px, 1fr)                      /* Status Pembayaran */
+    minmax(90px, 0.8fr)                     /* Tanggal */
+    minmax(100px, 0.9fr)                    /* Sumber */
+    minmax(120px, 1fr)                      /* Waktu Pembayaran */
+    minmax(110px, 1fr)                      /* Metode Bayar */
+    minmax(100px, 0.9fr);                   /* Actions */
   gap: 0.3rem;
   align-items: center;
-  min-width: 1300px;
+  min-width: 1200px;
 }
 
 .orders-table__head {

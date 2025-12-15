@@ -187,15 +187,16 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
       const totalHarga = Number(updatedOrder.total_harga || order?.total_harga || 0);
       const isFullyPaid = newTotalPaid >= totalHarga;
       
-      // Untuk DP: jika sudah lunas (total_paid >= total_harga), status menjadi 2 (Paid)
-      // Jika belum lunas, tetap status 4 (DP) atau sesuai response dari backend
+      // Untuk DP: 
+      // - Jika belum match dengan total harga, tetap status 4 (DP)
+      // - Jika sudah match dengan total harga, tetap status 4 (DP) sampai divalidasi finance
+      // - Hanya finance yang bisa mengubah status menjadi 2 (Paid) setelah validasi
+      // - Untuk non-DP, status mengikuti response dari backend (biasanya 1 = Menunggu Approve Finance)
       let newStatusPembayaran = konfirmasiOrder.status_pembayaran;
       if (statusPembayaran === 4) {
-        if (isFullyPaid) {
-          newStatusPembayaran = 2; // Paid (lunas)
-        } else {
-          newStatusPembayaran = 4; // Tetap DP jika belum lunas
-        }
+        // Tetap DP, tidak berubah menjadi Paid otomatis
+        // Finance yang akan mengubah menjadi Paid setelah validasi
+        newStatusPembayaran = 4; // Tetap DP
       } else {
         newStatusPembayaran = konfirmasiOrder.status_pembayaran ?? 1; // 1 = Menunggu Approve Finance
       }
