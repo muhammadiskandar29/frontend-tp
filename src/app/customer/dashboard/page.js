@@ -634,6 +634,7 @@ export default function DashboardPage() {
       >
         <div className="customer-dashboard__hero-wrapper">
           <div className="customer-dashboard__hero-background"></div>
+          <div className="customer-dashboard__hero-content">
             <div className="customer-dashboard__hero-card">
               <p className="customer-dashboard__subtitle">Kelola dan akses order Anda di sini</p>
               <h1>
@@ -641,6 +642,7 @@ export default function DashboardPage() {
                 <span>{(customerInfo?.nama_panggilan || customerInfo?.nama || "Member") + "!"}</span>
               </h1>
             </div>
+          </div>
         </div>
 
         {!dashboardLoading && dashboardError && (

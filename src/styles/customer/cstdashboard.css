@@ -196,8 +196,7 @@
 .customer-dashboard__hero-content {
   position: relative;
   z-index: 1;
-  width: 100%;
-  max-width: 100%;
+
   padding: 0;
   box-sizing: border-box;
 }
