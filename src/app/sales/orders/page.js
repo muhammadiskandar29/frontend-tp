@@ -745,44 +745,37 @@ export default function DaftarPesanan() {
                             
                             {/* Total Paid & Remaining
                                 NOTE:
-                                - Tampil untuk order dengan status pembayaran DP (4) ATAU jika masih ada remaining
+                                - Hanya tampil untuk order dengan status pembayaran DP (4)
                                 - Untuk pembayaran full (bukan DP), meskipun total_paid > 0,
                                   tidak menampilkan breakdown agar hanya terlihat total harga saja
                             */}
-                            {(() => {
-                              const totalPaid = Number(order.total_paid || 0);
-                              const totalHarga = Number(order.total_harga || 0);
-                              const remaining = order.remaining !== undefined 
-                                ? Number(order.remaining)
-                                : (totalHarga - totalPaid);
-                              
-                              // Tampilkan jika status 4 (DP) atau jika masih ada remaining > 0
-                              const shouldShow = statusPembayaranValue === 4 || (totalPaid > 0 && remaining > 0);
-                              
-                              return shouldShow ? (
-                                <div className="payment-breakdown">
-                                  <div className="payment-item">
-                                    <span 
-                                      className="payment-label payment-clickable" 
-                                      onClick={() => handleShowPaymentHistory(order)}
-                                      style={{ cursor: "pointer", textDecoration: "underline" }}
-                                      title="Klik untuk melihat riwayat pembayaran"
-                                    >
-                                      Total Paid:
-                                    </span>
-                                    <span className="payment-value paid">
-                                      Rp {totalPaid.toLocaleString("id-ID")}
-                                    </span>
-                                  </div>
-                                  <div className="payment-item">
-                                    <span className="payment-label">Remaining:</span>
-                                    <span className="payment-value remaining">
-                                      Rp {remaining.toLocaleString("id-ID")}
-                                    </span>
-                                  </div>
+                            {statusPembayaranValue === 4 && (
+                              <div className="payment-breakdown">
+                                <div className="payment-item">
+                                  <span 
+                                    className="payment-label payment-clickable" 
+                                    onClick={() => handleShowPaymentHistory(order)}
+                                    style={{ cursor: "pointer", textDecoration: "underline" }}
+                                    title="Klik untuk melihat riwayat pembayaran"
+                                  >
+                                    Total Paid:
+                                  </span>
+                                  <span className="payment-value paid">
+                                    Rp {Number(order.total_paid || 0).toLocaleString("id-ID")}
+                                  </span>
                                 </div>
-                              ) : null;
-                            })()}
+                                <div className="payment-item">
+                                  <span className="payment-label">Remaining:</span>
+                                  <span className="payment-value remaining">
+                                    Rp {Number(
+                                      order.remaining !== undefined 
+                                        ? order.remaining 
+                                        : (Number(order.total_harga || 0) - Number(order.total_paid || 0))
+                                    ).toLocaleString("id-ID")}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className="orders-table__cell" data-label="Status Order">
