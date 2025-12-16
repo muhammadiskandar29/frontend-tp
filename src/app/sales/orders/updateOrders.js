@@ -200,8 +200,13 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
       // - Untuk non-DP, status mengikuti response dari backend (biasanya 1 = Menunggu Approve Finance)
       let newStatusPembayaran;
       if (statusPembayaran === 4) {
-        // Untuk DP, tetap 4 (jangan diubah)
-        newStatusPembayaran = 4;
+        // Untuk DP, tetap 4 (jangan diubah) selama masih ada remaining
+        // Jika sudah lunas, backend akan mengubah status menjadi 2 (Paid)
+        if (isFullyPaid) {
+          newStatusPembayaran = konfirmasiOrder.status_pembayaran ?? 2; // 2 = Paid (lunas)
+        } else {
+          newStatusPembayaran = 4; // Tetap DP selama masih ada remaining
+        }
       } else {
         // Untuk non-DP, ikuti response dari backend
         newStatusPembayaran = konfirmasiOrder.status_pembayaran ?? 1; // 1 = Menunggu Approve Finance

@@ -346,8 +346,79 @@ export default function DaftarPesanan() {
         showToast("Order ID tidak valid", "error");
         return;
       }
+
+      // Cek apakah ini konfirmasi pembayaran (ada status_pembayaran, total_paid, atau remaining)
+      const isPaymentConfirmation = 
+        updatedFromForm.status_pembayaran !== undefined ||
+        updatedFromForm.total_paid !== undefined ||
+        updatedFromForm.remaining !== undefined ||
+        updatedFromForm.bukti_pembayaran !== undefined;
+
+      // Jika ini konfirmasi pembayaran, langsung update state tanpa memanggil updateOrderAdmin
+      // karena konfirmasi pembayaran sudah dilakukan via API order-konfirmasi
+      if (isPaymentConfirmation) {
+        // Tutup modal
+        setShowEdit(false);
+
+        // Hitung remaining untuk menentukan apakah masih DP
+        const totalHarga = Number(updatedFromForm.total_harga ?? selectedOrder?.total_harga ?? 0);
+        const totalPaid = Number(updatedFromForm.total_paid ?? selectedOrder?.total_paid ?? 0);
+        const remaining = updatedFromForm.remaining !== undefined 
+          ? Number(updatedFromForm.remaining)
+          : (totalHarga - totalPaid);
+
+        // Tentukan status pembayaran:
+        // - Jika status_pembayaran dari form adalah 4, tetap 4
+        // - Jika sebelumnya 4 dan masih ada remaining, tetap 4
+        // - Jika total_paid < total_harga (masih ada remaining), set ke 4 (DP)
+        // - Selain itu, ikuti status dari form
+        let finalStatusPembayaran = updatedFromForm.status_pembayaran ?? selectedOrder?.status_pembayaran ?? 0;
+        
+        if (updatedFromForm.status_pembayaran === 4) {
+          // Jika form mengirim status 4, tetap 4
+          finalStatusPembayaran = 4;
+        } else if (selectedOrder?.status_pembayaran === 4 && remaining > 0) {
+          // Jika sebelumnya 4 dan masih ada remaining, tetap 4
+          finalStatusPembayaran = 4;
+        } else if (totalPaid > 0 && remaining > 0 && totalPaid < totalHarga) {
+          // Jika ada pembayaran tapi belum lunas, set ke 4 (DP)
+          finalStatusPembayaran = 4;
+        }
+
+        // Update state orders dengan data dari form (yang sudah diupdate dari konfirmasi pembayaran)
+        setOrders((prev) =>
+          prev.map((o) =>
+            o.id === selectedOrder.id
+              ? {
+                  ...o,
+                  ...updatedFromForm,
+
+                  // Pastikan status_pembayaran tetap 4 jika masih ada remaining
+                  status_pembayaran: finalStatusPembayaran,
+
+                  // Pastikan total_paid dan remaining tetap ada
+                  total_paid: totalPaid,
+                  remaining: remaining,
+
+                  // pertahankan relasi supaya view tidak error
+                  customer_rel: updatedFromForm.customer_rel || o.customer_rel,
+                  produk_rel: updatedFromForm.produk_rel || o.produk_rel,
+                }
+              : o
+          )
+        );
+
+        // Reset selected
+        setSelectedOrder(null);
+
+        showToast(updatedFromForm.message || "Pembayaran berhasil dikonfirmasi!", "success");
+
+        // Refresh statistics dan data dari backend
+        await Promise.all([loadStatistics(), fetchOrders(page)]);
+        return;
+      }
   
-      // Update ke server
+      // Untuk update order biasa (bukan konfirmasi pembayaran), gunakan updateOrderAdmin
       const result = await updateOrderAdmin(selectedOrder.id, updatedFromForm);
   
       if (result.success) {
@@ -615,37 +686,44 @@ export default function DaftarPesanan() {
                             
                             {/* Total Paid & Remaining
                                 NOTE:
-                                - Hanya tampil untuk order dengan status pembayaran DP (4)
+                                - Tampil untuk order dengan status pembayaran DP (4) ATAU jika masih ada remaining
                                 - Untuk pembayaran full (bukan DP), meskipun total_paid > 0,
                                   tidak menampilkan breakdown agar hanya terlihat total harga saja
                             */}
-                            {statusPembayaranValue === 4 && (
-                              <div className="payment-breakdown">
-                                <div className="payment-item">
-                                  <span 
-                                    className="payment-label payment-clickable" 
-                                    onClick={() => handleShowPaymentHistory(order)}
-                                    style={{ cursor: "pointer", textDecoration: "underline" }}
-                                    title="Klik untuk melihat riwayat pembayaran"
-                                  >
-                                    Total Paid:
-                                  </span>
-                                  <span className="payment-value paid">
-                                    Rp {Number(order.total_paid || 0).toLocaleString("id-ID")}
-                                  </span>
+                            {(() => {
+                              const totalPaid = Number(order.total_paid || 0);
+                              const totalHarga = Number(order.total_harga || 0);
+                              const remaining = order.remaining !== undefined 
+                                ? Number(order.remaining)
+                                : (totalHarga - totalPaid);
+                              
+                              // Tampilkan jika status 4 (DP) atau jika masih ada remaining > 0
+                              const shouldShow = statusPembayaranValue === 4 || (totalPaid > 0 && remaining > 0);
+                              
+                              return shouldShow ? (
+                                <div className="payment-breakdown">
+                                  <div className="payment-item">
+                                    <span 
+                                      className="payment-label payment-clickable" 
+                                      onClick={() => handleShowPaymentHistory(order)}
+                                      style={{ cursor: "pointer", textDecoration: "underline" }}
+                                      title="Klik untuk melihat riwayat pembayaran"
+                                    >
+                                      Total Paid:
+                                    </span>
+                                    <span className="payment-value paid">
+                                      Rp {totalPaid.toLocaleString("id-ID")}
+                                    </span>
+                                  </div>
+                                  <div className="payment-item">
+                                    <span className="payment-label">Remaining:</span>
+                                    <span className="payment-value remaining">
+                                      Rp {remaining.toLocaleString("id-ID")}
+                                    </span>
+                                  </div>
                                 </div>
-                                <div className="payment-item">
-                                  <span className="payment-label">Remaining:</span>
-                                  <span className="payment-value remaining">
-                                    Rp {Number(
-                                      order.remaining !== undefined 
-                                        ? order.remaining 
-                                        : (Number(order.total_harga || 0) - Number(order.total_paid || 0))
-                                    ).toLocaleString("id-ID")}
-                                  </span>
-                                </div>
-                              </div>
-                            )}
+                              ) : null;
+                            })()}
                           </div>
                         </div>
                         <div className="orders-table__cell" data-label="Status Order">
