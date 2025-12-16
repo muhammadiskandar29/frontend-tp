@@ -288,44 +288,78 @@ export default function ViewOrders({ order, onClose }) {
                 )}
                 <div
                   className="orders-row"
-                  style={{ flexDirection: "column", alignItems: "flex-start" }}
+                  style={{ flexDirection: "column", alignItems: "flex-start", gap: "0.5rem" }}
                 >
                   <p>Bukti Pembayaran</p>
                   {buktiUrl ? (
-                    <>
-                      <p style={{ fontSize: "0.85rem", color: "#374151", marginBottom: "0.5rem" }}>
-                        📎 Bukti Pembayaran ({orderData.customer?.nama || "-"})
-                      </p>
+                    <div
+                      style={{
+                        position: "relative",
+                        display: "inline-block",
+                        cursor: "pointer",
+                      }}
+                      onClick={() => setShowImageModal(true)}
+                      onMouseEnter={(e) => {
+                        const img = e.currentTarget.querySelector("img");
+                        if (img) {
+                          img.style.transform = "scale(1.02)";
+                          img.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.2)";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        const img = e.currentTarget.querySelector("img");
+                        if (img) {
+                          img.style.transform = "scale(1)";
+                          img.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1)";
+                        }
+                      }}
+                    >
                       <img
                         src={buktiUrl}
                         alt={`Bukti Pembayaran ${orderData.customer?.nama || "-"}`}
-                        onClick={() => setShowImageModal(true)}
                         style={{
-                          maxWidth: 150,
-                          maxHeight: 120,
-                          objectFit: "cover",
-                          marginTop: 4,
-                          borderRadius: 6,
-                          border: "1px solid #e5e7eb",
-                          cursor: "pointer",
-                          transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                        }}
-                        onMouseEnter={(e) => {
-                          e.target.style.transform = "scale(1.05)";
-                          e.target.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.transform = "scale(1)";
-                          e.target.style.boxShadow = "none";
+                          width: "100%",
+                          maxWidth: "300px",
+                          height: "auto",
+                          maxHeight: "200px",
+                          objectFit: "contain",
+                          borderRadius: "8px",
+                          border: "2px solid #e5e7eb",
+                          boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                          transition: "all 0.3s ease",
+                          backgroundColor: "#f9fafb",
+                          display: "block",
                         }}
                         onError={(e) => {
                           e.target.style.display = "none";
+                          const parent = e.target.parentElement;
+                          if (parent) {
+                            parent.innerHTML = '<span style="color: #ef4444;">Gagal memuat gambar</span>';
+                          }
                           console.error("Gagal memuat gambar:", buktiUrl);
                         }}
                       />
-                    </>
+                      <div
+                        style={{
+                          position: "absolute",
+                          bottom: "8px",
+                          right: "8px",
+                          background: "rgba(0, 0, 0, 0.7)",
+                          color: "#fff",
+                          padding: "0.25rem 0.5rem",
+                          borderRadius: "4px",
+                          fontSize: "0.75rem",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "0.25rem",
+                        }}
+                      >
+                        <i className="pi pi-search-plus" style={{ fontSize: "0.875rem" }} />
+                        Klik untuk memperbesar
+                      </div>
+                    </div>
                   ) : (
-                    <span>-</span>
+                    <span style={{ color: "#6b7280" }}>-</span>
                   )}
                 </div>
               </div>
