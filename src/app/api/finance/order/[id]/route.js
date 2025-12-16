@@ -17,12 +17,12 @@ export async function GET(request, { params }) {
       );
     }
     
-    // Build backend URL
+    // Build backend URL - menggunakan endpoint sales/order untuk mendapatkan order detail
     const backendUrl = `${BACKEND_URL}/api/sales/order/${id}`;
     
-    console.log("🔍 [SALES-ORDER-DETAIL] Fetching order detail from:", backendUrl);
-    console.log("🔑 [SALES-ORDER-DETAIL] Auth header present:", !!authHeader);
-    console.log("🆔 [SALES-ORDER-DETAIL] Order ID:", id);
+    console.log("🔍 [FINANCE-ORDER-DETAIL] Fetching order detail from:", backendUrl);
+    console.log("🔑 [FINANCE-ORDER-DETAIL] Auth header present:", !!authHeader);
+    console.log("🆔 [FINANCE-ORDER-DETAIL] Order ID:", id);
     
     const response = await fetch(backendUrl, {
       method: "GET",
@@ -35,13 +35,13 @@ export async function GET(request, { params }) {
     });
 
     const text = await response.text();
-    console.log("📥 [SALES-ORDER-DETAIL] Response status:", response.status);
-    console.log("📥 [SALES-ORDER-DETAIL] Response text preview:", text.substring(0, 500));
+    console.log("📥 [FINANCE-ORDER-DETAIL] Response status:", response.status);
+    console.log("📥 [FINANCE-ORDER-DETAIL] Response text preview:", text.substring(0, 500));
     
     // Check if response is HTML
     if (text.trim().startsWith("<!DOCTYPE") || text.trim().startsWith("<html")) {
-      console.error("❌ [SALES-ORDER-DETAIL] Backend mengembalikan HTML, bukan JSON!");
-      console.error("❌ [SALES-ORDER-DETAIL] Full response:", text.substring(0, 1000));
+      console.error("❌ [FINANCE-ORDER-DETAIL] Backend mengembalikan HTML, bukan JSON!");
+      console.error("❌ [FINANCE-ORDER-DETAIL] Full response:", text.substring(0, 1000));
       
       return NextResponse.json(
         {
@@ -57,7 +57,7 @@ export async function GET(request, { params }) {
     try {
       json = JSON.parse(text);
     } catch (e) {
-      console.error("❌ [SALES-ORDER-DETAIL] Invalid JSON response:", text);
+      console.error("❌ [FINANCE-ORDER-DETAIL] Invalid JSON response:", text);
       return NextResponse.json(
         {
           success: false,
@@ -71,7 +71,7 @@ export async function GET(request, { params }) {
     // Return the response from backend
     return NextResponse.json(json, { status: response.status });
   } catch (error) {
-    console.error("❌ [SALES-ORDER-DETAIL] Error:", error);
+    console.error("❌ [FINANCE-ORDER-DETAIL] Error:", error);
     return NextResponse.json(
       {
         success: false,
