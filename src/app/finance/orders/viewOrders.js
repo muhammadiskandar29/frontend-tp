@@ -1,17 +1,24 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import "@/styles/finance/pesanan.css";
+import { BACKEND_URL } from "@/config/env";
 
-// Helper function untuk build image URL via proxy
+// Helper function untuk build image URL
 const buildImageUrl = (path) => {
   if (!path) return null;
+  
   // Jika sudah full URL, gunakan langsung
   if (path.startsWith("http://") || path.startsWith("https://")) {
     return path;
   }
-  // Bersihkan path dari prefix yang tidak diperlukan
-  const cleanPath = path.replace(/^\/?(storage\/)?/, "");
-  return `/api/image?path=${encodeURIComponent(cleanPath)}`;
+  
+  // Jika path sudah dimulai dengan /storage/, tambahkan BACKEND_URL
+  if (path.startsWith("/storage/")) {
+    return `${BACKEND_URL}${path}`;
+  }
+  
+  // Jika path relative (seperti "order/bukti/..."), tambahkan /storage/
+  return `${BACKEND_URL}/storage/${path}`;
 };
 
 export default function ViewOrders({ order, onClose }) {
