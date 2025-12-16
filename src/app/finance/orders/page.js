@@ -62,6 +62,11 @@ export default function FinanceOrders() {
   const [toast, setToast] = useState(DEFAULT_TOAST);
   const toastTimeoutRef = useRef(null);
   const fetchingRef = useRef(false); // Prevent multiple simultaneous fetches
+  
+  // Cache untuk menyimpan order details berdasarkan order_id
+  // Format: { [orderId]: { status_pembayaran: 4, ... } }
+  const [orderDetailsCache, setOrderDetailsCache] = useState({});
+  const fetchingOrdersRef = useRef(new Set()); // Track order IDs yang sedang di-fetch
 
   const showToast = (message, type = "success") => {
     setToast({ show: true, message, type });
@@ -91,6 +96,77 @@ export default function FinanceOrders() {
       console.error("Error loading statistics:", err);
     }
   }, []);
+
+  // 🔹 Fetch order detail berdasarkan order_id untuk mendapatkan status_pembayaran
+  const fetchOrderDetail = useCallback(async (orderId) => {
+    // Jika sudah di cache, return dari cache
+    if (orderDetailsCache[orderId]) {
+      return orderDetailsCache[orderId];
+    }
+
+    // Jika sedang di-fetch, return null (akan di-fetch lagi nanti)
+    if (fetchingOrdersRef.current.has(orderId)) {
+      return null;
+    }
+
+    // Jika orderId tidak valid, return null
+    if (!orderId || orderId === "-") {
+      return null;
+    }
+
+    try {
+      fetchingOrdersRef.current.add(orderId);
+      const token = localStorage.getItem("token");
+      if (!token) {
+        fetchingOrdersRef.current.delete(orderId);
+        return null;
+      }
+
+      // Fetch order detail dari finance/order/[id] endpoint (menggunakan API route khusus finance)
+      const res = await fetch(`/api/finance/order/${orderId}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        fetchingOrdersRef.current.delete(orderId);
+        return null;
+      }
+
+      const json = await res.json();
+      
+      // Extract order data dari response
+      // Format bisa: { success: true, data: { ... } } atau { success: true, data: [{ ... }] }
+      let order = null;
+      if (json.success && json.data) {
+        if (Array.isArray(json.data)) {
+          order = json.data[0] || json.data;
+        } else {
+          order = json.data;
+        }
+      }
+      
+      if (order) {
+        // Simpan ke cache
+        setOrderDetailsCache((prev) => ({
+          ...prev,
+          [orderId]: order,
+        }));
+        fetchingOrdersRef.current.delete(orderId);
+        return order;
+      }
+
+      fetchingOrdersRef.current.delete(orderId);
+      return null;
+    } catch (err) {
+      console.error(`Error fetching order detail for order_id ${orderId}:`, err);
+      fetchingOrdersRef.current.delete(orderId);
+      return null;
+    }
+  }, [orderDetailsCache]);
 
   // 🔹 Fetch orders dengan fallback pagination
   const fetchOrders = useCallback(async (pageNumber = 1) => {
@@ -129,6 +205,24 @@ export default function FinanceOrders() {
       if (json.success && json.data && Array.isArray(json.data)) {
         // Selalu replace data (bukan append) - setiap page menampilkan data yang berbeda
         setOrders(json.data);
+        // Debug: log struktur data untuk melihat apakah order_rel sudah include status_pembayaran
+        if (json.data.length > 0) {
+          console.log("🔍 Sample payment data structure:", {
+            payment: json.data[0],
+            orderRel: json.data[0]?.order_rel,
+            hasStatusPembayaran: json.data[0]?.order_rel?.status_pembayaran !== undefined,
+            statusPembayaran: json.data[0]?.order_rel?.status_pembayaran,
+          });
+        }
+        // Debug: log struktur data untuk melihat apakah order_rel sudah include status_pembayaran
+        if (json.data.length > 0) {
+          console.log("🔍 Sample payment data structure:", {
+            payment: json.data[0],
+            orderRel: json.data[0]?.order_rel,
+            hasStatusPembayaran: json.data[0]?.order_rel?.status_pembayaran !== undefined,
+            statusPembayaran: json.data[0]?.order_rel?.status_pembayaran,
+          });
+        }
 
         // Gunakan pagination object jika tersedia, jika tidak gunakan fallback
         if (json.pagination && typeof json.pagination === "object") {
@@ -166,6 +260,46 @@ export default function FinanceOrders() {
       fetchingRef.current = false;
     }
   }, [showToast, perPage]);
+
+  // 🔹 Fetch order details untuk payments yang tidak memiliki status_pembayaran di order_rel
+  useEffect(() => {
+    if (!orders || orders.length === 0) return;
+
+    const fetchMissingOrderDetails = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      // Cari payments yang tidak memiliki status_pembayaran di order_rel
+      const paymentsToFetch = orders.filter((payment) => {
+        const orderRel = payment.order_rel || {};
+        const orderId = orderRel.id ?? payment.order_id ?? payment.id;
+        
+        // Skip jika:
+        // 1. orderId tidak valid
+        // 2. sudah di cache
+        // 3. sedang di-fetch
+        // 4. sudah ada status_pembayaran di order_rel
+        if (!orderId || orderId === "-") return false;
+        if (orderDetailsCache[orderId]) return false;
+        if (fetchingOrdersRef.current.has(orderId)) return false;
+        if (orderRel.status_pembayaran !== undefined && orderRel.status_pembayaran !== null) return false;
+        
+        return true;
+      });
+
+      // Fetch order details untuk payments yang belum memiliki status_pembayaran
+      for (const payment of paymentsToFetch) {
+        const orderRel = payment.order_rel || {};
+        const orderId = orderRel.id ?? payment.order_id ?? payment.id;
+        
+        if (orderId && orderId !== "-") {
+          await fetchOrderDetail(orderId);
+        }
+      }
+    };
+
+    fetchMissingOrderDetails();
+  }, [orders, orderDetailsCache, fetchOrderDetail]);
 
   // Load statistics on mount
   useEffect(() => {
@@ -388,7 +522,7 @@ export default function FinanceOrders() {
   };
 
   return (
-    <Layout title="Orders | Finance Dashboard">
+    <Layout>
       <div className="dashboard-shell orders-shell">
         <section className="dashboard-hero orders-hero">
           <div className="dashboard-hero__copy">
@@ -408,7 +542,6 @@ export default function FinanceOrders() {
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
               />
-              <span className="orders-search__icon pi pi-search" />
             </div>
             <div className="orders-toolbar-buttons">
               {/* Button tambahan bisa ditambahkan di sini nanti */}
@@ -460,11 +593,9 @@ export default function FinanceOrders() {
               display: "flex",
               justifyContent: "space-between",
               alignItems: "flex-start",
-              flexWrap: "wrap",
               gap: "1rem",
             }}
           >
-            <div>
               <p className="panel__eyebrow">Validasi Pembayaran</p>
               <h3 className="panel__title">Daftar Pembayaran Order</h3>
               <p
@@ -530,11 +661,9 @@ export default function FinanceOrders() {
                       background: "#ffffff",
                       border: "1px solid #e5e7eb",
                       borderRadius: "0.5rem",
-                      boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
                     }}
                   />
                 </div>
-              </div>
 
               {/* Clear Filter Button */}
               {dateRange &&
@@ -550,11 +679,11 @@ export default function FinanceOrders() {
                       color: "#6b7280",
                       border: "none",
                       borderRadius: "0.375rem",
+                      statusPembayaranFromCache: orderDetailsCache[orderId]?.status_pembayaran,
                       cursor: "pointer",
                       fontSize: "0.75rem",
                       fontWeight: 500,
                       transition: "all 0.2s ease",
-                      whiteSpace: "nowrap",
                       height: "fit-content",
                       marginTop: "1.75rem",
                     }}
@@ -602,10 +731,32 @@ export default function FinanceOrders() {
                         : Math.max(totalOrder - totalPaid, 0);
 
                     // Cek apakah status pembayaran adalah type 4 (DP)
-                    // Hanya tampilkan Total Paid & Remaining jika status_pembayaran === 4
-                    const statusPembayaran = orderRel.status_pembayaran !== undefined && orderRel.status_pembayaran !== null
-                      ? Number(orderRel.status_pembayaran)
-                      : null;
+                    // Menggunakan relasi order_id (payment.order_rel) untuk mendapatkan status_pembayaran dari order
+                    // Hanya tampilkan Total Paid & Remaining jika status_pembayaran === 4 (DP)
+                    
+                    // Prioritas 1: order_rel.status_pembayaran (dari relasi payment ke order)
+                    let statusPembayaran = null;
+                    if (orderRel.status_pembayaran !== undefined && orderRel.status_pembayaran !== null) {
+                      statusPembayaran = Number(orderRel.status_pembayaran);
+                    }
+                    // Prioritas 2: orderDetailsCache (jika sudah di-fetch sebelumnya)
+                    else if (orderDetailsCache[orderId]?.status_pembayaran !== undefined && orderDetailsCache[orderId]?.status_pembayaran !== null) {
+                      statusPembayaran = Number(orderDetailsCache[orderId].status_pembayaran);
+                    }
+                    // Prioritas 3: Fetch order detail jika belum ada di cache dan orderId valid
+                    else if (orderId && orderId !== "-" && !fetchingOrdersRef.current.has(orderId)) {
+                      // Trigger fetch (async, tidak blocking render)
+                      fetchOrderDetail(orderId).then((orderDetail) => {
+                        if (orderDetail?.status_pembayaran !== undefined && orderDetail?.status_pembayaran !== null) {
+                          // Update akan trigger re-render dengan data baru
+                          setOrderDetailsCache((prev) => ({
+                            ...prev,
+                            [orderId]: orderDetail,
+                          }));
+                        }
+                      });
+                    }
+                    
                     const isDP = statusPembayaran === 4;
 
                     const paymentKe = payment.payment_ke !== undefined && payment.payment_ke !== null
@@ -680,7 +831,11 @@ export default function FinanceOrders() {
                                 <div className="payment-item">
                                   <span className="payment-label">Remaining:</span>
                                   <span className="payment-value remaining">
-                                    Rp {remaining.toLocaleString("id-ID")}
+                                    {remaining <= 0 ? (
+                                      <span className="status-badge status-badge--valid">Lunas</span>
+                                    ) : (
+                                      <>Rp {remaining.toLocaleString("id-ID")}</>
+                                    )}
                                   </span>
                                 </div>
                               </div>
@@ -696,9 +851,7 @@ export default function FinanceOrders() {
                           </span>
                         </div>
                         <div className="orders-table__cell" data-label="Status Validasi">
-                          <span
-                            className={`orders-status-badge orders-status-badge--${validationInfo.class}`}
-                          >
+                          <span className={`orders-status orders-status--${validationInfo.class}`}>
                             {validationInfo.label}
                           </span>
                         </div>
@@ -864,6 +1017,103 @@ export default function FinanceOrders() {
             </button>
           </div>
         </section>
+
+        {/* Table Grid Styles */}
+        <style jsx>{`
+          .orders-table__head {
+            display: grid;
+            grid-template-columns: 40px 80px 120px 150px 180px 100px 100px 120px 160px 180px;
+            gap: 1rem;
+            padding: 0.75rem 1rem;
+            background: #f9fafb;
+            border-bottom: 2px solid #e5e7eb;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: #374151;
+            align-items: center;
+          }
+
+          .orders-table__row {
+            display: grid;
+            grid-template-columns: 40px 80px 120px 150px 180px 100px 100px 120px 160px 180px;
+            gap: 1rem;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            align-items: center;
+          }
+
+          .orders-table__row:hover {
+            background: #f9fafb;
+          }
+
+          .orders-table__cell {
+            display: flex;
+            align-items: center;
+            font-size: 0.875rem;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+          }
+
+          .orders-table__cell--actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            align-items: flex-start;
+          }
+
+          @media (max-width: 1200px) {
+            .orders-table__head,
+            .orders-table__row {
+              grid-template-columns: 40px 80px 100px 130px 150px 90px 90px 110px 140px 160px;
+              gap: 0.75rem;
+            }
+          }
+
+          @media (max-width: 768px) {
+            .orders-table__head {
+              display: none;
+            }
+
+            .orders-table__row {
+              display: flex;
+              flex-direction: column;
+              gap: 0.5rem;
+              padding: 1rem;
+              border: 1px solid #e5e7eb;
+              border-radius: 0.5rem;
+              margin-bottom: 0.75rem;
+            }
+
+            .orders-table__cell {
+              display: flex;
+              justify-content: space-between;
+              width: 100%;
+              padding: 0.5rem 0;
+              border-bottom: 1px solid #f3f4f6;
+            }
+
+            .orders-table__cell:last-child {
+              border-bottom: none;
+            }
+
+            .orders-table__cell::before {
+              content: attr(data-label);
+              font-weight: 600;
+              color: #6b7280;
+              margin-right: 1rem;
+            }
+
+            .orders-table__cell--actions {
+              flex-direction: row;
+              flex-wrap: wrap;
+              gap: 0.5rem;
+            }
+
+            .orders-table__cell--actions::before {
+              display: none;
+            }
+          }
+        `}</style>
 
         {/* Payment Details Styles */}
         <style jsx>{`
