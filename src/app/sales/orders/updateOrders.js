@@ -95,13 +95,21 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
       ? Number(updatedOrder.remaining)
       : (totalHarga - totalPaid);
 
+    // Jika status 2 (Paid), button di-nonaktifkan
+    if (statusPembayaran === 2) {
+      return false;
+    }
+
     // Jika status DP (4), bisa konfirmasi BERKALI-KALI selama remaining > 0 atau total_paid < total_harga
     if (statusPembayaran === 4) {
       return remaining > 0 && totalPaid < totalHarga;
     }
 
-    // Jika status 0 (Unpaid), bisa konfirmasi HANYA SEKALI
-    return statusPembayaran === 0;
+    // Untuk status lainnya (0, 1, 3), bisa konfirmasi
+    // Status 0 = Unpaid (bisa konfirmasi)
+    // Status 1 = Menunggu (bisa konfirmasi lagi jika reject)
+    // Status 3 = Ditolak (bisa konfirmasi lagi)
+    return true;
   };
 
   const handleChange = (e) => {
@@ -480,20 +488,13 @@ const handleSubmitUpdate = async (e) => {
                   />
                 </label>
 
-                {/* Status Pembayaran Card */}
-                <div className={`payment-status-card ${computedStatus() === 1 || computedStatus() === 2 ? "paid" : "unpaid"}`}>
-                  <div className="status-info">
-                    <span className="status-label">Status Pembayaran</span>
-                    <span className={`status-badge ${computedStatus() === 1 || computedStatus() === 2 ? "badge-paid" : computedStatus() === 4 ? "badge-dp" : "badge-unpaid"}`}>
-                      {computedStatus() === 4 ? "💰 DP" : computedStatus() === 1 ? "✅ Paid" : computedStatus() === 2 ? "✅ Paid" : "⏳ Unpaid"}
-                    </span>
-                  </div>
-                  
-                  {/* Tampilkan Total Paid & Remaining hanya jika status pembayaran = 4 (DP) */}
-                  {computedStatus() === 4 && (
-                    <div style={{ marginTop: "0.5rem", fontSize: "0.85rem", color: "#6b7280" }}>
-                      <div>
-                        Total Paid:{" "}
+                {/* Total Paid & Remaining - hanya tampil jika status pembayaran = 4 (DP) */}
+                {computedStatus() === 4 && (
+                  <div style={{ marginBottom: "16px", padding: "16px", background: "#f9fafb", borderRadius: "12px", border: "1px solid #e5e7eb" }}>
+                    <h4 style={{ margin: "0 0 0.75rem", fontSize: "0.95rem", fontWeight: 600, color: "#111827" }}>Detail Pembayaran DP</h4>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.85rem" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span style={{ color: "#6b7280" }}>Total Paid:</span>
                         <strong style={{ color: "#059669" }}>
                           Rp{" "}
                           {Number(
@@ -501,8 +502,8 @@ const handleSubmitUpdate = async (e) => {
                           ).toLocaleString("id-ID")}
                         </strong>
                       </div>
-                      <div>
-                        Remaining:{" "}
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span style={{ color: "#6b7280" }}>Remaining:</span>
                         <strong style={{ color: "#dc2626" }}>
                           Rp{" "}
                           {Number(
@@ -514,38 +515,45 @@ const handleSubmitUpdate = async (e) => {
                         </strong>
                       </div>
                     </div>
-                  )}
+                  </div>
+                )}
                   
-                  {canConfirmPayment() ? (
-                    <button
-                      type="button"
-                      className="btn-konfirmasi"
-                      disabled={!metodeBayar}
-                      onClick={() => {
-                        // Set amount ke total_harga saat modal dibuka (jika bukan DP)
-                        // Jika DP, biarkan kosong untuk input manual
-                        const statusPembayaran = computedStatus();
-                        if (statusPembayaran !== 4) {
-                          const totalHarga = updatedOrder.total_harga || order?.total_harga || 0;
-                          setAmount(totalHarga.toString());
-                          setIsDP(false);
-                        } else {
-                          // Untuk DP, biarkan amount kosong untuk input manual (user bisa input berapa saja selama tidak melebihi remaining)
-                          setAmount("");
-                          setIsDP(true);
-                        }
-                        setShowKonfirmasiModal(true);
-                      }}
-                    >
-                      <i className="pi pi-check-circle" />
-                      {computedStatus() === 4 ? "Konfirmasi Pembayaran Lanjutan" : "Konfirmasi Pembayaran"}
-                    </button>
-                  ) : (
-                    computedStatus() === 2 && (
-                      <span className="status-confirmed">Pembayaran Lunas</span>
-                    )
-                  )}
-                </div>
+                {/* Button Konfirmasi Pembayaran */}
+                {canConfirmPayment() ? (
+                  <button
+                    type="button"
+                    className="btn-konfirmasi"
+                    disabled={!metodeBayar}
+                    onClick={() => {
+                      // Set amount ke total_harga saat modal dibuka (jika bukan DP)
+                      // Jika DP, biarkan kosong untuk input manual
+                      const statusPembayaran = computedStatus();
+                      if (statusPembayaran !== 4) {
+                        const totalHarga = updatedOrder.total_harga || order?.total_harga || 0;
+                        setAmount(totalHarga.toString());
+                        setIsDP(false);
+                      } else {
+                        // Untuk DP, biarkan amount kosong untuk input manual (user bisa input berapa saja selama tidak melebihi remaining)
+                        setAmount("");
+                        setIsDP(true);
+                      }
+                      setShowKonfirmasiModal(true);
+                    }}
+                    style={{
+                      width: "100%",
+                      marginBottom: "16px"
+                    }}
+                  >
+                    <i className="pi pi-check-circle" />
+                    {computedStatus() === 4 ? "Konfirmasi Pembayaran Lanjutan" : "Konfirmasi Pembayaran"}
+                  </button>
+                ) : (
+                  computedStatus() === 2 && (
+                    <div style={{ padding: "12px", background: "#d1fae5", borderRadius: "8px", textAlign: "center", color: "#065f46", fontWeight: 500, fontSize: "0.875rem" }}>
+                      ✅ Pembayaran Lunas
+                    </div>
+                  )
+                )}
 
                 {/* Bukti Pembayaran Preview */}
                 {bukti && (

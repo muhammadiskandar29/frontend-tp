@@ -15,7 +15,6 @@ import { getOrders, updateOrderAdmin, getOrderStatistics } from "@/lib/sales/ord
 const ViewOrders = dynamic(() => import("./viewOrders"), { ssr: false });
 const UpdateOrders = dynamic(() => import("./updateOrders"), { ssr: false });
 const AddOrders = dynamic(() => import("./addOrders"), { ssr: false });
-const AddCicilan = dynamic(() => import("./addCicilan"), { ssr: false });
 const PaymentHistoryModal = dynamic(() => import("./paymentHistoryModal"), { ssr: false });
 
 // Use Next.js proxy to avoid CORS
@@ -75,7 +74,6 @@ export default function DaftarPesanan() {
   const [showAdd, setShowAdd] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showView, setShowView] = useState(false);
-  const [showCicilan, setShowCicilan] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [paymentHistory, setPaymentHistory] = useState({}); // { orderId: [payments] }
   const [showPaymentHistory, setShowPaymentHistory] = useState(false);
@@ -150,6 +148,7 @@ export default function DaftarPesanan() {
       // Handle response dengan struktur baru: { success: true, message: "...", data: [...], pagination: {...} }
       if (json.success && json.data && Array.isArray(json.data)) {
         // Normalisasi data: pastikan status_pembayaran tetap 4 jika masih ada remaining
+        // dan status_order tetap "Proses" (1) meskipun ada payment yang di-reject
         const normalizedData = json.data.map((order) => {
           const totalHarga = Number(order.total_harga || 0);
           const totalPaid = Number(order.total_paid || 0);
@@ -168,9 +167,23 @@ export default function DaftarPesanan() {
             statusPembayaran = 4;
           }
           
+          // Pastikan status_order tetap "Proses" (1) meskipun ada payment yang di-reject
+          // Status order tidak boleh berubah menjadi "Failed" (3) hanya karena payment di-reject
+          // User masih bisa konfirmasi pembayaran lagi jika payment di-reject
+          let statusOrder = order.status_order ?? order.status ?? "1";
+          // Jika status_order adalah "3" (Failed) tapi masih ada remaining atau belum paid, kembalikan ke "1" (Proses)
+          if (statusOrder === "3" || statusOrder === 3) {
+            // Cek apakah order sudah benar-benar failed atau hanya payment yang di-reject
+            // Jika masih ada remaining atau belum paid, kembalikan ke "Proses"
+            if (remaining > 0 || totalPaid < totalHarga || statusPembayaran !== 2) {
+              statusOrder = "1"; // Kembalikan ke "Proses"
+            }
+          }
+          
           return {
             ...order,
             status_pembayaran: statusPembayaran,
+            status_order: statusOrder,
             total_paid: totalPaid,
             remaining: remaining,
           };
@@ -353,11 +366,6 @@ export default function DaftarPesanan() {
   const handleEdit = (order) => {
     setSelectedOrder(order);
     setShowEdit(true);
-  };
-
-  const handleCicilan = (order) => {
-    setSelectedOrder(order);
-    setShowCicilan(true);
   };
 
   const handleShowPaymentHistory = (order) => {
@@ -814,21 +822,6 @@ export default function DaftarPesanan() {
                           >
                             <i className="pi pi-pencil" />
                           </button>
-                          {/* Button Input Cicilan - hanya muncul jika status_pembayaran === 4 (DP) */}
-                          {statusPembayaranValue === 4 && (
-                            <button
-                              className="orders-action-btn"
-                              title="Input Cicilan"
-                              onClick={() => handleCicilan(order)}
-                              style={{
-                                background: "#10b981",
-                                color: "#fff",
-                                marginTop: "0.25rem"
-                              }}
-                            >
-                              <i className="pi pi-money-bill" />
-                            </button>
-                          )}
                         </div>
                       </div>
                     );
@@ -972,25 +965,6 @@ export default function DaftarPesanan() {
           onSave={handleSuccessEdit}
           setToast={setToast}
           refreshOrders={() => requestRefresh("")}
-        />
-      )}
-
-      {showCicilan && selectedOrder && (
-        <AddCicilan
-          order={{
-            ...selectedOrder,
-            customer: selectedOrder.customer_rel?.nama || "-",
-          }}
-          onClose={() => {
-            setShowCicilan(false);
-            setSelectedOrder(null);
-          }}
-          onSave={async () => {
-            // Fungsi save akan diisi nanti
-            setShowCicilan(false);
-            setSelectedOrder(null);
-            await requestRefresh("Cicilan berhasil ditambahkan!");
-          }}
         />
       )}
 
