@@ -582,9 +582,16 @@ export default function DaftarPesanan() {
                     const statusOrderInfo = STATUS_ORDER_MAP[statusOrderValue] || { label: "-", class: "default" };
 
                     // Get Status Pembayaran
+                    // Handle string "4" atau number 4
                     let statusPembayaranValue = order.status_pembayaran;
                     if (statusPembayaranValue === null || statusPembayaranValue === undefined) {
                       statusPembayaranValue = 0;
+                    } else {
+                      // Konversi ke number untuk konsistensi
+                      statusPembayaranValue = Number(statusPembayaranValue);
+                      if (isNaN(statusPembayaranValue)) {
+                        statusPembayaranValue = 0;
+                      }
                     }
                     const statusPembayaranInfo = STATUS_PEMBAYARAN_MAP[statusPembayaranValue] || STATUS_PEMBAYARAN_MAP[0];
 

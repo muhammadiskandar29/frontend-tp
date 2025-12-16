@@ -91,10 +91,13 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
     const statusPembayaran = computedStatus();
     const totalHarga = Number(updatedOrder.total_harga || order?.total_harga || 0);
     const totalPaid = Number(updatedOrder.total_paid || order?.total_paid || 0);
+    const remaining = updatedOrder.remaining !== undefined && updatedOrder.remaining !== null
+      ? Number(updatedOrder.remaining)
+      : (totalHarga - totalPaid);
 
-    // Jika status DP (4), bisa konfirmasi selama total_paid < total_harga
+    // Jika status DP (4), bisa konfirmasi selama remaining > 0 atau total_paid < total_harga
     if (statusPembayaran === 4) {
-      return totalPaid < totalHarga;
+      return remaining > 0 || totalPaid < totalHarga;
     }
 
     // Jika status 0 (Unpaid), bisa konfirmasi
@@ -191,19 +194,16 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
       const totalHarga = Number(updatedOrder.total_harga || order?.total_harga || 0);
       const isFullyPaid = newTotalPaid >= totalHarga;
       
-      // Untuk DP: 
-      // - Jika belum match dengan total harga, tetap status 4 (DP)
-      // - Jika sudah match dengan total harga, ubah jadi 1 (Menunggu) menunggu validasi finance
-      // - Finance yang akan mengubah menjadi 2 (Paid) setelah validasi
+      // Untuk DP (status 4): 
+      // - Jangan ubah status pembayaran sama sekali, tetap 4 sampai total_paid >= total_harga
+      // - Backend yang akan handle perubahan status saat sudah lunas
       // - Untuk non-DP, status mengikuti response dari backend (biasanya 1 = Menunggu Approve Finance)
-      let newStatusPembayaran = konfirmasiOrder.status_pembayaran;
+      let newStatusPembayaran;
       if (statusPembayaran === 4) {
-        if (isFullyPaid) {
-          newStatusPembayaran = 1; // Menunggu validasi finance
-        } else {
-          newStatusPembayaran = 4; // Tetap DP
-        }
+        // Untuk DP, tetap 4 (jangan diubah)
+        newStatusPembayaran = 4;
       } else {
+        // Untuk non-DP, ikuti response dari backend
         newStatusPembayaran = konfirmasiOrder.status_pembayaran ?? 1; // 1 = Menunggu Approve Finance
       }
 
