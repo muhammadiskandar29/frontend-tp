@@ -587,15 +587,8 @@ export default function FinanceOrders() {
         </section>
         
         <section className="panel orders-panel">
-          <div
-            className="panel__header"
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-start",
-              gap: "1rem",
-            }}
-          >
+          <div className="panel__header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
+            <div>
               <p className="panel__eyebrow">Validasi Pembayaran</p>
               <h3 className="panel__title">Daftar Pembayaran Order</h3>
               <p
@@ -608,14 +601,7 @@ export default function FinanceOrders() {
                 Setiap baris = 1 transaksi pembayaran (DP / pelunasan) yang perlu divalidasi oleh tim finance.
               </p>
             </div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "1rem",
-                flexWrap: "wrap",
-              }}
-            >
+            <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
               {/* Date Range Picker - filter berdasarkan tanggal bayar */}
               <div style={{ position: "relative" }}>
                 <label
@@ -664,6 +650,7 @@ export default function FinanceOrders() {
                     }}
                   />
                 </div>
+              </div>
 
               {/* Clear Filter Button */}
               {dateRange &&
@@ -679,7 +666,6 @@ export default function FinanceOrders() {
                       color: "#6b7280",
                       border: "none",
                       borderRadius: "0.375rem",
-                      statusPembayaranFromCache: orderDetailsCache[orderId]?.status_pembayaran,
                       cursor: "pointer",
                       fontSize: "0.75rem",
                       fontWeight: 500,
@@ -819,25 +805,27 @@ export default function FinanceOrders() {
                               <strong>Rp {totalOrder.toLocaleString("id-ID")}</strong>
                             </div>
                             
-                            {/* Total Paid & Remaining - tampilkan untuk semua payment */}
-                            <div className="payment-breakdown">
-                              <div className="payment-item">
-                                <span className="payment-label">Total Paid:</span>
-                                <span className="payment-value paid">
-                                  Rp {totalPaid.toLocaleString("id-ID")}
-                                </span>
+                            {/* Total Paid & Remaining - hanya tampilkan untuk status pembayaran DP (4) */}
+                            {isDP && (
+                              <div className="payment-breakdown">
+                                <div className="payment-item">
+                                  <span className="payment-label">Total Paid:</span>
+                                  <span className="payment-value paid">
+                                    Rp {totalPaid.toLocaleString("id-ID")}
+                                  </span>
+                                </div>
+                                <div className="payment-item">
+                                  <span className="payment-label">Remaining:</span>
+                                  <span className="payment-value remaining">
+                                    {remaining <= 0 ? (
+                                      <span className="orders-status-badge orders-status-badge--valid">Lunas</span>
+                                    ) : (
+                                      <>Rp {remaining.toLocaleString("id-ID")}</>
+                                    )}
+                                  </span>
+                                </div>
                               </div>
-                              <div className="payment-item">
-                                <span className="payment-label">Remaining:</span>
-                                <span className="payment-value remaining">
-                                  {remaining <= 0 ? (
-                                    <span className="status-badge status-badge--valid">Lunas</span>
-                                  ) : (
-                                    <>Rp {remaining.toLocaleString("id-ID")}</>
-                                  )}
-                                </span>
-                              </div>
-                            </div>
+                            )}
                           </div>
                         </div>
                         <div className="orders-table__cell" data-label="Pembayaran Ke -">
@@ -849,7 +837,7 @@ export default function FinanceOrders() {
                           </span>
                         </div>
                         <div className="orders-table__cell" data-label="Status Validasi">
-                          <span className={`orders-status orders-status--${validationInfo.class}`}>
+                          <span className={`orders-status-badge orders-status-badge--${validationInfo.class}`}>
                             {validationInfo.label}
                           </span>
                         </div>
