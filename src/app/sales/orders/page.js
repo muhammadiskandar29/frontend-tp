@@ -149,8 +149,35 @@ export default function DaftarPesanan() {
       
       // Handle response dengan struktur baru: { success: true, message: "...", data: [...], pagination: {...} }
       if (json.success && json.data && Array.isArray(json.data)) {
+        // Normalisasi data: pastikan status_pembayaran tetap 4 jika masih ada remaining
+        const normalizedData = json.data.map((order) => {
+          const totalHarga = Number(order.total_harga || 0);
+          const totalPaid = Number(order.total_paid || 0);
+          const remaining = order.remaining !== undefined 
+            ? Number(order.remaining)
+            : (totalHarga - totalPaid);
+          
+          // Jika status_pembayaran adalah 4 dan masih ada remaining, tetap 4
+          // Jika status_pembayaran bukan 4 tapi masih ada remaining (total_paid > 0 dan total_paid < total_harga), set ke 4
+          let statusPembayaran = order.status_pembayaran;
+          if (statusPembayaran === 4 && remaining > 0) {
+            // Tetap 4 jika sebelumnya 4 dan masih ada remaining
+            statusPembayaran = 4;
+          } else if (statusPembayaran !== 4 && totalPaid > 0 && remaining > 0 && totalPaid < totalHarga) {
+            // Jika ada pembayaran tapi belum lunas, set ke 4 (DP)
+            statusPembayaran = 4;
+          }
+          
+          return {
+            ...order,
+            status_pembayaran: statusPembayaran,
+            total_paid: totalPaid,
+            remaining: remaining,
+          };
+        });
+        
         // Selalu replace data (bukan append) - setiap page menampilkan data yang berbeda
-        setOrders(json.data);
+        setOrders(normalizedData);
 
         // Gunakan pagination object jika tersedia
         if (json.pagination && typeof json.pagination === 'object') {
@@ -426,6 +453,25 @@ export default function DaftarPesanan() {
   
         // Tutup modal
         setShowEdit(false);
+
+        // Hitung remaining untuk menentukan apakah masih DP
+        const totalHarga = Number(updatedFromAPI.total_harga ?? selectedOrder?.total_harga ?? 0);
+        const totalPaid = Number(updatedFromAPI.total_paid ?? selectedOrder?.total_paid ?? 0);
+        const remaining = updatedFromAPI.remaining !== undefined 
+          ? Number(updatedFromAPI.remaining)
+          : (totalHarga - totalPaid);
+
+        // Pastikan status_pembayaran tetap 4 jika masih ada remaining
+        let finalStatusPembayaran = updatedFromAPI.status_pembayaran ?? selectedOrder?.status_pembayaran ?? 0;
+        
+        // Jika sebelumnya 4 dan masih ada remaining, tetap 4
+        if (selectedOrder?.status_pembayaran === 4 && remaining > 0) {
+          finalStatusPembayaran = 4;
+        } 
+        // Jika ada pembayaran tapi belum lunas, set ke 4 (DP)
+        else if (totalPaid > 0 && remaining > 0 && totalPaid < totalHarga) {
+          finalStatusPembayaran = 4;
+        }
   
         // Update state orders agar UI langsung berubah
         setOrders((prev) =>
@@ -434,6 +480,11 @@ export default function DaftarPesanan() {
               ? {
                   ...o,
                   ...updatedFromAPI,
+
+                  // Pastikan status_pembayaran tetap 4 jika masih ada remaining
+                  status_pembayaran: finalStatusPembayaran,
+                  total_paid: totalPaid,
+                  remaining: remaining,
   
                   // pertahankan relasi supaya view tidak error
                   customer_rel: updatedFromAPI.customer_rel || o.customer_rel,

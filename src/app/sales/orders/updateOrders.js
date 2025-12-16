@@ -86,7 +86,7 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
     return 0;
   };
 
-  // Cek apakah masih bisa konfirmasi pembayaran (untuk DP)
+  // Cek apakah masih bisa konfirmasi pembayaran
   const canConfirmPayment = () => {
     const statusPembayaran = computedStatus();
     const totalHarga = Number(updatedOrder.total_harga || order?.total_harga || 0);
@@ -95,12 +95,12 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
       ? Number(updatedOrder.remaining)
       : (totalHarga - totalPaid);
 
-    // Jika status DP (4), bisa konfirmasi selama remaining > 0 atau total_paid < total_harga
+    // Jika status DP (4), bisa konfirmasi BERKALI-KALI selama remaining > 0 atau total_paid < total_harga
     if (statusPembayaran === 4) {
-      return remaining > 0 || totalPaid < totalHarga;
+      return remaining > 0 && totalPaid < totalHarga;
     }
 
-    // Jika status 0 (Unpaid), bisa konfirmasi
+    // Jika status 0 (Unpaid), bisa konfirmasi HANYA SEKALI
     return statusPembayaran === 0;
   };
 
@@ -192,24 +192,28 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
       // Update local state dengan data dari backend
       const newTotalPaid = konfirmasiOrder.total_paid !== undefined ? konfirmasiOrder.total_paid : (order.total_paid || 0);
       const totalHarga = Number(updatedOrder.total_harga || order?.total_harga || 0);
+      const newRemaining = konfirmasiOrder.remaining !== undefined 
+        ? Number(konfirmasiOrder.remaining)
+        : (totalHarga - newTotalPaid);
       const isFullyPaid = newTotalPaid >= totalHarga;
       
-      // Untuk DP (status 4): 
-      // - Jangan ubah status pembayaran sama sekali, tetap 4 sampai total_paid >= total_harga
+      // JANGAN UBAH STATUS PEMBAYARAN setelah konfirmasi pembayaran
+      // - Untuk DP (status 4): tetap 4 sampai remaining = 0 atau total_paid = total_harga
+      // - Untuk status selain 4: tetap status yang sudah ada (jangan diubah)
       // - Backend yang akan handle perubahan status saat sudah lunas
-      // - Untuk non-DP, status mengikuti response dari backend (biasanya 1 = Menunggu Approve Finance)
-      let newStatusPembayaran;
-      if (statusPembayaran === 4) {
-        // Untuk DP, tetap 4 (jangan diubah) selama masih ada remaining
-        // Jika sudah lunas, backend akan mengubah status menjadi 2 (Paid)
-        if (isFullyPaid) {
-          newStatusPembayaran = konfirmasiOrder.status_pembayaran ?? 2; // 2 = Paid (lunas)
-        } else {
-          newStatusPembayaran = 4; // Tetap DP selama masih ada remaining
-        }
-      } else {
-        // Untuk non-DP, ikuti response dari backend
-        newStatusPembayaran = konfirmasiOrder.status_pembayaran ?? 1; // 1 = Menunggu Approve Finance
+      let newStatusPembayaran = statusPembayaran; // Gunakan status yang sudah ada
+      
+      // Jika status 4 (DP) dan sudah lunas, baru ubah ke 2 (Paid)
+      if (statusPembayaran === 4 && isFullyPaid) {
+        newStatusPembayaran = 2; // 2 = Paid (lunas)
+      }
+      // Jika status 4 (DP) dan masih ada remaining, tetap 4
+      else if (statusPembayaran === 4 && !isFullyPaid) {
+        newStatusPembayaran = 4; // Tetap DP
+      }
+      // Untuk status selain 4, tetap status yang sudah ada
+      else {
+        newStatusPembayaran = statusPembayaran;
       }
 
       const finalOrder = {
@@ -223,7 +227,7 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
         status_order: order.status_order || "1", // Tetap Proses (1), tidak berubah saat konfirmasi pembayaran
         // Update total_paid dan remaining dari response
         total_paid: newTotalPaid,
-        remaining: konfirmasiOrder.remaining !== undefined ? konfirmasiOrder.remaining : (totalHarga - newTotalPaid),
+        remaining: newRemaining,
       };
 
       setUpdatedOrder(finalOrder);
@@ -232,7 +236,8 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
       onSave(finalOrder);
       setShowKonfirmasiModal(false);
 
-      // Reset form untuk pembayaran berikutnya (jika DP dan belum lunas)
+      // Reset form untuk pembayaran berikutnya
+      // Untuk status 4 (DP) yang belum lunas, reset bukti dan amount agar bisa konfirmasi lagi
       if (statusPembayaran === 4 && !isFullyPaid) {
         // Untuk DP yang belum lunas, reset bukti dan amount untuk pembayaran berikutnya
         // Amount dibiarkan kosong agar user bisa input manual
@@ -253,7 +258,7 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
       // Tampilkan toast sukses
       const successMessage = isFullyPaid 
         ? "Pembayaran berhasil dikonfirmasi! Order sudah lunas." 
-        : `Pembayaran berhasil dikonfirmasi! Sisa yang harus dibayar: Rp ${(totalHarga - newTotalPaid).toLocaleString("id-ID")}`;
+        : `Pembayaran berhasil dikonfirmasi! Sisa yang harus dibayar: Rp ${newRemaining.toLocaleString("id-ID")}`;
       
       setToast?.({
         show: true,
@@ -262,6 +267,7 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
       });
 
       // Tutup modal dan redirect ke halaman orders setelah delay
+      // Button akan tetap muncul ketika user buka modal edit lagi untuk status 4 yang masih ada remaining
       setTimeout(() => {
         setToast?.((prev) => ({ ...prev, show: false }));
         onClose();
