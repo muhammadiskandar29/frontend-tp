@@ -205,22 +205,22 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
         : (totalHarga - newTotalPaid);
       const isFullyPaid = newTotalPaid >= totalHarga;
       
-      // JANGAN UBAH STATUS PEMBAYARAN setelah konfirmasi pembayaran
-      // - Untuk DP (status 4): tetap 4 sampai remaining = 0 atau total_paid = total_harga
-      // - Untuk status selain 4: tetap status yang sudah ada (jangan diubah)
-      // - Backend yang akan handle perubahan status saat sudah lunas
-      let newStatusPembayaran = statusPembayaran; // Gunakan status yang sudah ada
+      // LOGIKA STATUS PEMBAYARAN setelah konfirmasi pembayaran:
+      // - Jika sudah lunas (total_paid >= total_harga), set ke 2 (Paid)
+      // - Jika masih ada remaining (total_paid < total_harga), set ke 4 (DP)
+      // - Status pembayaran di page.js harus tetap 4 (DP) sampai remaining = 0
+      // - Perubahan status payment individual (approve/reject) hanya mempengaruhi paymentHistoryModal.js, bukan page.js
+      let newStatusPembayaran;
       
-      // Jika status 4 (DP) dan sudah lunas, baru ubah ke 2 (Paid)
-      if (statusPembayaran === 4 && isFullyPaid) {
-        newStatusPembayaran = 2; // 2 = Paid (lunas)
-      }
-      // Jika status 4 (DP) dan masih ada remaining, tetap 4
-      else if (statusPembayaran === 4 && !isFullyPaid) {
-        newStatusPembayaran = 4; // Tetap DP
-      }
-      // Untuk status selain 4, tetap status yang sudah ada
-      else {
+      if (isFullyPaid) {
+        // Jika sudah lunas, set ke 2 (Paid)
+        newStatusPembayaran = 2;
+      } else if (newRemaining > 0 || newTotalPaid < totalHarga) {
+        // Jika masih ada remaining, set ke 4 (DP)
+        // Ini berlaku untuk konfirmasi pertama kali (dari Unpaid) maupun konfirmasi lanjutan
+        newStatusPembayaran = 4;
+      } else {
+        // Fallback: gunakan status yang sudah ada
         newStatusPembayaran = statusPembayaran;
       }
 

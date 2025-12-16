@@ -156,14 +156,19 @@ export default function DaftarPesanan() {
             ? Number(order.remaining)
             : (totalHarga - totalPaid);
           
-          // Jika status_pembayaran adalah 4 dan masih ada remaining, tetap 4
-          // Jika status_pembayaran bukan 4 tapi masih ada remaining (total_paid > 0 dan total_paid < total_harga), set ke 4
+          // LOGIKA STATUS PEMBAYARAN:
+          // - Jika sudah lunas (total_paid >= total_harga), set ke 2 (Paid)
+          // - Jika masih ada remaining (total_paid < total_harga), set ke 4 (DP)
+          // - Status pembayaran harus tetap 4 (DP) sampai remaining = 0
+          // - Perubahan status payment individual (approve/reject) hanya mempengaruhi paymentHistoryModal.js, bukan page.js
           let statusPembayaran = order.status_pembayaran;
-          if (statusPembayaran === 4 && remaining > 0) {
-            // Tetap 4 jika sebelumnya 4 dan masih ada remaining
-            statusPembayaran = 4;
-          } else if (statusPembayaran !== 4 && totalPaid > 0 && remaining > 0 && totalPaid < totalHarga) {
-            // Jika ada pembayaran tapi belum lunas, set ke 4 (DP)
+          
+          if (totalPaid >= totalHarga) {
+            // Jika sudah lunas, set ke 2 (Paid)
+            statusPembayaran = 2;
+          } else if (remaining > 0 || totalPaid < totalHarga) {
+            // Jika masih ada remaining, set ke 4 (DP)
+            // Ini berlaku untuk semua kasus: konfirmasi pertama kali, konfirmasi lanjutan, setelah approve/reject
             statusPembayaran = 4;
           }
           
@@ -403,21 +408,22 @@ export default function DaftarPesanan() {
           : (totalHarga - totalPaid);
 
         // Tentukan status pembayaran:
-        // - Jika status_pembayaran dari form adalah 4, tetap 4
-        // - Jika sebelumnya 4 dan masih ada remaining, tetap 4
-        // - Jika total_paid < total_harga (masih ada remaining), set ke 4 (DP)
-        // - Selain itu, ikuti status dari form
-        let finalStatusPembayaran = updatedFromForm.status_pembayaran ?? selectedOrder?.status_pembayaran ?? 0;
+        // - Jika sudah lunas (total_paid >= total_harga), set ke 2 (Paid)
+        // - Jika masih ada remaining (total_paid < total_harga), set ke 4 (DP)
+        // - Status pembayaran harus tetap 4 (DP) sampai remaining = 0
+        // - Perubahan status payment individual (approve/reject) hanya mempengaruhi paymentHistoryModal.js, bukan page.js
+        let finalStatusPembayaran;
         
-        if (updatedFromForm.status_pembayaran === 4) {
-          // Jika form mengirim status 4, tetap 4
+        if (totalPaid >= totalHarga) {
+          // Jika sudah lunas, set ke 2 (Paid)
+          finalStatusPembayaran = 2;
+        } else if (remaining > 0 || totalPaid < totalHarga) {
+          // Jika masih ada remaining, set ke 4 (DP)
+          // Ini berlaku untuk konfirmasi pertama kali (dari Unpaid) maupun konfirmasi lanjutan
           finalStatusPembayaran = 4;
-        } else if (selectedOrder?.status_pembayaran === 4 && remaining > 0) {
-          // Jika sebelumnya 4 dan masih ada remaining, tetap 4
-          finalStatusPembayaran = 4;
-        } else if (totalPaid > 0 && remaining > 0 && totalPaid < totalHarga) {
-          // Jika ada pembayaran tapi belum lunas, set ke 4 (DP)
-          finalStatusPembayaran = 4;
+        } else {
+          // Fallback: gunakan status dari form atau order
+          finalStatusPembayaran = updatedFromForm.status_pembayaran ?? selectedOrder?.status_pembayaran ?? 0;
         }
 
         // Update state orders dengan data dari form (yang sudah diupdate dari konfirmasi pembayaran)
