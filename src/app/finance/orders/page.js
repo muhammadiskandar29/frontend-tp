@@ -31,6 +31,7 @@ const ORDERS_COLUMNS = [
   "Produk",
   "Total Harga",
   "Pembayaran Ke -",
+  "Amount",
   "Status Validasi",
   "Tanggal Bayar",
   "Actions",
@@ -679,11 +680,7 @@ export default function FinanceOrders() {
                                 <div className="payment-item">
                                   <span className="payment-label">Remaining:</span>
                                   <span className="payment-value remaining">
-                                    {remaining <= 0 ? (
-                                      <span className="status-badge status-badge--valid">Lunas</span>
-                                    ) : (
-                                      <>Rp {remaining.toLocaleString("id-ID")}</>
-                                    )}
+                                    Rp {remaining.toLocaleString("id-ID")}
                                   </span>
                                 </div>
                               </div>
@@ -692,6 +689,11 @@ export default function FinanceOrders() {
                         </div>
                         <div className="orders-table__cell" data-label="Pembayaran Ke -">
                           {paymentKe}
+                        </div>
+                        <div className="orders-table__cell" data-label="Amount">
+                          <span style={{ fontWeight: 600, color: "#059669" }}>
+                            Rp {Number(payment.amount || 0).toLocaleString("id-ID")}
+                          </span>
                         </div>
                         <div className="orders-table__cell" data-label="Status Validasi">
                           <span
