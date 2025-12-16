@@ -44,9 +44,11 @@ export default function ApproveOrder({ order, onClose, onApprove }) {
         }
 
         // Menggunakan order.id (ID payment validation), bukan order_id
+        // Gunakan Next.js proxy route untuk menghindari CORS issues
         const response = await fetch(
-          `http://3.105.234.181:8000/api/finance/order-validation/${order.id}`,
+          `/api/finance/order-validation/${order.id}`,
           {
+            method: "GET",
             headers: {
               "Content-Type": "application/json",
               Accept: "application/json",
@@ -55,11 +57,21 @@ export default function ApproveOrder({ order, onClose, onApprove }) {
           }
         );
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
+        // Parse response terlebih dahulu untuk melihat error message
         const json = await response.json();
+
+        if (!response.ok) {
+          // Jika response tidak OK, tampilkan error message dari backend
+          console.error("API Error:", {
+            status: response.status,
+            statusText: response.statusText,
+            message: json.message || json.error || "Gagal memuat data",
+            json: json,
+          });
+          setError(json.message || json.error || `Gagal memuat data (${response.status})`);
+          setDataLoading(false);
+          return;
+        }
 
         if (json.success && json.data) {
           setOrderData(json.data);
@@ -68,7 +80,12 @@ export default function ApproveOrder({ order, onClose, onApprove }) {
         }
       } catch (err) {
         console.error("Error fetching order detail:", err);
-        setError("Terjadi kesalahan saat memuat data");
+        // Jika error adalah network error atau parsing error
+        if (err.message && err.message.includes("JSON")) {
+          setError("Format response tidak valid. Pastikan endpoint benar.");
+        } else {
+          setError(`Terjadi kesalahan: ${err.message || "Gagal memuat data"}`);
+        }
       } finally {
         setDataLoading(false);
       }
