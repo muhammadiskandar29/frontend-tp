@@ -3,22 +3,43 @@ import React, { useState, useEffect } from "react";
 import "@/styles/finance/pesanan.css";
 import { BACKEND_URL } from "@/config/env";
 
-// Helper function untuk build image URL
+// Helper function untuk build image URL via proxy
+// Menggunakan /api/image proxy untuk menghindari CORS issues
 const buildImageUrl = (path) => {
   if (!path) return null;
   
-  // Jika sudah full URL, gunakan langsung
+  // Jika sudah full URL (http:// atau https://), extract path-nya
   if (path.startsWith("http://") || path.startsWith("https://")) {
-    return path;
+    try {
+      const url = new URL(path);
+      // Extract path setelah domain (misal: /storage/order/bukti/xxx.png)
+      let cleanPath = url.pathname;
+      // Hapus leading slash
+      cleanPath = cleanPath.replace(/^\/+/, "");
+      // Hapus "storage/" prefix jika ada (proxy akan menambahkan)
+      cleanPath = cleanPath.replace(/^storage\//, "");
+      // Gunakan proxy
+      return `/api/image?path=${encodeURIComponent(cleanPath)}`;
+    } catch (e) {
+      // Jika URL parsing gagal, coba extract path secara manual
+      const match = path.match(/\/(storage\/.*)$/);
+      if (match) {
+        let cleanPath = match[1].replace(/^storage\//, "");
+        return `/api/image?path=${encodeURIComponent(cleanPath)}`;
+      }
+      // Fallback: gunakan langsung (mungkin akan error CORS)
+      return path;
+    }
   }
   
-  // Jika path sudah dimulai dengan /storage/, tambahkan BACKEND_URL
+  // Jika path sudah dimulai dengan /storage/, hapus prefix-nya
   if (path.startsWith("/storage/")) {
-    return `${BACKEND_URL}${path}`;
+    let cleanPath = path.replace(/^\/storage\//, "");
+    return `/api/image?path=${encodeURIComponent(cleanPath)}`;
   }
   
-  // Jika path relative (seperti "order/bukti/..."), tambahkan /storage/
-  return `${BACKEND_URL}/storage/${path}`;
+  // Jika path relative (seperti "order/bukti/..."), gunakan langsung
+  return `/api/image?path=${encodeURIComponent(path)}`;
 };
 
 export default function ApproveOrder({ order, onClose, onApprove }) {
