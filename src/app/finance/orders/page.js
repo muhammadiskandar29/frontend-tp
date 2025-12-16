@@ -127,15 +127,6 @@ export default function FinanceOrders() {
       
       // Handle response dengan struktur: { success: true, data: [...], pagination: {...} }
       if (json.success && json.data && Array.isArray(json.data)) {
-        // Debug: log struktur data untuk melihat apakah order_rel sudah include status_pembayaran
-        if (json.data.length > 0) {
-          console.log("🔍 Sample payment data structure:", {
-            payment: json.data[0],
-            orderRel: json.data[0]?.order_rel,
-            hasStatusPembayaran: json.data[0]?.order_rel?.status_pembayaran !== undefined,
-            statusPembayaran: json.data[0]?.order_rel?.status_pembayaran,
-          });
-        }
         // Selalu replace data (bukan append) - setiap page menampilkan data yang berbeda
         setOrders(json.data);
 
@@ -611,42 +602,11 @@ export default function FinanceOrders() {
                         : Math.max(totalOrder - totalPaid, 0);
 
                     // Cek apakah status pembayaran adalah type 4 (DP)
-                    // Menggunakan relasi order_id (payment.order_rel) untuk mendapatkan status_pembayaran dari order
-                    // orderRel adalah relasi dari payment ke order, yang berisi status_pembayaran
-                    // Hanya tampilkan Total Paid & Remaining jika status_pembayaran === 4 (DP)
-                    // Jika status_pembayaran null/0 atau bukan 4, tidak tampilkan Total Paid & Remaining
-                    
-                    // Ambil status_pembayaran dari order_rel
-                    // Bisa berupa string "4" atau number 4
-                    // Cek juga di payment.order jika order_rel tidak ada
-                    let statusPembayaran = null;
-                    
-                    // Prioritas 1: order_rel.status_pembayaran
-                    if (orderRel.status_pembayaran !== undefined && orderRel.status_pembayaran !== null) {
-                      statusPembayaran = Number(orderRel.status_pembayaran);
-                    }
-                    // Prioritas 2: payment.order?.status_pembayaran (jika ada)
-                    else if (payment.order?.status_pembayaran !== undefined && payment.order?.status_pembayaran !== null) {
-                      statusPembayaran = Number(payment.order.status_pembayaran);
-                    }
-                    
+                    // Hanya tampilkan Total Paid & Remaining jika status_pembayaran === 4
+                    const statusPembayaran = orderRel.status_pembayaran !== undefined && orderRel.status_pembayaran !== null
+                      ? Number(orderRel.status_pembayaran)
+                      : null;
                     const isDP = statusPembayaran === 4;
-                    
-                    // Debug: log untuk memastikan status_pembayaran terdeteksi dengan benar
-                    console.log('🔍 Payment Debug:', {
-                      paymentId: payment.id,
-                      orderId: orderId,
-                      orderRel: orderRel,
-                      paymentOrder: payment.order,
-                      statusPembayaran: statusPembayaran,
-                      statusPembayaranFromOrderRel: orderRel.status_pembayaran,
-                      statusPembayaranFromPaymentOrder: payment.order?.status_pembayaran,
-                      isDP: isDP,
-                      totalPaid: totalPaid,
-                      remaining: remaining,
-                      totalOrder: totalOrder,
-                      fullPayment: payment
-                    });
 
                     const paymentKe = payment.payment_ke !== undefined && payment.payment_ke !== null
                       ? payment.payment_ke
