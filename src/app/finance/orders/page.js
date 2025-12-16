@@ -30,6 +30,7 @@ const ORDERS_COLUMNS = [
   "Customer",
   "Produk",
   "Total Harga",
+  "Pembayaran Ke -",
   "Status Validasi",
   "Tanggal Bayar",
   "Actions",
@@ -617,6 +618,10 @@ export default function FinanceOrders() {
                         ? Number(payment.remaining)
                         : Math.max(totalOrder - totalPaid, 0);
 
+                    const paymentKe = payment.payment_ke !== undefined && payment.payment_ke !== null
+                      ? payment.payment_ke
+                      : "-";
+
                     // Format tanggal bayar: "15-12-2025 14:35:36" (konsisten dengan sales)
                     const formatTanggalBayar = (tanggal) => {
                       if (!tanggal) return "-";
@@ -696,9 +701,12 @@ export default function FinanceOrders() {
                             )}
                           </div>
                         </div>
+                        <div className="orders-table__cell" data-label="Pembayaran Ke -">
+                          {paymentKe}
+                        </div>
                         <div className="orders-table__cell" data-label="Status Validasi">
                           <span
-                            className={`status-badge status-badge--${validationInfo.class}`}
+                            className={`orders-status-badge orders-status-badge--${validationInfo.class}`}
                           >
                             {validationInfo.label}
                           </span>

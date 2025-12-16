@@ -304,12 +304,13 @@
     minmax(120px, 1.1fr)                    /* Customer */
     minmax(140px, 1.2fr)                    /* Produk */
     minmax(180px, 1.3fr)                    /* Total Harga */
+    minmax(100px, 0.9fr)                    /* Pembayaran Ke - */
     minmax(110px, 1fr)                      /* Status Validasi */
     minmax(140px, 1.1fr)                    /* Tanggal Bayar */
     minmax(180px, 1.2fr);                   /* Actions */
   gap: 0.3rem;
   align-items: center;
-  min-width: 1100px;
+  min-width: 1200px;
 }
 
 .orders-table__head {
@@ -414,19 +415,104 @@
 }
 
 /* Status Pembayaran Badge Styles */
+.orders-status-badge--dp {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+/* Status Validasi Badge Styles untuk Finance */
 .orders-status-badge--pending {
-  background-color: #dbeafe;
-  color: #1e40af;
+  background-color: #fef3c7;
+  color: #92400e;
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.orders-status-badge--pending::before {
+  content: "⏳";
+  position: absolute;
+  left: 0.4rem;
+  font-size: 0.75rem;
+}
+
+.orders-status-badge--valid {
+  background-color: #dcfce7;
+  color: #166534;
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.orders-status-badge--valid::before {
+  content: "✓";
+  position: absolute;
+  left: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 700;
 }
 
 .orders-status-badge--rejected {
   background-color: #fee2e2;
   color: #991b1b;
+  position: relative;
+  padding-left: 1.5rem;
 }
 
-.orders-status-badge--dp {
+.orders-status-badge--rejected::before {
+  content: "✗";
+  position: absolute;
+  left: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* Status Validasi Badge Styles untuk Finance */
+.orders-status-badge--pending {
   background-color: #fef3c7;
   color: #92400e;
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.orders-status-badge--pending::before {
+  content: "⏳";
+  position: absolute;
+  left: 0.4rem;
+  font-size: 0.75rem;
+}
+
+.orders-status-badge--valid {
+  background-color: #dcfce7;
+  color: #166534;
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.orders-status-badge--valid::before {
+  content: "✓";
+  position: absolute;
+  left: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.orders-status-badge--rejected {
+  background-color: #fee2e2;
+  color: #991b1b;
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.orders-status-badge--rejected::before {
+  content: "✗";
+  position: absolute;
+  left: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.orders-status-badge--default {
+  background-color: #f3f4f6;
+  color: #6b7280;
 }
 
 .orders-link {
