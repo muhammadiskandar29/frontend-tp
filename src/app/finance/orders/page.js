@@ -602,11 +602,19 @@ export default function FinanceOrders() {
                         : Math.max(totalOrder - totalPaid, 0);
 
                     // Cek apakah status pembayaran adalah type 4 (DP)
-                    // Hanya tampilkan Total Paid & Remaining jika status_pembayaran === 4
+                    // Menggunakan relasi order_id (payment.order_rel) untuk mendapatkan status_pembayaran dari order
+                    // orderRel adalah relasi dari payment ke order, yang berisi status_pembayaran
+                    // Hanya tampilkan Total Paid & Remaining jika status_pembayaran === 4 (DP)
+                    // Jika status_pembayaran null/0 atau bukan 4, tidak tampilkan Total Paid & Remaining
                     const statusPembayaran = orderRel.status_pembayaran !== undefined && orderRel.status_pembayaran !== null
                       ? Number(orderRel.status_pembayaran)
                       : null;
                     const isDP = statusPembayaran === 4;
+                    
+                    // Debug: log untuk memastikan status_pembayaran terdeteksi dengan benar
+                    if (process.env.NODE_ENV === 'development') {
+                      console.log('Payment ID:', payment.id, 'Order ID:', orderId, 'Status Pembayaran:', statusPembayaran, 'isDP:', isDP);
+                    }
 
                     const paymentKe = payment.payment_ke !== undefined && payment.payment_ke !== null
                       ? payment.payment_ke
