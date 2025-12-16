@@ -229,19 +229,19 @@ export default function FinanceOrders() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchInput, dateRange]); // Reset page ketika search atau date range berubah
 
-  // Group dan filter orders berdasarkan order_id (1 baris per order)
+  // Filter payments (tidak di-group, setiap payment = 1 baris)
   const filteredOrders = useMemo(() => {
     let filtered = [...orders];
 
     // Filter by search (customer name, product name, total harga)
     if (searchInput && searchInput.trim()) {
       const searchLower = searchInput.toLowerCase().trim();
-      filtered = filtered.filter((order) => {
-        const customerName = order.order_rel?.customer_rel?.nama?.toLowerCase() || "";
-        const productName = order.order_rel?.produk_rel?.nama?.toLowerCase() || "";
-        const totalOrder = order.order_rel?.total_harga?.toString() || "";
-        const totalPaid = order.total_paid?.toString() || "";
-        const remaining = order.remaining?.toString() || "";
+      filtered = filtered.filter((payment) => {
+        const customerName = payment.order_rel?.customer_rel?.nama?.toLowerCase() || "";
+        const productName = payment.order_rel?.produk_rel?.nama?.toLowerCase() || "";
+        const totalOrder = payment.order_rel?.total_harga?.toString() || "";
+        const totalPaid = payment.total_paid?.toString() || "";
+        const remaining = payment.remaining?.toString() || "";
         
         return (
           customerName.includes(searchLower) ||
@@ -255,9 +255,9 @@ export default function FinanceOrders() {
 
     // Filter by date range
     if (dateRange && Array.isArray(dateRange) && dateRange.length === 2 && dateRange[0] && dateRange[1]) {
-      filtered = filtered.filter((order) => {
-        if (!order.tanggal) return false;
-        const orderDate = new Date(order.tanggal);
+      filtered = filtered.filter((payment) => {
+        if (!payment.tanggal) return false;
+        const orderDate = new Date(payment.tanggal);
         const fromDate = new Date(dateRange[0]);
         fromDate.setHours(0, 0, 0, 0);
         const toDate = new Date(dateRange[1]);
@@ -266,26 +266,8 @@ export default function FinanceOrders() {
       });
     }
 
-    // Group by order_id - ambil 1 record per order_id (yang terbaru berdasarkan tanggal)
-    const groupedByOrderId = {};
-    filtered.forEach((payment) => {
-      const orderId = payment.order_rel?.id ?? payment.order_id ?? payment.id;
-      if (!orderId) return;
-
-      if (!groupedByOrderId[orderId]) {
-        groupedByOrderId[orderId] = payment;
-      } else {
-        // Ambil yang terbaru berdasarkan tanggal
-        const existingDate = new Date(groupedByOrderId[orderId].tanggal || 0);
-        const currentDate = new Date(payment.tanggal || 0);
-        if (currentDate > existingDate) {
-          groupedByOrderId[orderId] = payment;
-        }
-      }
-    });
-
-    // Convert back to array
-    return Object.values(groupedByOrderId);
+    // Return semua payment tanpa grouping (setiap payment = 1 baris)
+    return filtered;
   }, [orders, searchInput, dateRange]);
 
   // === SUMMARY ===
@@ -491,7 +473,7 @@ export default function FinanceOrders() {
                   color: "var(--dash-muted)",
                 }}
               >
-                Setiap baris = 1 order dengan detail total pembayaran yang perlu divalidasi oleh tim finance.
+                Setiap baris = 1 transaksi pembayaran (DP / pelunasan) yang perlu divalidasi oleh tim finance.
               </p>
             </div>
             <div
@@ -655,7 +637,7 @@ export default function FinanceOrders() {
                     return (
                       <div
                         className="orders-table__row"
-                        key={orderId || `order-${i}`}
+                        key={payment.id || `payment-${i}`}
                       >
                         <div className="orders-table__cell" data-label="#">
                           {(page - 1) * perPage + i + 1}

@@ -70,7 +70,11 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
     // Gunakan status_pembayaran dari order jika ada, jika tidak hitung dari bukti
     const statusPembayaran = updatedOrder.status_pembayaran ?? order?.status_pembayaran;
     if (statusPembayaran !== null && statusPembayaran !== undefined) {
-      return Number(statusPembayaran);
+      // Handle string "4" atau number 4
+      const statusNum = Number(statusPembayaran);
+      if (!isNaN(statusNum)) {
+        return statusNum;
+      }
     }
     // Fallback: hitung dari bukti pembayaran
     if (
@@ -226,9 +230,9 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
       // Reset form untuk pembayaran berikutnya (jika DP dan belum lunas)
       if (statusPembayaran === 4 && !isFullyPaid) {
         // Untuk DP yang belum lunas, reset bukti dan amount untuk pembayaran berikutnya
+        // Amount dibiarkan kosong agar user bisa input manual
         setBukti(null);
-        const newRemaining = totalHarga - newTotalPaid;
-        setAmount(newRemaining > 0 ? newRemaining.toString() : "");
+        setAmount("");
         setIsDP(true);
       } else {
         // Jika sudah lunas atau bukan DP, reset semua
@@ -474,8 +478,8 @@ const handleSubmitUpdate = async (e) => {
                     </span>
                   </div>
                   
-                  {/* Tampilkan Total Paid & Remaining hanya jika user menandai sebagai DP */}
-                  {isDP && (
+                  {/* Tampilkan Total Paid & Remaining hanya jika status pembayaran = 4 (DP) */}
+                  {computedStatus() === 4 && (
                     <div style={{ marginTop: "0.5rem", fontSize: "0.85rem", color: "#6b7280" }}>
                       <div>
                         Total Paid:{" "}
@@ -515,11 +519,8 @@ const handleSubmitUpdate = async (e) => {
                           setAmount(totalHarga.toString());
                           setIsDP(false);
                         } else {
-                          // Untuk DP, set amount ke remaining atau kosong
-                          const totalHarga = Number(updatedOrder.total_harga || order?.total_harga || 0);
-                          const totalPaid = Number(updatedOrder.total_paid || order?.total_paid || 0);
-                          const remaining = totalHarga - totalPaid;
-                          setAmount(remaining > 0 ? remaining.toString() : "");
+                          // Untuk DP, biarkan amount kosong untuk input manual (user bisa input berapa saja selama tidak melebihi remaining)
+                          setAmount("");
                           setIsDP(true);
                         }
                         setShowKonfirmasiModal(true);
@@ -904,7 +905,14 @@ const handleSubmitUpdate = async (e) => {
                   <span className="field-hint">Jumlah otomatis sesuai total order (tidak dapat diubah)</span>
                 )}
                 {isDP && (
-                  <span className="field-hint">Masukkan jumlah DP yang dibayar (Status Pembayaran: DP)</span>
+                  <span className="field-hint">
+                    Masukkan jumlah pembayaran DP (maksimal: Rp{" "}
+                    {Number(
+                      (Number(updatedOrder.total_harga ?? order?.total_harga ?? 0) -
+                        Number(updatedOrder.total_paid ?? order?.total_paid ?? 0))
+                    ).toLocaleString("id-ID")}
+                    )
+                  </span>
                 )}
               </label>
 
