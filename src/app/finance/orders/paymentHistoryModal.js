@@ -248,61 +248,74 @@ export default function PaymentHistoryModal({ orderId, isOpen, onClose }) {
                 </div>
 
                 {/* Summary */}
-                {paymentHistoryData.summary && (
-                  <div
-                    style={{
-                      marginBottom: "1.5rem",
-                      padding: "1rem",
-                      background: "#eff6ff",
-                      borderRadius: "8px",
-                      border: "1px solid #bfdbfe",
-                    }}
-                  >
-                    <h3
-                      style={{
-                        margin: "0 0 0.75rem",
-                        fontSize: "1rem",
-                        fontWeight: 600,
-                        color: "#111827",
-                      }}
-                    >
-                      Ringkasan
-                    </h3>
+                {paymentHistoryData.summary && (() => {
+                  // Cek apakah status pembayaran adalah type 4 (DP)
+                  const statusPembayaran = paymentHistoryData.order?.status_pembayaran !== undefined && paymentHistoryData.order?.status_pembayaran !== null
+                    ? Number(paymentHistoryData.order.status_pembayaran)
+                    : null;
+                  const isDP = statusPembayaran === 4;
+                  
+                  return (
                     <div
                       style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-                        gap: "0.75rem",
-                        fontSize: "0.875rem",
+                        marginBottom: "1.5rem",
+                        padding: "1rem",
+                        background: "#eff6ff",
+                        borderRadius: "8px",
+                        border: "1px solid #bfdbfe",
                       }}
                     >
-                      <div>
-                        <span style={{ color: "#6b7280" }}>Total Amount:</span>
-                        <strong style={{ display: "block", color: "#111827" }}>
-                          Rp {Number(paymentHistoryData.summary.total_amount || 0).toLocaleString("id-ID")}
-                        </strong>
-                      </div>
-                      <div>
-                        <span style={{ color: "#6b7280" }}>Total Paid:</span>
-                        <strong style={{ display: "block", color: "#059669" }}>
-                          Rp {Number(paymentHistoryData.summary.total_paid || 0).toLocaleString("id-ID")}
-                        </strong>
-                      </div>
-                      <div>
-                        <span style={{ color: "#6b7280" }}>Remaining:</span>
-                        <strong style={{ display: "block", color: "#dc2626" }}>
-                          Rp {Number(paymentHistoryData.summary.remaining || 0).toLocaleString("id-ID")}
-                        </strong>
-                      </div>
-                      <div>
-                        <span style={{ color: "#6b7280" }}>Jumlah Pembayaran:</span>
-                        <strong style={{ display: "block", color: "#111827" }}>
-                          {paymentHistoryData.summary.count_payments || 0}x
-                        </strong>
+                      <h3
+                        style={{
+                          margin: "0 0 0.75rem",
+                          fontSize: "1rem",
+                          fontWeight: 600,
+                          color: "#111827",
+                        }}
+                      >
+                        Ringkasan
+                      </h3>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+                          gap: "0.75rem",
+                          fontSize: "0.875rem",
+                        }}
+                      >
+                        <div>
+                          <span style={{ color: "#6b7280" }}>Total Amount:</span>
+                          <strong style={{ display: "block", color: "#111827" }}>
+                            Rp {Number(paymentHistoryData.summary.total_amount || 0).toLocaleString("id-ID")}
+                          </strong>
+                        </div>
+                        {/* Total Paid & Remaining - hanya tampil jika status_pembayaran === 4 (DP) */}
+                        {isDP && (
+                          <>
+                            <div>
+                              <span style={{ color: "#6b7280" }}>Total Paid:</span>
+                              <strong style={{ display: "block", color: "#059669" }}>
+                                Rp {Number(paymentHistoryData.summary.total_paid || 0).toLocaleString("id-ID")}
+                              </strong>
+                            </div>
+                            <div>
+                              <span style={{ color: "#6b7280" }}>Remaining:</span>
+                              <strong style={{ display: "block", color: "#dc2626" }}>
+                                Rp {Number(paymentHistoryData.summary.remaining || 0).toLocaleString("id-ID")}
+                              </strong>
+                            </div>
+                          </>
+                        )}
+                        <div>
+                          <span style={{ color: "#6b7280" }}>Jumlah Pembayaran:</span>
+                          <strong style={{ display: "block", color: "#111827" }}>
+                            {paymentHistoryData.summary.count_payments || 0}x
+                          </strong>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* Payments List */}
                 <div>

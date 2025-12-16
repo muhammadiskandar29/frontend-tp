@@ -600,6 +600,13 @@ export default function FinanceOrders() {
                         ? Number(payment.remaining)
                         : Math.max(totalOrder - totalPaid, 0);
 
+                    // Cek apakah status pembayaran adalah type 4 (DP)
+                    // Hanya tampilkan Total Paid & Remaining jika status_pembayaran === 4
+                    const statusPembayaran = orderRel.status_pembayaran !== undefined && orderRel.status_pembayaran !== null
+                      ? Number(orderRel.status_pembayaran)
+                      : null;
+                    const isDP = statusPembayaran === 4;
+
                     const paymentKe = payment.payment_ke !== undefined && payment.payment_ke !== null
                       ? payment.payment_ke
                       : "-";
@@ -660,8 +667,8 @@ export default function FinanceOrders() {
                               <strong>Rp {totalOrder.toLocaleString("id-ID")}</strong>
                             </div>
                             
-                            {/* Total Paid & Remaining - tampil jika ada pembayaran */}
-                            {(totalPaid > 0 || remaining < totalOrder) && (
+                            {/* Total Paid & Remaining - hanya tampil jika status_pembayaran === 4 (DP) */}
+                            {isDP && (
                               <div className="payment-breakdown">
                                 <div className="payment-item">
                                   <span className="payment-label">Total Paid:</span>

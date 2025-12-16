@@ -222,129 +222,80 @@ export default function ApproveOrder({ order, onClose, onApprove }) {
                 </div>
               ) : orderData ? (
                 <>
-                  {/* Informasi Pelanggan */}
                   <div className="orders-section">
-                    <h4>Informasi Pelanggan</h4>
-                    <div className="orders-row">
-                      <p>Nama</p>
-                      <span>{orderData.customer?.nama || "-"}</span>
-                    </div>
-                    <div className="orders-row">
-                      <p>Email</p>
-                      <span>{orderData.customer?.email || "-"}</span>
-                    </div>
-                    <div className="orders-row">
-                      <p>No. WhatsApp</p>
-                      <span>{orderData.customer?.wa || "-"}</span>
-                    </div>
-                    <div className="orders-row">
-                      <p>Alamat</p>
-                      <span>{orderData.customer?.alamat || "-"}</span>
-                    </div>
-                  </div>
-
-                  {/* Detail Produk */}
-                  <div className="orders-section">
-                    <h4>Detail Produk</h4>
-                    <div className="orders-row">
-                      <p>Nama Produk</p>
-                      <span>{orderData.produk?.nama || "-"}</span>
-                    </div>
-                    <div className="orders-row">
-                      <p>Kode Produk</p>
-                      <span>{orderData.produk?.kode || "-"}</span>
-                    </div>
-                  </div>
-
-                  {/* Informasi Order */}
-                  <div className="orders-section">
-                    <h4>Informasi Order</h4>
-                    <div className="orders-row">
-                      <p>Order ID</p>
-                      <span>#{orderData.order_id || "-"}</span>
-                    </div>
-                    <div className="orders-row">
-                      <p>Total Harga</p>
-                      <span>Rp {Number(orderData.order?.total_harga || 0).toLocaleString("id-ID")}</span>
-                    </div>
-                    <div className="orders-row">
-                      <p>Ongkir</p>
-                      <span>Rp {Number(orderData.order?.ongkir || 0).toLocaleString("id-ID")}</span>
-                    </div>
-                  </div>
-
-                  {/* Informasi Pembayaran */}
-                  <div className="orders-section">
-                    <h4>Informasi Pembayaran</h4>
-                    <div className="orders-row">
-                      <p>ID Validasi</p>
-                      <span>#{orderData.id || "-"}</span>
-                    </div>
-                    <div className="orders-row">
-                      <p>Jumlah Pembayaran</p>
-                      <span style={{ fontWeight: 600, color: "#059669" }}>
-                        Rp {Number(orderData.amount || 0).toLocaleString("id-ID")}
-                      </span>
-                    </div>
-                    <div className="orders-row">
-                      <p>Pembayaran Ke-</p>
-                      <span>{orderData.payment_ke || "-"}</span>
-                    </div>
-                    <div className="orders-row">
-                      <p>Metode Pembayaran</p>
-                      <span>{getPaymentMethodLabel(orderData.payment_method) || "-"}</span>
-                    </div>
-                    <div className="orders-row">
-                      <p>Tipe Pembayaran</p>
-                      <span>
-                        {orderData.payment_type === "1"
-                          ? "DP (Down Payment)"
-                          : orderData.payment_type === "2"
-                          ? "Pelunasan"
-                          : orderData.payment_type || "-"}
-                      </span>
-                    </div>
-                    <div className="orders-row">
-                      <p>Tanggal Pembayaran</p>
-                      <span>{formatTanggal(orderData.tanggal) || "-"}</span>
-                    </div>
-                    <div className="orders-row">
-                      <p>Status Validasi</p>
-                      <span
-                        style={{
-                          padding: "0.25rem 0.75rem",
-                          borderRadius: "0.375rem",
-                          fontSize: "0.875rem",
-                          fontWeight: 600,
-                          display: "inline-block",
-                          backgroundColor:
-                            getStatusLabel(orderData.status) === "Valid"
-                              ? "#d1fae5"
-                              : getStatusLabel(orderData.status) === "Ditolak"
-                              ? "#fee2e2"
-                              : "#fef3c7",
-                          color:
-                            getStatusLabel(orderData.status) === "Valid"
-                              ? "#059669"
-                              : getStatusLabel(orderData.status) === "Ditolak"
-                              ? "#dc2626"
-                              : "#d97706",
-                        }}
-                      >
-                        {getStatusLabel(orderData.status)}
-                      </span>
-                    </div>
-                    {orderData.catatan && (
+                    {/* Ringkasan Informasi Penting */}
+                    <div
+                      style={{
+                        padding: "1rem",
+                        background: "#f0fdf4",
+                        borderRadius: "8px",
+                        border: "1px solid #bbf7d0",
+                        marginBottom: "1.5rem",
+                      }}
+                    >
                       <div className="orders-row">
-                        <p>Catatan</p>
-                        <span>{orderData.catatan}</span>
+                        <p style={{ fontWeight: 600 }}>Customer</p>
+                        <span style={{ fontWeight: 600 }}>{orderData.customer?.nama || "-"}</span>
                       </div>
-                    )}
+                      <div className="orders-row">
+                        <p>Produk</p>
+                        <span>{orderData.produk?.nama || "-"}</span>
+                      </div>
+                      <div className="orders-row">
+                        <p>Order ID</p>
+                        <span>#{orderData.order_id || "-"}</span>
+                      </div>
+                      <div className="orders-row">
+                        <p>Jumlah Pembayaran</p>
+                        <span style={{ fontWeight: 600, color: "#059669", fontSize: "1.1rem" }}>
+                          Rp {Number(orderData.amount || 0).toLocaleString("id-ID")}
+                        </span>
+                      </div>
+                      <div className="orders-row">
+                        <p>Pembayaran Ke-</p>
+                        <span>{orderData.payment_ke || "-"}</span>
+                      </div>
+                      <div className="orders-row">
+                        <p>Tipe Pembayaran</p>
+                        <span>
+                          {(() => {
+                            // Cek apakah order memiliki status_pembayaran === 4 (DP)
+                            const statusPembayaran = order?.order_rel?.status_pembayaran !== undefined && order?.order_rel?.status_pembayaran !== null
+                              ? Number(order.order_rel.status_pembayaran)
+                              : (orderData.order?.status_pembayaran !== undefined && orderData.order?.status_pembayaran !== null
+                                ? Number(orderData.order.status_pembayaran)
+                                : null);
+                            
+                            // Jika status_pembayaran === 4, berarti DP
+                            if (statusPembayaran === 4) {
+                              return "DP (Down Payment)";
+                            }
+                            
+                            // Jika bukan DP, tampilkan payment_type sesuai nilai
+                            if (orderData.payment_type === "1") {
+                              return "Pembayaran Pertama";
+                            } else if (orderData.payment_type === "2") {
+                              return "Pelunasan";
+                            } else if (orderData.payment_type) {
+                              return orderData.payment_type;
+                            }
+                            
+                            return "-";
+                          })()}
+                        </span>
+                      </div>
+                      <div className="orders-row">
+                        <p>Metode Pembayaran</p>
+                        <span>{getPaymentMethodLabel(orderData.payment_method) || "-"}</span>
+                      </div>
+                    </div>
+
+                    {/* Bukti Pembayaran - Penting untuk approve */}
                     <div
                       className="orders-row"
                       style={{ flexDirection: "column", alignItems: "flex-start", gap: "0.5rem" }}
                     >
-                      <p>Bukti Pembayaran</p>
+                      <p style={{ fontWeight: 600, marginBottom: "0.5rem" }}>Bukti Pembayaran</p>
                       {buktiUrl ? (
                         <div
                           style={{
@@ -422,21 +373,32 @@ export default function ApproveOrder({ order, onClose, onApprove }) {
             </>
           ) : (
             <div className="orders-section">
-              <p style={{ marginBottom: "1rem", color: "var(--dash-text)", fontSize: "1rem", textAlign: "center" }}>
+              <p style={{ marginBottom: "1.5rem", color: "var(--dash-text)", fontSize: "1rem", textAlign: "center", fontWeight: 500 }}>
                 Apakah anda yakin ingin approve pembayaran ini?
               </p>
               {orderData && (
                 <div style={{ 
-                  marginTop: "1rem", 
                   padding: "1rem", 
-                  background: "#f3f4f6", 
-                  borderRadius: "0.5rem",
+                  background: "#f0fdf4", 
+                  borderRadius: "8px",
+                  border: "1px solid #bbf7d0",
                   fontSize: "0.875rem"
                 }}>
-                  <p style={{ marginBottom: "0.5rem", fontWeight: 600 }}>Ringkasan:</p>
-                  <p>Order ID: #{orderData.order_id || "-"}</p>
-                  <p>Jumlah: Rp {Number(orderData.amount || 0).toLocaleString("id-ID")}</p>
-                  <p>Customer: {orderData.customer?.nama || "-"}</p>
+                  <p style={{ marginBottom: "0.75rem", fontWeight: 600, color: "#111827" }}>Ringkasan Pembayaran:</p>
+                  <div className="orders-row">
+                    <p>Customer</p>
+                    <span style={{ fontWeight: 600 }}>{orderData.customer?.nama || "-"}</span>
+                  </div>
+                  <div className="orders-row">
+                    <p>Order ID</p>
+                    <span>#{orderData.order_id || "-"}</span>
+                  </div>
+                  <div className="orders-row">
+                    <p>Jumlah Pembayaran</p>
+                    <span style={{ fontWeight: 600, color: "#059669", fontSize: "1rem" }}>
+                      Rp {Number(orderData.amount || 0).toLocaleString("id-ID")}
+                    </span>
+                  </div>
                 </div>
               )}
             </div>

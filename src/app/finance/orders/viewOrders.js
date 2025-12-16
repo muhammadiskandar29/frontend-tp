@@ -271,11 +271,32 @@ export default function ViewOrders({ order, onClose }) {
                 <div className="orders-row">
                   <p>Tipe Pembayaran</p>
                   <span>
-                    {orderData.payment_type === "1"
-                      ? "DP (Down Payment)"
-                      : orderData.payment_type === "2"
-                      ? "Pelunasan"
-                      : orderData.payment_type || "-"}
+                    {(() => {
+                      // Cek apakah order memiliki status_pembayaran === 4 (DP)
+                      // Cek dari order prop yang dikirim ke modal (order.order_rel?.status_pembayaran)
+                      // atau dari orderData jika tersedia
+                      const statusPembayaran = order?.order_rel?.status_pembayaran !== undefined && order?.order_rel?.status_pembayaran !== null
+                        ? Number(order.order_rel.status_pembayaran)
+                        : (orderData.order?.status_pembayaran !== undefined && orderData.order?.status_pembayaran !== null
+                          ? Number(orderData.order.status_pembayaran)
+                          : null);
+                      
+                      // Jika status_pembayaran === 4, berarti DP
+                      if (statusPembayaran === 4) {
+                        return "DP (Down Payment)";
+                      }
+                      
+                      // Jika bukan DP, tampilkan payment_type sesuai nilai (jangan asumsikan "1" = DP)
+                      if (orderData.payment_type === "1") {
+                        return "Pembayaran Pertama";
+                      } else if (orderData.payment_type === "2") {
+                        return "Pelunasan";
+                      } else if (orderData.payment_type) {
+                        return orderData.payment_type;
+                      }
+                      
+                      return "-";
+                    })()}
                   </span>
                 </div>
                 <div className="orders-row">
