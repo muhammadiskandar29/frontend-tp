@@ -236,46 +236,35 @@ export default function PaymentHistoryModal({ orderId, isOpen, onClose }) {
                   {paymentHistoryData.payments && paymentHistoryData.payments.length > 0 ? (
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                       {paymentHistoryData.payments.map((payment, idx) => {
-                        const rawPaymentStatus = payment.status;
-                        const paymentStatusStr =
-                          rawPaymentStatus === null || rawPaymentStatus === undefined
-                            ? ""
-                            : String(rawPaymentStatus);
-                        const orderStatusPemb = paymentHistoryData.order?.status_pembayaran;
-                        const orderStatusPembStr =
-                          orderStatusPemb === null || orderStatusPemb === undefined
-                            ? ""
-                            : String(orderStatusPemb);
+                        // Ambil status payment individual (bukan order status)
+                        // 1 = Menunggu Approve Finance (Pending)
+                        // 2 = Data sudah di approve (Approved)
+                        // 3 = Data di tolak (Rejected)
+                        const paymentStatus = payment.status;
+                        const paymentStatusNum = 
+                          paymentStatus === null || paymentStatus === undefined
+                            ? 1 // Default ke 1 (Pending) jika null/undefined
+                            : Number(paymentStatus);
 
-                        const isRejected = paymentStatusStr === "3";
-                        const isExplicitApproved = paymentStatusStr === "2";
-                        const isOrderPaidOrDp =
-                          orderStatusPembStr === "2" ||
-                          orderStatusPembStr === "4";
-
-                        // Label dan style:
-                        // - Rejected (3) -> "Rejected"
-                        // - Jika payment.status = 2 ATAU (status kosong/1 tapi order sudah Paid/DP) -> "Valid"
-                        // - Selain itu -> "Pending"
-                        const isValid = isExplicitApproved || (!isRejected && isOrderPaidOrDp);
-
-                        const statusLabel = isRejected
-                          ? "Rejected"
-                          : isValid
-                          ? "Valid"
-                          : "Pending";
-
-                        const statusBg = isRejected
-                          ? "#fee2e2"
-                          : isValid
-                          ? "#d1fae5"
-                          : "#fef3c7";
-
-                        const statusColor = isRejected
-                          ? "#991b1b"
-                          : isValid
-                          ? "#065f46"
-                          : "#92400e";
+                        // Tentukan label dan style berdasarkan payment.status
+                        let statusLabel, statusBg, statusColor;
+                        
+                        if (paymentStatusNum === 2) {
+                          // Data sudah di approve
+                          statusLabel = "Approved";
+                          statusBg = "#d1fae5";
+                          statusColor = "#065f46";
+                        } else if (paymentStatusNum === 3) {
+                          // Data di tolak
+                          statusLabel = "Rejected";
+                          statusBg = "#fee2e2";
+                          statusColor = "#991b1b";
+                        } else {
+                          // 1 atau null/undefined = Menunggu Approve Finance
+                          statusLabel = "Pending";
+                          statusBg = "#fef3c7";
+                          statusColor = "#92400e";
+                        }
 
                         return (
                         <div key={payment.id || idx} style={{ padding: "1rem", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
