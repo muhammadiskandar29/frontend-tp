@@ -29,13 +29,9 @@ const ORDERS_COLUMNS = [
   "Order ID",
   "Customer",
   "Produk",
-  "Total Order",
-  "Total Dibayar",
-  "Sisa Tagihan",
-  "Pembayaran ke-",
-  "Metode Bayar",
-  "Tanggal Bayar",
+  "Total Harga",
   "Status Validasi",
+  "Tanggal Bayar",
   "Actions",
 ];
 
@@ -232,11 +228,11 @@ export default function FinanceOrders() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchInput, dateRange]); // Reset page ketika search atau date range berubah
 
-  // Filter orders berdasarkan search dan date range
+  // Group dan filter orders berdasarkan order_id (1 baris per order)
   const filteredOrders = useMemo(() => {
     let filtered = [...orders];
 
-    // Filter by search (customer name, product name, alamat, total harga)
+    // Filter by search (customer name, product name, total harga)
     if (searchInput && searchInput.trim()) {
       const searchLower = searchInput.toLowerCase().trim();
       filtered = filtered.filter((order) => {
@@ -269,7 +265,26 @@ export default function FinanceOrders() {
       });
     }
 
-    return filtered;
+    // Group by order_id - ambil 1 record per order_id (yang terbaru berdasarkan tanggal)
+    const groupedByOrderId = {};
+    filtered.forEach((payment) => {
+      const orderId = payment.order_rel?.id ?? payment.order_id ?? payment.id;
+      if (!orderId) return;
+
+      if (!groupedByOrderId[orderId]) {
+        groupedByOrderId[orderId] = payment;
+      } else {
+        // Ambil yang terbaru berdasarkan tanggal
+        const existingDate = new Date(groupedByOrderId[orderId].tanggal || 0);
+        const currentDate = new Date(payment.tanggal || 0);
+        if (currentDate > existingDate) {
+          groupedByOrderId[orderId] = payment;
+        }
+      }
+    });
+
+    // Convert back to array
+    return Object.values(groupedByOrderId);
   }, [orders, searchInput, dateRange]);
 
   // === SUMMARY ===
@@ -475,7 +490,7 @@ export default function FinanceOrders() {
                   color: "var(--dash-muted)",
                 }}
               >
-                Setiap baris = 1 transaksi pembayaran (DP / pelunasan) yang perlu divalidasi oleh tim finance.
+                Setiap baris = 1 order dengan detail total pembayaran yang perlu divalidasi oleh tim finance.
               </p>
             </div>
             <div
@@ -602,25 +617,20 @@ export default function FinanceOrders() {
                         ? Number(payment.remaining)
                         : Math.max(totalOrder - totalPaid, 0);
 
-                    const paymentKe =
-                      payment.payment_ke !== undefined &&
-                      payment.payment_ke !== null
-                        ? payment.payment_ke
-                        : "-";
+                    // Format tanggal bayar: "15-12-2025 14:35:36" (konsisten dengan sales)
+                    const formatTanggalBayar = (tanggal) => {
+                      if (!tanggal) return "-";
+                      const date = new Date(tanggal);
+                      const day = String(date.getDate()).padStart(2, "0");
+                      const month = String(date.getMonth() + 1).padStart(2, "0");
+                      const year = date.getFullYear();
+                      const hours = String(date.getHours()).padStart(2, "0");
+                      const minutes = String(date.getMinutes()).padStart(2, "0");
+                      const seconds = String(date.getSeconds()).padStart(2, "0");
+                      return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
+                    };
 
-                    const paymentMethod = (
-                      payment.payment_method || "-"
-                    ).toUpperCase();
-
-                    const tanggalBayar = payment.tanggal
-                      ? new Date(payment.tanggal).toLocaleString("id-ID", {
-                          day: "2-digit",
-                          month: "2-digit",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
-                      : "-";
+                    const tanggalBayar = formatTanggalBayar(payment.tanggal);
 
                     const statusCode = Number(
                       payment.status === null || payment.status === undefined
@@ -640,7 +650,7 @@ export default function FinanceOrders() {
                     return (
                       <div
                         className="orders-table__row"
-                        key={payment.id || `${payment.id}-${i}`}
+                        key={orderId || `order-${i}`}
                       >
                         <div className="orders-table__cell" data-label="#">
                           {(page - 1) * perPage + i + 1}
@@ -657,38 +667,34 @@ export default function FinanceOrders() {
                         <div className="orders-table__cell" data-label="Produk">
                           {produkNama}
                         </div>
-                        <div
-                          className="orders-table__cell orders-table__cell--numeric"
-                          data-label="Total Order"
-                        >
-                          Rp {totalOrder.toLocaleString("id-ID")}
-                        </div>
-                        <div
-                          className="orders-table__cell orders-table__cell--numeric"
-                          data-label="Total Dibayar"
-                        >
-                          Rp {totalPaid.toLocaleString("id-ID")}
-                        </div>
-                        <div
-                          className="orders-table__cell orders-table__cell--numeric"
-                          data-label="Sisa Tagihan"
-                        >
-                          {remaining <= 0 ? (
-                            <span className="status-badge status-badge--valid">
-                              Lunas
-                            </span>
-                          ) : (
-                            <>Rp {remaining.toLocaleString("id-ID")}</>
-                          )}
-                        </div>
-                        <div className="orders-table__cell" data-label="Pembayaran ke-">
-                          {paymentKe}
-                        </div>
-                        <div className="orders-table__cell" data-label="Metode Bayar">
-                          {paymentMethod}
-                        </div>
-                        <div className="orders-table__cell" data-label="Tanggal Bayar">
-                          {tanggalBayar}
+                        <div className="orders-table__cell" data-label="Total Harga">
+                          <div className="payment-details">
+                            <div className="payment-main">
+                              <strong>Rp {totalOrder.toLocaleString("id-ID")}</strong>
+                            </div>
+                            
+                            {/* Total Paid & Remaining - tampil jika ada pembayaran */}
+                            {(totalPaid > 0 || remaining < totalOrder) && (
+                              <div className="payment-breakdown">
+                                <div className="payment-item">
+                                  <span className="payment-label">Total Paid:</span>
+                                  <span className="payment-value paid">
+                                    Rp {totalPaid.toLocaleString("id-ID")}
+                                  </span>
+                                </div>
+                                <div className="payment-item">
+                                  <span className="payment-label">Remaining:</span>
+                                  <span className="payment-value remaining">
+                                    {remaining <= 0 ? (
+                                      <span className="status-badge status-badge--valid">Lunas</span>
+                                    ) : (
+                                      <>Rp {remaining.toLocaleString("id-ID")}</>
+                                    )}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
                         <div className="orders-table__cell" data-label="Status Validasi">
                           <span
@@ -696,6 +702,9 @@ export default function FinanceOrders() {
                           >
                             {validationInfo.label}
                           </span>
+                        </div>
+                        <div className="orders-table__cell" data-label="Tanggal Bayar">
+                          {tanggalBayar}
                         </div>
                         <div
                           className="orders-table__cell orders-table__cell--actions"
@@ -856,6 +865,88 @@ export default function FinanceOrders() {
             </button>
           </div>
         </section>
+
+        {/* Payment Details Styles */}
+        <style jsx>{`
+          .payment-details {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+          }
+
+          .payment-main {
+            font-size: 0.875rem;
+            color: #111827;
+            word-wrap: break-word;
+          }
+
+          .payment-main strong {
+            font-weight: 600;
+            color: #1f2937;
+          }
+
+          .payment-breakdown {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            margin-top: 0.375rem;
+            padding-top: 0.375rem;
+            border-top: 1px solid #e5e7eb;
+            width: 100%;
+            box-sizing: border-box;
+          }
+
+          .payment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+          }
+
+          .payment-label {
+            color: #6b7280;
+            font-weight: 500;
+            flex-shrink: 0;
+          }
+
+          .payment-value {
+            font-weight: 600;
+            flex-shrink: 0;
+            white-space: nowrap;
+          }
+
+          .payment-value.paid {
+            color: #059669;
+          }
+
+          .payment-value.remaining {
+            color: #dc2626;
+          }
+
+          @media (max-width: 768px) {
+            .payment-details {
+              gap: 0.375rem;
+            }
+
+            .payment-main {
+              font-size: 0.8125rem;
+            }
+
+            .payment-breakdown {
+              font-size: 0.6875rem;
+              padding: 0.375rem;
+            }
+
+            .payment-item {
+              font-size: 0.6875rem;
+            }
+          }
+        `}</style>
 
         {/* TOAST */}
         {toast.show && (
