@@ -743,7 +743,11 @@ export default function FinanceOrders() {
                       });
                     }
                     
-                    const isDP = statusPembayaran === 4;
+                    // Tentukan isDP:
+                    // 1. Jika statusPembayaran sudah tersedia, gunakan itu (statusPembayaran === 4)
+                    // 2. Jika statusPembayaran masih null, gunakan heuristik: jika total_paid > 0 dan remaining > 0, kemungkinan besar ini DP
+                    //    (karena jika sudah lunas, remaining akan 0, dan jika unpaid, total_paid akan 0)
+                    const isDP = statusPembayaran === 4 || (statusPembayaran === null && totalPaid > 0 && remaining > 0);
 
                     const paymentKe = payment.payment_ke !== undefined && payment.payment_ke !== null
                       ? payment.payment_ke
