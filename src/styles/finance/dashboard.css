@@ -258,7 +258,7 @@
 }
 
 .panel__eyebrow {
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--dash-muted);
@@ -266,14 +266,14 @@
 }
 
 .panel__title {
-  font-size: 1.15rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: var(--dash-text);
   margin: 0;
 }
 
 .panel__meta {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--dash-muted);
   padding: 0.35rem 0.65rem;
   border-radius: 0.5rem;
