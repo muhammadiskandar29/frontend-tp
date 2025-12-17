@@ -11,8 +11,8 @@
   --dash-muted: #94a3b8;
   --dash-muted-strong: #475569;
   --dash-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
-  --dash-radius: 1.5rem;
-  --dash-radius-sm: 1rem;
+  --dash-radius: 0.75rem;
+  --dash-radius-sm: 0.6rem;
   --accent-blue: #3b82f6;
   --accent-emerald: #10b981;
   --accent-amber: #f59e0b;
@@ -32,7 +32,10 @@
 
 /* Greeting (like screenshot: simple text block) */
 .greeting-banner {
-  padding: 0.25rem 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
 }
 
 .greeting-banner__title {

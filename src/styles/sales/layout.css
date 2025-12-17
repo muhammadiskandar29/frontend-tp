@@ -189,7 +189,7 @@
 .layout-content {
   flex: 1;
   background: var(--layout-surface);
-  border-radius: 1.25rem;
+  border-radius: 0.75rem;
   border: 1px solid var(--layout-border);
   box-shadow: var(--layout-shadow);
   padding: clamp(1.25rem, 3vw, 2rem);
