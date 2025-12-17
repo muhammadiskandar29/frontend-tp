@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Home,
   Users,
@@ -34,13 +34,15 @@ const getViewport = () => {
   return VIEWPORT.DESKTOP;
 };
 
-export default function Sidebar({ role }) {
+export default function Sidebar({ role, userName = "User", userInitials = "U", onLogout }) {
   const pathname = usePathname();
   const [menu, setMenu] = useState([]);
   const [viewport, setViewport] = useState(VIEWPORT.DESKTOP);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isRailExpanded, setIsRailExpanded] = useState(true);
   const [openSubmenu, setOpenSubmenu] = useState(null);
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const accountRef = useRef(null);
   
   // Check if user is sales (divisi 3) or finance (divisi 4)
   const [isSales, setIsSales] = useState(false);
@@ -199,6 +201,15 @@ export default function Sidebar({ role }) {
     }
   };
 
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (!accountRef.current) return;
+      if (!accountRef.current.contains(e.target)) setIsAccountOpen(false);
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
+
   // === TOGGLE SUBMENU ===
   const toggleSubmenu = (label) => {
     setOpenSubmenu((prev) => (prev === label ? null : label));
@@ -325,7 +336,48 @@ export default function Sidebar({ role }) {
           })}
         </ul>
 
-        <div className="sidebar-footer">© 2025 One Dashboard</div>
+        <div className="sidebar-bottom">
+          <div className="sidebar-account" ref={accountRef}>
+            <button
+              type="button"
+              className={`sidebar-account__trigger ${isAccountOpen ? "is-open" : ""}`}
+              onClick={() => setIsAccountOpen((p) => !p)}
+              aria-haspopup="menu"
+              aria-expanded={isAccountOpen}
+            >
+              <span className="sidebar-account__avatar" aria-hidden="true">
+                {userInitials}
+              </span>
+              <span className="sidebar-account__name" title={userName}>
+                {userName}
+              </span>
+              <span className="sidebar-account__chevron" aria-hidden="true" />
+            </button>
+
+            {isAccountOpen && (
+              <div className="sidebar-account__menu" role="menu">
+                <button
+                  type="button"
+                  className="sidebar-account__menu-item"
+                  role="menuitem"
+                  onClick={() => setIsAccountOpen(false)}
+                >
+                  Profile
+                </button>
+                <button
+                  type="button"
+                  className="sidebar-account__menu-item sidebar-account__menu-item--danger"
+                  role="menuitem"
+                  onClick={() => (typeof onLogout === "function" ? onLogout() : undefined)}
+                >
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="sidebar-footer">© 2025 One Dashboard</div>
+        </div>
       </aside>
 
       {/* === TOGGLE BUTTON (TABLET & MOBILE) === */}

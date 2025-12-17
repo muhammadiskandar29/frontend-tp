@@ -11,6 +11,28 @@ import "primereact/resources/themes/lara-light-amber/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 
+function formatLongDateId(date) {
+  try {
+    return new Intl.DateTimeFormat("id-ID", {
+      weekday: "long",
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    }).format(date);
+  } catch {
+    return date.toDateString();
+  }
+}
+
+function derivePageTitle(pathname) {
+  if (!pathname) return "Dashboard";
+  const cleaned = String(pathname).split("?")[0].split("#")[0];
+  const seg = cleaned.split("/").filter(Boolean).pop() || "dashboard";
+  return seg
+    .replace(/[-_]/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 
 function isTokenExpired() {
   try {
@@ -27,7 +49,6 @@ export default function Layout({ children, title, description }) {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState(null);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
@@ -56,10 +77,6 @@ export default function Layout({ children, title, description }) {
     }
   }, [pathname, router]);
 
-  useEffect(() => {
-    setDropdownOpen(false);
-  }, [pathname]);
-
   const isLoginPage = pathname.includes("/login");
   const showShell = !isLoginPage;
 
@@ -67,6 +84,9 @@ export default function Layout({ children, title, description }) {
     if (!user?.name) return "U";
     return user.name.charAt(0).toUpperCase();
   }, [user]);
+
+  const pageTitle = useMemo(() => title || derivePageTitle(pathname), [title, pathname]);
+  const todayLabel = useMemo(() => formatLongDateId(new Date()), []);
 
   // Show loading state instead of null to prevent blank screen
   if (!isAuthorized && !pathname.includes("/login")) {
@@ -101,48 +121,26 @@ export default function Layout({ children, title, description }) {
       </Head>
 
       <div className={`layout-wrapper ${showShell ? "layout-wrapper--private" : ""}`}>
-        {showShell && <Sidebar role={user?.role || "admin"} />}
+        {showShell && (
+          <Sidebar
+            role={user?.role || "admin"}
+            userName={user?.name || "User"}
+            userInitials={userInitials}
+            onLogout={handleLogout}
+          />
+        )}
 
         <main className={`layout-main ${showShell ? "layout-main--with-sidebar" : ""}`}>
           {showShell && (
             <header className="layout-header" role="banner">
               <div className="layout-header__title">
-                <h1 className="layout-header__heading">
-                  👋 Hi, {user?.name || "User"}
-                </h1>
-                <p className="layout-header__subtitle">
-                  Welcome back to your workspace
-                </p>
+                <h1 className="layout-header__heading">{pageTitle}</h1>
               </div>
 
               <div className="layout-header__actions">
-                <div className="layout-profile">
-                  <button
-                    onClick={() => setDropdownOpen((p) => !p)}
-                    className="layout-profile__trigger"
-                    aria-haspopup="menu"
-                    aria-expanded={dropdownOpen}
-                  >
-                    <div className="layout-avatar">{userInitials}</div>
-                    <div className="layout-profile__meta">
-                      <span className="layout-profile__name">
-                        {user?.name || "User"}
-                      </span>
-                    </div>
-                    <span className={`layout-profile__chevron ${dropdownOpen ? "is-open" : ""}`} />
-                  </button>
-
-                  {dropdownOpen && (
-                    <div className="layout-profile__menu" role="menu">
-                      <button
-                        onClick={handleLogout}
-                        className="layout-profile__menu-item"
-                        role="menuitem"
-                      >
-                        Logout
-                      </button>
-                    </div>
-                  )}
+                <div className="layout-header__right">
+                  <div className="layout-header__user">{user?.name || "User"}</div>
+                  <div className="layout-header__date">{todayLabel}</div>
                 </div>
               </div>
             </header>

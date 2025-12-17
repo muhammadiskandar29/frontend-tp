@@ -122,6 +122,106 @@
   text-align: center;
 }
 
+.sidebar-bottom {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sidebar-account {
+  position: relative;
+}
+
+.sidebar-account__trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--sidebar-border);
+  border-radius: 0.5rem;
+  background: #ffffff;
+  color: var(--sidebar-text);
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.sidebar-account__trigger:hover {
+  background: rgba(255, 108, 0, 0.06);
+  border-color: rgba(255, 108, 0, 0.18);
+}
+
+.sidebar-account__avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 0.45rem;
+  background: rgba(255, 108, 0, 0.12);
+  color: var(--sidebar-accent);
+  font-weight: 700;
+  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.sidebar-account__name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1 1 auto;
+  text-align: left;
+}
+
+.sidebar-account__chevron {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-right: 2px solid var(--sidebar-muted);
+  border-bottom: 2px solid var(--sidebar-muted);
+  transform: rotate(45deg);
+  transition: transform 140ms ease;
+  flex: 0 0 auto;
+}
+
+.sidebar-account__trigger.is-open .sidebar-account__chevron {
+  transform: rotate(-135deg);
+}
+
+.sidebar-account__menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 0.5rem);
+  background: #ffffff;
+  border: 1px solid var(--sidebar-border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  z-index: 70;
+}
+
+.sidebar-account__menu-item {
+  width: 100%;
+  text-align: left;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.82rem;
+  color: var(--sidebar-text);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+
+.sidebar-account__menu-item:hover {
+  background: #f8fafc;
+}
+
+.sidebar-account__menu-item--danger {
+  color: #dc2626;
+}
+
 .sidebar-toggle-btn {
   position: fixed;
   bottom: 1.25rem;
