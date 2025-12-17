@@ -9,8 +9,8 @@ ADMIN USERS PAGE (Scoped Styles)
 
 /* Root variables tetap global */
 :root {
---primary: #F1A124;
---primary-hover: #df9620;
+--primary: #ff6c00;
+--primary-hover: #c85400;
 --success: #4ADE80;
 --warning: #FACC15;
 --danger: #F87171;
@@ -52,12 +52,12 @@ ADMIN USERS PAGE (Scoped Styles)
 .customers-search__input {
   width: 100%;
   border: 1px solid var(--dash-border);
-  border-radius: 1rem;
+  border-radius: 0.5rem;
   background: var(--dash-surface);
   color: var(--dash-text);
-  padding: 0.8rem 2.6rem 0.8rem 1rem;
-  font-size: 0.95rem;
-  transition: border 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  padding: 0.55rem 2.2rem 0.55rem 0.75rem;
+  font-size: 0.85rem;
+  transition: border 0.2s ease, background 0.2s ease;
 }
 
 .users-search__input::placeholder {
@@ -66,8 +66,8 @@ ADMIN USERS PAGE (Scoped Styles)
 
 .users-search__input:focus {
   outline: none;
-  border-color: var(--accent-indigo);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  border-color: var(--primary);
+  box-shadow: none;
   background: #fff;
 }
 
@@ -78,18 +78,18 @@ ADMIN USERS PAGE (Scoped Styles)
   top: 50%;
   transform: translateY(-50%);
   color: var(--dash-muted);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
 .users-button,
 .customers-button {
-  border: none;
-  border-radius: 999px;
-  padding: 0.85rem 1.5rem;
-  font-size: 0.95rem;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  padding: 0.55rem 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -97,43 +97,86 @@ ADMIN USERS PAGE (Scoped Styles)
 
 .users-button:focus-visible,
 .customers-button:focus-visible {
-  outline: 2px solid var(--accent-indigo);
+  outline: 2px solid rgba(255, 108, 0, 0.45);
   outline-offset: 2px;
 }
 
 .users-button--primary {
-  background: #f1a124;
+  background: var(--primary);
   color: #fff;
-  box-shadow: 0 12px 25px rgba(241, 161, 36, 0.25);
+  box-shadow: none;
 }
 
 .users-button--primary:hover {
-  background: #df9620;
-  transform: translateY(-1px);
+  background: var(--primary-hover);
 }
 
 .customers-button--primary {
-  background: #f1a124;
+  background: var(--primary);
   color: #fff;
-  box-shadow: 0 12px 25px rgba(241, 161, 36, 0.25);
+  box-shadow: none;
 }
 
 .customers-button--primary:hover {
-  background: #df9620;
-  transform: translateY(-1px);
+  background: var(--primary-hover);
 }
 
 .customers-button--secondary {
   background: #ffffff;
-  color: #374151;
-  border: 1px solid #d1d5db;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  color: var(--primary);
+  border: 1px solid rgba(255, 108, 0, 0.35);
+  box-shadow: none;
 }
 
 .customers-button--secondary:hover {
-  background: #f3f4f6;
-  border-color: #9ca3af;
-  transform: translateY(-1px);
+  background: rgba(255, 108, 0, 0.06);
+  border-color: rgba(255, 108, 0, 0.55);
+}
+
+/* Small filter bar under customers toolbar */
+.customers-filters {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.35rem;
+}
+
+.customers-filter-btn {
+  border: 1px solid var(--dash-border);
+  background: #ffffff;
+  color: var(--dash-text);
+  border-radius: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.customers-filter-btn:hover {
+  background: rgba(255, 108, 0, 0.06);
+}
+
+.customers-filter-btn.is-active {
+  border-color: rgba(255, 108, 0, 0.5);
+  color: var(--primary);
+  background: rgba(255, 108, 0, 0.08);
+}
+
+.customers-filter-icon-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  justify-content: center;
+  color: var(--primary);
+  border-color: rgba(255, 108, 0, 0.35);
+}
+
+.customers-filter-icon-btn svg {
+  color: currentColor;
 }
 
 .customers-toolbar-buttons {
@@ -878,7 +921,7 @@ ADMIN USERS PAGE (Scoped Styles)
 }
 
 .orders-button--primary:hover {
-  background: #df9620 !important;
+  background: #c85400 !important;
   transform: translateY(-1px);
 }
 
@@ -1071,14 +1114,14 @@ ADMIN USERS PAGE (Scoped Styles)
 }
 
 .orders-link {
-  color: #2563eb;
+  color: #ff6c00;
   text-decoration: underline;
   font-size: 0.75rem;
   transition: color 0.2s ease;
 }
 
 .orders-link:hover {
-  color: #1d4ed8;
+  color: #c85400;
 }
 
 /* === BROADCAST TABLE (9 columns) === */

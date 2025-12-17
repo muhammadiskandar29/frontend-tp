@@ -1,5 +1,5 @@
 .customers-history-link {
-  color: #2563eb;
+  color: #ff6c00;
   font-weight: 600;
   text-decoration: none;
 }
@@ -13,14 +13,14 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: #128C7E;
+  color: #ff6c00;
   font-size: 12px;
   text-decoration: none;
   transition: color 0.2s ease;
 }
 
 .wa-link:hover {
-  color: #25D366;
+  color: #c85400;
 }
 
 .wa-link span {
@@ -64,9 +64,9 @@
 }
 
 .followup-chip--active {
-  background: #2563eb;
+  background: #ff6c00;
   color: #fff;
-  border-color: #1d4ed8;
+  border-color: #c85400;
 }
 
 .followup-chip--inactive {
