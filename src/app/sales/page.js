@@ -2,6 +2,7 @@
 
 import "@/styles/sales/dashboard.css";
 import Layout from "@/components/Layout";
+import GreetingBanner from "@/components/GreetingBanner";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   TrendingUp,
@@ -162,6 +163,7 @@ export default function Dashboard() {
   return (
     <Layout title="Dashboard | Sales Panel">
       <div className="dashboard-shell">
+        <GreetingBanner />
         {error && <div className="dashboard-alert">{error}</div>}
         <section className="dashboard-hero">
           <div className="dashboard-hero__copy">
