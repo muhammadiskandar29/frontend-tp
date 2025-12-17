@@ -157,7 +157,7 @@ export default function FollowupReportPage() {
   };
 
   return (
-    <Layout title="Report Follow Up | One Dashboard">
+    <Layout title="Log Report Follow Up">
       <div className="dashboard-shell customers-shell">
         {/* HERO SECTION */}
         <section className="dashboard-hero customers-hero">

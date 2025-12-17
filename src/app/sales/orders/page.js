@@ -534,7 +534,7 @@ export default function DaftarPesanan() {
   };
 
   return (
-    <Layout title="Orders | One Dashboard">
+    <Layout title="Manage Orders">
       <div className="dashboard-shell orders-shell">
         <section className="dashboard-hero orders-hero">
           <div className="dashboard-hero__copy">

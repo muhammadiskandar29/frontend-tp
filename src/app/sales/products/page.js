@@ -91,7 +91,7 @@ export default function AdminProductsPage() {
   }, []);
 
   return (
-    <Layout title="Products | One Dashboard">
+    <Layout title="Manage Products">
       <div className="dashboard-shell customers-shell">
         <section className="dashboard-hero customers-hero">
           <div className="dashboard-hero__copy">

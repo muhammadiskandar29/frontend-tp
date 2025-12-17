@@ -111,7 +111,7 @@ export default function AdminKategoriPage() {
     );
 
   return (
-    <Layout title="Kategori | One Dashboard">
+    <Layout title="Manage Categories">
       <div className="dashboard-shell customers-shell">
         <section className="dashboard-hero customers-hero">
           <div className="dashboard-hero__copy">

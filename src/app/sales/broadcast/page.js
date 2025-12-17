@@ -201,7 +201,7 @@ export default function BroadcastPage() {
   };
 
   return (
-    <Layout title="Broadcast | Sales Dashboard">
+    <Layout title="Manage Broadcast">
       <div className="dashboard-shell orders-shell">
         <section className="dashboard-hero orders-hero">
           <div className="dashboard-hero__copy">

@@ -175,7 +175,7 @@ export default function AdminCustomerPage() {
   };
 
   return (
-    <Layout title="Customers | One Dashboard">
+    <Layout title="Manage Customers">
       <div className="dashboard-shell customers-shell">
         <section className="dashboard-hero customers-hero">
           <div className="dashboard-hero__copy">

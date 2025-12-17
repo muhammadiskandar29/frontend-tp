@@ -97,7 +97,7 @@ export default function Layout({ children, title, description, aboveContent = nu
         alignItems: "center", 
         minHeight: "100vh" 
       }}>
-        <p>Redirecting to login...</p>
+        <p>Sebentar ya, sedang disiapkan datanya...</p>
       </div>
     );
   }

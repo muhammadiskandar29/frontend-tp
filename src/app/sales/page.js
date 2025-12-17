@@ -47,6 +47,52 @@ export default function Dashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activityRangeDays, setActivityRangeDays] = useState(30);
+  const [financeRangeDays, setFinanceRangeDays] = useState(30);
+
+  const requestDays = useMemo(() => Math.max(activityRangeDays, financeRangeDays), [activityRangeDays, financeRangeDays]);
+
+  const makeRangeLabel = (days) => `Last ${days} days`;
+
+  const formatShortDay = (date) => {
+    try {
+      return new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "short" }).format(date);
+    } catch {
+      return `${date.getDate()}/${date.getMonth() + 1}`;
+    }
+  };
+
+  const buildSeriesForLastNDays = useCallback(
+    (points, days) => {
+      const list = Array.isArray(points) ? points : [];
+      const byKey = new Map();
+      for (const p of list) {
+        if (!p) continue;
+        const key = p.date || p.tanggal || p.label;
+        if (key != null) byKey.set(String(key), p);
+      }
+
+      const out = [];
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        const iso = d.toISOString().slice(0, 10);
+        const label = formatShortDay(d);
+
+        const hit = byKey.get(iso) || byKey.get(label);
+        out.push({
+          label,
+          orders: hit?.order ?? hit?.orders ?? 0,
+          transactions: hit?.transaksi ?? hit?.transactions ?? 0,
+        });
+      }
+      return out;
+    },
+    [formatShortDay]
+  );
 
   const loadDashboardData = useCallback(async () => {
     setLoading(true);
@@ -54,7 +100,7 @@ export default function Dashboard() {
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("/api/sales/dashboard", {
+      const response = await fetch(`/api/sales/dashboard?days=${encodeURIComponent(requestDays)}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -74,7 +120,7 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [requestDays]);
 
   useEffect(() => {
     loadDashboardData();
@@ -90,25 +136,25 @@ export default function Dashboard() {
         title: "Total Orders",
         value: overview?.orders_total?.toLocaleString("id-ID") ?? (loading ? "…" : "0"),
         icon: <ShoppingCart size={22} />,
-        color: "accent-blue",
+        color: "accent-orange",
       },
       {
         title: "Total Paid",
         value: overview?.orders_paid?.toLocaleString("id-ID") ?? (loading ? "…" : "0"),
         icon: <CreditCard size={22} />,
-        color: "accent-emerald",
+        color: "accent-orange",
       },
       {
         title: "Paid Ratio",
         value: overview?.paid_ratio_formatted ?? (loading ? "…" : "0%"),
         icon: <Percent size={22} />,
-        color: "accent-amber",
+        color: "accent-orange",
       },
       {
         title: "Unpaid Orders",
         value: overview?.orders_unpaid?.toLocaleString("id-ID") ?? (loading ? "…" : "0"),
         icon: <Package size={22} />,
-        color: "accent-red",
+        color: "accent-orange",
       },
     ];
   }, [overview, loading]);
@@ -119,66 +165,64 @@ export default function Dashboard() {
         title: "Gross Revenue",
         value: financial?.gross_revenue_formatted ?? (loading ? "…" : "Rp0"),
         icon: <DollarSign size={22} />,
-        color: "accent-emerald",
+        color: "accent-orange",
       },
       {
         title: "Shipping Cost",
         value: financial?.shipping_cost_formatted ?? (loading ? "…" : "Rp0"),
         icon: <Truck size={22} />,
-        color: "accent-purple",
+        color: "accent-orange",
       },
       {
         title: "Net Revenue",
         value: financial?.net_revenue_formatted ?? (loading ? "…" : "Rp0"),
         icon: <Wallet size={22} />,
-        color: "accent-indigo",
+        color: "accent-orange",
       },
       {
         title: "Gross Profit",
         value: financial?.gross_profit_formatted ?? (loading ? "…" : "Rp0"),
         icon: <PiggyBank size={22} />,
-        color: "accent-pink",
+        color: "accent-orange",
       },
       {
         title: "Net Profit",
         value: financial?.net_profit_formatted ?? (loading ? "…" : "Rp0"),
         icon: <TrendingUp size={22} />,
-        color: "accent-teal",
+        color: "accent-orange",
       },
     ];
   }, [financial, loading]);
 
   const activityTrend = useMemo(() => {
-    return (
+    const raw =
       data?.chart_transaksi_order?.map((point) => ({
         label: point.label,
-        orders: point.order,
-        transactions: point.transaksi,
-      })) ?? []
-    );
-  }, [data]);
+        order: point.order,
+        transaksi: point.transaksi,
+        date: point.date,
+        tanggal: point.tanggal,
+      })) ?? [];
+
+    // If API provides dated points (ideal), build a full N-day series.
+    // If API only provides limited points (e.g., weekday buckets), we still show them as-is.
+    const hasDateKey = raw.some((p) => p?.date || p?.tanggal);
+    if (hasDateKey) return buildSeriesForLastNDays(raw, activityRangeDays);
+
+    return raw.map((p) => ({
+      label: p.label,
+      orders: p.order ?? 0,
+      transactions: p.transaksi ?? 0,
+    }));
+  }, [data, activityRangeDays, buildSeriesForLastNDays]);
 
   const chartHasData = activityTrend.length > 0;
 
   return (
-    <Layout title="Dashboard | Sales Panel" aboveContent={<GreetingBanner />}>
+    <Layout title="Dashboard" aboveContent={<GreetingBanner />}>
       <div className="dashboard-shell">
         {error && <div className="dashboard-alert">{error}</div>}
         <section className="dashboard-hero">
-          <div className="dashboard-hero__copy">
-            <p className="dashboard-hero__eyebrow">Performance</p>
-            <h2 className="dashboard-hero__title">Sales Dashboard Overview</h2>
-            <p className="dashboard-hero__subtitle">Sales pipeline, revenue, and fulfillment.</p>
-            <span className="dashboard-hero__meta">
-              <span role="img" aria-label="calendar">
-                📅
-              </span>{" "}
-              {statistik?.total_penjualan_hari_ini_formatted
-                ? `Hari ini: ${statistik.total_penjualan_hari_ini_formatted}`
-                : "Last 30 Days"}
-            </span>
-          </div>
-
           <div className="dashboard-summary">
             {summaryCards.map((card, index) => (
               <article className="summary-card" key={card.title}>
@@ -199,7 +243,17 @@ export default function Dashboard() {
                 <p className="panel__eyebrow">Orders vs Transactions</p>
                 <h3 className="panel__title">Sales Activity</h3>
               </div>
-              <span className="panel__meta">Last 30 days</span>
+              <label className="panel__filter" aria-label="Filter range for Sales Activity">
+                <select
+                  className="panel__select"
+                  value={activityRangeDays}
+                  onChange={(e) => setActivityRangeDays(Number(e.target.value))}
+                >
+                  <option value={7}>Last 7 days</option>
+                  <option value={14}>Last 14 days</option>
+                  <option value={30}>Last 30 days</option>
+                </select>
+              </label>
             </div>
 
             {LazyResponsiveContainer && LazyChart && LazyLine && LazyXAxis && LazyTooltip && LazyCartesianGrid ? (
@@ -211,11 +265,11 @@ export default function Dashboard() {
                     contentStyle={{ borderRadius: 12, border: "1px solid #E2E8F0" }}
                     formatter={(value, name) => [value, name === "orders" ? "Order" : "Transaksi"]}
                   />
-                  <LazyLine type="monotone" dataKey="orders" stroke="#6366F1" strokeWidth={3} dot={false} name="orders" />
+                  <LazyLine type="monotone" dataKey="orders" stroke="#ff6c00" strokeWidth={3} dot={false} name="orders" />
                   <LazyLine
                     type="monotone"
                     dataKey="transactions"
-                    stroke="#F97316"
+                    stroke="#c85400"
                     strokeWidth={3}
                     dot={false}
                     name="transactions"
@@ -236,7 +290,17 @@ export default function Dashboard() {
                 <p className="panel__eyebrow">Revenue breakdown</p>
                 <h3 className="panel__title">Financial Snapshot</h3>
               </div>
-              <span className="panel__meta accent-green">Stable</span>
+              <label className="panel__filter" aria-label="Filter range for Financial Snapshot">
+                <select
+                  className="panel__select"
+                  value={financeRangeDays}
+                  onChange={(e) => setFinanceRangeDays(Number(e.target.value))}
+                >
+                  <option value={7}>{makeRangeLabel(7)}</option>
+                  <option value={14}>{makeRangeLabel(14)}</option>
+                  <option value={30}>{makeRangeLabel(30)}</option>
+                </select>
+              </label>
             </div>
 
             <div className="revenue-grid">
