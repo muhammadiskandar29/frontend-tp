@@ -227,9 +227,8 @@ export default function FinanceDashboard() {
   const chartHasData = activityTrend.length > 0;
 
   return (
-    <Layout title="Dashboard | Finance Panel">
+    <Layout title="Dashboard | Finance Panel" aboveContent={<GreetingBanner />}>
       <div className="dashboard-shell">
-        <GreetingBanner />
         {error && <div className="dashboard-alert">{error}</div>}
         <section className="dashboard-hero">
           <div className="dashboard-hero__copy">

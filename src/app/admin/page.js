@@ -316,9 +316,8 @@ export default function Dashboard() {
   }));
 
   return (
-    <Layout title="Dashboard | Admin Panel">
+    <Layout title="Dashboard | Admin Panel" aboveContent={<GreetingBanner />}>
       <div className="dashboard-shell">
-        <GreetingBanner />
         <DashboardTabs tabs={tabs} activeKey={activeDivision} onChange={setActiveDivision} />
         {error && <div className="dashboard-alert">{error}</div>}
         <section className="dashboard-hero">

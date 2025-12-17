@@ -45,7 +45,7 @@ function isTokenExpired() {
   }
 }
 
-export default function Layout({ children, title, description }) {
+export default function Layout({ children, title, description, aboveContent = null }) {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState(null);
@@ -146,6 +146,7 @@ export default function Layout({ children, title, description }) {
             </header>
           )}
 
+          {showShell && aboveContent}
           <section className="layout-content">{children}</section>
         </main>
       </div>
