@@ -23,14 +23,9 @@ function formatLongDateId(date) {
 }
 
 function formatTimeId(date) {
-  try {
-    return new Intl.DateTimeFormat("id-ID", {
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(date);
-  } catch {
-    return `${date.getHours()}:${String(date.getMinutes()).padStart(2, "0")}`;
-  }
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+  return `${hh}.${mm}`;
 }
 
 export default function GreetingBanner({ name }) {
