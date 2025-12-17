@@ -19,38 +19,55 @@
 
 /* === MAIN SIDEBAR === */
 .sidebar {
-  @apply bg-white shadow-md h-screen flex flex-col border-r border-gray-200 
-  transition-all duration-300 ease-in-out;
-  width: 16rem;
-  padding: 1.5rem;
+  @apply bg-white h-screen flex flex-col border-r border-gray-200;
+  transition: transform 220ms ease, box-shadow 220ms ease, width 200ms ease;
+  width: 15rem;
+  padding: 1rem;
   position: fixed;
   top: 0;
   left: 0;
   z-index: 40;
+  box-shadow: 0 6px 24px rgba(15, 23, 42, 0.06);
 }
 
 /* === TITLE === */
 .sidebar-title {
-  @apply text-2xl font-bold mb-8 tracking-tight text-[#F1A124] transition-all duration-300 ease-in-out;
+  @apply font-semibold tracking-tight text-[#374151];
+  font-size: 0.75rem;
+  line-height: 1rem;
+  margin: 0.25rem 0 0.75rem;
 }
 
 /* === MENU === */
 .sidebar-menu {
-  @apply space-y-2 flex-1;
+  @apply flex-1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .sidebar-item {
-  @apply flex items-center gap-3 px-4 py-2 rounded-xl font-medium 
-  transition-all duration-200 text-gray-700 hover:bg-[#FCEBD2] hover:text-[#F1A124];
+  @apply flex items-center gap-3 font-medium text-gray-700;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.6rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  border: 1px solid transparent;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
 }
 
 .sidebar-item-active {
-  @apply bg-[#F1A124] text-white shadow-sm;
+  background: #fff4ea;
+  color: #ff6c00;
+  border-color: rgba(255, 108, 0, 0.24);
+  box-shadow: none;
 }
 
 /* === FOOTER === */
 .sidebar-footer {
-  @apply text-sm text-gray-500 mt-auto border-t pt-4 transition-all duration-300;
+  @apply text-gray-500 mt-auto border-t transition-all duration-300;
+  font-size: 0.8rem;
+  padding-top: 1rem;
 }
 
 /* Tooltip untuk collapsed menu */
@@ -65,15 +82,18 @@
   position: fixed;
   bottom: 20px;
   left: 20px;
-  @apply bg-[#F1A124] text-white p-2.5 rounded-full shadow-md hover:bg-[#e3951e]
-  transition-all duration-300 ease-in-out;
+  background: #ff6c00;
+  color: #ffffff;
+  border: none;
+  border-radius: 999px;
+  transition: box-shadow 160ms ease;
+  box-shadow: 0 10px 22px rgba(255, 108, 0, 0.22);
   z-index: 60;
   width: 42px;
   height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: none;
 }
 
 /* ==========================================================
@@ -85,17 +105,18 @@
   }
 
 .sidebar.expanded-mobile {
-  transform: translateX(-10px);
+  transform: translateX(0);
 }
 
 
   /* tombol tetap stay */
 .sidebar.expanded-mobile ~ .sidebar-toggle-btn {
-  left: calc(16rem - 2rem);
+  left: calc(15rem - 2rem);
 }
 
   .sidebar-item-active {
-    @apply bg-[#F1A124] text-gray-100 shadow-sm;
+    background: #fff4ea;
+    color: #ff6c00;
   }
 
   .sidebar:not(.expanded-mobile) .sidebar-title,
@@ -119,90 +140,9 @@
   }
 
   .sidebar-item-active {
-    @apply bg-[#F1A124] text-white shadow-sm;
+    background: #fff4ea;
+    color: #ff6c00;
   }
-}
-/* === SUBMENU (Modern + Icon + Smooth) === */
-.submenu-list {
-  @apply flex flex-col gap-1 mt-1 ml-5 pl-3 border-l border-gray-200;
-}
-
-.submenu-item {
-  @apply relative flex items-center gap-2 px-3 py-2 text-sm text-gray-600 
-  rounded-lg transition-all duration-200 ease-in-out hover:text-[#F1A124] hover:bg-[#FFF7EA];
-}
-
-/* === Icon bulat kecil di kiri submenu === */
-.submenu-item::before {
-  content: "";
-  @apply w-2 h-2 rounded-full bg-gray-300 transition-all duration-300 ease-in-out;
-}
-
-.submenu-item:hover::before {
-  @apply bg-[#F1A124] scale-110;
-}
-
-.submenu-item-active {
-  @apply text-[#F1A124] font-semibold bg-[#FFF1DA];
-}
-
-.submenu-item-active::before {
-  @apply bg-[#F1A124];
-}
-
-/* === Dropdown Header (Products) === */
-.sidebar-item.has-submenu {
-  @apply flex justify-between items-center cursor-pointer;
-}
-
-.sidebar-item.has-submenu svg {
-  @apply text-gray-400 transition-transform duration-200;
-}
-
-.sidebar-item.has-submenu.open svg {
-  @apply rotate-90 text-[#F1A124];
-}
-
-/* === FIX: Icon warna saat item aktif / ada submenu === */
-.sidebar-item svg {
-  @apply text-gray-500 transition-colors duration-200;
-}
-
-/* Hover efek */
-.sidebar-item:hover svg {
-  @apply text-[#F1A124];
-}
-
-/* Warna ikon saat item aktif */
-.sidebar-item-active svg {
-  @apply text-white;
-}
-
-/* Item yang punya submenu dan sedang terbuka */
-.sidebar-item.has-submenu.open svg:first-child {
-  @apply text-white;
-}
-
-/* Icon dropdown panah kanan/bawah */
-.sidebar-item.has-submenu svg:last-child {
-  @apply text-gray-400 transition-all duration-200;
-}
-
-.sidebar-item.has-submenu.open svg:last-child {
-  @apply text-white rotate-90;
-}
-/* Biar pas dibuka tetap gaya hover, bukan full putih/oranye */
-.sidebar-item.has-submenu.open {
-  @apply bg-[#FCEBD2] text-[#F1A124];
-}
-
-.sidebar-item.has-submenu.open svg:first-child {
-  @apply text-[#F1A124];
-}
-
-/* panah tetap oranye & muter 90° */
-.sidebar-item.has-submenu.open svg:last-child {
-  @apply text-[#F1A124] rotate-90;
 }
 /* ==========================================================
    CONTENT POSITIONING SAAT ADA / TIDAK ADA SIDEBAR
@@ -210,9 +150,9 @@
 
 /* default: ada sidebar */
 .main-content {
-  margin-left: 16rem;
-  width: calc(100% - 16rem);
-  transition: all 0.3s ease-in-out;
+  margin-left: 15rem;
+  width: calc(100% - 15rem);
+  transition: margin 200ms ease, width 200ms ease;
 }
 
 /* kalau sidebar tidak ada */
@@ -242,29 +182,21 @@
   }
 
   .sidebar-item-active {
-    @apply bg-[#F1A124] text-white shadow-sm;
+    background: #fff4ea;
+    color: #ff6c00;
+    border-color: rgba(255, 108, 0, 0.24);
   }
 
   /* biar konten utama ga ketimpa sidebar */
   .main-content {
-    margin-left: 16rem; /* sama kayak lebar sidebar */
-    width: calc(100% - 16rem);
+    margin-left: 15rem; /* sama kayak lebar sidebar */
+    width: calc(100% - 15rem);
   }
 }
-/* Tambahan kecil biar beda dari admin */
-.sidebar-title {
-  @apply text-2xl font-bold mb-8 tracking-tight text-[#F1A124];
-}
 
-.sidebar-item {
-  @apply flex items-center gap-3 px-4 py-2 rounded-xl font-medium 
-  transition-all duration-200 text-gray-700 hover:bg-[#FFF3E0] hover:text-[#F1A124];
-}
-
-.sidebar-item-active {
-  @apply bg-[#F1A124] text-white shadow-sm;
-}
-
-.sidebar-footer {
-  @apply text-sm text-gray-400 mt-auto border-t pt-4;
+/* Simple hover (professional) */
+.sidebar-item:hover {
+  background: #fff4ea;
+  color: #374151;
+  border-color: rgba(255, 108, 0, 0.16);
 }

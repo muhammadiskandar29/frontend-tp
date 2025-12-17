@@ -12,7 +12,7 @@ import {
   LogOut,
   Menu,
 } from "lucide-react";
-import "@/styles/cstsidebar.css";
+import "@/styles/customer/cstsidebar.css";
 
 export default function SidebarCustomer() {
   const pathname = usePathname();
@@ -57,9 +57,7 @@ export default function SidebarCustomer() {
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className={`sidebar-item flex items-center gap-3 px-4 py-2 rounded-lg transition-all ${
-                    isActive ? "sidebar-item-active bg-gray-100 font-medium" : "hover:bg-gray-50"
-                  }`}
+                  className={`sidebar-item ${isActive ? "sidebar-item-active" : ""}`}
                 >
                   {item.icon}
                   <span>{item.label}</span>
@@ -79,7 +77,7 @@ export default function SidebarCustomer() {
       {isMobile && (
         <button
           onClick={toggleSidebar}
-          className="sidebar-toggle-btn fixed top-4 left-4 bg-white p-2 rounded-md shadow-md z-50"
+          className="sidebar-toggle-btn"
           aria-label="Toggle sidebar"
         >
           <Menu size={18} />
