@@ -4,13 +4,13 @@
 }
 
 :root {
-  --dash-bg: #f8f9fa;
-  --dash-surface: #ffffff;
-  --dash-border: #e9ecef;
-  --dash-text: #212529;
-  --dash-muted: #6c757d;
-  --dash-muted-strong: #495057;
-  --dash-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --dash-bg: #1a1d24;
+  --dash-surface: #252932;
+  --dash-border: #2d3239;
+  --dash-text: #e2e8f0;
+  --dash-muted: #94a3b8;
+  --dash-muted-strong: #cbd5e1;
+  --dash-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   --dash-radius: 0.75rem;
   --dash-radius-sm: 0.5rem;
   /* Single accent palette */
@@ -110,12 +110,12 @@
   display: flex;
   gap: 1rem;
   align-items: center;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .summary-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   transform: translateY(-2px);
 }
 
@@ -211,7 +211,7 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .panel__header {
@@ -298,7 +298,7 @@
   padding: 0.35rem 0.5rem;
   border-radius: 0.5rem;
   border: 1px solid var(--dash-border);
-  background: #ffffff;
+  background: var(--dash-surface);
   color: var(--dash-text);
 }
 

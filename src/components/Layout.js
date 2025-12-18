@@ -8,6 +8,7 @@ import Link from "next/link";
 import { Menu } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import "@/styles/sales/layout.css";
+import "@/styles/toast.css";
 import "../app/globals.css";
 import "primereact/resources/themes/lara-light-amber/theme.css";
 import "primereact/resources/primereact.min.css";

@@ -5,7 +5,7 @@ import Layout from "@/components/Layout";
 import dynamic from "next/dynamic";
 import { FolderOpen, Search } from "lucide-react";
 import useKategori from "@/hooks/sales/useKategori";
-import { toast } from "react-hot-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 import "@/styles/sales/dashboard.css";
 import "@/styles/sales/admin.css";
 
@@ -60,11 +60,15 @@ export default function AdminKategoriPage() {
 
   const handleSaveAdd = async (newData) => {
     try {
-      await addKategori(newData.nama);
+      const result = await addKategori(newData.nama);
       setShowAdd(false);
-      toast.success("Kategori berhasil ditambahkan!");
+      if (result) {
+        toastSuccess("Kategori berhasil ditambahkan!");
+      } else {
+        toastError("Gagal menambah kategori!");
+      }
     } catch (err) {
-      toast.error("Gagal menambah kategori!");
+      toastError("Gagal menambah kategori!");
     }
   };
 
@@ -75,12 +79,16 @@ export default function AdminKategoriPage() {
 
   const handleSaveEdit = async (updated) => {
     try {
-      await updateKategori(selectedKategori.id, updated.nama);
+      const result = await updateKategori(selectedKategori.id, updated.nama);
       setShowEdit(false);
       setSelectedKategori(null);
-      toast.success("Kategori berhasil diperbarui!");
+      if (result) {
+        toastSuccess("Kategori berhasil diperbarui!");
+      } else {
+        toastError("Gagal mengedit kategori!");
+      }
     } catch (err) {
-      toast.error("Gagal mengedit kategori!");
+      toastError("Gagal mengedit kategori!");
     }
   };
 
@@ -91,12 +99,16 @@ export default function AdminKategoriPage() {
 
   const handleConfirmDelete = async () => {
     try {
-      await deleteKategori(selectedKategori.id);
+      const result = await deleteKategori(selectedKategori.id);
       setShowDelete(false);
       setSelectedKategori(null);
-      toast.success("Kategori berhasil dihapus!");
+      if (result) {
+        toastSuccess("Kategori berhasil dihapus!");
+      } else {
+        toastError("Gagal menghapus kategori!");
+      }
     } catch (err) {
-      toast.error("Gagal menghapus kategori!");
+      toastError("Gagal menghapus kategori!");
     }
   };
 

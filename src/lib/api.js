@@ -4,7 +4,7 @@
  * Scalable dan mudah dipindahkan ke environment manapun
  */
 
-import { toast } from "react-hot-toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 import { getApiUrl } from "@/config/api";
 import config from "@/config/env";
 
@@ -70,19 +70,20 @@ const handleResponse = async (res, endpoint, options = {}) => {
   // Success response
   if (data?.success === true) {
     if (config.features.enableToast && data?.message) {
-      toast.success(data.message);
+      toastSuccess(data.message, res.status);
     }
     return {
       success: true,
       message: data?.message || "Berhasil",
       data: data?.data,
+      status: res.status,
     };
   }
 
   // Unauthorized
   if (res.status === 401) {
     if (config.features.enableToast) {
-      toast.error("⚠️ Sesi kamu berakhir. Silakan login ulang.");
+      toastError("⚠️ Sesi kamu berakhir. Silakan login ulang.", res.status);
     }
     
     if (typeof window !== "undefined") {
@@ -144,7 +145,7 @@ const handleResponse = async (res, endpoint, options = {}) => {
       console.error("❌ [422] Validation errors:", validationErrors);
       
       if (config.features.enableToast) {
-        toast.error(message);
+        toastError(message, res.status);
       }
       
       throw Object.assign(new Error(message), { 
@@ -164,7 +165,7 @@ const handleResponse = async (res, endpoint, options = {}) => {
     if (res.status === 500 && endpoint.includes("/order-admin")) {
       console.warn("⚠️ Server error tapi data kemungkinan berhasil masuk.");
       if (config.features.enableToast) {
-        toast.success("Data pesanan tersimpan, tapi server mengirim error.");
+        toastSuccess("Data pesanan tersimpan, tapi server mengirim error.", res.status);
       }
       return {
         success: true,
@@ -174,7 +175,7 @@ const handleResponse = async (res, endpoint, options = {}) => {
     }
 
     if (config.features.enableToast) {
-      toast.error(message);
+      toastError(message, res.status);
     }
     
     throw Object.assign(new Error(message), { 
@@ -209,7 +210,7 @@ export async function api(endpoint, options = {}) {
     console.error(`❌ API Error [${endpoint}]:`, err);
     
     if (config.features.enableToast) {
-      toast.error(err.message || "Terjadi kesalahan");
+      toastError(err.message || "Terjadi kesalahan", err.status || null);
     }
     
     throw err;

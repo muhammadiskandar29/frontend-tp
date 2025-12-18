@@ -30,7 +30,7 @@ function useDebouncedValue(value, delay = 250) {
   return debounced;
 }
 
-const DEFAULT_TOAST = { show: false, message: "", type: "success" };
+import { toastSuccess, toastError, toastWarning } from "@/lib/toast";
 const CUSTOMERS_COLUMNS = [
   "#",
   "Nama",
@@ -59,9 +59,6 @@ export default function AdminCustomerPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 25;
 
-  const [toast, setToast] = useState(DEFAULT_TOAST);
-  const toastTimeoutRef = useRef(null);
-
   const getCustomerDate = useCallback((c) => {
     const raw =
       c?.created_at ||
@@ -76,20 +73,6 @@ export default function AdminCustomerPage() {
     return Number.isNaN(d.getTime()) ? null : d;
   }, []);
 
-  const showToast = (message, type = "success") => {
-    setToast({ show: true, message, type });
-    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-    toastTimeoutRef.current = setTimeout(() => {
-      setToast({ show: false, message: "", type });
-    }, 2500);
-  };
-
-  useEffect(() => {
-    return () => {
-      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-    };
-  }, []);
-
   // 🔹 Load data dari backend, batched via needsRefresh flag
   useEffect(() => {
     if (!needsRefresh) return;
@@ -99,7 +82,7 @@ export default function AdminCustomerPage() {
         setCustomers(data);
       } catch (err) {
         console.error("Error fetching customers:", err);
-        showToast("Gagal memuat data customer", "error");
+        toastError("Gagal memuat data customer");
       } finally {
         setNeedsRefresh(false);
       }
@@ -150,7 +133,13 @@ export default function AdminCustomerPage() {
   };
 
   const requestRefresh = (message, type = "success") => {
-    showToast(message, type);
+    if (type === "error") {
+      toastError(message);
+    } else if (type === "warning") {
+      toastWarning(message);
+    } else {
+      toastSuccess(message);
+    }
     setNeedsRefresh(true);
   };
 
@@ -177,7 +166,7 @@ export default function AdminCustomerPage() {
       requestRefresh("Customer berhasil dihapus!", "warning");
     } catch (err) {
       console.error("Error deleting customer:", err);
-      showToast("Gagal menghapus customer", "error");
+      toastError("Gagal menghapus customer");
     } finally {
       setShowDelete(false);
       setSelectedCustomer(null);
@@ -499,16 +488,6 @@ export default function AdminCustomerPage() {
           />
         )}
 
-        {/* TOAST */}
-        {toast.show && (
-          <div
-            className={`toast ${toast.type === "error" ? "toast-error" : ""} ${
-              toast.type === "warning" ? "toast-warning" : ""
-            }`}
-          >
-            {toast.message}
-          </div>
-        )}
       </div>
     </Layout>
   );
