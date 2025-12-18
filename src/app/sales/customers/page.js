@@ -214,6 +214,32 @@ export default function AdminCustomerPage() {
               />
               <span className="customers-search__icon pi pi-search" />
             </div>
+            <div className="customers-filters" aria-label="Filter pelanggan">
+              <button
+                type="button"
+                className={`customers-filter-btn ${filterPreset === "all" ? "is-active" : ""}`}
+                onClick={() => setFilterPreset("all")}
+              >
+                Semua
+              </button>
+              <button
+                type="button"
+                className={`customers-filter-btn ${filterPreset === "today" ? "is-active" : ""}`}
+                onClick={() => setFilterPreset("today")}
+                title="Filter customer yang tanggalnya hari ini (butuh field tanggal dari API)"
+              >
+                Hari Ini
+              </button>
+              <button
+                type="button"
+                className="customers-filter-btn customers-filter-icon-btn"
+                title="Filter"
+                aria-label="Filter"
+                onClick={() => {}}
+              >
+                <Filter size={16} />
+              </button>
+            </div>
             <div className="customers-toolbar-buttons">
               <button 
                 className="customers-button customers-button--secondary" 
@@ -226,33 +252,6 @@ export default function AdminCustomerPage() {
                 + Tambah Customer
               </button>
             </div>
-          </div>
-
-          <div className="customers-filters" aria-label="Filter pelanggan">
-            <button
-              type="button"
-              className={`customers-filter-btn ${filterPreset === "all" ? "is-active" : ""}`}
-              onClick={() => setFilterPreset("all")}
-            >
-              Semua
-            </button>
-            <button
-              type="button"
-              className={`customers-filter-btn ${filterPreset === "today" ? "is-active" : ""}`}
-              onClick={() => setFilterPreset("today")}
-              title="Filter customer yang tanggalnya hari ini (butuh field tanggal dari API)"
-            >
-              Hari Ini
-            </button>
-            <button
-              type="button"
-              className="customers-filter-btn customers-filter-icon-btn"
-              title="Filter"
-              aria-label="Filter"
-              onClick={() => {}}
-            >
-              <Filter size={16} />
-            </button>
           </div>
         </section>
 

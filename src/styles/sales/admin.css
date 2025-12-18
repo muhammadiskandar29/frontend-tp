@@ -133,12 +133,11 @@ ADMIN USERS PAGE (Scoped Styles)
   border-color: rgba(255, 108, 0, 0.55);
 }
 
-/* Small filter bar under customers toolbar */
+/* Filter bar inside customers toolbar */
 .customers-filters {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding-top: 0.35rem;
 }
 
 .customers-filter-btn {
