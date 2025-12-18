@@ -34,19 +34,6 @@ const formatJenisKelamin = (value) => {
   return "—";
 };
 
-// Komponen Field untuk layout modern
-const DetailField = ({ label, value, className = "" }) => {
-  const isEmpty = !value || value === "—";
-  return (
-    <div className={`customer-detail-field ${className}`}>
-      <div className="customer-detail-label">{label}</div>
-      <div className={`customer-detail-value ${isEmpty ? "customer-detail-value--empty" : ""}`}>
-        {value}
-      </div>
-    </div>
-  );
-};
-
 export default function ViewCustomerModal({ customer, onClose }) {
   return (
     <div className="modal-overlay">
@@ -59,64 +46,74 @@ export default function ViewCustomerModal({ customer, onClose }) {
           </button>
         </div>
 
-        {/* BODY - Modern Grid Layout */}
+        {/* BODY - Label : Value Format */}
         <div className="modal-body">
-          <div className="customer-detail-grid">
-            <DetailField 
-              label="Nama" 
-              value={formatValue(customer.nama)} 
-            />
-            
-            <DetailField 
-              label="Email" 
-              value={formatValue(customer.email)} 
-            />
-            
-            <DetailField 
-              label="No. HP" 
-              value={formatValue(customer.wa)} 
-            />
-            
-            <DetailField 
-              label="Nama Panggilan" 
-              value={formatValue(customer.nama_panggilan)} 
-            />
-            
-            <DetailField 
-              label="Instagram" 
-              value={formatInstagram(customer.instagram)} 
-            />
-            
-            <DetailField 
-              label="Profesi" 
-              value={formatValue(customer.profesi)} 
-            />
-            
-            <DetailField 
-              label="Pendapatan per Bulan" 
-              value={formatPendapatan(customer.pendapatan_bln)} 
-            />
-            
-            <DetailField 
-              label="Industri Pekerjaan" 
-              value={formatValue(customer.industri_pekerjaan)} 
-            />
-            
-            <DetailField 
-              label="Jenis Kelamin" 
-              value={formatJenisKelamin(customer.jenis_kelamin)} 
-            />
-            
-            <DetailField 
-              label="Tanggal Lahir" 
-              value={formatValue(customer.tanggal_lahir)} 
-            />
-            
-            <DetailField 
-              label="Alamat" 
-              value={formatValue(customer.alamat)} 
-              className="customer-detail-field--full"
-            />
+          <div className="detail-list">
+            <div className="detail-item">
+              <span className="detail-label">Nama</span>
+              <span className="detail-colon">:</span>
+              <span className="detail-value">{formatValue(customer.nama)}</span>
+            </div>
+
+            <div className="detail-item">
+              <span className="detail-label">Email</span>
+              <span className="detail-colon">:</span>
+              <span className="detail-value">{formatValue(customer.email)}</span>
+            </div>
+
+            <div className="detail-item">
+              <span className="detail-label">No. HP</span>
+              <span className="detail-colon">:</span>
+              <span className="detail-value">{formatValue(customer.wa)}</span>
+            </div>
+
+            <div className="detail-item">
+              <span className="detail-label">Nama Panggilan</span>
+              <span className="detail-colon">:</span>
+              <span className="detail-value">{formatValue(customer.nama_panggilan)}</span>
+            </div>
+
+            <div className="detail-item">
+              <span className="detail-label">Instagram</span>
+              <span className="detail-colon">:</span>
+              <span className="detail-value">{formatInstagram(customer.instagram)}</span>
+            </div>
+
+            <div className="detail-item">
+              <span className="detail-label">Profesi</span>
+              <span className="detail-colon">:</span>
+              <span className="detail-value">{formatValue(customer.profesi)}</span>
+            </div>
+
+            <div className="detail-item">
+              <span className="detail-label">Pendapatan per Bulan</span>
+              <span className="detail-colon">:</span>
+              <span className="detail-value">{formatPendapatan(customer.pendapatan_bln)}</span>
+            </div>
+
+            <div className="detail-item">
+              <span className="detail-label">Industri Pekerjaan</span>
+              <span className="detail-colon">:</span>
+              <span className="detail-value">{formatValue(customer.industri_pekerjaan)}</span>
+            </div>
+
+            <div className="detail-item">
+              <span className="detail-label">Jenis Kelamin</span>
+              <span className="detail-colon">:</span>
+              <span className="detail-value">{formatJenisKelamin(customer.jenis_kelamin)}</span>
+            </div>
+
+            <div className="detail-item">
+              <span className="detail-label">Tanggal Lahir</span>
+              <span className="detail-colon">:</span>
+              <span className="detail-value">{formatValue(customer.tanggal_lahir)}</span>
+            </div>
+
+            <div className="detail-item">
+              <span className="detail-label">Alamat</span>
+              <span className="detail-colon">:</span>
+              <span className="detail-value">{formatValue(customer.alamat)}</span>
+            </div>
           </div>
         </div>
       </div>

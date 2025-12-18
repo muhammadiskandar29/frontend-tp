@@ -549,32 +549,30 @@ export default function DaftarPesanan() {
               />
               <span className="orders-search__icon pi pi-search" />
             </div>
-            <div className="orders-toolbar-buttons">
-              <div className="orders-filters" aria-label="Filter pesanan">
-                <button
-                  type="button"
-                  className={`orders-filter-btn ${filterPreset === "all" ? "is-active" : ""}`}
-                  onClick={() => setFilterPreset("all")}
-                >
-                  Semua
-                </button>
-                <button
-                  type="button"
-                  className={`orders-filter-btn ${filterPreset === "today" ? "is-active" : ""}`}
-                  onClick={() => setFilterPreset("today")}
-                >
-                  Hari Ini
-                </button>
-                <button
-                  type="button"
-                  className="orders-filter-btn orders-filter-icon-btn"
-                  title="Filter"
-                  aria-label="Filter"
-                  onClick={() => {}}
-                >
-                  <Filter size={16} />
-                </button>
-              </div>
+            <div className="orders-filters" aria-label="Filter pesanan">
+              <button
+                type="button"
+                className={`orders-filter-btn ${filterPreset === "all" ? "is-active" : ""}`}
+                onClick={() => setFilterPreset("all")}
+              >
+                Semua
+              </button>
+              <button
+                type="button"
+                className={`orders-filter-btn ${filterPreset === "today" ? "is-active" : ""}`}
+                onClick={() => setFilterPreset("today")}
+              >
+                Hari Ini
+              </button>
+              <button
+                type="button"
+                className="orders-filter-btn orders-filter-icon-btn"
+                title="Filter"
+                aria-label="Filter"
+                onClick={() => {}}
+              >
+                <Filter size={16} />
+              </button>
               <div style={{ position: "relative" }}>
                 <Calendar
                   value={dateRange}
@@ -614,7 +612,7 @@ export default function DaftarPesanan() {
               {dateRange && Array.isArray(dateRange) && dateRange.length === 2 && dateRange[0] && dateRange[1] && (
                 <button
                   onClick={() => setDateRange(null)}
-                  className="orders-button orders-button--secondary"
+                  className="orders-filter-btn"
                   style={{ whiteSpace: "nowrap" }}
                 >
                   <i className="pi pi-times" style={{ marginRight: "0.25rem" }} />
@@ -629,7 +627,7 @@ export default function DaftarPesanan() {
           <article className="summary-card summary-card--combined">
             <div className="summary-card__column">
               <div className={`summary-card__icon accent-orange`}>
-                <ShoppingCart size={22} />
+                <ShoppingCart size={24} />
               </div>
               <div>
                 <p className="summary-card__label">Total orders</p>
@@ -639,7 +637,7 @@ export default function DaftarPesanan() {
             <div className="summary-card__divider"></div>
             <div className="summary-card__column">
               <div className={`summary-card__icon accent-orange`}>
-                <Clock size={22} />
+                <Clock size={24} />
               </div>
               <div>
                 <p className="summary-card__label">Unpaid</p>
@@ -649,7 +647,7 @@ export default function DaftarPesanan() {
             <div className="summary-card__divider"></div>
             <div className="summary-card__column">
               <div className={`summary-card__icon accent-orange`}>
-                <Clock size={22} />
+                <Clock size={24} />
               </div>
               <div>
                 <p className="summary-card__label">Menunggu</p>
@@ -659,7 +657,7 @@ export default function DaftarPesanan() {
             <div className="summary-card__divider"></div>
             <div className="summary-card__column">
               <div className={`summary-card__icon accent-orange`}>
-                <CheckCircle size={22} />
+                <CheckCircle size={24} />
               </div>
               <div>
                 <p className="summary-card__label">Sudah Approve</p>
@@ -669,7 +667,7 @@ export default function DaftarPesanan() {
             <div className="summary-card__divider"></div>
             <div className="summary-card__column">
               <div className={`summary-card__icon accent-orange`}>
-                <XCircle size={22} />
+                <XCircle size={24} />
               </div>
               <div>
                 <p className="summary-card__label">Ditolak</p>
