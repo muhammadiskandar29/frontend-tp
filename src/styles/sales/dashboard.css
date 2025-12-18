@@ -98,18 +98,24 @@
 
 .dashboard-summary {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .dashboard-summary {
+    grid-template-columns: 1fr;
+  }
 }
 
 .summary-card {
   background: var(--dash-surface);
   border: 1px solid var(--dash-border);
   border-radius: var(--dash-radius);
-  padding: 1.25rem 1.5rem;
+  padding: 1.5rem;
   display: flex;
-  gap: 1rem;
-  align-items: center;
+  gap: 1.25rem;
+  align-items: flex-start;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
@@ -120,30 +126,36 @@
 }
 
 .summary-card__icon {
-  width: 3rem;
-  height: 3rem;
+  width: 3.5rem;
+  height: 3.5rem;
   border-radius: 0.75rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, rgba(255, 108, 0, 0.15), rgba(255, 108, 0, 0.08));
-  color: var(--accent-orange);
+  background: #fb8500;
+  color: #ffffff;
   flex-shrink: 0;
 }
 
 .summary-card__icon svg {
-  color: currentColor;
+  color: #ffffff;
+  width: 22px;
+  height: 22px;
 }
 
 .summary-card__label {
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   color: var(--dash-muted);
+  margin: 0 0 0.5rem 0;
+  font-weight: 500;
 }
 
 .summary-card__value {
-  font-size: 1.35rem;
-  font-weight: 600;
+  font-size: 1.75rem;
+  font-weight: 700;
   color: var(--dash-text);
+  margin: 0;
+  line-height: 1.2;
 }
 
 .summary-card--button-group {
@@ -267,29 +279,34 @@
 
 .revenue-card {
   display: flex;
-  gap: 0.75rem;
-  padding: 0.85rem 1rem;
-  border-radius: 1rem;
-  border: 1px dashed var(--dash-border);
-  align-items: center;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  border-radius: var(--dash-radius);
+  border: 1px solid var(--dash-border);
+  background: var(--dash-surface);
+  align-items: flex-start;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .revenue-card__icon {
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: 1rem;
-  background: rgba(255, 108, 0, 0.12);
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 0.75rem;
+  background: #fb8500;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .revenue-card__icon svg {
-  color: var(--accent-orange);
+  color: #ffffff;
+  width: 22px;
+  height: 22px;
 }
 
 .revenue-card__icon.accent-orange {
-  background: rgba(255, 108, 0, 0.12);
+  background: #fb8500;
 }
 
 /* Header dropdown filter */
@@ -308,14 +325,18 @@
 }
 
 .revenue-card__label {
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   color: var(--dash-muted);
+  margin: 0 0 0.5rem 0;
+  font-weight: 500;
 }
 
 .revenue-card__value {
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 1.75rem;
+  font-weight: 700;
   color: var(--dash-text);
+  margin: 0;
+  line-height: 1.2;
 }
 
 .hr-panel-grid {

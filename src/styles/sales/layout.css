@@ -63,18 +63,17 @@
   justify-content: center;
   width: 36px;
   height: 36px;
-  border: 1px solid var(--layout-border);
+  border: none;
   border-radius: 0.5rem;
-  background: #ffffff;
+  background: transparent;
   color: var(--layout-heading);
   cursor: pointer;
-  transition: background 140ms ease, border-color 140ms ease;
+  transition: background 140ms ease;
   flex-shrink: 0;
 }
 
 .layout-header__burger:hover {
-  background: #f8fafc;
-  border-color: #d1d5db;
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .layout-header__breadcrumb {
