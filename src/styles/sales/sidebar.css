@@ -432,7 +432,7 @@
 
 /* Hover efek */
 .sidebar-item:hover svg {
-  color: var(--sidebar-accent);
+  color: white;
 }
 
 /* Warna ikon saat item aktif */
