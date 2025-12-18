@@ -81,65 +81,49 @@ export default function Sidebar({ role }) {
     return () => window.removeEventListener('addProductsSidebarToggle', handleToggle);
   }, [isAddProductsPage]);
 
-  // Menu state - initialized as empty to avoid hydration mismatch
-  const [menu, setMenu] = useState([]);
-  
-  // === MENU BASED ON ROLE (SECTIONED STRUCTURE) ===
-  useEffect(() => {
-    // Only run on client side
-    if (typeof window === "undefined") return;
-    
-    // Use pathname as primary check (consistent between server and client)
-    const pathBasedFinance = pathname?.startsWith("/finance");
-    const pathBasedSales = pathname?.startsWith("/sales");
-    
-    // Determine base path - prioritize pathname over state
-    let basePath = "/admin";
-    if (pathBasedFinance) {
-      basePath = "/finance";
-    } else if (pathBasedSales) {
-      basePath = "/sales";
-    } else if (isFinance) {
-      basePath = "/finance";
-    } else if (isSales) {
-      basePath = "/sales";
-    }
-    
-    // Finance menu structure - prioritize pathname
-    if (pathBasedFinance || isFinance) {
-      setMenu([
+  // Determine base path from pathname (simple and consistent)
+  const basePath = pathname?.startsWith("/finance") 
+    ? "/finance" 
+    : pathname?.startsWith("/sales") 
+    ? "/sales" 
+    : "/admin";
+
+  // Build menu structure directly (no state, no hydration issues)
+  const buildMenu = () => {
+    // Finance menu
+    if (pathname?.startsWith("/finance")) {
+      return [
         {
           section: "OVERVIEW",
           items: [
-            { label: "Dashboard", href: "/finance", iconType: "Home" },
+            { label: "Dashboard", href: "/finance", icon: <Home size={18} /> },
           ],
         },
         {
           section: "TRANSACTIONS",
           items: [
-            { label: "Orders", href: "/finance/orders", iconType: "ClipboardList" },
+            { label: "Orders", href: "/finance/orders", icon: <ClipboardList size={18} /> },
           ],
         },
-      ]);
-      return;
+      ];
     }
     
-    // Sales menu structure - prioritize pathname
-    if (pathBasedSales || isSales) {
-      setMenu([
+    // Sales menu
+    if (pathname?.startsWith("/sales")) {
+      return [
         {
           section: "OVERVIEW",
           items: [
-            { label: "Dashboard", href: basePath, iconType: "Home" },
+            { label: "Dashboard", href: basePath, icon: <Home size={18} /> },
           ],
         },
         {
           section: "CUSTOMERS",
           items: [
-            { label: "Customers", href: `${basePath}/customers`, iconType: "UserCheck" },
+            { label: "Customers", href: `${basePath}/customers`, icon: <UserCheck size={18} /> },
             {
               label: "CRM",
-              iconType: "Tag",
+              icon: <Tag size={18} />,
               submenu: [
                 { label: "Leads", href: `${basePath}/leads` },
                 { label: "Follow Up Report", href: `${basePath}/followup/report` },
@@ -150,10 +134,10 @@ export default function Sidebar({ role }) {
         {
           section: "OPERATIONS",
           items: [
-            { label: "Orders", href: `${basePath}/orders`, iconType: "ClipboardList" },
+            { label: "Orders", href: `${basePath}/orders`, icon: <ClipboardList size={18} /> },
             {
               label: "Products",
-              iconType: "ShoppingBag",
+              icon: <ShoppingBag size={18} />,
               submenu: [
                 { label: "Kategori Produk", href: `${basePath}/kategori` },
                 { label: "Produk", href: `${basePath}/products` },
@@ -164,35 +148,34 @@ export default function Sidebar({ role }) {
         {
           section: "COMMUNICATION",
           items: [
-            { label: "Broadcast", href: `${basePath}/broadcast`, iconType: "Radio" },
+            { label: "Broadcast", href: `${basePath}/broadcast`, icon: <Radio size={18} /> },
           ],
         },
-      ]);
-      return;
+      ];
     }
     
-    // Admin menu structure
-    setMenu([
+    // Admin menu (default)
+    return [
       {
         section: "OVERVIEW",
         items: [
-          { label: "Dashboard", href: basePath, iconType: "Home" },
+          { label: "Dashboard", href: basePath, icon: <Home size={18} /> },
         ],
       },
       {
         section: "USER MANAGEMENT",
         items: [
-          { label: "Users", href: "/admin/users", iconType: "Users" },
-          { label: "Customers", href: `${basePath}/customers`, iconType: "UserCheck" },
+          { label: "Users", href: "/admin/users", icon: <Users size={18} /> },
+          { label: "Customers", href: `${basePath}/customers`, icon: <UserCheck size={18} /> },
         ],
       },
       {
         section: "SALES OPERATIONS",
         items: [
-          { label: "Orders", href: `${basePath}/orders`, iconType: "ClipboardList" },
+          { label: "Orders", href: `${basePath}/orders`, icon: <ClipboardList size={18} /> },
           {
             label: "Products",
-            iconType: "ShoppingBag",
+            icon: <ShoppingBag size={18} />,
             submenu: [
               { label: "Kategori Produk", href: `${basePath}/kategori` },
               { label: "Produk", href: `${basePath}/products` },
@@ -203,25 +186,13 @@ export default function Sidebar({ role }) {
       {
         section: "COMMUNICATION",
         items: [
-          { label: "Broadcast", href: `${basePath}/broadcast`, iconType: "Radio" },
+          { label: "Broadcast", href: `${basePath}/broadcast`, icon: <Radio size={18} /> },
         ],
       },
-    ]);
-  }, [role, isSales, isFinance, pathname]);
-
-  // Icon mapping function
-  const getIcon = (iconType) => {
-    const iconMap = {
-      Home: <Home size={18} />,
-      Users: <Users size={18} />,
-      UserCheck: <UserCheck size={18} />,
-      ClipboardList: <ClipboardList size={18} />,
-      ShoppingBag: <ShoppingBag size={18} />,
-      Tag: <Tag size={18} />,
-      Radio: <Radio size={18} />,
-    };
-    return iconMap[iconType] || null;
+    ];
   };
+
+  const menu = buildMenu();
 
   // === DETECT SCREEN WIDTH ===
   useEffect(() => {
@@ -254,7 +225,7 @@ export default function Sidebar({ role }) {
 
   // === AUTO OPEN SUBMENU IF CURRENT PAGE IS INSIDE IT ===
   useEffect(() => {
-    if (!pathname || !menu) return;
+    if (!pathname) return;
     // Handle sectioned menu structure
     menu.forEach((section) => {
       if (section.items) {
@@ -272,7 +243,7 @@ export default function Sidebar({ role }) {
         });
       }
     });
-  }, [pathname, menu]);
+  }, [pathname]);
 
   const handleToggle = () => {
     if (viewport === VIEWPORT.MOBILE) {
@@ -353,7 +324,7 @@ export default function Sidebar({ role }) {
         </div>
 
         <ul className="sidebar-menu">
-          {menu.length > 0 && menu.map((section, sectionIndex) => {
+          {menu.map((section, sectionIndex) => {
             if (!section || !section.section || !section.items) return null;
             
             return (
@@ -369,7 +340,6 @@ export default function Sidebar({ role }) {
                   
                   const active = isMenuActive(item);
                   const isOpen = openSubmenu === item.label;
-                  const icon = getIcon(item.iconType);
 
                   return (
                     <li key={item.label} className="sidebar-item-wrapper">
@@ -384,7 +354,7 @@ export default function Sidebar({ role }) {
                             aria-controls={`${item.label}-submenu`}
                           >
                             <div className="flex items-center gap-3">
-                              {icon}
+                              {item.icon}
                               <span>{item.label}</span>
                             </div>
                             {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
@@ -421,7 +391,7 @@ export default function Sidebar({ role }) {
                             className={`sidebar-item ${active ? "sidebar-item-active" : ""}`}
                             onClick={handleLinkClick}
                           >
-                            {icon}
+                            {item.icon}
                             <span>{item.label}</span>
                           </Link>
                         ) : null
