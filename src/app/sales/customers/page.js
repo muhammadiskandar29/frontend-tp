@@ -240,18 +240,6 @@ export default function AdminCustomerPage() {
                 <Filter size={16} />
               </button>
             </div>
-            <div className="customers-toolbar-buttons">
-              <button 
-                className="customers-button customers-button--secondary" 
-                onClick={() => router.push("/sales/followup/report")}
-              >
-                <i className="pi pi-chart-bar" style={{ marginRight: "6px" }} />
-                Report Follow Up
-              </button>
-              <button className="customers-button customers-button--primary" onClick={() => setShowAdd(true)}>
-                + Tambah Customer
-              </button>
-            </div>
           </div>
         </section>
 
@@ -269,12 +257,6 @@ export default function AdminCustomerPage() {
               accent: "accent-orange",
               icon: <CheckCircle size={22} />,
             },
-            {
-              label: "Active (filtered)",
-              value: filtered.length,
-              accent: "accent-orange",
-              icon: <Filter size={22} />,
-            },
           ].map((card) => (
             <article className="summary-card" key={card.label}>
               <div className={`summary-card__icon ${card.accent}`}>{card.icon}</div>
@@ -284,6 +266,20 @@ export default function AdminCustomerPage() {
               </div>
             </article>
           ))}
+          
+          {/* Button Actions */}
+          <article className="summary-card summary-card--button-group">
+            <button 
+              className="customers-button customers-button--secondary" 
+              onClick={() => router.push("/sales/followup/report")}
+            >
+              <i className="pi pi-chart-bar" style={{ marginRight: "6px" }} />
+              Report Follow Up
+            </button>
+            <button className="customers-button customers-button--primary" onClick={() => setShowAdd(true)}>
+              + Tambah Customer
+            </button>
+          </article>
         </section>
 
         <section className="panel customers-panel">

@@ -136,6 +136,19 @@
   color: var(--dash-text);
 }
 
+.summary-card--button-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  justify-content: center;
+  padding: 1rem 1.15rem;
+}
+
+.summary-card--button-group .customers-button {
+  width: 100%;
+  justify-content: center;
+}
+
 .dashboard-panels {
   display: grid;
   gap: 1.5rem;
