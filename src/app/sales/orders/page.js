@@ -537,14 +537,6 @@ export default function DaftarPesanan() {
     <Layout title="Manage Orders">
       <div className="dashboard-shell orders-shell">
         <section className="dashboard-hero orders-hero">
-          <div className="dashboard-hero__copy">
-            <p className="dashboard-hero__eyebrow">Orders</p>
-            <h2 className="dashboard-hero__title">Order Management</h2>
-            <span className="dashboard-hero__meta">
-              Track and manage all customer orders and payments.
-            </span>
-          </div>
-
           <div className="orders-toolbar">
             <div className="orders-search">
               <input
