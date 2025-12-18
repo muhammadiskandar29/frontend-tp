@@ -204,14 +204,6 @@ export default function BroadcastPage() {
     <Layout title="Manage Broadcast">
       <div className="dashboard-shell orders-shell">
         <section className="dashboard-hero orders-hero">
-          <div className="dashboard-hero__copy">
-            <p className="dashboard-hero__eyebrow">Broadcast</p>
-            <h2 className="dashboard-hero__title">Broadcast Management</h2>
-            <span className="dashboard-hero__meta">
-              Kelola dan kirim broadcast pesan ke customer.
-            </span>
-          </div>
-
           <div className="orders-toolbar">
             <div></div>
             <div className="orders-toolbar-buttons">

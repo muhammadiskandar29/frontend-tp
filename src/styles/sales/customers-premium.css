@@ -294,11 +294,80 @@
   display: grid;
   grid-template-columns: 1fr auto 1fr auto 1fr;
   justify-items: start;
+  gap: 1.5rem;
+  padding: 1.5rem;
 }
 
 .customers-summary .summary-card--three-cols {
   width: 100%;
   max-width: 100%;
+}
+
+/* Summary card column - horizontal layout with icon on left */
+.customers-summary .summary-card__column {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+/* Icon styling for customers summary */
+.customers-summary .summary-card__icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-primary-dark) 100%);
+  color: #ffffff;
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px 0 rgba(251, 133, 0, 0.25);
+}
+
+.customers-summary .summary-card__icon svg {
+  width: 20px;
+  height: 20px;
+  color: #ffffff;
+}
+
+/* Label and value container - vertical layout */
+.customers-summary .summary-card__column > div:not(.summary-card__icon) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+/* Label styling */
+.customers-summary .summary-card__label {
+  font-size: var(--text-xs);
+  color: var(--dash-muted-light);
+  margin: 0;
+  font-weight: var(--font-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+}
+
+/* Value styling */
+.customers-summary .summary-card__value {
+  font-size: var(--text-3xl);
+  font-weight: var(--font-bold);
+  color: var(--dash-text-dark);
+  margin: 0;
+  line-height: var(--leading-tight);
+  letter-spacing: -0.03em;
+}
+
+/* Divider styling */
+.customers-summary .summary-card__divider {
+  width: 1px;
+  height: 60%;
+  background: var(--dash-border);
+  align-self: center;
+  flex-shrink: 0;
 }
 
 /* ============================================

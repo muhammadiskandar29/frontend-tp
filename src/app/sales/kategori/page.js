@@ -126,14 +126,6 @@ export default function AdminKategoriPage() {
     <Layout title="Manage Categories">
       <div className="dashboard-shell customers-shell">
         <section className="dashboard-hero customers-hero">
-          <div className="dashboard-hero__copy">
-            <p className="dashboard-hero__eyebrow">Categories</p>
-            <h2 className="dashboard-hero__title">Category Management</h2>
-            <span className="dashboard-hero__meta">
-              Manage product categories and organize your catalog.
-            </span>
-          </div>
-
           <div className="customers-toolbar">
             <div className="customers-search">
               <input

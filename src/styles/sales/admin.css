@@ -1410,6 +1410,63 @@ ADMIN USERS PAGE (Scoped Styles)
   font-weight: 500;
 }
 
+/* ============================================
+   ORDERS SUMMARY CARD - Full Width
+   ============================================ */
+.dashboard-summary.orders-summary {
+  display: block !important;
+  grid-template-columns: 1fr !important;
+  width: 100%;
+  max-width: 100%;
+}
+
+.dashboard-summary.orders-summary .summary-card--combined {
+  width: 100%;
+  max-width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr auto 1fr;
+  justify-items: start;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.25rem 1.75rem;
+}
+
+.dashboard-summary.orders-summary .summary-card__column {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.dashboard-summary.orders-summary .summary-card__divider {
+  width: 1px;
+  height: 60%;
+  background: var(--dash-border);
+  flex-shrink: 0;
+  align-self: center;
+}
+
+@media (max-width: 1200px) {
+  .dashboard-summary.orders-summary .summary-card--combined {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+  }
+  
+  .dashboard-summary.orders-summary .summary-card__divider {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-summary.orders-summary .summary-card--combined {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+  }
+  
+  .dashboard-summary.orders-summary .summary-card__divider {
+    display: none;
+  }
+}
+
 /* === MODALS & TOAST tetap global === */
 .modal-overlay {
   position: fixed;

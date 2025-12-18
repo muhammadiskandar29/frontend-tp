@@ -94,14 +94,6 @@ export default function AdminProductsPage() {
     <Layout title="Manage Products">
       <div className="dashboard-shell customers-shell">
         <section className="dashboard-hero customers-hero">
-          <div className="dashboard-hero__copy">
-            <p className="dashboard-hero__eyebrow">Products</p>
-            <h2 className="dashboard-hero__title">Product Directory</h2>
-            <span className="dashboard-hero__meta">
-              Manage your product catalog and track inventory.
-            </span>
-          </div>
-
           <div className="customers-toolbar">
             <div className="customers-search">
               <input
