@@ -224,6 +224,29 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
     }
   }, [isHovered, viewport, isExplicitlyOpened]);
 
+  // Add class to body based on sidebar expanded state for CSS to adjust content margin
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      const body = document.body;
+      if (viewport === VIEWPORT.DESKTOP) {
+        if (isRailExpanded) {
+          body.classList.add('sidebar-expanded');
+          body.classList.remove('sidebar-collapsed');
+        } else {
+          body.classList.add('sidebar-collapsed');
+          body.classList.remove('sidebar-expanded');
+        }
+      } else {
+        body.classList.remove('sidebar-expanded', 'sidebar-collapsed');
+      }
+    }
+    return () => {
+      if (typeof document !== 'undefined') {
+        document.body.classList.remove('sidebar-expanded', 'sidebar-collapsed');
+      }
+    };
+  }, [isRailExpanded, viewport]);
+
   useEffect(() => {
     // Force mobile behavior for addProducts page
     if (isAddProductsPage) {
@@ -401,32 +424,75 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
                 {section.items.map((item) => {
                   if (!item || !item.label) return null;
                   
-                  // Determine the actual href to use (for items with submenu, use first submenu href)
-                  const actualHref = item.href || (item.submenu?.[0]?.href);
-                  // Calculate active state - check if current path matches item or any submenu
                   const active = isMenuActive(item);
+                  const isSubmenuOpen = openSubmenu === item.label;
 
                   return (
                     <li key={item.label} className="sidebar-item-wrapper">
-                      {/* Hide submenu - only show main menu items */}
-                      {actualHref ? (
-                        <Link
-                          href={actualHref}
-                          className={`sidebar-item ${active ? "sidebar-item-active" : ""}`}
-                          onClick={handleLinkClick}
-                        >
-                          <span className="sidebar-item-icon-wrapper">
-                            {item.icon}
-                          </span>
-                          <span>{item.label}</span>
-                        </Link>
+                      {item.submenu ? (
+                        <>
+                          <button
+                            onClick={() => {
+                              toggleSubmenu(item.label);
+                              // Expand sidebar when submenu is clicked
+                              if (viewport === VIEWPORT.DESKTOP) {
+                                setIsRailExpanded(true);
+                                setIsExplicitlyOpened(true);
+                                if (onToggle && !isOpen) {
+                                  onToggle();
+                                }
+                              }
+                            }}
+                            className={`sidebar-item has-submenu w-full ${
+                              active ? "sidebar-item-active" : ""
+                            } ${isSubmenuOpen ? "open" : ""}`}
+                            aria-expanded={isSubmenuOpen}
+                            aria-controls={`${item.label}-submenu`}
+                          >
+                            <div className="flex items-center gap-3" style={{ flex: 1 }}>
+                              <span className="sidebar-item-icon-wrapper">
+                                {item.icon}
+                              </span>
+                              <span>{item.label}</span>
+                            </div>
+                            {isSubmenuOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                          </button>
+
+                          <ul className={`submenu-list ${isSubmenuOpen ? "submenu-open" : ""}`} id={`${item.label}-submenu`}>
+                            {item.submenu.map((sub) => {
+                              if (!sub || !sub.href || !sub.label) return null;
+                              const normalizedPathname = String(pathname || "").replace(/^\/sales/, "/admin");
+                              const normalizedSubHref = String(sub.href).replace(/^\/sales/, "/admin");
+                              const isSubActive = normalizedPathname === normalizedSubHref || normalizedPathname.startsWith(normalizedSubHref + "/");
+                              return (
+                                <li key={sub.href}>
+                                  <Link
+                                    href={sub.href}
+                                    className={`submenu-item ${
+                                      isSubActive ? "submenu-item-active" : ""
+                                    }`}
+                                    onClick={handleLinkClick}
+                                  >
+                                    {sub.label}
+                                  </Link>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </>
                       ) : (
-                        <div className="sidebar-item">
-                          <span className="sidebar-item-icon-wrapper">
-                            {item.icon}
-                          </span>
-                          <span>{item.label}</span>
-                        </div>
+                        item.href ? (
+                          <Link
+                            href={item.href}
+                            className={`sidebar-item ${active ? "sidebar-item-active" : ""}`}
+                            onClick={handleLinkClick}
+                          >
+                            <span className="sidebar-item-icon-wrapper">
+                              {item.icon}
+                            </span>
+                            <span>{item.label}</span>
+                          </Link>
+                        ) : null
                       )}
                     </li>
                   );

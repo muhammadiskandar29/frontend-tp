@@ -506,21 +506,26 @@
 }
 
 .staff-cards-container::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 
 .staff-cards-container::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 3px;
+  background: transparent;
 }
 
 .staff-cards-container::-webkit-scrollbar-thumb {
   background: #cbd5e1;
-  border-radius: 3px;
+  border-radius: 10px;
 }
 
 .staff-cards-container::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+/* Firefox scrollbar */
+.staff-cards-container {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
 }
 
 /* Staff Card */
@@ -530,15 +535,10 @@
   border-radius: var(--dash-radius);
   padding: 1.5rem;
   margin-bottom: 1rem;
-  opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 0.6s ease, transform 0.6s ease;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.staff-card.visible {
   opacity: 1;
   transform: translateY(0);
+  transition: opacity 0.5s ease, transform 0.5s ease;
 }
 
 .staff-card:last-child {

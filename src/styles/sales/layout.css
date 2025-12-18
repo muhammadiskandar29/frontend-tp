@@ -34,6 +34,16 @@
   margin-left: var(--sidebar-compact-width);
 }
 
+/* Adjust content margin when sidebar is expanded via hover or click - higher specificity */
+body.sidebar-expanded .layout-main--with-sidebar,
+body.sidebar-expanded .layout-main--with-sidebar.sidebar-collapsed {
+  margin-left: var(--sidebar-width);
+}
+
+body.sidebar-collapsed:not(.sidebar-expanded) .layout-main--with-sidebar {
+  margin-left: var(--sidebar-compact-width);
+}
+
 .layout-header {
   background: #ffffff;
   border: 1px solid var(--layout-border);

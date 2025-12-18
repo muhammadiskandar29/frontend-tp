@@ -244,9 +244,16 @@ export default function Dashboard() {
 
   // Scroll effect untuk staff cards
   useEffect(() => {
+    // Set semua cards sebagai visible secara default
+    staffCardsRef.current.forEach((card) => {
+      if (card) {
+        card.classList.add("visible");
+      }
+    });
+
     const observerOptions = {
       root: null,
-      rootMargin: "0px",
+      rootMargin: "50px",
       threshold: 0.1,
     };
 
@@ -260,9 +267,19 @@ export default function Dashboard() {
 
     const observer = new IntersectionObserver(observerCallback, observerOptions);
 
-    staffCardsRef.current.forEach((card) => {
-      if (card) observer.observe(card);
-    });
+    // Observe cards untuk animasi saat scroll
+    setTimeout(() => {
+      staffCardsRef.current.forEach((card) => {
+        if (card) {
+          // Check initial visibility
+          const rect = card.getBoundingClientRect();
+          if (rect.top < window.innerHeight && rect.bottom > 0) {
+            card.classList.add("visible");
+          }
+          observer.observe(card);
+        }
+      });
+    }, 50);
 
     return () => {
       staffCardsRef.current.forEach((card) => {
