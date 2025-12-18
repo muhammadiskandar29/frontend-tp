@@ -33,26 +33,31 @@ export default function ViewCustomerModal({ customer, onClose }) {
           <div className="detail-list">
             <div className="detail-item">
               <span className="detail-label">Nama</span>
+              <span className="detail-colon">:</span>
               <span className="detail-value">{customer.nama || "-"}</span>
             </div>
 
             <div className="detail-item">
               <span className="detail-label">Email</span>
+              <span className="detail-colon">:</span>
               <span className="detail-value">{customer.email || "-"}</span>
             </div>
 
             <div className="detail-item">
               <span className="detail-label">No. HP</span>
+              <span className="detail-colon">:</span>
               <span className="detail-value">{customer.wa || "-"}</span>
             </div>
 
             <div className="detail-item">
               <span className="detail-label">Nama Panggilan</span>
+              <span className="detail-colon">:</span>
               <span className="detail-value">{customer.nama_panggilan || "-"}</span>
             </div>
 
             <div className="detail-item">
               <span className="detail-label">Instagram</span>
+              <span className="detail-colon">:</span>
               <span className="detail-value">
                 {customer.instagram
                   ? customer.instagram.startsWith("@")
@@ -64,21 +69,25 @@ export default function ViewCustomerModal({ customer, onClose }) {
 
             <div className="detail-item">
               <span className="detail-label">Profesi</span>
+              <span className="detail-colon">:</span>
               <span className="detail-value">{customer.profesi || "-"}</span>
             </div>
 
             <div className="detail-item">
               <span className="detail-label">Pendapatan per Bulan</span>
+              <span className="detail-colon">:</span>
               <span className="detail-value">{formatPendapatan(customer.pendapatan_bln)}</span>
             </div>
 
             <div className="detail-item">
               <span className="detail-label">Industri Pekerjaan</span>
+              <span className="detail-colon">:</span>
               <span className="detail-value">{customer.industri_pekerjaan || "-"}</span>
             </div>
 
             <div className="detail-item">
               <span className="detail-label">Jenis Kelamin</span>
+              <span className="detail-colon">:</span>
               <span className="detail-value">
                 {customer.jenis_kelamin === "l"
                   ? "Laki-laki"
@@ -90,11 +99,13 @@ export default function ViewCustomerModal({ customer, onClose }) {
 
             <div className="detail-item">
               <span className="detail-label">Tanggal Lahir</span>
+              <span className="detail-colon">:</span>
               <span className="detail-value">{customer.tanggal_lahir || "-"}</span>
             </div>
 
             <div className="detail-item">
               <span className="detail-label">Alamat</span>
+              <span className="detail-colon">:</span>
               <span className="detail-value">{customer.alamat || "-"}</span>
             </div>
           </div>

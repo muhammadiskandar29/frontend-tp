@@ -367,8 +367,9 @@ background: #FCA5A5;
 
 .detail-item {
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.5rem;
   padding: 0.75rem 0;
   border-bottom: 1px solid #f3f4f6;
 }
@@ -379,11 +380,16 @@ background: #FCA5A5;
 
 .detail-label {
   font-weight: 600;
-  font-size: 0.8rem;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.15rem;
+  font-size: 0.9rem;
+  color: #111827;
+  min-width: 160px;
+  flex-shrink: 0;
+}
+
+.detail-colon {
+  color: #111827;
+  font-size: 0.9rem;
+  flex-shrink: 0;
 }
 
 .detail-value {
@@ -391,6 +397,7 @@ background: #FCA5A5;
   color: #111827;
   line-height: 1.5;
   word-break: break-word;
+  flex: 1;
 }
 
 .form-grid {
