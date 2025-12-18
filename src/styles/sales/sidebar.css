@@ -75,6 +75,38 @@
   gap: 0.35rem; /* space between items like reference */
 }
 
+/* === SIDEBAR SECTION HEADERS === */
+.sidebar-section-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.sidebar-section-wrapper:first-child {
+  margin-top: 0;
+}
+
+.sidebar-section-header {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--sidebar-muted);
+  padding: 0.5rem 0.65rem 0.25rem;
+  margin-top: 0.75rem;
+  user-select: none;
+  pointer-events: none;
+}
+
+.sidebar-section-wrapper:first-child .sidebar-section-header {
+  margin-top: 0;
+}
+
+.sidebar-item-wrapper {
+  list-style: none;
+}
+
 .sidebar-item {
   display: flex;
   align-items: center;
@@ -264,7 +296,8 @@
 
 .sidebar--tablet.sidebar--compact .sidebar-item span,
 .sidebar--tablet.sidebar--compact .submenu-list,
-.sidebar--tablet.sidebar--compact .sidebar-footer {
+.sidebar--tablet.sidebar--compact .sidebar-footer,
+.sidebar--tablet.sidebar--compact .sidebar-section-header {
   opacity: 0;
   pointer-events: none;
   position: absolute;

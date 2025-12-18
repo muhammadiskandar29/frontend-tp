@@ -85,7 +85,7 @@ export default function Sidebar({ role, userName = "User", userInitials = "U", o
     return () => window.removeEventListener('addProductsSidebarToggle', handleToggle);
   }, [isAddProductsPage]);
 
-  // === MENU BASED ON ROLE ===
+  // === MENU BASED ON ROLE (SECTIONED STRUCTURE) ===
   useEffect(() => {
     // Check pathname for finance
     const pathBasedFinance = typeof window !== "undefined" && pathname?.startsWith("/finance");
@@ -99,44 +99,112 @@ export default function Sidebar({ role, userName = "User", userInitials = "U", o
       basePath = "/sales";
     }
     
-    // Finance menu - hanya Orders
+    // Finance menu structure
     if (isFinance || pathBasedFinance) {
-      const financeMenu = [
-        { label: "Dashboard", href: "/finance", icon: <Home size={18} /> },
-        { label: "Orders", href: "/finance/orders", icon: <ClipboardList size={18} /> },
+      const financeMenuSections = [
+        {
+          section: "OVERVIEW",
+          items: [
+            { label: "Dashboard", href: "/finance", icon: <Home size={18} /> },
+          ],
+        },
+        {
+          section: "TRANSACTIONS",
+          items: [
+            { label: "Orders", href: "/finance/orders", icon: <ClipboardList size={18} /> },
+          ],
+        },
       ];
-      setMenu(financeMenu);
+      setMenu(financeMenuSections);
       return;
     }
     
-    // Sales menu
-    const baseMenu = [
-      { label: "Dashboard", href: basePath, icon: <Home size={18} /> },
-      // Users hanya untuk admin, tidak untuk sales
-      ...(isSales || pathBasedSales ? [] : [{ label: "Users", href: "/admin/users", icon: <Users size={18} /> }]),
-      { label: "Customers", href: `${basePath}/customers`, icon: <UserCheck size={18} /> },
+    // Sales menu structure
+    if (isSales || pathBasedSales) {
+      const salesMenuSections = [
+        {
+          section: "OVERVIEW",
+          items: [
+            { label: "Dashboard", href: basePath, icon: <Home size={18} /> },
+          ],
+        },
+        {
+          section: "CUSTOMERS",
+          items: [
+            { label: "Customers", href: `${basePath}/customers`, icon: <UserCheck size={18} /> },
+            {
+              label: "CRM",
+              icon: <Tag size={18} />,
+              submenu: [
+                { label: "Leads", href: `${basePath}/leads` },
+                { label: "Follow Up Report", href: `${basePath}/followup/report` },
+              ],
+            },
+          ],
+        },
+        {
+          section: "OPERATIONS",
+          items: [
+            { label: "Orders", href: `${basePath}/orders`, icon: <ClipboardList size={18} /> },
+            {
+              label: "Products",
+              icon: <ShoppingBag size={18} />,
+              submenu: [
+                { label: "Kategori Produk", href: `${basePath}/kategori` },
+                { label: "Produk", href: `${basePath}/products` },
+              ],
+            },
+          ],
+        },
+        {
+          section: "COMMUNICATION",
+          items: [
+            { label: "Broadcast", href: `${basePath}/broadcast`, icon: <Radio size={18} /> },
+          ],
+        },
+      ];
+      setMenu(salesMenuSections);
+      return;
+    }
+    
+    // Admin menu structure
+    const adminMenuSections = [
       {
-        label: "Products",
-        icon: <ShoppingBag size={18} />,
-        submenu: [
-          { label: "Kategori Produk", href: `${basePath}/kategori` },
-          { label: "Produk", href: `${basePath}/products` },
+        section: "OVERVIEW",
+        items: [
+          { label: "Dashboard", href: basePath, icon: <Home size={18} /> },
         ],
       },
-      { label: "Orders", href: `${basePath}/orders`, icon: <ClipboardList size={18} /> },
-      { label: "Broadcast", href: `${basePath}/broadcast`, icon: <Radio size={18} /> },
       {
-        label: "Follow Up",
-        icon: <Tag size={18} />,
-        submenu: [
-          { label: "Report", href: `${basePath}/followup/report` },
+        section: "USER MANAGEMENT",
+        items: [
+          { label: "Users", href: "/admin/users", icon: <Users size={18} /> },
+          { label: "Customers", href: `${basePath}/customers`, icon: <UserCheck size={18} /> },
         ],
       },
-      // { label: "Aktivitas", href: `${basePath}/aktivitas`, icon: <Activity size={18} /> }, // Route belum tersedia
-      // { label: "Settings", href: `${basePath}/settings`, icon: <Settings size={18} /> }, // Route belum tersedia
+      {
+        section: "SALES OPERATIONS",
+        items: [
+          { label: "Orders", href: `${basePath}/orders`, icon: <ClipboardList size={18} /> },
+          {
+            label: "Products",
+            icon: <ShoppingBag size={18} />,
+            submenu: [
+              { label: "Kategori Produk", href: `${basePath}/kategori` },
+              { label: "Produk", href: `${basePath}/products` },
+            ],
+          },
+        ],
+      },
+      {
+        section: "COMMUNICATION",
+        items: [
+          { label: "Broadcast", href: `${basePath}/broadcast`, icon: <Radio size={18} /> },
+        ],
+      },
     ];
 
-    setMenu(baseMenu);
+    setMenu(adminMenuSections);
   }, [role, isSales, isFinance, pathname]);
 
   // === DETECT SCREEN WIDTH ===
@@ -171,16 +239,21 @@ export default function Sidebar({ role, userName = "User", userInitials = "U", o
   // === AUTO OPEN SUBMENU IF CURRENT PAGE IS INSIDE IT ===
   useEffect(() => {
     if (!pathname) return;
-    menu.forEach((item) => {
-      if (item.submenu) {
-        const activeSub = item.submenu.find((sub) => {
-          if (!sub?.href) return false;
-          // Normalize paths for comparison (handle both /admin and /sales)
-          const normalizedPathname = String(pathname).replace(/^\/sales/, "/admin");
-          const normalizedSubHref = String(sub.href).replace(/^\/sales/, "/admin");
-          return normalizedPathname.startsWith(normalizedSubHref);
+    // Handle sectioned menu structure
+    menu.forEach((section) => {
+      if (section.items) {
+        section.items.forEach((item) => {
+          if (item.submenu) {
+            const activeSub = item.submenu.find((sub) => {
+              if (!sub?.href) return false;
+              // Normalize paths for comparison (handle both /admin and /sales)
+              const normalizedPathname = String(pathname).replace(/^\/sales/, "/admin");
+              const normalizedSubHref = String(sub.href).replace(/^\/sales/, "/admin");
+              return normalizedPathname.startsWith(normalizedSubHref);
+            });
+            if (activeSub) setOpenSubmenu(item.label);
+          }
         });
-        if (activeSub) setOpenSubmenu(item.label);
       }
     });
   }, [pathname, menu]);
@@ -260,7 +333,7 @@ export default function Sidebar({ role, userName = "User", userInitials = "U", o
       <aside className={sidebarClass} aria-label="Navigation sidebar">
         {/* === LOGO GANTI TULISAN === */}
         <div className="sidebar-logo">
-          <Link href={isSales ? "/sales" : "/admin"}>
+          <Link href={isFinance ? "/finance" : isSales ? "/sales" : "/admin"}>
             <Image
               src="/assets/logo.png"
               alt="Logo"
@@ -272,65 +345,81 @@ export default function Sidebar({ role, userName = "User", userInitials = "U", o
         </div>
 
         <ul className="sidebar-menu">
-          {menu.map((item) => {
-            if (!item || !item.label) return null;
+          {menu.map((section, sectionIndex) => {
+            if (!section || !section.section || !section.items) return null;
             
-            const active = isMenuActive(item);
-            const isOpen = openSubmenu === item.label;
-
             return (
-              <li key={item.label}>
-                {item.submenu ? (
-                  <>
-                    <button
-                      onClick={() => toggleSubmenu(item.label)}
-                      className={`sidebar-item has-submenu w-full ${
-                        active ? "sidebar-item-active open" : ""
-                      }`}
-                      aria-expanded={openSubmenu === item.label}
-                      aria-controls={`${item.label}-submenu`}
-                    >
-                      <div className="flex items-center gap-3">
-                        {item.icon}
-                        <span>{item.label}</span>
-                      </div>
-                      {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                    </button>
+              <li key={`section-${sectionIndex}`} className="sidebar-section-wrapper">
+                {/* Section Header - Non-clickable label */}
+                <div className="sidebar-section-header">
+                  {section.section}
+                </div>
+                
+                {/* Section Items */}
+                {section.items.map((item) => {
+                  if (!item || !item.label) return null;
+                  
+                  const active = isMenuActive(item);
+                  const isOpen = openSubmenu === item.label;
 
-                    {isOpen && (
-                      <ul className="submenu-list" id={`${item.label}-submenu`}>
-                        {item.submenu.map((sub) => {
-                          if (!sub || !sub.href || !sub.label) return null;
-                          const isSubActive = pathname === sub.href;
-                          return (
-                            <li key={sub.href}>
-                              <Link
-                                href={sub.href}
-                                className={`submenu-item ${
-                                  isSubActive ? "submenu-item-active" : ""
-                                }`}
-                                onClick={handleLinkClick}
-                              >
-                                {sub.label}
-                              </Link>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    )}
-                  </>
-                ) : (
-                  item.href ? (
-                    <Link
-                      href={item.href}
-                      className={`sidebar-item ${active ? "sidebar-item-active" : ""}`}
-                      onClick={handleLinkClick}
-                    >
-                      {item.icon}
-                      <span>{item.label}</span>
-                    </Link>
-                  ) : null
-                )}
+                  return (
+                    <li key={item.label} className="sidebar-item-wrapper">
+                      {item.submenu ? (
+                        <>
+                          <button
+                            onClick={() => toggleSubmenu(item.label)}
+                            className={`sidebar-item has-submenu w-full ${
+                              active ? "sidebar-item-active open" : ""
+                            }`}
+                            aria-expanded={openSubmenu === item.label}
+                            aria-controls={`${item.label}-submenu`}
+                          >
+                            <div className="flex items-center gap-3">
+                              {item.icon}
+                              <span>{item.label}</span>
+                            </div>
+                            {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                          </button>
+
+                          {isOpen && (
+                            <ul className="submenu-list" id={`${item.label}-submenu`}>
+                              {item.submenu.map((sub) => {
+                                if (!sub || !sub.href || !sub.label) return null;
+                                const normalizedPathname = String(pathname || "").replace(/^\/sales/, "/admin");
+                                const normalizedSubHref = String(sub.href).replace(/^\/sales/, "/admin");
+                                const isSubActive = normalizedPathname === normalizedSubHref || normalizedPathname.startsWith(normalizedSubHref + "/");
+                                return (
+                                  <li key={sub.href}>
+                                    <Link
+                                      href={sub.href}
+                                      className={`submenu-item ${
+                                        isSubActive ? "submenu-item-active" : ""
+                                      }`}
+                                      onClick={handleLinkClick}
+                                    >
+                                      {sub.label}
+                                    </Link>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          )}
+                        </>
+                      ) : (
+                        item.href ? (
+                          <Link
+                            href={item.href}
+                            className={`sidebar-item ${active ? "sidebar-item-active" : ""}`}
+                            onClick={handleLinkClick}
+                          >
+                            {item.icon}
+                            <span>{item.label}</span>
+                          </Link>
+                        ) : null
+                      )}
+                    </li>
+                  );
+                })}
               </li>
             );
           })}
