@@ -6,8 +6,8 @@
 :root {
   --sidebar-width: 16rem;
   --sidebar-compact-width: 4.5rem;
-  --sidebar-bg: #e4e4e4;
-  --sidebar-border: #e9ecef;
+  --sidebar-bg: #f4f4f5;
+  --sidebar-border: #f4f4f5;
   --sidebar-accent: #fb8500;
   --sidebar-accent-soft: #fff4ea;
   --sidebar-text: #212529;
@@ -457,7 +457,7 @@
 }
 /* Biar pas dibuka tetap gaya hover, bukan full putih/oranye */
 .sidebar-item.has-submenu.open:not(.sidebar-item-active) {
-  background: var(--sidebar-accent-soft);
+  background: #ffffff;
   color: var(--sidebar-accent);
   border-color: transparent;
 }
