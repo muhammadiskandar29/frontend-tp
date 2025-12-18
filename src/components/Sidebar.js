@@ -378,29 +378,27 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
                             {isSubmenuOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                           </button>
 
-                          {isSubmenuOpen && (
-                            <ul className="submenu-list" id={`${item.label}-submenu`}>
-                              {item.submenu.map((sub) => {
-                                if (!sub || !sub.href || !sub.label) return null;
-                                const normalizedPathname = String(pathname || "").replace(/^\/sales/, "/admin");
-                                const normalizedSubHref = String(sub.href).replace(/^\/sales/, "/admin");
-                                const isSubActive = normalizedPathname === normalizedSubHref || normalizedPathname.startsWith(normalizedSubHref + "/");
-                                return (
-                                  <li key={sub.href}>
-                                    <Link
-                                      href={sub.href}
-                                      className={`submenu-item ${
-                                        isSubActive ? "submenu-item-active" : ""
-                                      }`}
-                                      onClick={handleLinkClick}
-                                    >
-                                      {sub.label}
-                                    </Link>
-                                  </li>
-                                );
-                              })}
-                            </ul>
-                          )}
+                          <ul className={`submenu-list ${isSubmenuOpen ? "submenu-open" : ""}`} id={`${item.label}-submenu`}>
+                            {item.submenu.map((sub) => {
+                              if (!sub || !sub.href || !sub.label) return null;
+                              const normalizedPathname = String(pathname || "").replace(/^\/sales/, "/admin");
+                              const normalizedSubHref = String(sub.href).replace(/^\/sales/, "/admin");
+                              const isSubActive = normalizedPathname === normalizedSubHref || normalizedPathname.startsWith(normalizedSubHref + "/");
+                              return (
+                                <li key={sub.href}>
+                                  <Link
+                                    href={sub.href}
+                                    className={`submenu-item ${
+                                      isSubActive ? "submenu-item-active" : ""
+                                    }`}
+                                    onClick={handleLinkClick}
+                                  >
+                                    {sub.label}
+                                  </Link>
+                                </li>
+                              );
+                            })}
+                          </ul>
                         </>
                       ) : (
                         item.href ? (
