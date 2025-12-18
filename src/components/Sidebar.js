@@ -40,10 +40,16 @@ export default function Sidebar({ role }) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isRailExpanded, setIsRailExpanded] = useState(true);
   const [openSubmenu, setOpenSubmenu] = useState(null);
+  const [mounted, setMounted] = useState(false);
   
   // Check if user is sales (divisi 3) or finance (divisi 4)
   const [isSales, setIsSales] = useState(false);
   const [isFinance, setIsFinance] = useState(false);
+  
+  // Set mounted flag to avoid hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -82,25 +88,33 @@ export default function Sidebar({ role }) {
     return () => window.removeEventListener('addProductsSidebarToggle', handleToggle);
   }, [isAddProductsPage]);
 
+  // Menu state - initialized as empty to avoid hydration mismatch
+  const [menu, setMenu] = useState([]);
+  
   // === MENU BASED ON ROLE (SECTIONED STRUCTURE) ===
-  // Use useMemo instead of useEffect to avoid storing JSX in state
-  const menu = useMemo(() => {
-    if (typeof window === "undefined") return [];
-    // Check pathname for finance
-    const pathBasedFinance = typeof window !== "undefined" && pathname?.startsWith("/finance");
-    const pathBasedSales = typeof window !== "undefined" && pathname?.startsWith("/sales");
+  useEffect(() => {
+    // Only run on client side after mount
+    if (!mounted || typeof window === "undefined") return;
     
-    // Determine base path
+    // Use pathname as primary check (consistent between server and client)
+    const pathBasedFinance = pathname?.startsWith("/finance");
+    const pathBasedSales = pathname?.startsWith("/sales");
+    
+    // Determine base path - prioritize pathname over state
     let basePath = "/admin";
-    if (isFinance || pathBasedFinance) {
+    if (pathBasedFinance) {
       basePath = "/finance";
-    } else if (isSales || pathBasedSales) {
+    } else if (pathBasedSales) {
+      basePath = "/sales";
+    } else if (isFinance) {
+      basePath = "/finance";
+    } else if (isSales) {
       basePath = "/sales";
     }
     
-    // Finance menu structure
-    if (isFinance || pathBasedFinance) {
-      return [
+    // Finance menu structure - prioritize pathname
+    if (pathBasedFinance || isFinance) {
+      setMenu([
         {
           section: "OVERVIEW",
           items: [
@@ -113,12 +127,13 @@ export default function Sidebar({ role }) {
             { label: "Orders", href: "/finance/orders", iconType: "ClipboardList" },
           ],
         },
-      ];
+      ]);
+      return;
     }
     
-    // Sales menu structure
-    if (isSales || pathBasedSales) {
-      return [
+    // Sales menu structure - prioritize pathname
+    if (pathBasedSales || isSales) {
+      setMenu([
         {
           section: "OVERVIEW",
           items: [
@@ -159,11 +174,12 @@ export default function Sidebar({ role }) {
             { label: "Broadcast", href: `${basePath}/broadcast`, iconType: "Radio" },
           ],
         },
-      ];
+      ]);
+      return;
     }
     
     // Admin menu structure
-    return [
+    setMenu([
       {
         section: "OVERVIEW",
         items: [
@@ -197,8 +213,8 @@ export default function Sidebar({ role }) {
           { label: "Broadcast", href: `${basePath}/broadcast`, iconType: "Radio" },
         ],
       },
-    ];
-  }, [role, isSales, isFinance, pathname]);
+    ]);
+  }, [mounted, role, isSales, isFinance, pathname]);
 
   // Icon mapping function
   const getIcon = (iconType) => {
@@ -344,7 +360,7 @@ export default function Sidebar({ role }) {
         </div>
 
         <ul className="sidebar-menu">
-          {(menu || []).map((section, sectionIndex) => {
+          {mounted && menu.length > 0 && menu.map((section, sectionIndex) => {
             if (!section || !section.section || !section.items) return null;
             
             return (
