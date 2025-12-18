@@ -240,18 +240,6 @@ export default function AdminCustomerPage() {
                 <Filter size={16} />
               </button>
             </div>
-            <div className="customers-toolbar-buttons">
-              <button 
-                className="customers-button customers-button--secondary" 
-                onClick={() => router.push("/sales/followup/report")}
-              >
-                <i className="pi pi-chart-bar" style={{ marginRight: "6px" }} />
-                Report Follow Up
-              </button>
-              <button className="customers-button customers-button--primary" onClick={() => setShowAdd(true)}>
-                + Tambah Customer
-              </button>
-            </div>
           </div>
         </section>
 
@@ -292,7 +280,18 @@ export default function AdminCustomerPage() {
               <p className="panel__eyebrow">Directory</p>
               <h3 className="panel__title">Customer roster</h3>
             </div>
-            <span className="panel__meta">{filtered.length} aktif</span>
+            <div className="customers-toolbar-buttons">
+              <button 
+                className="customers-button customers-button--secondary" 
+                onClick={() => router.push("/sales/followup/report")}
+              >
+                <i className="pi pi-chart-bar" style={{ marginRight: "6px" }} />
+                Report Follow Up
+              </button>
+              <button className="customers-button customers-button--primary" onClick={() => setShowAdd(true)}>
+                + Tambah Customer
+              </button>
+            </div>
           </div>
 
           <div className="customers-table__wrapper">
