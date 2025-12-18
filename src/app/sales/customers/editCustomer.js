@@ -92,122 +92,131 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
         </div>
 
         {/* BODY */}
-        <div className="modal-body">
-          <form onSubmit={handleSubmit} className="form-grid">
-            <div className="form-group">
-              <label>Nama</label>
-              <input name="nama" value={formData.nama} onChange={handleChange} required />
+        <div className="modal-body modal-body--form">
+          <form onSubmit={handleSubmit} className="customer-edit-form">
+            {/* Primary Fields - Contact Information */}
+            <div className="form-section">
+              <div className="form-group form-group--primary">
+                <label>Nama</label>
+                <input name="nama" value={formData.nama} onChange={handleChange} required />
+              </div>
+
+              <div className="form-group form-group--primary">
+                <label>Email</label>
+                <input name="email" value={formData.email} onChange={handleChange} required />
+              </div>
+
+              <div className="form-group form-group--primary">
+                <label>WA</label>
+                <input
+                  name="wa"
+                  value={formData.wa}
+                  onChange={handleChange}
+                  required
+                  placeholder="cth: 081234567890"
+                />
+              </div>
             </div>
 
-            <div className="form-group">
-              <label>Email</label>
-              <input name="email" value={formData.email} onChange={handleChange} required />
+            {/* Secondary Fields - Personal Details */}
+            <div className="form-section">
+              <div className="form-group form-group--secondary">
+                <label>Nama Panggilan</label>
+                <input
+                  name="nama_panggilan"
+                  value={formData.nama_panggilan}
+                  onChange={handleChange}
+                  placeholder="cth: Budi"
+                />
+              </div>
+
+              <div className="form-group form-group--secondary">
+                <label>Instagram</label>
+                <input
+                  name="instagram"
+                  value={
+                    formData.instagram
+                      ? formData.instagram.startsWith("@")
+                        ? formData.instagram
+                        : `@${formData.instagram}`
+                      : ""
+                  }
+                  onChange={handleChange}
+                  placeholder="@username"
+                />
+              </div>
+
+              <div className="form-group form-group--secondary">
+                <label>Profesi</label>
+                <input name="profesi" value={formData.profesi} onChange={handleChange} />
+              </div>
+
+              <div className="form-group form-group--secondary">
+                <label>Pendapatan per Bulan</label>
+                <select
+                  name="pendapatan_bln"
+                  value={formData.pendapatan_bln}
+                  onChange={handleChange}
+                >
+                  <option value="">Pilih Range Pendapatan</option>
+                  <option value="<1jt">&lt; 1 Juta</option>
+                  <option value="1-5jt">1 - 5 Juta</option>
+                  <option value="5-10jt">5 - 10 Juta</option>
+                  <option value="10-15jt">10 - 15 Juta</option>
+                  <option value="15-20jt">15 - 20 Juta</option>
+                  <option value=">20jt">&gt; 20 Juta</option>
+                </select>
+              </div>
+
+              <div className="form-group form-group--secondary">
+                <label>Industri Pekerjaan</label>
+                <input
+                  name="industri_pekerjaan"
+                  value={formData.industri_pekerjaan}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="form-group form-group--secondary">
+                <label>Jenis Kelamin</label>
+                <select
+                  name="jenis_kelamin"
+                  value={formData.jenis_kelamin}
+                  onChange={handleChange}
+                >
+                  <option value="l">Laki-laki</option>
+                  <option value="p">Perempuan</option>
+                </select>
+              </div>
             </div>
 
-            <div className="form-group">
-              <label>WA</label>
-              <input
-                name="wa"
-                value={formData.wa}
-                onChange={handleChange}
-                required
-                placeholder="cth: 081234567890"
-              />
-            </div>
+            {/* Full Width Fields */}
+            <div className="form-section">
+              <div className="form-group form-group--full form-group--secondary">
+                <label>Tanggal Lahir</label>
+                <input
+                  name="tanggal_lahir"
+                  value={formData.tanggal_lahir}
+                  onChange={handleChange}
+                  placeholder="dd-mm-yyyy"
+                />
+              </div>
 
-            <div className="form-group">
-              <label>Nama Panggilan</label>
-              <input
-                name="nama_panggilan"
-                value={formData.nama_panggilan}
-                onChange={handleChange}
-                placeholder="cth: Budi"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Instagram</label>
-              <input
-                name="instagram"
-                value={
-                  formData.instagram
-                    ? formData.instagram.startsWith("@")
-                      ? formData.instagram
-                      : `@${formData.instagram}`
-                    : ""
-                }
-                onChange={handleChange}
-                placeholder="@username"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Profesi</label>
-              <input name="profesi" value={formData.profesi} onChange={handleChange} />
-            </div>
-
-            <div className="form-group">
-              <label>Pendapatan per Bulan</label>
-              <select
-                name="pendapatan_bln"
-                value={formData.pendapatan_bln}
-                onChange={handleChange}
-              >
-                <option value="">Pilih Range Pendapatan</option>
-                <option value="<1jt">&lt; 1 Juta</option>
-                <option value="1-5jt">1 - 5 Juta</option>
-                <option value="5-10jt">5 - 10 Juta</option>
-                <option value="10-15jt">10 - 15 Juta</option>
-                <option value="15-20jt">15 - 20 Juta</option>
-                <option value=">20jt">&gt; 20 Juta</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label>Industri Pekerjaan</label>
-              <input
-                name="industri_pekerjaan"
-                value={formData.industri_pekerjaan}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Jenis Kelamin</label>
-              <select
-                name="jenis_kelamin"
-                value={formData.jenis_kelamin}
-                onChange={handleChange}
-              >
-                <option value="l">Laki-laki</option>
-                <option value="p">Perempuan</option>
-              </select>
-            </div>
-
-            <div className="form-group full-width">
-              <label>Tanggal Lahir</label>
-              <input
-                name="tanggal_lahir"
-                value={formData.tanggal_lahir}
-                onChange={handleChange}
-                placeholder="dd-mm-yyyy"
-              />
-            </div>
-
-            <div className="form-group full-width">
-              <label>Alamat</label>
-              <textarea
-                name="alamat"
-                value={formData.alamat}
-                onChange={handleChange}
-                rows={3}
-              />
+              <div className="form-group form-group--full form-group--secondary">
+                <label>Alamat</label>
+                <textarea
+                  name="alamat"
+                  value={formData.alamat}
+                  onChange={handleChange}
+                  rows={3}
+                />
+              </div>
             </div>
           </form>
         </div>
 
         {/* FOOTER */}
-        <div className="modal-footer">
+        <div className="modal-footer modal-footer--form">
           <button type="button" className="btn-cancel" onClick={onClose}>
             Batal
           </button>

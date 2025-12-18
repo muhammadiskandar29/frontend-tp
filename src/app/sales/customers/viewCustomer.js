@@ -4,7 +4,7 @@ import "@/styles/sales/customer.css";
 
 // Helper untuk display pendapatan dalam format readable
 const formatPendapatan = (value) => {
-  if (!value) return "-";
+  if (!value) return "—";
   const mapping = {
     "<1jt": "< 1 Juta",
     "1-5jt": "1 - 5 Juta",
@@ -14,6 +14,37 @@ const formatPendapatan = (value) => {
     ">20jt": "> 20 Juta",
   };
   return mapping[value] || value;
+};
+
+// Helper untuk format value dengan placeholder
+const formatValue = (value) => {
+  return value || "—";
+};
+
+// Helper untuk format Instagram
+const formatInstagram = (value) => {
+  if (!value) return "—";
+  return value.startsWith("@") ? value : "@" + value;
+};
+
+// Helper untuk format jenis kelamin
+const formatJenisKelamin = (value) => {
+  if (value === "l") return "Laki-laki";
+  if (value === "p") return "Perempuan";
+  return "—";
+};
+
+// Komponen Field untuk layout modern
+const DetailField = ({ label, value, className = "" }) => {
+  const isEmpty = !value || value === "—";
+  return (
+    <div className={`customer-detail-field ${className}`}>
+      <div className="customer-detail-label">{label}</div>
+      <div className={`customer-detail-value ${isEmpty ? "customer-detail-value--empty" : ""}`}>
+        {value}
+      </div>
+    </div>
+  );
 };
 
 export default function ViewCustomerModal({ customer, onClose }) {
@@ -28,86 +59,64 @@ export default function ViewCustomerModal({ customer, onClose }) {
           </button>
         </div>
 
-        {/* BODY */}
+        {/* BODY - Modern Grid Layout */}
         <div className="modal-body">
-          <div className="detail-list">
-            <div className="detail-item">
-              <span className="detail-label">Nama</span>
-              <span className="detail-colon">:</span>
-              <span className="detail-value">{customer.nama || "-"}</span>
-            </div>
-
-            <div className="detail-item">
-              <span className="detail-label">Email</span>
-              <span className="detail-colon">:</span>
-              <span className="detail-value">{customer.email || "-"}</span>
-            </div>
-
-            <div className="detail-item">
-              <span className="detail-label">No. HP</span>
-              <span className="detail-colon">:</span>
-              <span className="detail-value">{customer.wa || "-"}</span>
-            </div>
-
-            <div className="detail-item">
-              <span className="detail-label">Nama Panggilan</span>
-              <span className="detail-colon">:</span>
-              <span className="detail-value">{customer.nama_panggilan || "-"}</span>
-            </div>
-
-            <div className="detail-item">
-              <span className="detail-label">Instagram</span>
-              <span className="detail-colon">:</span>
-              <span className="detail-value">
-                {customer.instagram
-                  ? customer.instagram.startsWith("@")
-                    ? customer.instagram
-                    : "@" + customer.instagram
-                  : "-"}
-              </span>
-            </div>
-
-            <div className="detail-item">
-              <span className="detail-label">Profesi</span>
-              <span className="detail-colon">:</span>
-              <span className="detail-value">{customer.profesi || "-"}</span>
-            </div>
-
-            <div className="detail-item">
-              <span className="detail-label">Pendapatan per Bulan</span>
-              <span className="detail-colon">:</span>
-              <span className="detail-value">{formatPendapatan(customer.pendapatan_bln)}</span>
-            </div>
-
-            <div className="detail-item">
-              <span className="detail-label">Industri Pekerjaan</span>
-              <span className="detail-colon">:</span>
-              <span className="detail-value">{customer.industri_pekerjaan || "-"}</span>
-            </div>
-
-            <div className="detail-item">
-              <span className="detail-label">Jenis Kelamin</span>
-              <span className="detail-colon">:</span>
-              <span className="detail-value">
-                {customer.jenis_kelamin === "l"
-                  ? "Laki-laki"
-                  : customer.jenis_kelamin === "p"
-                  ? "Perempuan"
-                  : "-"}
-              </span>
-            </div>
-
-            <div className="detail-item">
-              <span className="detail-label">Tanggal Lahir</span>
-              <span className="detail-colon">:</span>
-              <span className="detail-value">{customer.tanggal_lahir || "-"}</span>
-            </div>
-
-            <div className="detail-item">
-              <span className="detail-label">Alamat</span>
-              <span className="detail-colon">:</span>
-              <span className="detail-value">{customer.alamat || "-"}</span>
-            </div>
+          <div className="customer-detail-grid">
+            <DetailField 
+              label="Nama" 
+              value={formatValue(customer.nama)} 
+            />
+            
+            <DetailField 
+              label="Email" 
+              value={formatValue(customer.email)} 
+            />
+            
+            <DetailField 
+              label="No. HP" 
+              value={formatValue(customer.wa)} 
+            />
+            
+            <DetailField 
+              label="Nama Panggilan" 
+              value={formatValue(customer.nama_panggilan)} 
+            />
+            
+            <DetailField 
+              label="Instagram" 
+              value={formatInstagram(customer.instagram)} 
+            />
+            
+            <DetailField 
+              label="Profesi" 
+              value={formatValue(customer.profesi)} 
+            />
+            
+            <DetailField 
+              label="Pendapatan per Bulan" 
+              value={formatPendapatan(customer.pendapatan_bln)} 
+            />
+            
+            <DetailField 
+              label="Industri Pekerjaan" 
+              value={formatValue(customer.industri_pekerjaan)} 
+            />
+            
+            <DetailField 
+              label="Jenis Kelamin" 
+              value={formatJenisKelamin(customer.jenis_kelamin)} 
+            />
+            
+            <DetailField 
+              label="Tanggal Lahir" 
+              value={formatValue(customer.tanggal_lahir)} 
+            />
+            
+            <DetailField 
+              label="Alamat" 
+              value={formatValue(customer.alamat)} 
+              className="customer-detail-field--full"
+            />
           </div>
         </div>
       </div>

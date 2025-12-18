@@ -50,7 +50,7 @@ export default function EmailSyncWarningModal({ userId, oldEmail, newEmail, onCl
             </h3>
             <ol style={{ paddingLeft: "1.25rem", margin: 0, color: "#374151", lineHeight: "1.8" }}>
               <li style={{ marginBottom: "0.5rem" }}>
-                Minta backend developer untuk update endpoint <code style={{ fontSize: "0.8rem", backgroundColor: "#F3F4F6", padding: "0.2rem 0.4rem", borderRadius: "4px" }}>PUT /api/admin/users/{`{id}`}</code> agar sync email di kedua tabel.
+                Minta backend developer untuk update endpoint <code style={{ fontSize: "0.8rem", backgroundColor: "#F3F4F6", padding: "0.2rem 0.4rem", borderRadius: "4px" }}>PUT /api/sales/users/{`{id}`}</code> agar sync email di kedua tabel.
               </li>
               <li style={{ marginBottom: "0.5rem" }}>
                 Atau jalankan SQL manual di database:

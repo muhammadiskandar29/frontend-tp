@@ -680,7 +680,7 @@ export async function PUT(request, { params }) {
   }
 }
 
-// Handle POST untuk update produk (sama seperti POST /api/admin/produk tapi dengan id)
+// Handle POST untuk update produk (sama seperti POST /api/sales/produk tapi dengan id)
 export async function POST(request, { params }) {
   try {
     const { id } = await params;
@@ -705,7 +705,7 @@ export async function POST(request, { params }) {
 
     let response;
 
-    // Handle FormData request (sama seperti POST /api/admin/produk)
+    // Handle FormData request (sama seperti POST /api/sales/produk)
     if (contentType.includes("multipart/form-data")) {
       // Forward FormData langsung ke backend Laravel
       const incomingFormData = await request.formData();
