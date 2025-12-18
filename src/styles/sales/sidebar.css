@@ -558,7 +558,7 @@
 }
 
 .sidebar-item.has-submenu.open svg:last-child {
-  color: var(--sidebar-accent);
+  color: #ffffff;
   transform: rotate(90deg);
 }
 /* Biar pas dibuka tetap gaya hover, bukan full putih/oranye */
@@ -587,7 +587,7 @@
 
 /* panah tetap oranye & muter 90° */
 .sidebar-item.has-submenu.open svg:last-child {
-  color: var(--sidebar-accent);
+  color: #ffffff;
   transform: rotate(90deg);
 }
 /* ==========================================================
