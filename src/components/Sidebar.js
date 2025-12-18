@@ -371,8 +371,10 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
                             aria-expanded={openSubmenu === item.label}
                             aria-controls={`${item.label}-submenu`}
                           >
-                            <div className="flex items-center gap-3">
-                              {item.icon}
+                            <div className="flex items-center gap-3" style={{ flex: 1 }}>
+                              <span className="sidebar-item-icon-wrapper">
+                                {item.icon}
+                              </span>
                               <span>{item.label}</span>
                             </div>
                             {isSubmenuOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
@@ -407,7 +409,9 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
                             className={`sidebar-item ${active ? "sidebar-item-active" : ""}`}
                             onClick={handleLinkClick}
                           >
-                            {item.icon}
+                            <span className="sidebar-item-icon-wrapper">
+                              {item.icon}
+                            </span>
                             <span>{item.label}</span>
                           </Link>
                         ) : null
