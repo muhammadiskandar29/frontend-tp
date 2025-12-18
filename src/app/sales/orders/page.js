@@ -548,63 +548,6 @@ export default function DaftarPesanan() {
               />
               <span className="orders-search__icon pi pi-search" />
             </div>
-            <div className="orders-toolbar-buttons">
-              <button className="orders-button orders-button--primary" onClick={() => setShowAdd(true)}>
-                + Tambah Pesanan
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <section className="dashboard-summary orders-summary">
-          {[
-            {
-              label: "Total orders",
-              value: totalOrders,
-              accent: "accent-indigo",
-              icon: <ShoppingCart size={22} />,
-            },
-            {
-              label: "Unpaid",
-              value: unpaidOrders,
-              accent: "accent-amber",
-              icon: <Clock size={22} />,
-            },
-            {
-              label: "Menunggu",
-              value: menungguOrders,
-              accent: "accent-blue",
-              icon: <Clock size={22} />,
-            },
-            {
-              label: "Sudah Approve",
-              value: approvedOrders,
-              accent: "accent-emerald",
-              icon: <CheckCircle size={22} />,
-            },
-            {
-              label: "Ditolak",
-              value: ditolakOrders,
-              accent: "accent-red",
-              icon: <XCircle size={22} />,
-            },
-          ].map((card) => (
-            <article className="summary-card" key={card.label}>
-              <div className={`summary-card__icon ${card.accent}`}>{card.icon}</div>
-              <div>
-                <p className="summary-card__label">{card.label}</p>
-                <p className="summary-card__value">{card.value}</p>
-              </div>
-            </article>
-          ))}
-        </section>
-        
-        <section className="panel orders-panel">
-          <div className="panel__header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
-            <div>
-              <p className="panel__eyebrow">Directory</p>
-              <h3 className="panel__title">Order roster</h3>
-            </div>
             <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
               {/* Date Range Picker - Rata Kanan */}
               <div style={{ position: "relative" }}>
@@ -684,6 +627,63 @@ export default function DaftarPesanan() {
                   Reset
                 </button>
               )}
+            </div>
+          </div>
+        </section>
+
+        <section className="dashboard-summary orders-summary">
+          {[
+            {
+              label: "Total orders",
+              value: totalOrders,
+              accent: "accent-indigo",
+              icon: <ShoppingCart size={22} />,
+            },
+            {
+              label: "Unpaid",
+              value: unpaidOrders,
+              accent: "accent-amber",
+              icon: <Clock size={22} />,
+            },
+            {
+              label: "Menunggu",
+              value: menungguOrders,
+              accent: "accent-blue",
+              icon: <Clock size={22} />,
+            },
+            {
+              label: "Sudah Approve",
+              value: approvedOrders,
+              accent: "accent-emerald",
+              icon: <CheckCircle size={22} />,
+            },
+            {
+              label: "Ditolak",
+              value: ditolakOrders,
+              accent: "accent-red",
+              icon: <XCircle size={22} />,
+            },
+          ].map((card) => (
+            <article className="summary-card" key={card.label}>
+              <div className={`summary-card__icon ${card.accent}`}>{card.icon}</div>
+              <div>
+                <p className="summary-card__label">{card.label}</p>
+                <p className="summary-card__value">{card.value}</p>
+              </div>
+            </article>
+          ))}
+        </section>
+        
+        <section className="panel orders-panel">
+          <div className="panel__header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
+            <div>
+              <p className="panel__eyebrow">Directory</p>
+              <h3 className="panel__title">Order roster</h3>
+            </div>
+            <div className="orders-toolbar-buttons">
+              <button className="orders-button orders-button--primary" onClick={() => setShowAdd(true)}>
+                + Tambah Pesanan
+              </button>
             </div>
           </div>
           <div className="orders-table__wrapper">
