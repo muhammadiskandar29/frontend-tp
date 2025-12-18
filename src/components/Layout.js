@@ -4,6 +4,8 @@ import Head from "next/head";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
+import Link from "next/link";
+import { Menu } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import "@/styles/sales/layout.css";
 import "../app/globals.css";
@@ -33,6 +35,70 @@ function derivePageTitle(pathname) {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+function generateBreadcrumb(pathname) {
+  if (!pathname) return [];
+  const cleaned = String(pathname).split("?")[0].split("#")[0];
+  const segments = cleaned.split("/").filter(Boolean);
+  
+  // Map section names based on path
+  const sectionMap = {
+    customers: "CUSTOMERS",
+    orders: "OPERATIONS",
+    products: "OPERATIONS",
+    kategori: "OPERATIONS",
+    users: "USER MANAGEMENT",
+    broadcast: "COMMUNICATION",
+    followup: "CUSTOMERS",
+    leads: "CUSTOMERS",
+    report: "CUSTOMERS",
+  };
+  
+  // If only one segment (e.g., /sales, /admin, /finance), return empty
+  if (segments.length <= 1) {
+    return [];
+  }
+  
+  const breadcrumb = [];
+  const lastSegment = segments[segments.length - 1];
+  const sectionName = sectionMap[lastSegment.toLowerCase()];
+  
+  if (sectionName) {
+    // Show section name and page name
+    const label = lastSegment
+      .replace(/[-_]/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+    
+    const basePath = segments[0]; // sales, admin, finance
+    const currentPath = `/${segments.join("/")}`;
+    const sectionPath = `/${basePath}/${lastSegment}`;
+    
+    breadcrumb.push({
+      section: sectionName,
+      sectionHref: sectionPath,
+      label,
+      href: currentPath,
+      isLast: true,
+    });
+  } else {
+    // Fallback: show all segments
+    let currentPath = "";
+    segments.forEach((segment, index) => {
+      currentPath += `/${segment}`;
+      const label = segment
+        .replace(/[-_]/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+      
+      breadcrumb.push({
+        label,
+        href: currentPath,
+        isLast: index === segments.length - 1,
+      });
+    });
+  }
+  
+  return breadcrumb;
+}
+
 
 function isTokenExpired() {
   try {
@@ -51,6 +117,7 @@ export default function Layout({ children, title, description, aboveContent = nu
   const [user, setUser] = useState(null);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const accountRef = useRef(null);
 
   useEffect(() => {
@@ -89,6 +156,7 @@ export default function Layout({ children, title, description, aboveContent = nu
 
   const pageTitle = useMemo(() => title || derivePageTitle(pathname), [title, pathname]);
   const todayLabel = useMemo(() => formatLongDateId(new Date()), []);
+  const breadcrumb = useMemo(() => generateBreadcrumb(pathname), [pathname]);
 
   // Document mousedown listener for account menu - MUST be before any conditional return
   useEffect(() => {
@@ -136,14 +204,50 @@ export default function Layout({ children, title, description, aboveContent = nu
         {showShell && (
           <Sidebar
             role={user?.role || "admin"}
+            isOpen={isSidebarOpen}
+            onToggle={() => setIsSidebarOpen((prev) => !prev)}
           />
         )}
 
-        <main className={`layout-main ${showShell ? "layout-main--with-sidebar" : ""}`}>
+        <main className={`layout-main ${showShell ? "layout-main--with-sidebar" : ""} ${showShell && !isSidebarOpen ? "sidebar-collapsed" : ""}`}>
           {showShell && (
             <header className="layout-header" role="banner">
-              <div className="layout-header__title">
-                <h1 className="layout-header__heading">{pageTitle}</h1>
+              <div className="layout-header__left">
+                <button
+                  type="button"
+                  className="layout-header__burger"
+                  onClick={() => setIsSidebarOpen((prev) => !prev)}
+                  aria-label="Toggle sidebar"
+                >
+                  <Menu size={20} />
+                </button>
+                
+                <div className="layout-header__breadcrumb">
+                  {breadcrumb.length > 0 ? (
+                    breadcrumb.map((crumb, index) => (
+                      <span key={crumb.href || index} className="layout-breadcrumb__item">
+                        {index > 0 && <span className="layout-breadcrumb__separator"> / </span>}
+                        {crumb.section && crumb.isLast ? (
+                          <>
+                            <Link href={crumb.sectionHref || crumb.href} className="layout-breadcrumb__link">
+                              {crumb.section}
+                            </Link>
+                            <span className="layout-breadcrumb__separator"> / </span>
+                            <span className="layout-breadcrumb__current">{crumb.label}</span>
+                          </>
+                        ) : crumb.isLast ? (
+                          <span className="layout-breadcrumb__current">{crumb.label}</span>
+                        ) : (
+                          <Link href={crumb.href} className="layout-breadcrumb__link">
+                            {crumb.label}
+                          </Link>
+                        )}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="layout-breadcrumb__current">Dashboard</span>
+                  )}
+                </div>
               </div>
 
               <div className="layout-header__actions">

@@ -31,7 +31,8 @@
 }
 
 .sidebar--tablet.sidebar--compact,
-.sidebar--mobile {
+.sidebar--mobile,
+.sidebar--desktop.sidebar--collapsed {
   width: var(--sidebar-compact-width);
 }
 
@@ -49,7 +50,8 @@
 }
 
 .sidebar--tablet.sidebar--compact .sidebar-logo,
-.sidebar--tablet.sidebar--compact .sidebar-footer {
+.sidebar--tablet.sidebar--compact .sidebar-footer,
+.sidebar--desktop.sidebar--collapsed .sidebar-logo {
   opacity: 0;
   pointer-events: none;
 }
@@ -73,7 +75,43 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem; /* space between items */
+  gap: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 0.5rem;
+}
+
+/* === SIDEBAR SECTION HEADERS === */
+.sidebar-section-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.sidebar-section-wrapper:first-child {
+  margin-top: 0;
+}
+
+.sidebar-section-header {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sidebar-muted);
+  padding: 0.75rem 1rem 0.5rem;
+  margin-top: 1rem;
+  user-select: none;
+  pointer-events: none;
+}
+
+.sidebar-section-wrapper:first-child .sidebar-section-header {
+  margin-top: 0;
+  padding-top: 0.5rem;
+}
+
+.sidebar-item-wrapper {
+  list-style: none;
 }
 
 .sidebar-item {
@@ -160,14 +198,19 @@
 /* =======================
    Compact (tablet) tweaks
    ======================= */
-.sidebar--tablet.sidebar--compact .sidebar-item {
+.sidebar--tablet.sidebar--compact .sidebar-item,
+.sidebar--desktop.sidebar--collapsed .sidebar-item {
   justify-content: center;
   padding: 0.55rem 0;
 }
 
 .sidebar--tablet.sidebar--compact .sidebar-item span,
 .sidebar--tablet.sidebar--compact .submenu-list,
-.sidebar--tablet.sidebar--compact .sidebar-footer {
+.sidebar--tablet.sidebar--compact .sidebar-footer,
+.sidebar--desktop.sidebar--collapsed .sidebar-item span,
+.sidebar--desktop.sidebar--collapsed .submenu-list,
+.sidebar--desktop.sidebar--collapsed .sidebar-footer,
+.sidebar--desktop.sidebar--collapsed .sidebar-section-header {
   opacity: 0;
   pointer-events: none;
   position: absolute;
@@ -176,11 +219,16 @@
   overflow: hidden;
 }
 
+.sidebar--desktop.sidebar--collapsed .submenu-list {
+  display: none;
+}
+
 .sidebar--tablet.sidebar--compact .submenu-list {
   display: none;
 }
 
-.sidebar--tablet.sidebar--compact .sidebar-item.has-submenu svg:last-child {
+.sidebar--tablet.sidebar--compact .sidebar-item.has-submenu svg:last-child,
+.sidebar--desktop.sidebar--collapsed .sidebar-item.has-submenu svg:last-child {
   display: none;
 }
 
