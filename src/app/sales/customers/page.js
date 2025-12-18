@@ -363,7 +363,7 @@ export default function AdminCustomerPage() {
                           cust.verifikasi === "1" || cust.verifikasi === true ? "is-verified" : "is-unverified"
                         }`}
                       >
-                        {cust.verifikasi === "1" || cust.verifikasi === true ? "Sudah" : "Belum"}
+                        {cust.verifikasi === "1" || cust.verifikasi === true ? "Verified" : "Unverified"}
                       </span>
                     </div>
                     <div className="customers-table__cell customers-table__cell--actions" data-label="Actions">
