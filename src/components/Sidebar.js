@@ -36,7 +36,6 @@ const getViewport = () => {
 
 export default function Sidebar({ role }) {
   const pathname = usePathname();
-  const [menu, setMenu] = useState([]);
   const [viewport, setViewport] = useState(VIEWPORT.DESKTOP);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isRailExpanded, setIsRailExpanded] = useState(true);
@@ -84,7 +83,9 @@ export default function Sidebar({ role }) {
   }, [isAddProductsPage]);
 
   // === MENU BASED ON ROLE (SECTIONED STRUCTURE) ===
-  useEffect(() => {
+  // Use useMemo instead of useEffect to avoid storing JSX in state
+  const menu = useMemo(() => {
+    if (typeof window === "undefined") return [];
     // Check pathname for finance
     const pathBasedFinance = typeof window !== "undefined" && pathname?.startsWith("/finance");
     const pathBasedSales = typeof window !== "undefined" && pathname?.startsWith("/sales");
@@ -99,40 +100,38 @@ export default function Sidebar({ role }) {
     
     // Finance menu structure
     if (isFinance || pathBasedFinance) {
-      const financeMenuSections = [
+      return [
         {
           section: "OVERVIEW",
           items: [
-            { label: "Dashboard", href: "/finance", icon: <Home size={18} /> },
+            { label: "Dashboard", href: "/finance", iconType: "Home" },
           ],
         },
         {
           section: "TRANSACTIONS",
           items: [
-            { label: "Orders", href: "/finance/orders", icon: <ClipboardList size={18} /> },
+            { label: "Orders", href: "/finance/orders", iconType: "ClipboardList" },
           ],
         },
       ];
-      setMenu(financeMenuSections);
-      return;
     }
     
     // Sales menu structure
     if (isSales || pathBasedSales) {
-      const salesMenuSections = [
+      return [
         {
           section: "OVERVIEW",
           items: [
-            { label: "Dashboard", href: basePath, icon: <Home size={18} /> },
+            { label: "Dashboard", href: basePath, iconType: "Home" },
           ],
         },
         {
           section: "CUSTOMERS",
           items: [
-            { label: "Customers", href: `${basePath}/customers`, icon: <UserCheck size={18} /> },
+            { label: "Customers", href: `${basePath}/customers`, iconType: "UserCheck" },
             {
               label: "CRM",
-              icon: <Tag size={18} />,
+              iconType: "Tag",
               submenu: [
                 { label: "Leads", href: `${basePath}/leads` },
                 { label: "Follow Up Report", href: `${basePath}/followup/report` },
@@ -143,10 +142,10 @@ export default function Sidebar({ role }) {
         {
           section: "OPERATIONS",
           items: [
-            { label: "Orders", href: `${basePath}/orders`, icon: <ClipboardList size={18} /> },
+            { label: "Orders", href: `${basePath}/orders`, iconType: "ClipboardList" },
             {
               label: "Products",
-              icon: <ShoppingBag size={18} />,
+              iconType: "ShoppingBag",
               submenu: [
                 { label: "Kategori Produk", href: `${basePath}/kategori` },
                 { label: "Produk", href: `${basePath}/products` },
@@ -157,36 +156,34 @@ export default function Sidebar({ role }) {
         {
           section: "COMMUNICATION",
           items: [
-            { label: "Broadcast", href: `${basePath}/broadcast`, icon: <Radio size={18} /> },
+            { label: "Broadcast", href: `${basePath}/broadcast`, iconType: "Radio" },
           ],
         },
       ];
-      setMenu(salesMenuSections);
-      return;
     }
     
     // Admin menu structure
-    const adminMenuSections = [
+    return [
       {
         section: "OVERVIEW",
         items: [
-          { label: "Dashboard", href: basePath, icon: <Home size={18} /> },
+          { label: "Dashboard", href: basePath, iconType: "Home" },
         ],
       },
       {
         section: "USER MANAGEMENT",
         items: [
-          { label: "Users", href: "/admin/users", icon: <Users size={18} /> },
-          { label: "Customers", href: `${basePath}/customers`, icon: <UserCheck size={18} /> },
+          { label: "Users", href: "/admin/users", iconType: "Users" },
+          { label: "Customers", href: `${basePath}/customers`, iconType: "UserCheck" },
         ],
       },
       {
         section: "SALES OPERATIONS",
         items: [
-          { label: "Orders", href: `${basePath}/orders`, icon: <ClipboardList size={18} /> },
+          { label: "Orders", href: `${basePath}/orders`, iconType: "ClipboardList" },
           {
             label: "Products",
-            icon: <ShoppingBag size={18} />,
+            iconType: "ShoppingBag",
             submenu: [
               { label: "Kategori Produk", href: `${basePath}/kategori` },
               { label: "Produk", href: `${basePath}/products` },
@@ -197,13 +194,25 @@ export default function Sidebar({ role }) {
       {
         section: "COMMUNICATION",
         items: [
-          { label: "Broadcast", href: `${basePath}/broadcast`, icon: <Radio size={18} /> },
+          { label: "Broadcast", href: `${basePath}/broadcast`, iconType: "Radio" },
         ],
       },
     ];
-
-    setMenu(adminMenuSections);
   }, [role, isSales, isFinance, pathname]);
+
+  // Icon mapping function
+  const getIcon = (iconType) => {
+    const iconMap = {
+      Home: <Home size={18} />,
+      Users: <Users size={18} />,
+      UserCheck: <UserCheck size={18} />,
+      ClipboardList: <ClipboardList size={18} />,
+      ShoppingBag: <ShoppingBag size={18} />,
+      Tag: <Tag size={18} />,
+      Radio: <Radio size={18} />,
+    };
+    return iconMap[iconType] || null;
+  };
 
   // === DETECT SCREEN WIDTH ===
   useEffect(() => {
@@ -236,7 +245,7 @@ export default function Sidebar({ role }) {
 
   // === AUTO OPEN SUBMENU IF CURRENT PAGE IS INSIDE IT ===
   useEffect(() => {
-    if (!pathname) return;
+    if (!pathname || !menu) return;
     // Handle sectioned menu structure
     menu.forEach((section) => {
       if (section.items) {
@@ -335,7 +344,7 @@ export default function Sidebar({ role }) {
         </div>
 
         <ul className="sidebar-menu">
-          {menu.map((section, sectionIndex) => {
+          {(menu || []).map((section, sectionIndex) => {
             if (!section || !section.section || !section.items) return null;
             
             return (
@@ -351,6 +360,7 @@ export default function Sidebar({ role }) {
                   
                   const active = isMenuActive(item);
                   const isOpen = openSubmenu === item.label;
+                  const icon = getIcon(item.iconType);
 
                   return (
                     <li key={item.label} className="sidebar-item-wrapper">
@@ -365,7 +375,7 @@ export default function Sidebar({ role }) {
                             aria-controls={`${item.label}-submenu`}
                           >
                             <div className="flex items-center gap-3">
-                              {item.icon}
+                              {icon}
                               <span>{item.label}</span>
                             </div>
                             {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
@@ -402,7 +412,7 @@ export default function Sidebar({ role }) {
                             className={`sidebar-item ${active ? "sidebar-item-active" : ""}`}
                             onClick={handleLinkClick}
                           >
-                            {item.icon}
+                            {icon}
                             <span>{item.label}</span>
                           </Link>
                         ) : null
