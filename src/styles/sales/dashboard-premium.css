@@ -165,10 +165,10 @@ body {
   opacity: 1;
 }
 
-/* Icon Container - Soft background */
+/* Icon Container - Smaller, supporting role */
 .summary-card__icon {
-  width: 3.5rem;
-  height: 3.5rem;
+  width: 2.5rem;
+  height: 2.5rem;
   border-radius: var(--radius-md);
   display: inline-flex;
   align-items: center;
@@ -177,32 +177,34 @@ body {
   color: #ffffff;
   flex-shrink: 0;
   box-shadow: 0 4px 14px 0 rgba(251, 133, 0, 0.25);
+  opacity: 0.9;
 }
 
 .summary-card__icon svg {
-  width: var(--icon-md);
-  height: var(--icon-md);
+  width: var(--icon-sm);
+  height: var(--icon-sm);
   color: #ffffff;
 }
 
-/* Typography - Clear hierarchy */
+/* Typography - Value is the hero */
 .summary-card__label {
   font-size: var(--text-xs);
-  color: var(--dash-muted);
-  margin: 0 0 var(--space-2) 0;
+  color: var(--dash-muted-light);
+  margin: 0 0 var(--space-3) 0;
   font-weight: var(--font-medium);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   line-height: var(--leading-tight);
+  opacity: 0.7;
 }
 
 .summary-card__value {
-  font-size: var(--text-2xl);
+  font-size: 2rem;
   font-weight: var(--font-bold);
   color: var(--dash-text-dark);
   margin: 0;
   line-height: var(--leading-tight);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
 }
 
 /* ============================================
@@ -595,12 +597,17 @@ body {
   }
   
   .summary-card__icon {
-    width: 3rem;
-    height: 3rem;
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+  
+  .summary-card__icon svg {
+    width: var(--icon-xs);
+    height: var(--icon-xs);
   }
   
   .summary-card__value {
-    font-size: var(--text-xl);
+    font-size: 1.75rem;
   }
 }
 
