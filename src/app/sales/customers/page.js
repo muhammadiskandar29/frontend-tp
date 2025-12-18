@@ -244,7 +244,7 @@ export default function AdminCustomerPage() {
         </section>
 
         <section className="dashboard-summary customers-summary">
-          <article className="summary-card summary-card--combined">
+          <article className="summary-card summary-card--combined summary-card--three-cols">
             <div className="summary-card__column">
               <div className={`summary-card__icon accent-orange`}>
                 <Users size={22} />

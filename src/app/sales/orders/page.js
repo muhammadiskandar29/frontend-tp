@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useMemo, useCallback, memo } from "react";
 import Layout from "@/components/Layout";
 import dynamic from "next/dynamic";
-import { ShoppingCart, Clock, CheckCircle, PartyPopper, XCircle } from "lucide-react";
+import { ShoppingCart, Clock, CheckCircle, PartyPopper, XCircle, Filter } from "lucide-react";
 import { Calendar } from "primereact/calendar";
 import "primereact/resources/themes/lara-light-cyan/theme.css";
 import "primereact/resources/primereact.min.css";
@@ -68,6 +68,7 @@ export default function DaftarPesanan() {
   // Filter state
   const [searchInput, setSearchInput] = useState("");
   const [dateRange, setDateRange] = useState(null); // [startDate, endDate] atau null
+  const [filterPreset, setFilterPreset] = useState("all"); // all | today
   
   // State lainnya
   const [statistics, setStatistics] = useState(null);
@@ -548,76 +549,81 @@ export default function DaftarPesanan() {
               />
               <span className="orders-search__icon pi pi-search" />
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-              {/* Date Range Picker - Rata Kanan */}
-              <div style={{ position: "relative" }}>
-                <div style={{ position: "relative" }}>
-                  <Calendar
-                    value={dateRange}
-                    onChange={(e) => setDateRange(e.value)}
-                    selectionMode="range"
-                    readOnlyInput
-                    showIcon
-                    icon="pi pi-calendar"
-                    placeholder="Pilih tanggal"
-                    dateFormat="dd M yyyy"
-                    monthNavigator
-                    yearNavigator
-                    yearRange="2020:2030"
-                    style={{
-                      width: "100%",
-                      minWidth: "300px"
-                    }}
-                    inputStyle={{
-                      width: "100%",
-                      padding: "0.75rem 2.5rem 0.75rem 1rem",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: "0.5rem",
-                      fontSize: "0.875rem",
-                      background: "#ffffff",
-                      color: "#1f2937",
-                      boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-                      cursor: "pointer"
-                    }}
-                    panelStyle={{
-                      background: "#ffffff",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: "0.5rem",
-                      boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)"
-                    }}
-                  />
-                </div>
+            <div className="orders-toolbar-buttons">
+              <div className="orders-filters" aria-label="Filter pesanan">
+                <button
+                  type="button"
+                  className={`orders-filter-btn ${filterPreset === "all" ? "is-active" : ""}`}
+                  onClick={() => setFilterPreset("all")}
+                >
+                  Semua
+                </button>
+                <button
+                  type="button"
+                  className={`orders-filter-btn ${filterPreset === "today" ? "is-active" : ""}`}
+                  onClick={() => setFilterPreset("today")}
+                >
+                  Hari Ini
+                </button>
+                <button
+                  type="button"
+                  className="orders-filter-btn orders-filter-icon-btn"
+                  title="Filter"
+                  aria-label="Filter"
+                  onClick={() => {}}
+                >
+                  <Filter size={16} />
+                </button>
               </div>
-
-              {/* Clear Filter Button */}
+              <div style={{ position: "relative" }}>
+                <Calendar
+                  value={dateRange}
+                  onChange={(e) => setDateRange(e.value)}
+                  selectionMode="range"
+                  readOnlyInput
+                  showIcon
+                  icon="pi pi-calendar"
+                  placeholder="Pilih tanggal"
+                  dateFormat="dd M yyyy"
+                  monthNavigator
+                  yearNavigator
+                  yearRange="2020:2030"
+                  style={{
+                    width: "100%",
+                    minWidth: "250px"
+                  }}
+                  inputStyle={{
+                    width: "100%",
+                    padding: "0.55rem 2.2rem 0.55rem 0.75rem",
+                    border: "1px solid var(--dash-border)",
+                    borderRadius: "0.5rem",
+                    fontSize: "0.85rem",
+                    background: "var(--dash-surface)",
+                    color: "var(--dash-text)",
+                    boxShadow: "none",
+                    cursor: "pointer"
+                  }}
+                  panelStyle={{
+                    background: "#ffffff",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "0.5rem",
+                    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)"
+                  }}
+                />
+              </div>
               {dateRange && Array.isArray(dateRange) && dateRange.length === 2 && dateRange[0] && dateRange[1] && (
                 <button
                   onClick={() => setDateRange(null)}
-                  style={{
-                    padding: "0.5rem 0.75rem",
-                    background: "#e5e7eb",
-                    color: "#6b7280",
-                    border: "none",
-                    borderRadius: "0.375rem",
-                    cursor: "pointer",
-                    fontSize: "0.75rem",
-                    fontWeight: 500,
-                    transition: "all 0.2s ease",
-                    whiteSpace: "nowrap",
-                    height: "fit-content",
-                    marginTop: "1.75rem"
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.background = "#d1d5db";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.background = "#e5e7eb";
-                  }}
+                  className="orders-button orders-button--secondary"
+                  style={{ whiteSpace: "nowrap" }}
                 >
-                  <i className="pi pi-times" style={{ marginRight: "0.25rem", fontSize: "0.75rem" }} />
+                  <i className="pi pi-times" style={{ marginRight: "0.25rem" }} />
                   Reset
                 </button>
               )}
+              <button className="customers-button customers-button--primary" onClick={() => setShowAdd(true)}>
+                + Tambah Pesanan
+              </button>
             </div>
           </div>
         </section>

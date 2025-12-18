@@ -178,6 +178,58 @@ ADMIN USERS PAGE (Scoped Styles)
   color: currentColor;
 }
 
+/* Orders filter (same as customers) */
+.orders-filters {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.orders-filter-btn {
+  border: 1px solid var(--dash-border);
+  background: #ffffff;
+  color: var(--dash-text);
+  border-radius: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.orders-filter-btn:hover {
+  background: rgba(255, 108, 0, 0.06);
+}
+
+.orders-filter-btn.is-active {
+  border-color: rgba(255, 108, 0, 0.5);
+  color: var(--primary);
+  background: rgba(255, 108, 0, 0.08);
+}
+
+.orders-filter-icon-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  justify-content: center;
+  color: var(--primary);
+  border-color: rgba(255, 108, 0, 0.35);
+}
+
+.orders-filter-icon-btn svg {
+  color: currentColor;
+}
+
+.orders-toolbar-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+}
+
 .customers-toolbar-buttons {
   display: flex;
   gap: 10px;

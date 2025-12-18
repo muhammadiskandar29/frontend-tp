@@ -162,6 +162,17 @@
   grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr auto 1fr;
 }
 
+/* Support untuk 3 kolom dengan 2 divider - rata kiri */
+.summary-card--three-cols {
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  justify-items: start;
+}
+
+.summary-card--three-cols .summary-card__column {
+  justify-content: flex-start;
+  width: 100%;
+}
+
 .summary-card__column {
   display: flex;
   align-items: center;
