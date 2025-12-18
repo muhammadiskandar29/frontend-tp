@@ -1,6 +1,6 @@
 "use client";
 
-import "@/styles/sales/dashboard.css";
+import "@/styles/sales/dashboard-premium.css";
 import Layout from "@/components/Layout";
 import DashboardTabs from "@/components/DashboardTabs";
 import GreetingBanner from "@/components/GreetingBanner";
@@ -206,25 +206,25 @@ export default function Dashboard() {
         {
           title: "Active Employees",
           value: activeData?.hrMetrics?.activeEmployees ?? (loading ? "…" : "0"),
-          icon: <Users2 size={22} />,
+          icon: <Users2 size={24} />,
           color: "accent-indigo",
         },
         {
           title: "Open Requisitions",
           value: activeData?.hrMetrics?.openRoles ?? (loading ? "…" : "0"),
-          icon: <Briefcase size={22} />,
+          icon: <Briefcase size={24} />,
           color: "accent-emerald",
         },
         {
           title: "New Hires (30d)",
           value: activeData?.hrMetrics?.newHires30d ?? (loading ? "…" : "0"),
-          icon: <UserPlus size={22} />,
+          icon: <UserPlus size={24} />,
           color: "accent-blue",
         },
         {
           title: "Attrition (30d)",
           value: activeData?.hrMetrics?.attrition30d ?? (loading ? "…" : "0"),
-          icon: <UserMinus size={22} />,
+          icon: <UserMinus size={24} />,
           color: "accent-red",
         },
       ];
@@ -234,25 +234,25 @@ export default function Dashboard() {
       {
         title: "Total Orders",
         value: overview?.orders_total?.toLocaleString("id-ID") ?? (loading ? "…" : "0"),
-        icon: <ShoppingCart size={22} />,
+        icon: <ShoppingCart size={24} />,
         color: "accent-blue",
       },
       {
         title: "Total Paid",
         value: overview?.orders_paid?.toLocaleString("id-ID") ?? (loading ? "…" : "0"),
-        icon: <CreditCard size={22} />,
+        icon: <CreditCard size={24} />,
         color: "accent-emerald",
       },
       {
         title: "Paid Ratio",
         value: overview?.paid_ratio_formatted ?? (loading ? "…" : "0%"),
-        icon: <Percent size={22} />,
+        icon: <Percent size={24} />,
         color: "accent-amber",
       },
       {
         title: "Unpaid Orders",
         value: overview?.orders_unpaid?.toLocaleString("id-ID") ?? (loading ? "…" : "0"),
-        icon: <Package size={22} />,
+        icon: <Package size={24} />,
         color: "accent-red",
       },
     ];
@@ -267,31 +267,31 @@ export default function Dashboard() {
       {
         title: "Gross Revenue",
         value: financial?.gross_revenue_formatted ?? (loading ? "…" : "Rp0"),
-        icon: <DollarSign size={22} />,
+        icon: <DollarSign size={24} />,
         color: "accent-emerald",
       },
       {
         title: "Shipping Cost",
         value: financial?.shipping_cost_formatted ?? (loading ? "…" : "Rp0"),
-        icon: <Truck size={22} />,
+        icon: <Truck size={24} />,
         color: "accent-purple",
       },
       {
         title: "Net Revenue",
         value: financial?.net_revenue_formatted ?? (loading ? "…" : "Rp0"),
-        icon: <Wallet size={22} />,
+        icon: <Wallet size={24} />,
         color: "accent-indigo",
       },
       {
         title: "Gross Profit",
         value: financial?.gross_profit_formatted ?? (loading ? "…" : "Rp0"),
-        icon: <PiggyBank size={22} />,
+        icon: <PiggyBank size={24} />,
         color: "accent-pink",
       },
       {
         title: "Net Profit",
         value: financial?.net_profit_formatted ?? (loading ? "…" : "Rp0"),
-        icon: <TrendingUp size={22} />,
+        icon: <TrendingUp size={24} />,
         color: "accent-teal",
       },
     ];
@@ -335,7 +335,7 @@ export default function Dashboard() {
             </span>
           </div>
 
-          <div className="dashboard-summary">
+          <div className="dashboard-summary-horizontal">
             {summaryCards.map((card, index) => (
               <article className="summary-card" key={card.title}>
                 <div className={`summary-card__icon ${card.color}`}>{card.icon}</div>

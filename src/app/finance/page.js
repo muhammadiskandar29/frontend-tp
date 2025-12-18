@@ -1,6 +1,6 @@
 "use client";
 
-import "@/styles/finance/dashboard.css";
+import "@/styles/sales/dashboard-premium.css";
 import Layout from "@/components/Layout";
 import GreetingBanner from "@/components/GreetingBanner";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -132,25 +132,25 @@ export default function FinanceDashboard() {
       {
         title: "Pending Approval",
         value: overview?.orders_pending?.toLocaleString("id-ID") ?? (loading ? "…" : "0"),
-        icon: <Clock size={22} />,
+        icon: <Clock size={24} />,
         color: "accent-amber",
       },
       {
         title: "Approved Orders",
         value: overview?.orders_approved?.toLocaleString("id-ID") ?? (loading ? "…" : "0"),
-        icon: <CheckCircle size={22} />,
+        icon: <CheckCircle size={24} />,
         color: "accent-emerald",
       },
       {
         title: "Rejected Orders",
         value: overview?.orders_rejected?.toLocaleString("id-ID") ?? (loading ? "…" : "0"),
-        icon: <XCircle size={22} />,
+        icon: <XCircle size={24} />,
         color: "accent-red",
       },
       {
         title: "DP Orders",
         value: overview?.orders_dp?.toLocaleString("id-ID") ?? (loading ? "…" : "0"),
-        icon: <FileCheck size={22} />,
+        icon: <FileCheck size={24} />,
         color: "accent-blue",
       },
     ];
@@ -161,25 +161,25 @@ export default function FinanceDashboard() {
       {
         title: "Net Revenue",
         value: financial?.net_revenue ? formatCurrency(financial.net_revenue) : (loading ? "…" : "Rp0"),
-        icon: <TrendingUp size={22} />,
+        icon: <TrendingUp size={24} />,
         color: "accent-indigo",
       },
       {
         title: "Net Profit",
         value: financial?.net_profit ? formatCurrency(financial.net_profit) : (loading ? "…" : "Rp0"),
-        icon: <PiggyBank size={22} />,
+        icon: <PiggyBank size={24} />,
         color: "accent-teal",
       },
       {
         title: "Cash Flow",
         value: financial?.cash_flow ? formatCurrency(financial.cash_flow) : (loading ? "…" : "Rp0"),
-        icon: <Wallet size={22} />,
+        icon: <Wallet size={24} />,
         color: "accent-blue",
       },
       {
         title: "Outstanding Payments",
         value: financial?.outstanding_payments ? formatCurrency(financial.outstanding_payments) : (loading ? "…" : "Rp0"),
-        icon: <AlertCircle size={22} />,
+        icon: <AlertCircle size={24} />,
         color: "accent-amber",
       },
     ];
@@ -190,25 +190,25 @@ export default function FinanceDashboard() {
       {
         title: "Total Orders",
         value: overview?.orders_total?.toLocaleString("id-ID") ?? (loading ? "…" : "0"),
-        icon: <ShoppingCart size={22} />,
+        icon: <ShoppingCart size={24} />,
         color: "accent-blue",
       },
       {
         title: "Total Paid",
         value: overview?.orders_paid?.toLocaleString("id-ID") ?? (loading ? "…" : "0"),
-        icon: <CreditCard size={22} />,
+        icon: <CreditCard size={24} />,
         color: "accent-emerald",
       },
       {
         title: "Paid Ratio",
         value: overview?.paid_ratio ? `${overview.paid_ratio}%` : (loading ? "…" : "0%"),
-        icon: <Percent size={22} />,
+        icon: <Percent size={24} />,
         color: "accent-amber",
       },
       {
         title: "Unpaid Orders",
         value: overview?.orders_unpaid?.toLocaleString("id-ID") ?? (loading ? "…" : "0"),
-        icon: <Package size={22} />,
+        icon: <Package size={24} />,
         color: "accent-red",
       },
     ];

@@ -252,9 +252,6 @@ export default function Layout({ children, title, description, aboveContent = nu
               </div>
 
               <div className="layout-header__actions">
-                <div className="layout-header__right">
-                  <div className="layout-header__date">{todayLabel}</div>
-                </div>
                 <div className="layout-account" ref={accountRef}>
                   <button
                     type="button"
