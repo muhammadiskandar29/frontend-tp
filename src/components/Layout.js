@@ -90,6 +90,16 @@ export default function Layout({ children, title, description, aboveContent = nu
   const pageTitle = useMemo(() => title || derivePageTitle(pathname), [title, pathname]);
   const todayLabel = useMemo(() => formatLongDateId(new Date()), []);
 
+  // Document mousedown listener for account menu - MUST be before any conditional return
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (!accountRef.current) return;
+      if (!accountRef.current.contains(e.target)) setIsAccountOpen(false);
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
+
   // Show loading state instead of null to prevent blank screen
   if (!isAuthorized && !pathname.includes("/login")) {
     return (
@@ -107,16 +117,7 @@ export default function Layout({ children, title, description, aboveContent = nu
   const handleLogout = () => {
     localStorage.clear();
     router.push("/login");
-  };
-
-  useEffect(() => {
-    const onDocClick = (e) => {
-      if (!accountRef.current) return;
-      if (!accountRef.current.contains(e.target)) setIsAccountOpen(false);
-    };
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, []);  
+  };  
 
   return (
     <>
