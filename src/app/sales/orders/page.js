@@ -549,30 +549,32 @@ export default function DaftarPesanan() {
               />
               <span className="orders-search__icon pi pi-search" />
             </div>
-            <div className="orders-filters" aria-label="Filter pesanan">
-              <button
-                type="button"
-                className={`orders-filter-btn ${filterPreset === "all" ? "is-active" : ""}`}
-                onClick={() => setFilterPreset("all")}
-              >
-                Semua
-              </button>
-              <button
-                type="button"
-                className={`orders-filter-btn ${filterPreset === "today" ? "is-active" : ""}`}
-                onClick={() => setFilterPreset("today")}
-              >
-                Hari Ini
-              </button>
-              <button
-                type="button"
-                className="orders-filter-btn orders-filter-icon-btn"
-                title="Filter"
-                aria-label="Filter"
-                onClick={() => {}}
-              >
-                <Filter size={16} />
-              </button>
+            <div className="orders-toolbar-buttons">
+              <div className="orders-filters" aria-label="Filter pesanan">
+                <button
+                  type="button"
+                  className={`orders-filter-btn ${filterPreset === "all" ? "is-active" : ""}`}
+                  onClick={() => setFilterPreset("all")}
+                >
+                  Semua
+                </button>
+                <button
+                  type="button"
+                  className={`orders-filter-btn ${filterPreset === "today" ? "is-active" : ""}`}
+                  onClick={() => setFilterPreset("today")}
+                >
+                  Hari Ini
+                </button>
+                <button
+                  type="button"
+                  className="orders-filter-btn orders-filter-icon-btn"
+                  title="Filter"
+                  aria-label="Filter"
+                  onClick={() => {}}
+                >
+                  <Filter size={16} />
+                </button>
+              </div>
               <div style={{ position: "relative" }}>
                 <Calendar
                   value={dateRange}
@@ -612,7 +614,7 @@ export default function DaftarPesanan() {
               {dateRange && Array.isArray(dateRange) && dateRange.length === 2 && dateRange[0] && dateRange[1] && (
                 <button
                   onClick={() => setDateRange(null)}
-                  className="orders-filter-btn"
+                  className="orders-button orders-button--secondary"
                   style={{ whiteSpace: "nowrap" }}
                 >
                   <i className="pi pi-times" style={{ marginRight: "0.25rem" }} />

@@ -281,8 +281,7 @@
 /* ============================================
    SUMMARY CARD - Full Width
    ============================================ */
-.customers-summary,
-.orders-summary {
+.customers-summary {
   display: block !important;
   grid-template-columns: 1fr !important;
   width: 100%;
@@ -297,16 +296,7 @@
   justify-items: start;
 }
 
-.orders-summary .summary-card--combined {
-  width: 100%;
-  max-width: 100%;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr auto 1fr;
-  justify-items: start;
-}
-
-.customers-summary .summary-card--three-cols,
-.orders-summary .summary-card--three-cols {
+.customers-summary .summary-card--three-cols {
   width: 100%;
   max-width: 100%;
 }
