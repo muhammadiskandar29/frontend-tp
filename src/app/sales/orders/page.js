@@ -621,9 +621,6 @@ export default function DaftarPesanan() {
                   Reset
                 </button>
               )}
-              <button className="customers-button customers-button--primary" onClick={() => setShowAdd(true)}>
-                + Tambah Pesanan
-              </button>
             </div>
           </div>
         </section>
@@ -688,6 +685,12 @@ export default function DaftarPesanan() {
               <p className="panel__eyebrow">Directory</p>
               <h3 className="panel__title">Order roster</h3>
             </div>
+            <div className="customers-toolbar-buttons">
+
+            <button className="customers-button customers-button--primary" onClick={() => setShowAdd(true)}>
+                + Tambah Pesanan
+              </button>
+              </div>
           </div>
           <div className="orders-table__wrapper">
             <div className="orders-table">
