@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import "@/styles/sales/pesanan.css";
+import "@/styles/sales/customer.css";
 
 // Use Next.js proxy to avoid CORS
 const BASE_URL = "/api";
@@ -339,61 +339,58 @@ const handleSubmitUpdate = async (e) => {
 
   return (
     <>
-      <div className="orders-modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-        <div className="orders-modal-card" style={{ width: "min(960px, 95vw)", maxHeight: "90vh", display: "flex", flexDirection: "column" }}>
+      <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+        <div className="modal-card" style={{ width: "min(960px, 95vw)", maxHeight: "90vh", display: "flex", flexDirection: "column" }}>
           {/* Header */}
-          <div className="orders-modal-header">
-            <div>
-              <p className="orders-modal-eyebrow">Kelola Pesanan</p>
-              <h2>Update Pesanan #{order?.id}</h2>
-            </div>
-            <button className="orders-modal-close" onClick={onClose} type="button" aria-label="Tutup modal">
+          <div className="modal-header">
+            <h2>Update Pesanan #{order?.id}</h2>
+            <button className="modal-close" onClick={onClose} type="button" aria-label="Tutup modal">
               <i className="pi pi-times" />
             </button>
           </div>
 
           {/* Body */}
-          <form className="orders-modal-body" onSubmit={handleSubmitUpdate} style={{ overflowY: "auto", flex: 1, padding: "1.5rem" }}>
+          <form className="modal-body" onSubmit={handleSubmitUpdate} style={{ overflowY: "auto", flex: 1 }}>
             <div className="update-orders-grid">
               {/* KOLOM KIRI - Informasi Order */}
               <div className="update-orders-section">
-                <div className="section-header">
-                  <span className="section-icon">📋</span>
-                  <div>
-                    <h4>Informasi Order</h4>
-                    <p>Data pelanggan dan produk</p>
-                  </div>
-                </div>
-
-                <div className="info-card">
-                  <div className="info-row">
-                    <span className="info-label">👤 Customer</span>
-                    <span className="info-value">
+                <h4 className="detail-section-title">Informasi Order</h4>
+                
+                <div className="detail-list">
+                  <div className="detail-item">
+                    <span className="detail-label">Customer</span>
+                    <span className="detail-colon">:</span>
+                    <span className="detail-value">
                       {order.customer_rel?.nama ||
                         (typeof order.customer === "object" ? order.customer?.nama : String(order.customer || "-")) ||
                         "-"}
                     </span>
                   </div>
-                  <div className="info-row">
-                    <span className="info-label">📱 WhatsApp</span>
-                    <span className="info-value">{order.customer_rel?.wa || "-"}</span>
+                  <div className="detail-item">
+                    <span className="detail-label">WhatsApp</span>
+                    <span className="detail-colon">:</span>
+                    <span className="detail-value">{order.customer_rel?.wa || "-"}</span>
                   </div>
-                  <div className="info-row">
-                    <span className="info-label">📦 Produk</span>
-                    <span className="info-value">
+                  <div className="detail-item">
+                    <span className="detail-label">Produk</span>
+                    <span className="detail-colon">:</span>
+                    <span className="detail-value">
                       {order.produk_rel?.nama ||
                         (typeof order.produk === "object" ? order.produk?.nama : String(order.produk || "-")) ||
                         "-"}
                     </span>
                   </div>
-                  <div className="info-row">
-                    <span className="info-label">📅 Tanggal</span>
-                    <span className="info-value">{order.tanggal || "-"}</span>
+                  <div className="detail-item">
+                    <span className="detail-label">Tanggal</span>
+                    <span className="detail-colon">:</span>
+                    <span className="detail-value">{order.tanggal || "-"}</span>
                   </div>
                 </div>
 
+                <div className="detail-section-divider"></div>
+
                 <label className="form-field">
-                  <span className="field-label">📍 Alamat Pengiriman</span>
+                  <span className="field-label">Alamat Pengiriman</span>
                   <textarea
                     name="alamat"
                     rows="3"
@@ -405,7 +402,7 @@ const handleSubmitUpdate = async (e) => {
                 </label>
 
                 <label className="form-field">
-                  <span className="field-label">🔗 Sumber Order</span>
+                  <span className="field-label">Sumber Order</span>
                   <select
                     name="sumber"
                     className="field-input"
@@ -425,13 +422,7 @@ const handleSubmitUpdate = async (e) => {
 
               {/* KOLOM KANAN - Pembayaran */}
               <div className="update-orders-section">
-                <div className="section-header">
-                  <span className="section-icon">💰</span>
-                  <div>
-                    <h4>Detail Pembayaran</h4>
-                    <p>Informasi harga dan status bayar</p>
-                  </div>
-                </div>
+                <h4 className="detail-section-title">Detail Pembayaran</h4>
 
                 <div className="price-grid">
                   <label className="form-field">
@@ -478,7 +469,7 @@ const handleSubmitUpdate = async (e) => {
                 </label>
 
                 <label className="form-field">
-                  <span className="field-label">💳 Metode Pembayaran</span>
+                  <span className="field-label">Metode Pembayaran</span>
                   <input
                     type="text"
                     className="field-input"
@@ -558,7 +549,7 @@ const handleSubmitUpdate = async (e) => {
                 {/* Bukti Pembayaran Preview */}
                 {bukti && (
                   <div className="bukti-preview">
-                    <span className="field-label">📎 Bukti Pembayaran</span>
+                    <span className="field-label">Bukti Pembayaran</span>
                     <div className="bukti-image-wrapper">
                       <img
                         src={bukti.url.startsWith("blob:") ? bukti.url : buildImageUrl(bukti.url)}
@@ -580,12 +571,11 @@ const handleSubmitUpdate = async (e) => {
             )}
 
             {/* Footer */}
-            <div className="orders-modal-footer">
-              <button type="button" onClick={onClose} className="orders-btn orders-btn--ghost">
+            <div className="modal-footer">
+              <button type="button" onClick={onClose} className="btn-cancel">
                 Batal
               </button>
-              <button type="submit" className="orders-btn orders-btn--primary">
-                <i className="pi pi-save" style={{ marginRight: 6 }} />
+              <button type="submit" className="btn-save">
                 Simpan Perubahan
               </button>
             </div>

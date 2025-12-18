@@ -254,7 +254,7 @@ export default function AdminCustomerPage() {
                 <p className="summary-card__value">{customers.length}</p>
               </div>
             </div>
-            <span className="summary-card__separator">|</span>
+            <div className="summary-card__divider"></div>
             <div className="summary-card__column">
               <div className={`summary-card__icon accent-orange`}>
                 <CheckCircle size={22} />
@@ -266,7 +266,7 @@ export default function AdminCustomerPage() {
                 </p>
               </div>
             </div>
-            <span className="summary-card__separator">|</span>
+            <div className="summary-card__divider"></div>
             <div className="summary-card__column">
               <div className={`summary-card__icon accent-orange`}>
                 <Filter size={22} />

@@ -1,11 +1,12 @@
 .customers-history-link {
-  color: #ff6c00;
+  color: #111827;
   font-weight: 600;
   text-decoration: none;
 }
 
 .customers-history-link:hover {
   text-decoration: underline;
+  color: #111827;
 }
 
 /* WhatsApp Link - Simple */
@@ -13,14 +14,14 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: #ff6c00;
+  color: #25d366;
   font-size: 12px;
   text-decoration: none;
   transition: color 0.2s ease;
 }
 
 .wa-link:hover {
-  color: #c85400;
+  color: #20ba5a;
 }
 
 .wa-link span {
@@ -398,6 +399,57 @@ background: #FCA5A5;
   line-height: 1.5;
   word-break: break-word;
   flex: 1;
+}
+
+.detail-section {
+  margin-bottom: 1rem;
+}
+
+.detail-section:last-child {
+  margin-bottom: 0;
+}
+
+.detail-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.75rem;
+  margin-top: 0;
+}
+
+.detail-section-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 1.25rem 0;
+  width: 100%;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.status-badge.unpaid {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge.paid {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-badge.sukses {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status-badge.gagal {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .form-grid {
