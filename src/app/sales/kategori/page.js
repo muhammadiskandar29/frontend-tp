@@ -137,38 +137,31 @@ export default function AdminKategoriPage() {
               />
               <span className="customers-search__icon pi pi-search" />
             </div>
-            <button
-              className="customers-button customers-button--primary"
-              onClick={handleAdd}
-            >
-              + Tambah Kategori
-            </button>
           </div>
         </section>
 
-        <section className="dashboard-summary customers-summary">
-          {[
-            {
-              label: "Total categories",
-              value: kategori.length,
-              accent: "accent-blue",
-              icon: <FolderOpen size={22} />,
-            },
-            {
-              label: "Filtered",
-              value: filtered.length,
-              accent: "accent-amber",
-              icon: <Search size={22} />,
-            },
-          ].map((card) => (
-            <article className="summary-card" key={card.label}>
-              <div className={`summary-card__icon ${card.accent}`}>{card.icon}</div>
-              <div>
-                <p className="summary-card__label">{card.label}</p>
-                <p className="summary-card__value">{card.value}</p>
+        <section className="dashboard-summary kategori-summary">
+          <article className="summary-card summary-card--combined summary-card--two-cols">
+            <div className="summary-card__column">
+              <div className="summary-card__icon accent-orange">
+                <FolderOpen size={22} />
               </div>
-            </article>
-          ))}
+              <div>
+                <p className="summary-card__label">Total categories</p>
+                <p className="summary-card__value">{kategori.length}</p>
+              </div>
+            </div>
+            <div className="summary-card__divider"></div>
+            <div className="summary-card__column">
+              <div className="summary-card__icon accent-orange">
+                <Search size={22} />
+              </div>
+              <div>
+                <p className="summary-card__label">Filtered</p>
+                <p className="summary-card__value">{filtered.length}</p>
+              </div>
+            </div>
+          </article>
         </section>
 
         <section className="panel users-panel">
@@ -177,8 +170,12 @@ export default function AdminKategoriPage() {
               <p className="panel__eyebrow">Directory</p>
               <h3 className="panel__title">Category roster</h3>
             </div>
-            <span className="panel__meta">{filtered.length} kategori</span>
-          </div>
+            <button
+              className="customers-button customers-button--primary"
+              onClick={handleAdd}
+            >
+              + Tambah Kategori
+            </button>          </div>
 
           <div className="users-table__wrapper">
             <div className="users-table">

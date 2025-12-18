@@ -209,7 +209,7 @@ export default function BroadcastPage() {
             <div className="orders-toolbar-buttons">
               <button
                 type="button"
-                className="orders-button orders-button--primary"
+                className="customers-button customers-button--primary"
                 onClick={() => setShowAddBroadcast(true)}
               >
                 + Tambah Broadcast

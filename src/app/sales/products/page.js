@@ -105,44 +105,41 @@ export default function AdminProductsPage() {
               />
               <span className="customers-search__icon pi pi-search" />
             </div>
-            <button
-              className="customers-button customers-button--primary"
-              onClick={() => router.push("/sales/products/addProducts")}
-            >
-              + Tambah Produk
-            </button>
           </div>
         </section>
 
-        <section className="dashboard-summary customers-summary">
-          {[
-            {
-              label: "Total products",
-              value: products.length,
-              accent: "accent-blue",
-              icon: <Package size={22} />,
-            },
-            {
-              label: "Active products",
-              value: products.filter((p) => p.status === "1").length,
-              accent: "accent-emerald",
-              icon: <CheckCircle size={22} />,
-            },
-            {
-              label: "Filtered",
-              value: filtered.length,
-              accent: "accent-amber",
-              icon: <Search size={22} />,
-            },
-          ].map((card) => (
-            <article className="summary-card" key={card.label}>
-              <div className={`summary-card__icon ${card.accent}`}>{card.icon}</div>
-              <div>
-                <p className="summary-card__label">{card.label}</p>
-                <p className="summary-card__value">{card.value}</p>
+        <section className="dashboard-summary products-summary">
+          <article className="summary-card summary-card--combined summary-card--three-cols">
+            <div className="summary-card__column">
+              <div className="summary-card__icon accent-orange">
+                <Package size={22} />
               </div>
-            </article>
-          ))}
+              <div>
+                <p className="summary-card__label">Total products</p>
+                <p className="summary-card__value">{products.length}</p>
+              </div>
+            </div>
+            <div className="summary-card__divider"></div>
+            <div className="summary-card__column">
+              <div className="summary-card__icon accent-orange">
+                <CheckCircle size={22} />
+              </div>
+              <div>
+                <p className="summary-card__label">Active products</p>
+                <p className="summary-card__value">{products.filter((p) => p.status === "1").length}</p>
+              </div>
+            </div>
+            <div className="summary-card__divider"></div>
+            <div className="summary-card__column">
+              <div className="summary-card__icon accent-orange">
+                <Search size={22} />
+              </div>
+              <div>
+                <p className="summary-card__label">Filtered</p>
+                <p className="summary-card__value">{filtered.length}</p>
+              </div>
+            </div>
+          </article>
         </section>
 
         <section className="panel products-panel">
@@ -151,7 +148,12 @@ export default function AdminProductsPage() {
               <p className="panel__eyebrow">Directory</p>
               <h3 className="panel__title">Product roster</h3>
             </div>
-            <span className="panel__meta">{filtered.length} produk</span>
+            <button
+              className="customers-button customers-button--primary"
+              onClick={() => router.push("/sales/products/addProducts")}
+            >
+              + Tambah Produk
+            </button>          
           </div>
 
           {error && (
