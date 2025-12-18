@@ -14,11 +14,11 @@ ADMIN USERS PAGE (Scoped Styles)
 --success: #4ADE80;
 --warning: #FACC15;
 --danger: #F87171;
---gray-bg: #F9FAFB;
---gray-border: #E5E7EB;
---gray-text: #6B7280;
---dark-text: #111827;
---white: #ffffff;
+--gray-bg: #1a1d24;
+--gray-border: #2d3239;
+--gray-text: #94a3b8;
+--dark-text: #e2e8f0;
+--white: #252932;
 --radius: 8px;
 --shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
 }
@@ -122,7 +122,7 @@ ADMIN USERS PAGE (Scoped Styles)
 }
 
 .customers-button--secondary {
-  background: #ffffff;
+  background: var(--white);
   color: var(--primary);
   border: 1px solid rgba(255, 108, 0, 0.35);
   box-shadow: none;
@@ -142,7 +142,7 @@ ADMIN USERS PAGE (Scoped Styles)
 
 .customers-filter-btn {
   border: 1px solid var(--dash-border);
-  background: #ffffff;
+  background: var(--white);
   color: var(--dash-text);
   border-radius: 0.5rem;
   padding: 0.35rem 0.6rem;
@@ -187,7 +187,7 @@ ADMIN USERS PAGE (Scoped Styles)
 
 .orders-filter-btn {
   border: 1px solid var(--dash-border);
-  background: #ffffff;
+  background: var(--white);
   color: var(--dash-text);
   border-radius: 0.5rem;
   padding: 0.35rem 0.6rem;
@@ -1246,7 +1246,7 @@ ADMIN USERS PAGE (Scoped Styles)
   text-transform: uppercase;
   font-weight: 600;
   border-bottom: 1px solid var(--dash-border);
-  background: #f8fafc;
+  background: var(--gray-bg);
   border-radius: 0.75rem;
   position: sticky;
   top: 0;
@@ -1814,5 +1814,5 @@ margin-left: 0px;
   border-radius: 0.75rem;
   margin: 1rem 0;
   grid-column: 1 / -1;
-  background: #f8fafc;
+  background: var(--gray-bg);
 }

@@ -1,15 +1,15 @@
 :root {
-  --layout-bg: #f8fafc;
-  --layout-surface: #ffffff;
-  --layout-border: #e5e7eb;
+  --layout-bg: #1a1d24;
+  --layout-surface: #252932;
+  --layout-border: #2d3239;
   --layout-muted: #94a3b8;
-  --layout-heading: #0f172a;
-  --layout-shadow: 0 20px 60px rgba(15, 23, 42, 0.08);
+  --layout-heading: #e2e8f0;
+  --layout-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
 .layout-wrapper {
   min-height: 100vh;
-  background: #cfcfcf;
+  background: var(--layout-bg);
   color: var(--layout-heading);
   font-family: Inter,system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
 }
@@ -43,7 +43,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   position: sticky;
   top: 0;
   z-index: 40;
@@ -65,7 +65,7 @@
   height: 36px;
   border: 1px solid var(--layout-border);
   border-radius: 0.5rem;
-  background: #ffffff;
+  background: var(--layout-surface);
   color: var(--layout-heading);
   cursor: pointer;
   transition: background 140ms ease, border-color 140ms ease;
@@ -73,8 +73,8 @@
 }
 
 .layout-header__burger:hover {
-  background: #f8fafc;
-  border-color: #d1d5db;
+  background: #2d3239;
+  border-color: #3a3f47;
 }
 
 .layout-header__breadcrumb {
@@ -167,15 +167,15 @@
   padding: 0.4rem 0.5rem 0.4rem 0.4rem;
   border-radius: 0.5rem;
   border: 1px solid var(--layout-border);
-  background: #ffffff;
+  background: var(--layout-surface);
   color: var(--layout-heading);
   cursor: pointer;
   transition: background 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
 }
 
 .layout-account__trigger:hover {
-  background: #f8fafc;
-  border-color: #d1d5db;
+  background: #2d3239;
+  border-color: #3a3f47;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
@@ -222,10 +222,10 @@
   position: absolute;
   right: 0;
   top: calc(100% + 0.5rem);
-  background: #ffffff;
+  background: var(--layout-surface);
   border: 1px solid var(--layout-border);
   border-radius: 0.5rem;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
   overflow: hidden;
   z-index: 70;
   min-width: 160px;
@@ -245,7 +245,7 @@
 }
 
 .layout-account__menu-item:hover {
-  background: #f8fafc;
+  background: #2d3239;
 }
 
 .layout-account__menu-item--danger {
@@ -267,13 +267,13 @@
   padding: 0.35rem 0.5rem 0.35rem 0.35rem;
   border-radius: 999px;
   border: 1px solid var(--layout-border);
-  background: #f8fafc;
+  background: #2d3239;
   color: #0f172a;
   transition: box-shadow 180ms ease, border 180ms ease;
 }
 
 .layout-profile__trigger:hover {
-  border-color: #d1d5db;
+  border-color: #3a3f47;
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
 }
 
@@ -327,7 +327,7 @@
   right: 0;
   top: calc(100% + 0.5rem);
   width: 200px;
-  background: #ffffff;
+  background: var(--layout-surface);
   border: 1px solid var(--layout-border);
   border-radius: 1rem;
   box-shadow: 0 30px 60px rgba(15, 23, 42, 0.15);

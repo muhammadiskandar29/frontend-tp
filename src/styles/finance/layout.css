@@ -1,10 +1,10 @@
 :root {
-  --layout-bg: #f8fafc;
-  --layout-surface: #ffffff;
-  --layout-border: #e5e7eb;
+  --layout-bg: #1a1d24;
+  --layout-surface: #252932;
+  --layout-border: #2d3239;
   --layout-muted: #94a3b8;
-  --layout-heading: #0f172a;
-  --layout-shadow: 0 20px 60px rgba(15, 23, 42, 0.08);
+  --layout-heading: #e2e8f0;
+  --layout-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
 .layout-wrapper {

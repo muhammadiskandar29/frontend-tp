@@ -4,7 +4,7 @@
 .finance-orders {
   padding: 2rem;
   min-height: 100vh;
-  background: var(--dash-bg, #f8fafc);
+  background: var(--dash-bg, #1a1d24);
 }
 
 .finance-orders__header {
@@ -27,9 +27,9 @@
 .finance-orders__table-wrapper {
   width: 100%;
   overflow-x: auto;
-  background: #fff;
+  background: var(--dash-surface, #252932);
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .finance-orders__table {
@@ -75,7 +75,7 @@
 }
 
 .finance-orders__table-row {
-  background: #fff;
+  background: var(--dash-surface, #252932);
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   padding: 0.5rem 0.65rem;
@@ -223,7 +223,7 @@
   outline: none;
   border-color: var(--accent-indigo);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-  background: #fff;
+  background: var(--dash-surface, #252932);
 }
 
 .orders-search__icon {
