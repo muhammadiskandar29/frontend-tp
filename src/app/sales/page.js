@@ -223,16 +223,50 @@ export default function Dashboard() {
       <div className="dashboard-shell">
         {error && <div className="dashboard-alert">{error}</div>}
         <section className="dashboard-hero">
-          <div className="dashboard-summary">
-            {summaryCards.map((card, index) => (
-              <article className="summary-card" key={card.title}>
-                <div className={`summary-card__icon ${card.color}`}>{card.icon}</div>
+          <div className="dashboard-main-layout">
+            <div className="dashboard-summary">
+              {summaryCards.map((card, index) => (
+                <article className="summary-card" key={card.title}>
+                  <div className={`summary-card__icon ${card.color}`}>{card.icon}</div>
+                  <div>
+                    <p className="summary-card__label">{card.title}</p>
+                    <p className="summary-card__value">{card.value}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <article className="panel panel--revenue">
+              <div className="panel__header">
                 <div>
-                  <p className="summary-card__label">{card.title}</p>
-                  <p className="summary-card__value">{card.value}</p>
+                  <p className="panel__eyebrow">Revenue breakdown</p>
+                  <h3 className="panel__title">Financial Snapshot</h3>
                 </div>
-              </article>
-            ))}
+                <label className="panel__filter" aria-label="Filter range for Financial Snapshot">
+                  <select
+                    className="panel__select"
+                    value={financeRangeDays}
+                    onChange={(e) => setFinanceRangeDays(Number(e.target.value))}
+                  >
+                    <option value={7}>{makeRangeLabel(7)}</option>
+                    <option value={14}>{makeRangeLabel(14)}</option>
+                    <option value={30}>{makeRangeLabel(30)}</option>
+                  </select>
+                </label>
+              </div>
+
+              <div className="revenue-grid">
+                {revenueCards.map((card) => (
+                  <article className="revenue-card" key={card.title}>
+                    <div className={`revenue-card__icon ${card.color}`}>{card.icon}</div>
+                    <div>
+                      <p className="revenue-card__label">{card.title}</p>
+                      <p className="revenue-card__value">{card.value}</p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </article>
           </div>
         </section>
 
@@ -284,37 +318,6 @@ export default function Dashboard() {
             {!chartHasData && <p className="panel__empty">Belum ada data transaksi untuk periode ini.</p>}
           </article>
 
-          <article className="panel panel--revenue">
-            <div className="panel__header">
-              <div>
-                <p className="panel__eyebrow">Revenue breakdown</p>
-                <h3 className="panel__title">Financial Snapshot</h3>
-              </div>
-              <label className="panel__filter" aria-label="Filter range for Financial Snapshot">
-                <select
-                  className="panel__select"
-                  value={financeRangeDays}
-                  onChange={(e) => setFinanceRangeDays(Number(e.target.value))}
-                >
-                  <option value={7}>{makeRangeLabel(7)}</option>
-                  <option value={14}>{makeRangeLabel(14)}</option>
-                  <option value={30}>{makeRangeLabel(30)}</option>
-                </select>
-              </label>
-            </div>
-
-            <div className="revenue-grid">
-              {revenueCards.map((card) => (
-                <article className="revenue-card" key={card.title}>
-                  <div className={`revenue-card__icon ${card.color}`}>{card.icon}</div>
-                  <div>
-                    <p className="revenue-card__label">{card.title}</p>
-                    <p className="revenue-card__value">{card.value}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </article>
         </section>
       </div>
     </Layout>
