@@ -244,34 +244,41 @@ export default function AdminCustomerPage() {
         </section>
 
         <section className="dashboard-summary customers-summary">
-          {[
-            {
-              label: "Total customers",
-              value: customers.length,
-              accent: "accent-orange",
-              icon: <Users size={22} />,
-            },
-            {
-              label: "Verified",
-              value: customers.filter((c) => c.verifikasi === "1" || c.verifikasi === true).length,
-              accent: "accent-orange",
-              icon: <CheckCircle size={22} />,
-            },
-            {
-              label: "Active (filtered)",
-              value: filtered.length,
-              accent: "accent-orange",
-              icon: <Filter size={22} />,
-            },
-          ].map((card) => (
-            <article className="summary-card" key={card.label}>
-              <div className={`summary-card__icon ${card.accent}`}>{card.icon}</div>
-              <div>
-                <p className="summary-card__label">{card.label}</p>
-                <p className="summary-card__value">{card.value}</p>
+          <article className="summary-card summary-card--combined">
+            <div className="summary-card__column">
+              <div className={`summary-card__icon accent-orange`}>
+                <Users size={22} />
               </div>
-            </article>
-          ))}
+              <div>
+                <p className="summary-card__label">Total customers</p>
+                <p className="summary-card__value">{customers.length}</p>
+              </div>
+            </div>
+            <span className="summary-card__separator">|</span>
+            <div className="summary-card__column">
+              <div className={`summary-card__icon accent-orange`}>
+                <CheckCircle size={22} />
+              </div>
+              <div>
+                <p className="summary-card__label">Verified</p>
+                <p className="summary-card__value">
+                  {customers.filter((c) => c.verifikasi === "1" || c.verifikasi === true).length}
+                </p>
+              </div>
+            </div>
+            <span className="summary-card__separator">|</span>
+            <div className="summary-card__column">
+              <div className={`summary-card__icon accent-orange`}>
+                <Filter size={22} />
+              </div>
+              <div>
+                <p className="summary-card__label">Unverified</p>
+                <p className="summary-card__value">
+                  {customers.filter((c) => c.verifikasi !== "1" && c.verifikasi !== true).length}
+                </p>
+              </div>
+            </div>
+          </article>
         </section>
 
         <section className="panel customers-panel">

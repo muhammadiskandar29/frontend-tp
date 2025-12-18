@@ -149,6 +149,31 @@
   justify-content: center;
 }
 
+.summary-card--combined {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 1.5rem;
+  padding: 1rem 1.5rem;
+}
+
+.summary-card__column {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex: 1;
+  justify-content: center;
+}
+
+.summary-card__separator {
+  color: var(--dash-border);
+  font-size: 1.5rem;
+  font-weight: 300;
+  line-height: 1;
+  flex-shrink: 0;
+  padding: 0 0.5rem;
+}
+
 .dashboard-panels {
   display: grid;
   gap: 1.5rem;

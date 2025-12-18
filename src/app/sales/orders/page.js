@@ -551,15 +551,6 @@ export default function DaftarPesanan() {
             <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
               {/* Date Range Picker - Rata Kanan */}
               <div style={{ position: "relative" }}>
-                <label style={{ 
-                  display: "block", 
-                  marginBottom: "0.5rem", 
-                  fontSize: "0.875rem",
-                  fontWeight: 500,
-                  color: "var(--dash-text)"
-                }}>
-                  Waktu Pesanan Dibuat
-                </label>
                 <div style={{ position: "relative" }}>
                   <Calendar
                     value={dateRange}
