@@ -2,7 +2,7 @@
 
 import Head from "next/head";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import Sidebar from "@/components/Sidebar";
 import "@/styles/sales/layout.css";
@@ -50,6 +50,8 @@ export default function Layout({ children, title, description, aboveContent = nu
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const accountRef = useRef(null);
 
   useEffect(() => {
     if (pathname.includes("/login")) {
@@ -105,7 +107,16 @@ export default function Layout({ children, title, description, aboveContent = nu
   const handleLogout = () => {
     localStorage.clear();
     router.push("/login");
-  };  
+  };
+
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (!accountRef.current) return;
+      if (!accountRef.current.contains(e.target)) setIsAccountOpen(false);
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);  
 
   return (
     <>
@@ -124,9 +135,6 @@ export default function Layout({ children, title, description, aboveContent = nu
         {showShell && (
           <Sidebar
             role={user?.role || "admin"}
-            userName={user?.name || "User"}
-            userInitials={userInitials}
-            onLogout={handleLogout}
           />
         )}
 
@@ -139,8 +147,48 @@ export default function Layout({ children, title, description, aboveContent = nu
 
               <div className="layout-header__actions">
                 <div className="layout-header__right">
-                  <div className="layout-header__user">{user?.name || "User"}</div>
                   <div className="layout-header__date">{todayLabel}</div>
+                </div>
+                <div className="layout-account" ref={accountRef}>
+                  <button
+                    type="button"
+                    className={`layout-account__trigger ${isAccountOpen ? "is-open" : ""}`}
+                    onClick={() => setIsAccountOpen((p) => !p)}
+                    aria-haspopup="menu"
+                    aria-expanded={isAccountOpen}
+                  >
+                    <span className="layout-account__avatar" aria-hidden="true">
+                      {userInitials}
+                    </span>
+                    <span className="layout-account__name" title={user?.name || "User"}>
+                      {user?.name || "User"}
+                    </span>
+                    <span className="layout-account__chevron" aria-hidden="true" />
+                  </button>
+
+                  {isAccountOpen && (
+                    <div className="layout-account__menu" role="menu">
+                      <button
+                        type="button"
+                        className="layout-account__menu-item"
+                        role="menuitem"
+                        onClick={() => setIsAccountOpen(false)}
+                      >
+                        Profile
+                      </button>
+                      <button
+                        type="button"
+                        className="layout-account__menu-item layout-account__menu-item--danger"
+                        role="menuitem"
+                        onClick={() => {
+                          setIsAccountOpen(false);
+                          handleLogout();
+                        }}
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </header>
