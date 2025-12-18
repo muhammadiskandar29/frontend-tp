@@ -14,11 +14,11 @@ ADMIN USERS PAGE (Scoped Styles)
 --success: #4ADE80;
 --warning: #FACC15;
 --danger: #F87171;
---gray-bg: #1a1d24;
---gray-border: #2d3239;
---gray-text: #94a3b8;
---dark-text: #e2e8f0;
---white: #252932;
+--gray-bg: #F9FAFB;
+--gray-border: #E5E7EB;
+--gray-text: #6B7280;
+--dark-text: #111827;
+--white: #ffffff;
 --radius: 8px;
 --shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
 }
@@ -1246,7 +1246,7 @@ ADMIN USERS PAGE (Scoped Styles)
   text-transform: uppercase;
   font-weight: 600;
   border-bottom: 1px solid var(--dash-border);
-  background: var(--gray-bg);
+  background: #f8fafc;
   border-radius: 0.75rem;
   position: sticky;
   top: 0;
@@ -1440,7 +1440,7 @@ ADMIN USERS PAGE (Scoped Styles)
   align-items: center;
   padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--gray-border);
-  background: var(--gray-bg);
+  background: #f8fafc;
 }
 
 .modal-header h2 {
@@ -1518,7 +1518,7 @@ ADMIN USERS PAGE (Scoped Styles)
   gap: 0.5rem;
   padding: 0.9rem 1.25rem;
   border-top: 1px solid var(--gray-border);
-  background: var(--gray-bg);
+  background: #f8fafc;
 }
 
 .btn-cancel {
@@ -1814,5 +1814,5 @@ margin-left: 0px;
   border-radius: 0.75rem;
   margin: 1rem 0;
   grid-column: 1 / -1;
-  background: var(--gray-bg);
+  background: #f8fafc;
 }

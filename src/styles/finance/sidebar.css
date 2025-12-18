@@ -6,12 +6,12 @@
 :root {
   --sidebar-width: 16rem;
   --sidebar-compact-width: 4.5rem;
-  --sidebar-bg: #1a1d24;
-  --sidebar-border: #2d3239;
-  --sidebar-accent: #fb8500;
-  --sidebar-accent-soft: rgba(251, 133, 0, 0.15);
-  --sidebar-text: #e2e8f0;
-  --sidebar-muted: #94a3b8;
+  --sidebar-bg: #ffffff;
+  --sidebar-border: #e5e7eb;
+  --sidebar-accent: #ff6c00;
+  --sidebar-accent-soft: #fff4ea;
+  --sidebar-text: #374151;
+  --sidebar-muted: #9ca3af;
   --sidebar-shadow: none;
 }
 

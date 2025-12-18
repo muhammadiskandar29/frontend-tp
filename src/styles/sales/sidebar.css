@@ -6,12 +6,12 @@
 :root {
   --sidebar-width: 16rem;
   --sidebar-compact-width: 4.5rem;
-  --sidebar-bg: #1a1d24;
-  --sidebar-border: #2d3239;
+  --sidebar-bg: #f8f9fa;
+  --sidebar-border: #e9ecef;
   --sidebar-accent: #fb8500;
-  --sidebar-accent-soft: rgba(251, 133, 0, 0.15);
-  --sidebar-text: #e2e8f0;
-  --sidebar-muted: #94a3b8;
+  --sidebar-accent-soft: #fff4ea;
+  --sidebar-text: #212529;
+  --sidebar-muted: #6c757d;
   --sidebar-shadow: none;
 }
 
@@ -198,7 +198,7 @@
 }
 
 .sidebar-item:not(.sidebar-item-active) .sidebar-item-icon-wrapper svg {
-  color: #1a1d24;
+  color: #212529;
 }
 
 /* Icon untuk item aktif - background orange, icon putih */
@@ -237,13 +237,13 @@
 /* Active state - background putih */
 .sidebar-item-active {
   background: #ffffff;
-  color: #1a1d24;
+  color: var(--sidebar-text);
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .sidebar-item-active span:not(.sidebar-item-icon-wrapper) {
-  color: #1a1d24;
+  color: var(--sidebar-text);
 }
 
 .sidebar-footer {
