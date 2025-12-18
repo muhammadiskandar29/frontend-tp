@@ -81,15 +81,15 @@ export default function Sidebar({ role }) {
     return () => window.removeEventListener('addProductsSidebarToggle', handleToggle);
   }, [isAddProductsPage]);
 
-  // Determine base path from pathname (simple and consistent)
-  const basePath = pathname?.startsWith("/finance") 
-    ? "/finance" 
-    : pathname?.startsWith("/sales") 
-    ? "/sales" 
-    : "/admin";
+  // Determine base path from pathname (memoized to avoid recalculation)
+  const basePath = useMemo(() => {
+    if (pathname?.startsWith("/finance")) return "/finance";
+    if (pathname?.startsWith("/sales")) return "/sales";
+    return "/admin";
+  }, [pathname]);
 
-  // Build menu structure directly (no state, no hydration issues)
-  const buildMenu = () => {
+  // Build menu structure with useMemo to stabilize reference
+  const menu = useMemo(() => {
     // Finance menu
     if (pathname?.startsWith("/finance")) {
       return [
@@ -190,9 +190,7 @@ export default function Sidebar({ role }) {
         ],
       },
     ];
-  };
-
-  const menu = buildMenu();
+  }, [pathname, basePath]);
 
   // === DETECT SCREEN WIDTH ===
   useEffect(() => {
@@ -225,8 +223,11 @@ export default function Sidebar({ role }) {
 
   // === AUTO OPEN SUBMENU IF CURRENT PAGE IS INSIDE IT ===
   useEffect(() => {
-    if (!pathname) return;
-    // Handle sectioned menu structure
+    if (!pathname || !menu) return;
+    
+    // Find which submenu should be open (if any)
+    let submenuToOpen = null;
+    
     menu.forEach((section) => {
       if (section.items) {
         section.items.forEach((item) => {
@@ -238,12 +239,19 @@ export default function Sidebar({ role }) {
               const normalizedSubHref = String(sub.href).replace(/^\/sales/, "/admin");
               return normalizedPathname.startsWith(normalizedSubHref);
             });
-            if (activeSub) setOpenSubmenu(item.label);
+            if (activeSub) {
+              submenuToOpen = item.label;
+            }
           }
         });
       }
     });
-  }, [pathname]);
+    
+    // Only update state if the value actually changed (using functional update to avoid dependency)
+    setOpenSubmenu((prev) => {
+      return submenuToOpen !== prev ? submenuToOpen : prev;
+    });
+  }, [pathname, menu]);
 
   const handleToggle = () => {
     if (viewport === VIEWPORT.MOBILE) {
