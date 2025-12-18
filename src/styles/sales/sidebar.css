@@ -73,43 +73,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-right: 0.5rem;
-}
-
-/* === SIDEBAR SECTION HEADERS === */
-.sidebar-section-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  margin-bottom: 0.5rem;
-}
-
-.sidebar-section-wrapper:first-child {
-  margin-top: 0;
-}
-
-.sidebar-section-header {
-  font-size: 0.65rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--sidebar-muted);
-  padding: 0.75rem 1rem 0.5rem;
-  margin-top: 1rem;
-  user-select: none;
-  pointer-events: none;
-}
-
-.sidebar-section-wrapper:first-child .sidebar-section-header {
-  margin-top: 0;
-  padding-top: 0.5rem;
-}
-
-.sidebar-item-wrapper {
-  list-style: none;
+  gap: 0.35rem; /* space between items */
 }
 
 .sidebar-item {
@@ -203,8 +167,7 @@
 
 .sidebar--tablet.sidebar--compact .sidebar-item span,
 .sidebar--tablet.sidebar--compact .submenu-list,
-.sidebar--tablet.sidebar--compact .sidebar-footer,
-.sidebar--tablet.sidebar--compact .sidebar-section-header {
+.sidebar--tablet.sidebar--compact .sidebar-footer {
   opacity: 0;
   pointer-events: none;
   position: absolute;
