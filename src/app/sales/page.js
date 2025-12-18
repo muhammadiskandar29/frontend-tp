@@ -220,25 +220,46 @@ export default function Dashboard() {
   const chartHasData = activityTrend.length > 0;
   const staffCardsRef = useRef([]);
 
-  // Dummy data untuk staff sales
+  // Dummy data untuk staff sales dengan data lengkap
   const staffSalesData = [
     {
       name: "Salsa",
       totalLeads: 45,
       totalClosing: 28,
       conversionRate: 62.22,
+      totalRevenue: 125000000,
+      averageDealSize: 4464286,
+      responseTime: "2.5 jam",
+      activeDeals: 12,
+      closedThisMonth: 8,
+      targetAchievement: 87.5,
+      customerSatisfaction: 4.6,
     },
     {
       name: "Budi",
       totalLeads: 52,
       totalClosing: 35,
       conversionRate: 67.31,
+      totalRevenue: 158000000,
+      averageDealSize: 4514286,
+      responseTime: "1.8 jam",
+      activeDeals: 15,
+      closedThisMonth: 10,
+      targetAchievement: 95.2,
+      customerSatisfaction: 4.8,
     },
     {
       name: "Rina",
       totalLeads: 38,
       totalClosing: 24,
       conversionRate: 63.16,
+      totalRevenue: 98000000,
+      averageDealSize: 4083333,
+      responseTime: "3.2 jam",
+      activeDeals: 9,
+      closedThisMonth: 6,
+      targetAchievement: 75.0,
+      customerSatisfaction: 4.4,
     },
   ];
 
@@ -326,22 +347,68 @@ export default function Dashboard() {
                   >
                     <div className="staff-card__header">
                       <div className="staff-card__avatar">
-                        <User size={20} />
+                        <User size={24} />
                       </div>
-                      <h4 className="staff-card__name">{staff.name}</h4>
+                      <div className="staff-card__header-info">
+                        <h4 className="staff-card__name">{staff.name}</h4>
+                        <p className="staff-card__role">Sales Representative</p>
+                      </div>
                     </div>
+                    
                     <div className="staff-card__stats">
-                      <div className="staff-card__stat">
-                        <p className="staff-card__stat-label">Total Leads</p>
-                        <p className="staff-card__stat-value">{staff.totalLeads}</p>
+                      <div className="staff-card__stat-row">
+                        <div className="staff-card__stat">
+                          <p className="staff-card__stat-label">Total Leads</p>
+                          <p className="staff-card__stat-value">{staff.totalLeads}</p>
+                        </div>
+                        <div className="staff-card__stat">
+                          <p className="staff-card__stat-label">Total Closing</p>
+                          <p className="staff-card__stat-value">{staff.totalClosing}</p>
+                        </div>
                       </div>
-                      <div className="staff-card__stat">
-                        <p className="staff-card__stat-label">Total Closing</p>
-                        <p className="staff-card__stat-value">{staff.totalClosing}</p>
+                      
+                      <div className="staff-card__stat-row">
+                        <div className="staff-card__stat">
+                          <p className="staff-card__stat-label">Conversion Rate</p>
+                          <p className="staff-card__stat-value">{staff.conversionRate.toFixed(2)}%</p>
+                        </div>
+                        <div className="staff-card__stat">
+                          <p className="staff-card__stat-label">Total Revenue</p>
+                          <p className="staff-card__stat-value">Rp {staff.totalRevenue.toLocaleString("id-ID")}</p>
+                        </div>
                       </div>
-                      <div className="staff-card__stat">
-                        <p className="staff-card__stat-label">Conversion Rate</p>
-                        <p className="staff-card__stat-value">{staff.conversionRate.toFixed(2)}%</p>
+                      
+                      <div className="staff-card__stat-row">
+                        <div className="staff-card__stat">
+                          <p className="staff-card__stat-label">Average Deal Size</p>
+                          <p className="staff-card__stat-value">Rp {staff.averageDealSize.toLocaleString("id-ID")}</p>
+                        </div>
+                        <div className="staff-card__stat">
+                          <p className="staff-card__stat-label">Response Time</p>
+                          <p className="staff-card__stat-value">{staff.responseTime}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="staff-card__stat-row">
+                        <div className="staff-card__stat">
+                          <p className="staff-card__stat-label">Active Deals</p>
+                          <p className="staff-card__stat-value">{staff.activeDeals}</p>
+                        </div>
+                        <div className="staff-card__stat">
+                          <p className="staff-card__stat-label">Closed This Month</p>
+                          <p className="staff-card__stat-value">{staff.closedThisMonth}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="staff-card__stat-row">
+                        <div className="staff-card__stat">
+                          <p className="staff-card__stat-label">Target Achievement</p>
+                          <p className="staff-card__stat-value">{staff.targetAchievement}%</p>
+                        </div>
+                        <div className="staff-card__stat">
+                          <p className="staff-card__stat-label">Customer Satisfaction</p>
+                          <p className="staff-card__stat-value">{staff.customerSatisfaction}/5.0</p>
+                        </div>
                       </div>
                     </div>
                   </article>

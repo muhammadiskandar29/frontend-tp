@@ -433,13 +433,26 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
                         <>
                           <button
                             onClick={() => {
-                              toggleSubmenu(item.label);
-                              // Expand sidebar when submenu is clicked
-                              if (viewport === VIEWPORT.DESKTOP) {
+                              // If sidebar is collapsed, expand it first, then toggle submenu
+                              if (viewport === VIEWPORT.DESKTOP && !isRailExpanded) {
                                 setIsRailExpanded(true);
                                 setIsExplicitlyOpened(true);
                                 if (onToggle && !isOpen) {
                                   onToggle();
+                                }
+                                // Small delay to ensure sidebar expands before toggling submenu
+                                setTimeout(() => {
+                                  toggleSubmenu(item.label);
+                                }, 100);
+                              } else {
+                                toggleSubmenu(item.label);
+                                // Expand sidebar when submenu is clicked (if not already expanded)
+                                if (viewport === VIEWPORT.DESKTOP && !isRailExpanded) {
+                                  setIsRailExpanded(true);
+                                  setIsExplicitlyOpened(true);
+                                  if (onToggle && !isOpen) {
+                                    onToggle();
+                                  }
                                 }
                               }
                             }}

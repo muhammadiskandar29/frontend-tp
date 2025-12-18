@@ -495,14 +495,18 @@
   }
 }
 
-/* Staff Cards Container dengan scroll effect */
+/* Staff Cards Container dengan scroll snap - 1 card = 1 data sales */
 .staff-cards-container {
   position: relative;
   height: 100%;
-  min-height: 400px;
+  min-height: 500px;
   max-height: 600px;
   overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 0.5rem;
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+  scroll-padding: 0;
 }
 
 .staff-cards-container::-webkit-scrollbar {
@@ -528,17 +532,24 @@
   scrollbar-color: #cbd5e1 transparent;
 }
 
-/* Staff Card */
+/* Staff Card - Full height untuk 1 card = 1 data sales */
 .staff-card {
   background: var(--dash-surface);
   border: 1px solid var(--dash-border);
   border-radius: var(--dash-radius);
-  padding: 1.5rem;
+  padding: 2rem;
   margin-bottom: 1rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   opacity: 1;
   transform: translateY(0);
   transition: opacity 0.5s ease, transform 0.5s ease;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  height: calc(100% - 1rem);
+  min-height: 550px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .staff-card:last-child {
@@ -548,15 +559,15 @@
 .staff-card__header {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--dash-border);
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid var(--dash-border);
 }
 
 .staff-card__avatar {
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 3.5rem;
+  height: 3.5rem;
   border-radius: 50%;
   background: #fb8500;
   color: #ffffff;
@@ -564,37 +575,58 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(251, 133, 0, 0.3);
+}
+
+.staff-card__header-info {
+  flex: 1;
 }
 
 .staff-card__name {
-  font-size: 1.125rem;
-  font-weight: 600;
+  font-size: 1.5rem;
+  font-weight: 700;
   color: var(--dash-text);
-  margin: 0;
+  margin: 0 0 0.25rem 0;
 }
 
-.staff-card__stats {
-  display: flex;
-  flex-direction: column;
-  gap: 0.875rem;
-}
-
-.staff-card__stat {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.staff-card__stat-label {
+.staff-card__role {
   font-size: 0.875rem;
   color: var(--dash-muted);
   margin: 0;
   font-weight: 500;
 }
 
+.staff-card__stats {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  flex: 1;
+}
+
+.staff-card__stat-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.staff-card__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.staff-card__stat-label {
+  font-size: 0.8125rem;
+  color: var(--dash-muted);
+  margin: 0;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .staff-card__stat-value {
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 1.125rem;
+  font-weight: 700;
   color: var(--dash-text);
   margin: 0;
 }

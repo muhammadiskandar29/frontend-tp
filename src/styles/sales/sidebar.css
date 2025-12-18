@@ -388,46 +388,27 @@
   color: var(--sidebar-accent);
 }
 
-/* Submenu tetap ditampilkan saat collapsed (hanya icon) */
+/* Submenu disembunyikan saat collapsed - hanya menu utama yang tampil */
 .sidebar--desktop.sidebar--collapsed .submenu-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  margin-left: 0;
-  padding-left: 0;
-  border-left: none;
-  opacity: 1;
-  max-height: none;
-  margin-top: 0.15rem;
-  padding-top: 0;
-  padding-bottom: 0;
+  display: none !important;
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
 }
 
 .sidebar--desktop.sidebar--collapsed .submenu-item {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 0.4rem 0;
-  position: relative;
+  display: none !important;
 }
 
 .sidebar--desktop.sidebar--collapsed .submenu-item::before {
-  content: "";
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--sidebar-muted);
-  display: block;
-  flex-shrink: 0;
+  display: none;
 }
 
 .sidebar--desktop.sidebar--collapsed .submenu-item span,
 .sidebar--desktop.sidebar--collapsed .submenu-item a {
-  opacity: 0;
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
+  display: none !important;
 }
 
 /* Section header tetap ditampilkan kecil saat collapsed */
