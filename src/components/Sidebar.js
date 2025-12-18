@@ -40,16 +40,9 @@ export default function Sidebar({ role }) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isRailExpanded, setIsRailExpanded] = useState(true);
   const [openSubmenu, setOpenSubmenu] = useState(null);
-  const [mounted, setMounted] = useState(false);
-  
   // Check if user is sales (divisi 3) or finance (divisi 4)
   const [isSales, setIsSales] = useState(false);
   const [isFinance, setIsFinance] = useState(false);
-  
-  // Set mounted flag to avoid hydration mismatch
-  useEffect(() => {
-    setMounted(true);
-  }, []);
   
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -93,8 +86,8 @@ export default function Sidebar({ role }) {
   
   // === MENU BASED ON ROLE (SECTIONED STRUCTURE) ===
   useEffect(() => {
-    // Only run on client side after mount
-    if (!mounted || typeof window === "undefined") return;
+    // Only run on client side
+    if (typeof window === "undefined") return;
     
     // Use pathname as primary check (consistent between server and client)
     const pathBasedFinance = pathname?.startsWith("/finance");
@@ -214,7 +207,7 @@ export default function Sidebar({ role }) {
         ],
       },
     ]);
-  }, [mounted, role, isSales, isFinance, pathname]);
+  }, [role, isSales, isFinance, pathname]);
 
   // Icon mapping function
   const getIcon = (iconType) => {
@@ -360,7 +353,7 @@ export default function Sidebar({ role }) {
         </div>
 
         <ul className="sidebar-menu">
-          {mounted && menu.length > 0 && menu.map((section, sectionIndex) => {
+          {menu.length > 0 && menu.map((section, sectionIndex) => {
             if (!section || !section.section || !section.items) return null;
             
             return (

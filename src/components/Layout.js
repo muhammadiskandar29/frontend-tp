@@ -4,8 +4,13 @@ import Head from "next/head";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
-import Sidebar from "@/components/Sidebar";
+import dynamic from "next/dynamic";
 import "@/styles/sales/layout.css";
+
+// Dynamic import Sidebar to avoid hydration mismatch
+const Sidebar = dynamic(() => import("@/components/Sidebar"), {
+  ssr: false,
+});
 import "../app/globals.css";
 import "primereact/resources/themes/lara-light-amber/theme.css";
 import "primereact/resources/primereact.min.css";
