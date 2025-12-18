@@ -40,6 +40,8 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isRailExpanded, setIsRailExpanded] = useState(isOpen);
   const [openSubmenu, setOpenSubmenu] = useState(null);
+  const [isHovered, setIsHovered] = useState(false);
+  const [isExplicitlyOpened, setIsExplicitlyOpened] = useState(isOpen);
   // Check if user is sales (divisi 3) or finance (divisi 4)
   const [isSales, setIsSales] = useState(false);
   const [isFinance, setIsFinance] = useState(false);
@@ -204,8 +206,23 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
   useEffect(() => {
     if (viewport === VIEWPORT.DESKTOP) {
       setIsRailExpanded(isOpen);
+      setIsExplicitlyOpened(isOpen);
     }
   }, [isOpen, viewport]);
+
+  // Handle hover behavior for desktop - expand on hover, collapse on mouse leave (unless explicitly opened)
+  useEffect(() => {
+    if (viewport === VIEWPORT.DESKTOP) {
+      if (isHovered) {
+        setIsRailExpanded(true);
+      } else {
+        // Collapse only if not explicitly opened via click/burger button
+        if (!isExplicitlyOpened) {
+          setIsRailExpanded(false);
+        }
+      }
+    }
+  }, [isHovered, viewport, isExplicitlyOpened]);
 
   useEffect(() => {
     // Force mobile behavior for addProducts page
@@ -274,6 +291,28 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
     if (viewport === VIEWPORT.MOBILE) {
       setIsDrawerOpen(false);
     }
+    // On desktop, clicking expands the sidebar fully and keeps it open
+    if (viewport === VIEWPORT.DESKTOP) {
+      setIsRailExpanded(true);
+      setIsExplicitlyOpened(true);
+      if (onToggle && !isOpen) {
+        onToggle();
+      }
+    }
+  };
+
+  // Handle sidebar click - expand fully and keep it open
+  const handleSidebarClick = (e) => {
+    if (viewport === VIEWPORT.DESKTOP) {
+      // If clicking on a menu item or link, expand and keep open
+      if (e.target.closest('.sidebar-item') || e.target.closest('a')) {
+        setIsRailExpanded(true);
+        setIsExplicitlyOpened(true);
+        if (onToggle && !isOpen) {
+          onToggle();
+        }
+      }
+    }
   };
 
 
@@ -327,7 +366,13 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
 
   return (
     <>
-      <aside className={sidebarClass} aria-label="Navigation sidebar">
+      <aside 
+        className={sidebarClass} 
+        aria-label="Navigation sidebar"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        onClick={handleSidebarClick}
+      >
         {/* === LOGO GANTI TULISAN === */}
         <div className="sidebar-logo">
           <Link href={isFinance ? "/finance" : isSales ? "/sales" : "/admin"}>
@@ -356,65 +401,32 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
                 {section.items.map((item) => {
                   if (!item || !item.label) return null;
                   
+                  // Determine the actual href to use (for items with submenu, use first submenu href)
+                  const actualHref = item.href || (item.submenu?.[0]?.href);
+                  // Calculate active state - check if current path matches item or any submenu
                   const active = isMenuActive(item);
-                  const isSubmenuOpen = openSubmenu === item.label;
 
                   return (
                     <li key={item.label} className="sidebar-item-wrapper">
-                      {item.submenu ? (
-                        <>
-                          <button
-                            onClick={() => toggleSubmenu(item.label)}
-                            className={`sidebar-item has-submenu w-full ${
-                              active ? "sidebar-item-active open" : ""
-                            }`}
-                            aria-expanded={openSubmenu === item.label}
-                            aria-controls={`${item.label}-submenu`}
-                          >
-                            <div className="flex items-center gap-3" style={{ flex: 1 }}>
-                              <span className="sidebar-item-icon-wrapper">
-                                {item.icon}
-                              </span>
-                              <span>{item.label}</span>
-                            </div>
-                            {isSubmenuOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                          </button>
-
-                          <ul className={`submenu-list ${isSubmenuOpen ? "submenu-open" : ""}`} id={`${item.label}-submenu`}>
-                            {item.submenu.map((sub) => {
-                              if (!sub || !sub.href || !sub.label) return null;
-                              const normalizedPathname = String(pathname || "").replace(/^\/sales/, "/admin");
-                              const normalizedSubHref = String(sub.href).replace(/^\/sales/, "/admin");
-                              const isSubActive = normalizedPathname === normalizedSubHref || normalizedPathname.startsWith(normalizedSubHref + "/");
-                              return (
-                                <li key={sub.href}>
-                                  <Link
-                                    href={sub.href}
-                                    className={`submenu-item ${
-                                      isSubActive ? "submenu-item-active" : ""
-                                    }`}
-                                    onClick={handleLinkClick}
-                                  >
-                                    {sub.label}
-                                  </Link>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        </>
+                      {/* Hide submenu - only show main menu items */}
+                      {actualHref ? (
+                        <Link
+                          href={actualHref}
+                          className={`sidebar-item ${active ? "sidebar-item-active" : ""}`}
+                          onClick={handleLinkClick}
+                        >
+                          <span className="sidebar-item-icon-wrapper">
+                            {item.icon}
+                          </span>
+                          <span>{item.label}</span>
+                        </Link>
                       ) : (
-                        item.href ? (
-                          <Link
-                            href={item.href}
-                            className={`sidebar-item ${active ? "sidebar-item-active" : ""}`}
-                            onClick={handleLinkClick}
-                          >
-                            <span className="sidebar-item-icon-wrapper">
-                              {item.icon}
-                            </span>
-                            <span>{item.label}</span>
-                          </Link>
-                        ) : null
+                        <div className="sidebar-item">
+                          <span className="sidebar-item-icon-wrapper">
+                            {item.icon}
+                          </span>
+                          <span>{item.label}</span>
+                        </div>
                       )}
                     </li>
                   );

@@ -3,7 +3,7 @@
 import "@/styles/sales/dashboard.css";
 import Layout from "@/components/Layout";
 import GreetingBanner from "@/components/GreetingBanner";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import {
   TrendingUp,
   ShoppingCart,
@@ -14,6 +14,7 @@ import {
   Truck,
   Wallet,
   PiggyBank,
+  User,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 
@@ -217,24 +218,119 @@ export default function Dashboard() {
   }, [data, activityRangeDays, buildSeriesForLastNDays]);
 
   const chartHasData = activityTrend.length > 0;
+  const staffCardsRef = useRef([]);
+
+  // Dummy data untuk staff sales
+  const staffSalesData = [
+    {
+      name: "Salsa",
+      totalLeads: 45,
+      totalClosing: 28,
+      conversionRate: 62.22,
+    },
+    {
+      name: "Budi",
+      totalLeads: 52,
+      totalClosing: 35,
+      conversionRate: 67.31,
+    },
+    {
+      name: "Rina",
+      totalLeads: 38,
+      totalClosing: 24,
+      conversionRate: 63.16,
+    },
+  ];
+
+  // Scroll effect untuk staff cards
+  useEffect(() => {
+    const observerOptions = {
+      root: null,
+      rootMargin: "0px",
+      threshold: 0.1,
+    };
+
+    const observerCallback = (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("visible");
+        }
+      });
+    };
+
+    const observer = new IntersectionObserver(observerCallback, observerOptions);
+
+    staffCardsRef.current.forEach((card) => {
+      if (card) observer.observe(card);
+    });
+
+    return () => {
+      staffCardsRef.current.forEach((card) => {
+        if (card) observer.unobserve(card);
+      });
+    };
+  }, []);
 
   return (
     <Layout title="Dashboard" aboveContent={<GreetingBanner />}>
       <div className="dashboard-shell">
         {error && <div className="dashboard-alert">{error}</div>}
         <section className="dashboard-hero">
-          <div className="dashboard-main-layout">
-            <div className="dashboard-summary">
-              {summaryCards.map((card, index) => (
-                <article className="summary-card" key={card.title}>
-                  <div className={`summary-card__icon ${card.color}`}>{card.icon}</div>
-                  <div>
-                    <p className="summary-card__label">{card.title}</p>
-                    <p className="summary-card__value">{card.value}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
+          <div className="dashboard-summary-horizontal">
+            {summaryCards.map((card, index) => (
+              <article className="summary-card" key={card.title}>
+                <div className={`summary-card__icon ${card.color}`}>{card.icon}</div>
+                <div>
+                  <p className="summary-card__label">{card.title}</p>
+                  <p className="summary-card__value">{card.value}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="dashboard-staff-section">
+          <div className="dashboard-staff-layout">
+            <article className="panel panel--staff">
+              <div className="panel__header">
+                <div>
+                  <p className="panel__eyebrow">Data per staff sales</p>
+                  <h3 className="panel__title">Sales Performance</h3>
+                </div>
+              </div>
+
+              <div className="staff-cards-container">
+                {staffSalesData.map((staff, index) => (
+                  <article
+                    ref={(el) => (staffCardsRef.current[index] = el)}
+                    className="staff-card"
+                    key={staff.name}
+                    data-index={index}
+                  >
+                    <div className="staff-card__header">
+                      <div className="staff-card__avatar">
+                        <User size={20} />
+                      </div>
+                      <h4 className="staff-card__name">{staff.name}</h4>
+                    </div>
+                    <div className="staff-card__stats">
+                      <div className="staff-card__stat">
+                        <p className="staff-card__stat-label">Total Leads</p>
+                        <p className="staff-card__stat-value">{staff.totalLeads}</p>
+                      </div>
+                      <div className="staff-card__stat">
+                        <p className="staff-card__stat-label">Total Closing</p>
+                        <p className="staff-card__stat-value">{staff.totalClosing}</p>
+                      </div>
+                      <div className="staff-card__stat">
+                        <p className="staff-card__stat-label">Conversion Rate</p>
+                        <p className="staff-card__stat-value">{staff.conversionRate.toFixed(2)}%</p>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </article>
 
             <article className="panel panel--revenue">
               <div className="panel__header">
