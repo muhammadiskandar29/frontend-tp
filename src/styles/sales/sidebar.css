@@ -335,6 +335,59 @@
   overflow: hidden;
 }
 
+/* Pastikan flex container untuk item dengan submenu tidak menyembunyikan icon wrapper */
+.sidebar--desktop.sidebar--collapsed .sidebar-item.has-submenu .flex {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0;
+  flex: 0;
+}
+
+/* Pastikan item dengan submenu tetap terlihat saat collapsed */
+.sidebar--desktop.sidebar--collapsed .sidebar-item.has-submenu {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 1;
+  visibility: visible;
+}
+
+.sidebar--desktop.sidebar--collapsed .sidebar-item.has-submenu .sidebar-item-icon-wrapper {
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  position: static !important;
+  width: 28px;
+  height: 28px;
+}
+
+/* Pastikan icon wrapper untuk item dengan submenu memiliki warna yang sama dengan item biasa */
+.sidebar--desktop.sidebar--collapsed .sidebar-item.has-submenu:not(.sidebar-item-active) .sidebar-item-icon-wrapper {
+  background: #ffffff;
+}
+
+.sidebar--desktop.sidebar--collapsed .sidebar-item.has-submenu:not(.sidebar-item-active) .sidebar-item-icon-wrapper svg {
+  color: #212529;
+}
+
+.sidebar--desktop.sidebar--collapsed .sidebar-item.has-submenu.sidebar-item-active .sidebar-item-icon-wrapper {
+  background: var(--sidebar-accent);
+}
+
+.sidebar--desktop.sidebar--collapsed .sidebar-item.has-submenu.sidebar-item-active .sidebar-item-icon-wrapper svg {
+  color: #ffffff;
+}
+
+/* Hover state untuk item dengan submenu saat collapsed */
+.sidebar--desktop.sidebar--collapsed .sidebar-item.has-submenu:not(.sidebar-item-active):hover .sidebar-item-icon-wrapper {
+  background: rgba(251, 133, 0, 0.1);
+}
+
+.sidebar--desktop.sidebar--collapsed .sidebar-item.has-submenu:not(.sidebar-item-active):hover .sidebar-item-icon-wrapper svg {
+  color: var(--sidebar-accent);
+}
+
 /* Submenu tetap ditampilkan saat collapsed (hanya icon) */
 .sidebar--desktop.sidebar--collapsed .submenu-list {
   display: flex;
@@ -540,6 +593,15 @@
 
 .sidebar-item.has-submenu.open:not(.sidebar-item-active) .sidebar-item-icon-wrapper svg {
   color: var(--sidebar-accent);
+}
+
+/* Saat collapsed, item dengan submenu yang terbuka tetap terlihat normal */
+.sidebar--desktop.sidebar--collapsed .sidebar-item.has-submenu.open:not(.sidebar-item-active) .sidebar-item-icon-wrapper {
+  background: #ffffff;
+}
+
+.sidebar--desktop.sidebar--collapsed .sidebar-item.has-submenu.open:not(.sidebar-item-active) .sidebar-item-icon-wrapper svg {
+  color: #212529;
 }
 
 /* panah tetap oranye & muter 90° */
