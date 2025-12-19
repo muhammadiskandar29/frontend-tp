@@ -155,6 +155,14 @@ export default function CustomerLayout({ children }) {
           <div 
             className="customer-navbar__profile"
             onClick={() => setDropdownOpen(!dropdownOpen)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                setDropdownOpen(!dropdownOpen);
+              }
+            }}
+            tabIndex={0}
+            role="button"
+            aria-label="User menu"
           >
             <div className="customer-navbar__avatar">{customerInfo?.initials || "U"}</div>
             <span className="customer-navbar__name">{customerInfo?.name || "User"}</span>
@@ -175,7 +183,10 @@ export default function CustomerLayout({ children }) {
                   className="customer-navbar__dropdown-item"
                   onClick={handleLogout}
                 >
-                  Logout
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '8px', display: 'inline-block', verticalAlign: 'middle' }}>
+                    <path d="M6 14H3.333C2.979 14 2.639 13.86 2.389 13.61C2.139 13.36 2 13.02 2 12.667V3.333C2 2.979 2.139 2.639 2.389 2.389C2.639 2.139 2.979 2 3.333 2H6M11 11.333L14.333 8M14.333 8L11 4.667M14.333 8H6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Keluar
                 </button>
               </div>
             )}
