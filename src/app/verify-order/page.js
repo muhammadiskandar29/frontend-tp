@@ -183,9 +183,9 @@ export default function VerifyOrderOTPPage() {
             // Hapus pending order dari localStorage
             localStorage.removeItem("pending_order");
             
-            // Redirect ke dashboard customer
+            // Redirect ke halaman pembayaran (default landing dashboard)
             await new Promise((r) => setTimeout(r, 500));
-            router.replace("/customer/dashboard");
+            router.replace("/customer/dashboard/payment");
             return;
           } else {
             // Jika login gagal, tampilkan error dan tetap redirect ke payment

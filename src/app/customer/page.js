@@ -28,7 +28,7 @@ export default function LoginPage() {
   useEffect(() => {
     const session = getCustomerSession();
     if (session.isAuthenticated && session.token) {
-      router.replace("/customer/dashboard");
+      router.replace("/customer/dashboard/payment");
     }
     
     // Tampilkan debug log dari localStorage jika ada
@@ -138,9 +138,9 @@ try {
       resultToken: result.token ? "exists" : "missing"
     }));
     
-    console.log("✅ [LOGIN] Redirecting customer to dashboard for verification check");
+    console.log("✅ [LOGIN] Redirecting customer to payment page (default landing)");
     setTimeout(() => {
-      router.replace("/customer/dashboard");
+      router.replace("/customer/dashboard/payment");
     }, 300);
         
   } else {

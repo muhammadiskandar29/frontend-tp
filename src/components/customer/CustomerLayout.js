@@ -2,18 +2,18 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { getCustomerSession } from "@/lib/customerAuth";
 import "@/styles/customer/cstdashboard.css";
 
 const navLinks = [
-  { label: "Dashboard", href: "/customer/dashboard" },
-  { label: "Profile", href: "/customer/profile" },
-  { label: "Orders", href: "/customer/orders" },
+  { label: "Home", href: "/customer/dashboard" },
+  { label: "Pembayaran", href: "/customer/dashboard/payment" },
 ];
 
 export default function CustomerLayout({ children }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [customerInfo, setCustomerInfo] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -134,6 +134,22 @@ export default function CustomerLayout({ children }) {
         <div className="customer-navbar__brand">
           <img src="/assets/logo.png" alt="Ternak Properti" />
         </div>
+
+        <nav className="customer-navbar__nav">
+          {navLinks.map((link) => {
+            const isActive = pathname === link.href || 
+              (link.href === "/customer/dashboard/payment" && pathname?.includes("/payment"));
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`customer-navbar__nav-link ${isActive ? "active" : ""}`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
+        </nav>
 
         <div className="customer-navbar__right">
           <div 

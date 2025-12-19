@@ -11,7 +11,6 @@ export default function DashboardPage() {
   const router = useRouter();
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [updateModalReason, setUpdateModalReason] = useState("password");
-  const [isDashboardLocked, setIsDashboardLocked] = useState(false); // Untuk lock dashboard saat form muncul
   const [stats, setStats] = useState([
     { id: "total", label: "Total Order", value: 0, icon: "" },
     { id: "active", label: "Order Aktif", value: 0, icon: "" },
@@ -88,10 +87,6 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, [products]);
 
-  // Lock dashboard saat modal update muncul
-  useEffect(() => {
-    setIsDashboardLocked(showUpdateModal);
-  }, [showUpdateModal]);
 
   const formatCurrency = (value) => {
     if (!value) return "Rp 0";
@@ -320,43 +315,7 @@ export default function DashboardPage() {
     }
   }, [router]);
 
-  // Helper function untuk cek apakah form customer perlu ditampilkan
-  // CATATAN: verifikasi = 1 berarti sudah mengisi form customer (nama_panggilan, profesi, dll)
-  // verifikasi = 0 berarti belum mengisi form
-  // TIDAK ADA LOGIKA OTP VERIFICATION DI SINI - semua validasi menggunakan verifikasi form customer
-  const checkAndShowCustomerForm = useCallback((user) => {
-    if (!user) {
-      console.log("[DASHBOARD] No user data");
-      return;
-    }
-
-    // ===== CEK VERIFIKASI FORM CUSTOMER =====
-    // verifikasi = 1: sudah mengisi form customer → tidak perlu tampilkan form lagi
-    // verifikasi = 0: belum mengisi form → perlu tampilkan form untuk diisi
-    const verifikasiValue = user.verifikasi;
-    const normalizedVerifikasi = verifikasiValue === "1" ? 1 : verifikasiValue === "0" ? 0 : verifikasiValue;
-    const hasFilledForm = normalizedVerifikasi === 1 || normalizedVerifikasi === true;
-
-    console.log("[DASHBOARD] Checking user data:", {
-      verifikasi: user.verifikasi,
-      hasFilledForm,
-      meaning: hasFilledForm ? "Sudah mengisi form customer" : "Belum mengisi form customer"
-    });
-
-    // Jika sudah mengisi form (verifikasi = 1), tidak perlu tampilkan form
-    if (hasFilledForm) {
-      console.log("[DASHBOARD] User sudah mengisi form (verifikasi = 1), tidak perlu tampilkan form");
-      setShowUpdateModal(false);
-      return;
-    }
-
-    // Jika belum mengisi form (verifikasi = 0), tampilkan form customer untuk diisi
-    if (!hasFilledForm) {
-      console.log("[DASHBOARD] User belum mengisi form (verifikasi = 0), tampilkan form customer");
-      setUpdateModalReason("incomplete");
-      setShowUpdateModal(true);
-    }
-  }, []);
+  // Update customer form sekarang opsional - tidak ada blocking logic
 
   // Fetch customer profile langsung dari API untuk mendapatkan data lengkap
   const fetchCustomerProfile = useCallback(async (token) => {
@@ -383,7 +342,7 @@ export default function DashboardPage() {
     }
   }, []);
 
-  // Load dashboard data dan cek modal
+  // Load dashboard data - tidak ada blocking logic untuk update customer
   useEffect(() => {
     const session = getCustomerSession();
     
@@ -392,72 +351,25 @@ export default function DashboardPage() {
       return;
     }
 
-    // Load dashboard data dan customer profile, lalu cek modal dengan data terbaru
+    // Load dashboard data saja - update customer form sekarang opsional
     const initDashboard = async () => {
       // Fetch dashboard data
-      const dashboardCustomerData = await loadDashboardData();
+      await loadDashboardData();
       
-      // Fetch customer profile langsung untuk mendapatkan data lengkap (termasuk nama_panggilan, profesi)
+      // Fetch customer profile untuk sync data ke localStorage (opsional)
       const customerProfile = await fetchCustomerProfile(session.token);
       
-      console.log("[DASHBOARD] Dashboard customer data:", dashboardCustomerData);
-      console.log("[DASHBOARD] Customer profile data:", customerProfile);
-      
-      // Gabungkan data dari berbagai sumber
-      // Prioritas: customerProfile > dashboardCustomerData > session.user
-      const mergedCustomerData = {
-        ...session.user,
-        ...dashboardCustomerData,
-        ...customerProfile,
-        // Pastikan verifikasi dari source terbaru (prioritas utama untuk menentukan apakah modal muncul)
-        verifikasi: customerProfile?.verifikasi || dashboardCustomerData?.verifikasi || session.user?.verifikasi,
-      };
-      
-      console.log("[DASHBOARD] Merged customer data:", mergedCustomerData);
-      console.log("[DASHBOARD] Key field for modal check:", {
-        verifikasi: mergedCustomerData.verifikasi,
-        isVerified: mergedCustomerData.verifikasi === "1" || mergedCustomerData.verifikasi === 1
-      });
-      
-      // Update localStorage dengan data lengkap
-      if (mergedCustomerData && (mergedCustomerData.id || mergedCustomerData.nama)) {
+      if (customerProfile) {
+        const mergedCustomerData = {
+          ...session.user,
+          ...customerProfile,
+        };
         localStorage.setItem("customer_user", JSON.stringify(mergedCustomerData));
-        console.log("[DASHBOARD] Customer data synced to localStorage");
-      }
-      
-      // Cek verifikasi terlebih dahulu sebelum check modal
-      // verifikasi = 1 berarti sudah mengisi form customer (nama_panggilan, profesi, dll)
-      // verifikasi = 0 berarti belum mengisi form
-      const verifikasiValue = mergedCustomerData?.verifikasi;
-      const isUserVerified =
-        verifikasiValue === "1" ||
-        verifikasiValue === 1 ||
-        verifikasiValue === true;
-      
-      console.log("[DASHBOARD] Verifikasi check:", {
-        verifikasiValue,
-        isUserVerified,
-        meaning: isUserVerified ? "Sudah mengisi form" : "Belum mengisi form"
-      });
-      
-      // Jika sudah verifikasi (sudah mengisi form), pastikan modal tidak muncul
-      if (isUserVerified) {
-        console.log("[DASHBOARD] User sudah mengisi form (verifikasi = 1), tidak perlu tampilkan form lagi");
-        setShowUpdateModal(false);
-        // Hapus pending update modal jika ada
-        localStorage.removeItem("customer_show_update_modal");
-      } else {
-        // Jika belum verifikasi (belum mengisi form), tampilkan form customer untuk diisi
-        console.log("[DASHBOARD] User belum mengisi form (verifikasi = 0), perlu tampilkan form");
-        
-        // Tampilkan form customer langsung (tidak perlu OTP verification)
-        // Semua validasi menggunakan verifikasi form customer saja
-        checkAndShowCustomerForm(mergedCustomerData);
       }
     };
 
     initDashboard();
-  }, [router, loadDashboardData, fetchCustomerProfile, checkAndShowCustomerForm]);
+  }, [router, loadDashboardData, fetchCustomerProfile]);
 
   // Handler untuk membuka form customer (UpdateCustomerModal)
   const handleOpenCustomerForm = () => {
@@ -492,12 +404,8 @@ export default function DashboardPage() {
       console.log("[DASHBOARD] Verifikasi updated to:", verifikasiFromResponse);
       localStorage.setItem("customer_user", JSON.stringify(updatedUser));
       
-      // Update customerInfo state juga - HARUS dilakukan SEBELUM loadDashboardData
-      // Agar isUserVerified() langsung return true dan pesan tidak muncul
+      // Update customerInfo state
       setCustomerInfo(updatedUser);
-      
-      // Pastikan customerInfo sudah di-update dengan verifikasi = "1"
-      // Ini akan membuat isUserVerified() langsung return true pada render berikutnya
       console.log("[DASHBOARD] customerInfo state updated with verifikasi =", verifikasiFromResponse);
     }
 
@@ -507,25 +415,9 @@ export default function DashboardPage() {
     
     toast.success("Data berhasil diperbarui!");
     
-    // Refresh dashboard data untuk mendapatkan data terbaru termasuk verifikasi
-    // Setelah customerInfo sudah di-update dengan verifikasi = "1", 
-    // isUserVerified() akan return true dan pesan "Silakan lengkapi data..." tidak akan muncul lagi
-    // loadDashboardData akan fetch data terbaru dari API, tapi customerInfo sudah di-update
-    // sehingga tidak akan overwrite dengan data lama
+    // Refresh dashboard data untuk mendapatkan data terbaru
     loadDashboardData().then(() => {
       console.log("[DASHBOARD] Dashboard data refreshed after form submission");
-      console.log("[DASHBOARD] isUserVerified() should now return true");
-      
-      // Double check: pastikan customerInfo masih memiliki verifikasi = "1"
-      // Jika loadDashboardData mengembalikan data dengan verifikasi = "1", 
-      // maka customerInfo akan tetap benar
-      const session = getCustomerSession();
-      const currentCustomerInfo = customerInfo || session.user;
-      console.log("[DASHBOARD] Final verifikasi check:", {
-        customerInfo_verifikasi: customerInfo?.verifikasi,
-        sessionUser_verifikasi: session.user?.verifikasi,
-        isUserVerified: isUserVerified()
-      });
     });
   };
 
@@ -557,48 +449,6 @@ export default function DashboardPage() {
   };
 
 
-  // Cek apakah user sudah verifikasi
-  const isUserVerified = () => {
-    const session = getCustomerSession();
-    // Prioritaskan customerInfo (data terbaru dari API), lalu session.user
-    const customerData = customerInfo || session.user;
-    if (!customerData) {
-      console.log("[isUserVerified] No customer data found");
-      return false;
-    }
-    
-    const verifikasiValue = customerData.verifikasi;
-    
-    // Normalisasi yang lebih robust: handle string "1"/"0", number 1/0, boolean true/false, dan null/undefined
-    if (verifikasiValue === null || verifikasiValue === undefined) {
-      console.log("[isUserVerified] Verifikasi value is null/undefined:", { verifikasiValue, customerData });
-      return false;
-    }
-    
-    // Convert ke string dulu untuk konsistensi, lalu bandingkan
-    const verifikasiStr = String(verifikasiValue).trim();
-    const verifikasiNum = Number(verifikasiValue);
-    
-    // Cek berbagai format: "1", 1, true, "true"
-    const isVerified = (
-      verifikasiStr === "1" ||
-      verifikasiNum === 1 ||
-      verifikasiValue === true ||
-      verifikasiStr === "true" ||
-      verifikasiStr === "True"
-    );
-    
-    console.log("[isUserVerified] Check result:", {
-      verifikasiValue,
-      verifikasiStr,
-      verifikasiNum,
-      isVerified,
-      customerInfo: customerInfo?.verifikasi,
-      sessionUser: session.user?.verifikasi
-    });
-    
-    return isVerified;
-  };
 
   return (
     <CustomerLayout>
@@ -622,16 +472,7 @@ export default function DashboardPage() {
       {/* CATATAN: Modal OTP Verification sudah dihapus */}
       {/* Semua validasi menggunakan verifikasi form customer saja (verifikasi = 1 berarti sudah isi form) */}
 
-      <div 
-        className="customer-dashboard"
-        style={{
-          position: "relative",
-          filter: isDashboardLocked ? "blur(5px)" : "none",
-          pointerEvents: isDashboardLocked ? "none" : "auto",
-          opacity: isDashboardLocked ? 0.6 : 1,
-          transition: "all 0.3s ease",
-        }}
-      >
+      <div className="customer-dashboard">
         <div className="customer-dashboard__hero-wrapper">
           <div className="customer-dashboard__hero-background"></div>
           <div className="customer-dashboard__hero-content">
@@ -690,54 +531,8 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* Tampilkan pesan jika belum mengisi form customer (verifikasi = 0) */}
-            {/* CATATAN: verifikasi = 1 berarti sudah mengisi form, verifikasi = 0 berarti belum */}
-            {!dashboardLoading && !isUserVerified() && (
-              <div style={{
-                marginBottom: "16px",
-                padding: "12px 16px",
-                borderRadius: "8px",
-                background: "#fff1f0",
-                color: "#a8071a",
-                border: "1px solid #ffa39e",
-                fontSize: "14px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: "16px",
-                flexWrap: "wrap"
-              }}>
-                <span>
-                  Silakan lengkapi data profil Anda terlebih dahulu untuk melihat order.
-                </span>
-                <button
-                  onClick={handleOpenCustomerForm}
-                  style={{
-                    padding: "8px 20px",
-                    backgroundColor: "#3b82f6",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "6px",
-                    cursor: "pointer",
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    transition: "all 0.3s ease",
-                    whiteSpace: "nowrap"
-                  }}
-                  onMouseOver={(e) => {
-                    e.target.style.backgroundColor = "#2563eb";
-                  }}
-                  onMouseOut={(e) => {
-                    e.target.style.backgroundColor = "#3b82f6";
-                  }}
-                >
-                  Lengkapi Data
-                </button>
-              </div>
-            )}
-
-            {/* Tampilkan order list hanya jika sudah verifikasi */}
-            {!dashboardLoading && isUserVerified() && activeOrders.length === 0 && (
+            {/* Tampilkan order list */}
+            {!dashboardLoading && activeOrders.length === 0 && (
               <div className="order-card">
                 <div className="order-body">
                   <div>
@@ -748,7 +543,7 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {!dashboardLoading && isUserVerified() &&
+            {!dashboardLoading &&
               activeOrders.map((order) => (
                 <div key={order.id} className="order-card">
                   <div className="order-card__banner">
