@@ -12,8 +12,8 @@ export default function DashboardPage() {
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [updateModalReason, setUpdateModalReason] = useState("password");
   const [stats, setStats] = useState([
-    { id: "total", label: "Total Order", value: 0, icon: "" },
-    { id: "active", label: "Order Aktif", value: 0, icon: "" },
+    { id: "total", label: "Total Order", value: 0, icon: "📦" },
+    { id: "active", label: "Order Aktif", value: 0, icon: "✅" },
   ]);
   const [activeOrders, setActiveOrders] = useState([]);
   const [customerInfo, setCustomerInfo] = useState(null);
@@ -487,18 +487,13 @@ export default function DashboardPage() {
         </div>
 
         {!dashboardLoading && dashboardError && (
-          <div
-            style={{
-              marginBottom: "16px",
-              padding: "12px 16px",
-              borderRadius: "8px",
-              background: "#fff1f0",
-              color: "#a8071a",
-              border: "1px solid #ffa39e",
-              fontSize: "14px",
-            }}
-          >
-            {dashboardError}
+          <div className="dashboard-error-alert">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+              <path d="M10 18C14.4183 18 18 14.4183 18 10C18 5.58172 14.4183 2 10 2C5.58172 2 2 5.58172 2 10C2 14.4183 5.58172 18 10 18Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M10 6V10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M10 14H10.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <span>{dashboardError}</span>
           </div>
         )}
 
@@ -521,11 +516,12 @@ export default function DashboardPage() {
 
           <div className="orders-list">
             {dashboardLoading && (
-              <div className="order-card">
+              <div className="order-card order-card--loading">
                 <div className="order-body">
-                  <div>
-                    <h3>Sedang memuat data...</h3>
-                    <p>Mohon tunggu sebentar.</p>
+                  <div className="loading-state">
+                    <div className="loading-spinner"></div>
+                    <h3>Memuat data...</h3>
+                    <p>Mohon tunggu sebentar</p>
                   </div>
                 </div>
               </div>
@@ -533,11 +529,12 @@ export default function DashboardPage() {
 
             {/* Tampilkan order list */}
             {!dashboardLoading && activeOrders.length === 0 && (
-              <div className="order-card">
+              <div className="order-card order-card--empty">
                 <div className="order-body">
-                  <div>
+                  <div className="empty-state">
+                    <div className="empty-state__icon">📋</div>
                     <h3>Belum ada order aktif</h3>
-                    <p>Ayo eksplor produk kami untuk mulai belajar.</p>
+                    <p>Ayo eksplor produk kami untuk mulai belajar</p>
                   </div>
                 </div>
               </div>

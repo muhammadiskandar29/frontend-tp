@@ -14,8 +14,8 @@ export function useCustomerLogin() {
       try {
         const result = await loginCustomer(payload);
         if (result.success) {
-          // Navigate to payment page (default landing dashboard)
-          router.replace("/customer/dashboard/payment");
+          // Navigate to dashboard (Home)
+          router.replace("/customer/dashboard");
         } else {
           setError(result.message);
         }
