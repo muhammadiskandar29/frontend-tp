@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
+import { loginCustomer } from "@/lib/customerAuth";
 import "@/styles/sales/otp.css";
 
 const OTP_VALID_DURATION = 5 * 60; // 5 menit
@@ -159,13 +160,48 @@ export default function VerifyOrderOTPPage() {
         }
 
         // Log orderData untuk debug
-        console.log("[VERIFY_ORDER] Order data before redirect:", currentOrderData);
-        console.log("[VERIFY_ORDER] Payment method:", currentOrderData?.paymentMethod);
+        console.log("[VERIFY_ORDER] Order data before login:", currentOrderData);
+        console.log("[VERIFY_ORDER] Email from order:", currentOrderData?.email);
 
-        // Redirect ke halaman pembayaran sesuai metode
-        // Jangan hapus localStorage dulu, biarkan redirectToPayment yang handle
-        await new Promise((r) => setTimeout(r, 500));
-        redirectToPayment(currentOrderData);
+        // Setelah verifikasi OTP berhasil, login otomatis dengan email dari form landing page
+        // Password default dari backend: 123456
+        if (currentOrderData?.email) {
+          console.log("[VERIFY_ORDER] Attempting auto-login with email:", currentOrderData.email);
+          
+          // Login dengan password default dari backend: 123456
+          const loginResult = await loginCustomer({
+            email: currentOrderData.email,
+            password: "123456", // Password default dari backend
+          });
+
+          console.log("[VERIFY_ORDER] Login result:", loginResult);
+
+          if (loginResult.success) {
+            console.log("[VERIFY_ORDER] Auto-login successful! Redirecting to dashboard...");
+            toast.success("Login berhasil! Mengarahkan ke dashboard...");
+            
+            // Hapus pending order dari localStorage
+            localStorage.removeItem("pending_order");
+            
+            // Redirect ke dashboard customer
+            await new Promise((r) => setTimeout(r, 500));
+            router.replace("/customer/dashboard");
+            return;
+          } else {
+            // Jika login gagal, tampilkan error dan tetap redirect ke payment
+            console.error("[VERIFY_ORDER] Auto-login failed, falling back to payment page");
+            toast.error("Login otomatis gagal. Silakan login manual di halaman customer.");
+            
+            // Fallback: redirect ke payment page seperti sebelumnya
+            await new Promise((r) => setTimeout(r, 500));
+            redirectToPayment(currentOrderData);
+          }
+        } else {
+          // Jika tidak ada email, fallback ke payment page
+          console.warn("[VERIFY_ORDER] No email found in order data, redirecting to payment");
+          await new Promise((r) => setTimeout(r, 500));
+          redirectToPayment(currentOrderData);
+        }
       } else {
         setMessage(result.message || "Kode OTP salah atau sudah kadaluarsa.");
       }

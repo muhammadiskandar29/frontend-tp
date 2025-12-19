@@ -958,6 +958,19 @@ export default function LandingPage() {
         <section className="payment-section" aria-label="Payment methods">
           <h2 className="payment-title">Metode Pembayaran</h2>
           <div className="payment-options-vertical">
+            {/* Manual Transfer */}
+            <label className="payment-option-row">
+              <input
+                type="radio"
+                name="payment"
+                value="manual"
+                onChange={(e) => setPaymentMethod(e.target.value)}
+              />
+              <span className="payment-label">Bank Transfer (Manual)</span>
+              <div className="payment-icons-inline">
+                <img className="pay-icon" src="/assets/bca.png" alt="BCA" />
+              </div>
+            </label>
             {/* E-Payment */}
             <label className="payment-option-row">
               <input
@@ -1008,19 +1021,7 @@ export default function LandingPage() {
               </div>
             </label>
 
-            {/* Manual Transfer */}
-            <label className="payment-option-row">
-              <input
-                type="radio"
-                name="payment"
-                value="manual"
-                onChange={(e) => setPaymentMethod(e.target.value)}
-              />
-              <span className="payment-label">Bank Transfer (Manual)</span>
-              <div className="payment-icons-inline">
-                <img className="pay-icon" src="/assets/bca.png" alt="BCA" />
-              </div>
-            </label>
+            
           </div>
         </section>
 
