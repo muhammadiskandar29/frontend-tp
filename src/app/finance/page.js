@@ -1,6 +1,7 @@
 "use client";
 
 import "@/styles/sales/dashboard-premium.css";
+import "@/styles/finance/dashboard-premium.css";
 import Layout from "@/components/Layout";
 import GreetingBanner from "@/components/GreetingBanner";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -230,26 +231,8 @@ export default function FinanceDashboard() {
     <Layout title="Dashboard | Finance Panel" aboveContent={<GreetingBanner />}>
       <div className="dashboard-shell">
         {error && <div className="dashboard-alert">{error}</div>}
-        <section className="dashboard-hero">
-          <div className="dashboard-hero__copy">
-            <p className="dashboard-hero__eyebrow">Financial Control</p>
-            <h2 className="dashboard-hero__title">Finance Dashboard Overview</h2>
-            <p className="dashboard-hero__subtitle">Payment approvals, revenue tracking, and financial insights.</p>
-            <span className="dashboard-hero__meta">
-              
-            </span>
-          </div>
-        </section>
 
         <section className="financial-snapshot-section">
-          <div className="financial-snapshot-header">
-            <div>
-              <p className="panel__eyebrow">Revenue breakdown</p>
-              <h3 className="panel__title">Financial Snapshot</h3>
-            </div>
-            <span className="panel__meta accent-green">Stable</span>
-          </div>
-
           <div className="revenue-grid">
             {revenueCards.map((card) => (
               <article className="revenue-card revenue-card--solid" key={card.title}>

@@ -121,6 +121,20 @@ ADMIN USERS PAGE (Scoped Styles)
   background: var(--primary-hover);
 }
 
+.customers-button--primary:active,
+.customers-button--primary:focus,
+.customers-button--primary:focus-visible {
+  background: var(--primary-hover) !important;
+  color: #fff !important;
+  outline: none;
+  border-color: transparent !important;
+}
+
+.customers-button--primary:visited {
+  background: var(--primary) !important;
+  color: #fff !important;
+}
+
 .customers-button--secondary {
   background: var(--white);
   color: var(--primary);
@@ -839,12 +853,13 @@ ADMIN USERS PAGE (Scoped Styles)
   align-items: center;
   justify-content: center;
   min-width: 70px;
-  padding: 0.25rem 0.55rem;
+  padding: 0.25rem 0.625rem;
   border-radius: 999px;
   font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
+  line-height: 1.3;
 }
 
 .customers-verif-tag.is-verified {
@@ -961,7 +976,7 @@ ADMIN USERS PAGE (Scoped Styles)
 }
 
 .orders-button:focus-visible {
-  outline: 2px solid var(--accent-indigo);
+  outline: 2px solid rgba(255, 108, 0, 0.45);
   outline-offset: 2px;
 }
 
@@ -974,6 +989,20 @@ ADMIN USERS PAGE (Scoped Styles)
 .orders-button--primary:hover {
   background: #c85400 !important;
   transform: translateY(-1px);
+}
+
+.orders-button--primary:active,
+.orders-button--primary:focus,
+.orders-button--primary:focus-visible {
+  background: #c85400 !important;
+  color: #fff !important;
+  outline: none;
+  border-color: transparent !important;
+}
+
+.orders-button--primary:visited {
+  background: #f1a124 !important;
+  color: #fff !important;
 }
 
 .orders-panel {

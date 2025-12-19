@@ -207,13 +207,6 @@ export default function BroadcastPage() {
           <div className="orders-toolbar">
             <div></div>
             <div className="orders-toolbar-buttons">
-              <button
-                type="button"
-                className="customers-button customers-button--primary"
-                onClick={() => setShowAddBroadcast(true)}
-              >
-                + Tambah Broadcast
-              </button>
             </div>
           </div>
         </section>
@@ -230,6 +223,13 @@ export default function BroadcastPage() {
               <p className="panel__eyebrow">Directory</p>
               <h3 className="panel__title">Broadcast List</h3>
             </div>
+            <button
+                type="button"
+                className="customers-button customers-button--primary"
+                onClick={() => setShowAddBroadcast(true)}
+              >
+                + Tambah Broadcast
+            </button>
           </div>
 
           <div className="orders-table__wrapper">

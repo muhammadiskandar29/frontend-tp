@@ -104,7 +104,7 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
         {
           section: "TRANSACTIONS",
           items: [
-            { label: "Orders", href: "/finance/orders", icon: <ClipboardList size={18} /> },
+            { label: "Transactions", href: "/finance/orders", icon: <ClipboardList size={18} /> },
           ],
         },
       ];

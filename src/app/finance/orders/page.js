@@ -3,12 +3,14 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import Layout from "@/components/Layout";
 import dynamic from "next/dynamic";
-import { Clock, CheckCircle, XCircle, DollarSign } from "lucide-react";
+import { Clock, CheckCircle, XCircle, DollarSign, Filter } from "lucide-react";
 import { Calendar } from "primereact/calendar";
 import "primereact/resources/themes/lara-light-cyan/theme.css";
 import "primereact/resources/primereact.min.css";
 import "@/styles/finance/dashboard.css";
+import "@/styles/finance/dashboard-premium.css";
 import "@/styles/finance/admin.css";
+import "@/styles/sales/admin.css";
 import { getOrderStatistics } from "@/lib/finance/orders";
 
 // Lazy load modals
@@ -50,6 +52,7 @@ export default function FinanceOrders() {
   
   // Filter state
   const [searchInput, setSearchInput] = useState("");
+  const [filterPreset, setFilterPreset] = useState("all"); // all | today
   const [dateRange, setDateRange] = useState(null); // [startDate, endDate] atau null
   
   // State lainnya
@@ -362,11 +365,23 @@ export default function FinanceOrders() {
     setHasMore(true);
     fetchOrders(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchInput, dateRange]); // Reset page ketika search atau date range berubah
+  }, [searchInput, dateRange, filterPreset]); // Reset page ketika search, date range, atau filter preset berubah
 
   // Filter payments (tidak di-group, setiap payment = 1 baris)
   const filteredOrders = useMemo(() => {
     let filtered = [...orders];
+
+    // Filter by preset (all | today)
+    if (filterPreset === "today") {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      filtered = filtered.filter((payment) => {
+        if (!payment.tanggal) return false;
+        const paymentDate = new Date(payment.tanggal);
+        paymentDate.setHours(0, 0, 0, 0);
+        return paymentDate.getTime() === today.getTime();
+      });
+    }
 
     // Filter by search (customer name, product name, total harga)
     if (searchInput && searchInput.trim()) {
@@ -403,7 +418,7 @@ export default function FinanceOrders() {
 
     // Return semua payment tanpa grouping (setiap payment = 1 baris)
     return filtered;
-  }, [orders, searchInput, dateRange]);
+  }, [orders, searchInput, dateRange, filterPreset]);
 
   // === SUMMARY ===
   // Gunakan data dari statistics API
@@ -525,14 +540,6 @@ export default function FinanceOrders() {
     <Layout>
       <div className="dashboard-shell orders-shell">
         <section className="dashboard-hero orders-hero">
-          <div className="dashboard-hero__copy">
-            <p className="dashboard-hero__eyebrow">Finance</p>
-            <h2 className="dashboard-hero__title">Dashboard Finance</h2>
-            <span className="dashboard-hero__meta">
-              Validasi dan monitoring pembayaran (DP & pelunasan) untuk setiap order.
-            </span>
-          </div>
-
           <div className="orders-toolbar">
             <div className="orders-search">
               <input
@@ -542,48 +549,126 @@ export default function FinanceOrders() {
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
               />
+              <span className="orders-search__icon pi pi-search" />
             </div>
             <div className="orders-toolbar-buttons">
-              {/* Button tambahan bisa ditambahkan di sini nanti */}
+              <div className="orders-filters" aria-label="Filter pesanan">
+                <button
+                  type="button"
+                  className={`orders-filter-btn ${filterPreset === "all" ? "is-active" : ""}`}
+                  onClick={() => setFilterPreset("all")}
+                >
+                  Semua
+                </button>
+                <button
+                  type="button"
+                  className={`orders-filter-btn ${filterPreset === "today" ? "is-active" : ""}`}
+                  onClick={() => setFilterPreset("today")}
+                >
+                  Hari Ini
+                </button>
+                <button
+                  type="button"
+                  className="orders-filter-btn orders-filter-icon-btn"
+                  title="Filter"
+                  aria-label="Filter"
+                  onClick={() => {}}
+                >
+                  <Filter size={16} />
+                </button>
+              </div>
+              <div style={{ position: "relative" }}>
+                <Calendar
+                  value={dateRange}
+                  onChange={(e) => setDateRange(e.value)}
+                  selectionMode="range"
+                  readOnlyInput
+                  showIcon
+                  icon="pi pi-calendar"
+                  placeholder="Pilih tanggal"
+                  dateFormat="dd M yyyy"
+                  monthNavigator
+                  yearNavigator
+                  yearRange="2020:2030"
+                  style={{
+                    width: "100%",
+                    minWidth: "250px"
+                  }}
+                  inputStyle={{
+                    width: "100%",
+                    padding: "0.55rem 2.2rem 0.55rem 0.75rem",
+                    border: "1px solid var(--dash-border)",
+                    borderRadius: "0.5rem",
+                    fontSize: "0.85rem",
+                    background: "var(--dash-surface)",
+                    color: "var(--dash-text)",
+                    boxShadow: "none",
+                    cursor: "pointer"
+                  }}
+                  panelStyle={{
+                    background: "#ffffff",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "0.5rem",
+                    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)"
+                  }}
+                />
+              </div>
+              {dateRange && Array.isArray(dateRange) && dateRange.length === 2 && dateRange[0] && dateRange[1] && (
+                <button
+                  onClick={() => setDateRange(null)}
+                  className="orders-button orders-button--secondary"
+                  style={{ whiteSpace: "nowrap" }}
+                >
+                  <i className="pi pi-times" style={{ marginRight: "0.25rem" }} />
+                  Reset
+                </button>
+              )}
             </div>
           </div>
         </section>
  
-        <section className="dashboard-summary orders-summary">
-          {[
-            {
-              label: "Menunggu Validasi",
-              value: menungguOrders,
-              accent: "accent-amber",
-              icon: <Clock size={22} />,
-            },
-            {
-              label: "Sudah Approve",
-              value: approvedOrders,
-              accent: "accent-emerald",
-              icon: <CheckCircle size={22} />,
-            },
-            {
-              label: "Ditolak",
-              value: ditolakOrders,
-              accent: "accent-red",
-              icon: <XCircle size={22} />,
-            },
-            {
-              label: "Total Nilai Menunggu",
-              value: totalNilaiMenunggu,
-              accent: "accent-indigo",
-              icon: <DollarSign size={22} />,
-            },
-          ].map((card) => (
-            <article className="summary-card" key={card.label}>
-              <div className={`summary-card__icon ${card.accent}`}>{card.icon}</div>
-              <div>
-                <p className="summary-card__label">{card.label}</p>
-                <p className="summary-card__value">{card.value}</p>
+        <section className="dashboard-summary finance-orders-summary">
+          <article className="summary-card summary-card--combined summary-card--four-cols">
+            <div className="summary-card__column">
+              <div className="summary-card__icon accent-orange">
+                <Clock size={24} />
               </div>
-            </article>
-          ))}
+              <div>
+                <p className="summary-card__label">Menunggu Validasi</p>
+                <p className="summary-card__value">{menungguOrders}</p>
+              </div>
+            </div>
+            <div className="summary-card__divider"></div>
+            <div className="summary-card__column">
+              <div className="summary-card__icon accent-orange">
+                <CheckCircle size={24} />
+              </div>
+              <div>
+                <p className="summary-card__label">Sudah Approve</p>
+                <p className="summary-card__value">{approvedOrders}</p>
+              </div>
+            </div>
+            <div className="summary-card__divider"></div>
+            <div className="summary-card__column">
+              <div className="summary-card__icon accent-orange">
+                <XCircle size={24} />
+              </div>
+              <div>
+                <p className="summary-card__label">Ditolak</p>
+                <p className="summary-card__value">{ditolakOrders}</p>
+              </div>
+            </div>
+            <div className="summary-card__divider"></div>
+            <div className="summary-card__column">
+              <div className="summary-card__icon accent-orange">
+                <DollarSign size={24} />
+              </div>
+              <div>
+                <p className="summary-card__label">Total Nilai Menunggu</p>
+                <p className="summary-card__value">{totalNilaiMenunggu}</p>
+              </div>
+            </div>
+          </article>
         </section>
         
         <section className="panel orders-panel">
@@ -591,102 +676,6 @@ export default function FinanceOrders() {
             <div>
               <p className="panel__eyebrow">Validasi Pembayaran</p>
               <h3 className="panel__title">Daftar Pembayaran Order</h3>
-              <p
-                style={{
-                  marginTop: "0.25rem",
-                  fontSize: "0.875rem",
-                  color: "var(--dash-muted)",
-                }}
-              >
-                Setiap baris = 1 transaksi pembayaran (DP / pelunasan) yang perlu divalidasi oleh tim finance.
-              </p>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-              {/* Date Range Picker - filter berdasarkan tanggal bayar */}
-              <div style={{ position: "relative" }}>
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom: "0.5rem",
-                    fontSize: "0.875rem",
-                    fontWeight: 500,
-                    color: "var(--dash-text)",
-                  }}
-                >
-                  Tanggal Bayar
-                </label>
-                <div style={{ position: "relative" }}>
-                  <Calendar
-                    value={dateRange}
-                    onChange={(e) => setDateRange(e.value)}
-                    selectionMode="range"
-                    readOnlyInput
-                    showIcon
-                    icon="pi pi-calendar"
-                    placeholder="Pilih tanggal"
-                    dateFormat="dd M yyyy"
-                    monthNavigator
-                    yearNavigator
-                    yearRange="2020:2030"
-                    style={{
-                      width: "100%",
-                      minWidth: "300px",
-                    }}
-                    inputStyle={{
-                      width: "100%",
-                      padding: "0.75rem 2.5rem 0.75rem 1rem",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: "0.5rem",
-                      fontSize: "0.875rem",
-                      background: "#ffffff",
-                      color: "#1f2937",
-                      boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-                      cursor: "pointer",
-                    }}
-                    panelStyle={{
-                      background: "#ffffff",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: "0.5rem",
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Clear Filter Button */}
-              {dateRange &&
-                Array.isArray(dateRange) &&
-                dateRange.length === 2 &&
-                dateRange[0] &&
-                dateRange[1] && (
-                  <button
-                    onClick={() => setDateRange(null)}
-                    style={{
-                      padding: "0.5rem 0.75rem",
-                      background: "#e5e7eb",
-                      color: "#6b7280",
-                      border: "none",
-                      borderRadius: "0.375rem",
-                      cursor: "pointer",
-                      fontSize: "0.75rem",
-                      fontWeight: 500,
-                      transition: "all 0.2s ease",
-                      height: "fit-content",
-                      marginTop: "1.75rem",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.background = "#d1d5db";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.background = "#e5e7eb";
-                    }}
-                  >
-                    <i
-                      className="pi pi-times"
-                      style={{ marginRight: "0.25rem", fontSize: "0.75rem" }}
-                    />
-                    Reset
-                  </button>
-                )}
             </div>
           </div>
 
