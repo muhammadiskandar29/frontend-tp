@@ -35,7 +35,6 @@ export default function LandingPage() {
 
   const [paymentMethod, setPaymentMethod] = useState(""); // cc | ewallet | va | manual
   const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false); // Prevent double-click
   const [testimoniIndex, setTestimoniIndex] = useState(0); // For testimoni carousel
 
@@ -227,8 +226,6 @@ export default function LandingPage() {
         });
       } catch (err) {
         console.error("Landing fetch failed:", err);
-      } finally {
-        setLoading(false);
       }
     }
 
@@ -374,68 +371,10 @@ export default function LandingPage() {
     };
   }, [data]);
 
-  if (!data && !loading) return (
-    <div className="not-found-page">
-      <div className="not-found-content">
-        <span className="not-found-icon">📦</span>
-        <h1>Halaman Tidak Tersedia</h1>
-        <p>Produk yang Anda cari sedang tidak tersedia saat ini.</p>
-        <a href="/" className="not-found-btn">Kembali ke Beranda</a>
-      </div>
-      <style jsx>{`
-        .not-found-page {
-          min-height: 100vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
-          padding: 20px;
-        }
-        .not-found-content {
-          text-align: center;
-          background: white;
-          padding: 48px;
-          border-radius: 20px;
-          box-shadow: 0 10px 40px rgba(0,0,0,0.08);
-          max-width: 400px;
-        }
-        .not-found-icon {
-          font-size: 64px;
-          display: block;
-          margin-bottom: 20px;
-        }
-        .not-found-content h1 {
-          font-size: 24px;
-          font-weight: 600;
-          color: #1f2937;
-          margin: 0 0 12px;
-        }
-        .not-found-content p {
-          color: #6b7280;
-          margin: 0 0 24px;
-          font-size: 15px;
-        }
-        .not-found-btn {
-          display: inline-block;
-          padding: 12px 24px;
-          background: linear-gradient(135deg, #3b82f6, #2563eb);
-          color: white;
-          text-decoration: none;
-          border-radius: 10px;
-          font-weight: 500;
-          transition: all 0.2s;
-        }
-        .not-found-btn:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(59,130,246,0.3);
-        }
-      `}</style>
-    </div>
-  );
-
   // Safety check - ensure data exists before using
+  // Return empty div instead of null to avoid loading indicator
   if (!data) {
-    return null; // Return null if no data (will show not-found page)
+    return <div style={{ display: 'none' }}></div>;
   }
 
   const form = data;
