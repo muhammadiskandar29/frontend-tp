@@ -14,7 +14,9 @@ import { MultiSelect } from "primereact/multiselect";
 import { ArrowLeft } from "lucide-react";
 import DragDropUpload from "./components/DragDropUpload";
 import DragDropGallery from "./components/DragDropGallery";
+import PageBuilder from "./components/PageBuilder";
 import "@/styles/sales/add-products.css";
+import "@/styles/sales/page-builder.css";
 
 export default function Page() {
   const router = useRouter();
@@ -87,6 +89,7 @@ export default function Page() {
   event_fb_pixel: [],
   gtm: [],
   video: "",
+  page_blocks: [], // Blocks untuk visual page builder
 };
 
 
@@ -1064,7 +1067,7 @@ useEffect(() => {
         />
       </div>
 
-      {/* SECTION 4: Testimoni */}
+      {/* SECTION 5: Testimoni */}
       <div className="form-section-card">
         <div className="section-header">
           <h3 className="section-title">Testimoni</h3>
@@ -1130,7 +1133,7 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* SECTION 5: Konten Tambahan */}
+      {/* SECTION 6: Konten Tambahan */}
       <div className="form-section-card">
         <div className="section-header">
           <h3 className="section-title">Konten Tambahan</h3>
@@ -1184,7 +1187,7 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* SECTION 6: Form Fields - Compact Style */}
+      {/* SECTION 7: Form Fields - Compact Style */}
       <section className="compact-form-section-preview" aria-label="Order form">
         <h2 className="compact-form-title-preview">Lengkapi Data:</h2>
         
@@ -1247,7 +1250,7 @@ useEffect(() => {
         </div>
       </section>
 
-      {/* SECTION 7: Custom Fields */}
+      {/* SECTION 8: Custom Fields */}
       <div className="form-section-card">
         <div className="section-header">
           <h3 className="section-title">Custom Fields</h3>
@@ -1310,7 +1313,7 @@ useEffect(() => {
       </div>
 
 
-      {/* SECTION 8: Pengaturan */}
+      {/* SECTION 9: Pengaturan */}
       <div className="form-section-card">
         <div className="section-header">
           <h3 className="section-title">Pengaturan</h3>
