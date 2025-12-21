@@ -128,10 +128,10 @@ export default function FollowupReportPage() {
   }), [logs]);
 
   const summaryCards = [
-    { label: "Total Log", value: countByStatus.all, icon: <FileText size={24} />, accent: "accent-indigo" },
-    { label: "Pending", value: countByStatus.pending, icon: <Clock size={24} />, accent: "accent-amber" },
-    { label: "Terkirim", value: countByStatus.terkirim, icon: <CheckCircle size={24} />, accent: "accent-emerald" },
-    { label: "Gagal", value: countByStatus.gagal, icon: <XCircle size={24} />, accent: "accent-rose" },
+    { label: "Total Log", value: countByStatus.all, icon: <FileText size={24} /> },
+    { label: "Pending", value: countByStatus.pending, icon: <Clock size={24} /> },
+    { label: "Terkirim", value: countByStatus.terkirim, icon: <CheckCircle size={24} /> },
+    { label: "Gagal", value: countByStatus.gagal, icon: <XCircle size={24} /> },
   ];
 
   const filterTabs = [
@@ -161,14 +161,6 @@ export default function FollowupReportPage() {
       <div className="dashboard-shell customers-shell">
         {/* HERO SECTION */}
         <section className="dashboard-hero customers-hero">
-          <div className="dashboard-hero__copy">
-            <p className="dashboard-hero__eyebrow">Follow-up</p>
-            <h2 className="dashboard-hero__title">Report Follow Up</h2>
-            <span className="dashboard-hero__meta">
-              Lihat ringkasan aktivitas follow up broadcast WhatsApp.
-            </span>
-          </div>
-
           <div className="customers-toolbar">
             <div className="customers-search">
               <input
@@ -187,7 +179,7 @@ export default function FollowupReportPage() {
         <section className="dashboard-summary-horizontal">
           {summaryCards.map((card) => (
             <article className="summary-card" key={card.label}>
-              <div className={`summary-card__icon ${card.accent}`}>
+              <div className="summary-card__icon summary-card__icon--orange">
                 {card.icon}
               </div>
               <div>

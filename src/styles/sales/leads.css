@@ -334,76 +334,243 @@
   font-weight: 500;
 }
 
-/* Status Badges */
-.leads-status {
-  display: inline-block;
-  padding: 0.25rem 0.65rem;
-  border-radius: 0.375rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: capitalize;
+/* Customer Info */
+.leads-customer-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.leads-customer-name {
+  font-weight: 700;
+  font-size: 0.9375rem;
+  color: var(--dash-text-dark);
+  text-decoration: underline;
   line-height: 1.4;
 }
 
-.leads-status.status-new {
-  background: rgba(59, 130, 246, 0.1);
+.leads-customer-email,
+.leads-customer-phone {
+  font-size: 0.8125rem;
+  color: var(--dash-muted);
+  line-height: 1.4;
+}
+
+.leads-contact-icons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.375rem;
+}
+
+.leads-contact-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--dash-border);
+  border-radius: 0.375rem;
+  background: var(--dash-surface);
+  color: var(--dash-muted);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: 0.875rem;
+}
+
+.leads-contact-icon--whatsapp {
+  color: #25d366;
+  border-color: rgba(37, 211, 102, 0.3);
+}
+
+.leads-contact-icon--whatsapp:hover {
+  background: rgba(37, 211, 102, 0.1);
+  border-color: #25d366;
+}
+
+.leads-contact-icon--email {
   color: #3b82f6;
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.leads-contact-icon--email:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: #3b82f6;
+}
+
+.leads-contact-icon--phone {
+  color: var(--dash-muted);
+  border-color: var(--dash-border);
+}
+
+.leads-contact-icon--phone:hover {
+  background: rgba(107, 114, 128, 0.1);
+  border-color: var(--dash-muted);
+}
+
+.leads-contact-icon--add {
+  color: var(--accent-primary);
+  border-color: rgba(251, 133, 0, 0.3);
+}
+
+.leads-contact-icon--add:hover {
+  background: rgba(251, 133, 0, 0.1);
+  border-color: var(--accent-primary);
+}
+
+/* Label Text */
+.leads-label-text {
+  font-size: 0.875rem;
+  color: var(--dash-muted);
+  line-height: 1.4;
+}
+
+/* Status Badges */
+.leads-status {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  line-height: 1.4;
+  letter-spacing: 0.05em;
+}
+
+.leads-status.status-new {
+  background: #93c5fd;
+  color: #ffffff;
 }
 
 .leads-status.status-contacted {
-  background: rgba(251, 191, 36, 0.1);
+  background: rgba(251, 191, 36, 0.15);
   color: #fbbf24;
 }
 
 .leads-status.status-qualified {
-  background: rgba(139, 92, 246, 0.1);
+  background: rgba(139, 92, 246, 0.15);
   color: #8b5cf6;
 }
 
 .leads-status.status-converted {
-  background: rgba(16, 185, 129, 0.1);
+  background: rgba(16, 185, 129, 0.15);
   color: #10b981;
 }
 
 .leads-status.status-lost {
-  background: rgba(239, 68, 68, 0.1);
+  background: rgba(239, 68, 68, 0.15);
   color: #ef4444;
 }
 
 .leads-status.status-default {
-  background: rgba(107, 114, 128, 0.1);
+  background: rgba(107, 114, 128, 0.15);
   color: #6b7280;
 }
 
-/* Label Badges */
-.leads-label {
-  display: inline-block;
-  padding: 0.25rem 0.65rem;
-  border-radius: 0.375rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: capitalize;
+/* Assign Sales */
+.leads-assign-sales {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.leads-assign-sales-name {
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: var(--dash-text-dark);
   line-height: 1.4;
 }
 
-.leads-label.label-hot {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+.leads-assign-sales-role {
+  font-size: 0.8125rem;
+  color: var(--dash-muted);
+  line-height: 1.4;
 }
 
-.leads-label.label-warm {
-  background: rgba(251, 191, 36, 0.1);
-  color: #fbbf24;
+/* Minat Produk */
+.leads-minat-produk {
+  font-size: 0.875rem;
+  color: var(--dash-muted);
+  line-height: 1.4;
 }
 
-.leads-label.label-cold {
-  background: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
+/* Action Buttons */
+.leads-action-btn {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--dash-border);
+  border-radius: 0.375rem;
+  background: var(--dash-surface);
+  color: var(--dash-text);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
 }
 
-.leads-label.label-default {
-  background: rgba(107, 114, 128, 0.1);
-  color: #6b7280;
+.leads-action-btn--detail,
+.leads-action-btn--edit {
+  background: #ffffff;
+  color: var(--dash-text);
+  border-color: var(--dash-border);
+}
+
+.leads-action-btn--detail:hover,
+.leads-action-btn--edit:hover {
+  background: var(--dash-bg);
+  border-color: var(--dash-muted);
+}
+
+.leads-action-btn--delete {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+}
+
+.leads-action-btn--delete:hover {
+  background: #dc2626;
+  border-color: #dc2626;
+}
+
+/* WhatsApp Modal Customer Info */
+.leads-whatsapp-customer-info {
+  padding: 1rem;
+  background: var(--dash-bg);
+  border: 1px solid var(--dash-border);
+  border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.leads-whatsapp-customer-name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--dash-text-dark);
+  margin-bottom: 0.75rem;
+}
+
+.leads-whatsapp-customer-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.leads-whatsapp-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.leads-whatsapp-detail-label {
+  font-weight: 600;
+  color: var(--dash-text);
+  min-width: 100px;
+}
+
+.leads-whatsapp-detail-value {
+  color: var(--dash-muted-strong);
+  flex: 1;
 }
 
 /* Hero Section */

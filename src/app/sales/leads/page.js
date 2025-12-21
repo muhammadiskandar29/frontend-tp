@@ -18,6 +18,9 @@ const BASE_URL = "/api";
 const AddLeadModal = dynamic(() => import("./addLead"), { ssr: false });
 const GenerateLeadsModal = dynamic(() => import("./generateLeads"), { ssr: false });
 const BroadcastLeadModal = dynamic(() => import("./broadcastLead"), { ssr: false });
+const SendWhatsAppModal = dynamic(() => import("./sendWhatsApp"), { ssr: false });
+const AddFollowUpModal = dynamic(() => import("./addFollowUp"), { ssr: false });
+const ViewLeadModal = dynamic(() => import("./viewLead"), { ssr: false });
 
 const LEADS_COLUMNS = [
   "Nama Customer",
@@ -64,6 +67,10 @@ export default function LeadsPage() {
   const [showAddLead, setShowAddLead] = useState(false);
   const [showGenerateLeads, setShowGenerateLeads] = useState(false);
   const [showBroadcast, setShowBroadcast] = useState(false);
+  const [showSendWhatsApp, setShowSendWhatsApp] = useState(false);
+  const [showAddFollowUp, setShowAddFollowUp] = useState(false);
+  const [showViewLead, setShowViewLead] = useState(false);
+  const [selectedLead, setSelectedLead] = useState(null);
 
   // Statistics
   const [statistics, setStatistics] = useState({
@@ -437,57 +444,161 @@ export default function LeadsPage() {
               </div>
               <div className="leads-table__body">
                 {paginatedLeads.length > 0 ? (
-                  paginatedLeads.map((lead, i) => (
-                    <div key={lead.id || i} className="leads-table__row">
-                      <span className="leads-table__cell">{lead.nama || "-"}</span>
-                      <span className="leads-table__cell">
-                        {lead.label ? (
-                          <span className={`leads-label ${getLabelClass(lead.label)}`}>
-                            {lead.label}
-                          </span>
-                        ) : (
-                          "-"
-                        )}
-                      </span>
-                      <span className="leads-table__cell">
-                        {lead.status ? (
-                          <span className={`leads-status ${getStatusClass(lead.status)}`}>
-                            {lead.status}
-                          </span>
-                        ) : (
-                          "-"
-                        )}
-                      </span>
-                      <span className="leads-table__cell">{lead.assign_sales || "-"}</span>
-                      <span className="leads-table__cell">{lead.minat_produk || "-"}</span>
-                      <span className="leads-table__cell">{formatDate(lead.last_contact)}</span>
-                      <span className="leads-table__cell">{formatDate(lead.next_followup)}</span>
-                      <span className="leads-table__cell leads-table__cell--actions">
-                        <div className="leads-table__actions">
-                          <button
-                            className="leads-table__action-btn"
-                            onClick={() => {
-                              // TODO: Implement view/edit action
-                              toastWarning("Fitur aksi akan segera tersedia");
-                            }}
-                            title="Lihat Detail"
-                          >
-                            <span className="pi pi-eye" />
-                          </button>
-                          <button
-                            className="leads-table__action-btn"
-                            onClick={() => {
-                              // TODO: Implement edit action
-                              toastWarning("Fitur edit akan segera tersedia");
-                            }}
-                            title="Edit"
-                          >
-                            <span className="pi pi-pencil" />
-                          </button>
-                        </div>
-                      </span>
-                    </div>
-                  ))
+                  paginatedLeads.map((lead, i) => {
+                    const customer = lead.customer_rel || {};
+                    const customerName = customer.nama || lead.nama || "-";
+                    const customerEmail = customer.email || lead.email || "";
+                    const customerPhone = customer.wa || lead.wa || "";
+                    const assignSalesName = lead.assign_sales_name || lead.assign_sales || "";
+                    const assignSalesRole = lead.assign_sales_role || "Sales";
+                    
+                    return (
+                      <div key={lead.id || i} className="leads-table__row">
+                        {/* Nama Customer */}
+                        <span className="leads-table__cell">
+                          <div className="leads-customer-info">
+                            <div className="leads-customer-name">{customerName}</div>
+                            {customerEmail && (
+                              <div className="leads-customer-email">{customerEmail}</div>
+                            )}
+                            {customerPhone && (
+                              <div className="leads-customer-phone">{customerPhone}</div>
+                            )}
+                            <div className="leads-contact-icons">
+                              {customerPhone && (
+                                <button
+                                  type="button"
+                                  className="leads-contact-icon leads-contact-icon--whatsapp"
+                                  title={`Kirim WhatsApp ${customerPhone}`}
+                                  onClick={() => {
+                                    setSelectedLead(lead);
+                                    setShowSendWhatsApp(true);
+                                  }}
+                                >
+                                  <i className="pi pi-whatsapp" />
+                                </button>
+                              )}
+                              {customerEmail && (
+                                <a
+                                  href={`mailto:${customerEmail}`}
+                                  className="leads-contact-icon leads-contact-icon--email"
+                                  title={`Email ${customerEmail}`}
+                                >
+                                  <i className="pi pi-envelope" />
+                                </a>
+                              )}
+                              {customerPhone && (
+                                <a
+                                  href={`tel:${customerPhone}`}
+                                  className="leads-contact-icon leads-contact-icon--phone"
+                                  title={`Call ${customerPhone}`}
+                                >
+                                  <i className="pi pi-phone" />
+                                </a>
+                              )}
+                              <button
+                                className="leads-contact-icon leads-contact-icon--add"
+                                title="Input Follow Up"
+                                onClick={() => {
+                                  setSelectedLead(lead);
+                                  setShowAddFollowUp(true);
+                                }}
+                              >
+                                <i className="pi pi-plus" />
+                              </button>
+                            </div>
+                          </div>
+                        </span>
+
+                        {/* Label */}
+                        <span className="leads-table__cell">
+                          {lead.label ? (
+                            <span className="leads-label-text">{lead.label}</span>
+                          ) : (
+                            "-"
+                          )}
+                        </span>
+
+                        {/* Status */}
+                        <span className="leads-table__cell">
+                          {lead.status ? (
+                            <span className={`leads-status ${getStatusClass(lead.status)}`}>
+                              {lead.status.toUpperCase()}
+                            </span>
+                          ) : (
+                            "-"
+                          )}
+                        </span>
+
+                        {/* Assign Sales */}
+                        <span className="leads-table__cell">
+                          {assignSalesName ? (
+                            <div className="leads-assign-sales">
+                              <div className="leads-assign-sales-name">{assignSalesName}</div>
+                              <div className="leads-assign-sales-role">{assignSalesRole}</div>
+                            </div>
+                          ) : (
+                            "-"
+                          )}
+                        </span>
+
+                        {/* Minat Produk */}
+                        <span className="leads-table__cell">
+                          {lead.minat_produk ? (
+                            <span className="leads-minat-produk">{lead.minat_produk}</span>
+                          ) : (
+                            "-"
+                          )}
+                        </span>
+
+                        {/* Last Contact */}
+                        <span className="leads-table__cell">
+                          {formatDate(lead.last_contact)}
+                        </span>
+
+                        {/* Next Follow Up */}
+                        <span className="leads-table__cell">
+                          {formatDate(lead.next_followup)}
+                        </span>
+
+                        {/* Aksi */}
+                        <span className="leads-table__cell leads-table__cell--actions">
+                          <div className="leads-table__actions">
+                            <button
+                              className="leads-action-btn leads-action-btn--detail"
+                              onClick={() => {
+                                setSelectedLead(lead);
+                                setShowViewLead(true);
+                              }}
+                              title="Detail"
+                            >
+                              Detail
+                            </button>
+                            <button
+                              className="leads-action-btn leads-action-btn--edit"
+                              onClick={() => {
+                                // TODO: Implement edit
+                                toastWarning("Fitur edit akan segera tersedia");
+                              }}
+                              title="Edit"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              className="leads-action-btn leads-action-btn--delete"
+                              onClick={() => {
+                                // TODO: Implement delete
+                                toastWarning("Fitur hapus akan segera tersedia");
+                              }}
+                              title="Hapus"
+                            >
+                              Hapus
+                            </button>
+                          </div>
+                        </span>
+                      </div>
+                    );
+                  })
                 ) : (
                   <div className="leads-table__row">
                     <div className="leads-table__empty">
@@ -543,6 +654,42 @@ export default function LeadsPage() {
         <BroadcastLeadModal
           onClose={() => setShowBroadcast(false)}
           onSuccess={handleModalSuccess}
+        />
+      )}
+
+      {showSendWhatsApp && selectedLead && (
+        <SendWhatsAppModal
+          lead={selectedLead}
+          onClose={() => {
+            setShowSendWhatsApp(false);
+            setSelectedLead(null);
+          }}
+          onSuccess={handleModalSuccess}
+        />
+      )}
+
+      {showAddFollowUp && selectedLead && (
+        <AddFollowUpModal
+          lead={selectedLead}
+          onClose={() => {
+            setShowAddFollowUp(false);
+            setSelectedLead(null);
+          }}
+          onSuccess={handleModalSuccess}
+        />
+      )}
+
+      {showViewLead && selectedLead && (
+        <ViewLeadModal
+          lead={selectedLead}
+          onClose={() => {
+            setShowViewLead(false);
+            setSelectedLead(null);
+          }}
+          onEdit={(lead) => {
+            // TODO: Open edit modal
+            toastWarning("Fitur edit akan segera tersedia");
+          }}
         />
       )}
     </Layout>
