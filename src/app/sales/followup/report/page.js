@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layout";
 import { FileText, Clock, CheckCircle, XCircle } from "lucide-react";
-import "@/styles/sales/dashboard.css";
+import "@/styles/sales/dashboard-premium.css";
 import "@/styles/sales/admin.css";
-import "@/styles/sales/customer.css";
+import "@/styles/sales/customers-premium.css";
 import { getLogsFollowUp } from "@/lib/logsFollowUp";
 
 function useDebouncedValue(value, delay = 250) {
@@ -128,10 +128,10 @@ export default function FollowupReportPage() {
   }), [logs]);
 
   const summaryCards = [
-    { label: "Total Log", value: countByStatus.all, icon: <FileText size={22} />, accent: "accent-indigo" },
-    { label: "Pending", value: countByStatus.pending, icon: <Clock size={22} />, accent: "accent-amber" },
-    { label: "Terkirim", value: countByStatus.terkirim, icon: <CheckCircle size={22} />, accent: "accent-emerald" },
-    { label: "Gagal", value: countByStatus.gagal, icon: <XCircle size={22} />, accent: "accent-rose" },
+    { label: "Total Log", value: countByStatus.all, icon: <FileText size={24} />, accent: "accent-indigo" },
+    { label: "Pending", value: countByStatus.pending, icon: <Clock size={24} />, accent: "accent-amber" },
+    { label: "Terkirim", value: countByStatus.terkirim, icon: <CheckCircle size={24} />, accent: "accent-emerald" },
+    { label: "Gagal", value: countByStatus.gagal, icon: <XCircle size={24} />, accent: "accent-rose" },
   ];
 
   const filterTabs = [
@@ -184,7 +184,7 @@ export default function FollowupReportPage() {
         </section>
 
         {/* SUMMARY CARDS */}
-        <section className="dashboard-summary orders-summary">
+        <section className="dashboard-summary-horizontal">
           {summaryCards.map((card) => (
             <article className="summary-card" key={card.label}>
               <div className={`summary-card__icon ${card.accent}`}>
@@ -260,7 +260,7 @@ export default function FollowupReportPage() {
                       <div className="customers-table__cell" data-label="#">
                         {startIndex + i + 1}
                       </div>
-                      <div className="customers-table__cell" data-label="Customer">
+                      <div className="customers-table__cell customers-table__cell--strong" data-label="Customer">
                         <div className="customer-info">
                           <span className="customer-name">{log.customerName}</span>
                           {log.customerPhone && log.customerPhone !== "-" && (
@@ -336,135 +336,6 @@ export default function FollowupReportPage() {
         </section>
       </div>
 
-      <style jsx>{`
-        .followup-filter-section {
-          margin-bottom: 20px;
-        }
-        
-        .followup-filter-tabs {
-          display: flex;
-          gap: 8px;
-          flex-wrap: wrap;
-          background: white;
-          padding: 12px 16px;
-          border-radius: 12px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-        }
-        
-        .followup-filter-tab {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          padding: 8px 16px;
-          border: 1px solid #e5e7eb;
-          background: #f9fafb;
-          border-radius: 8px;
-          cursor: pointer;
-          font-weight: 500;
-          font-size: 13px;
-          color: #374151;
-          transition: all 0.2s;
-        }
-        
-        .followup-filter-tab:hover {
-          background: #f3f4f6;
-          border-color: #d1d5db;
-        }
-        
-        .followup-filter-tab.active {
-          background: #2563eb;
-          color: white;
-          border-color: #2563eb;
-        }
-        
-        .followup-filter-count {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          min-width: 22px;
-          height: 22px;
-          padding: 0 6px;
-          background: rgba(0,0,0,0.08);
-          border-radius: 11px;
-          font-size: 11px;
-          font-weight: 600;
-        }
-        
-        .followup-filter-tab.active .followup-filter-count {
-          background: rgba(255,255,255,0.2);
-        }
-        
-        .customer-info {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-        
-        .customer-name {
-          font-weight: 600;
-          color: #1f2937;
-          font-size: 13px;
-        }
-        
-        .cell-text {
-          font-size: 13px;
-          color: #374151;
-        }
-        
-        .cell-text--truncate {
-          max-width: 150px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          display: block;
-        }
-        
-        .cell-text--muted {
-          color: #6b7280;
-          font-size: 12px;
-        }
-        
-        .followup-status-badge {
-          display: inline-flex;
-          align-items: center;
-          padding: 4px 10px;
-          border-radius: 6px;
-          font-size: 11px;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.3px;
-        }
-        
-        .followup-status-badge--pending {
-          background: #fef3c7;
-          color: #d97706;
-        }
-        
-        .followup-status-badge--terkirim {
-          background: #d1fae5;
-          color: #059669;
-        }
-        
-        .followup-status-badge--gagal {
-          background: #fee2e2;
-          color: #dc2626;
-        }
-        
-        .customers-empty {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 48px 24px;
-          color: #6b7280;
-          text-align: center;
-        }
-        
-        .accent-rose {
-          background: linear-gradient(135deg, #fda4af, #fb7185);
-          color: white;
-        }
-      `}</style>
     </Layout>
   );
 }

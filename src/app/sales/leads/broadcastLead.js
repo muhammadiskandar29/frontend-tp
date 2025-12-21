@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Dropdown } from "primereact/dropdown";
 import "@/styles/sales/customer.css";
 import "@/styles/sales/admin.css";
+import "@/styles/sales/leads-modal.css";
 import "primereact/resources/themes/lara-light-cyan/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";

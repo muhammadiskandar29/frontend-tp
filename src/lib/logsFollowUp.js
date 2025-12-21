@@ -11,7 +11,7 @@ export async function getLogsFollowUp() {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };
 
-    const res = await fetch(`${BASE_URL}/admin/logs-follup`, {
+    const res = await fetch(`${BASE_URL}/sales/logs-follup`, {
       method: "GET",
       headers,
     });

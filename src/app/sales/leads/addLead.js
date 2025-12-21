@@ -5,6 +5,7 @@ import { Calendar } from "primereact/calendar";
 import { Dropdown } from "primereact/dropdown";
 import "@/styles/sales/customer.css";
 import "@/styles/sales/admin.css";
+import "@/styles/sales/leads-modal.css";
 import "primereact/resources/themes/lara-light-cyan/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
@@ -162,46 +163,20 @@ export default function AddLeadModal({ onClose, onSuccess }) {
                 style={{ width: "100%" }}
               />
               {showCustomerDropdown && filteredCustomers.length > 0 && (
-                <div
-                  className="leads-customer-dropdown"
-                  style={{
-                    position: "absolute",
-                    top: "100%",
-                    left: 0,
-                    right: 0,
-                    background: "white",
-                    border: "1px solid var(--dash-border)",
-                    borderRadius: "0.5rem",
-                    boxShadow: "var(--shadow-lg)",
-                    zIndex: 1000,
-                    maxHeight: "200px",
-                    overflowY: "auto",
-                    marginTop: "0.25rem",
-                  }}
-                >
+                <div className="leads-customer-dropdown">
                   {filteredCustomers.map((customer) => (
                     <button
                       key={customer.id}
                       type="button"
+                      className="leads-customer-dropdown-item"
                       onClick={() => {
                         handleChange("customer_id", customer.id);
                         setCustomerSearch(customer.nama || "");
                         setShowCustomerDropdown(false);
                       }}
-                      style={{
-                        width: "100%",
-                        padding: "0.75rem",
-                        textAlign: "left",
-                        background: "transparent",
-                        border: "none",
-                        cursor: "pointer",
-                        borderBottom: "1px solid var(--dash-border)",
-                      }}
-                      onMouseEnter={(e) => (e.target.style.background = "rgba(251, 133, 0, 0.08)")}
-                      onMouseLeave={(e) => (e.target.style.background = "transparent")}
                     >
-                      <div style={{ fontWeight: 600 }}>{customer.nama}</div>
-                      <div style={{ fontSize: "0.75rem", color: "var(--dash-muted)" }}>
+                      <div className="leads-customer-name">{customer.nama}</div>
+                      <div className="leads-customer-info">
                         {customer.email} | {customer.wa}
                       </div>
                     </button>
