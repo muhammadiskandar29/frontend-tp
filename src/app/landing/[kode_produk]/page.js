@@ -54,6 +54,9 @@ export default function LandingPage() {
   const [ongkir, setOngkir] = useState(0); // Ongkir dalam rupiah
   const [ongkirInfo, setOngkirInfo] = useState({ courier: '', service: '' }); // Info courier dan service
   
+  // Down Payment untuk Workshop (kategori 15)
+  const [downPayment, setDownPayment] = useState(0); // Down payment dalam rupiah
+  
   // Debug: log ongkir changes
   useEffect(() => {
     console.log('[LANDING] ongkir state changed:', ongkir);
@@ -70,6 +73,270 @@ export default function LandingPage() {
     if (!price) return "0";
     const numPrice = typeof price === "string" ? parseInt(price.replace(/[^\d]/g, "")) : price;
     return (isNaN(numPrice) ? 0 : numPrice).toLocaleString("id-ID");
+  };
+
+  // Format price untuk input (dengan Rp prefix)
+  const formatPriceInput = (value) => {
+    if (!value) return "";
+    const numValue = typeof value === "string" ? parseInt(value.replace(/[^\d]/g, "")) : value;
+    return isNaN(numValue) ? "" : `Rp ${numValue.toLocaleString("id-ID")}`;
+  };
+
+  // Parse price dari input format "Rp 1.000.000"
+  const parsePriceInput = (value) => {
+    if (!value) return 0;
+    const numValue = parseInt(value.replace(/[^\d]/g, ""), 10);
+    return isNaN(numValue) ? 0 : numValue;
+  };
+
+  // Get kategori ID dari data
+  const getKategoriId = () => {
+    if (!data) return null;
+    return data.kategori_id 
+      || (data.kategori_rel?.id ? Number(data.kategori_rel.id) : null)
+      || (data.kategori ? Number(data.kategori) : null);
+  };
+
+  // Check apakah kategori memerlukan ongkir (kategori 13 = Buku)
+  const isKategoriBuku = () => {
+    return getKategoriId() === 13;
+  };
+
+  // Check apakah kategori Workshop (kategori 15)
+  const isKategoriWorkshop = () => {
+    return getKategoriId() === 15;
+  };
+
+  // ============================
+  // FAQ MAPPING PER KATEGORI
+  // ============================
+  const getFAQByKategori = (kategoriId) => {
+    const faqMap = {
+      10: [ // Ebook
+        {
+          question: "Apa yang akan saya dapatkan dari Ebook ini?",
+          answer: "Dengan membeli Ebook ini, Anda akan mendapatkan panduan lengkap dan praktis yang dapat diakses kapan saja. Ebook ini berisi materi yang telah disusun secara sistematis untuk membantu Anda memahami topik secara mendalam. Format PDF yang mudah dibaca di berbagai perangkat."
+        },
+        {
+          question: "Bagaimana cara mengakses Ebook setelah pembayaran?",
+          answer: "Setelah pembayaran Anda dikonfirmasi, Anda akan menerima email berisi link download Ebook. Link tersebut dapat digunakan untuk mengunduh file PDF yang dapat Anda simpan dan baca kapan saja. Tidak ada batasan waktu untuk mengakses Ebook ini."
+        },
+        {
+          question: "Apakah Ebook ini bisa diakses offline?",
+          answer: "Ya, setelah Anda mengunduh file PDF, Ebook dapat dibaca secara offline di perangkat Anda. Anda dapat menyimpannya di smartphone, tablet, atau laptop untuk dibaca kapan saja tanpa perlu koneksi internet."
+        },
+        {
+          question: "Apakah ada update untuk Ebook ini?",
+          answer: "Jika ada update atau revisi materi, Anda akan mendapatkan notifikasi via email dan dapat mengunduh versi terbaru secara gratis. Kami selalu berkomitmen untuk memberikan konten yang terupdate dan relevan."
+        },
+        {
+          question: "Bisakah saya membagikan Ebook ini ke orang lain?",
+          answer: "Ebook ini adalah produk berbayar dengan hak cipta. Setiap pembelian hanya untuk penggunaan pribadi. Kami tidak mengizinkan pembagian atau distribusi tanpa izin. Jika Anda ingin membagikan, silakan ajak teman untuk membeli secara terpisah."
+        },
+        {
+          question: "Apakah ada garansi uang kembali?",
+          answer: "Kami memberikan garansi kepuasan 7 hari. Jika Anda merasa tidak puas dengan konten Ebook, silakan hubungi customer service kami untuk proses refund. Kami akan mengembalikan 100% uang Anda tanpa pertanyaan."
+        },
+        {
+          question: "Bagaimana jika saya mengalami masalah saat download?",
+          answer: "Jika Anda mengalami kendala saat download atau mengakses Ebook, silakan hubungi customer service kami melalui WhatsApp atau email. Tim kami siap membantu Anda menyelesaikan masalah dengan cepat."
+        }
+      ],
+      11: [ // Webinar
+        {
+          question: "Bagaimana cara mengakses Webinar setelah pembayaran?",
+          answer: "Setelah pembayaran Anda dikonfirmasi, Anda akan menerima email berisi link akses Webinar dan detail meeting (Zoom/Google Meet). Link tersebut dapat digunakan untuk bergabung pada waktu yang telah ditentukan. Pastikan Anda sudah menyiapkan koneksi internet yang stabil."
+        },
+        {
+          question: "Kapan Webinar akan dilaksanakan?",
+          answer: "Jadwal Webinar akan dikirimkan melalui email setelah pembayaran dikonfirmasi. Biasanya Webinar dilaksanakan pada hari kerja atau weekend sesuai dengan kesepakatan. Anda akan mendapatkan reminder 1 hari sebelum acara dimulai."
+        },
+        {
+          question: "Apakah Webinar ini akan direkam?",
+          answer: "Ya, Webinar akan direkam dan rekaman akan dikirimkan ke email Anda setelah acara selesai. Dengan demikian, Anda dapat menonton ulang kapan saja jika melewatkan sesi atau ingin mengulang materi tertentu."
+        },
+        {
+          question: "Bagaimana jika saya tidak bisa hadir di waktu yang ditentukan?",
+          answer: "Tidak masalah! Anda tetap akan mendapatkan rekaman lengkap Webinar yang dapat ditonton kapan saja. Rekaman akan dikirimkan maksimal 24 jam setelah acara selesai. Anda juga bisa mengajukan pertanyaan via email jika ada yang ingin ditanyakan."
+        },
+        {
+          question: "Apakah ada sesi tanya jawab dalam Webinar?",
+          answer: "Ya, setiap Webinar menyediakan sesi Q&A di akhir acara. Anda dapat mengajukan pertanyaan langsung kepada pembicara. Jika waktu terbatas, pertanyaan yang tidak sempat dijawab akan dijawab via email setelah Webinar selesai."
+        },
+        {
+          question: "Perangkat apa saja yang bisa digunakan untuk mengikuti Webinar?",
+          answer: "Anda dapat mengikuti Webinar menggunakan laptop, smartphone, atau tablet. Pastikan perangkat Anda memiliki aplikasi Zoom atau Google Meet (tergantung platform yang digunakan) dan koneksi internet yang stabil untuk pengalaman terbaik."
+        },
+        {
+          question: "Apakah saya bisa mendapatkan sertifikat setelah Webinar?",
+          answer: "Ya, peserta yang mengikuti Webinar hingga selesai akan mendapatkan sertifikat digital yang dikirimkan via email. Sertifikat ini dapat digunakan untuk keperluan profesional atau portofolio Anda."
+        }
+      ],
+      12: [ // Seminar
+        {
+          question: "Apa saja yang akan dibahas dalam Seminar ini?",
+          answer: "Seminar ini akan membahas berbagai topik penting mulai dari dasar-dasar hingga strategi lanjutan. Anda akan mendapatkan insight langsung dari para ahli, kesempatan networking dengan peserta lain, dan materi yang dapat langsung diterapkan dalam bisnis atau karir Anda."
+        },
+        {
+          question: "Dimana lokasi Seminar akan dilaksanakan?",
+          answer: "Lokasi Seminar akan dikirimkan melalui email setelah pembayaran dikonfirmasi. Biasanya dilaksanakan di hotel atau venue yang mudah dijangkau dengan fasilitas lengkap. Pastikan Anda sudah mengetahui lokasi dan rute perjalanan sebelum hari H."
+        },
+        {
+          question: "Apakah ada makan siang dan coffee break?",
+          answer: "Ya, setiap Seminar menyediakan coffee break dan makan siang untuk semua peserta. Menu akan disesuaikan dengan durasi acara. Jika Anda memiliki kebutuhan diet khusus, silakan informasikan saat registrasi."
+        },
+        {
+          question: "Bagaimana jika saya tidak bisa hadir di hari Seminar?",
+          answer: "Jika Anda tidak bisa hadir, silakan hubungi customer service minimal 3 hari sebelum acara untuk reschedule atau refund. Kami akan membantu mencari solusi terbaik sesuai dengan kebijakan yang berlaku."
+        },
+        {
+          question: "Apakah saya bisa mendapatkan materi Seminar?",
+          answer: "Ya, semua peserta akan mendapatkan materi Seminar dalam bentuk softcopy yang dikirimkan via email setelah acara. Materi ini dapat Anda gunakan sebagai referensi dan panduan untuk implementasi selanjutnya."
+        },
+        {
+          question: "Apakah ada sesi networking dalam Seminar?",
+          answer: "Ya, Seminar ini menyediakan waktu khusus untuk networking session dimana Anda dapat berinteraksi dengan peserta lain dan pembicara. Ini adalah kesempatan emas untuk memperluas jaringan profesional Anda."
+        },
+        {
+          question: "Apakah Seminar ini memberikan sertifikat?",
+          answer: "Ya, peserta yang hadir dan mengikuti Seminar hingga selesai akan mendapatkan sertifikat kehadiran yang dapat diambil di lokasi atau dikirimkan via email dalam bentuk digital. Sertifikat ini dapat digunakan untuk keperluan profesional."
+        }
+      ],
+      13: [ // Buku
+        {
+          question: "Apakah Buku ini tersedia dalam format digital?",
+          answer: "Buku ini tersedia dalam format fisik yang akan dikirimkan ke alamat Anda. Setelah pembayaran dan konfirmasi alamat, buku akan dikirim menggunakan jasa kurir. Estimasi pengiriman 3-7 hari kerja tergantung lokasi Anda."
+        },
+        {
+          question: "Berapa lama waktu pengiriman Buku?",
+          answer: "Waktu pengiriman bervariasi tergantung lokasi tujuan. Untuk area Jabodetabek biasanya 2-3 hari kerja, sedangkan untuk luar kota bisa 5-7 hari kerja. Anda akan mendapatkan nomor resi untuk tracking pengiriman."
+        },
+        {
+          question: "Apakah ongkir sudah termasuk dalam harga?",
+          answer: "Ongkir dihitung terpisah berdasarkan alamat pengiriman Anda. Setelah Anda mengisi alamat lengkap, sistem akan menghitung ongkir secara otomatis. Anda dapat memilih kurir dan layanan pengiriman yang diinginkan."
+        },
+        {
+          question: "Bagaimana jika Buku yang diterima rusak?",
+          answer: "Jika Buku yang Anda terima dalam kondisi rusak atau tidak sesuai, silakan hubungi customer service kami dengan foto bukti. Kami akan mengganti dengan buku baru atau mengembalikan uang Anda sesuai kebijakan garansi."
+        },
+        {
+          question: "Apakah Buku ini bisa dikirim ke luar negeri?",
+          answer: "Saat ini pengiriman hanya untuk wilayah Indonesia. Untuk pengiriman ke luar negeri, silakan hubungi customer service terlebih dahulu untuk informasi ongkir dan estimasi waktu pengiriman yang lebih detail."
+        },
+        {
+          question: "Apakah ada edisi terbaru dari Buku ini?",
+          answer: "Jika ada edisi terbaru atau revisi, informasi akan dikirimkan via email kepada pembeli. Kami selalu berusaha memberikan konten yang terupdate dan relevan untuk pembaca."
+        },
+        {
+          question: "Bisakah saya membeli Buku ini sebagai hadiah untuk orang lain?",
+          answer: "Tentu saja! Saat checkout, Anda dapat mengisi alamat pengiriman yang berbeda dengan alamat Anda. Buku akan dikirim langsung ke alamat yang Anda tentukan dengan catatan khusus jika diperlukan."
+        }
+      ],
+      14: [ // Ecourse
+        {
+          question: "Berapa lama akses Ecourse ini berlaku?",
+          answer: "Akses Ecourse ini berlaku seumur hidup. Setelah pembayaran dikonfirmasi, Anda dapat mengakses semua materi kapan saja dan mempelajarinya sesuai dengan kecepatan Anda sendiri. Tidak ada batasan waktu untuk menyelesaikan course."
+        },
+        {
+          question: "Bagaimana cara mengakses Ecourse setelah pembayaran?",
+          answer: "Setelah pembayaran dikonfirmasi, Anda akan menerima email berisi link akses ke platform Ecourse dan kredensial login. Anda dapat langsung mulai belajar melalui dashboard yang telah disediakan."
+        },
+        {
+          question: "Apakah Ecourse ini bisa diakses dari smartphone?",
+          answer: "Ya, platform Ecourse kami responsive dan dapat diakses melalui smartphone, tablet, atau laptop. Anda dapat belajar kapan saja dan dimana saja dengan koneksi internet yang stabil."
+        },
+        {
+          question: "Apakah ada tugas atau quiz dalam Ecourse ini?",
+          answer: "Ya, Ecourse ini dilengkapi dengan quiz dan tugas praktis di setiap modul untuk memastikan Anda memahami materi. Setelah menyelesaikan semua modul, Anda akan mendapatkan sertifikat penyelesaian."
+        },
+        {
+          question: "Apakah ada support dari mentor selama belajar?",
+          answer: "Ya, Anda akan mendapatkan akses ke grup diskusi atau forum dimana Anda dapat bertanya kepada mentor dan berdiskusi dengan peserta lain. Mentor akan merespons pertanyaan Anda dalam waktu 24-48 jam."
+        },
+        {
+          question: "Apakah materi Ecourse akan diupdate?",
+          answer: "Ya, kami secara berkala mengupdate materi Ecourse untuk memastikan konten tetap relevan dan terbaru. Semua update akan otomatis tersedia untuk Anda tanpa biaya tambahan."
+        },
+        {
+          question: "Apakah saya bisa mendapatkan refund jika tidak puas?",
+          answer: "Kami memberikan garansi kepuasan 14 hari. Jika Anda merasa tidak puas dengan Ecourse, silakan hubungi customer service untuk proses refund. Kami akan mengembalikan 100% uang Anda."
+        }
+      ],
+      15: [ // Workshop
+        {
+          question: "Apa yang membedakan Workshop ini dengan yang lain?",
+          answer: "Workshop ini dirancang dengan pendekatan praktis dan interaktif. Anda akan mendapatkan hands-on experience, feedback langsung dari mentor, dan kesempatan untuk berdiskusi dengan peserta lain. Materi disusun berdasarkan pengalaman nyata di lapangan."
+        },
+        {
+          question: "Berapa jumlah Down Payment yang harus dibayar?",
+          answer: "Down Payment dapat Anda tentukan sendiri sesuai dengan kemampuan. Minimum down payment adalah 30% dari total harga Workshop. Sisa pembayaran dapat dilunasi sebelum atau saat Workshop dimulai."
+        },
+        {
+          question: "Kapan sisa pembayaran harus dilunasi?",
+          answer: "Sisa pembayaran dapat dilunasi kapan saja sebelum Workshop dimulai atau saat registrasi di lokasi. Kami akan mengirimkan reminder via email dan WhatsApp untuk memastikan pembayaran Anda lengkap."
+        },
+        {
+          question: "Apakah Workshop ini menyediakan sertifikat?",
+          answer: "Ya, peserta yang mengikuti Workshop hingga selesai dan menyelesaikan semua tugas praktis akan mendapatkan sertifikat penyelesaian. Sertifikat ini dapat digunakan untuk keperluan profesional atau portofolio."
+        },
+        {
+          question: "Berapa jumlah peserta dalam satu batch Workshop?",
+          answer: "Workshop ini dibatasi maksimal 20-30 peserta per batch untuk memastikan kualitas pembelajaran dan interaksi yang optimal. Dengan jumlah terbatas, mentor dapat memberikan perhatian lebih kepada setiap peserta."
+        },
+        {
+          question: "Apakah ada materi yang bisa dibawa pulang?",
+          answer: "Ya, semua peserta akan mendapatkan modul Workshop, worksheet, dan materi pendukung lainnya yang dapat dibawa pulang. Materi ini akan membantu Anda mengimplementasikan ilmu yang didapat setelah Workshop selesai."
+        },
+        {
+          question: "Bagaimana jika saya tidak bisa hadir di hari Workshop?",
+          answer: "Jika Anda tidak bisa hadir, silakan hubungi customer service minimal 7 hari sebelum acara untuk reschedule ke batch berikutnya. Down payment yang sudah dibayar tetap berlaku untuk batch yang baru."
+        }
+      ],
+      16: [ // Private Mentoring
+        {
+          question: "Bagaimana sistem Private Mentoring ini berjalan?",
+          answer: "Private Mentoring memberikan Anda akses eksklusif untuk konsultasi langsung dengan mentor berpengalaman. Anda akan mendapatkan sesi one-on-one yang disesuaikan dengan kebutuhan dan tujuan Anda, dengan jadwal yang fleksibel sesuai kesepakatan."
+        },
+        {
+          question: "Berapa lama durasi satu sesi Private Mentoring?",
+          answer: "Satu sesi Private Mentoring biasanya berdurasi 60-90 menit. Durasi dapat disesuaikan sesuai kebutuhan Anda. Anda dapat membahas topik spesifik yang ingin dipelajari atau mendapatkan solusi untuk masalah yang sedang dihadapi."
+        },
+        {
+          question: "Bagaimana cara menentukan jadwal sesi?",
+          answer: "Setelah pembayaran dikonfirmasi, tim kami akan menghubungi Anda untuk koordinasi jadwal. Anda dapat memilih waktu yang paling sesuai dengan aktivitas Anda. Sesi dapat dilakukan via Zoom, Google Meet, atau offline sesuai kesepakatan."
+        },
+        {
+          question: "Apakah saya bisa memilih mentor yang diinginkan?",
+          answer: "Ya, Anda dapat memilih mentor sesuai dengan expertise yang dibutuhkan. Tim kami akan membantu menyesuaikan mentor terbaik berdasarkan kebutuhan dan tujuan Anda. Jika ada mentor spesifik yang diinginkan, silakan informasikan saat registrasi."
+        },
+        {
+          question: "Berapa banyak sesi yang saya dapatkan?",
+          answer: "Jumlah sesi tergantung pada paket yang Anda pilih. Setiap paket memiliki jumlah sesi yang berbeda. Detail jumlah sesi akan dikirimkan via email setelah pembayaran dikonfirmasi."
+        },
+        {
+          question: "Apakah sesi Private Mentoring direkam?",
+          answer: "Sesi dapat direkam atas permintaan Anda. Rekaman akan dikirimkan via email setelah sesi selesai sehingga Anda dapat menonton ulang atau membuat catatan tambahan. Privasi dan kerahasiaan informasi Anda dijamin."
+        },
+        {
+          question: "Apakah ada follow-up setelah sesi selesai?",
+          answer: "Ya, setelah setiap sesi, mentor akan memberikan action plan dan follow-up via email. Anda juga dapat mengajukan pertanyaan lanjutan melalui email atau WhatsApp dalam waktu 7 hari setelah sesi."
+        }
+      ]
+    };
+
+    // Default FAQ jika kategori tidak ditemukan
+    const defaultFAQ = [
+      {
+        question: "Bagaimana cara mengakses produk setelah pembayaran?",
+        answer: "Setelah pembayaran Anda dikonfirmasi, Anda akan menerima email berisi instruksi akses dan detail produk. Silakan ikuti langkah-langkah yang tertera untuk mulai menggunakan produk."
+      },
+      {
+        question: "Apakah ada garansi untuk produk ini?",
+        answer: "Ya, kami memberikan garansi kepuasan untuk semua produk kami. Jika Anda tidak puas, silakan hubungi customer service untuk proses refund atau pertukaran sesuai dengan kebijakan yang berlaku."
+      }
+    ];
+
+    return faqMap[kategoriId] || defaultFAQ;
   };
 
   // Generate alamat lengkap dengan format: "alamat dasar, kec. [kecamatan], kel/kab. [kelurahan], kode pos [kode pos]"
@@ -209,11 +476,18 @@ export default function LandingPage() {
           ? d.header.replace(/\\/g, '/') 
           : d.header;
 
+        // Get kategori ID dari data
+        const kategoriId = d.kategori_rel?.id 
+          ? Number(d.kategori_rel.id) 
+          : (d.kategori ? Number(d.kategori) : null);
+
         setData({
           ...d,
           header: normalizedHeader, // Normalize header path
           product_name: d.nama,
-          landingpage: d.landingpage || "1", // 1 = non-fisik, 2 = fisik
+          landingpage: d.landingpage || "1", // 1 = non-fisik, 2 = fisik (backward compatibility)
+          kategori_id: kategoriId, // Kategori ID untuk template selection
+          kategori_rel: d.kategori_rel || null, // Kategori relation
           gambar: normalizedGambar,
           custom_field: safeParse(d.custom_field, []),
           assign: safeParse(d.assign, []),
@@ -391,7 +665,8 @@ export default function LandingPage() {
       return toast.error("Silakan lengkapi data yang diperlukan");
     
     // Validasi ongkir untuk produk fisik (landingpage = "2")
-    const isFisik = form.landingpage === "2" || form.landingpage === 2;
+    // Deteksi berdasarkan kategori ID, bukan landingpage
+    const isFisik = isKategoriBuku(); // Kategori 13 (Buku) memerlukan ongkir
     if (isFisik && (!ongkir || ongkir === 0)) {
       return toast.error("Silakan hitung ongkir terlebih dahulu");
     }
@@ -405,8 +680,15 @@ export default function LandingPage() {
     }
 
     const hargaAsli = parseInt(form.harga_asli || '0', 10);
-    const ongkirValue = ongkir || 0;
-    const totalHarga = hargaAsli + ongkirValue;
+    const ongkirValue = isKategoriBuku() ? (ongkir || 0) : 0;
+    const downPaymentValue = isKategoriWorkshop() ? (downPayment || 0) : 0;
+    
+    // Untuk Workshop: total = down payment
+    // Untuk Buku: total = harga + ongkir
+    // Untuk lainnya: total = harga
+    const totalHarga = isKategoriWorkshop() 
+      ? downPaymentValue 
+      : (isKategoriBuku() ? hargaAsli + ongkirValue : hargaAsli);
 
     const payload = {
       nama: customerForm.nama,
@@ -415,8 +697,9 @@ export default function LandingPage() {
       alamat: alamatLengkap || customerForm.alamat || '', // Gunakan alamat lengkap yang sudah di-generate
       produk: parseInt(form.id, 10), // produk tetap integer
       harga: String(hargaAsli), // harga sebagai string
-      ongkir: String(ongkirValue), // ongkir dari hasil cek Raja Ongkir
-      total_harga: String(totalHarga), // total_harga = harga + ongkir
+      ongkir: String(ongkirValue), // ongkir dari hasil cek Raja Ongkir (hanya untuk kategori 13)
+      down_payment: isKategoriWorkshop() ? String(downPaymentValue) : undefined, // down payment untuk kategori 15
+      total_harga: String(totalHarga), // total_harga sesuai kategori
       metode_bayar: paymentMethod,
       sumber: sumber || 'website',
       custom_value: Array.isArray(customerForm.custom_value) 
@@ -467,8 +750,11 @@ export default function LandingPage() {
 
       // Simpan data untuk verifikasi OTP + URL landing untuk redirect balik
       const hargaAsli = parseInt(form.harga_asli || '0', 10);
-      const ongkirValue = ongkir || 0;
-      const totalHargaFinal = hargaAsli + ongkirValue;
+      const ongkirValue = isKategoriBuku() ? (ongkir || 0) : 0;
+      const downPaymentValue = isKategoriWorkshop() ? (downPayment || 0) : 0;
+      const totalHargaFinal = isKategoriWorkshop() 
+        ? downPaymentValue 
+        : (isKategoriBuku() ? hargaAsli + ongkirValue : hargaAsli);
 
       const pendingOrder = {
         orderId: orderId,
@@ -505,6 +791,31 @@ export default function LandingPage() {
   // ==========================================================
   // RENDER PAGE
   // ==========================================================
+  
+  // Log kategori untuk debugging
+  useEffect(() => {
+    if (data) {
+      const kategoriId = getKategoriId();
+      console.log("========================================");
+      console.log("🏷️ LANDING PAGE - KATEGORI DETECTION");
+      console.log("========================================");
+      console.log("📦 Kategori ID:", kategoriId);
+      console.log("📝 Kategori Nama:", data.kategori_rel?.nama || "Unknown");
+      console.log("🔍 Is Kategori Buku (13):", isKategoriBuku());
+      console.log("🔍 Is Kategori Workshop (15):", isKategoriWorkshop());
+      console.log("📋 Kategori Mapping:", {
+        10: "Ebook",
+        11: "Webinar",
+        12: "Seminar",
+        13: "Buku (dengan ongkir)",
+        14: "Ecourse",
+        15: "Workshop (dengan down payment)",
+        16: "Private Mentoring",
+      });
+      console.log("========================================");
+    }
+  }, [data]);
+
   const headerSrc = resolveHeaderSource(form.header);
 
   return (
@@ -836,8 +1147,8 @@ export default function LandingPage() {
       />
     </div>
 
-    {/* Ongkir Calculator - Tampilkan jika landingpage = "2" (fisik), di dalam card yang sama */}
-    {(form.landingpage === "2" || form.landingpage === 2) && (
+    {/* Ongkir Calculator - Tampilkan jika kategori 13 (Buku), di dalam card yang sama */}
+    {isKategoriBuku() && (
       <OngkirCalculator
         onSelectOngkir={(info) => {
           console.log('[LANDING] onSelectOngkir called with info:', info);
@@ -889,8 +1200,8 @@ export default function LandingPage() {
           </section>
         )}
 
-        {/* Rincian Pesanan Card - Tampilkan jika landingpage = "2" dan ongkir sudah dihitung */}
-        {(form.landingpage === "2" || form.landingpage === 2) && ongkir > 0 && (() => {
+        {/* Rincian Pesanan Card - Tampilkan jika kategori 13 (Buku) dan ongkir sudah dihitung */}
+        {isKategoriBuku() && ongkir > 0 && (() => {
           // Parse harga produk ke number
           const hargaProduk = typeof form.harga_asli === "string" 
             ? parseInt(form.harga_asli.replace(/[^\d]/g, ""), 10) || 0
@@ -953,6 +1264,50 @@ export default function LandingPage() {
             </section>
           );
         })()}
+
+        {/* Down Payment Input - Tampilkan jika kategori 15 (Workshop) */}
+        {isKategoriWorkshop() && (
+          <section className="compact-form-section" aria-label="Down Payment">
+            <div className="compact-form-card">
+              <div style={{ marginBottom: "16px" }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#111827', margin: 0 }}>
+                  Masukan Jumlah Down Payment
+                </h3>
+                <p style={{ fontSize: '14px', color: '#6b7280', margin: '4px 0 0' }}>
+                  Masukkan jumlah uang muka yang ingin Anda bayar
+                </p>
+              </div>
+              <div className="compact-field">
+                <label className="compact-label">
+                  Jumlah Down Payment <span className="required">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Rp 0"
+                  className="compact-input"
+                  value={formatPriceInput(downPayment)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const parsed = parsePriceInput(value);
+                    setDownPayment(parsed);
+                  }}
+                  onBlur={(e) => {
+                    // Format ulang saat blur
+                    const parsed = parsePriceInput(e.target.value);
+                    if (parsed > 0) {
+                      e.target.value = formatPriceInput(parsed);
+                    }
+                  }}
+                />
+                {downPayment > 0 && (
+                  <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0 0' }}>
+                    Down payment: {formatPriceInput(downPayment)}
+                  </p>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Payment - Vertical Layout, Horizontal Items */}
         <section className="payment-section" aria-label="Payment methods">
@@ -1139,40 +1494,21 @@ export default function LandingPage() {
           </div>
         </section>
 
-{/* FAQ Section */}
-<section className="faq-section" aria-label="Frequently Asked Questions">
-          <h2 className="faq-title">Pertanyaan yang Sering Diajukan</h2>
-          <div className="faq-container">
-            <FAQItem 
-              question="Apa yang akan saya dapatkan dari Ebook ini?" 
-              answer="Dengan membeli Ebook ini, Anda akan mendapatkan panduan lengkap dan praktis yang dapat diakses kapan saja. Ebook ini berisi materi yang telah disusun secara sistematis untuk membantu Anda memahami topik secara mendalam."
-            />
-            <FAQItem 
-              question="Bagaimana cara mengakses Webinar setelah pembayaran?" 
-              answer="Setelah pembayaran Anda dikonfirmasi, Anda akan menerima email berisi link akses Webinar dan detail meeting. Link tersebut dapat digunakan untuk bergabung pada waktu yang telah ditentukan. Pastikan Anda sudah menyiapkan koneksi internet yang stabil."
-            />
-            <FAQItem 
-              question="Apa saja yang akan dibahas dalam Seminar ini?" 
-              answer="Seminar ini akan membahas berbagai topik penting mulai dari dasar-dasar hingga strategi lanjutan. Anda akan mendapatkan insight langsung dari para ahli, kesempatan networking, dan materi yang dapat langsung diterapkan."
-            />
-            <FAQItem 
-              question="Apakah Buku ini tersedia dalam format digital?" 
-              answer="Ya, Buku ini tersedia dalam format digital yang dapat diakses melalui platform kami. Setelah pembayaran, Anda akan mendapatkan akses untuk mengunduh atau membaca langsung melalui aplikasi yang telah kami sediakan."
-            />
-            <FAQItem 
-              question="Berapa lama akses Ecourse ini berlaku?" 
-              answer="Akses Ecourse ini berlaku seumur hidup. Setelah pembayaran dikonfirmasi, Anda dapat mengakses semua materi kapan saja dan mempelajarinya sesuai dengan kecepatan Anda sendiri."
-            />
-            <FAQItem 
-              question="Apa yang membedakan Workshop ini dengan yang lain?" 
-              answer="Workshop ini dirancang dengan pendekatan praktis dan interaktif. Anda akan mendapatkan hands-on experience, feedback langsung dari mentor, dan kesempatan untuk berdiskusi dengan peserta lain. Materi disusun berdasarkan pengalaman nyata di lapangan."
-            />
-            <FAQItem 
-              question="Bagaimana sistem Private Mentoring ini berjalan?" 
-              answer="Private Mentoring memberikan Anda akses eksklusif untuk konsultasi langsung dengan mentor berpengalaman. Anda akan mendapatkan sesi one-on-one yang disesuaikan dengan kebutuhan dan tujuan Anda, dengan jadwal yang fleksibel."
-            />
-          </div>
-        </section>
+{/* FAQ Section - Berdasarkan Kategori */}
+{form && (
+          <section className="faq-section" aria-label="Frequently Asked Questions">
+            <h2 className="faq-title">Pertanyaan yang Sering Diajukan</h2>
+            <div className="faq-container">
+              {getFAQByKategori(getKategoriId()).map((faq, index) => (
+                <FAQItem 
+                  key={index}
+                  question={faq.question} 
+                  answer={faq.answer}
+                />
+              ))}
+            </div>
+          </section>
+        )}
         
         {/* Loading Overlay saat submit */}
         {submitting && (

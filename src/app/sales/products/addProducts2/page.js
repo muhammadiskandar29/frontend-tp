@@ -1387,10 +1387,23 @@ useEffect(() => {
 
 function LandingPageRenderer({ form }) {
   // ============================
+  // GET KATEGORI ID
+  // ============================
+  const getKategoriId = () => {
+    if (form.kategori) {
+      return Number(form.kategori);
+    }
+    return null;
+  };
+
+  const kategoriId = getKategoriId();
+
+  // ============================
   // MOCK DATA - Meniru struktur backend
   // ============================
   const mockData = {
     nama: form.nama || "Webinar Ternak Properti 2024",
+    kategori_id: kategoriId,
     header: form.header?.value 
       ? URL.createObjectURL(form.header.value) 
       : "https://via.placeholder.com/1200x400?text=Header+Image",
@@ -1561,11 +1574,21 @@ function LandingPageRenderer({ form }) {
     console.log("🎯 LANDING PAGE RENDERER");
     console.log("========================================");
     console.log("📦 MOCK DATA:", mockData);
+    console.log("🏷️ KATEGORI ID:", kategoriId);
+    console.log("📝 Kategori Mapping:", {
+      10: "Ebook",
+      11: "Webinar",
+      12: "Seminar",
+      13: "Buku (dengan ongkir)",
+      14: "Ecourse",
+      15: "Workshop (dengan down payment)",
+      16: "Private Mentoring",
+    });
     console.log("🔢 NORMALIZED_BLOCKS:", blocks);
     console.log("📊 Total Blocks:", blocks.length);
     console.log("📋 Block Types:", [...new Set(blocks.map(b => b.type))]);
     console.log("========================================");
-  }, [blocks, mockData]);
+  }, [blocks, mockData, kategoriId]);
 
   // ============================
   // RENDER BLOCK
