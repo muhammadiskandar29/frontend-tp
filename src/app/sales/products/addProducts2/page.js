@@ -1,571 +1,1377 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { InputText } from "primereact/inputtext";
+import { InputTextarea } from "primereact/inputtextarea";
+import { InputNumber } from "primereact/inputnumber";
+import { Calendar } from "primereact/calendar";
+import { Dropdown } from "primereact/dropdown";
+import { InputSwitch } from "primereact/inputswitch";
 import { Button } from "primereact/button";
+import LandingTemplate from "@/components/LandingTemplate";
+import { MultiSelect } from "primereact/multiselect";
+import { ArrowLeft } from "lucide-react";
+import DragDropUpload from "./components/DragDropUpload";
+import DragDropGallery from "./components/DragDropGallery";
+import "@/styles/sales/add-products.css";
 
 export default function Page() {
-  // Generate kode dari nama
+  const router = useRouter();
+
+  // ============================
+  // SLUGIFY - Generate kode dari nama dengan dash
+  // Contoh: "webinar ternak properti" -> "webinar-ternak-properti"
+  // ============================
   const generateKode = (text) => {
     if (!text) return "";
+    
     return text
-      .toLowerCase()
-      .trim()
+    .toLowerCase()
+    .trim()
+      // Hapus karakter khusus, hanya simpan huruf, angka, spasi, dan dash
       .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-");
+      // Ganti multiple spaces dengan single space
+      .replace(/\s+/g, " ")
+      // Ganti spasi dengan dash
+      .replace(/\s/g, "-")
+      // Hapus multiple dash menjadi single dash
+      .replace(/-+/g, "-")
+      // Hapus dash di awal dan akhir
+      .replace(/^-+|-+$/g, "");
   };
 
-  // Format tanggal untuk backend
+
+
+
+
+// form state
+  // ============================
+  // FORMAT TANGGAL KE BACKEND
+  // ============================
   const formatDateForBackend = (date) => {
     if (!date) return "";
     const d = new Date(date);
     const pad = (v) => (v < 10 ? `0${v}` : v);
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    const year = d.getFullYear();
+    const month = pad(d.getMonth() + 1);
+    const day = pad(d.getDate());
+    const hours = pad(d.getHours());
+    const minutes = pad(d.getMinutes());
+    const seconds = pad(d.getSeconds());
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
   };
 
-  // Form state
-  const [form, setForm] = useState({
-    kategori: null,
-    nama: "",
-    kode: "",
-    url: "",
-    header: null,
-    harga_coret: "",
-    harga_asli: "",
-    deskripsi: "",
-    tanggal_event: "",
-    landingpage: "1",
-    status: 1,
-    assign: null,
-    list_point: [],
-    testimoni: [],
-    video: "",
-  });
+  // ============================
+  // DEFAULT FORM
+  // ============================
+  const defaultForm = {
+  id: null,
+  kategori: null, // Changed from "" to null to fix validation
+  nama: "",
+  url: "",
+  kode: "",
+  header: { type: "file", value: null },
+  harga_coret: "",
+  harga_asli: "",
+  deskripsi: "",
+  tanggal_event: "",
+  gambar: [], // [{ path: {type:'file', value:File}, caption }]
+  landingpage: "1", // 1 = non-fisik, 2 = fisik
+  status: 1,
+  assign: [],
+  custom_field: [],   // <--- kosong di awal
+  list_point: [],   
+  testimoni: [],
+  fb_pixel: [],
+  event_fb_pixel: [],
+  gtm: [],
+  video: "",
+};
 
-  const [kategoriOptions, setKategoriOptions] = useState([]);
-  const [userOptions, setUserOptions] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
 
-  // Load kategori dan users
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) return;
+  const [form, setForm] = useState(defaultForm);
+const [isSubmitting, setIsSubmitting] = useState(false);
+const [submitProgress, setSubmitProgress] = useState("");
 
-        // Load kategori
-        const kategoriRes = await fetch("/api/admin/kategori-produk", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const kategoriData = await kategoriRes.json();
-        if (kategoriData.data) {
-          const active = kategoriData.data.filter((k) => k.status === "1" || k.status === 1);
-          setKategoriOptions(active.map((k) => ({ label: k.nama, value: k.id })));
-        }
+  // ============================
+  // HANDLER INPUT
+  // ============================
+  const handleChange = (key, value) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
 
-        // Load users
-        const usersRes = await fetch("/api/admin/users", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const usersData = await usersRes.json();
-        if (usersData.data) {
-          const active = usersData.data.filter((u) => u.status === "1" || u.status === 1);
-          setUserOptions(active.map((u) => ({ label: u.nama || u.name, value: u.id })));
-        }
-      } catch (err) {
-        console.error("Load data error:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadData();
-  }, []);
+  const updateArrayItem = (key, i, field, value) => {
+    const arr = [...form[key]];
+    if (field) arr[i][field] = value;
+    else arr[i] = value;
+    setForm((p) => ({ ...p, [key]: arr }));
+  };
 
-  // Compress image to JPG (max 1MB)
-  const compressImage = async (file, maxSizeMB = 1, maxWidth = 1600) => {
+  const addArray = (key, value) => {
+    setForm((p) => ({ ...p, [key]: [...p[key], value] }));
+  };
+
+  const removeArray = (key, index) => {
+    const arr = [...form[key]];
+    arr.splice(index, 1);
+    setForm((p) => ({ ...p, [key]: arr }));
+  };
+
+  // ============================
+  // COMPRESS IMAGE BEFORE BASE64
+  // Optimasi: Kompres gambar sebelum konversi untuk mengurangi ukuran
+  // ============================
+  const compressImage = (file, maxWidth = 1600, maxHeight = 1600, quality = 0.75) => {
     return new Promise((resolve, reject) => {
-      if (!file || !file.type.startsWith("image/")) {
-        reject(new Error("File bukan gambar"));
+      if (!file || !file.type.startsWith('image/')) {
+        resolve(file);
         return;
       }
 
-      const maxSizeBytes = maxSizeMB * 1024 * 1024;
       const reader = new FileReader();
       reader.onload = (e) => {
         const img = new Image();
         img.onload = () => {
-          const canvas = document.createElement("canvas");
+          const canvas = document.createElement('canvas');
           let width = img.width;
           let height = img.height;
 
-          if (width > maxWidth) {
-            height = (height * maxWidth) / width;
-            width = maxWidth;
+          // Calculate new dimensions
+          if (width > maxWidth || height > maxHeight) {
+            if (width > height) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            } else {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
           }
 
           canvas.width = width;
           canvas.height = height;
-          const ctx = canvas.getContext("2d");
-          ctx.fillStyle = "#FFFFFF";
-          ctx.fillRect(0, 0, width, height);
-          ctx.drawImage(img, 0, 0, width, height);
 
-          const tryCompress = (quality) => {
-            canvas.toBlob(
-              (blob) => {
-                if (!blob) {
-                  reject(new Error("Failed to compress"));
-                  return;
-                }
-                if (blob.size <= maxSizeBytes || quality <= 0.3) {
-                  const jpgFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
-                    type: "image/jpeg",
-                    lastModified: Date.now(),
-                  });
-                  resolve(jpgFile);
-                } else {
-                  tryCompress(quality - 0.1);
-                }
-              },
-              "image/jpeg",
-              quality
-            );
-          };
-          tryCompress(0.85);
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+    
+          // Convert to blob with compression
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                // Create new File object with compressed data
+                const compressedFile = new File([blob], file.name, {
+                  type: 'image/jpeg',
+                  lastModified: Date.now()
+                });
+                resolve(compressedFile);
+              } else {
+                resolve(file);
+              }
+            },
+            'image/jpeg',
+            quality
+          );
         };
-        img.onerror = () => reject(new Error("Failed to load image"));
+        img.onerror = () => resolve(file);
         img.src = e.target.result;
       };
-      reader.onerror = () => reject(new Error("Failed to read file"));
+      reader.onerror = () => resolve(file);
       reader.readAsDataURL(file);
     });
   };
 
-  // Handle submit
-  const handleSubmit = async () => {
-    try {
-      // Validasi
-      if (!form.nama.trim()) {
-        alert("Nama produk wajib diisi!");
-        return;
+  // ============================
+  // BUILD PRODUCT FORMDATA
+  // Sesuai dokumentasi Postman: multipart/form-data dengan file langsung
+  // Array fields sebagai JSON string
+  // ============================
+  async function buildProductFormData(form, kategoriId, normalizedAssign, onProgress = null) {
+    // SELALU generate kode dari nama (auto generate dengan dash)
+    const kode = generateKode(form.nama) || "produk-baru";
+    
+    const formData = new FormData();
+    
+    // ============================
+    // 1. BASIC FIELDS
+    // ============================
+    formData.append("kategori", String(kategoriId));
+    formData.append("nama", form.nama || "");
+    formData.append("kode", kode);
+    formData.append("url", "/" + kode);
+    formData.append("deskripsi", form.deskripsi || "");
+    formData.append("harga_asli", String(form.harga_asli || 0));
+    formData.append("harga_coret", String(form.harga_coret || 0));
+    formData.append("tanggal_event", formatDateForBackend(form.tanggal_event) || "");
+    formData.append("landingpage", String(form.landingpage || 1));
+    formData.append("status", String(form.status || 1));
+    
+    console.log("[FORMDATA] Basic fields:", {
+      kategori: kategoriId,
+      nama: form.nama,
+      kode: kode,
+      url: "/" + kode
+    });
+    
+    // ============================
+    // 2. HEADER IMAGE (REQUIRED) - File langsung
+    // ============================
+    if (form.header?.type === "file" && form.header.value) {
+      if (onProgress) {
+        onProgress("Mengompresi header image...");
       }
-      if (!form.kategori) {
-        alert("Kategori wajib dipilih!");
-        return;
-      }
-      if (!form.header) {
-        alert("Header gambar wajib diupload!");
-        return;
-      }
-
-      setSubmitting(true);
-
-      // Get user_input dari localStorage
-      const userSession = localStorage.getItem("user");
-      const userData = userSession ? JSON.parse(userSession) : null;
-      if (!userData || !userData.id) {
-        alert("User tidak ditemukan. Silakan login ulang!");
-        setSubmitting(false);
-        return;
-      }
-
-      // Generate kode dan URL
-      const kode = form.kode || generateKode(form.nama);
-      const url = form.url || "/" + kode;
-
-      // Compress header image
-      const compressedHeader = await compressImage(form.header, 1, 1600);
-
-      // Build FormData
-      const formData = new FormData();
+      const compressedHeader = await compressImage(form.header.value);
       formData.append("header", compressedHeader);
-      formData.append("kategori", String(form.kategori));
-      formData.append("user_input", String(userData.id));
-      formData.append("nama", form.nama);
-      formData.append("kode", kode);
-      formData.append("url", url.startsWith("/") ? url : "/" + url);
-      formData.append("deskripsi", form.deskripsi || "");
-      formData.append("harga_coret", String(form.harga_coret || "0"));
-      formData.append("harga_asli", String(form.harga_asli || "0"));
-      formData.append("tanggal_event", formatDateForBackend(form.tanggal_event) || "");
-      formData.append("landingpage", String(form.landingpage || "1"));
-      formData.append("status", String(form.status || 1));
-      formData.append("assign", JSON.stringify(form.assign ? [form.assign] : []));
-      formData.append("list_point", JSON.stringify(form.list_point || []));
-      formData.append("testimoni", JSON.stringify(form.testimoni || []));
-      formData.append("video", JSON.stringify(form.video ? form.video.split(",").map((v) => v.trim()).filter((v) => v) : []));
-      formData.append("custom_field", JSON.stringify([]));
-      formData.append("fb_pixel", JSON.stringify([]));
-      formData.append("event_fb_pixel", JSON.stringify([]));
-      formData.append("gtm", JSON.stringify([]));
-      formData.append("gambar", JSON.stringify([]));
+    } else {
+      throw new Error("Header image wajib diisi");
+    }
+    
+    // ============================
+    // 3. GAMBAR GALLERY - File langsung
+    // Format: gambar[0][file], gambar[0][caption], gambar[1][file], gambar[1][caption]
+    // ============================
+    const gambarFiles = (form.gambar || []).filter(g => g.path && g.path.type === "file" && g.path.value);
+    if (onProgress && gambarFiles.length > 0) {
+      onProgress(`Mengompresi ${gambarFiles.length} gambar...`);
+    }
+    
+    for (let i = 0; i < (form.gambar || []).length; i++) {
+      const g = form.gambar[i];
+      if (g.path && g.path.type === "file" && g.path.value) {
+        if (onProgress) {
+          onProgress(`Mengompresi gambar ${i + 1}/${gambarFiles.length}...`);
+        }
+        const compressedGambar = await compressImage(g.path.value);
+        formData.append(`gambar[${i}][file]`, compressedGambar);
+        formData.append(`gambar[${i}][caption]`, g.caption || "");
+      }
+    }
+    
+    // ============================
+    // 4. TESTIMONI - File langsung
+    // Format: testimoni[0][gambar], testimoni[0][nama], testimoni[0][deskripsi]
+    // ============================
+    const testimoniFiles = (form.testimoni || []).filter(t => t.gambar && t.gambar.type === "file" && t.gambar.value);
+    if (onProgress && testimoniFiles.length > 0) {
+      onProgress(`Mengompresi ${testimoniFiles.length} testimoni...`);
+    }
+    
+    for (let i = 0; i < (form.testimoni || []).length; i++) {
+      const t = form.testimoni[i];
+      if (t.gambar && t.gambar.type === "file" && t.gambar.value) {
+        if (onProgress) {
+          onProgress(`Mengompresi testimoni ${i + 1}/${testimoniFiles.length}...`);
+        }
+        const compressedTestimoni = await compressImage(t.gambar.value);
+        formData.append(`testimoni[${i}][gambar]`, compressedTestimoni);
+      }
+      formData.append(`testimoni[${i}][nama]`, t.nama || "");
+      formData.append(`testimoni[${i}][deskripsi]`, t.deskripsi || "");
+    }
+    
+    // ============================
+    // 5. ARRAY FIELDS - Sebagai JSON string (sesuai Postman)
+    // ============================
+    // custom_field - JSON string
+    const customFieldArray = (form.custom_field || []).map((f, idx) => ({
+      nama_field: f.label || f.key || "",
+      urutan: idx + 1,
+    }));
+    formData.append("custom_field", JSON.stringify(customFieldArray));
+    
+    // list_point - JSON string
+    const listPointArray = (form.list_point || []).map((p, idx) => ({
+      nama: p.nama || "",
+      urutan: idx + 1,
+    }));
+    formData.append("list_point", JSON.stringify(listPointArray));
+    
+    // assign - JSON string (array of numbers)
+    formData.append("assign", JSON.stringify(normalizedAssign || []));
+    
+    // fb_pixel - JSON string (array of numbers)
+    const fbPixelArray = (form.fb_pixel || []).map(v => Number(v)).filter(n => !Number.isNaN(n));
+    formData.append("fb_pixel", JSON.stringify(fbPixelArray));
+    
+    // event_fb_pixel - JSON string
+    const eventFbPixelArray = (form.event_fb_pixel || []).map((ev) => ({ 
+      event: ev || "" 
+    }));
+    formData.append("event_fb_pixel", JSON.stringify(eventFbPixelArray));
+    
+    // gtm - JSON string (array of numbers)
+    const gtmArray = (form.gtm || []).map(v => Number(v)).filter(n => !Number.isNaN(n));
+    formData.append("gtm", JSON.stringify(gtmArray));
+    
+    // video - JSON string (array of strings)
+    const videoArray = form.video
+      ? form.video.split(",").map((v) => v.trim()).filter((v) => v)
+      : [];
+    formData.append("video", JSON.stringify(videoArray));
+    
+    // Log semua array fields untuk debugging
+    console.log("[FORMDATA] Array fields:", {
+      assign: normalizedAssign,
+      list_point: listPointArray,
+      custom_field: customFieldArray,
+      event_fb_pixel: eventFbPixelArray,
+      fb_pixel: fbPixelArray,
+      gtm: gtmArray,
+      video: videoArray,
+    });
+    
+    return formData;
+  }
 
-      // Submit
-      const token = localStorage.getItem("token");
-      const res = await fetch("/api/admin/produk2", {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
+  // ============================
+  // SUBMIT
+  // ============================
+const handleSubmit = async () => {
+  if (isSubmitting) return;
+  setIsSubmitting(true);
+
+  try {
+    // 1) kategori validation - ambil ID dari kategori yang dipilih
+    console.log("[VALIDATION] ========== KATEGORI VALIDATION ==========");
+    console.log("form.kategori raw:", form.kategori);
+    console.log("form.kategori type:", typeof form.kategori);
+    console.log("form.kategori is null:", form.kategori === null);
+    console.log("form.kategori is undefined:", form.kategori === undefined);
+    console.log("form.kategori is empty string:", form.kategori === "");
+    
+    let kategoriId = null;
+    if (form.kategori !== null && form.kategori !== undefined && form.kategori !== "") {
+      // form.kategori adalah string ID dari dropdown (contoh: "7")
+      kategoriId = Number(form.kategori);
+      console.log("Kategori ID parsed:", kategoriId);
+    }
+
+    console.log("[VALIDATION] Kategori check:", {
+      formKategori: form.kategori,
+      kategoriId: kategoriId,
+      type: typeof form.kategori,
+      isValid: !Number.isNaN(kategoriId) && kategoriId > 0,
+      isNull: kategoriId === null,
+      isNaN: Number.isNaN(kategoriId),
+      isZeroOrNegative: kategoriId <= 0
+    });
+    console.log("[VALIDATION] ========================================");
+    
+    if (!kategoriId || Number.isNaN(kategoriId) || kategoriId <= 0) {
+      console.error("[VALIDATION] KATEGORI INVALID!");
+      alert("Kategori wajib dipilih!");
+      setIsSubmitting(false);
+      return;
+    }
+    
+    console.log("[VALIDATION] Kategori valid:", kategoriId);
+
+    // 3) assign normalization
+    const normalizedAssign = Array.isArray(form.assign)
+      ? form.assign.map(a => Number(a)).filter(n => !Number.isNaN(n) && n > 0)
+      : [];
+    if (normalizedAssign.length === 0) {
+      alert("Pilih minimal 1 penanggung jawab (assign).");
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Build FormData dengan progress indicator
+    setSubmitProgress("Mempersiapkan data...");
+    const formData = await buildProductFormData(
+      form, 
+      kategoriId, 
+      normalizedAssign,
+      (message) => setSubmitProgress(message)
+    );
+
+    // DEBUG: Log FormData untuk tracking (detail)
+    console.log("[FORMDATA] ========== DETAIL FORMDATA ==========");
+    const formDataEntries = [];
+    const formDataJSON = {};
+    
+    for (const [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        formDataEntries.push({ key, type: "File", name: value.name, size: `${(value.size / 1024).toFixed(2)} KB` });
+        formDataJSON[key] = {
+          type: "File",
+          name: value.name,
+          size: `${(value.size / 1024).toFixed(2)} KB`,
+          sizeBytes: value.size,
+          mimeType: value.type
+        };
+        console.log(`  ${key}: [File] ${value.name} (${(value.size / 1024).toFixed(2)} KB)`);
+      } else {
+        const str = String(value);
+        formDataEntries.push({ key, type: "String", value: str.length > 200 ? str.substring(0, 200) + "..." : str });
+        
+        // Try to parse JSON strings for better readability
+        let displayValue = str;
+        try {
+          const parsed = JSON.parse(str);
+          formDataJSON[key] = parsed;
+          displayValue = Array.isArray(parsed) 
+            ? `[Array(${parsed.length})] ${JSON.stringify(parsed).substring(0, 200)}...`
+            : typeof parsed === "object"
+            ? `[Object] ${JSON.stringify(parsed).substring(0, 200)}...`
+            : parsed;
+        } catch {
+          formDataJSON[key] = str.length > 200 ? str.substring(0, 200) + "..." : str;
+        }
+        
+        console.log(`  ${key}: ${displayValue.length > 200 ? displayValue.substring(0, 200) + "..." : displayValue}`);
+      }
+    }
+    console.table(formDataEntries);
+    
+    // Tampilkan sebagai JSON yang readable
+    console.log("[FORMDATA] ========== FORMDATA AS JSON ==========");
+    console.log(JSON.stringify(formDataJSON, null, 2));
+    console.log("[FORMDATA] =====================================");
+    
+    // Verify critical fields
+    console.log("[FORMDATA] ========== CRITICAL FIELDS VERIFICATION ==========");
+    const kategoriInFormData = formData.get("kategori");
+    const namaInFormData = formData.get("nama");
+    const assignInFormData = formData.get("assign");
+    const headerInFormData = formData.get("header");
+    
+    console.log({
+      kategori: {
+        value: kategoriInFormData,
+        type: typeof kategoriInFormData,
+        exists: kategoriInFormData !== null,
+        isEmpty: kategoriInFormData === "" || kategoriInFormData === "null" || kategoriInFormData === "undefined"
+      },
+      nama: {
+        value: namaInFormData,
+        type: typeof namaInFormData,
+        exists: namaInFormData !== null,
+        isEmpty: !namaInFormData || namaInFormData === ""
+      },
+      assign: {
+        value: assignInFormData,
+        type: typeof assignInFormData,
+        parsed: assignInFormData ? JSON.parse(assignInFormData) : null
+      },
+      header: {
+        exists: headerInFormData !== null,
+        isFile: headerInFormData instanceof File,
+        name: headerInFormData instanceof File ? headerInFormData.name : null
+      }
+    });
+
+    // Final check sebelum kirim
+    if (!kategoriInFormData || kategoriInFormData === "" || kategoriInFormData === "null" || kategoriInFormData === "undefined") {
+      console.error("[FORMDATA] ❌ KATEGORI TIDAK ADA DI FORMDATA!");
+      throw new Error("Kategori tidak ditemukan di FormData. Pastikan kategori sudah dipilih.");
+    }
+    
+    if (!namaInFormData || namaInFormData === "") {
+      console.error("[FORMDATA] ❌ NAMA TIDAK ADA DI FORMDATA!");
+      throw new Error("Nama produk tidak ditemukan di FormData.");
+      }
+    
+    if (!headerInFormData || !(headerInFormData instanceof File)) {
+      console.error("[FORMDATA] ❌ HEADER TIDAK ADA DI FORMDATA!");
+      throw new Error("Header image tidak ditemukan di FormData.");
+    }
+    
+    console.log("[FORMDATA] All critical fields verified");
+    console.log("[FORMDATA] =================================================");
+
+    // ============================
+    // SIMPAN REQUEST DATA KE LOCALSTORAGE DULU
+    // ============================
+    console.log("[LOCALSTORAGE] ========== SAVING REQUEST DATA ==========");
+    const requestDataToSave = {
+      timestamp: new Date().toISOString(),
+      formData: {}
+    };
+    
+    // Convert FormData ke object untuk disimpan
+    for (const [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        requestDataToSave.formData[key] = {
+          type: "File",
+          name: value.name,
+          size: value.size,
+          sizeKB: `${(value.size / 1024).toFixed(2)} KB`,
+          mimeType: value.type,
+          lastModified: value.lastModified
+        };
+      } else {
+        const strValue = String(value);
+        // Try to parse JSON strings
+        try {
+          const parsed = JSON.parse(strValue);
+          requestDataToSave.formData[key] = parsed;
+        } catch {
+          requestDataToSave.formData[key] = strValue;
+        }
+      }
+    }
+    
+    // Simpan ke localStorage
+    try {
+      localStorage.setItem("last_product_request", JSON.stringify(requestDataToSave, null, 2));
+      console.log("[LOCALSTORAGE] Request data saved to localStorage");
+      console.log("[LOCALSTORAGE] Key: 'last_product_request'");
+      console.log("[LOCALSTORAGE] Data preview:", {
+        timestamp: requestDataToSave.timestamp,
+        fieldsCount: Object.keys(requestDataToSave.formData).length,
+        fields: Object.keys(requestDataToSave.formData)
       });
+      console.log("[LOCALSTORAGE] Full data:", JSON.stringify(requestDataToSave, null, 2));
+    } catch (error) {
+      console.error("[LOCALSTORAGE] Failed to save to localStorage:", error);
+    }
+    console.log("[LOCALSTORAGE] ==========================================");
 
-      const data = await res.json();
+    // FETCH dengan FormData (sesuai dokumentasi Postman)
+    setSubmitProgress("Mengirim data ke server...");
+    
+    // Log request untuk network tracking
+    console.log("[NETWORK] ========== REQUEST FORMDATA ==========");
+    console.log("URL:", "/api/sales/produk");
+    console.log("Method:", "POST");
+    console.log("Content-Type:", "multipart/form-data (auto-set by browser)");
+    const token = localStorage.getItem("token") || "";
+    console.log("Headers:", {
+      "Accept": "application/json",
+      "Authorization": token ? `Bearer ${token.substring(0, 20)}...` : "MISSING"
+    });
+    console.log("FormData entries count:", formDataEntries.length);
+    
+    // Verify data sebelum kirim
+    console.log("[NETWORK] ========== PRE-SEND VERIFICATION ==========");
+    const preKategori = formData.get("kategori");
+    const preNama = formData.get("nama");
+    const preAssign = formData.get("assign");
+    const preHeader = formData.get("header");
+    console.log("Kategori:", preKategori);
+    console.log("Nama:", preNama);
+    console.log("Assign:", preAssign);
+    console.log("Header:", preHeader instanceof File ? `File(${preHeader.name}, ${(preHeader.size / 1024).toFixed(2)} KB)` : "NULL");
+    console.log("[NETWORK] ===========================================");
+    console.log("[NETWORK] ======================================");
+    
+    const res = await fetch("/api/sales/produk", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`
+        // Jangan set Content-Type, browser akan set otomatis dengan boundary untuk FormData
+      },
+      body: formData
+    });
+    
+    console.log("[NETWORK] ========== RESPONSE RECEIVED ==========");
+    console.log("Response status:", res.status);
+    console.log("Response statusText:", res.statusText);
+    console.log("Response headers:", Object.fromEntries(res.headers.entries()));
+    console.log("[NETWORK] =======================================");
 
-      if (!res.ok) {
-        console.error("API Error:", data);
-        alert(data.message || "Gagal membuat produk!");
-        setSubmitting(false);
-        return;
+    const contentType = res.headers.get("content-type") || "";
+    let data;
+    if (contentType.includes("application/json")) {
+      data = await res.json();
+    } else {
+      const text = await res.text();
+      throw new Error("Non-JSON response: " + text.slice(0, 400));
+    }
+
+    if (!res.ok) {
+      console.error("[API ERROR] ========== DETAIL ERROR ==========");
+      console.error("Status:", res.status);
+      console.error("Response:", data);
+      console.error("Full error object:", JSON.stringify(data, null, 2));
+      
+      // Extract detailed error information
+      let errorDetails = "\n\nDetail Error:\n";
+      
+      if (data.errors && typeof data.errors === "object" && Object.keys(data.errors).length > 0) {
+        errorDetails += "Field yang error:\n";
+        for (const [field, messages] of Object.entries(data.errors)) {
+          const msgArray = Array.isArray(messages) ? messages : [messages];
+          errorDetails += `  ❌ ${field}: ${msgArray.join(", ")}\n`;
+        }
+      } else if (data.errorFields && data.errorFields.length > 0) {
+        errorDetails += `Field yang error: ${data.errorFields.join(", ")}\n`;
+      } else {
+        // Parse error dari message jika ada
+        const message = data.message || "";
+        const fieldMatches = message.match(/(\w+)\s+field\s+is\s+required/gi);
+        if (fieldMatches) {
+          errorDetails += "Field yang error (dari message):\n";
+          fieldMatches.forEach(match => {
+            const field = match.match(/(\w+)\s+field/i)?.[1];
+            if (field) {
+              errorDetails += `  ❌ ${field}: wajib diisi\n`;
+            }
+          });
+        }
+      }
+      
+      console.error(errorDetails);
+      
+      // Log debug info jika ada
+      if (data.debug) {
+        console.error("[API ERROR] Debug info:", data.debug);
+      }
+      
+      console.error("[API ERROR] ====================================");
+      
+      setSubmitProgress("");
+      const errorMessage = data.detailedMessage || data.message || "Gagal membuat produk";
+      
+      // Tampilkan alert dengan detail
+      alert(errorMessage);
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Handle success response sesuai format backend
+    console.log("[API SUCCESS]", data);
+    setSubmitProgress("");
+    
+    if (data.success && data.data) {
+      alert(data.message || "Produk berhasil dibuat!");
+      router.push("/sales/products");
+    } else {
+    alert("Produk berhasil dibuat!");
+    router.push("/sales/products");
+    }
+  } catch (err) {
+    console.error("[SUBMIT ERROR]", err);
+    setSubmitProgress("");
+    
+    // Tampilkan error message yang lebih user-friendly
+    let errorMessage = "Terjadi kesalahan saat submit";
+    
+    if (err.message) {
+      if (err.message.includes("NetworkError") || err.message.includes("Failed to fetch")) {
+        errorMessage = "Gagal terhubung ke server. Pastikan koneksi internet stabil dan coba lagi.";
+      } else if (err.message.includes("upload")) {
+        errorMessage = `Gagal upload file: ${err.message}`;
+      } else {
+        errorMessage = err.message;
+      }
+    }
+    
+    alert(errorMessage);
+  } finally {
+    setIsSubmitting(false);
+    setSubmitProgress("");
+  }
+};
+
+const [kategoriOptions, setKategoriOptions] = useState([]);
+const [userOptions, setUserOptions] = useState([]);
+const [currentUser, setCurrentUser] = useState(null); // User yang sedang login
+
+useEffect(() => {
+  async function fetchInitialData() {
+    try {
+      const token = localStorage.getItem("token");
+      const headers = { Authorization: `Bearer ${token}` };
+
+      // Ambil data user yang sedang login
+      const userSession = localStorage.getItem("user");
+      if (userSession) {
+        try {
+          const userData = JSON.parse(userSession);
+          setCurrentUser(userData);
+        } catch (e) {
+          console.error("Error parsing user session:", e);
+        }
       }
 
-      alert("Produk berhasil dibuat!");
-      console.log("Success:", data);
+      // 1️⃣ Fetch kategori dan filter hanya yang aktif (status === "1")
+      const kategoriRes = await fetch(
+        "/api/sales/kategori-produk",
+        { headers }
+      );
+      const kategoriData = await kategoriRes.json();
       
-      // Reset form
-      setForm({
-        kategori: null,
-        nama: "",
-        kode: "",
-        url: "",
-        header: null,
-        harga_coret: "",
-        harga_asli: "",
-        deskripsi: "",
-        tanggal_event: "",
-        landingpage: "1",
-        status: 1,
-        assign: null,
-        list_point: [],
-        testimoni: [],
-        video: "",
-      });
-    } catch (err) {
-      console.error("Submit error:", err);
-      alert("Terjadi kesalahan saat submit: " + err.message);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  // Update kode dan URL saat nama berubah
-  useEffect(() => {
-    if (form.nama && !form.kode) {
-      const kode = generateKode(form.nama);
-      setForm((prev) => ({
-        ...prev,
-        kode,
-        url: "/" + kode,
+      // Logging struktur JSON lengkap
+      console.log("Success:", kategoriData.success);
+      console.log("Data:", kategoriData.data);
+      console.table(kategoriData.data);
+      
+      // Filter hanya kategori yang aktif (status === "1")
+      const activeCategories = Array.isArray(kategoriData.data)
+        ? kategoriData.data.filter((k) => k.status === "1")
+        : [];
+      
+      // Create options with ID as value and name as label
+      const kategoriOpts = activeCategories.map((k) => ({
+        label: `${k.id} - ${k.nama}`,
+        value: String(k.id),
       }));
+      setKategoriOptions(kategoriOpts);
+
+      // 2️⃣ Fetch produk (misal edit mode)
+      const produkRes = await fetch(
+        "/api/sales/produk/1",
+        { headers }
+      );
+      const produkData = await produkRes.json();
+      
+      // Logging struktur JSON lengkap
+      console.log("Success:", produkData.success);
+      console.log("Data:", produkData.data);
+      console.table(produkData.data);
+
+      // 3️⃣ Fetch users - filter hanya status 1
+      const usersRes = await fetch(
+        "/api/sales/users",
+        { headers }
+      );
+      const usersJson = await usersRes.json();
+      
+      // Logging struktur JSON lengkap
+      console.log("Success:", usersJson.success);
+      console.log("Data:", usersJson.data);
+      console.table(usersJson.data);
+      const userOpts = Array.isArray(usersJson.data)
+        ? usersJson.data
+            .filter((u) => u.status === "1" || u.status === 1) // Filter hanya status 1
+            .map((u) => ({ label: u.nama || u.name, value: u.id }))
+        : [];
+      setUserOptions(userOpts);
+
+      // ✅ SELALU generate kode dari nama dengan dash
+      const kodeGenerated = generateKode(produkData.nama || "produk-baru");
+
+      // Handle kategori_id: if kategori_rel exists, use its ID; otherwise use produkData.kategori_id
+      let kategoriId = null;
+      if (produkData.kategori_rel) {
+        kategoriId = produkData.kategori_rel.id ? Number(produkData.kategori_rel.id) : null;
+      } else if (produkData.kategori
+      ) {
+        kategoriId = Number(produkData.kategori
+        );
+      } else if (produkData.kategori) {
+        // Backward compatibility: if kategori is string (name), try to find ID
+        // This should not happen in new implementation, but handle for old data
+        const found = activeCategories.find(k => k.nama === produkData.kategori);
+        kategoriId = found ? Number(found.id) : null;
+      }
+      
+      setForm((f) => ({
+        ...f,
+        // Removed kategori: null to prevent overwriting user selection
+        assign: [],
+        custom_field: [],
+        kode: "",
+        url: "/",
+        landingpage: "1",
+      }));
+    } catch (err) {
+      console.error("Fetch initial data error:", err);
     }
-  }, [form.nama]);
+  }
 
+  fetchInitialData();
+}, []);
+
+
+  // ============================
+  // UI
+  // ============================
   return (
-    <div style={{ padding: "20px", maxWidth: "800px", margin: "0 auto" }}>
-      <h1 style={{ marginBottom: "20px" }}>Tambah Produk</h1>
-
-      {loading && <p>Loading...</p>}
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-        {/* Nama */}
-        <div>
-          <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>
-            Nama Produk *
-          </label>
-          <input
-            type="text"
-            value={form.nama}
-            onChange={(e) => setForm({ ...form, nama: e.target.value })}
-            style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
-            placeholder="Masukkan nama produk"
-          />
-        </div>
-
-        {/* Kategori */}
-        <div>
-          <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>
-            Kategori *
-          </label>
-          <select
-            value={form.kategori || ""}
-            onChange={(e) => setForm({ ...form, kategori: e.target.value ? Number(e.target.value) : null })}
-            style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
-          >
-            <option value="">Pilih Kategori</option>
-            {kategoriOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Kode */}
-        <div>
-          <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>Kode</label>
-          <input
-            type="text"
-            value={form.kode}
-            onChange={(e) => {
-              const kode = e.target.value;
-              setForm({ ...form, kode, url: "/" + kode });
-            }}
-            style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
-            placeholder="Auto-generate dari nama"
-          />
-        </div>
-
-        {/* URL */}
-        <div>
-          <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>URL</label>
-          <input
-            type="text"
-            value={form.url}
-            onChange={(e) => setForm({ ...form, url: e.target.value })}
-            style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
-            placeholder="Auto-generate dari kode"
-          />
-        </div>
-
-        {/* Header */}
-        <div>
-          <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>
-            Header Gambar *
-          </label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setForm({ ...form, header: e.target.files[0] })}
-            style={{ width: "100%", padding: "8px" }}
-          />
-        </div>
-
-        {/* Harga */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px" }}>
-          <div>
-            <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>
-              Harga Coret
-            </label>
-            <input
-              type="number"
-              value={form.harga_coret}
-              onChange={(e) => setForm({ ...form, harga_coret: e.target.value })}
-              style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
-              placeholder="0"
-            />
-          </div>
-          <div>
-            <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>
-              Harga Asli
-            </label>
-            <input
-              type="number"
-              value={form.harga_asli}
-              onChange={(e) => setForm({ ...form, harga_asli: e.target.value })}
-              style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
-              placeholder="0"
-            />
+    <div className="produk-container produk-builder-layout">
+      <div className="produk-form" style={{ position: "relative" }}>
+      {isSubmitting && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "rgba(255,255,255,0.95)",
+            zIndex: 10,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "16px",
+            backdropFilter: "blur(4px)",
+          }}
+        >
+          <div className="spinner" style={{ width: "48px", height: "48px", border: "4px solid #3b82f6", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+          <div style={{ textAlign: "center" }}>
+            <p style={{ color: "#1f2937", fontWeight: 600, fontSize: "16px", marginBottom: "8px" }}>
+              {submitProgress || "Menyimpan produk, mohon tunggu..."}
+            </p>
+            <p style={{ color: "#6b7280", fontSize: "14px" }}>
+              Proses ini mungkin memakan waktu beberapa saat
+            </p>
           </div>
         </div>
-
-        {/* Deskripsi */}
-        <div>
-          <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>
-            Deskripsi
-          </label>
-          <textarea
-            value={form.deskripsi}
-            onChange={(e) => setForm({ ...form, deskripsi: e.target.value })}
-            rows={4}
-            style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
-            placeholder="Masukkan deskripsi produk"
-          />
+      )}
+      {/* Header Section */}
+      <div className="form-header-section">
+        <button
+          className="back-to-products-btn"
+          onClick={() => router.push("/sales/products")}
+          aria-label="Back to products list"
+        >
+          <ArrowLeft size={18} />
+          <span>Back to Products</span>
+        </button>
+        <div className="form-title-wrapper">
+          <h2 className="form-title">Tambah Produk Baru</h2>
+          <p className="form-subtitle">Lengkapi informasi produk di bawah ini</p>
         </div>
+      </div>
 
-        {/* Tanggal Event */}
-        <div>
-          <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>
-            Tanggal Event
-          </label>
-          <input
-            type="datetime-local"
-            value={form.tanggal_event ? new Date(form.tanggal_event).toISOString().slice(0, 16) : ""}
-            onChange={(e) => setForm({ ...form, tanggal_event: e.target.value ? new Date(e.target.value).toISOString() : "" })}
-            style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
-          />
+      {/* SECTION 1: Informasi Dasar */}
+      <div className="form-section-card">
+        <div className="section-header">
+          <h3 className="section-title">Informasi Dasar</h3>
+          <p className="section-description">Data utama produk yang akan ditampilkan</p>
         </div>
-
-        {/* Assign */}
-        <div>
-          <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>Assign</label>
-          <select
-            value={form.assign || ""}
-            onChange={(e) => setForm({ ...form, assign: e.target.value ? Number(e.target.value) : null })}
-            style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
-          >
-            <option value="">Pilih User</option>
-            {userOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Landing Page */}
-        <div>
-          <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>
-            Landing Page
-          </label>
-          <input
-            type="text"
-            value={form.landingpage}
-            onChange={(e) => setForm({ ...form, landingpage: e.target.value })}
-            style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
-            placeholder="1"
-          />
-        </div>
-
-        {/* Status */}
-        <div>
-          <label style={{ display: "flex", alignItems: "center", gap: "10px", fontWeight: "bold" }}>
-            <input
-              type="checkbox"
-              checked={form.status === 1}
-              onChange={(e) => setForm({ ...form, status: e.target.checked ? 1 : 0 })}
+        <div className="section-content">
+          {/* NAMA PRODUK */}
+          <div className="form-field-group">
+            <label className="form-label">
+              Nama Produk <span className="required">*</span>
+            </label>
+            <InputText
+              className="w-full form-input"
+              value={form.nama}
+              placeholder="Masukkan nama produk"
+              onChange={(e) => {
+                const nama = e.target.value;
+                // SELALU auto-generate kode dari nama dengan dash
+                // Contoh: "webinar ternak properti" -> "webinar-ternak-properti"
+                const kode = generateKode(nama) || "";
+                setForm({ 
+                  ...form, 
+                  nama, 
+                  kode: kode,
+                  url: "/" + (kode || "produk-baru")
+                });
+              }}
             />
-            Status Aktif
-          </label>
-        </div>
+          </div>
 
-        {/* List Point */}
-        <div>
-          <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>
-            List Point
-          </label>
-          {form.list_point.map((item, idx) => (
-            <div key={idx} style={{ display: "flex", gap: "5px", marginBottom: "5px" }}>
-              <input
-                type="text"
-                value={item.nama || ""}
+          {/* KATEGORI */}
+          <div className="form-field-group">
+            <label className="form-label">
+              Kategori <span className="required">*</span>
+            </label>
+            <Dropdown
+              className="w-full form-input"
+              value={form.kategori || null}
+              options={kategoriOptions}
+              optionLabel="label"
+              optionValue="value"
+              onChange={(e) => {
+                const selectedValue = e.value;
+                console.log("[KATEGORI] Dropdown onChange:", {
+                  selectedValue: selectedValue,
+                  type: typeof selectedValue,
+                  isNull: selectedValue === null,
+                  isUndefined: selectedValue === undefined,
+                  isEmpty: selectedValue === ""
+                });
+                // Ensure value is set as string ID (PrimeReact returns value directly from optionValue)
+                // optionValue adalah String(k.id), jadi sudah string
+                const finalValue = selectedValue !== null && selectedValue !== undefined && selectedValue !== ""
+                  ? String(selectedValue) 
+                  : null;
+                console.log("[KATEGORI] Setting kategori to:", finalValue);
+                handleChange("kategori", finalValue);
+              }}
+              placeholder="Pilih Kategori"
+              showClear
+              filter
+              filterPlaceholder="Cari kategori..."
+            />
+            {!form.kategori && (
+              <small className="field-hint" style={{ color: "#ef4444" }}>
+                Kategori wajib dipilih
+              </small>
+            )}
+          </div>
+
+          {/* KODE & URL */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="form-field-group">
+              <label className="form-label">
+                Kode Produk
+              </label>
+              <InputText
+                className="w-full form-input"
+                value={form.kode || generateKode(form.nama) || ""}
                 onChange={(e) => {
-                  const newList = [...form.list_point];
-                  newList[idx] = { nama: e.target.value };
-                  setForm({ ...form, list_point: newList });
+                  const kode = e.target.value;
+                  setForm({
+                    ...form,
+                    kode,
+                    url: "/" + (kode || "produk-baru"),
+                  });
                 }}
-                style={{ flex: 1, padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
-                placeholder="Masukkan list point"
+                placeholder="Kode otomatis dari nama (contoh: webinar-ternak-properti)"
+                title="Kode akan otomatis di-generate dari nama produk dengan format dash"
               />
-              <button
-                onClick={() => {
-                  const newList = form.list_point.filter((_, i) => i !== idx);
-                  setForm({ ...form, list_point: newList });
-                }}
-                style={{ padding: "8px 15px", background: "#dc3545", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}
-              >
-                Hapus
-              </button>
+            </div>
+            <div className="form-field-group">
+              <label className="form-label">
+                URL
+              </label>
+              <InputText
+                className="w-full form-input"
+                value={form.url || ""}
+                onChange={(e) => handleChange("url", e.target.value)}
+                placeholder="/kode-produk"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* SECTION 2: Media & Konten */}
+      <div className="form-section-card">
+        <div className="section-header">
+          <h3 className="section-title">Media & Konten</h3>
+          <p className="section-description">Gambar, deskripsi, dan konten produk</p>
+        </div>
+        <div className="section-content">
+          {/* HEADER IMAGE - Drag & Drop */}
+          <div className="form-field-group">
+            <label className="form-label">
+              Header Image <span className="required">*</span>
+            </label>
+            <DragDropUpload
+              value={form.header}
+              onChange={(value) => handleChange("header", value)}
+              accept="image/*"
+              multiple={false}
+              label="Upload Header Image"
+              description="Drag and drop gambar header di sini atau klik untuk memilih"
+              preview={true}
+            />
+            {!form.header?.value && (
+              <small className="field-hint" style={{ color: "#ef4444", marginTop: "0.5rem", display: "block" }}>
+                Header image wajib diisi
+              </small>
+            )}
+          </div>
+
+          {/* DESKRIPSI */}
+          <div className="form-field-group">
+            <label className="form-label">
+              Deskripsi Produk
+            </label>
+            <InputTextarea
+              className="w-full form-input"
+              rows={5}
+              value={form.deskripsi}
+              placeholder="Masukkan deskripsi lengkap produk"
+              onChange={(e) => handleChange("deskripsi", e.target.value)}
+            />
+          </div>
+
+          {/* HARGA */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="form-field-group">
+              <label className="form-label">
+                Harga Asli
+              </label>
+              <InputNumber
+                className="w-full form-input"
+                value={Number(form.harga_coret)}
+                onValueChange={(e) => handleChange("harga_coret", e.value)}
+                placeholder="Harga sebelum diskon"
+                mode="currency"
+                currency="IDR"
+                locale="id-ID"
+              />
+            </div>
+            <div className="form-field-group">
+              <label className="form-label">
+                Harga Promo <span className="required">*</span>
+              </label>
+              <InputNumber
+                className="w-full form-input"
+                value={Number(form.harga_asli)}
+                onValueChange={(e) => handleChange("harga_asli", e.value)}
+                placeholder="Harga setelah diskon"
+                mode="currency"
+                currency="IDR"
+                locale="id-ID"
+              />
+            </div>
+          </div>
+
+          {/* TANGGAL EVENT */}
+          <div className="form-field-group">
+            <label className="form-label">
+              Tanggal Event
+            </label>
+            <Calendar
+              className="w-full form-input"
+              showTime
+              value={form.tanggal_event ? new Date(form.tanggal_event) : null}
+              onChange={(e) => handleChange("tanggal_event", e.value)}
+              placeholder="Pilih tanggal event"
+            />
+          </div>
+
+          {/* LANDING PAGE TYPE */}
+          <div className="form-field-group">
+            <label className="form-label">
+              Tipe Landing Page <span className="required">*</span>
+            </label>
+            <Dropdown
+              className="w-full form-input"
+              value={form.landingpage}
+              onChange={(e) => handleChange("landingpage", e.value)}
+              options={[
+                { label: "Non-Fisik (Seminar, Webinar, dll)", value: "1" },
+                { label: "Fisik (Buku, Baju, dll)", value: "2" }
+              ]}
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Pilih tipe landing page"
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              Non-Fisik: tanpa ongkir | Fisik: dengan form cek ongkir
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* SECTION 3: Gallery - Drag & Drop */}
+      <div className="form-section-card">
+        <DragDropGallery
+          items={form.gambar}
+          onAdd={(newItem) => addArray("gambar", newItem)}
+          onRemove={(index) => removeArray("gambar", index)}
+          onUpdate={(index, updatedItem) => {
+            const arr = [...form.gambar];
+            arr[index] = updatedItem;
+            setForm((p) => ({ ...p, gambar: arr }));
+          }}
+          onReorder={(fromIndex, toIndex) => {
+            const arr = [...form.gambar];
+            const [removed] = arr.splice(fromIndex, 1);
+            arr.splice(toIndex, 0, removed);
+            setForm((p) => ({ ...p, gambar: arr }));
+          }}
+          label="Gallery Produk"
+          description="Tambah gambar produk dengan caption. Drag & drop untuk upload, drag item untuk mengubah urutan."
+        />
+      </div>
+
+      {/* SECTION 4: Testimoni */}
+      <div className="form-section-card">
+        <div className="section-header">
+          <h3 className="section-title">Testimoni</h3>
+          <p className="section-description">Tambah testimoni dari pembeli</p>
+        </div>
+        <div className="section-content">
+          {form.testimoni.map((t, i) => (
+            <div key={i} className="testimoni-item-card">
+              <div className="testimoni-item-header">
+                <span className="testimoni-item-number">Testimoni {i + 1}</span>
+                <Button
+                  icon="pi pi-trash"
+                  severity="danger"
+                  className="p-button-danger p-button-sm"
+                  onClick={() => removeArray("testimoni", i)}
+                  tooltip="Hapus testimoni"
+                />
+              </div>
+              <div className="testimoni-item-content">
+                <div className="form-field-group">
+                  <label className="form-label-small">Upload Foto</label>
+                  <DragDropUpload
+                    value={t.gambar}
+                    onChange={(value) => updateArrayItem("testimoni", i, "gambar", value)}
+                    accept="image/*"
+                    multiple={false}
+                    label="Upload Foto Testimoni"
+                    description="Drag and drop atau klik untuk memilih"
+                    preview={true}
+                    className="testimoni-upload"
+                  />
+                </div>
+                <div className="form-field-group">
+                  <label className="form-label-small">Nama</label>
+                  <InputText
+                    className="w-full form-input"
+                    placeholder="Masukkan nama testimoni"
+                    value={t.nama}
+                    onChange={(e) => updateArrayItem("testimoni", i, "nama", e.target.value)}
+                  />
+                </div>
+                <div className="form-field-group">
+                  <label className="form-label-small">Deskripsi</label>
+                  <InputTextarea
+                    className="w-full form-input"
+                    rows={3}
+                    placeholder="Masukkan deskripsi testimoni"
+                    value={t.deskripsi}
+                    onChange={(e) => updateArrayItem("testimoni", i, "deskripsi", e.target.value)}
+                  />
+                </div>
+              </div>
             </div>
           ))}
-          <button
-            onClick={() => setForm({ ...form, list_point: [...form.list_point, { nama: "" }] })}
-            style={{ padding: "8px 15px", background: "#28a745", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", marginTop: "5px" }}
-          >
-            + Tambah List Point
-          </button>
-        </div>
-
-        {/* Testimoni */}
-        <div>
-          <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>
-            Testimoni
-          </label>
-          {form.testimoni.map((item, idx) => (
-            <div key={idx} style={{ border: "1px solid #ccc", padding: "10px", marginBottom: "10px", borderRadius: "4px" }}>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const newTestimoni = [...form.testimoni];
-                  newTestimoni[idx] = { ...newTestimoni[idx], gambar: e.target.files[0] };
-                  setForm({ ...form, testimoni: newTestimoni });
-                }}
-                style={{ width: "100%", marginBottom: "5px" }}
-              />
-              <input
-                type="text"
-                value={item.nama || ""}
-                onChange={(e) => {
-                  const newTestimoni = [...form.testimoni];
-                  newTestimoni[idx] = { ...newTestimoni[idx], nama: e.target.value };
-                  setForm({ ...form, testimoni: newTestimoni });
-                }}
-                placeholder="Nama"
-                style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px", marginBottom: "5px" }}
-              />
-              <textarea
-                value={item.deskripsi || ""}
-                onChange={(e) => {
-                  const newTestimoni = [...form.testimoni];
-                  newTestimoni[idx] = { ...newTestimoni[idx], deskripsi: e.target.value };
-                  setForm({ ...form, testimoni: newTestimoni });
-                }}
-                placeholder="Deskripsi"
-                rows={2}
-                style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px", marginBottom: "5px" }}
-              />
-              <button
-                onClick={() => {
-                  const newTestimoni = form.testimoni.filter((_, i) => i !== idx);
-                  setForm({ ...form, testimoni: newTestimoni });
-                }}
-                style={{ padding: "8px 15px", background: "#dc3545", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}
-              >
-                Hapus
-              </button>
-            </div>
-          ))}
-          <button
-            onClick={() => setForm({ ...form, testimoni: [...form.testimoni, { nama: "", deskripsi: "", gambar: null }] })}
-            style={{ padding: "8px 15px", background: "#28a745", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}
-          >
-            + Tambah Testimoni
-          </button>
-        </div>
-
-        {/* Video */}
-        <div>
-          <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>Video</label>
-          <textarea
-            value={form.video}
-            onChange={(e) => setForm({ ...form, video: e.target.value })}
-            rows={2}
-            style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
-            placeholder="URL video (pisahkan dengan koma jika lebih dari satu)"
+          <Button
+            icon="pi pi-plus"
+            label="Tambah Testimoni"
+            className="add-item-btn"
+            onClick={() =>
+              addArray("testimoni", { gambar: { type: "file", value: null }, nama: "", deskripsi: "" })
+            }
           />
         </div>
+      </div>
 
-        {/* Submit Button */}
-        <div>
-          <button
-            onClick={handleSubmit}
-            disabled={submitting}
-            style={{
-              padding: "12px 30px",
-              background: submitting ? "#6c757d" : "#007bff",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor: submitting ? "not-allowed" : "pointer",
-              fontSize: "16px",
-              fontWeight: "bold",
-            }}
-          >
-            {submitting ? "Menyimpan..." : "Simpan Produk"}
-          </button>
+      {/* SECTION 5: Konten Tambahan */}
+      <div className="form-section-card">
+        <div className="section-header">
+          <h3 className="section-title">Konten Tambahan</h3>
+          <p className="section-description">Video, list point, dan konten pendukung</p>
         </div>
+        <div className="section-content">
+          {/* VIDEO */}
+          <div className="form-field-group">
+            <label className="form-label">
+              Video (URL, pisahkan dengan koma)
+            </label>
+            <InputTextarea
+              className="w-full form-input"
+              rows={3}
+              value={form.video}
+              placeholder="https://youtube.com/watch?v=..., https://youtube.com/watch?v=..."
+              onChange={(e) => handleChange("video", e.target.value)}
+            />
+            <p className="field-hint">Masukkan URL video YouTube, pisahkan dengan koma jika lebih dari satu</p>
+          </div>
+
+          {/* LIST POINT */}
+          <div className="form-field-group">
+            <label className="form-label">
+              List Point (Benefit)
+            </label>
+            {form.list_point.map((p, i) => (
+              <div key={i} className="list-point-item">
+                <div className="list-point-number">{i + 1}</div>
+                <InputText
+                  className="flex-1 form-input"
+                  value={p.nama}
+                  placeholder={`Point ${i + 1}`}
+                  onChange={(e) => updateArrayItem("list_point", i, "nama", e.target.value)}
+                />
+                <Button 
+                  icon="pi pi-trash" 
+                  severity="danger" 
+                  className="p-button-danger p-button-sm"
+                  onClick={() => removeArray("list_point", i)}
+                />
+              </div>
+            ))}
+            <Button
+              icon="pi pi-plus"
+              label="Tambah List Point"
+              className="add-item-btn"
+              onClick={() => addArray("list_point", { nama: "" })}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* SECTION 6: Form Fields - Compact Style */}
+      <section className="compact-form-section-preview" aria-label="Order form">
+        <h2 className="compact-form-title-preview">Lengkapi Data:</h2>
+        
+        <div className="compact-form-card-preview">
+          {/* Nama Lengkap */}
+          <div className="compact-field-preview">
+            <label className="compact-label-preview">
+              Nama Lengkap <span className="required-preview">*</span>
+            </label>
+            <input
+              type="text"
+              placeholder="Contoh: Krisdayanti"
+              className="compact-input-preview"
+              disabled
+            />
+          </div>
+
+          {/* No. WhatsApp */}
+          <div className="compact-field-preview">
+            <label className="compact-label-preview">
+              No. WhatsApp <span className="required-preview">*</span>
+            </label>
+            <div className="wa-input-wrapper-preview">
+              <div className="wa-prefix-preview">
+                <span className="flag">🇮🇩</span>
+                <span className="code">+62</span>
+              </div>
+              <input
+                type="tel"
+                placeholder="812345678"
+                className="compact-input-preview wa-input-preview"
+                disabled
+              />
+            </div>
+          </div>
+
+          {/* Email */}
+          <div className="compact-field-preview">
+            <label className="compact-label-preview">
+              Email <span className="required-preview">*</span>
+            </label>
+            <input
+              type="email"
+              placeholder="email@example.com"
+              className="compact-input-preview"
+              disabled
+            />
+          </div>
+
+          {/* Alamat */}
+          <div className="compact-field-preview">
+            <label className="compact-label-preview">Alamat</label>
+            <textarea
+              placeholder="Alamat lengkap (opsional)"
+              className="compact-input-preview compact-textarea-preview"
+              rows={2}
+              disabled
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 7: Custom Fields */}
+      <div className="form-section-card">
+        <div className="section-header">
+          <h3 className="section-title">Custom Fields</h3>
+          <p className="section-description">Tambah field tambahan untuk form pembeli</p>
+        </div>
+        <div className="section-content">
+          {form.custom_field.map((f, i) => (
+            <div key={i} className="custom-field-item-card">
+              <div className="custom-field-header">
+                <span className="custom-field-number">Field {i + 1}</span>
+                {!f.required && (
+                  <Button
+                    icon="pi pi-trash"
+                    severity="danger"
+                    className="p-button-danger p-button-sm"
+                    onClick={() => removeArray("custom_field", i)}
+                  />
+                )}
+              </div>
+              <div className="custom-field-content">
+                <div className="form-field-group">
+                  <label className="form-label-small">Nama Field</label>
+                  <InputText
+                    className="w-full form-input"
+                    value={f.label}
+                    placeholder="Contoh: Nomor HP, Instansi, dll"
+                    onChange={(e) => updateArrayItem("custom_field", i, "label", e.target.value)}
+                  />
+                </div>
+                <div className="form-field-group">
+                  <label className="form-label-small">Placeholder / Contoh</label>
+                  <InputText
+                    className="w-full form-input"
+                    value={f.value}
+                    placeholder={(f.label || "Contoh isian") + (f.required ? " *" : "")}
+                    onChange={(e) => updateArrayItem("custom_field", i, "value", e.target.value)}
+                  />
+                </div>
+                <div className="custom-field-required">
+                  <input
+                    type="checkbox"
+                    id={`required-${i}`}
+                    checked={f.required}
+                    onChange={(e) => updateArrayItem("custom_field", i, "required", e.target.checked)}
+                  />
+                  <label htmlFor={`required-${i}`} className="checkbox-label">
+                    Field wajib diisi
+                  </label>
+                </div>
+              </div>
+            </div>
+          ))}
+          <Button
+            icon="pi pi-plus"
+            label="Tambah Custom Field"
+            className="add-item-btn"
+            onClick={() => addArray("custom_field", { key: "", label: "", value: "", required: false })}
+          />
+        </div>
+      </div>
+
+
+      {/* SECTION 8: Pengaturan */}
+      <div className="form-section-card">
+        <div className="section-header">
+          <h3 className="section-title">Pengaturan</h3>
+          <p className="section-description">Assign user, landing page, dan status produk</p>
+        </div>
+        <div className="section-content">
+          {/* CREATED BY - Read Only */}
+          {/* ASSIGN BY - Penanggung Jawab */}
+          <div className="form-field-group">
+            <label className="form-label">
+              Penanggung Jawab (Assign By) <span className="required">*</span>
+            </label>
+            <MultiSelect
+              className="w-full form-input"
+              value={form.assign}
+              options={userOptions}
+              onChange={(e) => handleChange("assign", e.value || [])}
+              placeholder="Pilih penanggung jawab produk"
+              display="chip"
+              showClear
+              filter
+              filterPlaceholder="Cari user..."
+            />
+            <p className="field-hint">Pilih user yang bertanggung jawab menangani produk ini</p>
+          </div>
+
+          {/* LANDING PAGE */}
+          <div className="form-field-group">
+            <label className="form-label">
+              Landing Page
+            </label>
+            <InputText
+              className="w-full form-input"
+              value={form.landingpage || "1"}
+              onChange={(e) => handleChange("landingpage", e.target.value)}
+              placeholder="Masukkan nama landing page atau kode"
+            />
+            <p className="field-hint">Default: 1</p>
+          </div>
+        </div>
+      </div>
+
+      {/* SUBMIT BUTTON */}
+      <div className="submit-section">
+        <Button 
+          label="Simpan Produk" 
+          icon="pi pi-save"
+          className="p-button-primary submit-btn" 
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+        />
+        <p className="submit-hint">
+          {isSubmitting 
+            ? (submitProgress || "Sedang mengunggah data ke server...") 
+            : "Pastikan semua data sudah lengkap sebelum menyimpan"}
+        </p>
+      </div>
+      </div>
+      {/* ================= RIGHT: PREVIEW ================= */}
+      <div className="builder-preview-card">
+        <LandingTemplate form={form} />
       </div>
     </div>
   );

@@ -10,6 +10,448 @@
   --card-bg: #ffffff;
 }
 
+/* ============================================
+   DRAG & DROP UPLOAD - Modern Order Online Style
+   ============================================ */
+
+.drag-drop-input-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.drag-drop-upload-wrapper {
+  width: 100%;
+}
+
+.drag-drop-area {
+  position: relative;
+  width: 100%;
+  min-height: 200px;
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  background: var(--card-bg);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  overflow: hidden;
+}
+
+.drag-drop-area:hover {
+  border-color: var(--primary);
+  background: #fffef9;
+  box-shadow: 0 4px 12px rgba(241, 161, 36, 0.1);
+}
+
+.drag-drop-area.dragging {
+  border-color: var(--primary);
+  background: var(--primary);
+  background: linear-gradient(135deg, rgba(241, 161, 36, 0.1) 0%, rgba(241, 161, 36, 0.05) 100%);
+  border-width: 3px;
+  transform: scale(1.02);
+  box-shadow: 0 8px 24px rgba(241, 161, 36, 0.2);
+}
+
+.drag-drop-area.has-files {
+  min-height: auto;
+  padding: 1rem;
+  border-style: solid;
+  border-color: var(--border);
+}
+
+.drag-drop-content {
+  width: 100%;
+  text-align: center;
+}
+
+.drag-drop-icon {
+  color: var(--primary);
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: center;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.drag-drop-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.drag-drop-label {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.drag-drop-description {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.drag-drop-hint {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin: 0.5rem 0 0;
+  font-style: italic;
+}
+
+/* Preview Grid */
+.drag-drop-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
+  width: 100%;
+}
+
+.drag-drop-preview-item {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid var(--border);
+  background: var(--bg);
+  transition: all 0.2s ease;
+}
+
+.drag-drop-preview-item:hover {
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(241, 161, 36, 0.15);
+  transform: translateY(-2px);
+}
+
+.drag-drop-preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.drag-drop-remove-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.9);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.drag-drop-remove-btn:hover {
+  background: var(--danger);
+  transform: scale(1.1);
+}
+
+.drag-drop-file-info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+  padding: 0.5rem;
+  color: white;
+}
+
+.drag-drop-file-name {
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin: 0 0 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.drag-drop-file-size {
+  font-size: 0.625rem;
+  opacity: 0.9;
+  margin: 0;
+}
+
+.drag-drop-add-more {
+  aspect-ratio: 1;
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-secondary);
+}
+
+.drag-drop-add-more:hover {
+  border-color: var(--primary);
+  background: var(--primary);
+  background: linear-gradient(135deg, rgba(241, 161, 36, 0.1) 0%, rgba(241, 161, 36, 0.05) 100%);
+  color: var(--primary);
+}
+
+.drag-drop-add-more span {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* ============================================
+   DRAG & DROP GALLERY - Reorderable Gallery
+   ============================================ */
+
+.drag-drop-gallery-wrapper {
+  width: 100%;
+}
+
+.drag-drop-gallery-header {
+  margin-bottom: 1rem;
+}
+
+.drag-drop-gallery-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 0.25rem;
+}
+
+.drag-drop-gallery-description {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.drag-drop-gallery-zone {
+  position: relative;
+  width: 100%;
+  min-height: 150px;
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  background: var(--card-bg);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.drag-drop-gallery-zone:hover {
+  border-color: var(--primary);
+  background: #fffef9;
+  box-shadow: 0 4px 12px rgba(241, 161, 36, 0.1);
+}
+
+.drag-drop-gallery-zone.dragging {
+  border-color: var(--primary);
+  background: linear-gradient(135deg, rgba(241, 161, 36, 0.1) 0%, rgba(241, 161, 36, 0.05) 100%);
+  border-width: 3px;
+  transform: scale(1.02);
+  box-shadow: 0 8px 24px rgba(241, 161, 36, 0.2);
+}
+
+.drag-drop-gallery-zone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.drag-drop-gallery-zone-content svg {
+  color: var(--primary);
+}
+
+.drag-drop-gallery-zone-label {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text);
+  margin: 0;
+}
+
+.drag-drop-gallery-zone-hint {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.drag-drop-gallery-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.drag-drop-gallery-item {
+  position: relative;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--card-bg);
+  padding: 1rem;
+  transition: all 0.2s ease;
+  cursor: move;
+}
+
+.drag-drop-gallery-item:hover {
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(241, 161, 36, 0.15);
+  transform: translateY(-2px);
+}
+
+.drag-drop-gallery-item.dragging {
+  opacity: 0.5;
+  transform: scale(0.95);
+}
+
+.drag-drop-gallery-handle {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  width: 32px;
+  height: 32px;
+  background: rgba(241, 161, 36, 0.1);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  color: var(--primary);
+  z-index: 1;
+  transition: all 0.2s ease;
+}
+
+.drag-drop-gallery-handle:active {
+  cursor: grabbing;
+  background: rgba(241, 161, 36, 0.2);
+}
+
+.drag-drop-gallery-preview {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg);
+  margin-bottom: 1rem;
+}
+
+.drag-drop-gallery-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.drag-drop-gallery-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+  background: var(--bg);
+}
+
+.drag-drop-gallery-remove {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.9);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 2;
+}
+
+.drag-drop-gallery-remove:hover {
+  background: var(--danger);
+  transform: scale(1.1);
+}
+
+.drag-drop-gallery-caption {
+  width: 100%;
+}
+
+.drag-drop-gallery-caption-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+}
+
+.drag-drop-gallery-caption-input {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--card-bg);
+  transition: all 0.2s ease;
+}
+
+.drag-drop-gallery-caption-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(241, 161, 36, 0.1);
+}
+
+.drag-drop-gallery-caption-input::placeholder {
+  color: var(--text-secondary);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .drag-drop-preview-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .drag-drop-gallery-items {
+    grid-template-columns: 1fr;
+  }
+
+  .drag-drop-area {
+    min-height: 150px;
+    padding: 1.5rem;
+  }
+}
+
 /* ===== BASE ===== */
 body {
   background-color: var(--bg);
