@@ -188,13 +188,150 @@
   background: var(--accent-primary-dark);
 }
 
-/* Table Styles */
-.leads-table {
+/* ============================================
+   LEADS TABLE - Custom Styling
+   ============================================ */
+
+.leads-table__wrapper {
   width: 100%;
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--dash-border);
+  background: var(--dash-surface);
 }
 
-.leads-table .orders-table__row {
-  grid-template-columns: 1.5fr 1fr 1fr 1.2fr 1.5fr 1.2fr 1.2fr 1fr;
+.leads-table__wrapper::-webkit-scrollbar {
+  height: 8px;
+}
+
+.leads-table__wrapper::-webkit-scrollbar-thumb {
+  background: var(--dash-muted-light);
+  border-radius: 4px;
+}
+
+.leads-table__wrapper::-webkit-scrollbar-thumb:hover {
+  background: var(--dash-muted);
+}
+
+.leads-table__wrapper::-webkit-scrollbar-track {
+  background: var(--dash-bg);
+}
+
+.leads-table {
+  width: 100%;
+  min-width: 1000px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.leads-table__head,
+.leads-table__row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1.2fr 1.2fr 1.5fr 1.2fr 1.2fr 1fr;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.875rem 1.25rem;
+}
+
+.leads-table__head {
+  background: var(--dash-bg);
+  border-bottom: 2px solid var(--dash-border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.leads-table__head span {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--dash-muted-strong);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1.4;
+}
+
+.leads-table__body {
+  display: block;
+}
+
+.leads-table__row {
+  border-bottom: 1px solid var(--dash-border);
+  transition: background-color var(--transition-fast);
+  background: var(--dash-surface);
+}
+
+.leads-table__row:last-child {
+  border-bottom: none;
+}
+
+.leads-table__row:hover {
+  background: rgba(251, 133, 0, 0.03);
+}
+
+.leads-table__cell {
+  font-size: 0.875rem;
+  color: var(--dash-text);
+  line-height: 1.5;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  display: flex;
+  align-items: center;
+  min-height: 2.5rem;
+}
+
+.leads-table__cell--actions {
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.leads-table__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.leads-table__action-btn {
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--dash-border);
+  background: var(--dash-surface);
+  color: var(--dash-text);
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: 0.875rem;
+}
+
+.leads-table__action-btn:hover {
+  background: var(--accent-primary);
+  color: #ffffff;
+  border-color: var(--accent-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(251, 133, 0, 0.2);
+}
+
+.leads-table__action-btn:active {
+  transform: translateY(0);
+}
+
+.leads-table__empty {
+  grid-column: 1 / -1;
+  padding: 3rem 1.25rem;
+  text-align: center;
+  color: var(--dash-muted);
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+.leads-table__empty p {
+  margin: 0;
+  font-weight: 500;
 }
 
 /* Status Badges */
@@ -280,9 +417,33 @@
 }
 
 /* Responsive */
+@media (max-width: 1200px) {
+  .leads-table__head,
+  .leads-table__row {
+    grid-template-columns: 1.8fr 0.9fr 1fr 1fr 1.3fr 1fr 1fr 0.9fr;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+  }
+}
+
 @media (max-width: 1024px) {
-  .leads-table .orders-table__row {
-    grid-template-columns: 1.2fr 0.8fr 0.8fr 1fr 1.2fr 1fr 1fr 0.8fr;
+  .leads-table {
+    min-width: 900px;
+  }
+
+  .leads-table__head,
+  .leads-table__row {
+    grid-template-columns: 1.5fr 0.8fr 0.9fr 0.9fr 1.2fr 0.9fr 0.9fr 0.8fr;
+    gap: 0.65rem;
+    padding: 0.65rem 0.875rem;
+  }
+
+  .leads-table__head span {
+    font-size: 0.7rem;
+  }
+
+  .leads-table__cell {
+    font-size: 0.8rem;
   }
 }
 
@@ -293,9 +454,29 @@
     padding: 0.5rem 0.75rem;
   }
 
-  .leads-table .orders-table__row {
-    grid-template-columns: 1fr;
+  .leads-table {
+    min-width: 800px;
+  }
+
+  .leads-table__head,
+  .leads-table__row {
+    grid-template-columns: 1.2fr 0.7fr 0.8fr 0.8fr 1fr 0.8fr 0.8fr 0.7fr;
     gap: 0.5rem;
+    padding: 0.6rem 0.75rem;
+  }
+
+  .leads-table__head span {
+    font-size: 0.65rem;
+  }
+
+  .leads-table__cell {
+    font-size: 0.75rem;
+  }
+
+  .leads-table__action-btn {
+    width: 1.75rem;
+    height: 1.75rem;
+    font-size: 0.75rem;
   }
 
   .orders-toolbar-buttons {

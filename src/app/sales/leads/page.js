@@ -12,9 +12,12 @@ import "primereact/resources/primereact.min.css";
 import "primereact/resources/themes/lara-light-cyan/theme.css";
 import { toastSuccess, toastError, toastWarning } from "@/lib/toast";
 
-// Lazy load modals (akan dibuat nanti jika diperlukan)
-// const AddLeadModal = dynamic(() => import("./addLead"), { ssr: false });
-// const EditLeadModal = dynamic(() => import("./editLead"), { ssr: false });
+const BASE_URL = "/api";
+
+// Lazy load modals
+const AddLeadModal = dynamic(() => import("./addLead"), { ssr: false });
+const GenerateLeadsModal = dynamic(() => import("./generateLeads"), { ssr: false });
+const BroadcastLeadModal = dynamic(() => import("./broadcastLead"), { ssr: false });
 
 const LEADS_COLUMNS = [
   "Nama Customer",
@@ -56,6 +59,11 @@ export default function LeadsPage() {
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 25;
+  
+  // Modal states
+  const [showAddLead, setShowAddLead] = useState(false);
+  const [showGenerateLeads, setShowGenerateLeads] = useState(false);
+  const [showBroadcast, setShowBroadcast] = useState(false);
 
   // Statistics
   const [statistics, setStatistics] = useState({
@@ -64,23 +72,51 @@ export default function LeadsPage() {
     contacted: 0,
     converted: 0,
   });
+  
+  const [needsRefresh, setNeedsRefresh] = useState(true);
 
-  // Mock data untuk development (akan diganti dengan API call)
+  // Fetch leads data
   useEffect(() => {
-    // Simulasi fetch data
-    const mockLeads = [
-      // Data akan diisi dari API
-    ];
-    setLeads(mockLeads);
+    if (!needsRefresh) return;
     
-    // Simulasi statistics
-    setStatistics({
-      total: 0,
-      new: 0,
-      contacted: 0,
-      converted: 0,
-    });
-  }, []);
+    const fetchLeads = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        // TODO: Replace with actual API call
+        const res = await fetch(`${BASE_URL}/sales/leads`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.data) {
+            setLeads(data.data);
+            
+            // Calculate statistics
+            setStatistics({
+              total: data.data.length,
+              new: data.data.filter((l) => l.status?.toLowerCase() === "new").length,
+              contacted: data.data.filter((l) => l.status?.toLowerCase() === "contacted").length,
+              converted: data.data.filter((l) => l.status?.toLowerCase() === "converted").length,
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching leads:", err);
+        toastError("Gagal memuat data leads");
+      } finally {
+        setLoading(false);
+        setNeedsRefresh(false);
+      }
+    };
+
+    fetchLeads();
+  }, [needsRefresh]);
 
   // Filter leads berdasarkan search, status, dan label
   const filteredLeads = useMemo(() => {
@@ -163,18 +199,20 @@ export default function LeadsPage() {
   }, []);
 
   const handleBroadcast = () => {
-    // TODO: Implement broadcast functionality
-    toastWarning("Fitur broadcast akan segera tersedia");
+    setShowBroadcast(true);
   };
 
   const handleAddLead = () => {
-    // TODO: Open add lead modal
-    toastWarning("Fitur tambah lead akan segera tersedia");
+    setShowAddLead(true);
   };
 
   const handleGenerateLeads = () => {
-    // TODO: Implement generate leads functionality
-    toastWarning("Fitur generate leads akan segera tersedia");
+    setShowGenerateLeads(true);
+  };
+
+  const handleModalSuccess = (message) => {
+    toastSuccess(message);
+    setNeedsRefresh(true);
   };
 
   const formatDate = (dateString) => {
@@ -390,19 +428,19 @@ export default function LeadsPage() {
             </div>
           </div>
 
-          <div className="orders-table__wrapper">
-            <div className="orders-table leads-table">
-              <div className="orders-table__head">
+          <div className="leads-table__wrapper">
+            <div className="leads-table">
+              <div className="leads-table__head">
                 {LEADS_COLUMNS.map((column) => (
                   <span key={column}>{column}</span>
                 ))}
               </div>
-              <div className="orders-table__body">
+              <div className="leads-table__body">
                 {paginatedLeads.length > 0 ? (
                   paginatedLeads.map((lead, i) => (
-                    <div key={lead.id || i} className="orders-table__row">
-                      <span>{lead.nama || "-"}</span>
-                      <span>
+                    <div key={lead.id || i} className="leads-table__row">
+                      <span className="leads-table__cell">{lead.nama || "-"}</span>
+                      <span className="leads-table__cell">
                         {lead.label ? (
                           <span className={`leads-label ${getLabelClass(lead.label)}`}>
                             {lead.label}
@@ -411,7 +449,7 @@ export default function LeadsPage() {
                           "-"
                         )}
                       </span>
-                      <span>
+                      <span className="leads-table__cell">
                         {lead.status ? (
                           <span className={`leads-status ${getStatusClass(lead.status)}`}>
                             {lead.status}
@@ -420,14 +458,14 @@ export default function LeadsPage() {
                           "-"
                         )}
                       </span>
-                      <span>{lead.assign_sales || "-"}</span>
-                      <span>{lead.minat_produk || "-"}</span>
-                      <span>{formatDate(lead.last_contact)}</span>
-                      <span>{formatDate(lead.next_followup)}</span>
-                      <span>
-                        <div className="orders-table__actions">
+                      <span className="leads-table__cell">{lead.assign_sales || "-"}</span>
+                      <span className="leads-table__cell">{lead.minat_produk || "-"}</span>
+                      <span className="leads-table__cell">{formatDate(lead.last_contact)}</span>
+                      <span className="leads-table__cell">{formatDate(lead.next_followup)}</span>
+                      <span className="leads-table__cell leads-table__cell--actions">
+                        <div className="leads-table__actions">
                           <button
-                            className="orders-table__action-btn"
+                            className="leads-table__action-btn"
                             onClick={() => {
                               // TODO: Implement view/edit action
                               toastWarning("Fitur aksi akan segera tersedia");
@@ -437,7 +475,7 @@ export default function LeadsPage() {
                             <span className="pi pi-eye" />
                           </button>
                           <button
-                            className="orders-table__action-btn"
+                            className="leads-table__action-btn"
                             onClick={() => {
                               // TODO: Implement edit action
                               toastWarning("Fitur edit akan segera tersedia");
@@ -451,8 +489,10 @@ export default function LeadsPage() {
                     </div>
                   ))
                 ) : (
-                  <div className="orders-table__empty">
-                    <p>Tidak ada data leads</p>
+                  <div className="leads-table__row">
+                    <div className="leads-table__empty">
+                      <p>Tidak ada data leads</p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -483,6 +523,28 @@ export default function LeadsPage() {
           )}
         </section>
       </div>
+
+      {/* Modals */}
+      {showAddLead && (
+        <AddLeadModal
+          onClose={() => setShowAddLead(false)}
+          onSuccess={handleModalSuccess}
+        />
+      )}
+
+      {showGenerateLeads && (
+        <GenerateLeadsModal
+          onClose={() => setShowGenerateLeads(false)}
+          onSuccess={handleModalSuccess}
+        />
+      )}
+
+      {showBroadcast && (
+        <BroadcastLeadModal
+          onClose={() => setShowBroadcast(false)}
+          onSuccess={handleModalSuccess}
+        />
+      )}
     </Layout>
   );
 }
