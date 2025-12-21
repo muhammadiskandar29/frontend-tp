@@ -153,3 +153,4 @@ export default function ProductsSection({ products, isLoading, onProductClick })
   );
 }
 
+
