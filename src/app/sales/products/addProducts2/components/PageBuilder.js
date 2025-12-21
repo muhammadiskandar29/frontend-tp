@@ -369,17 +369,25 @@ function BlockRenderer({
   const renderBlock = () => {
     switch (block.type) {
       case 'text':
-        return (
+        return isEditing ? (
+          <div className="page-builder-text-editor">
+            <textarea
+              value={localContent.content || ''}
+              onChange={(e) => setLocalContent({ ...localContent, content: e.target.value })}
+              className="page-builder-text-input"
+              placeholder="Masukkan teks"
+              rows={4}
+            />
+            <div className="page-builder-text-preview" style={localContent.style || {}}>
+              {localContent.content || 'Preview teks'}
+            </div>
+          </div>
+        ) : (
           <div
-            contentEditable={isEditing}
-            suppressContentEditableWarning
-            onBlur={(e) => {
-              setLocalContent({ ...localContent, content: e.target.textContent });
-            }}
             style={block.style || {}}
             className="page-builder-text-block"
           >
-            {block.content}
+            {block.content || 'Klik untuk mengedit teks'}
           </div>
         );
 
@@ -420,13 +428,14 @@ function BlockRenderer({
               onChange={(e) => setLocalContent({ ...localContent, url: e.target.value })}
               className="page-builder-video-input"
             />
-            {block.url && (
+            {(isEditing ? localContent.url : block.url) && (
               <div className="page-builder-video-preview">
                 <iframe
-                  src={block.url}
-                  frameBorder="0"
+                  src={isEditing ? localContent.url : block.url}
+                  style={{ width: '100%', minHeight: '400px', border: 'none' }}
+                  title="Video preview"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
-                  style={{ width: '100%', minHeight: '400px' }}
                 />
               </div>
             )}
@@ -436,82 +445,123 @@ function BlockRenderer({
       case 'button':
         return (
           <div className="page-builder-button-block">
-            <input
-              type="text"
-              placeholder="Text button"
-              value={block.text || ''}
-              onChange={(e) => setLocalContent({ ...localContent, text: e.target.value })}
-              className="page-builder-button-input"
-            />
-            <input
-              type="text"
-              placeholder="Link"
-              value={block.link || ''}
-              onChange={(e) => setLocalContent({ ...localContent, link: e.target.value })}
-              className="page-builder-button-input"
-            />
-            <button
-              style={block.style}
-              className="page-builder-button-preview"
-            >
-              {block.text || 'Button'}
-            </button>
+            {isEditing ? (
+              <>
+                <input
+                  type="text"
+                  placeholder="Text button"
+                  value={localContent.text || ''}
+                  onChange={(e) => setLocalContent({ ...localContent, text: e.target.value })}
+                  className="page-builder-button-input"
+                />
+                <input
+                  type="text"
+                  placeholder="Link"
+                  value={localContent.link || ''}
+                  onChange={(e) => setLocalContent({ ...localContent, link: e.target.value })}
+                  className="page-builder-button-input"
+                />
+                <button
+                  style={localContent.style || block.style}
+                  className="page-builder-button-preview"
+                  type="button"
+                >
+                  {localContent.text || block.text || 'Button'}
+                </button>
+              </>
+            ) : (
+              <button
+                style={block.style}
+                className="page-builder-button-preview"
+                type="button"
+              >
+                {block.text || 'Button'}
+              </button>
+            )}
           </div>
         );
 
       case 'list':
         return (
           <div className="page-builder-list-block">
-            {(block.items || []).map((item, i) => (
+            {(isEditing ? (localContent.items || []) : (block.items || [])).map((item, i) => (
               <div key={i} className="page-builder-list-item">
-                <input
-                  type="text"
-                  value={item}
-                  onChange={(e) => {
-                    const newItems = [...(block.items || [])];
-                    newItems[i] = e.target.value;
-                    setLocalContent({ ...localContent, items: newItems });
-                  }}
-                  className="page-builder-list-input"
-                />
-                <button
-                  onClick={() => {
-                    const newItems = (block.items || []).filter((_, idx) => idx !== i);
-                    setLocalContent({ ...localContent, items: newItems });
-                  }}
-                >
-                  <X size={16} />
-                </button>
+                {isEditing ? (
+                  <>
+                    <input
+                      type="text"
+                      value={item}
+                      onChange={(e) => {
+                        const newItems = [...(localContent.items || block.items || [])];
+                        newItems[i] = e.target.value;
+                        setLocalContent({ ...localContent, items: newItems });
+                      }}
+                      className="page-builder-list-input"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newItems = (localContent.items || block.items || []).filter((_, idx) => idx !== i);
+                        setLocalContent({ ...localContent, items: newItems });
+                      }}
+                    >
+                      <X size={16} />
+                    </button>
+                  </>
+                ) : (
+                  <div className="page-builder-list-display">
+                    <span>{i + 1}.</span>
+                    <span>{item}</span>
+                  </div>
+                )}
               </div>
             ))}
-            <button
-              onClick={() => {
-                const newItems = [...(block.items || []), 'Item baru'];
-                setLocalContent({ ...localContent, items: newItems });
-              }}
-              className="page-builder-add-list-item"
-            >
-              <Plus size={16} /> Tambah Item
-            </button>
+            {isEditing && (
+              <button
+                type="button"
+                onClick={() => {
+                  const newItems = [...(localContent.items || block.items || []), 'Item baru'];
+                  setLocalContent({ ...localContent, items: newItems });
+                }}
+                className="page-builder-add-list-item"
+              >
+                <Plus size={16} /> Tambah Item
+              </button>
+            )}
           </div>
         );
 
       case 'quote':
         return (
           <div className="page-builder-quote-block">
-            <textarea
-              placeholder="Kutipan"
-              value={block.text || ''}
-              onChange={(e) => setLocalContent({ ...localContent, text: e.target.value })}
-              className="page-builder-quote-text"
-            />
-            <input
-              type="text"
-              placeholder="Author (opsional)"
-              value={block.author || ''}
-              onChange={(e) => setLocalContent({ ...localContent, author: e.target.value })}
-              className="page-builder-quote-author"
-            />
+            {isEditing ? (
+              <>
+                <textarea
+                  placeholder="Kutipan"
+                  value={localContent.text || ''}
+                  onChange={(e) => setLocalContent({ ...localContent, text: e.target.value })}
+                  className="page-builder-quote-text"
+                />
+                <input
+                  type="text"
+                  placeholder="Author (opsional)"
+                  value={localContent.author || ''}
+                  onChange={(e) => setLocalContent({ ...localContent, author: e.target.value })}
+                  className="page-builder-quote-author"
+                />
+              </>
+            ) : (
+              <>
+                <div className="page-builder-quote-display">
+                  "{block.text || 'Kutipan'}"
+                </div>
+                {block.author && (
+                  <div className="page-builder-quote-author-display">
+                    — {block.author}
+                  </div>
+                )}
+              </>
+            )}
           </div>
         );
 
@@ -519,18 +569,20 @@ function BlockRenderer({
         return (
           <div
             className="page-builder-spacer-block"
-            style={{ height: block.height || '40px' }}
+            style={{ height: (isEditing ? localContent.height : block.height) || '40px' }}
           >
-            <div className="page-builder-spacer-handle">
-              <input
-                type="range"
-                min="20"
-                max="200"
-                value={parseInt(block.height) || 40}
-                onChange={(e) => setLocalContent({ ...localContent, height: `${e.target.value}px` })}
-              />
-              <span>{block.height || '40px'}</span>
-            </div>
+            {isEditing && (
+              <div className="page-builder-spacer-handle">
+                <input
+                  type="range"
+                  min="20"
+                  max="200"
+                  value={parseInt(isEditing ? localContent.height : block.height) || 40}
+                  onChange={(e) => setLocalContent({ ...localContent, height: `${e.target.value}px` })}
+                />
+                <span>{(isEditing ? localContent.height : block.height) || '40px'}</span>
+              </div>
+            )}
           </div>
         );
 
