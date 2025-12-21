@@ -1374,7 +1374,331 @@ useEffect(() => {
       </div>
       {/* ================= RIGHT: PREVIEW ================= */}
       <div className="builder-preview-card">
-        <LandingTemplate form={form} />
+        <LandingPageRenderer form={form} />
+      </div>
+    </div>
+  );
+}
+
+// ============================
+// LANDING PAGE RENDERER
+// Block-based rendering system
+// ============================
+
+function LandingPageRenderer({ form }) {
+  // ============================
+  // MOCK DATA - Meniru struktur backend
+  // ============================
+  const mockData = {
+    nama: form.nama || "Webinar Ternak Properti 2024",
+    header: form.header?.value 
+      ? URL.createObjectURL(form.header.value) 
+      : "https://via.placeholder.com/1200x400?text=Header+Image",
+    deskripsi: form.deskripsi || "Pelajari strategi investasi properti yang menguntungkan dari para ahli terpercaya.",
+    harga_asli: form.harga_asli || 399000,
+    harga_coret: form.harga_coret || 599000,
+    gambar: form.gambar?.length > 0 
+      ? form.gambar.map((g, i) => ({
+          src: g.path?.value ? URL.createObjectURL(g.path.value) : `https://via.placeholder.com/800x600?text=Image+${i + 1}`,
+          caption: g.caption || `Gambar ${i + 1}`,
+          urutan: i + 1,
+        }))
+      : [
+          { src: "https://via.placeholder.com/800x600?text=Gallery+1", caption: "Galeri Produk 1", urutan: 1 },
+          { src: "https://via.placeholder.com/800x600?text=Gallery+2", caption: "Galeri Produk 2", urutan: 2 },
+        ],
+    list_point: form.list_point?.length > 0
+      ? form.list_point.map((p, i) => ({
+          nama: p.nama || `Point ${i + 1}`,
+          urutan: i + 1,
+        }))
+      : [
+          { nama: "Materi lengkap dan terupdate", urutan: 1 },
+          { nama: "Akses seumur hidup", urutan: 2 },
+          { nama: "Sertifikat resmi", urutan: 3 },
+          { nama: "Support dari mentor", urutan: 4 },
+        ],
+    video: form.video
+      ? form.video.split(",").map((v, i) => ({ url: v.trim(), urutan: i + 1 }))
+      : [
+          { url: "https://www.youtube.com/embed/dQw4w9WgXcQ", urutan: 1 },
+        ],
+    testimoni: form.testimoni?.length > 0
+      ? form.testimoni.map((t, i) => ({
+          nama: t.nama || `Testimoni ${i + 1}`,
+          deskripsi: t.deskripsi || "Sangat membantu dan informatif!",
+          gambar: t.gambar?.value ? URL.createObjectURL(t.gambar.value) : `https://via.placeholder.com/150?text=User+${i + 1}`,
+          urutan: i + 1,
+        }))
+      : [
+          {
+            nama: "Budi Santoso",
+            deskripsi: "Webinar ini sangat membantu saya memahami investasi properti. Materinya jelas dan mudah dipahami!",
+            gambar: "https://via.placeholder.com/150?text=BS",
+            urutan: 1,
+          },
+          {
+            nama: "Siti Nurhaliza",
+            deskripsi: "Saya sudah mengikuti beberapa webinar, tapi yang ini paling lengkap dan praktis.",
+            gambar: "https://via.placeholder.com/150?text=SN",
+            urutan: 2,
+          },
+        ],
+  };
+
+  // ============================
+  // NORMALIZE BLOCKS
+  // Gabungkan semua konten menjadi array blocks dengan type, order, data
+  // ============================
+  const normalizeBlocks = (data) => {
+    const blocks = [];
+
+    // 1. Header Image (order: 1)
+    if (data.header) {
+      blocks.push({
+        type: "header",
+        order: 1,
+        data: {
+          src: data.header,
+          alt: data.nama || "Header",
+        },
+      });
+    }
+
+    // 2. Deskripsi (order: 2)
+    if (data.deskripsi) {
+      blocks.push({
+        type: "text",
+        order: 2,
+        data: {
+          content: data.deskripsi,
+        },
+      });
+    }
+
+    // 3. List Point (order: 3)
+    if (data.list_point && data.list_point.length > 0) {
+      blocks.push({
+        type: "list",
+        order: 3,
+        data: {
+          items: data.list_point.sort((a, b) => (a.urutan || 0) - (b.urutan || 0)),
+        },
+      });
+    }
+
+    // 4. Gallery Images (order: 4)
+    if (data.gambar && data.gambar.length > 0) {
+      data.gambar
+        .sort((a, b) => (a.urutan || 0) - (b.urutan || 0))
+        .forEach((img, index) => {
+          blocks.push({
+            type: "image",
+            order: 4 + index * 0.1, // 4.0, 4.1, 4.2, etc
+            data: {
+              src: img.src,
+              caption: img.caption,
+            },
+          });
+        });
+    }
+
+    // 5. Video (order: 5)
+    if (data.video && data.video.length > 0) {
+      data.video
+        .sort((a, b) => (a.urutan || 0) - (b.urutan || 0))
+        .forEach((vid, index) => {
+          blocks.push({
+            type: "video",
+            order: 5 + index * 0.1, // 5.0, 5.1, etc
+            data: {
+              url: vid.url,
+            },
+          });
+        });
+    }
+
+    // 6. Testimoni (order: 6)
+    if (data.testimoni && data.testimoni.length > 0) {
+      data.testimoni
+        .sort((a, b) => (a.urutan || 0) - (b.urutan || 0))
+        .forEach((testi, index) => {
+          blocks.push({
+            type: "testimoni",
+            order: 6 + index * 0.1, // 6.0, 6.1, etc
+            data: {
+              nama: testi.nama,
+              deskripsi: testi.deskripsi,
+              gambar: testi.gambar,
+            },
+          });
+        });
+    }
+
+    // 7. Price CTA (order: 7)
+    if (data.harga_asli) {
+      blocks.push({
+        type: "price",
+        order: 7,
+        data: {
+          harga_asli: data.harga_asli,
+          harga_coret: data.harga_coret,
+        },
+      });
+    }
+
+    // Sort by order
+    return blocks.sort((a, b) => a.order - b.order);
+  };
+
+  const blocks = normalizeBlocks(mockData);
+
+  // ============================
+  // LOGGING
+  // ============================
+  useEffect(() => {
+    console.log("========================================");
+    console.log("🎯 LANDING PAGE RENDERER");
+    console.log("========================================");
+    console.log("📦 MOCK DATA:", mockData);
+    console.log("🔢 NORMALIZED_BLOCKS:", blocks);
+    console.log("📊 Total Blocks:", blocks.length);
+    console.log("📋 Block Types:", [...new Set(blocks.map(b => b.type))]);
+    console.log("========================================");
+  }, [blocks, mockData]);
+
+  // ============================
+  // RENDER BLOCK
+  // Generic renderer dengan switch(type)
+  // ============================
+  const renderBlock = (block, index) => {
+    switch (block.type) {
+      case "header":
+        return (
+          <div key={index} className="landing-block landing-block-header">
+            <img
+              src={block.data.src}
+              alt={block.data.alt}
+              className="landing-header-image"
+            />
+          </div>
+        );
+
+      case "text":
+        return (
+          <div key={index} className="landing-block landing-block-text">
+            <div className="landing-text-content">
+              <p>{block.data.content}</p>
+            </div>
+          </div>
+        );
+
+      case "list":
+        return (
+          <div key={index} className="landing-block landing-block-list">
+            <div className="landing-list-container">
+              <h3 className="landing-list-title">Apa yang Anda Dapatkan?</h3>
+              <ul className="landing-list-items">
+                {block.data.items.map((item, i) => (
+                  <li key={i} className="landing-list-item">
+                    <span className="landing-list-icon">✓</span>
+                    <span>{item.nama}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        );
+
+      case "image":
+        return (
+          <div key={index} className="landing-block landing-block-image">
+            <div className="landing-image-container">
+              <img
+                src={block.data.src}
+                alt={block.data.caption}
+                className="landing-image"
+              />
+              {block.data.caption && (
+                <p className="landing-image-caption">{block.data.caption}</p>
+              )}
+            </div>
+          </div>
+        );
+
+      case "video":
+        return (
+          <div key={index} className="landing-block landing-block-video">
+            <div className="landing-video-container">
+              <iframe
+                src={block.data.url}
+                className="landing-video-iframe"
+                title="Video"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          </div>
+        );
+
+      case "testimoni":
+        return (
+          <div key={index} className="landing-block landing-block-testimoni">
+            <div className="landing-testimoni-card">
+              <div className="landing-testimoni-header">
+                <img
+                  src={block.data.gambar}
+                  alt={block.data.nama}
+                  className="landing-testimoni-avatar"
+                />
+                <div className="landing-testimoni-info">
+                  <h4 className="landing-testimoni-name">{block.data.nama}</h4>
+                </div>
+              </div>
+              <p className="landing-testimoni-text">"{block.data.deskripsi}"</p>
+            </div>
+          </div>
+        );
+
+      case "price":
+        return (
+          <div key={index} className="landing-block landing-block-price">
+            <div className="landing-price-container">
+              <div className="landing-price-header">
+                <h2 className="landing-price-title">Harga Spesial</h2>
+              </div>
+              <div className="landing-price-content">
+                {block.data.harga_coret && (
+                  <p className="landing-price-coret">
+                    Rp {parseInt(block.data.harga_coret).toLocaleString("id-ID")}
+                  </p>
+                )}
+                <p className="landing-price-aktif">
+                  Rp {parseInt(block.data.harga_asli).toLocaleString("id-ID")}
+                </p>
+              </div>
+              <button className="landing-price-button">
+                Daftar Sekarang
+              </button>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="landing-page-container">
+      <div className="landing-page-content">
+        {blocks.length === 0 ? (
+          <div className="landing-empty">
+            <p>Belum ada konten untuk ditampilkan</p>
+          </div>
+        ) : (
+          blocks.map((block, index) => renderBlock(block, index))
+        )}
       </div>
     </div>
   );
