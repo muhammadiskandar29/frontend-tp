@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Plus, Type, Image as ImageIcon, Video, List, Quote, Button as ButtonIcon, GripVertical, X, Edit2, Trash2 } from "lucide-react";
+import { Plus, Type, Image as ImageIcon, Video, List, Quote, Square as ButtonIcon, GripVertical, X, Edit2, Trash2 } from "lucide-react";
 
 // Available block types
 export const BLOCK_TYPES = {
