@@ -176,18 +176,48 @@ export default function FollowupReportPage() {
         </section>
 
         {/* SUMMARY CARDS */}
-        <section className="dashboard-summary-horizontal">
-          {summaryCards.map((card) => (
-            <article className="summary-card" key={card.label}>
-              <div className="summary-card__icon summary-card__icon--orange">
-                {card.icon}
+        <section className="dashboard-summary followup-summary">
+          <article className="summary-card summary-card--combined summary-card--four-cols">
+            <div className="summary-card__column">
+              <div className="summary-card__icon accent-orange">
+                {summaryCards[0].icon}
               </div>
               <div>
-                <p className="summary-card__label">{card.label}</p>
-                <p className="summary-card__value">{card.value}</p>
+                <p className="summary-card__label">{summaryCards[0].label}</p>
+                <p className="summary-card__value">{summaryCards[0].value}</p>
               </div>
-            </article>
-          ))}
+            </div>
+            <div className="summary-card__divider"></div>
+            <div className="summary-card__column">
+              <div className="summary-card__icon accent-orange">
+                {summaryCards[1].icon}
+              </div>
+              <div>
+                <p className="summary-card__label">{summaryCards[1].label}</p>
+                <p className="summary-card__value">{summaryCards[1].value}</p>
+              </div>
+            </div>
+            <div className="summary-card__divider"></div>
+            <div className="summary-card__column">
+              <div className="summary-card__icon accent-orange">
+                {summaryCards[2].icon}
+              </div>
+              <div>
+                <p className="summary-card__label">{summaryCards[2].label}</p>
+                <p className="summary-card__value">{summaryCards[2].value}</p>
+              </div>
+            </div>
+            <div className="summary-card__divider"></div>
+            <div className="summary-card__column">
+              <div className="summary-card__icon accent-orange">
+                {summaryCards[3].icon}
+              </div>
+              <div>
+                <p className="summary-card__label">{summaryCards[3].label}</p>
+                <p className="summary-card__value">{summaryCards[3].value}</p>
+              </div>
+            </div>
+          </article>
         </section>
 
         {/* FILTER TABS */}

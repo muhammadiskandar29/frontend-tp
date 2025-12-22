@@ -508,9 +508,98 @@
 }
 
 /* ============================================
+   FOLLOWUP SUMMARY - Combined Card (4 Columns)
+   ============================================ */
+.dashboard-summary.followup-summary {
+  display: block !important;
+  grid-template-columns: 1fr !important;
+  width: 100%;
+  max-width: 100%;
+}
+
+.dashboard-summary.followup-summary .summary-card--combined.summary-card--four-cols {
+  width: 100%;
+  max-width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
+  justify-items: start;
+  align-items: center;
+  gap: 1.75rem;
+  padding: 1.5rem 2rem;
+  background: var(--dash-surface);
+  border: 1px solid var(--dash-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.dashboard-summary.followup-summary .summary-card__column {
+  width: 100%;
+  justify-content: flex-start;
+  flex: 1;
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+
+.dashboard-summary.followup-summary .summary-card__divider {
+  width: 1px;
+  height: 65%;
+  background: var(--dash-border);
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.dashboard-summary.followup-summary .summary-card__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--dash-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 0 0 0.25rem 0;
+}
+
+.dashboard-summary.followup-summary .summary-card__value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--dash-text-dark);
+  margin: 0;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+@media (max-width: 1200px) {
+  .dashboard-summary.followup-summary .summary-card--combined.summary-card--four-cols {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    padding: 1.25rem 1.75rem;
+  }
+  
+  .dashboard-summary.followup-summary .summary-card__divider {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-summary.followup-summary .summary-card--combined.summary-card--four-cols {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    padding: 1rem 1.5rem;
+  }
+  
+  .dashboard-summary.followup-summary .summary-card__divider {
+    display: none;
+  }
+}
+
+/* ============================================
    SUMMARY CARD - Accent Colors
    ============================================ */
 .summary-card__icon--orange {
+  background: #fb8500 !important;
+  box-shadow: 0 4px 14px 0 rgba(251, 133, 0, 0.25);
+}
+
+.summary-card__icon.accent-orange {
   background: #fb8500 !important;
   box-shadow: 0 4px 14px 0 rgba(251, 133, 0, 0.25);
 }
