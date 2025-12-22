@@ -71,6 +71,7 @@ export default function AddProducts3Page() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [blocks, setBlocks] = useState([]);
   const [expandedBlockId, setExpandedBlockId] = useState(null);
+  const [testimoniIndices, setTestimoniIndices] = useState({});
 
   // Default data untuk setiap komponen
   const getDefaultData = (componentId) => {
@@ -215,21 +216,97 @@ export default function AddProducts3Page() {
           <div className="preview-placeholder">URL video belum diisi</div>
         );
       case "testimoni":
+        const testimoniItems = block.data.items || [];
+        if (testimoniItems.length === 0) {
+          return <div className="preview-placeholder">Belum ada testimoni</div>;
+        }
+        
+        const currentIndex = testimoniIndices[block.id] || 0;
+        const maxIndex = Math.max(0, testimoniItems.length - 3);
+        
+        const handlePrev = () => {
+          setTestimoniIndices(prev => ({
+            ...prev,
+            [block.id]: Math.max(0, currentIndex - 1)
+          }));
+        };
+        
+        const handleNext = () => {
+          setTestimoniIndices(prev => ({
+            ...prev,
+            [block.id]: Math.min(maxIndex, currentIndex + 1)
+          }));
+        };
+        
         return (
-          <div className="preview-testimoni">
-            {block.data.items?.map((item, i) => (
-              <div key={i} className="preview-testimoni-item">
-                {item.gambar && <img src={item.gambar} alt={item.nama} className="preview-testimoni-avatar" />}
-                <div>
-                  <h4>{item.nama || "Nama"}</h4>
-                  <p>{item.deskripsi || "Deskripsi"}</p>
+          <section className="preview-testimonials" aria-label="Customer testimonials">
+            <h2>Testimoni Pembeli</h2>
+            <div className="testimonials-carousel-wrapper-new">
+              {currentIndex > 0 && (
+                <button 
+                  className="testimoni-nav-btn-new testimoni-nav-prev-new"
+                  onClick={handlePrev}
+                  aria-label="Previous testimonials"
+                >
+                  ‹
+                </button>
+              )}
+              <div className="testimonials-carousel-new" itemScope itemType="https://schema.org/Review">
+                <div 
+                  className="testimonials-track-new"
+                  style={{ transform: `translateX(-${currentIndex * 28}%)` }}
+                >
+                  {testimoniItems.map((item, i) => {
+                    return (
+                      <article key={i} className="testi-card-new" itemScope itemType="https://schema.org/Review">
+                        <div className="testi-header-new">
+                          {item.gambar ? (
+                            <div className="testi-avatar-wrapper-new">
+                              <img 
+                                src={item.gambar} 
+                                alt={`Foto ${item.nama}`}
+                                className="testi-avatar-new"
+                                itemProp="author"
+                                loading="lazy"
+                              />
+                            </div>
+                          ) : (
+                            <div className="testi-avatar-wrapper-new">
+                              <div className="testi-avatar-placeholder-new">
+                                {item.nama?.charAt(0)?.toUpperCase() || "U"}
+                              </div>
+                            </div>
+                          )}
+                          <div className="testi-info-new">
+                            <div className="testi-name-new" itemProp="author" itemScope itemType="https://schema.org/Person">
+                              <span itemProp="name">{item.nama || "Nama"}</span>
+                            </div>
+                            <div className="testi-stars-new">
+                              <span className="star-new">★</span>
+                              <span className="star-new">★</span>
+                              <span className="star-new">★</span>
+                              <span className="star-new">★</span>
+                              <span className="star-new">★</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="testi-desc-new" itemProp="reviewBody">{item.deskripsi || "Deskripsi testimoni"}</div>
+                      </article>
+                    );
+                  })}
                 </div>
               </div>
-            ))}
-            {(!block.data.items || block.data.items.length === 0) && (
-              <div className="preview-placeholder">Belum ada testimoni</div>
-            )}
-          </div>
+              {currentIndex < maxIndex && testimoniItems.length > 3 && (
+                <button 
+                  className="testimoni-nav-btn-new testimoni-nav-next-new"
+                  onClick={handleNext}
+                  aria-label="Next testimonials"
+                >
+                  ›
+                </button>
+              )}
+            </div>
+          </section>
         );
       case "list":
         return (

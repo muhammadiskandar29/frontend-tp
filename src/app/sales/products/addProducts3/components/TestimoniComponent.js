@@ -1,16 +1,15 @@
 "use client";
 
-import { useState } from "react";
 import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
 import { Button } from "primereact/button";
-import { MessageSquare, Trash2 } from "lucide-react";
+import ComponentWrapper from "./ComponentWrapper";
 
-export default function TestimoniComponent({ data = {}, onUpdate }) {
+export default function TestimoniComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index }) {
   const items = data.items || [];
 
   const addTestimoni = () => {
-    const newItems = [...items, { nama: "", deskripsi: "", gambar: null }];
+    const newItems = [...items, { gambar: { type: "file", value: null }, nama: "", deskripsi: "" }];
     onUpdate?.({ ...data, items: newItems });
   };
 
@@ -25,83 +24,78 @@ export default function TestimoniComponent({ data = {}, onUpdate }) {
     onUpdate?.({ ...data, items: newItems });
   };
 
-  const handleImageUpload = (index, e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        updateTestimoni(index, "gambar", event.target.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   return (
-    <div className="block-component testimoni-component">
-      <div className="block-header">
-        <MessageSquare size={16} />
-        <span>Testimoni</span>
-      </div>
-      <div className="block-content">
-        {items.map((item, index) => (
-          <div key={index} className="testimoni-item-editor">
+    <ComponentWrapper
+      title="Testimoni"
+      index={index}
+      onMoveUp={onMoveUp}
+      onMoveDown={onMoveDown}
+      onDelete={onDelete}
+    >
+      <div className="testimoni-component-content">
+        {items.map((item, i) => (
+          <div key={i} className="testimoni-item-card">
             <div className="testimoni-item-header">
-              <span>Testimoni {index + 1}</span>
+              <span className="testimoni-item-number">Testimoni {i + 1}</span>
               <Button
-                icon={<Trash2 size={14} />}
+                icon="pi pi-trash"
                 severity="danger"
-                size="small"
-                onClick={() => removeTestimoni(index)}
+                className="p-button-danger p-button-sm"
+                onClick={() => removeTestimoni(i)}
+                tooltip="Hapus testimoni"
               />
             </div>
-            
-            <div className="form-field-group">
-              <label className="form-label-small">Upload Foto</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => handleImageUpload(index, e)}
-                className="file-input"
-              />
-              {item.gambar && (
-                <div className="image-preview-small">
-                  <img src={item.gambar} alt={`Testimoni ${index + 1}`} />
-                </div>
-              )}
-            </div>
-
-            <div className="form-field-group">
-              <label className="form-label-small">Nama</label>
-              <InputText
-                value={item.nama}
-                onChange={(e) => updateTestimoni(index, "nama", e.target.value)}
-                placeholder="Nama testimoni"
-                className="w-full"
-              />
-            </div>
-
-            <div className="form-field-group">
-              <label className="form-label-small">Deskripsi</label>
-              <InputTextarea
-                value={item.deskripsi}
-                onChange={(e) => updateTestimoni(index, "deskripsi", e.target.value)}
-                placeholder="Deskripsi testimoni"
-                rows={3}
-                className="w-full"
-              />
+            <div className="testimoni-item-content">
+              <div className="form-field-group">
+                <label className="form-label-small">Upload Foto</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) =>
+                    updateTestimoni(i, "gambar", { type: "file", value: e.target.files[0] })
+                  }
+                  className="file-input"
+                />
+                {item.gambar?.type === "file" && item.gambar.value && (
+                  <div className="file-preview">
+                    <img 
+                      src={URL.createObjectURL(item.gambar.value)} 
+                      alt={`Testimoni ${i + 1}`}
+                      className="preview-thumbnail"
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="form-field-group">
+                <label className="form-label-small">Nama</label>
+                <InputText
+                  className="w-full form-input"
+                  placeholder="Masukkan nama testimoni"
+                  value={item.nama}
+                  onChange={(e) => updateTestimoni(i, "nama", e.target.value)}
+                />
+              </div>
+              <div className="form-field-group">
+                <label className="form-label-small">Deskripsi</label>
+                <InputTextarea
+                  className="w-full form-input"
+                  rows={3}
+                  placeholder="Masukkan deskripsi testimoni"
+                  value={item.deskripsi}
+                  onChange={(e) => updateTestimoni(i, "deskripsi", e.target.value)}
+                />
+              </div>
             </div>
           </div>
         ))}
-
         <Button
-          label="Tambah Testimoni"
           icon="pi pi-plus"
-          size="small"
-          onClick={addTestimoni}
+          label="Tambah Testimoni"
           className="add-item-btn"
+          onClick={addTestimoni}
         />
       </div>
-    </div>
+    </ComponentWrapper>
   );
 }
 
