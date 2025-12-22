@@ -115,11 +115,34 @@ export default function AddProducts3Page() {
     ));
   };
 
-  // Render komponen berdasarkan type
-  const renderComponent = (block) => {
+  // Handler untuk reorder blocks
+  const moveBlock = (blockId, direction) => {
+    const index = blocks.findIndex(b => b.id === blockId);
+    if (index === -1) return;
+    
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= blocks.length) return;
+    
+    const newBlocks = [...blocks];
+    [newBlocks[index], newBlocks[newIndex]] = [newBlocks[newIndex], newBlocks[index]];
+    setBlocks(newBlocks);
+  };
+
+  // Handler untuk delete block
+  const deleteBlock = (blockId) => {
+    setBlocks(blocks.filter(b => b.id !== blockId));
+  };
+
+  // Render komponen form editing di sidebar
+  const renderComponent = (block, index) => {
     const commonProps = {
       data: block.data,
       onUpdate: (newData) => handleUpdateBlock(block.id, newData),
+      blockId: block.id,
+      index: index,
+      onMoveUp: () => moveBlock(block.id, 'up'),
+      onMoveDown: () => moveBlock(block.id, 'down'),
+      onDelete: () => deleteBlock(block.id),
     };
 
     switch (block.type) {
@@ -156,6 +179,70 @@ export default function AddProducts3Page() {
         return <AnimationComponent {...commonProps} />;
       default:
         return <div>Unknown component: {block.type}</div>;
+    }
+  };
+
+  // Render preview di canvas
+  const renderPreview = (block) => {
+    switch (block.type) {
+      case "text":
+        return <div className="preview-text">{block.data.content || "Teks..."}</div>;
+      case "image":
+        return block.data.src ? (
+          <div className="preview-image-wrapper">
+            <img src={block.data.src} alt={block.data.alt || ""} className="preview-image-full" />
+            {block.data.caption && <p className="preview-caption">{block.data.caption}</p>}
+          </div>
+        ) : (
+          <div className="preview-placeholder">Gambar belum diupload</div>
+        );
+      case "youtube":
+      case "video":
+        return block.data.embedUrl ? (
+          <iframe src={block.data.embedUrl} title="Video" className="preview-video-iframe" allowFullScreen />
+        ) : (
+          <div className="preview-placeholder">URL video belum diisi</div>
+        );
+      case "testimoni":
+        return (
+          <div className="preview-testimoni">
+            {block.data.items?.map((item, i) => (
+              <div key={i} className="preview-testimoni-item">
+                {item.gambar && <img src={item.gambar} alt={item.nama} className="preview-testimoni-avatar" />}
+                <div>
+                  <h4>{item.nama || "Nama"}</h4>
+                  <p>{item.deskripsi || "Deskripsi"}</p>
+                </div>
+              </div>
+            ))}
+            {(!block.data.items || block.data.items.length === 0) && (
+              <div className="preview-placeholder">Belum ada testimoni</div>
+            )}
+          </div>
+        );
+      case "list":
+        return (
+          <ul className="preview-list">
+            {block.data.items?.map((item, i) => (
+              <li key={i}>{item.nama || `Point ${i + 1}`}</li>
+            ))}
+            {(!block.data.items || block.data.items.length === 0) && (
+              <div className="preview-placeholder">Belum ada list point</div>
+            )}
+          </ul>
+        );
+      case "button":
+        return (
+          <button className={`preview-button preview-button-${block.data.style || 'primary'}`}>
+            {block.data.text || "Klik Disini"}
+          </button>
+        );
+      case "html":
+        return <div dangerouslySetInnerHTML={{ __html: block.data.code || "" }} />;
+      case "embed":
+        return <div dangerouslySetInnerHTML={{ __html: block.data.code || "" }} />;
+      default:
+        return <div className="preview-placeholder">{block.type}</div>;
     }
   };
 
@@ -211,9 +298,16 @@ export default function AddProducts3Page() {
 
       {/* Main Content Area */}
       <div className="page-builder-main">
-        {/* Left Sidebar */}
-        {!sidebarCollapsed && (
-          <div className="page-builder-sidebar">
+        {/* Left Sidebar - Form Editing */}
+        <div className="page-builder-sidebar">
+          <div className="sidebar-content">
+            {blocks.map((block, index) => (
+              <div key={block.id} className="sidebar-component-item">
+                {renderComponent(block, index)}
+              </div>
+            ))}
+            
+            {/* Button Tambah Komponen Baru */}
             <button
               className="add-component-btn"
               onClick={() => setShowComponentModal(true)}
@@ -222,9 +316,9 @@ export default function AddProducts3Page() {
               <span className="add-component-text">Tambah Komponen Baru</span>
             </button>
           </div>
-        )}
+        </div>
 
-        {/* Main Canvas Area */}
+        {/* Right Canvas - Preview */}
         <div className="page-builder-canvas">
           <div className="canvas-wrapper">
             {/* Placeholder jika belum ada komponen */}
@@ -234,10 +328,10 @@ export default function AddProducts3Page() {
               </div>
             )}
             
-            {/* Komponen akan ditambahkan di sini */}
+            {/* Preview komponen */}
             {blocks.map((block) => (
-              <div key={block.id} className="canvas-block">
-                {renderComponent(block)}
+              <div key={block.id} className="canvas-preview-block">
+                {renderPreview(block)}
               </div>
             ))}
           </div>
