@@ -43,13 +43,7 @@ const STATUS_OPTIONS = [
   { value: "lost", label: "Lost" },
 ];
 
-// Label options untuk dropdown
-const LABEL_OPTIONS = [
-  { value: "all", label: "Semua Label" },
-  { value: "hot", label: "Hot" },
-  { value: "warm", label: "Warm" },
-  { value: "cold", label: "Cold" },
-];
+// Label options akan di-fetch dari API (dinamis dari lead_label)
 
 export default function LeadsPage() {
   const router = useRouter();
@@ -57,6 +51,7 @@ export default function LeadsPage() {
   const [searchInput, setSearchInput] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [labelFilter, setLabelFilter] = useState("all");
+  const [labelOptions, setLabelOptions] = useState([{ value: "all", label: "Semua Label" }]);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showLabelDropdown, setShowLabelDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -137,6 +132,21 @@ export default function LeadsPage() {
         // Selalu replace data (bukan append) - setiap page menampilkan data yang berbeda
         setLeads(json.data);
 
+        // Update label options jika ada label baru di current page
+        // (Label options utama sudah di-fetch di fetchLabelOptions)
+        const currentPageLabels = [...new Set(json.data.map((lead) => lead.lead_label).filter(Boolean))];
+        setLabelOptions((prev) => {
+          const existingValues = new Set(prev.map((opt) => opt.value));
+          const newLabels = currentPageLabels.filter((label) => !existingValues.has(label));
+          if (newLabels.length > 0) {
+            return [
+              ...prev,
+              ...newLabels.map((label) => ({ value: label, label: label })),
+            ];
+          }
+          return prev;
+        });
+
         // Gunakan pagination object jika tersedia
         if (json.pagination && typeof json.pagination === "object") {
           const isLastPage = json.pagination.current_page >= json.pagination.last_page;
@@ -194,12 +204,45 @@ export default function LeadsPage() {
     }
   }, [statusFilter, labelFilter, searchInput, perPage]);
 
-  // Initial load: fetch page 1
+  // Fetch all unique labels untuk filter dropdown
+  const fetchLabelOptions = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      // Fetch semua labels (tanpa pagination untuk mendapatkan semua unique labels)
+      const res = await fetch(`/api/sales/lead?per_page=1000`, {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data && Array.isArray(json.data)) {
+          // Extract unique labels dari semua data
+          const uniqueLabels = [...new Set(json.data.map((lead) => lead.lead_label).filter(Boolean))];
+          const labelOpts = [
+            { value: "all", label: "Semua Label" },
+            ...uniqueLabels.map((label) => ({ value: label, label: label })),
+          ];
+          setLabelOptions(labelOpts);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching label options:", err);
+    }
+  }, []);
+
+  // Initial load: fetch page 1 dan label options
   useEffect(() => {
     setPage(1);
     setLeads([]);
     setHasMore(true);
     fetchLeads(1);
+    fetchLabelOptions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Hanya sekali saat mount
 
@@ -433,12 +476,12 @@ export default function LeadsPage() {
                     setShowStatusDropdown(false);
                   }}
                 >
-                  {LABEL_OPTIONS.find((opt) => opt.value === labelFilter)?.label || "Semua Label"}
+                  {labelOptions.find((opt) => opt.value === labelFilter)?.label || "Semua Label"}
                   <ChevronDown size={16} style={{ marginLeft: "0.5rem" }} />
                 </button>
                 {showLabelDropdown && (
                   <div className="leads-filter-dropdown-menu">
-                    {LABEL_OPTIONS.map((option) => (
+                    {labelOptions.map((option) => (
                       <button
                         key={option.value}
                         type="button"
@@ -520,8 +563,14 @@ export default function LeadsPage() {
                     const customerName = customer.nama || lead.nama || "-";
                     const customerEmail = customer.email || lead.email || "";
                     const customerPhone = customer.wa || lead.wa || "";
-                    const assignSalesName = lead.assign_sales_name || lead.assign_sales || "";
-                    const assignSalesRole = lead.assign_sales_role || "Sales";
+                    
+                    // Assign Sales dari relasi users
+                    const assignSales = lead.assign_sales_rel || lead.user_rel || {};
+                    const assignSalesName = assignSales.nama || assignSales.name || lead.assign_sales_name || lead.assign_sales || "";
+                    const assignSalesRole = assignSales.role || "Sales";
+                    
+                    // Label dari lead_label
+                    const leadLabel = lead.lead_label || lead.label || "";
                     
                     return (
                       <div key={lead.id || i} className="leads-table__row">
@@ -583,8 +632,8 @@ export default function LeadsPage() {
 
                         {/* Label */}
                         <span className="leads-table__cell">
-                          {lead.label ? (
-                            <span className="leads-label-text">{lead.label}</span>
+                          {leadLabel ? (
+                            <span className="leads-label-text">{leadLabel}</span>
                           ) : (
                             "-"
                           )}

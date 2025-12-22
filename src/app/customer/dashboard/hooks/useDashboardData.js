@@ -80,6 +80,8 @@ export function useDashboardData() {
 
       const actionLabel = getActionLabel(kategoriNama);
       const startDate = getOrderStartDate(order);
+      const statusPembayaran = order.status_pembayaran || order.status_pembayaran_id;
+      const isPaid = statusPembayaran === 3 || statusPembayaran === "3";
       
       return {
         id: order.id,
@@ -92,6 +94,8 @@ export function useDashboardData() {
         schedule,
         actionLabel,
         startDate,
+        isPaid,
+        statusPembayaran,
       };
     });
 
@@ -134,23 +138,23 @@ export function useDashboardData() {
         { id: "active", label: "Order Aktif", value: data?.statistik?.order_aktif ?? 0, icon: "✅" },
       ];
 
-      // Combine all orders
-      const allOrdersMap = new Map();
-      (data?.orders_aktif || []).forEach((order) => {
-        if (order.id) allOrdersMap.set(order.id, order);
-      });
-      (data?.orders_pending || []).forEach((order) => {
-        if (order.id && !allOrdersMap.has(order.id)) {
-          allOrdersMap.set(order.id, order);
-        }
+      // Filter only paid orders (status_pembayaran = 3) for active orders
+      const paidOrders = (data?.orders_aktif || []).filter((order) => {
+        const statusPembayaran = order.status_pembayaran || order.status_pembayaran_id;
+        return statusPembayaran === 3 || statusPembayaran === "3";
       });
 
-      const allOrders = Array.from(allOrdersMap.values());
-      const unpaidCount = data?.orders_pending?.length || 0;
+      // Get unpaid orders for count
+      const unpaidOrders = (data?.orders_pending || []).filter((order) => {
+        const statusPembayaran = order.status_pembayaran || order.status_pembayaran_id;
+        return statusPembayaran !== 3 && statusPembayaran !== "3";
+      });
+
+      const unpaidCount = unpaidOrders.length;
 
       setDashboardData({
         stats: newStats,
-        activeOrders: adaptOrders(allOrders),
+        activeOrders: adaptOrders(paidOrders),
         customerInfo: customerData || session.user,
         unpaidCount,
       });

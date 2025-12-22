@@ -11,6 +11,7 @@ import ProductsSection from "./components/ProductsSection";
 import QuickActions from "./components/QuickActions";
 import { useDashboardData } from "./hooks/useDashboardData";
 import { useProducts } from "./hooks/useProducts";
+import { getCustomerSession } from "@/lib/customerAuth";
 import { toast } from "react-hot-toast";
 
 export default function DashboardPage() {

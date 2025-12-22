@@ -29,6 +29,12 @@ export default function OrdersSection({
   };
 
   const handleOrderClick = (order) => {
+    // If order is not paid, redirect to payment page
+    if (!order.isPaid) {
+      router.push('/customer/dashboard/payment');
+      return;
+    }
+
     if (onOrderAction) {
       onOrderAction(order);
     } else {
@@ -92,12 +98,24 @@ export default function OrdersSection({
 
         {!isLoading && orders.map((order) => {
           const countdown = getCountdownLabel(order);
+          const isPaid = order.isPaid !== false; // Default to true if not specified
           
           return (
-            <div key={order.id} className="order-card">
+            <div key={order.id} className={`order-card ${!isPaid ? 'order-card--locked' : ''}`}>
+              {!isPaid && (
+                <div className="order-card__lock-overlay">
+                  <div className="order-lock-notification">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                      <path d="M6 10V8C6 5.79086 7.79086 4 10 4H14C16.2091 4 18 5.79086 18 8V10M6 10H4C2.89543 10 2 10.8954 2 12V20C2 21.1046 2.89543 22 4 22H20C21.1046 22 22 21.1046 22 20V12C22 10.8954 21.1046 10 20 10H18M6 10V10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span>Selesaikan Pembayaran</span>
+                  </div>
+                </div>
+              )}
+
               <div className="order-card__banner">
                 <span className="order-badge">{order.type}</span>
-                {countdown && (
+                {countdown && isPaid && (
                   <div className="order-countdown">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                       <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5"/>
@@ -127,7 +145,7 @@ export default function OrdersSection({
               </div>
 
               <div className="order-footer">
-                {order.schedule && (
+                {order.schedule && isPaid && (
                   <div className="order-schedule">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                       <rect x="3" y="4" width="10" height="9" rx="1" stroke="currentColor" strokeWidth="1.5"/>
@@ -143,10 +161,10 @@ export default function OrdersSection({
                 )}
                 
                 <button 
-                  className="order-action"
+                  className={`order-action ${!isPaid ? 'order-action--payment' : ''}`}
                   onClick={() => handleOrderClick(order)}
                 >
-                  <span>{order.actionLabel}</span>
+                  <span>{!isPaid ? 'Selesaikan Pembayaran' : order.actionLabel}</span>
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                     <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
