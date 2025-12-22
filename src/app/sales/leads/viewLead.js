@@ -14,29 +14,31 @@ export default function ViewLeadModal({ lead, onClose, onEdit }) {
   const [followUps, setFollowUps] = useState([]);
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [leadData, setLeadData] = useState(lead);
 
   // Get customer info from lead
-  const customer = lead?.customer_rel || {};
-  const customerName = customer.nama || lead?.nama || "-";
-  const customerEmail = customer.email || lead?.email || "-";
-  const customerPhone = customer.wa || lead?.wa || "-";
-  const customerPendapatan = customer.pendapatan_bln || lead?.pendapatan || "-";
+  const customer = leadData?.customer_rel || lead?.customer_rel || {};
+  const customerName = customer.nama || leadData?.nama || lead?.nama || "-";
+  const customerEmail = customer.email || leadData?.email || lead?.email || "-";
+  const customerPhone = customer.wa || leadData?.wa || lead?.wa || "-";
+  const customerPendapatan = customer.pendapatan_bln || leadData?.pendapatan || lead?.pendapatan || "-";
 
-  // Fetch follow ups and activities
+  // Fetch lead detail, follow ups and activities
   useEffect(() => {
     if (lead?.id) {
+      fetchLeadDetail();
       fetchFollowUps();
       fetchActivities();
     }
   }, [lead?.id]);
 
-  const fetchFollowUps = async () => {
+  const fetchLeadDetail = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const res = await fetch(`${BASE_URL}/sales/leads/${lead.id}/follow-ups`, {
+      const res = await fetch(`${BASE_URL}/sales/lead/${lead.id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -45,6 +47,31 @@ export default function ViewLeadModal({ lead, onClose, onEdit }) {
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.data) {
+          setLeadData(data.data);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching lead detail:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchFollowUps = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const res = await fetch(`${BASE_URL}/sales/lead/${lead.id}/followup`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.data && Array.isArray(data.data)) {
           setFollowUps(data.data);
         }
       }
@@ -60,7 +87,7 @@ export default function ViewLeadModal({ lead, onClose, onEdit }) {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const res = await fetch(`${BASE_URL}/sales/leads/${lead.id}/activities`, {
+      const res = await fetch(`${BASE_URL}/sales/aktivitas/lead/${lead.id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -68,7 +95,7 @@ export default function ViewLeadModal({ lead, onClose, onEdit }) {
 
       if (res.ok) {
         const data = await res.json();
-        if (data.success && data.data) {
+        if (data.success && data.data && Array.isArray(data.data)) {
           setActivities(data.data);
         }
       }
@@ -140,6 +167,32 @@ export default function ViewLeadModal({ lead, onClose, onEdit }) {
     return "#6b7280";
   };
 
+  const getActivityTypeColor = (type) => {
+    const typeMap = {
+      whatsapp_out: "#25d366",
+      call_out: "#6b7280",
+      send_price: "#3b82f6",
+      interested: "#10b981",
+      thinking: "#f59e0b",
+      closed_won: "#10b981",
+      closed_lost: "#ef4444",
+    };
+    return typeMap[type] || "#6b7280";
+  };
+
+  const getActivityTypeLabel = (type) => {
+    const typeMap = {
+      whatsapp_out: "WhatsApp Out",
+      call_out: "Call Out",
+      send_price: "Send Price",
+      interested: "Interested",
+      thinking: "Thinking",
+      closed_won: "Closed Won",
+      closed_lost: "Closed Lost",
+    };
+    return typeMap[type] || type || "-";
+  };
+
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal-card leads-detail-modal" style={{ width: "min(800px, 95vw)", maxHeight: "90vh" }}>
@@ -204,43 +257,43 @@ export default function ViewLeadModal({ lead, onClose, onEdit }) {
               <div className="leads-detail-section">
                 <div className="leads-detail-field">
                   <span className="leads-detail-field-label">Label</span>
-                  <span className="leads-detail-field-value">{lead?.label || "-"}</span>
+                  <span className="leads-detail-field-value">{leadData?.lead_label || lead?.lead_label || lead?.label || "-"}</span>
                 </div>
                 <div className="leads-detail-field">
                   <span className="leads-detail-field-label">Status</span>
-                  <span className={`leads-status ${lead?.status ? `status-${lead.status.toLowerCase()}` : "status-default"}`}>
-                    {lead?.status ? lead.status.toUpperCase() : "-"}
+                  <span className={`leads-status ${(leadData?.status || lead?.status) ? `status-${(leadData?.status || lead?.status).toLowerCase()}` : "status-default"}`}>
+                    {(leadData?.status || lead?.status) ? (leadData?.status || lead?.status).toUpperCase() : "-"}
                   </span>
                 </div>
                 <div className="leads-detail-field">
                   <span className="leads-detail-field-label">Minat Produk</span>
-                  <span className="leads-detail-field-value">{lead?.minat_produk || "-"}</span>
+                  <span className="leads-detail-field-value">{leadData?.minat_produk || lead?.minat_produk || "-"}</span>
                 </div>
                 <div className="leads-detail-field">
                   <span className="leads-detail-field-label">Last Contact</span>
-                  <span className="leads-detail-field-value">{formatDate(lead?.last_contact)}</span>
+                  <span className="leads-detail-field-value">{formatDate(leadData?.last_contact_at || lead?.last_contact_at || lead?.last_contact)}</span>
                 </div>
                 <div className="leads-detail-field">
                   <span className="leads-detail-field-label">Next Follow Up</span>
-                  <span className="leads-detail-field-value">{formatDate(lead?.next_followup)}</span>
+                  <span className="leads-detail-field-value">{formatDate(leadData?.next_follow_up_at || lead?.next_follow_up_at || lead?.next_followup)}</span>
                 </div>
                 <div className="leads-detail-field">
                   <span className="leads-detail-field-label">Alasan Tertarik</span>
-                  <span className="leads-detail-field-value">{lead?.alasan_tertarik || "-"}</span>
+                  <span className="leads-detail-field-value">{leadData?.alasan_tertarik || lead?.alasan_tertarik || "-"}</span>
                 </div>
                 <div className="leads-detail-field">
                   <span className="leads-detail-field-label">Alasan Belum</span>
-                  <span className="leads-detail-field-value">{lead?.alasan_belum_membeli || "-"}</span>
+                  <span className="leads-detail-field-value">{leadData?.alasan_belum || lead?.alasan_belum || lead?.alasan_belum_membeli || "-"}</span>
                 </div>
                 <div className="leads-detail-field">
                   <span className="leads-detail-field-label">Harapan</span>
-                  <span className="leads-detail-field-value">{lead?.harapan_customer || "-"}</span>
+                  <span className="leads-detail-field-value">{leadData?.harapan || lead?.harapan || lead?.harapan_customer || "-"}</span>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Tab Follow Up */}
+              {/* Tab Follow Up */}
           {activeTab === "followup" && (
             <div className="leads-detail-content">
               {loading ? (
@@ -249,16 +302,16 @@ export default function ViewLeadModal({ lead, onClose, onEdit }) {
                 <div className="leads-followup-list">
                   {followUps.map((followUp, i) => (
                     <div key={followUp.id || i} className="leads-followup-item">
-                      <div className="leads-followup-date">{formatDate(followUp.created_at || followUp.tanggal)}</div>
+                      <div className="leads-followup-date">{formatDate(followUp.follow_up_date || followUp.created_at || followUp.tanggal)}</div>
                       <div className="leads-followup-content">
                         <div className="leads-followup-channel">
                           <i className={`pi ${getChannelIcon(followUp.channel)}`} style={{ color: getChannelColor(followUp.channel) }} />
                           <span>{followUp.channel || "-"}</span>
                         </div>
-                        <div className="leads-followup-keterangan">{followUp.keterangan || followUp.type_aktivitas || "-"}</div>
-                        {followUp.created_by && (
+                        <div className="leads-followup-keterangan">{followUp.note || followUp.keterangan || "-"}</div>
+                        {followUp.created_by_rel && (
                           <div className="leads-followup-oleh">
-                            Oleh: {followUp.created_by}
+                            Oleh: {followUp.created_by_rel.nama || followUp.created_by_rel.name || "-"}
                           </div>
                         )}
                       </div>
@@ -274,15 +327,25 @@ export default function ViewLeadModal({ lead, onClose, onEdit }) {
           {/* Tab Aktivitas */}
           {activeTab === "aktivitas" && (
             <div className="leads-detail-content">
-              {activities.length > 0 ? (
+              {loading ? (
+                <div className="leads-detail-loading">Memuat data...</div>
+              ) : activities.length > 0 ? (
                 <div className="leads-activity-timeline">
                   {activities.map((activity, i) => (
                     <div key={activity.id || i} className="leads-activity-item">
-                      <div className="leads-activity-dot"></div>
+                      <div className="leads-activity-dot" style={{ backgroundColor: getActivityTypeColor(activity.type) }}></div>
                       <div className="leads-activity-content">
-                        <div className="leads-activity-date">{formatActivityDate(activity.created_at || activity.tanggal)}</div>
-                        <div className="leads-activity-type">{activity.type || activity.event || "-"}</div>
-                        <div className="leads-activity-description">{activity.description || activity.keterangan || "-"}</div>
+                        <div className="leads-activity-header">
+                          <div className="leads-activity-type">{getActivityTypeLabel(activity.type)}</div>
+                          <div className="leads-activity-date">{formatActivityDate(activity.create_at || activity.created_at || activity.tanggal)}</div>
+                        </div>
+                        <div className="leads-activity-description">{activity.note || activity.description || activity.keterangan || "-"}</div>
+                        {activity.user_rel && (
+                          <div className="leads-activity-user">
+                            <i className="pi pi-user" style={{ marginRight: "0.25rem" }} />
+                            {activity.user_rel.nama || activity.user_rel.name || "-"}
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}

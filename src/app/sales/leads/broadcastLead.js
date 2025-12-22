@@ -12,14 +12,6 @@ import { toastSuccess, toastError } from "@/lib/toast";
 
 const BASE_URL = "/api";
 
-// Label options
-const LABEL_OPTIONS = [
-  { value: "all", label: "Semua Label" },
-  { value: "hot", label: "Hot" },
-  { value: "warm", label: "Warm" },
-  { value: "cold", label: "Cold" },
-];
-
 // Status options
 const STATUS_OPTIONS = [
   { value: "all", label: "Semua Status" },
@@ -32,17 +24,18 @@ const STATUS_OPTIONS = [
 
 export default function BroadcastLeadModal({ onClose, onSuccess }) {
   const [formData, setFormData] = useState({
-    pesan: "",
-    filter_label: "all",
-    filter_status: "all",
-    filter_assign_sales: "all",
+    message: "",
+    lead_label: "",
+    status: "",
+    sales_id: null,
   });
 
   const [salesList, setSalesList] = useState([]);
+  const [labelOptions, setLabelOptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Fetch sales list
+  // Fetch sales list and labels
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -50,13 +43,39 @@ export default function BroadcastLeadModal({ onClose, onSuccess }) {
         const token = localStorage.getItem("token");
         if (!token) return;
 
-        // Fetch sales list (mock for now, adjust based on your API)
-        // TODO: Replace with actual API call
-        setSalesList([
-          { value: "all", label: "Semua Sales" },
-          { value: "sales1", label: "Sales 1" },
-          { value: "sales2", label: "Sales 2" },
-        ]);
+        // Fetch sales list
+        const salesRes = await fetch(`${BASE_URL}/sales/lead/sales-list`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (salesRes.ok) {
+          const salesData = await salesRes.json();
+          if (salesData.success && salesData.data && Array.isArray(salesData.data)) {
+            const salesOpts = salesData.data.map((sales) => ({
+              value: sales.id,
+              label: sales.nama || sales.name || `Sales ${sales.id}`,
+            }));
+            setSalesList(salesOpts);
+          }
+        }
+
+        // Fetch labels
+        const labelsRes = await fetch(`${BASE_URL}/sales/lead/labels-list`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (labelsRes.ok) {
+          const labelsData = await labelsRes.json();
+          if (labelsData.success && labelsData.data && Array.isArray(labelsData.data)) {
+            const labelOpts = labelsData.data.map((label) => ({
+              value: label,
+              label: label,
+            }));
+            setLabelOptions(labelOpts);
+          }
+        }
       } catch (err) {
         console.error("Error fetching data:", err);
       } finally {
@@ -74,7 +93,7 @@ export default function BroadcastLeadModal({ onClose, onSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.pesan || !formData.pesan.trim()) {
+    if (!formData.message || !formData.message.trim()) {
       toastError("Pesan WhatsApp wajib diisi");
       return;
     }
@@ -83,13 +102,22 @@ export default function BroadcastLeadModal({ onClose, onSuccess }) {
     const token = localStorage.getItem("token");
 
     try {
-      const res = await fetch(`${BASE_URL}/sales/leads/broadcast`, {
+      // Build payload according to API documentation
+      const payload = {
+        message: formData.message.trim(),
+        ...(formData.lead_label && formData.lead_label.trim() && { lead_label: formData.lead_label.trim() }),
+        ...(formData.status && formData.status !== "" && { status: formData.status.toUpperCase() }),
+        ...(formData.sales_id && { sales_id: formData.sales_id }),
+      };
+
+      const res = await fetch(`${BASE_URL}/sales/lead/broadcast`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Accept: "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -130,8 +158,8 @@ export default function BroadcastLeadModal({ onClose, onSuccess }) {
             </label>
             <textarea
               placeholder="Masukkan pesan yang akan dikirim..."
-              value={formData.pesan}
-              onChange={(e) => handleChange("pesan", e.target.value)}
+              value={formData.message}
+              onChange={(e) => handleChange("message", e.target.value)}
               className="form-input"
               rows={6}
             />
@@ -139,37 +167,49 @@ export default function BroadcastLeadModal({ onClose, onSuccess }) {
 
           {/* Filter Label Lead */}
           <div className="form-group form-group--secondary">
-            <label>Filter Label Lead</label>
+            <label>Filter Label Lead (Opsional)</label>
             <Dropdown
-              value={formData.filter_label}
-              options={LABEL_OPTIONS}
-              onChange={(e) => handleChange("filter_label", e.value)}
+              value={formData.lead_label}
+              options={labelOptions}
+              onChange={(e) => handleChange("lead_label", e.value)}
+              placeholder="Pilih Label (Opsional)"
               className="w-full"
               style={{ width: "100%" }}
+              optionLabel="label"
+              optionValue="value"
+              showClear
             />
           </div>
 
           {/* Filter Status Lead */}
           <div className="form-group form-group--secondary">
-            <label>Filter Status Lead</label>
+            <label>Filter Status Lead (Opsional)</label>
             <Dropdown
-              value={formData.filter_status}
-              options={STATUS_OPTIONS}
-              onChange={(e) => handleChange("filter_status", e.value)}
+              value={formData.status}
+              options={STATUS_OPTIONS.filter((opt) => opt.value !== "all")}
+              onChange={(e) => handleChange("status", e.value)}
+              placeholder="Pilih Status (Opsional)"
               className="w-full"
               style={{ width: "100%" }}
+              optionLabel="label"
+              optionValue="value"
+              showClear
             />
           </div>
 
           {/* Filter Assign Sales */}
           <div className="form-group form-group--secondary">
-            <label>Filter Assign Sales</label>
+            <label>Filter Assign Sales (Opsional)</label>
             <Dropdown
-              value={formData.filter_assign_sales}
+              value={formData.sales_id}
               options={salesList}
-              onChange={(e) => handleChange("filter_assign_sales", e.value)}
+              onChange={(e) => handleChange("sales_id", e.value)}
+              placeholder="Pilih Sales (Opsional)"
               className="w-full"
               style={{ width: "100%" }}
+              optionLabel="label"
+              optionValue="value"
+              showClear
             />
           </div>
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Dropdown } from "primereact/dropdown";
+import { Calendar } from "primereact/calendar";
 import "@/styles/sales/customer.css";
 import "@/styles/sales/admin.css";
 import "@/styles/sales/leads-modal.css";
@@ -14,17 +15,15 @@ const BASE_URL = "/api";
 
 // Channel options
 const CHANNEL_OPTIONS = [
-  { value: "", label: "Pilih Channel" },
-  { value: "whatsapp", label: "WhatsApp" },
-  { value: "telepon", label: "Telepon" },
-  { value: "email", label: "Email" },
-  { value: "meeting", label: "Meeting" },
-  { value: "lainnya", label: "Lainnya" },
+  { value: "WhatsApp", label: "WhatsApp" },
+  { value: "Telepon", label: "Telepon" },
+  { value: "Email", label: "Email" },
+  { value: "Meeting", label: "Meeting" },
+  { value: "Lainnya", label: "Lainnya" },
 ];
 
-// Type Aktivitas options
-const TYPE_AKTIVITAS_OPTIONS = [
-  { value: "", label: "Pilih Type" },
+// Type options (sesuai dokumentasi)
+const TYPE_OPTIONS = [
   { value: "whatsapp_out", label: "WhatsApp Out" },
   { value: "call_out", label: "Call Out" },
   { value: "send_price", label: "Send Price" },
@@ -36,9 +35,10 @@ const TYPE_AKTIVITAS_OPTIONS = [
 
 export default function AddFollowUpModal({ lead, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
+    follow_up_date: null,
     channel: "",
-    type_aktivitas: "",
-    keterangan: "",
+    note: "",
+    type: "",
   });
 
   const [submitting, setSubmitting] = useState(false);
@@ -53,9 +53,10 @@ export default function AddFollowUpModal({ lead, onClose, onSuccess }) {
     if (lead) {
       // Reset form when lead changes
       setFormData({
+        follow_up_date: new Date(),
         channel: "",
-        type_aktivitas: "",
-        keterangan: "",
+        note: "",
+        type: "",
       });
     }
   }, [lead]);
@@ -67,13 +68,18 @@ export default function AddFollowUpModal({ lead, onClose, onSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!formData.follow_up_date) {
+      toastError("Tanggal Follow Up wajib diisi");
+      return;
+    }
+
     if (!formData.channel) {
       toastError("Channel wajib dipilih");
       return;
     }
 
-    if (!formData.type_aktivitas) {
-      toastError("Type Aktivitas wajib dipilih");
+    if (!formData.type) {
+      toastError("Type wajib dipilih");
       return;
     }
 
@@ -81,18 +87,33 @@ export default function AddFollowUpModal({ lead, onClose, onSuccess }) {
     const token = localStorage.getItem("token");
 
     try {
-      const res = await fetch(`${BASE_URL}/sales/leads/follow-up`, {
+      // Format date to "YYYY-MM-DD HH:mm:ss"
+      const formatDateTime = (date) => {
+        if (!date) return null;
+        if (date instanceof Date) {
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, "0");
+          const day = String(date.getDate()).padStart(2, "0");
+          const hours = String(date.getHours()).padStart(2, "0");
+          const minutes = String(date.getMinutes()).padStart(2, "0");
+          const seconds = String(date.getSeconds()).padStart(2, "0");
+          return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        }
+        return null;
+      };
+
+      const res = await fetch(`${BASE_URL}/sales/lead/${lead?.id}/followup`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Accept: "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          lead_id: lead?.id,
-          customer_id: customer.id || lead?.customer_id,
+          follow_up_date: formatDateTime(formData.follow_up_date),
           channel: formData.channel,
-          type_aktivitas: formData.type_aktivitas,
-          keterangan: formData.keterangan || "",
+          note: formData.note || "",
+          type: formData.type,
         }),
       });
 
@@ -142,6 +163,23 @@ export default function AddFollowUpModal({ lead, onClose, onSuccess }) {
             </div>
           </div>
 
+          {/* Follow Up Date */}
+          <div className="form-group form-group--primary">
+            <label>
+              Tanggal Follow Up <span className="required">*</span>
+            </label>
+            <Calendar
+              value={formData.follow_up_date}
+              onChange={(e) => handleChange("follow_up_date", e.value)}
+              showTime
+              hourFormat="24"
+              dateFormat="dd/mm/yy"
+              placeholder="dd/mm/yyyy --:--"
+              className="w-full"
+              style={{ width: "100%" }}
+            />
+          </div>
+
           {/* Channel Dropdown */}
           <div className="form-group form-group--primary">
             <label>
@@ -154,31 +192,38 @@ export default function AddFollowUpModal({ lead, onClose, onSuccess }) {
               placeholder="Pilih Channel"
               className="w-full"
               style={{ width: "100%" }}
+              optionLabel="label"
+              optionValue="value"
             />
           </div>
 
-          {/* Type Aktivitas Dropdown */}
+          {/* Type Dropdown */}
           <div className="form-group form-group--primary">
             <label>
-              Type Aktivitas <span className="required">*</span>
+              Type <span className="required">*</span>
             </label>
             <Dropdown
-              value={formData.type_aktivitas}
-              options={TYPE_AKTIVITAS_OPTIONS}
-              onChange={(e) => handleChange("type_aktivitas", e.value)}
+              value={formData.type}
+              options={TYPE_OPTIONS}
+              onChange={(e) => handleChange("type", e.value)}
               placeholder="Pilih Type"
               className="w-full"
               style={{ width: "100%" }}
+              optionLabel="label"
+              optionValue="value"
             />
+            <small style={{ color: "var(--dash-muted)", marginTop: "0.25rem", display: "block" }}>
+              closed_won → CONVERTED | closed_lost → LOST | interested → QUALIFIED | lainnya → CONTACTED
+            </small>
           </div>
 
-          {/* Keterangan (Optional) */}
+          {/* Note (Optional) */}
           <div className="form-group form-group--secondary">
-            <label>Keterangan</label>
+            <label>Note</label>
             <textarea
-              placeholder="Tambahkan keterangan (opsional)..."
-              value={formData.keterangan}
-              onChange={(e) => handleChange("keterangan", e.target.value)}
+              placeholder="Tambahkan note (opsional)..."
+              value={formData.note}
+              onChange={(e) => handleChange("note", e.target.value)}
               className="form-input"
               rows={4}
             />

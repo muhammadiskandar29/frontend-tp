@@ -51,16 +51,14 @@ export default function SendWhatsAppModal({ lead, onClose, onSuccess }) {
     const token = localStorage.getItem("token");
 
     try {
-      const res = await fetch(`${BASE_URL}/sales/leads/send-whatsapp`, {
+      const res = await fetch(`${BASE_URL}/sales/lead/${lead?.id}/send-whatsapp`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Accept: "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          lead_id: lead?.id,
-          customer_id: customer.id || lead?.customer_id,
-          phone: customerPhone,
           message: formData.pesan.trim(),
         }),
       });

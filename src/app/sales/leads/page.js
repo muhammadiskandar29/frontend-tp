@@ -21,6 +21,7 @@ const BroadcastLeadModal = dynamic(() => import("./broadcastLead"), { ssr: false
 const SendWhatsAppModal = dynamic(() => import("./sendWhatsApp"), { ssr: false });
 const AddFollowUpModal = dynamic(() => import("./addFollowUp"), { ssr: false });
 const ViewLeadModal = dynamic(() => import("./viewLead"), { ssr: false });
+const EditLeadModal = dynamic(() => import("./editLead"), { ssr: false });
 
 const LEADS_COLUMNS = [
   "Nama Customer",
@@ -68,6 +69,7 @@ export default function LeadsPage() {
   const [showSendWhatsApp, setShowSendWhatsApp] = useState(false);
   const [showAddFollowUp, setShowAddFollowUp] = useState(false);
   const [showViewLead, setShowViewLead] = useState(false);
+  const [showEditLead, setShowEditLead] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
 
   // Statistics
@@ -210,8 +212,8 @@ export default function LeadsPage() {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      // Fetch semua labels (tanpa pagination untuk mendapatkan semua unique labels)
-      const res = await fetch(`/api/sales/lead?per_page=1000`, {
+      // Fetch labels from API
+      const res = await fetch(`/api/sales/lead/labels-list`, {
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
@@ -222,11 +224,9 @@ export default function LeadsPage() {
       if (res.ok) {
         const json = await res.json();
         if (json.success && json.data && Array.isArray(json.data)) {
-          // Extract unique labels dari semua data
-          const uniqueLabels = [...new Set(json.data.map((lead) => lead.lead_label).filter(Boolean))];
           const labelOpts = [
             { value: "all", label: "Semua Label" },
-            ...uniqueLabels.map((label) => ({ value: label, label: label })),
+            ...json.data.map((label) => ({ value: label, label: label })),
           ];
           setLabelOptions(labelOpts);
         }
@@ -697,8 +697,8 @@ export default function LeadsPage() {
                             <button
                               className="leads-action-btn leads-action-btn--edit"
                               onClick={() => {
-                                // TODO: Implement edit
-                                toastWarning("Fitur edit akan segera tersedia");
+                                setSelectedLead(lead);
+                                setShowEditLead(true);
                               }}
                               title="Edit"
                             >
@@ -706,9 +706,30 @@ export default function LeadsPage() {
                             </button>
                             <button
                               className="leads-action-btn leads-action-btn--delete"
-                              onClick={() => {
-                                // TODO: Implement delete
-                                toastWarning("Fitur hapus akan segera tersedia");
+                              onClick={async () => {
+                                if (confirm(`Apakah Anda yakin ingin menghapus lead ini?`)) {
+                                  try {
+                                    const token = localStorage.getItem("token");
+                                    const res = await fetch(`/api/sales/lead/${lead.id}`, {
+                                      method: "DELETE",
+                                      headers: {
+                                        "Content-Type": "application/json",
+                                        Accept: "application/json",
+                                        Authorization: `Bearer ${token}`,
+                                      },
+                                    });
+                                    const data = await res.json();
+                                    if (res.ok && data.success) {
+                                      toastSuccess(data.message || "Lead berhasil dihapus");
+                                      requestRefresh("Lead berhasil dihapus", "success");
+                                    } else {
+                                      throw new Error(data.message || "Gagal menghapus lead");
+                                    }
+                                  } catch (err) {
+                                    console.error(err);
+                                    toastError("Gagal menghapus lead: " + err.message);
+                                  }
+                                }
                               }}
                               title="Hapus"
                             >
@@ -814,9 +835,21 @@ export default function LeadsPage() {
             setSelectedLead(null);
           }}
           onEdit={(lead) => {
-            // TODO: Open edit modal
-            toastWarning("Fitur edit akan segera tersedia");
+            setSelectedLead(lead);
+            setShowViewLead(false);
+            setShowEditLead(true);
           }}
+        />
+      )}
+
+      {showEditLead && selectedLead && (
+        <EditLeadModal
+          lead={selectedLead}
+          onClose={() => {
+            setShowEditLead(false);
+            setSelectedLead(null);
+          }}
+          onSuccess={handleModalSuccess}
         />
       )}
     </Layout>

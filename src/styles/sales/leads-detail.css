@@ -238,10 +238,43 @@
   letter-spacing: 0.05em;
 }
 
+.leads-activity-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.leads-activity-type {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--dash-text-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.leads-activity-date {
+  font-size: 0.8125rem;
+  color: var(--dash-muted);
+  font-weight: 500;
+}
+
 .leads-activity-description {
   font-size: 0.875rem;
   color: var(--dash-text);
   line-height: 1.5;
+  margin-top: 0.25rem;
+}
+
+.leads-activity-user {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--dash-muted);
+  margin-top: 0.5rem;
+  font-style: italic;
 }
 
 /* Empty State */

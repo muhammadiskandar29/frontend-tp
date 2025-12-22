@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { Dropdown } from "primereact/dropdown";
 import { InputNumber } from "primereact/inputnumber";
-import { MultiSelect } from "primereact/multiselect";
 import "@/styles/sales/customer.css";
 import "@/styles/sales/admin.css";
 import "@/styles/sales/leads-modal.css";
@@ -16,11 +15,11 @@ const BASE_URL = "/api";
 
 export default function GenerateLeadsModal({ onClose, onSuccess }) {
   const [formData, setFormData] = useState({
-    label: "",
-    assign_sales: "",
-    generate_all: true,
-    filter_pendapatan_min: null,
-    filter_produk: [],
+    lead_label: "",
+    sales_id: null,
+    all: false,
+    min_salary: null,
+    produk_id: [],
   });
 
   const [salesList, setSalesList] = useState([]);
@@ -36,12 +35,22 @@ export default function GenerateLeadsModal({ onClose, onSuccess }) {
         const token = localStorage.getItem("token");
         if (!token) return;
 
-        // Fetch sales list (mock for now, adjust based on your API)
-        // TODO: Replace with actual API call
-        setSalesList([
-          { value: "sales1", label: "Sales 1" },
-          { value: "sales2", label: "Sales 2" },
-        ]);
+        // Fetch sales list from API
+        const salesRes = await fetch(`${BASE_URL}/sales/lead/sales-list`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (salesRes.ok) {
+          const salesData = await salesRes.json();
+          if (salesData.success && salesData.data && Array.isArray(salesData.data)) {
+            const salesOpts = salesData.data.map((sales) => ({
+              value: sales.id,
+              label: sales.nama || sales.name || `Sales ${sales.id}`,
+            }));
+            setSalesList(salesOpts);
+          }
+        }
 
         // Fetch products
         const productsRes = await fetch(`${BASE_URL}/sales/produk`, {
@@ -52,10 +61,12 @@ export default function GenerateLeadsModal({ onClose, onSuccess }) {
         if (productsRes.ok) {
           const productsData = await productsRes.json();
           if (productsData.success && productsData.data) {
-            const productOptions = productsData.data.map((p) => ({
-              value: p.id,
-              label: p.nama || p.name,
-            }));
+            const productOptions = Array.isArray(productsData.data)
+              ? productsData.data.map((p) => ({
+                  value: p.id,
+                  label: p.nama || p.name,
+                }))
+              : [];
             setProducts(productOptions);
           }
         }
@@ -76,12 +87,12 @@ export default function GenerateLeadsModal({ onClose, onSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.label || !formData.label.trim()) {
+    if (!formData.lead_label || !formData.lead_label.trim()) {
       toastError("Label Lead wajib diisi");
       return;
     }
 
-    if (!formData.assign_sales) {
+    if (!formData.sales_id) {
       toastError("Assign Sales wajib dipilih");
       return;
     }
@@ -90,13 +101,26 @@ export default function GenerateLeadsModal({ onClose, onSuccess }) {
     const token = localStorage.getItem("token");
 
     try {
-      const res = await fetch(`${BASE_URL}/sales/leads/generate`, {
+      // Build payload according to API documentation
+      // Note: API expects single produk_id, but we allow multiple selection
+      // If multiple selected, we'll use the first one or send all if API supports it
+      const payload = {
+        lead_label: formData.lead_label.trim(),
+        sales_id: formData.sales_id,
+        all: formData.all || false,
+        ...(formData.min_salary && { min_salary: Number(formData.min_salary) }),
+        // API expects single produk_id, so we use the first selected product
+        ...(formData.produk_id && formData.produk_id.length > 0 && { produk_id: formData.produk_id[0] }),
+      };
+
+      const res = await fetch(`${BASE_URL}/sales/lead/generate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Accept: "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -142,9 +166,9 @@ export default function GenerateLeadsModal({ onClose, onSuccess }) {
             </label>
             <input
               type="text"
-              placeholder="Contoh: Promo Akhir Tahun 2024"
-              value={formData.label}
-              onChange={(e) => handleChange("label", e.target.value)}
+              placeholder="Contoh: Campaign A"
+              value={formData.lead_label}
+              onChange={(e) => handleChange("lead_label", e.target.value)}
               className="form-input"
             />
           </div>
@@ -155,12 +179,14 @@ export default function GenerateLeadsModal({ onClose, onSuccess }) {
               Assign Sales <span className="required">*</span>
             </label>
             <Dropdown
-              value={formData.assign_sales}
+              value={formData.sales_id}
               options={salesList}
-              onChange={(e) => handleChange("assign_sales", e.value)}
+              onChange={(e) => handleChange("sales_id", e.value)}
               placeholder="Pilih Sales"
               className="w-full"
               style={{ width: "100%" }}
+              optionLabel="label"
+              optionValue="value"
             />
           </div>
 
@@ -169,8 +195,8 @@ export default function GenerateLeadsModal({ onClose, onSuccess }) {
             <label>
               <input
                 type="checkbox"
-                checked={formData.generate_all}
-                onChange={(e) => handleChange("generate_all", e.target.checked)}
+                checked={formData.all}
+                onChange={(e) => handleChange("all", e.target.checked)}
                 style={{ marginRight: "0.5rem" }}
               />
               Generate dari Semua Customer
@@ -179,10 +205,10 @@ export default function GenerateLeadsModal({ onClose, onSuccess }) {
 
           {/* Filter Pendapatan Minimum */}
           <div className="form-group form-group--secondary">
-            <label>Filter Pendapatan Minimum</label>
+            <label>Filter Pendapatan Minimum (min_salary)</label>
             <InputNumber
-              value={formData.filter_pendapatan_min}
-              onValueChange={(e) => handleChange("filter_pendapatan_min", e.value)}
+              value={formData.min_salary}
+              onValueChange={(e) => handleChange("min_salary", e.value)}
               placeholder="Tidak ada filter"
               mode="currency"
               currency="IDR"
@@ -191,28 +217,62 @@ export default function GenerateLeadsModal({ onClose, onSuccess }) {
               style={{ width: "100%" }}
               useGrouping={true}
             />
-            {!formData.filter_pendapatan_min && (
+            {!formData.min_salary && (
               <small style={{ color: "var(--dash-muted)", marginTop: "0.25rem", display: "block" }}>
                 Tidak ada filter
               </small>
             )}
           </div>
 
-          {/* Filter Produk yang Pernah Dibeli */}
+          {/* Filter Produk yang Pernah Dibeli - Checkbox */}
           <div className="form-group form-group--secondary">
             <label>Filter Produk yang Pernah Dibeli</label>
-            <MultiSelect
-              value={formData.filter_produk}
-              options={products}
-              onChange={(e) => handleChange("filter_produk", e.value)}
-              placeholder="Tidak ada filter"
-              className="w-full"
-              style={{ width: "100%" }}
-              display="chip"
-            />
-            {(!formData.filter_produk || formData.filter_produk.length === 0) && (
+            <div style={{ marginTop: "0.5rem", maxHeight: "200px", overflowY: "auto", border: "1px solid #e5e7eb", borderRadius: "0.375rem", padding: "0.5rem" }}>
+              {products.length > 0 ? (
+                products.map((product) => (
+                  <label
+                    key={product.value}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      padding: "0.5rem",
+                      cursor: "pointer",
+                      borderRadius: "0.25rem",
+                      marginBottom: "0.25rem",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f3f4f6")}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formData.produk_id.includes(product.value)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          handleChange("produk_id", [...formData.produk_id, product.value]);
+                        } else {
+                          handleChange(
+                            "produk_id",
+                            formData.produk_id.filter((id) => id !== product.value)
+                          );
+                        }
+                      }}
+                      style={{ marginRight: "0.5rem" }}
+                    />
+                    <span>{product.label}</span>
+                  </label>
+                ))
+              ) : (
+                <div style={{ padding: "0.5rem", color: "var(--dash-muted)" }}>Tidak ada produk</div>
+              )}
+            </div>
+            {(!formData.produk_id || formData.produk_id.length === 0) && (
               <small style={{ color: "var(--dash-muted)", marginTop: "0.25rem", display: "block" }}>
                 Tidak ada filter
+              </small>
+            )}
+            {formData.produk_id && formData.produk_id.length > 1 && (
+              <small style={{ color: "#f59e0b", marginTop: "0.25rem", display: "block" }}>
+                ⚠️ Hanya produk pertama yang akan digunakan ({products.find((p) => p.value === formData.produk_id[0])?.label || formData.produk_id[0]})
               </small>
             )}
           </div>

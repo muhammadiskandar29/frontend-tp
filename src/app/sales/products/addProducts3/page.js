@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { 
   Type, Image as ImageIcon, FileText, List, MessageSquare, 
   HelpCircle, Image as SliderIcon, Square, Youtube, Link as LinkIcon,
-  MapPin, Film, Minus, Code, X, Save, Rocket, ChevronsLeft, Eye, EyeOff
+  MapPin, Film, Minus, Code, X, Save, Rocket, ChevronsLeft, Eye, EyeOff, ArrowLeft
 } from "lucide-react";
 import { Dialog } from "primereact/dialog";
 import { Button } from "primereact/button";
@@ -50,7 +51,7 @@ const COMPONENT_CATEGORIES = {
 };
 
 export default function AddProducts3Page() {
-  const [activeTab, setActiveTab] = useState("konten");
+  const router = useRouter();
   const [showComponentModal, setShowComponentModal] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [blocks, setBlocks] = useState([]);
@@ -106,75 +107,16 @@ export default function AddProducts3Page() {
 
   return (
     <div className="add-products3-container">
-      {/* Header dengan tabs */}
-      <div className="page-builder-header">
-        <div className="header-left">
-          <div className="header-tabs">
-            <button
-              className={`header-tab ${activeTab === "konten" ? "active" : ""}`}
-              onClick={() => setActiveTab("konten")}
-            >
-              Konten
-            </button>
-            <button
-              className={`header-tab ${activeTab === "desain" ? "active" : ""}`}
-              onClick={() => setActiveTab("desain")}
-            >
-              Desain
-            </button>
-            <button
-              className={`header-tab ${activeTab === "pengaturan" ? "active" : ""}`}
-              onClick={() => setActiveTab("pengaturan")}
-            >
-              Pengaturan
-            </button>
-          </div>
-        </div>
-        
-        <div className="header-right">
-          <button
-            className="header-collapse-btn"
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            title="Collapse sidebar"
-          >
-            <ChevronsLeft size={18} />
-          </button>
-          
-          <div className="header-status">
-            <span className="editing-badge">
-              Only you are editing this page
-            </span>
-            <div className="header-icons">
-              <div className="header-icon-item">
-                <Eye size={16} />
-                <span className="icon-count">0</span>
-              </div>
-              <div className="header-icon-item">
-                <EyeOff size={16} />
-                <span className="icon-count">0</span>
-              </div>
-              <div className="header-icon-item">
-                <Eye size={16} />
-                <span className="icon-count">0</span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="header-actions">
-            <Button
-              label="Simpan"
-              icon={<Save size={16} />}
-              className="p-button-text p-button-secondary save-btn"
-              onClick={() => {}}
-            />
-            <Button
-              label="Simpan & Terbitkan"
-              icon={<Rocket size={16} />}
-              className="p-button-primary publish-btn"
-              onClick={() => {}}
-            />
-          </div>
-        </div>
+      {/* Back Button */}
+      <div className="page-header-section">
+        <button
+          className="back-to-products-btn"
+          onClick={() => router.push("/sales/products")}
+          aria-label="Back to products list"
+        >
+          <ArrowLeft size={18} />
+          <span>Back to Products</span>
+        </button>
       </div>
 
       {/* Main Content Area */}
@@ -194,27 +136,21 @@ export default function AddProducts3Page() {
 
         {/* Main Canvas Area */}
         <div className="page-builder-canvas">
-          <div className="canvas-grid">
-            {/* Grid dengan 3 kolom - garis vertikal */}
-            <div className="canvas-column">
-              {/* Komponen akan ditambahkan di sini */}
-            </div>
-            <div className="canvas-column-divider"></div>
-            <div className="canvas-column">
-              {/* Komponen akan ditambahkan di sini */}
-            </div>
-            <div className="canvas-column-divider"></div>
-            <div className="canvas-column">
-              {/* Komponen akan ditambahkan di sini */}
-            </div>
+          <div className="canvas-wrapper">
+            {/* Placeholder jika belum ada komponen */}
+            {blocks.length === 0 && (
+              <div className="canvas-empty">
+                <p>Klik "Tambah Komponen Baru" untuk memulai</p>
+              </div>
+            )}
+            
+            {/* Komponen akan ditambahkan di sini */}
+            {blocks.map((block) => (
+              <div key={block.id} className="canvas-block">
+                {/* Block content akan di-render di sini */}
+              </div>
+            ))}
           </div>
-          
-          {/* Placeholder jika belum ada komponen */}
-          {blocks.length === 0 && (
-            <div className="canvas-empty">
-              <p>Klik "Tambah Komponen Baru" untuk memulai</p>
-            </div>
-          )}
         </div>
       </div>
 
@@ -228,9 +164,9 @@ export default function AddProducts3Page() {
         modal
         dismissableMask
         headerStyle={{ padding: "20px 24px", borderBottom: "1px solid #e5e7eb" }}
-        contentStyle={{ padding: "24px", maxHeight: "70vh", overflowY: "auto" }}
+        contentStyle={{ padding: "24px", maxHeight: "70vh", overflowY: "auto", background: "#ffffff" }}
         footer={
-          <div style={{ padding: "16px 24px", borderTop: "1px solid #e5e7eb", display: "flex", justifyContent: "flex-end" }}>
+          <div style={{ padding: "16px 24px", borderTop: "1px solid #e5e7eb", display: "flex", justifyContent: "flex-end", background: "#ffffff" }}>
             <Button
               label="Cancel"
               className="p-button-text p-button-secondary"
