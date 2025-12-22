@@ -301,7 +301,14 @@ export default function AddProducts3Page() {
         {/* Left Sidebar - Form Editing */}
         <div className="page-builder-sidebar">
           <div className="sidebar-content">
-            {/* Button Tambah Komponen Baru - Di atas */}
+            {/* Komponen yang sudah ditambahkan */}
+            {blocks.map((block, index) => (
+              <div key={block.id} className="sidebar-component-item">
+                {renderComponent(block, index)}
+              </div>
+            ))}
+            
+            {/* Button Tambah Komponen Baru - Selalu di bawah komponen terakhir */}
             <button
               className="add-component-btn"
               onClick={() => setShowComponentModal(true)}
@@ -309,13 +316,6 @@ export default function AddProducts3Page() {
               <span className="add-component-icon">+</span>
               <span className="add-component-text">Tambah Komponen Baru</span>
             </button>
-            
-            {/* Komponen yang sudah ditambahkan - Di bawah button */}
-            {blocks.map((block, index) => (
-              <div key={block.id} className="sidebar-component-item">
-                {renderComponent(block, index)}
-              </div>
-            ))}
           </div>
         </div>
 

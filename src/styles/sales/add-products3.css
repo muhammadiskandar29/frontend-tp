@@ -61,8 +61,8 @@
 }
 
 .sidebar-content .add-component-btn {
+  margin-top: 0;
   margin-bottom: 0;
-  order: -1; /* Selalu di atas */
 }
 
 .sidebar-component-item {
