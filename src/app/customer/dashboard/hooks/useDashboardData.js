@@ -80,7 +80,10 @@ export function useDashboardData() {
 
       const actionLabel = getActionLabel(kategoriNama);
       const startDate = getOrderStartDate(order);
-      const statusPembayaran = order.status_pembayaran || order.status_pembayaran_id;
+      const statusPembayaran = order.status_pembayaran || order.status_pembayaran_id || order.status_pembayaran_id_rel?.id;
+      
+      // Check if order is paid: status_pembayaran must be 3
+      // If order is from orders_aktif but status_pembayaran is not 3, still mark as unpaid
       const isPaid = statusPembayaran === 3 || statusPembayaran === "3";
       
       return {
@@ -138,23 +141,41 @@ export function useDashboardData() {
         { id: "active", label: "Order Aktif", value: data?.statistik?.order_aktif ?? 0, icon: "✅" },
       ];
 
-      // Filter only paid orders (status_pembayaran = 3) for active orders
-      const paidOrders = (data?.orders_aktif || []).filter((order) => {
-        const statusPembayaran = order.status_pembayaran || order.status_pembayaran_id;
-        return statusPembayaran === 3 || statusPembayaran === "3";
+      // Combine all orders (aktif + pending) but mark payment status correctly
+      const allOrdersMap = new Map();
+      
+      // Add orders_aktif (should be paid, but check status_pembayaran)
+      (data?.orders_aktif || []).forEach((order) => {
+        if (order.id) {
+          allOrdersMap.set(order.id, {
+            ...order,
+            _isFromActive: true,
+          });
+        }
+      });
+      
+      // Add orders_pending (unpaid orders) - these should be shown but locked
+      (data?.orders_pending || []).forEach((order) => {
+        if (order.id && !allOrdersMap.has(order.id)) {
+          allOrdersMap.set(order.id, {
+            ...order,
+            _isFromPending: true,
+          });
+        }
       });
 
-      // Get unpaid orders for count
-      const unpaidOrders = (data?.orders_pending || []).filter((order) => {
+      const allOrders = Array.from(allOrdersMap.values());
+      
+      // Get unpaid count
+      const unpaidOrders = allOrders.filter((order) => {
         const statusPembayaran = order.status_pembayaran || order.status_pembayaran_id;
         return statusPembayaran !== 3 && statusPembayaran !== "3";
       });
-
       const unpaidCount = unpaidOrders.length;
 
       setDashboardData({
         stats: newStats,
-        activeOrders: adaptOrders(paidOrders),
+        activeOrders: adaptOrders(allOrders),
         customerInfo: customerData || session.user,
         unpaidCount,
       });

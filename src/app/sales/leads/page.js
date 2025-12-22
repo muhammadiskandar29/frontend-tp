@@ -564,10 +564,10 @@ export default function LeadsPage() {
                     const customerEmail = customer.email || lead.email || "";
                     const customerPhone = customer.wa || lead.wa || "";
                     
-                    // Assign Sales dari relasi users
-                    const assignSales = lead.assign_sales_rel || lead.user_rel || {};
-                    const assignSalesName = assignSales.nama || assignSales.name || lead.assign_sales_name || lead.assign_sales || "";
-                    const assignSalesRole = assignSales.role || "Sales";
+                    // Assign Sales dari relasi sales_rel
+                    const assignSales = lead.sales_rel || {};
+                    const assignSalesName = assignSales.nama || assignSales.name || "";
+                    const assignSalesRole = assignSales.level ? (assignSales.level === "2" ? "Sales" : assignSales.level === "1" ? "Admin" : "Sales") : "Sales";
                     
                     // Label dari lead_label
                     const leadLabel = lead.lead_label || lead.label || "";
