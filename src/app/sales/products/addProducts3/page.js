@@ -70,6 +70,7 @@ export default function AddProducts3Page() {
   const [showComponentModal, setShowComponentModal] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [blocks, setBlocks] = useState([]);
+  const [expandedBlockId, setExpandedBlockId] = useState(null);
 
   // Default data untuk setiap komponen
   const getDefaultData = (componentId) => {
@@ -103,6 +104,7 @@ export default function AddProducts3Page() {
     };
     
     setBlocks([...blocks, newBlock]);
+    setExpandedBlockId(newBlock.id); // Expand komponen baru yang ditambahkan
     setShowComponentModal(false);
   };
 
@@ -133,8 +135,15 @@ export default function AddProducts3Page() {
     setBlocks(blocks.filter(b => b.id !== blockId));
   };
 
+  // Handler untuk expand/collapse komponen
+  const handleToggleExpand = (blockId) => {
+    setExpandedBlockId(expandedBlockId === blockId ? null : blockId);
+  };
+
   // Render komponen form editing di sidebar
   const renderComponent = (block, index) => {
+    const isExpanded = expandedBlockId === block.id;
+    
     const commonProps = {
       data: block.data,
       onUpdate: (newData) => handleUpdateBlock(block.id, newData),
@@ -143,6 +152,8 @@ export default function AddProducts3Page() {
       onMoveUp: () => moveBlock(block.id, 'up'),
       onMoveDown: () => moveBlock(block.id, 'down'),
       onDelete: () => deleteBlock(block.id),
+      isExpanded: isExpanded,
+      onToggleExpand: () => handleToggleExpand(block.id),
     };
 
     switch (block.type) {

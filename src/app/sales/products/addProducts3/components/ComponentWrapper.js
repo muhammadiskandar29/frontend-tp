@@ -9,7 +9,9 @@ export default function ComponentWrapper({
   index, 
   onMoveUp, 
   onMoveDown, 
-  onDelete 
+  onDelete,
+  isExpanded = true,
+  onToggleExpand
 }) {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef(null);
@@ -33,11 +35,11 @@ export default function ComponentWrapper({
   return (
     <div className="sidebar-component-card">
       {/* Header dengan arrow dan menu */}
-      <div className="component-card-header">
+      <div className="component-card-header" onClick={onToggleExpand}>
         <div className="component-card-header-left">
           <button 
             className={`component-move-btn-up ${index === 0 ? 'disabled' : ''}`}
-            onClick={onMoveUp} 
+            onClick={(e) => { e.stopPropagation(); onMoveUp(); }}
             disabled={index === 0}
             title="Pindah ke atas"
           >
@@ -46,7 +48,7 @@ export default function ComponentWrapper({
           <ChevronDown 
             size={16} 
             className="component-move-icon-down"
-            onClick={onMoveDown}
+            onClick={(e) => { e.stopPropagation(); onMoveDown(); }}
             title="Pindah ke bawah"
           />
           <span className="component-card-title">{title}</span>
@@ -54,7 +56,7 @@ export default function ComponentWrapper({
         <div className="component-menu-wrapper" ref={menuRef}>
           <button 
             className="component-menu-btn"
-            onClick={() => setShowMenu(!showMenu)}
+            onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
             title="Menu"
           >
             <MoreVertical size={16} />
@@ -72,10 +74,12 @@ export default function ComponentWrapper({
         </div>
       </div>
 
-      {/* Content */}
-      <div className="component-card-content">
-        {children}
-      </div>
+      {/* Content - Collapsible */}
+      {isExpanded && (
+        <div className="component-card-content">
+          {children}
+        </div>
+      )}
     </div>
   );
 }

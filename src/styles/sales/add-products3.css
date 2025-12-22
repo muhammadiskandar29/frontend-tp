@@ -2,10 +2,11 @@
 
 .add-products3-container {
   width: 100%;
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   background: #f5f5f5;
+  overflow: hidden;
 }
 
 /* ===== HEADER SECTION ===== */
@@ -41,6 +42,7 @@
   flex: 1;
   display: flex;
   overflow: hidden;
+  min-height: 0; /* Important untuk flex child dengan overflow */
 }
 
 /* ===== SIDEBAR ===== */
@@ -48,8 +50,9 @@
   width: 400px;
   background: #f9fafb;
   border-right: 1px solid #e5e7eb;
-  overflow-y: auto;
-  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .sidebar-content {
@@ -57,7 +60,28 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  min-height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1;
+  height: 100%;
+}
+
+/* Custom scrollbar untuk sidebar */
+.sidebar-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 
 .sidebar-content .add-component-btn {
@@ -159,9 +183,16 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
-  padding-bottom: 12px;
+  margin-bottom: 0;
+  padding: 12px;
   border-bottom: 1px solid #e5e7eb;
+  cursor: pointer;
+  transition: background 0.2s;
+  background: #ffffff;
+}
+
+.component-card-header:hover {
+  background: #f9fafb;
 }
 
 .component-card-header-left {
@@ -274,6 +305,20 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  padding: 12px;
+  background: #ffffff;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 2000px;
+  }
 }
 
 /* Info Box */
