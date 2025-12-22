@@ -7,8 +7,6 @@ import {
   HelpCircle, Image as SliderIcon, Square, Youtube, Link as LinkIcon,
   MapPin, Film, Minus, Code, X, Save, Rocket, ChevronsLeft, Eye, EyeOff, ArrowLeft
 } from "lucide-react";
-import { Dialog } from "primereact/dialog";
-import { Button } from "primereact/button";
 import "@/styles/sales/add-products3.css";
 
 // Komponen yang tersedia sesuai gambar
@@ -154,31 +152,38 @@ export default function AddProducts3Page() {
         </div>
       </div>
 
-      {/* Component Selection Modal */}
-      <Dialog
-        visible={showComponentModal}
-        onHide={() => setShowComponentModal(false)}
-        header="Pilih Komponen"
-        className="component-selection-modal"
-        style={{ width: "90vw", maxWidth: "800px" }}
-        modal
-        dismissableMask
-        headerStyle={{ padding: "20px 24px", borderBottom: "1px solid #e5e7eb" }}
-        contentStyle={{ padding: "24px", maxHeight: "70vh", overflowY: "auto", background: "#ffffff" }}
-        footer={
-          <div style={{ padding: "16px 24px", borderTop: "1px solid #e5e7eb", display: "flex", justifyContent: "flex-end", background: "#ffffff" }}>
-            <Button
-              label="Cancel"
-              className="p-button-text p-button-secondary"
-              onClick={() => setShowComponentModal(false)}
-            />
+      {/* Component Selection Modal - Simple */}
+      {showComponentModal && (
+        <div className="simple-modal-overlay" onClick={() => setShowComponentModal(false)}>
+          <div className="simple-modal" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="simple-modal-header">
+              <h2 className="simple-modal-title">Pilih Komponen</h2>
+              <button 
+                className="simple-modal-close"
+                onClick={() => setShowComponentModal(false)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            {/* Content */}
+            <div className="simple-modal-content">
+              {renderComponentGrid()}
+            </div>
+            
+            {/* Footer */}
+            <div className="simple-modal-footer">
+              <button 
+                className="simple-modal-cancel"
+                onClick={() => setShowComponentModal(false)}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
-        }
-        closeOnEscape
-        closable
-      >
-        {renderComponentGrid()}
-      </Dialog>
+        </div>
+      )}
     </div>
   );
 }

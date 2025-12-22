@@ -125,43 +125,94 @@
   margin-bottom: 20px;
 }
 
-/* ===== COMPONENT MODAL ===== */
-.component-selection-modal .p-dialog-mask {
-  background: rgba(0, 0, 0, 0.5) !important;
+/* ===== SIMPLE MODAL ===== */
+.simple-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
   backdrop-filter: blur(2px);
 }
 
-.component-selection-modal .p-dialog {
-  background: #ffffff !important;
-  border-radius: 8px !important;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
+.simple-modal {
+  background: #ffffff;
+  border-radius: 8px;
+  width: 90vw;
+  max-width: 800px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
 }
 
-.component-selection-modal .p-dialog-content {
-  background: #ffffff !important;
-  border-radius: 0 0 8px 8px;
+.simple-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
 }
 
-.component-selection-modal .p-dialog-header {
-  padding: 20px 24px !important;
-  border-bottom: 1px solid #e5e7eb !important;
-  background: #ffffff !important;
-  border-radius: 8px 8px 0 0;
+.simple-modal-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
 }
 
-.component-selection-modal .p-dialog-header-close {
-  color: #ef4444 !important;
-  font-size: 20px !important;
-  width: 32px !important;
-  height: 32px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
+.simple-modal-close {
+  background: transparent;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
 }
 
-.component-selection-modal .p-dialog-header-close:hover {
-  background: rgba(239, 68, 68, 0.1) !important;
-  border-radius: 4px !important;
+.simple-modal-close:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.simple-modal-content {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+  max-height: calc(90vh - 140px);
+}
+
+.simple-modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.simple-modal-cancel {
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.simple-modal-cancel:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
 }
 
 .component-modal-content {
