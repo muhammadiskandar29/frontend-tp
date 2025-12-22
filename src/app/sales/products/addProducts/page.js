@@ -721,6 +721,7 @@ useEffect(() => {
       console.table(produkData.data);
 
       // 3️⃣ Fetch users - filter hanya status 1
+      // Mengambil data user dengan relasi (user_rel atau sales_rel)
       const usersRes = await fetch(
         "/api/sales/users",
         { headers }
@@ -731,12 +732,38 @@ useEffect(() => {
       console.log("Success:", usersJson.success);
       console.log("Data:", usersJson.data);
       console.table(usersJson.data);
+      
+      // Map users dengan prioritas: user_rel > sales_rel > nama langsung
       const userOpts = Array.isArray(usersJson.data)
         ? usersJson.data
             .filter((u) => u.status === "1" || u.status === 1) // Filter hanya status 1
-            .map((u) => ({ label: u.nama || u.name, value: u.id }))
+            .map((u) => {
+              // Prioritaskan nama dari relasi jika ada
+              const nama = u.user_rel?.nama 
+                || u.sales_rel?.nama 
+                || u.user?.nama
+                || u.sales?.nama
+                || u.nama 
+                || u.name 
+                || `User #${u.id}`;
+              
+              // Gunakan ID dari relasi jika ada, atau ID langsung
+              const userId = u.user_rel?.id 
+                || u.sales_rel?.id 
+                || u.user?.id
+                || u.sales?.id
+                || u.id;
+              
+              return { 
+                label: nama, 
+                value: Number(userId) // Pastikan value adalah number
+              };
+            })
         : [];
       setUserOptions(userOpts);
+      
+      // Log untuk debugging
+      console.log("📋 User Options (Assign By):", userOpts);
 
       // ✅ SELALU generate kode dari nama dengan dash
       const kodeGenerated = generateKode(produkData.nama || "produk-baru");
