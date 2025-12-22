@@ -5,8 +5,25 @@ import { useRouter } from "next/navigation";
 import { 
   Type, Image as ImageIcon, FileText, List, MessageSquare, 
   HelpCircle, Image as SliderIcon, Square, Youtube, Link as LinkIcon,
-  MapPin, Film, Minus, Code, X, Save, Rocket, ChevronsLeft, Eye, EyeOff, ArrowLeft
+  MapPin, Film, Minus, Code, X, ArrowLeft
 } from "lucide-react";
+import {
+  TextComponent,
+  ImageComponent,
+  VideoComponent,
+  TestimoniComponent,
+  ListComponent,
+  FormComponent,
+  FAQComponent,
+  SliderComponent,
+  ButtonComponent,
+  EmbedComponent,
+  SectionComponent,
+  HTMLComponent,
+  DividerComponent,
+  ScrollTargetComponent,
+  AnimationComponent,
+} from './components';
 import "@/styles/sales/add-products3.css";
 
 // Komponen yang tersedia sesuai gambar
@@ -54,17 +71,92 @@ export default function AddProducts3Page() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [blocks, setBlocks] = useState([]);
 
+  // Default data untuk setiap komponen
+  const getDefaultData = (componentId) => {
+    const defaults = {
+      text: { content: "" },
+      image: { src: "", alt: "", caption: "" },
+      video: { url: "" },
+      testimoni: { items: [] },
+      list: { items: [] },
+      form: {},
+      faq: { items: [] },
+      slider: { images: [] },
+      button: { text: "Klik Disini", link: "#", style: "primary" },
+      embed: { code: "" },
+      section: { background: "#ffffff", padding: "20px" },
+      html: { code: "" },
+      divider: { style: "solid", color: "#e5e7eb" },
+      "scroll-target": { target: "" },
+      animation: { type: "fade" },
+    };
+    return defaults[componentId] || {};
+  };
+
   // Handler untuk menambah komponen baru
   const handleAddComponent = (componentId) => {
     const newBlock = {
       id: `block-${Date.now()}`,
       type: componentId,
-      data: {},
+      data: getDefaultData(componentId),
       order: blocks.length + 1,
     };
     
     setBlocks([...blocks, newBlock]);
     setShowComponentModal(false);
+  };
+
+  // Handler untuk update block data
+  const handleUpdateBlock = (blockId, newData) => {
+    setBlocks(blocks.map(block => 
+      block.id === blockId 
+        ? { ...block, data: { ...block.data, ...newData } }
+        : block
+    ));
+  };
+
+  // Render komponen berdasarkan type
+  const renderComponent = (block) => {
+    const commonProps = {
+      data: block.data,
+      onUpdate: (newData) => handleUpdateBlock(block.id, newData),
+    };
+
+    switch (block.type) {
+      case "text":
+        return <TextComponent {...commonProps} />;
+      case "image":
+        return <ImageComponent {...commonProps} />;
+      case "youtube":
+      case "video":
+        return <VideoComponent {...commonProps} />;
+      case "testimoni":
+        return <TestimoniComponent {...commonProps} />;
+      case "list":
+        return <ListComponent {...commonProps} />;
+      case "form":
+        return <FormComponent {...commonProps} />;
+      case "faq":
+        return <FAQComponent {...commonProps} />;
+      case "slider":
+        return <SliderComponent {...commonProps} />;
+      case "button":
+        return <ButtonComponent {...commonProps} />;
+      case "embed":
+        return <EmbedComponent {...commonProps} />;
+      case "section":
+        return <SectionComponent {...commonProps} />;
+      case "html":
+        return <HTMLComponent {...commonProps} />;
+      case "divider":
+        return <DividerComponent {...commonProps} />;
+      case "scroll-target":
+        return <ScrollTargetComponent {...commonProps} />;
+      case "animation":
+        return <AnimationComponent {...commonProps} />;
+      default:
+        return <div>Unknown component: {block.type}</div>;
+    }
   };
 
   // Render grid komponen dalam modal
@@ -145,7 +237,7 @@ export default function AddProducts3Page() {
             {/* Komponen akan ditambahkan di sini */}
             {blocks.map((block) => (
               <div key={block.id} className="canvas-block">
-                {/* Block content akan di-render di sini */}
+                {renderComponent(block)}
               </div>
             ))}
           </div>
