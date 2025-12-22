@@ -16,14 +16,14 @@ const BASE_URL = "/api";
 export default function AddLeadModal({ onClose, onSuccess }) {
   const [formData, setFormData] = useState({
     customer_id: null,
-    assign_sales: "",
-    label: "",
+    sales_id: null,
+    lead_label: "",
     minat_produk: "",
     alasan_tertarik: "",
-    alasan_belum_membeli: "",
-    harapan_customer: "",
-    last_contact: null,
-    next_followup: null,
+    alasan_belum: "",
+    harapan: "",
+    last_contact_at: null,
+    next_follow_up_at: null,
   });
 
   const [customers, setCustomers] = useState([]);
@@ -54,12 +54,26 @@ export default function AddLeadModal({ onClose, onSuccess }) {
           }
         }
 
-        // Fetch sales list (mock for now, adjust based on your API)
-        // TODO: Replace with actual API call
-        setSalesList([
-          { value: "sales1", label: "Sales 1" },
-          { value: "sales2", label: "Sales 2" },
-        ]);
+        // Fetch sales list from API
+        const salesRes = await fetch(`${BASE_URL}/sales/users`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (salesRes.ok) {
+          const salesData = await salesRes.json();
+          if (salesData.success && salesData.data && Array.isArray(salesData.data)) {
+            // Filter only active users (status === "1" or level === "2" for sales)
+            const activeSales = salesData.data.filter(
+              (user) => user.status === "1" || user.status === 1 || user.level === "2" || user.level === 2
+            );
+            const salesOpts = activeSales.map((user) => ({
+              value: user.id,
+              label: user.nama || user.name || `User ${user.id}`,
+            }));
+            setSalesList(salesOpts);
+          }
+        }
       } catch (err) {
         console.error("Error fetching data:", err);
       } finally {
@@ -93,7 +107,7 @@ export default function AddLeadModal({ onClose, onSuccess }) {
       return;
     }
 
-    if (!formData.label || !formData.label.trim()) {
+    if (!formData.lead_label || !formData.lead_label.trim()) {
       toastError("Label Lead wajib diisi");
       return;
     }
@@ -102,13 +116,43 @@ export default function AddLeadModal({ onClose, onSuccess }) {
     const token = localStorage.getItem("token");
 
     try {
-      const res = await fetch(`${BASE_URL}/sales/leads`, {
+      // Format dates to "YYYY-MM-DD HH:mm:ss" if provided
+      const formatDateTime = (date) => {
+        if (!date) return null;
+        if (date instanceof Date) {
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, "0");
+          const day = String(date.getDate()).padStart(2, "0");
+          const hours = String(date.getHours()).padStart(2, "0");
+          const minutes = String(date.getMinutes()).padStart(2, "0");
+          const seconds = String(date.getSeconds()).padStart(2, "0");
+          return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        }
+        return null;
+      };
+
+      // Build payload according to API documentation
+      const payload = {
+        customer_id: formData.customer_id,
+        lead_label: formData.lead_label.trim(),
+        status: "NEW",
+        ...(formData.sales_id && { sales_id: formData.sales_id }),
+        ...(formData.minat_produk && formData.minat_produk.trim() && { minat_produk: formData.minat_produk.trim() }),
+        ...(formData.alasan_tertarik && formData.alasan_tertarik.trim() && { alasan_tertarik: formData.alasan_tertarik.trim() }),
+        ...(formData.alasan_belum && formData.alasan_belum.trim() && { alasan_belum: formData.alasan_belum.trim() }),
+        ...(formData.harapan && formData.harapan.trim() && { harapan: formData.harapan.trim() }),
+        ...(formData.last_contact_at && { last_contact_at: formatDateTime(formData.last_contact_at) }),
+        ...(formData.next_follow_up_at && { next_follow_up_at: formatDateTime(formData.next_follow_up_at) }),
+      };
+
+      const res = await fetch(`${BASE_URL}/sales/lead`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Accept: "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -195,12 +239,14 @@ export default function AddLeadModal({ onClose, onSuccess }) {
           <div className="form-group form-group--primary">
             <label>Assign Sales</label>
             <Dropdown
-              value={formData.assign_sales}
+              value={formData.sales_id}
               options={salesList}
-              onChange={(e) => handleChange("assign_sales", e.value)}
+              onChange={(e) => handleChange("sales_id", e.value)}
               placeholder="Pilih Sales"
               className="w-full"
               style={{ width: "100%" }}
+              optionLabel="label"
+              optionValue="value"
             />
           </div>
 
@@ -212,8 +258,8 @@ export default function AddLeadModal({ onClose, onSuccess }) {
             <input
               type="text"
               placeholder="Contoh: Promo Akhir Tahun 2024"
-              value={formData.label}
-              onChange={(e) => handleChange("label", e.target.value)}
+              value={formData.lead_label}
+              onChange={(e) => handleChange("lead_label", e.target.value)}
               className="form-input"
             />
           </div>
@@ -247,8 +293,8 @@ export default function AddLeadModal({ onClose, onSuccess }) {
             <label>Alasan Belum Membeli</label>
             <textarea
               placeholder="Alasan customer belum membeli..."
-              value={formData.alasan_belum_membeli}
-              onChange={(e) => handleChange("alasan_belum_membeli", e.target.value)}
+              value={formData.alasan_belum}
+              onChange={(e) => handleChange("alasan_belum", e.target.value)}
               className="form-input"
               rows={3}
             />
@@ -259,8 +305,8 @@ export default function AddLeadModal({ onClose, onSuccess }) {
             <label>Harapan Customer</label>
             <textarea
               placeholder="Harapan dari customer..."
-              value={formData.harapan_customer}
-              onChange={(e) => handleChange("harapan_customer", e.target.value)}
+              value={formData.harapan}
+              onChange={(e) => handleChange("harapan", e.target.value)}
               className="form-input"
               rows={3}
             />
@@ -270,8 +316,8 @@ export default function AddLeadModal({ onClose, onSuccess }) {
           <div className="form-group form-group--secondary">
             <label>Last Contact</label>
             <Calendar
-              value={formData.last_contact}
-              onChange={(e) => handleChange("last_contact", e.value)}
+              value={formData.last_contact_at}
+              onChange={(e) => handleChange("last_contact_at", e.value)}
               showTime
               hourFormat="24"
               dateFormat="dd/mm/yy"
@@ -285,8 +331,8 @@ export default function AddLeadModal({ onClose, onSuccess }) {
           <div className="form-group form-group--secondary">
             <label>Next Follow Up</label>
             <Calendar
-              value={formData.next_followup}
-              onChange={(e) => handleChange("next_followup", e.value)}
+              value={formData.next_follow_up_at}
+              onChange={(e) => handleChange("next_follow_up_at", e.value)}
               showTime
               hourFormat="24"
               dateFormat="dd/mm/yy"

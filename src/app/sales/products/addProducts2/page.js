@@ -15,8 +15,10 @@ import { ArrowLeft } from "lucide-react";
 import DragDropUpload from "./components/DragDropUpload";
 import DragDropGallery from "./components/DragDropGallery";
 import PageBuilder from "./components/PageBuilder";
+import LandingPageStudio from "./components/LandingPageStudio";
 import "@/styles/sales/add-products.css";
 import "@/styles/sales/page-builder.css";
+import "@/styles/sales/landing-page-studio.css";
 
 export default function Page() {
   const router = useRouter();
@@ -1340,7 +1342,23 @@ useEffect(() => {
       </div>
 
 
-      {/* SECTION 9: Pengaturan */}
+      {/* SECTION 9: Landing Page Studio */}
+      <div className="form-section-card landing-studio-wrapper">
+        <div className="section-header">
+          <h3 className="section-title">Landing Page Studio</h3>
+          <p className="section-description">Bangun landing page dengan drag & drop builder</p>
+        </div>
+        <div className="section-content landing-studio-content">
+          <LandingPageStudio
+            blocks={form.page_blocks || []}
+            onBlocksChange={(blocks) => handleChange("page_blocks", blocks)}
+            form={form}
+            onFormChange={setForm}
+          />
+        </div>
+      </div>
+
+      {/* SECTION 10: Pengaturan */}
       <div className="form-section-card">
         <div className="section-header">
           <h3 className="section-title">Pengaturan</h3>
@@ -1398,10 +1416,6 @@ useEffect(() => {
             : "Pastikan semua data sudah lengkap sebelum menyimpan"}
         </p>
       </div>
-      </div>
-      {/* ================= RIGHT: PREVIEW ================= */}
-      <div className="builder-preview-card">
-        <LandingPageRenderer form={form} />
       </div>
     </div>
   );
