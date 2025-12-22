@@ -147,7 +147,7 @@ export default function AddProducts3Page() {
 
     switch (block.type) {
       case "text":
-        return <TextComponent {...commonProps} />;
+        return <TextComponent {...commonProps} index={index} />;
       case "image":
         return <ImageComponent {...commonProps} />;
       case "youtube":
