@@ -634,7 +634,7 @@ export default function LeadsPage() {
 
                         {/* Aksi */}
                         <span className="leads-table__cell leads-table__cell--actions">
-                          <div className="leads-table__actions">
+                          <div className="leads-table__actions leads-table__actions--vertical">
                             <button
                               className="leads-action-btn leads-action-btn--detail"
                               onClick={() => {

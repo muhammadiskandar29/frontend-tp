@@ -227,10 +227,10 @@
 .leads-table__head,
 .leads-table__row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1.2fr 1.2fr 1.5fr 1.2fr 1.2fr 1fr;
-  gap: 1rem;
-  align-items: center;
-  padding: 0.875rem 1.25rem;
+  grid-template-columns: 2.5fr 1.2fr 1.2fr 1.5fr 1.8fr 1.3fr 1.3fr 1.2fr;
+  gap: 1.25rem;
+  align-items: start;
+  padding: 1rem 1.5rem;
 }
 
 .leads-table__head {
@@ -239,6 +239,7 @@
   position: sticky;
   top: 0;
   z-index: 10;
+  padding: 1rem 1.5rem;
 }
 
 .leads-table__head span {
@@ -248,6 +249,8 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   line-height: 1.4;
+  display: flex;
+  align-items: center;
 }
 
 .leads-table__body {
@@ -258,6 +261,8 @@
   border-bottom: 1px solid var(--dash-border);
   transition: background-color var(--transition-fast);
   background: var(--dash-surface);
+  min-height: auto;
+  align-items: flex-start;
 }
 
 .leads-table__row:last-child {
@@ -275,19 +280,27 @@
   word-wrap: break-word;
   overflow-wrap: break-word;
   display: flex;
-  align-items: center;
-  min-height: 2.5rem;
+  align-items: flex-start;
+  min-height: auto;
+  padding: 0.5rem 0;
 }
 
 .leads-table__cell--actions {
-  justify-content: flex-end;
-  gap: 0.5rem;
+  justify-content: flex-start;
+  align-items: flex-start;
 }
 
 .leads-table__actions {
   display: flex;
-  align-items: center;
+  align-items: stretch;
+  gap: 0;
+  width: 100%;
+}
+
+.leads-table__actions--vertical {
+  flex-direction: column;
   gap: 0.5rem;
+  width: 100%;
 }
 
 .leads-table__action-btn {
@@ -497,7 +510,7 @@
 
 /* Action Buttons */
 .leads-action-btn {
-  padding: 0.4rem 0.75rem;
+  padding: 0.5rem 0.875rem;
   border: 1px solid var(--dash-border);
   border-radius: 0.375rem;
   background: var(--dash-surface);
@@ -507,6 +520,11 @@
   cursor: pointer;
   transition: all var(--transition-fast);
   white-space: nowrap;
+  width: 100%;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .leads-action-btn--detail,
@@ -520,6 +538,8 @@
 .leads-action-btn--edit:hover {
   background: var(--dash-bg);
   border-color: var(--dash-muted);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .leads-action-btn--delete {
@@ -531,6 +551,8 @@
 .leads-action-btn--delete:hover {
   background: #dc2626;
   border-color: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
 }
 
 /* WhatsApp Modal Customer Info */
@@ -584,25 +606,34 @@
 }
 
 /* Responsive */
+@media (max-width: 1400px) {
+  .leads-table__head,
+  .leads-table__row {
+    grid-template-columns: 2.2fr 1fr 1fr 1.3fr 1.6fr 1.2fr 1.2fr 1.1fr;
+    gap: 1rem;
+    padding: 0.875rem 1.25rem;
+  }
+}
+
 @media (max-width: 1200px) {
   .leads-table__head,
   .leads-table__row {
-    grid-template-columns: 1.8fr 0.9fr 1fr 1fr 1.3fr 1fr 1fr 0.9fr;
-    gap: 0.75rem;
+    grid-template-columns: 2fr 0.9fr 0.9fr 1.2fr 1.4fr 1fr 1fr 1fr;
+    gap: 0.875rem;
     padding: 0.75rem 1rem;
   }
 }
 
 @media (max-width: 1024px) {
   .leads-table {
-    min-width: 900px;
+    min-width: 1000px;
   }
 
   .leads-table__head,
   .leads-table__row {
-    grid-template-columns: 1.5fr 0.8fr 0.9fr 0.9fr 1.2fr 0.9fr 0.9fr 0.8fr;
-    gap: 0.65rem;
-    padding: 0.65rem 0.875rem;
+    grid-template-columns: 1.8fr 0.8fr 0.8fr 1fr 1.2fr 0.9fr 0.9fr 0.9fr;
+    gap: 0.75rem;
+    padding: 0.7rem 0.875rem;
   }
 
   .leads-table__head span {
@@ -622,14 +653,14 @@
   }
 
   .leads-table {
-    min-width: 800px;
+    min-width: 900px;
   }
 
   .leads-table__head,
   .leads-table__row {
-    grid-template-columns: 1.2fr 0.7fr 0.8fr 0.8fr 1fr 0.8fr 0.8fr 0.7fr;
-    gap: 0.5rem;
-    padding: 0.6rem 0.75rem;
+    grid-template-columns: 1.5fr 0.7fr 0.7fr 0.9fr 1fr 0.8fr 0.8fr 0.8fr;
+    gap: 0.65rem;
+    padding: 0.65rem 0.75rem;
   }
 
   .leads-table__head span {
@@ -640,9 +671,8 @@
     font-size: 0.75rem;
   }
 
-  .leads-table__action-btn {
-    width: 1.75rem;
-    height: 1.75rem;
+  .leads-action-btn {
+    padding: 0.4rem 0.65rem;
     font-size: 0.75rem;
   }
 
