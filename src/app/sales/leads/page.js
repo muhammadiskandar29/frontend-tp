@@ -60,8 +60,11 @@ export default function LeadsPage() {
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showLabelDropdown, setShowLabelDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 25;
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [paginationInfo, setPaginationInfo] = useState(null);
+  const perPage = 15;
+  const fetchingRef = useRef(false);
   
   // Modal states
   const [showAddLead, setShowAddLead] = useState(false);
@@ -80,103 +83,181 @@ export default function LeadsPage() {
     converted: 0,
   });
   
-  const [needsRefresh, setNeedsRefresh] = useState(true);
+  // Fetch leads data dengan pagination
+  const fetchLeads = useCallback(async (pageNumber = 1) => {
+    // Prevent multiple simultaneous calls
+    if (fetchingRef.current) {
+      console.log("⏸️ Already fetching, skipping duplicate request for page", pageNumber);
+      return;
+    }
 
-  // Fetch leads data
-  useEffect(() => {
-    if (!needsRefresh) return;
+    fetchingRef.current = true;
+    setLoading(true);
     
-    const fetchLeads = async () => {
-      try {
-        setLoading(true);
-        const token = localStorage.getItem("token");
-        if (!token) return;
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.warn("No token found");
+        setLoading(false);
+        fetchingRef.current = false;
+        return;
+      }
 
-        // TODO: Replace with actual API call
-        const res = await fetch(`${BASE_URL}/sales/leads`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+      // Build query parameters
+      const params = new URLSearchParams();
+      params.append("page", pageNumber.toString());
+      params.append("per_page", perPage.toString());
+      
+      // Add filters
+      if (statusFilter && statusFilter !== "all") {
+        params.append("status", statusFilter.toUpperCase());
+      }
+      if (labelFilter && labelFilter !== "all") {
+        params.append("lead_label", labelFilter);
+      }
+      if (searchInput && searchInput.trim()) {
+        params.append("search", searchInput.trim());
+      }
 
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success && data.data) {
-            setLeads(data.data);
-            
-            // Calculate statistics
-            setStatistics({
-              total: data.data.length,
-              new: data.data.filter((l) => l.status?.toLowerCase() === "new").length,
-              contacted: data.data.filter((l) => l.status?.toLowerCase() === "contacted").length,
-              converted: data.data.filter((l) => l.status?.toLowerCase() === "converted").length,
-            });
+      const res = await fetch(`/api/sales/lead?${params.toString()}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      const json = await res.json();
+      
+      if (json.success && json.data && Array.isArray(json.data)) {
+        // Selalu replace data (bukan append) - setiap page menampilkan data yang berbeda
+        setLeads(json.data);
+
+        // Gunakan pagination object jika tersedia
+        if (json.pagination && typeof json.pagination === "object") {
+          const isLastPage = json.pagination.current_page >= json.pagination.last_page;
+          setHasMore(!isLastPage);
+          setPaginationInfo(json.pagination);
+          console.log("📄 Pagination info (leads):", {
+            current_page: json.pagination.current_page,
+            last_page: json.pagination.last_page,
+            total: json.pagination.total,
+            hasMore: !isLastPage,
+          });
+        } else {
+          setPaginationInfo(null);
+          // Fallback pagination: cek jumlah data untuk menentukan hasMore
+          if (json.data.length < perPage) {
+            setHasMore(false);
+          } else {
+            setHasMore(true);
           }
         }
-      } catch (err) {
-        console.error("Error fetching leads:", err);
-        toastError("Gagal memuat data leads");
-      } finally {
-        setLoading(false);
-        setNeedsRefresh(false);
+
+        // Calculate statistics from all data (if we have total from pagination)
+        if (json.pagination && json.pagination.total) {
+          // Statistics akan dihitung dari total, bukan dari data current page
+          // Untuk sekarang, kita hitung dari data yang ada
+          setStatistics({
+            total: json.pagination.total || json.data.length,
+            new: json.data.filter((l) => l.status?.toLowerCase() === "new").length,
+            contacted: json.data.filter((l) => l.status?.toLowerCase() === "contacted").length,
+            converted: json.data.filter((l) => l.status?.toLowerCase() === "converted").length,
+          });
+        } else {
+          // Fallback: calculate from current data
+          setStatistics({
+            total: json.data.length,
+            new: json.data.filter((l) => l.status?.toLowerCase() === "new").length,
+            contacted: json.data.filter((l) => l.status?.toLowerCase() === "contacted").length,
+            converted: json.data.filter((l) => l.status?.toLowerCase() === "converted").length,
+          });
+        }
+      } else {
+        console.warn("⚠️ Unexpected response format (leads):", json);
+        setLeads([]);
+        setHasMore(false);
+        setPaginationInfo(null);
       }
-    };
-
-    fetchLeads();
-  }, [needsRefresh]);
-
-  // Filter leads berdasarkan search, status, dan label
-  const filteredLeads = useMemo(() => {
-    let filtered = [...leads];
-
-    // Filter by search
-    if (searchInput.trim()) {
-      const searchLower = searchInput.toLowerCase().trim();
-      filtered = filtered.filter((lead) => {
-        const nama = lead.nama?.toLowerCase() || "";
-        const email = lead.email?.toLowerCase() || "";
-        const wa = lead.wa?.toLowerCase() || "";
-        const produk = lead.minat_produk?.toLowerCase() || "";
-        return (
-          nama.includes(searchLower) ||
-          email.includes(searchLower) ||
-          wa.includes(searchLower) ||
-          produk.includes(searchLower)
-        );
-      });
+      
+      setLoading(false);
+      fetchingRef.current = false;
+    } catch (err) {
+      console.error("Error fetching leads:", err);
+      toastError("Gagal memuat data leads");
+      setLoading(false);
+      fetchingRef.current = false;
     }
+  }, [statusFilter, labelFilter, searchInput, perPage]);
 
-    // Filter by status
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((lead) => {
-        const leadStatus = lead.status?.toLowerCase() || "";
-        return leadStatus === statusFilter.toLowerCase();
-      });
-    }
-
-    // Filter by label
-    if (labelFilter !== "all") {
-      filtered = filtered.filter((lead) => {
-        const leadLabel = lead.label?.toLowerCase() || "";
-        return leadLabel === labelFilter.toLowerCase();
-      });
-    }
-
-    return filtered;
-  }, [leads, searchInput, statusFilter, labelFilter]);
-
-  // Pagination
-  const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedLeads = useMemo(() => {
-    return filteredLeads.slice(startIndex, endIndex);
-  }, [filteredLeads, startIndex, endIndex]);
-
-  // Reset to page 1 when filters change
+  // Initial load: fetch page 1
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchInput, statusFilter, labelFilter]);
+    setPage(1);
+    setLeads([]);
+    setHasMore(true);
+    fetchLeads(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Hanya sekali saat mount
+
+  // Fetch data saat page berubah
+  useEffect(() => {
+    if (page > 0 && !loading) {
+      fetchLeads(page);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]); // Hanya depend pada page
+
+  // Reset page ke 1 dan fetch ulang ketika filter berubah
+  useEffect(() => {
+    // Skip pada initial mount (sudah ada useEffect untuk initial load)
+    if (leads.length === 0 && page === 1) return;
+    
+    // Reset ke page 1 dan fetch ulang data
+    setPage(1);
+    setLeads([]);
+    setHasMore(true);
+    fetchLeads(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchInput, statusFilter, labelFilter]); // Reset page ketika filter berubah
+
+  // Next page handler
+  const handleNextPage = useCallback(() => {
+    if (loading || !hasMore) return;
+    
+    const nextPage = page + 1;
+    console.log("🔄 Next page clicked, loading page:", nextPage);
+    setPage(nextPage);
+  }, [page, hasMore, loading]);
+
+  // Previous page handler
+  const handlePrevPage = useCallback(() => {
+    if (loading || page <= 1) return;
+    
+    const prevPage = page - 1;
+    console.log("🔄 Previous page clicked, loading page:", prevPage);
+    setPage(prevPage);
+  }, [page, loading]);
+
+  // Refresh handler
+  const requestRefresh = useCallback(async (message, type = "success") => {
+    setPage(1);
+    setLeads([]);
+    setHasMore(true);
+    await fetchLeads(1);
+    if (message) {
+      if (type === "error") {
+        toastError(message);
+      } else if (type === "warning") {
+        toastWarning(message);
+      } else {
+        toastSuccess(message);
+      }
+    }
+  }, [fetchLeads]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -192,18 +273,8 @@ export default function LeadsPage() {
 
   // Handlers
   const handleRefresh = useCallback(async () => {
-    setLoading(true);
-    try {
-      // TODO: Implement API call
-      // const data = await getLeads();
-      // setLeads(data);
-      toastSuccess("Data berhasil diperbarui");
-    } catch (err) {
-      toastError("Gagal memuat data");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    await requestRefresh("Data berhasil diperbarui", "success");
+  }, [requestRefresh]);
 
   const handleBroadcast = () => {
     setShowBroadcast(true);
@@ -219,7 +290,7 @@ export default function LeadsPage() {
 
   const handleModalSuccess = (message) => {
     toastSuccess(message);
-    setNeedsRefresh(true);
+    requestRefresh(message, "success");
   };
 
   const formatDate = (dateString) => {
@@ -443,8 +514,8 @@ export default function LeadsPage() {
                 ))}
               </div>
               <div className="leads-table__body">
-                {paginatedLeads.length > 0 ? (
-                  paginatedLeads.map((lead, i) => {
+                {leads.length > 0 ? (
+                  leads.map((lead, i) => {
                     const customer = lead.customer_rel || {};
                     const customerName = customer.nama || lead.nama || "-";
                     const customerEmail = customer.email || lead.email || "";
@@ -611,22 +682,29 @@ export default function LeadsPage() {
           </div>
 
           {/* Pagination */}
-          {totalPages > 1 && (
+          {(paginationInfo || hasMore || page > 1) && (
             <div className="customers-pagination">
               <button
                 className="customers-pagination__btn"
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
+                onClick={handlePrevPage}
+                disabled={page === 1 || loading}
               >
                 Previous
               </button>
               <span className="customers-pagination__info">
-                Halaman {currentPage} dari {totalPages}
+                {paginationInfo ? (
+                  <>
+                    Halaman {paginationInfo.current_page} dari {paginationInfo.last_page} 
+                    {paginationInfo.total !== undefined && ` (Total: ${paginationInfo.total})`}
+                  </>
+                ) : (
+                  `Halaman ${page}`
+                )}
               </span>
               <button
                 className="customers-pagination__btn"
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
+                onClick={handleNextPage}
+                disabled={!hasMore || loading}
               >
                 Next
               </button>
