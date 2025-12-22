@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { InputText } from "primereact/inputtext";
-import { Image as ImageIcon, Info, ChevronDown as ChevronDownIcon } from "lucide-react";
+import { Image as ImageIcon, Info, ChevronDown as ChevronDownIcon, Pencil, Trash2, Eye, Settings } from "lucide-react";
 import ComponentWrapper from "./ComponentWrapper";
 
 export default function ImageComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index }) {
@@ -10,6 +10,7 @@ export default function ImageComponent({ data = {}, onUpdate, onMoveUp, onMoveDo
   const alt = data.alt || "";
   const caption = data.caption || "";
   const [showAdvance, setShowAdvance] = useState(false);
+  const [showImageActions, setShowImageActions] = useState(false);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -44,24 +45,59 @@ export default function ImageComponent({ data = {}, onUpdate, onMoveUp, onMoveDo
 
       {/* Upload Area */}
       <div className="component-upload-area">
-        <input
-          type="file"
-          accept=".jpg,.jpeg,.png,.webp,.gif,.heic"
-          onChange={handleFileChange}
-          className="component-file-input"
-          id={`image-upload-${index}`}
-        />
-        <label htmlFor={`image-upload-${index}`} className="component-upload-label">
-          <div className="upload-icon-wrapper">
-            <ImageIcon size={32} />
+        {src ? (
+          <div className="uploaded-image-container">
+            <div 
+              className="uploaded-image-preview-box"
+              onMouseEnter={() => setShowImageActions(true)}
+              onMouseLeave={() => setShowImageActions(false)}
+            >
+              <img src={src} alt="Preview" className="uploaded-image-preview-img" />
+              {showImageActions && (
+                <div className="image-action-overlay">
+                  <button className="image-action-btn" title="Edit">
+                    <Pencil size={16} />
+                  </button>
+                  <button className="image-action-btn" title="Hapus" onClick={() => onUpdate?.({ ...data, src: "" })}>
+                    <Trash2 size={16} />
+                  </button>
+                  <button className="image-action-btn" title="Lihat">
+                    <Eye size={16} />
+                  </button>
+                  <button className="image-action-btn" title="Pengaturan">
+                    <Settings size={16} />
+                  </button>
+                </div>
+              )}
+            </div>
+            <input
+              type="file"
+              accept=".jpg,.jpeg,.png,.webp,.gif,.heic"
+              onChange={handleFileChange}
+              className="component-file-input"
+              id={`image-replace-${index}`}
+            />
+            <label htmlFor={`image-replace-${index}`} className="replace-image-label">
+              Ganti Gambar
+            </label>
           </div>
-          <span className="upload-text">Upload Gambar *</span>
-          <span className="upload-formats">.jpg, .jpeg, .png, .webp, .gif, .heic</span>
-        </label>
-        {src && (
-          <div className="uploaded-image-preview">
-            <img src={src} alt="Preview" />
-          </div>
+        ) : (
+          <>
+            <input
+              type="file"
+              accept=".jpg,.jpeg,.png,.webp,.gif,.heic"
+              onChange={handleFileChange}
+              className="component-file-input"
+              id={`image-upload-${index}`}
+            />
+            <label htmlFor={`image-upload-${index}`} className="component-upload-label">
+              <div className="upload-icon-wrapper">
+                <ImageIcon size={32} />
+              </div>
+              <span className="upload-text">Upload Gambar *</span>
+              <span className="upload-formats">.jpg, .jpeg, .png, .webp, .gif, .heic</span>
+            </label>
+          </>
         )}
       </div>
 

@@ -61,9 +61,8 @@
 }
 
 .sidebar-content .add-component-btn {
-  margin-top: auto;
-  position: sticky;
-  bottom: 20px;
+  margin-bottom: 0;
+  order: -1; /* Selalu di atas */
 }
 
 .sidebar-component-item {
@@ -293,16 +292,85 @@
   color: #6b7280;
 }
 
-.uploaded-image-preview {
-  margin-top: 12px;
-  border-radius: 6px;
-  overflow: hidden;
+.uploaded-image-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.uploaded-image-preview img {
+.uploaded-image-preview-box {
+  position: relative;
+  border: 2px solid #3b82f6;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.uploaded-image-preview-img {
   width: 100%;
   height: auto;
   display: block;
+}
+
+.image-action-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.uploaded-image-preview-box:hover .image-action-overlay {
+  opacity: 1;
+}
+
+.image-action-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #374151;
+}
+
+.image-action-btn:hover {
+  background: #ffffff;
+  transform: scale(1.1);
+}
+
+.image-action-btn:last-child {
+  color: #ef4444;
+}
+
+.replace-image-label {
+  padding: 8px 16px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: block;
+}
+
+.replace-image-label:hover {
+  background: #e5e7eb;
+  border-color: #d1d5db;
 }
 
 /* Advance Section */
