@@ -11,7 +11,8 @@ export default function ComponentWrapper({
   onMoveDown, 
   onDelete,
   isExpanded = true,
-  onToggleExpand
+  onToggleExpand,
+  isRequired = false
 }) {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef(null);
@@ -66,9 +67,16 @@ export default function ComponentWrapper({
               <button className="menu-item" onClick={() => { setShowMenu(false); }}>
                 Duplikat
               </button>
-              <button className="menu-item menu-item-danger" onClick={() => { setShowMenu(false); onDelete(); }}>
-                Hapus
-              </button>
+              {!isRequired && (
+                <button className="menu-item menu-item-danger" onClick={() => { setShowMenu(false); onDelete(); }}>
+                  Hapus
+                </button>
+              )}
+              {isRequired && (
+                <button className="menu-item menu-item-disabled" disabled>
+                  Hapus (Tidak bisa dihapus)
+                </button>
+              )}
             </div>
           )}
         </div>

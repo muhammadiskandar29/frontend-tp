@@ -2,9 +2,10 @@
 
 import { InputText } from "primereact/inputtext";
 import { Button } from "primereact/button";
-import { List, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
+import ComponentWrapper from "./ComponentWrapper";
 
-export default function ListComponent({ data = {}, onUpdate }) {
+export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index }) {
   const items = data.items || [];
 
   const addItem = () => {
@@ -24,26 +25,28 @@ export default function ListComponent({ data = {}, onUpdate }) {
   };
 
   return (
-    <div className="block-component list-component">
-      <div className="block-header">
-        <List size={16} />
-        <span>Daftar / List Point</span>
-      </div>
-      <div className="block-content">
-        {items.map((item, index) => (
-          <div key={index} className="list-item-editor">
-            <div className="list-item-number">{index + 1}</div>
+    <ComponentWrapper
+      title="Daftar / List Point"
+      index={index}
+      onMoveUp={onMoveUp}
+      onMoveDown={onMoveDown}
+      onDelete={onDelete}
+    >
+      <div className="list-component-content">
+        {items.map((item, i) => (
+          <div key={i} className="list-item-editor">
+            <div className="list-item-number">{i + 1}</div>
             <InputText
               value={item.nama}
-              onChange={(e) => updateItem(index, e.target.value)}
-              placeholder={`Point ${index + 1}`}
+              onChange={(e) => updateItem(i, e.target.value)}
+              placeholder={`Point ${i + 1}`}
               className="flex-1"
             />
             <Button
               icon={<Trash2 size={14} />}
               severity="danger"
               size="small"
-              onClick={() => removeItem(index)}
+              onClick={() => removeItem(i)}
             />
           </div>
         ))}
@@ -56,7 +59,7 @@ export default function ListComponent({ data = {}, onUpdate }) {
           className="add-item-btn"
         />
       </div>
-    </div>
+    </ComponentWrapper>
   );
 }
 

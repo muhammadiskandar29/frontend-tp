@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
 import { Button } from "primereact/button";
-import { HelpCircle, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
+import ComponentWrapper from "./ComponentWrapper";
 
-export default function FAQComponent({ data = {}, onUpdate }) {
+export default function FAQComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index }) {
   const items = data.items || [];
 
   const addFAQ = () => {
@@ -26,21 +26,23 @@ export default function FAQComponent({ data = {}, onUpdate }) {
   };
 
   return (
-    <div className="block-component faq-component">
-      <div className="block-header">
-        <HelpCircle size={16} />
-        <span>FAQ</span>
-      </div>
-      <div className="block-content">
-        {items.map((item, index) => (
-          <div key={index} className="faq-item-editor">
+    <ComponentWrapper
+      title="FAQ"
+      index={index}
+      onMoveUp={onMoveUp}
+      onMoveDown={onMoveDown}
+      onDelete={onDelete}
+    >
+      <div className="faq-component-content">
+        {items.map((item, i) => (
+          <div key={i} className="faq-item-editor">
             <div className="faq-item-header">
-              <span>FAQ {index + 1}</span>
+              <span>FAQ {i + 1}</span>
               <Button
                 icon={<Trash2 size={14} />}
                 severity="danger"
                 size="small"
-                onClick={() => removeFAQ(index)}
+                onClick={() => removeFAQ(i)}
               />
             </div>
 
@@ -48,9 +50,9 @@ export default function FAQComponent({ data = {}, onUpdate }) {
               <label className="form-label-small">Pertanyaan</label>
               <InputText
                 value={item.question}
-                onChange={(e) => updateFAQ(index, "question", e.target.value)}
+                onChange={(e) => updateFAQ(i, "question", e.target.value)}
                 placeholder="Masukkan pertanyaan"
-                className="w-full"
+                className="w-full form-input"
               />
             </div>
 
@@ -58,10 +60,10 @@ export default function FAQComponent({ data = {}, onUpdate }) {
               <label className="form-label-small">Jawaban</label>
               <InputTextarea
                 value={item.answer}
-                onChange={(e) => updateFAQ(index, "answer", e.target.value)}
+                onChange={(e) => updateFAQ(i, "answer", e.target.value)}
                 placeholder="Masukkan jawaban"
                 rows={3}
-                className="w-full"
+                className="w-full form-input"
               />
             </div>
           </div>
@@ -75,7 +77,7 @@ export default function FAQComponent({ data = {}, onUpdate }) {
           className="add-item-btn"
         />
       </div>
-    </div>
+    </ComponentWrapper>
   );
 }
 

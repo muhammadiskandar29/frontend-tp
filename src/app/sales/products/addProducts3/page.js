@@ -72,6 +72,7 @@ export default function AddProducts3Page() {
   const [blocks, setBlocks] = useState([]);
   const [expandedBlockId, setExpandedBlockId] = useState(null);
   const [testimoniIndices, setTestimoniIndices] = useState({});
+  const [productKategori, setProductKategori] = useState(null); // Untuk menentukan kategori produk
 
   // Default data untuk setiap komponen
   const getDefaultData = (componentId) => {
@@ -81,7 +82,7 @@ export default function AddProducts3Page() {
       video: { url: "" },
       testimoni: { items: [] },
       list: { items: [] },
-      form: {},
+      form: { kategori: null }, // Kategori untuk form pemesanan
       faq: { items: [] },
       slider: { images: [] },
       button: { text: "Klik Disini", link: "#", style: "primary" },
@@ -97,6 +98,16 @@ export default function AddProducts3Page() {
 
   // Handler untuk menambah komponen baru
   const handleAddComponent = (componentId) => {
+    // Cek apakah form sudah ada
+    if (componentId === "form") {
+      const formExists = blocks.some(b => b.type === "form");
+      if (formExists) {
+        alert("Form Pemesanan sudah ada dan tidak bisa ditambahkan lagi");
+        setShowComponentModal(false);
+        return;
+      }
+    }
+    
     const newBlock = {
       id: `block-${Date.now()}`,
       type: componentId,
@@ -133,6 +144,11 @@ export default function AddProducts3Page() {
 
   // Handler untuk delete block
   const deleteBlock = (blockId) => {
+    const block = blocks.find(b => b.id === blockId);
+    if (block && block.type === "form") {
+      alert("Form Pemesanan tidak bisa dihapus");
+      return;
+    }
     setBlocks(blocks.filter(b => b.id !== blockId));
   };
 
@@ -155,6 +171,7 @@ export default function AddProducts3Page() {
       onDelete: () => deleteBlock(block.id),
       isExpanded: isExpanded,
       onToggleExpand: () => handleToggleExpand(block.id),
+      isRequired: block.type === "form", // Form tidak bisa dihapus
     };
 
     switch (block.type) {
@@ -170,7 +187,7 @@ export default function AddProducts3Page() {
       case "list":
         return <ListComponent {...commonProps} />;
       case "form":
-        return <FormComponent {...commonProps} />;
+        return <FormComponent {...commonProps} productKategori={productKategori} />;
       case "faq":
         return <FAQComponent {...commonProps} />;
       case "slider":
@@ -318,6 +335,145 @@ export default function AddProducts3Page() {
               <div className="preview-placeholder">Belum ada list point</div>
             )}
           </ul>
+        );
+      case "form":
+        const formKategori = block.data.kategori;
+        const isFormBuku = formKategori === 13;
+        const isFormWorkshop = formKategori === 15;
+        
+        return (
+          <>
+            {/* Form Pemesanan */}
+            <section className="preview-form-section compact-form-section" aria-label="Order form">
+              <h2 className="compact-form-title">Lengkapi Data:</h2>
+              <div className="compact-form-card">
+                <div className="compact-field">
+                  <label className="compact-label">Nama Lengkap <span className="required">*</span></label>
+                  <input type="text" placeholder="Contoh: Krisdayanti" className="compact-input" />
+                </div>
+                <div className="compact-field">
+                  <label className="compact-label">No. WhatsApp <span className="required">*</span></label>
+                  <div className="wa-input-wrapper">
+                    <div className="wa-prefix">
+                      <span className="flag">🇮🇩</span>
+                      <span className="code">+62</span>
+                    </div>
+                    <input type="tel" placeholder="812345678" className="compact-input wa-input" />
+                  </div>
+                </div>
+                <div className="compact-field">
+                  <label className="compact-label">Email <span className="required">*</span></label>
+                  <input type="email" placeholder="email@example.com" className="compact-input" />
+                </div>
+                <div className="compact-field">
+                  <label className="compact-label">Alamat <span className="required">*</span></label>
+                  <textarea placeholder="Contoh: Jl. Peta Utara 1, No 62 RT 01/07" className="compact-input compact-textarea" rows={3} />
+                </div>
+                {isFormBuku && (
+                  <div className="form-info-box">
+                    <p className="text-sm text-gray-600">Kalkulator ongkir akan muncul di sini</p>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* Rincian Pesanan - Kategori Buku */}
+            {isFormBuku && (
+              <section className="preview-form-section compact-form-section" aria-label="Rincian Pesanan">
+                <div className="compact-form-card">
+                  <div style={{ marginBottom: "16px" }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#111827', margin: 0 }}>
+                      Rincian Pesanan
+                    </h3>
+                  </div>
+                  <div className="compact-field">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '8px 0' }}>
+                      <span className="compact-label" style={{ margin: 0 }}>Produk</span>
+                      <span style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}>Rp 0</span>
+                    </div>
+                  </div>
+                  <div className="compact-field">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '8px 0' }}>
+                      <span className="compact-label" style={{ margin: 0 }}>Ongkir</span>
+                      <span style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}>Rp 0</span>
+                    </div>
+                  </div>
+                  <div style={{ height: '1px', background: '#e5e7eb', margin: '12px 0' }}></div>
+                  <div className="compact-field">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '8px 0' }}>
+                      <span className="compact-label" style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#111827' }}>Total Pesanan</span>
+                      <span style={{ fontSize: '18px', fontWeight: 700, color: '#111827' }}>Rp 0</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* Down Payment - Kategori Workshop */}
+            {isFormWorkshop && (
+              <section className="preview-form-section compact-form-section" aria-label="Down Payment">
+                <div className="compact-form-card">
+                  <div style={{ marginBottom: "16px" }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#111827', margin: 0 }}>
+                      Masukan Jumlah Down Payment
+                    </h3>
+                    <p style={{ fontSize: '14px', color: '#6b7280', margin: '4px 0 0' }}>
+                      Masukkan jumlah uang muka yang ingin Anda bayar
+                    </p>
+                  </div>
+                  <div className="compact-field">
+                    <label className="compact-label">
+                      Jumlah Down Payment <span className="required">*</span>
+                    </label>
+                    <input type="text" placeholder="Rp 0" className="compact-input" />
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* Payment Section - Selalu muncul */}
+            <section className="preview-payment-section payment-section" aria-label="Payment methods">
+              <h2 className="payment-title">Metode Pembayaran</h2>
+              <div className="payment-options-vertical">
+                <label className="payment-option-row">
+                  <input type="radio" name="payment" value="manual" />
+                  <span className="payment-label">Bank Transfer (Manual)</span>
+                  <div className="payment-icons-inline">
+                    <img className="pay-icon" src="/assets/bca.png" alt="BCA" />
+                  </div>
+                </label>
+                <label className="payment-option-row">
+                  <input type="radio" name="payment" value="ewallet" />
+                  <span className="payment-label">E-Payment</span>
+                  <div className="payment-icons-inline">
+                    <img className="pay-icon" src="/assets/qris.svg" alt="QRIS" />
+                    <img className="pay-icon" src="/assets/dana.png" alt="DANA" />
+                    <img className="pay-icon" src="/assets/ovo.png" alt="OVO" />
+                    <img className="pay-icon" src="/assets/link.png" alt="LinkAja" />
+                  </div>
+                </label>
+                <label className="payment-option-row">
+                  <input type="radio" name="payment" value="cc" />
+                  <span className="payment-label">Credit / Debit Card</span>
+                  <div className="payment-icons-inline">
+                    <img className="pay-icon" src="/assets/visa.svg" alt="Visa" />
+                    <img className="pay-icon" src="/assets/master.png" alt="Mastercard" />
+                    <img className="pay-icon" src="/assets/jcb.png" alt="JCB" />
+                  </div>
+                </label>
+                <label className="payment-option-row">
+                  <input type="radio" name="payment" value="va" />
+                  <span className="payment-label">Virtual Account</span>
+                  <div className="payment-icons-inline">
+                    <img className="pay-icon" src="/assets/bca.png" alt="BCA" />
+                    <img className="pay-icon" src="/assets/mandiri.png" alt="Mandiri" />
+                    <img className="pay-icon" src="/assets/bni.png" alt="BNI" />
+                    <img className="pay-icon" src="/assets/permata.svg" alt="Permata" />
+                  </div>
+                </label>
+              </div>
+            </section>
+          </>
         );
       case "button":
         return (
