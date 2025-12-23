@@ -518,7 +518,19 @@ export default function LeadsPage() {
                 <RefreshCw size={16} style={{ marginRight: "0.5rem" }} />
                 Refresh
               </button>
-              <button
+              
+            </div>
+          </div>
+        </section>
+
+        {/* Table */}
+        <section className="panel leads-panel">
+          <div className="panel__header">
+            <div>
+              <p className="panel__eyebrow">CRM / Leads Management</p>
+              <h3 className="panel__title">Daftar Leads</h3>
+            </div>
+            <button
                 type="button"
                 className="customers-button customers-button--primary"
                 onClick={handleAddLead}
@@ -536,17 +548,6 @@ export default function LeadsPage() {
                 <Sparkles size={16} style={{ marginRight: "0.5rem" }} />
                 Generate Leads
               </button>
-            </div>
-          </div>
-        </section>
-
-        {/* Table */}
-        <section className="panel leads-panel">
-          <div className="panel__header">
-            <div>
-              <p className="panel__eyebrow">CRM / Leads Management</p>
-              <h3 className="panel__title">Daftar Leads</h3>
-            </div>
           </div>
 
           <div className="leads-table__wrapper">
