@@ -230,14 +230,15 @@ export default function FollowUpPage() {
       if (res.ok) {
         const json = await res.json();
         if (json.success && json.data) {
+          const stats = json.data.leads_statistics || json.data;
           setStatistics({
-            total_leads: json.data.total_leads || 0,
-            new_leads: json.data.new_leads || 0,
-            contacted_leads: json.data.contacted_leads || 0,
-            qualified_leads: json.data.qualified_leads || 0,
-            converted_leads: json.data.converted_leads || 0,
-            lost_leads: json.data.lost_leads || 0,
-            active_leads: json.data.active_leads || 0,
+            total_leads: stats.total_leads || 0,
+            new_leads: stats.new_leads || 0,
+            contacted_leads: stats.contacted_leads || 0,
+            qualified_leads: stats.qualified_leads || 0,
+            converted_leads: stats.converted_leads || 0,
+            lost_leads: stats.lost_leads || 0,
+            active_leads: stats.active_leads || 0,
           });
         }
       }
@@ -921,6 +922,7 @@ export default function FollowUpPage() {
             setSelectedLead(null);
           }}
           onEdit={(lead) => {
+            // Immediately set all states to transition from ViewLeadModal to EditLeadModal
             setSelectedLead(lead);
             setShowViewLead(false);
             setShowEditLead(true);

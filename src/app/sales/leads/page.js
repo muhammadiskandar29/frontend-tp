@@ -898,6 +898,7 @@ export default function LeadsPage() {
             setSelectedLead(null);
           }}
           onEdit={(lead) => {
+            // Immediately set all states to transition from ViewLeadModal to EditLeadModal
             setSelectedLead(lead);
             setShowViewLead(false);
             setShowEditLead(true);

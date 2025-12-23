@@ -368,7 +368,8 @@ export default function ViewLeadModal({ lead, onClose, onEdit }) {
             onClick={() => {
               if (onEdit) {
                 onEdit(leadData || lead);
-                onClose();
+                // onEdit already handles closing ViewLeadModal and opening EditLeadModal
+                // No need to call onClose() separately
               }
             }}
           >
