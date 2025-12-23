@@ -601,7 +601,17 @@ export default function FollowUpPage() {
                         {/* Nama Customer */}
                         <span className="leads-table__cell">
                           <div className="leads-customer-info">
-                            <div className="leads-customer-name">{customerName}</div>
+                            <div 
+                              className="leads-customer-name"
+                              onClick={() => {
+                                setSelectedLead(lead);
+                                setShowViewLead(true);
+                              }}
+                              style={{ cursor: "pointer" }}
+                              title="Klik untuk melihat detail"
+                            >
+                              {customerName}
+                            </div>
                             {customerEmail && (
                               <div className="leads-customer-email">{customerEmail}</div>
                             )}
