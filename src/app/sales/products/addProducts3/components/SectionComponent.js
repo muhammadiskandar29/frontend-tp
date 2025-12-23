@@ -1,9 +1,9 @@
 "use client";
 
 import { InputText } from "primereact/inputtext";
-import { Minus } from "lucide-react";
+import ComponentWrapper from "./ComponentWrapper";
 
-export default function SectionComponent({ data = {}, onUpdate }) {
+export default function SectionComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index }) {
   const background = data.background || "#ffffff";
   const padding = data.padding || "20px";
 
@@ -12,19 +12,21 @@ export default function SectionComponent({ data = {}, onUpdate }) {
   };
 
   return (
-    <div className="block-component section-component">
-      <div className="block-header">
-        <Minus size={16} />
-        <span>Section</span>
-      </div>
-      <div className="block-content">
+    <ComponentWrapper
+      title="Section"
+      index={index}
+      onMoveUp={onMoveUp}
+      onMoveDown={onMoveDown}
+      onDelete={onDelete}
+    >
+      <div className="section-component-content">
         <div className="form-field-group">
           <label className="form-label-small">Background Color</label>
           <InputText
             value={background}
             onChange={(e) => handleChange("background", e.target.value)}
             placeholder="#ffffff"
-            className="w-full"
+            className="w-full form-input"
           />
         </div>
 
@@ -34,11 +36,11 @@ export default function SectionComponent({ data = {}, onUpdate }) {
             value={padding}
             onChange={(e) => handleChange("padding", e.target.value)}
             placeholder="20px"
-            className="w-full"
+            className="w-full form-input"
           />
         </div>
       </div>
-    </div>
+    </ComponentWrapper>
   );
 }
 

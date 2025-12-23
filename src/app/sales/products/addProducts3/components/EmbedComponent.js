@@ -1,9 +1,9 @@
 "use client";
 
 import { InputTextarea } from "primereact/inputtextarea";
-import { Link as LinkIcon } from "lucide-react";
+import ComponentWrapper from "./ComponentWrapper";
 
-export default function EmbedComponent({ data = {}, onUpdate }) {
+export default function EmbedComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index }) {
   const code = data.code || "";
 
   const handleChange = (value) => {
@@ -11,12 +11,14 @@ export default function EmbedComponent({ data = {}, onUpdate }) {
   };
 
   return (
-    <div className="block-component embed-component">
-      <div className="block-header">
-        <LinkIcon size={16} />
-        <span>Embed</span>
-      </div>
-      <div className="block-content">
+    <ComponentWrapper
+      title="Embed"
+      index={index}
+      onMoveUp={onMoveUp}
+      onMoveDown={onMoveDown}
+      onDelete={onDelete}
+    >
+      <div className="embed-component-content">
         <div className="form-field-group">
           <label className="form-label-small">Embed Code (HTML)</label>
           <InputTextarea
@@ -24,11 +26,11 @@ export default function EmbedComponent({ data = {}, onUpdate }) {
             onChange={(e) => handleChange(e.target.value)}
             placeholder="Paste embed code di sini (iframe, script, dll)"
             rows={5}
-            className="w-full"
+            className="w-full form-input"
           />
         </div>
       </div>
-    </div>
+    </ComponentWrapper>
   );
 }
 

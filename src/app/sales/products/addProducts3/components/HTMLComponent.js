@@ -1,9 +1,9 @@
 "use client";
 
 import { InputTextarea } from "primereact/inputtextarea";
-import { Code } from "lucide-react";
+import ComponentWrapper from "./ComponentWrapper";
 
-export default function HTMLComponent({ data = {}, onUpdate }) {
+export default function HTMLComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index }) {
   const code = data.code || "";
 
   const handleChange = (value) => {
@@ -11,12 +11,14 @@ export default function HTMLComponent({ data = {}, onUpdate }) {
   };
 
   return (
-    <div className="block-component html-component">
-      <div className="block-header">
-        <Code size={16} />
-        <span>HTML</span>
-      </div>
-      <div className="block-content">
+    <ComponentWrapper
+      title="HTML"
+      index={index}
+      onMoveUp={onMoveUp}
+      onMoveDown={onMoveDown}
+      onDelete={onDelete}
+    >
+      <div className="html-component-content">
         <div className="form-field-group">
           <label className="form-label-small">HTML Code</label>
           <InputTextarea
@@ -24,11 +26,11 @@ export default function HTMLComponent({ data = {}, onUpdate }) {
             onChange={(e) => handleChange(e.target.value)}
             placeholder="Masukkan HTML code di sini"
             rows={8}
-            className="w-full font-mono text-sm"
+            className="w-full font-mono text-sm form-input"
           />
         </div>
       </div>
-    </div>
+    </ComponentWrapper>
   );
 }
 

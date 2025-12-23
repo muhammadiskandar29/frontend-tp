@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "primereact/button";
-import { Image as SliderIcon, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
+import ComponentWrapper from "./ComponentWrapper";
 
-export default function SliderComponent({ data = {}, onUpdate }) {
+export default function SliderComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index }) {
   const images = data.images || [];
 
   const addImage = () => {
@@ -37,21 +37,23 @@ export default function SliderComponent({ data = {}, onUpdate }) {
   };
 
   return (
-    <div className="block-component slider-component">
-      <div className="block-header">
-        <SliderIcon size={16} />
-        <span>Gambar Slider</span>
-      </div>
-      <div className="block-content">
-        {images.map((img, index) => (
-          <div key={index} className="slider-item-editor">
+    <ComponentWrapper
+      title="Gambar Slider"
+      index={index}
+      onMoveUp={onMoveUp}
+      onMoveDown={onMoveDown}
+      onDelete={onDelete}
+    >
+      <div className="slider-component-content">
+        {images.map((img, i) => (
+          <div key={i} className="slider-item-editor">
             <div className="slider-item-header">
-              <span>Gambar {index + 1}</span>
+              <span>Gambar {i + 1}</span>
               <Button
                 icon={<Trash2 size={14} />}
                 severity="danger"
                 size="small"
-                onClick={() => removeImage(index)}
+                onClick={() => removeImage(i)}
               />
             </div>
 
@@ -60,12 +62,12 @@ export default function SliderComponent({ data = {}, onUpdate }) {
               <input
                 type="file"
                 accept="image/*"
-                onChange={(e) => handleImageUpload(index, e)}
+                onChange={(e) => handleImageUpload(i, e)}
                 className="file-input"
               />
               {img.src && (
                 <div className="image-preview-small">
-                  <img src={img.src} alt={img.alt || `Slider ${index + 1}`} />
+                  <img src={img.src} alt={img.alt || `Slider ${i + 1}`} />
                 </div>
               )}
             </div>
@@ -75,7 +77,7 @@ export default function SliderComponent({ data = {}, onUpdate }) {
               <input
                 type="text"
                 value={img.alt}
-                onChange={(e) => updateImage(index, "alt", e.target.value)}
+                onChange={(e) => updateImage(i, "alt", e.target.value)}
                 placeholder="Deskripsi gambar"
                 className="w-full form-input"
               />
@@ -86,7 +88,7 @@ export default function SliderComponent({ data = {}, onUpdate }) {
               <input
                 type="text"
                 value={img.caption}
-                onChange={(e) => updateImage(index, "caption", e.target.value)}
+                onChange={(e) => updateImage(i, "caption", e.target.value)}
                 placeholder="Caption (opsional)"
                 className="w-full form-input"
               />
@@ -97,12 +99,11 @@ export default function SliderComponent({ data = {}, onUpdate }) {
         <Button
           label="Tambah Gambar"
           icon="pi pi-plus"
-          size="small"
           onClick={addImage}
           className="add-item-btn"
         />
       </div>
-    </div>
+    </ComponentWrapper>
   );
 }
 

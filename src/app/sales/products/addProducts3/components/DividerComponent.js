@@ -2,9 +2,9 @@
 
 import { Dropdown } from "primereact/dropdown";
 import { InputText } from "primereact/inputtext";
-import { Minus } from "lucide-react";
+import ComponentWrapper from "./ComponentWrapper";
 
-export default function DividerComponent({ data = {}, onUpdate }) {
+export default function DividerComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index }) {
   const style = data.style || "solid";
   const color = data.color || "#e5e7eb";
 
@@ -13,12 +13,14 @@ export default function DividerComponent({ data = {}, onUpdate }) {
   };
 
   return (
-    <div className="block-component divider-component">
-      <div className="block-header">
-        <Minus size={16} />
-        <span>Divider</span>
-      </div>
-      <div className="block-content">
+    <ComponentWrapper
+      title="Divider"
+      index={index}
+      onMoveUp={onMoveUp}
+      onMoveDown={onMoveDown}
+      onDelete={onDelete}
+    >
+      <div className="divider-component-content">
         <div className="form-field-group">
           <label className="form-label-small">Style</label>
           <Dropdown
@@ -39,11 +41,11 @@ export default function DividerComponent({ data = {}, onUpdate }) {
             value={color}
             onChange={(e) => handleChange("color", e.target.value)}
             placeholder="#e5e7eb"
-            className="w-full"
+            className="w-full form-input"
           />
         </div>
       </div>
-    </div>
+    </ComponentWrapper>
   );
 }
 

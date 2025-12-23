@@ -2,9 +2,9 @@
 
 import { InputText } from "primereact/inputtext";
 import { Dropdown } from "primereact/dropdown";
-import { Square } from "lucide-react";
+import ComponentWrapper from "./ComponentWrapper";
 
-export default function ButtonComponent({ data = {}, onUpdate }) {
+export default function ButtonComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index }) {
   const text = data.text || "Klik Disini";
   const link = data.link || "#";
   const style = data.style || "primary";
@@ -14,19 +14,21 @@ export default function ButtonComponent({ data = {}, onUpdate }) {
   };
 
   return (
-    <div className="block-component button-component">
-      <div className="block-header">
-        <Square size={16} />
-        <span>Tombol</span>
-      </div>
-      <div className="block-content">
+    <ComponentWrapper
+      title="Tombol"
+      index={index}
+      onMoveUp={onMoveUp}
+      onMoveDown={onMoveDown}
+      onDelete={onDelete}
+    >
+      <div className="button-component-content">
         <div className="form-field-group">
           <label className="form-label-small">Text Tombol</label>
           <InputText
             value={text}
             onChange={(e) => handleChange("text", e.target.value)}
-            placeholder="Text tombol"
-            className="w-full"
+            placeholder="Klik Disini"
+            className="w-full form-input"
           />
         </div>
 
@@ -35,8 +37,8 @@ export default function ButtonComponent({ data = {}, onUpdate }) {
           <InputText
             value={link}
             onChange={(e) => handleChange("link", e.target.value)}
-            placeholder="https://..."
-            className="w-full"
+            placeholder="#"
+            className="w-full form-input"
           />
         </div>
 
@@ -55,7 +57,7 @@ export default function ButtonComponent({ data = {}, onUpdate }) {
           />
         </div>
       </div>
-    </div>
+    </ComponentWrapper>
   );
 }
 

@@ -1,9 +1,9 @@
 "use client";
 
 import { Dropdown } from "primereact/dropdown";
-import { Film } from "lucide-react";
+import ComponentWrapper from "./ComponentWrapper";
 
-export default function AnimationComponent({ data = {}, onUpdate }) {
+export default function AnimationComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index }) {
   const type = data.type || "fade";
 
   const handleChange = (value) => {
@@ -11,12 +11,14 @@ export default function AnimationComponent({ data = {}, onUpdate }) {
   };
 
   return (
-    <div className="block-component animation-component">
-      <div className="block-header">
-        <Film size={16} />
-        <span>Animation</span>
-      </div>
-      <div className="block-content">
+    <ComponentWrapper
+      title="Animation"
+      index={index}
+      onMoveUp={onMoveUp}
+      onMoveDown={onMoveDown}
+      onDelete={onDelete}
+    >
+      <div className="animation-component-content">
         <div className="form-field-group">
           <label className="form-label-small">Animation Type</label>
           <Dropdown
@@ -35,7 +37,7 @@ export default function AnimationComponent({ data = {}, onUpdate }) {
           />
         </div>
       </div>
-    </div>
+    </ComponentWrapper>
   );
 }
 
