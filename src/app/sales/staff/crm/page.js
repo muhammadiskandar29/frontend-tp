@@ -137,8 +137,8 @@ export default function CRMPage() {
         params.append("sales_id", currentUserId.toString());
       }
 
-      // Use sales-list endpoint
-      const res = await fetch(`/api/sales/lead/sales-list?${params.toString()}`, {
+      // Use follow-today endpoint
+      const res = await fetch(`/api/sales/lead/follow-today?${params.toString()}`, {
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
