@@ -162,7 +162,7 @@ export default function ViewLeadModal({ lead, onClose, onEdit }) {
     const channelLower = channel?.toLowerCase() || "";
     if (channelLower.includes("whatsapp")) return "#25d366";
     if (channelLower.includes("telepon") || channelLower.includes("call")) return "#6b7280";
-    if (channelLower.includes("email")) return "#3b82f6";
+    if (channelLower.includes("email")) return "#fb8500";
     if (channelLower.includes("meeting")) return "#8b5cf6";
     return "#6b7280";
   };
@@ -171,7 +171,7 @@ export default function ViewLeadModal({ lead, onClose, onEdit }) {
     const typeMap = {
       whatsapp_out: "#25d366",
       call_out: "#6b7280",
-      send_price: "#3b82f6",
+      send_price: "#fb8500",
       interested: "#10b981",
       thinking: "#f59e0b",
       closed_won: "#10b981",

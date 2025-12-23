@@ -169,15 +169,15 @@
 }
 
 .leads-filter-btn.is-active {
-  border-color: #3b82f6;
+  border-color: var(--primary);
   color: #ffffff;
-  background: #3b82f6;
+  background: var(--primary);
   font-weight: 600;
 }
 
 .leads-filter-btn.is-active:hover {
-  background: #2563eb;
-  border-color: #2563eb;
+  background: #c85400;
+  border-color: #c85400;
 }
 
 .leads-filter-dropdown-menu {
@@ -464,13 +464,13 @@
 }
 
 .leads-contact-icon--email {
-  color: #3b82f6;
-  border-color: rgba(59, 130, 246, 0.3);
+  color: var(--primary);
+  border-color: rgba(251, 133, 0, 0.3);
 }
 
 .leads-contact-icon--email:hover {
-  background: rgba(59, 130, 246, 0.1);
-  border-color: #3b82f6;
+  background: rgba(251, 133, 0, 0.1);
+  border-color: var(--primary);
 }
 
 .leads-contact-icon--phone {
@@ -604,16 +604,16 @@
 
 .leads-action-btn--edit {
   background: #ffffff;
-  color: #14b8a6;
-  border-color: #14b8a6;
+  color: var(--primary);
+  border-color: var(--primary);
 }
 
 .leads-action-btn--edit:hover {
-  background: rgba(20, 184, 166, 0.1);
-  border-color: #0d9488;
-  color: #0d9488;
+  background: rgba(251, 133, 0, 0.1);
+  border-color: #c85400;
+  color: #c85400;
   transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(20, 184, 166, 0.2);
+  box-shadow: 0 2px 4px rgba(251, 133, 0, 0.2);
 }
 
 .leads-action-btn--delete {
