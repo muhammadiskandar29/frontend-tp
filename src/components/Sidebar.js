@@ -211,27 +211,6 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
         section: "USER MANAGEMENT",
         items: [
           { label: "Users", href: "/admin/users", icon: <Users size={18} /> },
-          { label: "Customers", href: `${basePath}/customers`, icon: <UserCheck size={18} /> },
-        ],
-      },
-      {
-        section: "SALES OPERATIONS",
-        items: [
-          { label: "Orders", href: `${basePath}/orders`, icon: <ClipboardList size={18} /> },
-          {
-            label: "Products",
-            icon: <ShoppingBag size={18} />,
-            submenu: [
-              { label: "Kategori Produk", href: `${basePath}/kategori` },
-              { label: "Produk", href: `${basePath}/products` },
-            ],
-          },
-        ],
-      },
-      {
-        section: "COMMUNICATION",
-        items: [
-          { label: "Broadcast", href: `${basePath}/broadcast`, icon: <Radio size={18} /> },
         ],
       },
     ];
