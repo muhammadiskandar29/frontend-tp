@@ -18,7 +18,7 @@ const BASE_URL = "/api";
 const AddLeadModal = dynamic(() => import("./addLead"), { ssr: false });
 const BroadcastLeadModal = dynamic(() => import("./broadcastLead"), { ssr: false });
 const SendWhatsAppModal = dynamic(() => import("./sendWhatsApp"), { ssr: false });
-const AddFollowUpModal = dynamic(() => import("./addFollowUp"), { ssr: false });
+const AddFollowUpModal = dynamic(() => import("./addFollowup"), { ssr: false });
 const AddFollowUpGeneralModal = dynamic(() => import("./addFollowUpGeneral"), { ssr: false });
 const ViewLeadModal = dynamic(() => import("./viewLead"), { ssr: false });
 const EditLeadModal = dynamic(() => import("./editLead"), { ssr: false });
