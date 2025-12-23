@@ -73,12 +73,15 @@ export default function FollowUpPage() {
   const [showEditLead, setShowEditLead] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
 
-  // Statistics
+  // Statistics (tidak terpengaruh filter)
   const [statistics, setStatistics] = useState({
-    total: 0,
-    new: 0,
-    contacted: 0,
-    converted: 0,
+    total_leads: 0,
+    new_leads: 0,
+    contacted_leads: 0,
+    qualified_leads: 0,
+    converted_leads: 0,
+    lost_leads: 0,
+    active_leads: 0,
   });
 
   // Get current user ID from localStorage
@@ -192,25 +195,7 @@ export default function FollowUpPage() {
           }
         }
 
-        // Calculate statistics from all data (if we have total from pagination)
-        if (json.pagination && json.pagination.total) {
-          // Statistics akan dihitung dari total, bukan dari data current page
-          // Untuk sekarang, kita hitung dari data yang ada
-          setStatistics({
-            total: json.pagination.total || json.data.length,
-            new: json.data.filter((l) => l.status?.toLowerCase() === "new").length,
-            contacted: json.data.filter((l) => l.status?.toLowerCase() === "contacted").length,
-            converted: json.data.filter((l) => l.status?.toLowerCase() === "converted").length,
-          });
-        } else {
-          // Fallback: calculate from current data
-          setStatistics({
-            total: json.data.length,
-            new: json.data.filter((l) => l.status?.toLowerCase() === "new").length,
-            contacted: json.data.filter((l) => l.status?.toLowerCase() === "contacted").length,
-            converted: json.data.filter((l) => l.status?.toLowerCase() === "converted").length,
-          });
-        }
+        // Statistics tidak dihitung dari fetchLeads, karena harus tetap menampilkan total (tidak terpengaruh filter)
       } else {
         console.warn("⚠️ Unexpected response format (leads):", json);
         setLeads([]);
@@ -227,6 +212,39 @@ export default function FollowUpPage() {
       fetchingRef.current = false;
     }
   }, [statusFilter, labelFilter, searchInput, perPage, currentUserId]);
+
+  // Fetch statistics (tidak terpengaruh filter)
+  const fetchStatistics = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const res = await fetch(`${BASE_URL}/sales/lead/statistics`, {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          setStatistics({
+            total_leads: json.data.total_leads || 0,
+            new_leads: json.data.new_leads || 0,
+            contacted_leads: json.data.contacted_leads || 0,
+            qualified_leads: json.data.qualified_leads || 0,
+            converted_leads: json.data.converted_leads || 0,
+            lost_leads: json.data.lost_leads || 0,
+            active_leads: json.data.active_leads || 0,
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching statistics:", err);
+    }
+  }, []);
 
   // Fetch all unique labels untuk filter dropdown
   const fetchLabelOptions = useCallback(async () => {
@@ -258,13 +276,14 @@ export default function FollowUpPage() {
     }
   }, []);
 
-  // Initial load: fetch page 1 dan label options
+  // Initial load: fetch page 1, label options, dan statistics
   useEffect(() => {
     setPage(1);
     setLeads([]);
     setHasMore(true);
     fetchLeads(1);
     fetchLabelOptions();
+    fetchStatistics();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Hanya sekali saat mount
 
@@ -313,6 +332,7 @@ export default function FollowUpPage() {
     setLeads([]);
     setHasMore(true);
     await fetchLeads(1);
+    await fetchStatistics(); // Refresh statistics juga
     if (message) {
       if (type === "error") {
         toastError(message);
@@ -322,7 +342,7 @@ export default function FollowUpPage() {
         toastSuccess(message);
       }
     }
-  }, [fetchLeads]);
+  }, [fetchLeads, fetchStatistics]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -399,44 +419,74 @@ export default function FollowUpPage() {
       <div className="dashboard-shell leads-shell">
         {/* Summary Cards */}
         <section className="dashboard-summary leads-summary">
-          <article className="summary-card summary-card--combined summary-card--four-cols">
+          <article className="summary-card summary-card--combined summary-card--seven-cols">
             <div className="summary-card__column">
               <div className="summary-card__icon accent-orange">
-                <Users size={24} />
+                <Users size={20} />
               </div>
               <div>
                 <p className="summary-card__label">Total Leads</p>
-                <p className="summary-card__value">{statistics.total}</p>
+                <p className="summary-card__value">{statistics.total_leads}</p>
               </div>
             </div>
             <div className="summary-card__divider"></div>
             <div className="summary-card__column">
               <div className="summary-card__icon accent-orange">
-                <Users size={24} />
+                <Users size={20} />
               </div>
               <div>
                 <p className="summary-card__label">New Leads</p>
-                <p className="summary-card__value">{statistics.new}</p>
+                <p className="summary-card__value">{statistics.new_leads}</p>
               </div>
             </div>
             <div className="summary-card__divider"></div>
             <div className="summary-card__column">
               <div className="summary-card__icon accent-orange">
-                <Users size={24} />
+                <Users size={20} />
               </div>
               <div>
                 <p className="summary-card__label">Contacted</p>
-                <p className="summary-card__value">{statistics.contacted}</p>
+                <p className="summary-card__value">{statistics.contacted_leads}</p>
               </div>
             </div>
             <div className="summary-card__divider"></div>
             <div className="summary-card__column">
               <div className="summary-card__icon accent-orange">
-                <Users size={24} />
+                <Users size={20} />
+              </div>
+              <div>
+                <p className="summary-card__label">Qualified</p>
+                <p className="summary-card__value">{statistics.qualified_leads}</p>
+              </div>
+            </div>
+            <div className="summary-card__divider"></div>
+            <div className="summary-card__column">
+              <div className="summary-card__icon accent-orange">
+                <Users size={20} />
               </div>
               <div>
                 <p className="summary-card__label">Converted</p>
-                <p className="summary-card__value">{statistics.converted}</p>
+                <p className="summary-card__value">{statistics.converted_leads}</p>
+              </div>
+            </div>
+            <div className="summary-card__divider"></div>
+            <div className="summary-card__column">
+              <div className="summary-card__icon accent-orange">
+                <Users size={20} />
+              </div>
+              <div>
+                <p className="summary-card__label">Lost</p>
+                <p className="summary-card__value">{statistics.lost_leads}</p>
+              </div>
+            </div>
+            <div className="summary-card__divider"></div>
+            <div className="summary-card__column">
+              <div className="summary-card__icon accent-orange">
+                <Users size={20} />
+              </div>
+              <div>
+                <p className="summary-card__label">Active</p>
+                <p className="summary-card__value">{statistics.active_leads}</p>
               </div>
             </div>
           </article>
