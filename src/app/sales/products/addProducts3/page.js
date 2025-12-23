@@ -452,14 +452,14 @@ export default function AddProducts3Page() {
                 <h3 className="rincian-pesanan-title">RINCIAN PESANAN:</h3>
                 <div className="rincian-pesanan-item">
                   <div className="rincian-pesanan-detail">
-                    <div className="rincian-pesanan-name">Jakarta - Seminar Offline Ternak Properti - Paket 1 Orang 150rb</div>
+                    <div className="rincian-pesanan-name">Nama Produk</div>
                   </div>
-                  <div className="rincian-pesanan-price">Rp 150.000</div>
+                  <div className="rincian-pesanan-price">Rp 0</div>
                 </div>
                 <div className="rincian-pesanan-divider"></div>
                 <div className="rincian-pesanan-total">
                   <span className="rincian-pesanan-total-label">Total</span>
-                  <span className="rincian-pesanan-total-price">Rp 150.000</span>
+                  <span className="rincian-pesanan-total-price">Rp 0</span>
                 </div>
               </div>
             </section>
