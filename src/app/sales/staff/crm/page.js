@@ -540,15 +540,6 @@ export default function CRMPage() {
                 <RefreshCw size={16} style={{ marginRight: "0.5rem" }} />
                 Refresh
               </button>
-              <button
-                type="button"
-                className="customers-button customers-button--primary"
-                onClick={handleAddFollowUp}
-                title="Tambah Follow Up"
-              >
-                <Plus size={16} style={{ marginRight: "0.5rem" }} />
-                Tambah Follow Up
-              </button>
             </div>
           </div>
         </section>
@@ -569,7 +560,15 @@ export default function CRMPage() {
                 <Plus size={16} style={{ marginRight: "0.5rem" }} />
                 Tambah Lead
               </button>
-
+              <button
+                type="button"
+                className="customers-button customers-button--primary"
+                onClick={handleAddFollowUp}
+                title="Tambah Follow Up"
+              >
+                <Plus size={16} style={{ marginRight: "0.5rem" }} />
+                Tambah Follow Up
+              </button>
           </div>
 
           <div className="leads-table__wrapper">
