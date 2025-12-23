@@ -514,28 +514,11 @@ export default function AddProducts3Page() {
             <h2 className="special-offer-title">Special Offer!</h2>
             <div className="special-offer-price">
               <span className="price-old" aria-label="Harga lama">
-                Rp 599.000
+                Rp 0
               </span>
-              <span className="price-new" itemProp="price" content="399000">
-                Rp 399.000
+              <span className="price-new" itemProp="price" content="0">
+                Rp 0
               </span>
-            </div>
-            <div className="special-offer-benefits">
-              <h3>Benefit yang akan Anda dapatkan:</h3>
-              <ul itemProp="featureList">
-                <li itemProp="itemListElement">
-                  <span className="benefit-check">✓</span>
-                  Materi lengkap dan terupdate
-                </li>
-                <li itemProp="itemListElement">
-                  <span className="benefit-check">✓</span>
-                  Akses seumur hidup
-                </li>
-                <li itemProp="itemListElement">
-                  <span className="benefit-check">✓</span>
-                  Sertifikat resmi
-                </li>
-              </ul>
             </div>
             <meta itemProp="priceCurrency" content="IDR" />
             <meta itemProp="availability" content="https://schema.org/InStock" />

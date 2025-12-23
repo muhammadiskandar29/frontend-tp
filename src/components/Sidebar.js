@@ -18,6 +18,7 @@ import {
   ClipboardList,
   UserCheck,
   Radio,
+  Calendar,
 } from "lucide-react";
 import "@/styles/sales/sidebar.css";
 
@@ -113,7 +114,7 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
       ];
     }
     
-    // Staff Sales menu (level 2) - hanya Dashboard dan CRM
+    // Staff Sales menu (level 2) - hanya Dashboard dan Follow Hari Ini
     if (pathname?.startsWith("/sales/staff")) {
       return [
         {
@@ -126,8 +127,8 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
           section: "CUSTOMERS",
           items: [
             {
-              label: "CRM",
-              icon: <Tag size={18} />,
+              label: "Follow Hari Ini",
+              icon: <Calendar size={18} />,
               href: `${basePath}/crm`,
             },
           ],
