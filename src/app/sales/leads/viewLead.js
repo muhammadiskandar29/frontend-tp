@@ -367,7 +367,7 @@ export default function ViewLeadModal({ lead, onClose, onEdit }) {
             className="customers-button customers-button--primary"
             onClick={() => {
               if (onEdit) {
-                onEdit(lead);
+                onEdit(leadData || lead);
                 onClose();
               }
             }}

@@ -219,7 +219,7 @@ export default function FollowUpPage() {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const res = await fetch(`${BASE_URL}/sales/lead/statistics`, {
+      const res = await fetch(`${BASE_URL}/sales/dashboard`, {
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
