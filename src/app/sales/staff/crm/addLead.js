@@ -33,6 +33,30 @@ export default function AddLeadModal({ onClose, onSuccess }) {
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isStaffLevel2, setIsStaffLevel2] = useState(false);
+
+  // Get current user data and check level
+  useEffect(() => {
+    const userDataStr = localStorage.getItem("user");
+    if (userDataStr) {
+      try {
+        const user = JSON.parse(userDataStr);
+        setCurrentUser(user);
+        // Check if user is staff level 2
+        const userLevel = user?.level ? Number(user.level) : null;
+        if (userLevel === 2) {
+          setIsStaffLevel2(true);
+          // Auto set sales_id to current user's id
+          if (user.id) {
+            setFormData((prev) => ({ ...prev, sales_id: user.id }));
+          }
+        }
+      } catch (e) {
+        console.error("Error parsing user data:", e);
+      }
+    }
+  }, []);
 
   // Fetch customers and sales list
   useEffect(() => {
@@ -142,11 +166,14 @@ export default function AddLeadModal({ onClose, onSuccess }) {
       };
 
       // Build payload according to API documentation
+      // If staff level 2, always include sales_id from current user
+      const salesId = isStaffLevel2 && currentUser?.id ? currentUser.id : formData.sales_id;
+      
       const payload = {
         customer_id: formData.customer_id,
         lead_label: formData.lead_label.trim(),
         status: "NEW",
-        ...(formData.sales_id && { sales_id: formData.sales_id }),
+        ...(salesId && { sales_id: salesId }),
         ...(formData.minat_produk && formData.minat_produk.trim() && { minat_produk: formData.minat_produk.trim() }),
         ...(formData.alasan_tertarik && formData.alasan_tertarik.trim() && { alasan_tertarik: formData.alasan_tertarik.trim() }),
         ...(formData.alasan_belum && formData.alasan_belum.trim() && { alasan_belum: formData.alasan_belum.trim() }),
@@ -245,20 +272,37 @@ export default function AddLeadModal({ onClose, onSuccess }) {
             )}
           </div>
 
-          {/* Assign Sales */}
-          <div className="form-group form-group--primary">
-            <label>Assign Sales</label>
-            <Dropdown
-              value={formData.sales_id}
-              options={salesList}
-              onChange={(e) => handleChange("sales_id", e.value)}
-              placeholder="Pilih Sales"
-              className="w-full"
-              style={{ width: "100%" }}
-              optionLabel="label"
-              optionValue="value"
-            />
-          </div>
+          {/* Assign Sales - Hidden/Disabled for staff level 2 */}
+          {!isStaffLevel2 && (
+            <div className="form-group form-group--primary">
+              <label>Assign Sales</label>
+              <Dropdown
+                value={formData.sales_id}
+                options={salesList}
+                onChange={(e) => handleChange("sales_id", e.value)}
+                placeholder="Pilih Sales"
+                className="w-full"
+                style={{ width: "100%" }}
+                optionLabel="label"
+                optionValue="value"
+              />
+            </div>
+          )}
+          {isStaffLevel2 && currentUser && (
+            <div className="form-group form-group--primary">
+              <label>Assign Sales</label>
+              <input
+                type="text"
+                value={currentUser.nama || currentUser.name || "Anda"}
+                className="form-input"
+                disabled
+                style={{ backgroundColor: "#f3f4f6", cursor: "not-allowed" }}
+              />
+              <small style={{ color: "var(--dash-muted)", marginTop: "0.25rem", display: "block" }}>
+                Lead akan otomatis di-assign ke Anda
+              </small>
+            </div>
+          )}
 
           {/* Label Lead */}
           <div className="form-group form-group--primary">

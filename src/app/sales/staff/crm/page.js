@@ -19,6 +19,7 @@ const AddLeadModal = dynamic(() => import("./addLead"), { ssr: false });
 const BroadcastLeadModal = dynamic(() => import("./broadcastLead"), { ssr: false });
 const SendWhatsAppModal = dynamic(() => import("./sendWhatsApp"), { ssr: false });
 const AddFollowUpModal = dynamic(() => import("./addFollowUp"), { ssr: false });
+const AddFollowUpGeneralModal = dynamic(() => import("./addFollowUpGeneral"), { ssr: false });
 const ViewLeadModal = dynamic(() => import("./viewLead"), { ssr: false });
 const EditLeadModal = dynamic(() => import("./editLead"), { ssr: false });
 
@@ -58,6 +59,7 @@ export default function CRMPage() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [paginationInfo, setPaginationInfo] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
   const perPage = 15;
   const fetchingRef = useRef(false);
   
@@ -66,6 +68,7 @@ export default function CRMPage() {
   const [showBroadcast, setShowBroadcast] = useState(false);
   const [showSendWhatsApp, setShowSendWhatsApp] = useState(false);
   const [showAddFollowUp, setShowAddFollowUp] = useState(false);
+  const [showAddFollowUpGeneral, setShowAddFollowUpGeneral] = useState(false);
   const [showViewLead, setShowViewLead] = useState(false);
   const [showEditLead, setShowEditLead] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
@@ -77,8 +80,23 @@ export default function CRMPage() {
     contacted: 0,
     converted: 0,
   });
+
+  // Get current user ID from localStorage
+  useEffect(() => {
+    const userDataStr = localStorage.getItem("user");
+    if (userDataStr) {
+      try {
+        const user = JSON.parse(userDataStr);
+        if (user.id) {
+          setCurrentUserId(user.id);
+        }
+      } catch (e) {
+        console.error("Error parsing user data:", e);
+      }
+    }
+  }, []);
   
-  // Fetch leads data dengan pagination
+  // Fetch leads data dengan pagination menggunakan sales-list endpoint
   const fetchLeads = useCallback(async (pageNumber = 1) => {
     // Prevent multiple simultaneous calls
     if (fetchingRef.current) {
@@ -113,8 +131,14 @@ export default function CRMPage() {
       if (searchInput && searchInput.trim()) {
         params.append("search", searchInput.trim());
       }
+      
+      // Add sales_id if current user ID is available (for staff level 2)
+      if (currentUserId) {
+        params.append("sales_id", currentUserId.toString());
+      }
 
-      const res = await fetch(`/api/sales/lead?${params.toString()}`, {
+      // Use sales-list endpoint
+      const res = await fetch(`/api/sales/lead/sales-list?${params.toString()}`, {
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
@@ -202,7 +226,7 @@ export default function CRMPage() {
       setLoading(false);
       fetchingRef.current = false;
     }
-  }, [statusFilter, labelFilter, searchInput, perPage]);
+  }, [statusFilter, labelFilter, searchInput, perPage, currentUserId]);
 
   // Fetch all unique labels untuk filter dropdown
   const fetchLabelOptions = useCallback(async () => {
@@ -326,7 +350,7 @@ export default function CRMPage() {
   };
 
   const handleAddFollowUp = () => {
-    setShowAddFollowUp(true);
+    setShowAddFollowUpGeneral(true);
   };
 
   const handleModalSuccess = (message) => {
@@ -808,12 +832,21 @@ export default function CRMPage() {
         />
       )}
 
-      {showAddFollowUp && (
+      {showAddFollowUp && selectedLead && (
         <AddFollowUpModal
           lead={selectedLead}
           onClose={() => {
             setShowAddFollowUp(false);
             setSelectedLead(null);
+          }}
+          onSuccess={handleModalSuccess}
+        />
+      )}
+
+      {showAddFollowUpGeneral && (
+        <AddFollowUpGeneralModal
+          onClose={() => {
+            setShowAddFollowUpGeneral(false);
           }}
           onSuccess={handleModalSuccess}
         />
