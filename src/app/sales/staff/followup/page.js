@@ -46,7 +46,7 @@ const STATUS_OPTIONS = [
 
 // Label options akan di-fetch dari API (dinamis dari lead_label)
 
-export default function CRMPage() {
+export default function FollowUpPage() {
   const router = useRouter();
   const [leads, setLeads] = useState([]);
   const [searchInput, setSearchInput] = useState("");
@@ -548,8 +548,8 @@ export default function CRMPage() {
         <section className="panel leads-panel">
           <div className="panel__header">
             <div>
-              <p className="panel__eyebrow">CRM / Leads Management</p>
-              <h3 className="panel__title">Daftar Leads</h3>
+              <p className="panel__eyebrow">Follow Up Hari Ini</p>
+              <h3 className="panel__title">Daftar Follow Up</h3>
             </div>
             <button
                 type="button"
