@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
-import { Users, RefreshCw, Plus, Sparkles, Filter, ChevronDown } from "lucide-react";
+import { Users, RefreshCw, Plus, Filter, ChevronDown } from "lucide-react";
 import dynamic from "next/dynamic";
 import "@/styles/sales/dashboard-premium.css";
 import "@/styles/sales/admin.css";
@@ -15,13 +15,12 @@ import { toastSuccess, toastError, toastWarning } from "@/lib/toast";
 const BASE_URL = "/api";
 
 // Lazy load modals
-const AddLeadModal = dynamic(() => import("../../leads/addLead"), { ssr: false });
-const GenerateLeadsModal = dynamic(() => import("../../leads/generateLeads"), { ssr: false });
-const BroadcastLeadModal = dynamic(() => import("../../leads/broadcastLead"), { ssr: false });
-const SendWhatsAppModal = dynamic(() => import("../../leads/sendWhatsApp"), { ssr: false });
-const AddFollowUpModal = dynamic(() => import("../../leads/addFollowUp"), { ssr: false });
-const ViewLeadModal = dynamic(() => import("../../leads/viewLead"), { ssr: false });
-const EditLeadModal = dynamic(() => import("../../leads/editLead"), { ssr: false });
+const AddLeadModal = dynamic(() => import("./addLead"), { ssr: false });
+const BroadcastLeadModal = dynamic(() => import("./broadcastLead"), { ssr: false });
+const SendWhatsAppModal = dynamic(() => import("./sendWhatsApp"), { ssr: false });
+const AddFollowUpModal = dynamic(() => import("./addFollowUp"), { ssr: false });
+const ViewLeadModal = dynamic(() => import("./viewLead"), { ssr: false });
+const EditLeadModal = dynamic(() => import("./editLead"), { ssr: false });
 
 const LEADS_COLUMNS = [
   "Nama Customer",
@@ -64,7 +63,6 @@ export default function CRMPage() {
   
   // Modal states
   const [showAddLead, setShowAddLead] = useState(false);
-  const [showGenerateLeads, setShowGenerateLeads] = useState(false);
   const [showBroadcast, setShowBroadcast] = useState(false);
   const [showSendWhatsApp, setShowSendWhatsApp] = useState(false);
   const [showAddFollowUp, setShowAddFollowUp] = useState(false);
@@ -327,8 +325,8 @@ export default function CRMPage() {
     setShowAddLead(true);
   };
 
-  const handleGenerateLeads = () => {
-    setShowGenerateLeads(true);
+  const handleAddFollowUp = () => {
+    setShowAddFollowUp(true);
   };
 
   const handleModalSuccess = (message) => {
@@ -521,20 +519,11 @@ export default function CRMPage() {
               <button
                 type="button"
                 className="customers-button customers-button--primary"
-                onClick={handleAddLead}
-                title="Tambah Lead"
+                onClick={handleAddFollowUp}
+                title="Tambah Follow Up"
               >
                 <Plus size={16} style={{ marginRight: "0.5rem" }} />
-                Tambah Lead
-              </button>
-              <button
-                type="button"
-                className="customers-button customers-button--primary"
-                onClick={handleGenerateLeads}
-                title="Generate Leads"
-              >
-                <Sparkles size={16} style={{ marginRight: "0.5rem" }} />
-                Generate Leads
+                Tambah Follow Up
               </button>
             </div>
           </div>
@@ -547,6 +536,16 @@ export default function CRMPage() {
               <p className="panel__eyebrow">CRM / Leads Management</p>
               <h3 className="panel__title">Daftar Leads</h3>
             </div>
+            <button
+                type="button"
+                className="customers-button customers-button--primary"
+                onClick={handleAddLead}
+                title="Tambah Lead"
+              >
+                <Plus size={16} style={{ marginRight: "0.5rem" }} />
+                Tambah Lead
+              </button>
+
           </div>
 
           <div className="leads-table__wrapper">
@@ -791,13 +790,6 @@ export default function CRMPage() {
         />
       )}
 
-      {showGenerateLeads && (
-        <GenerateLeadsModal
-          onClose={() => setShowGenerateLeads(false)}
-          onSuccess={handleModalSuccess}
-        />
-      )}
-
       {showBroadcast && (
         <BroadcastLeadModal
           onClose={() => setShowBroadcast(false)}
@@ -816,7 +808,7 @@ export default function CRMPage() {
         />
       )}
 
-      {showAddFollowUp && selectedLead && (
+      {showAddFollowUp && (
         <AddFollowUpModal
           lead={selectedLead}
           onClose={() => {
