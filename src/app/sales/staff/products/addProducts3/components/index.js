@@ -13,5 +13,4 @@ export { default as HTMLComponent } from './HTMLComponent';
 export { default as DividerComponent } from './DividerComponent';
 export { default as ScrollTargetComponent } from './ScrollTargetComponent';
 export { default as AnimationComponent } from './AnimationComponent';
-export { default as PriceComponent } from './PriceComponent';
 

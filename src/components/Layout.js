@@ -7,6 +7,7 @@ import { toast } from "react-hot-toast";
 import Link from "next/link";
 import { Menu } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
+import { getDivisionHome } from "@/lib/divisionRoutes";
 import "@/styles/sales/layout.css";
 import "@/styles/toast.css";
 import "../app/globals.css";
@@ -140,7 +141,36 @@ export default function Layout({ children, title, description, aboveContent = nu
     }
 
     try {
-      setUser(JSON.parse(userData));
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
+      
+      // Check if user is accessing the correct route based on their level
+      const userDivisi = parsedUser?.divisi;
+      const userLevel = parsedUser?.level ? Number(parsedUser.level) : null;
+      const expectedRoute = getDivisionHome(userDivisi, userLevel);
+      
+      // Redirect logic based on level
+      if (userLevel === 2) {
+        // Staff level - should be on /{division}/staff or sub-routes
+        if (pathname === "/sales" || pathname === "/finance") {
+          // Staff trying to access leader route - redirect to staff route
+          router.replace(expectedRoute);
+          return;
+        }
+      } else if (userLevel === 1) {
+        // Leader level - should be on /{division} or sub-routes (but not /staff)
+        if (pathname === "/sales/staff" || pathname === "/finance/staff") {
+          // Leader trying to access staff route - redirect to leader route
+          router.replace(expectedRoute);
+          return;
+        }
+        // Also redirect if accessing /staff sub-routes
+        if (pathname.startsWith("/sales/staff/") || pathname.startsWith("/finance/staff/")) {
+          router.replace(expectedRoute);
+          return;
+        }
+      }
+      
       setIsAuthorized(true);
     } catch {
       setIsAuthorized(false);

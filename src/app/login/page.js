@@ -135,11 +135,13 @@ export default function LoginPage() {
         setToken(data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         localStorage.setItem('division', data.user?.divisi || '');
+        localStorage.setItem('level', data.user?.level || '');
 
         // ✅ Simpan cookie yang bisa dibaca middleware (token berlaku 1 hari)
         document.cookie = `token=${data.token}; path=/; max-age=${60 * 60 * 24}; SameSite=Lax`;
 
-        const targetRoute = getDivisionHome(data.user?.divisi);
+        // Get route based on division and level
+        const targetRoute = getDivisionHome(data.user?.divisi, data.user?.level);
         localStorage.setItem('division_home', targetRoute);
         router.replace(targetRoute);
       } else if (data?.token) {
@@ -147,10 +149,12 @@ export default function LoginPage() {
         setToken(data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         localStorage.setItem('division', data.user?.divisi || '');
+        localStorage.setItem('level', data.user?.level || '');
 
         document.cookie = `token=${data.token}; path=/; max-age=${60 * 60 * 24}; SameSite=Lax`;
 
-        const targetRoute = getDivisionHome(data.user?.divisi);
+        // Get route based on division and level
+        const targetRoute = getDivisionHome(data.user?.divisi, data.user?.level);
         localStorage.setItem('division_home', targetRoute);
         router.replace(targetRoute);
       } else {

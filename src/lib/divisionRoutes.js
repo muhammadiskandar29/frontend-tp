@@ -14,16 +14,42 @@ const divisionRouteMap = {
   trainer: "/admin",
 };
 
-export function getDivisionHome(divisi) {
+/**
+ * Get division home route based on division and level
+ * @param {string|number} divisi - Division ID or name
+ * @param {string|number} level - User level (1 = Leader, 2 = Staff)
+ * @returns {string} Route path
+ */
+export function getDivisionHome(divisi, level = null) {
   if (!divisi) return "/admin";
+  
   // Handle both string and number values
   const divisiStr = String(divisi).trim();
+  const levelNum = level ? Number(level) : null;
+  
+  // Get base route for division
+  let baseRoute = null;
+  
   // Try exact match first (for numeric strings like "3", "1", etc.)
   if (divisionRouteMap[divisiStr]) {
-    return divisionRouteMap[divisiStr];
+    baseRoute = divisionRouteMap[divisiStr];
+  } else {
+    // Fallback to lowercase for text values
+    const normalized = divisiStr.toLowerCase();
+    baseRoute = divisionRouteMap[normalized] || "/admin";
   }
-  // Fallback to lowercase for text values
-  const normalized = divisiStr.toLowerCase();
-  return divisionRouteMap[normalized] || "/admin";
+  
+  // If level is provided and is 2 (Staff), append /staff to the route
+  // Only apply for divisions that have staff routes (sales, finance, etc.)
+  if (levelNum === 2 && baseRoute !== "/admin" && baseRoute !== "/hr/dashboard") {
+    // Check if division supports staff routes
+    const staffSupportedDivisions = ["/sales", "/finance"];
+    if (staffSupportedDivisions.includes(baseRoute)) {
+      return `${baseRoute}/staff`;
+    }
+  }
+  
+  // Level 1 (Leader) or no level specified - return base route
+  return baseRoute;
 }
 

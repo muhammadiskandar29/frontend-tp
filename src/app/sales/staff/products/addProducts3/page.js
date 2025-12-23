@@ -23,7 +23,6 @@ import {
   DividerComponent,
   ScrollTargetComponent,
   AnimationComponent,
-  PriceComponent,
 } from './components';
 import "@/styles/sales/add-products3.css";
 
@@ -34,7 +33,6 @@ const COMPONENT_CATEGORIES = {
     components: [
       { id: "text", name: "Teks", icon: Type, color: "#3b82f6" },
       { id: "image", name: "Gambar", icon: ImageIcon, color: "#10b981" },
-      { id: "price", name: "Harga", icon: FileText, color: "#F1A124" },
     ]
   },
   formPemesanan: {
@@ -81,11 +79,10 @@ export default function AddProducts3Page() {
     const defaults = {
       text: { content: "" },
       image: { src: "", alt: "", caption: "" },
-      video: { items: [] },
+      video: { url: "" },
       testimoni: { items: [] },
       list: { items: [] },
       form: { kategori: null }, // Kategori untuk form pemesanan
-      price: {},
       faq: { items: [] },
       slider: { images: [] },
       button: { text: "Klik Disini", link: "#", style: "primary" },
@@ -185,8 +182,6 @@ export default function AddProducts3Page() {
       case "youtube":
       case "video":
         return <VideoComponent {...commonProps} />;
-      case "price":
-        return <PriceComponent {...commonProps} />;
       case "testimoni":
         return <TestimoniComponent {...commonProps} />;
       case "list":
@@ -232,20 +227,10 @@ export default function AddProducts3Page() {
         );
       case "youtube":
       case "video":
-        const videoItems = block.data.items || [];
-        if (videoItems.length === 0) {
-          return <div className="preview-placeholder">Belum ada video</div>;
-        }
-        return (
-          <div className="preview-videos">
-            {videoItems.map((item, i) => (
-              item.embedUrl ? (
-                <div key={i} className="preview-video-wrapper">
-                  <iframe src={item.embedUrl} title={`Video ${i + 1}`} className="preview-video-iframe" allowFullScreen />
-                </div>
-              ) : null
-            ))}
-          </div>
+        return block.data.embedUrl ? (
+          <iframe src={block.data.embedUrl} title="Video" className="preview-video-iframe" allowFullScreen />
+        ) : (
+          <div className="preview-placeholder">URL video belum diisi</div>
         );
       case "testimoni":
         const testimoniItems = block.data.items || [];
@@ -446,24 +431,6 @@ export default function AddProducts3Page() {
               </section>
             )}
 
-            {/* Rincian Pesanan - General untuk semua kategori */}
-            <section className="preview-form-section rincian-pesanan-section" aria-label="Rincian Pesanan">
-              <div className="rincian-pesanan-card">
-                <h3 className="rincian-pesanan-title">RINCIAN PESANAN:</h3>
-                <div className="rincian-pesanan-item">
-                  <div className="rincian-pesanan-detail">
-                    <div className="rincian-pesanan-name">Jakarta - Seminar Offline Ternak Properti - Paket 1 Orang 150rb</div>
-                  </div>
-                  <div className="rincian-pesanan-price">Rp 150.000</div>
-                </div>
-                <div className="rincian-pesanan-divider"></div>
-                <div className="rincian-pesanan-total">
-                  <span className="rincian-pesanan-total-label">Total</span>
-                  <span className="rincian-pesanan-total-price">Rp 150.000</span>
-                </div>
-              </div>
-            </section>
-
             {/* Payment Section - Selalu muncul */}
             <section className="preview-payment-section payment-section" aria-label="Payment methods">
               <h2 className="payment-title">Metode Pembayaran</h2>
@@ -507,39 +474,6 @@ export default function AddProducts3Page() {
               </div>
             </section>
           </>
-        );
-      case "price":
-        return (
-          <section className="preview-price-section special-offer-card" aria-label="Special offer" itemScope itemType="https://schema.org/Offer">
-            <h2 className="special-offer-title">Special Offer!</h2>
-            <div className="special-offer-price">
-              <span className="price-old" aria-label="Harga lama">
-                Rp 599.000
-              </span>
-              <span className="price-new" itemProp="price" content="399000">
-                Rp 399.000
-              </span>
-            </div>
-            <div className="special-offer-benefits">
-              <h3>Benefit yang akan Anda dapatkan:</h3>
-              <ul itemProp="featureList">
-                <li itemProp="itemListElement">
-                  <span className="benefit-check">✓</span>
-                  Materi lengkap dan terupdate
-                </li>
-                <li itemProp="itemListElement">
-                  <span className="benefit-check">✓</span>
-                  Akses seumur hidup
-                </li>
-                <li itemProp="itemListElement">
-                  <span className="benefit-check">✓</span>
-                  Sertifikat resmi
-                </li>
-              </ul>
-            </div>
-            <meta itemProp="priceCurrency" content="IDR" />
-            <meta itemProp="availability" content="https://schema.org/InStock" />
-          </section>
         );
       case "button":
         return (

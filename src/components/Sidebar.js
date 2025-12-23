@@ -85,6 +85,9 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
 
   // Determine base path from pathname (memoized to avoid recalculation)
   const basePath = useMemo(() => {
+    // Check for staff paths first (staff berada di dalam divisi)
+    if (pathname?.startsWith("/sales/staff")) return "/sales/staff";
+    if (pathname?.startsWith("/finance/staff")) return "/finance/staff";
     if (pathname?.startsWith("/finance")) return "/finance";
     if (pathname?.startsWith("/sales")) return "/sales";
     return "/admin";
@@ -110,7 +113,47 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
       ];
     }
     
-    // Sales menu
+    // Staff Sales menu (level 2) - hanya Dashboard dan CRM
+    if (pathname?.startsWith("/sales/staff")) {
+      return [
+        {
+          section: "OVERVIEW",
+          items: [
+            { label: "Dashboard", href: basePath, icon: <Home size={18} /> },
+          ],
+        },
+        {
+          section: "CUSTOMERS",
+          items: [
+            {
+              label: "CRM",
+              icon: <Tag size={18} />,
+              href: `${basePath}/crm`,
+            },
+          ],
+        },
+      ];
+    }
+    
+    // Staff Finance menu (level 2) - untuk nanti
+    if (pathname?.startsWith("/finance/staff")) {
+      return [
+        {
+          section: "OVERVIEW",
+          items: [
+            { label: "Dashboard", href: basePath, icon: <Home size={18} /> },
+          ],
+        },
+        {
+          section: "TRANSACTIONS",
+          items: [
+            { label: "Transactions", href: `${basePath}/orders`, icon: <ClipboardList size={18} /> },
+          ],
+        },
+      ];
+    }
+    
+    // Sales menu (leader)
     if (pathname?.startsWith("/sales")) {
       return [
         {
@@ -398,7 +441,13 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
       >
         {/* === LOGO GANTI TULISAN === */}
         <div className="sidebar-logo">
-          <Link href={isFinance ? "/finance" : isSales ? "/sales" : "/admin"}>
+          <Link href={
+            pathname?.startsWith("/finance/staff") ? "/finance/staff" :
+            pathname?.startsWith("/sales/staff") ? "/sales/staff" :
+            isFinance ? "/finance" : 
+            isSales ? "/sales" : 
+            "/admin"
+          }>
             <Image
               src="/assets/logo.png"
               alt="Logo"
