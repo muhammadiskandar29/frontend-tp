@@ -5,6 +5,15 @@
 .leads-detail-modal {
   display: flex;
   flex-direction: column;
+  max-height: none !important;
+  height: auto !important;
+  overflow: visible !important;
+}
+
+.leads-detail-modal .modal-body {
+  overflow: visible !important;
+  max-height: none !important;
+  height: auto !important;
 }
 
 /* Tabs */
@@ -46,12 +55,17 @@
 .leads-detail-body {
   flex: 1;
   padding: 1.5rem;
+  overflow: visible !important;
+  max-height: none !important;
+  height: auto !important;
 }
 
 .leads-detail-content {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  overflow: visible;
+  max-height: none;
 }
 
 /* Customer Info Section */
