@@ -102,6 +102,14 @@ export default function AddFollowUpModal({ lead, onClose, onSuccess }) {
         return null;
       };
 
+      const payload = {
+        lead_id: lead?.id,
+        follow_up_date: formatDateTime(formData.follow_up_date),
+        channel: formData.channel || null,
+        note: formData.note || "",
+        type: formData.type,
+      };
+
       const res = await fetch(`${BASE_URL}/sales/lead/${lead?.id}/followup`, {
         method: "POST",
         headers: {
@@ -109,12 +117,7 @@ export default function AddFollowUpModal({ lead, onClose, onSuccess }) {
           Accept: "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          follow_up_date: formatDateTime(formData.follow_up_date),
-          channel: formData.channel,
-          note: formData.note || "",
-          type: formData.type,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
