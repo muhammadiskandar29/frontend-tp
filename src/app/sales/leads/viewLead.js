@@ -195,7 +195,7 @@ export default function ViewLeadModal({ lead, onClose, onEdit }) {
 
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal-card leads-detail-modal" style={{ width: "min(900px, 95vw)" }}>
+      <div className="modal-card leads-detail-modal" style={{ width: "min(800px, 95vw)", maxHeight: "90vh" }}>
         {/* Header */}
         <div className="modal-header">
           <h2>Detail Lead</h2>
@@ -230,7 +230,7 @@ export default function ViewLeadModal({ lead, onClose, onEdit }) {
         </div>
 
         {/* Tab Content */}
-        <div className="modal-body leads-detail-body">
+        <div className="modal-body leads-detail-body" style={{ overflowY: "auto" }}>
           {/* Tab Detail */}
           {activeTab === "detail" && (
             <div className="leads-detail-content">

@@ -47,9 +47,12 @@ export default function AddLeadModal({ onClose, onSuccess }) {
         const userLevel = user?.level ? Number(user.level) : null;
         if (userLevel === 2) {
           setIsStaffLevel2(true);
-          // Auto set sales_id to current user's id
+          // Auto set sales_id to current user's id (ensure it's a number)
           if (user.id) {
-            setFormData((prev) => ({ ...prev, sales_id: user.id }));
+            const userId = Number(user.id);
+            if (!isNaN(userId)) {
+              setFormData((prev) => ({ ...prev, sales_id: userId }));
+            }
           }
         }
       } catch (e) {
@@ -167,13 +170,36 @@ export default function AddLeadModal({ onClose, onSuccess }) {
 
       // Build payload according to API documentation
       // If staff level 2, always include sales_id from current user
-      const salesId = isStaffLevel2 && currentUser?.id ? currentUser.id : formData.sales_id;
+      let salesId = null;
+      if (isStaffLevel2 && currentUser?.id) {
+        // Ensure sales_id is a number for staff level 2
+        salesId = Number(currentUser.id);
+        if (isNaN(salesId) || salesId <= 0) {
+          toastError("Sales ID tidak valid. Silakan login kembali.");
+          setSubmitting(false);
+          return;
+        }
+      } else if (formData.sales_id) {
+        salesId = Number(formData.sales_id);
+        if (isNaN(salesId) || salesId <= 0) {
+          toastError("Sales ID tidak valid. Silakan pilih Sales.");
+          setSubmitting(false);
+          return;
+        }
+      } else {
+        toastError("Sales ID wajib diisi. Silakan pilih Sales.");
+        setSubmitting(false);
+        return;
+      }
+      
+      console.log("📤 Submitting lead with sales_id:", salesId, "type:", typeof salesId, "isStaffLevel2:", isStaffLevel2, "currentUser:", currentUser);
+      console.log("📤 Form data sales_id:", formData.sales_id, "type:", typeof formData.sales_id);
       
       const payload = {
-        customer_id: formData.customer_id,
+        customer_id: Number(formData.customer_id),
         lead_label: formData.lead_label.trim(),
         status: "NEW",
-        ...(salesId && { sales_id: salesId }),
+        sales_id: salesId, // Always include sales_id as number
         ...(formData.minat_produk && formData.minat_produk.trim() && { minat_produk: formData.minat_produk.trim() }),
         ...(formData.alasan_tertarik && formData.alasan_tertarik.trim() && { alasan_tertarik: formData.alasan_tertarik.trim() }),
         ...(formData.alasan_belum && formData.alasan_belum.trim() && { alasan_belum: formData.alasan_belum.trim() }),
@@ -181,6 +207,8 @@ export default function AddLeadModal({ onClose, onSuccess }) {
         ...(formData.last_contact_at && { last_contact_at: formatDateTime(formData.last_contact_at) }),
         ...(formData.next_follow_up_at && { next_follow_up_at: formatDateTime(formData.next_follow_up_at) }),
       };
+
+      console.log("📤 Payload:", JSON.stringify(payload, null, 2));
 
       const res = await fetch(`${BASE_URL}/sales/lead`, {
         method: "POST",
@@ -194,6 +222,18 @@ export default function AddLeadModal({ onClose, onSuccess }) {
 
       const data = await res.json();
       if (!res.ok || !data.success) {
+        // Handle validation errors
+        if (data.errors && typeof data.errors === "object") {
+          const errorMessages = Object.entries(data.errors)
+            .map(([field, messages]) => {
+              if (Array.isArray(messages)) {
+                return messages.join(", ");
+              }
+              return String(messages);
+            })
+            .join("\n");
+          throw new Error(errorMessages || data.message || "Gagal menambahkan lead");
+        }
         throw new Error(data.message || "Gagal menambahkan lead");
       }
 
