@@ -758,7 +758,7 @@ export default function FollowUpPage() {
 
                         {/* Last Contact */}
                         <span className="leads-table__cell">
-                          {formatDate(lead.last_contact)}
+                          {formatDate(lead.last_contact_at)}
                         </span>
 
                         {/* Next Follow Up */}
