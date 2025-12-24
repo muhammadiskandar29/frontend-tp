@@ -110,7 +110,7 @@ export default function AddFollowUpModal({ lead, onClose, onSuccess }) {
         type: formData.type,
       };
 
-      const res = await fetch(`${BASE_URL}/sales/lead/${lead?.id}/followup`, {
+      const res = await fetch(`${BASE_URL}/sales/lead/followup`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
