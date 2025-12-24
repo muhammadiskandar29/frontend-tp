@@ -49,13 +49,17 @@ export default function AddFollowUpModal({ lead, onClose, onSuccess }) {
   const customerPhone = customer.wa || lead?.wa || "";
   const customerEmail = customer.email || lead?.email || "-";
 
-  // Set default follow_up_date to now
   useEffect(() => {
-    setFormData((prev) => ({
-      ...prev,
-      follow_up_date: new Date(),
-    }));
-  }, []);
+    if (lead) {
+      // Reset form when lead changes
+      setFormData({
+        follow_up_date: new Date(),
+        channel: "",
+        note: "",
+        type: "",
+      });
+    }
+  }, [lead]);
 
   const handleChange = (field, value) => {
     setFormData({ ...formData, [field]: value });
@@ -66,6 +70,11 @@ export default function AddFollowUpModal({ lead, onClose, onSuccess }) {
 
     if (!formData.follow_up_date) {
       toastError("Tanggal Follow Up wajib diisi");
+      return;
+    }
+
+    if (!formData.channel) {
+      toastError("Channel wajib dipilih");
       return;
     }
 
@@ -94,7 +103,7 @@ export default function AddFollowUpModal({ lead, onClose, onSuccess }) {
       };
 
       const payload = {
-        lead_id: lead.id,
+        lead_id: lead?.id,
         follow_up_date: formatDateTime(formData.follow_up_date),
         channel: formData.channel || null,
         note: formData.note || "",
@@ -131,7 +140,7 @@ export default function AddFollowUpModal({ lead, onClose, onSuccess }) {
 
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal-card" style={{ width: "min(500px, 95vw)" }}>
+      <div className="modal-card" style={{ width: "min(500px, 95vw)", maxHeight: "90vh" }}>
         {/* Header */}
         <div className="modal-header">
           <h2>Input Follow Up</h2>
@@ -141,7 +150,7 @@ export default function AddFollowUpModal({ lead, onClose, onSuccess }) {
         </div>
 
         {/* Body */}
-        <form className="modal-body modal-body--form" onSubmit={handleSubmit}>
+        <form className="modal-body modal-body--form" onSubmit={handleSubmit} style={{ overflowY: "auto" }}>
           {/* Customer Info */}
           <div className="leads-whatsapp-customer-info">
             <div className="leads-whatsapp-customer-name">{customerName}</div>
@@ -176,7 +185,9 @@ export default function AddFollowUpModal({ lead, onClose, onSuccess }) {
 
           {/* Channel Dropdown */}
           <div className="form-group form-group--primary">
-            <label>Channel</label>
+            <label>
+              Channel <span className="required">*</span>
+            </label>
             <Dropdown
               value={formData.channel}
               options={CHANNEL_OPTIONS}

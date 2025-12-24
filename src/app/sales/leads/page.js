@@ -61,6 +61,7 @@ export default function LeadsPage() {
   const [paginationInfo, setPaginationInfo] = useState(null);
   const perPage = 15;
   const fetchingRef = useRef(false);
+  const isInitialMount = useRef(true);
   
   // Modal states
   const [showAddLead, setShowAddLead] = useState(false);
@@ -262,27 +263,36 @@ export default function LeadsPage() {
     fetchLeads(1);
     fetchLabelOptions();
     fetchStatistics();
+    // Mark initial mount as complete after a short delay
+    setTimeout(() => {
+      isInitialMount.current = false;
+    }, 100);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Hanya sekali saat mount
 
   // Fetch data saat page berubah
   useEffect(() => {
-    if (page > 0 && !loading) {
+    if (page > 1 && !loading && !isInitialMount.current) {
       fetchLeads(page);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]); // Hanya depend pada page
 
-  // Reset page ke 1 dan fetch ulang ketika filter berubah
+  // Reset page ke 1 dan fetch ulang ketika filter berubah (dengan debounce untuk search)
   useEffect(() => {
-    // Skip pada initial mount (sudah ada useEffect untuk initial load)
-    if (leads.length === 0 && page === 1) return;
+    // Skip pada initial mount
+    if (isInitialMount.current) return;
     
-    // Reset ke page 1 dan fetch ulang data
-    setPage(1);
-    setLeads([]);
-    setHasMore(true);
-    fetchLeads(1);
+    // Debounce untuk search input
+    const timeoutId = setTimeout(() => {
+      // Reset ke page 1 dan fetch ulang data
+      setPage(1);
+      setLeads([]);
+      setHasMore(true);
+      fetchLeads(1);
+    }, searchInput ? 500 : 0); // 500ms debounce untuk search, langsung untuk filter dropdown
+    
+    return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchInput, statusFilter, labelFilter]); // Reset page ketika filter berubah
 
@@ -741,7 +751,7 @@ export default function LeadsPage() {
 
                         {/* Next Follow Up */}
                         <span className="leads-table__cell">
-                          {formatDate(lead.next_followup)}
+                          {formatDate(lead.next_follow_up_at)}
                         </span>
 
                         {/* Aksi */}
