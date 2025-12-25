@@ -799,37 +799,6 @@ export default function FollowUpPage() {
                             >
                               Edit
                             </button>
-                            <button
-                              className="leads-action-btn leads-action-btn--delete"
-                              onClick={async () => {
-                                if (confirm(`Apakah Anda yakin ingin menghapus lead ini?`)) {
-                                  try {
-                                    const token = localStorage.getItem("token");
-                                    const res = await fetch(`/api/sales/lead/${lead.id}`, {
-                                      method: "DELETE",
-                                      headers: {
-                                        "Content-Type": "application/json",
-                                        Accept: "application/json",
-                                        Authorization: `Bearer ${token}`,
-                                      },
-                                    });
-                                    const data = await res.json();
-                                    if (res.ok && data.success) {
-                                      toastSuccess(data.message || "Lead berhasil dihapus");
-                                      requestRefresh("Lead berhasil dihapus", "success");
-                                    } else {
-                                      throw new Error(data.message || "Gagal menghapus lead");
-                                    }
-                                  } catch (err) {
-                                    console.error(err);
-                                    toastError("Gagal menghapus lead: " + err.message);
-                                  }
-                                }
-                              }}
-                              title="Hapus"
-                            >
-                              Hapus
-                            </button>
                           </div>
                         </span>
                       </div>

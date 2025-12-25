@@ -83,6 +83,11 @@ export default function AddFollowUpModal({ lead, onClose, onSuccess }) {
       return;
     }
 
+    if (!formData.note || !formData.note.trim()) {
+      toastError("Note wajib diisi");
+      return;
+    }
+
     setSubmitting(true);
     const token = localStorage.getItem("token");
 
@@ -106,7 +111,7 @@ export default function AddFollowUpModal({ lead, onClose, onSuccess }) {
         lead_id: lead?.id,
         follow_up_date: formatDateTime(formData.follow_up_date),
         channel: formData.channel || null,
-        note: formData.note || "",
+        note: formData.note.trim(),
         type: formData.type,
       };
 
@@ -220,15 +225,18 @@ export default function AddFollowUpModal({ lead, onClose, onSuccess }) {
             </small>
           </div>
 
-          {/* Note (Optional) */}
-          <div className="form-group form-group--secondary">
-            <label>Note</label>
+          {/* Note (Required) */}
+          <div className="form-group form-group--primary">
+            <label>
+              Note <span className="required">*</span>
+            </label>
             <textarea
-              placeholder="Tambahkan note (opsional)..."
+              placeholder="Tambahkan note..."
               value={formData.note}
               onChange={(e) => handleChange("note", e.target.value)}
               className="form-input"
               rows={4}
+              required
             />
           </div>
         </form>

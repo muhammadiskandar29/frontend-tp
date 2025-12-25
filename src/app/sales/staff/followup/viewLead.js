@@ -195,7 +195,7 @@ export default function ViewLeadModal({ lead, onClose, onEdit }) {
 
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal-card leads-detail-modal" style={{ width: "min(900px, 95vw)" }}>
+      <div className="modal-card leads-detail-modal" style={{ width: "min(500px, 95vw)" }}>
         {/* Header */}
         <div className="modal-header">
           <h2>Detail Lead</h2>
@@ -233,61 +233,70 @@ export default function ViewLeadModal({ lead, onClose, onEdit }) {
         <div className="modal-body leads-detail-body">
           {/* Tab Detail */}
           {activeTab === "detail" && (
-            <div className="leads-detail-content">
-              {/* Customer Info */}
-              <div className="leads-detail-section">
-                <div className="leads-detail-customer-name">{customerName}</div>
-                <div className="leads-detail-customer-info">
-                  <div className="leads-detail-info-row">
-                    <span className="leads-detail-info-label">Email:</span>
-                    <span className="leads-detail-info-value">{customerEmail}</span>
-                  </div>
-                  <div className="leads-detail-info-row">
-                    <span className="leads-detail-info-label">WhatsApp:</span>
-                    <span className="leads-detail-info-value">{customerPhone}</span>
-                  </div>
-                  <div className="leads-detail-info-row">
-                    <span className="leads-detail-info-label">Pendapatan:</span>
-                    <span className="leads-detail-info-value">{formatPendapatan(customerPendapatan)}</span>
-                  </div>
-                </div>
+            <div className="leads-detail-content" style={{ padding: "1rem 0" }}>
+              {/* Customer Name (no label) */}
+              <div style={{ fontSize: "1.25rem", fontWeight: "600", marginBottom: "1.5rem", color: "var(--dash-text)" }}>
+                {customerName}
               </div>
 
-              {/* Lead Info */}
-              <div className="leads-detail-section">
-                <div className="leads-detail-field">
-                  <span className="leads-detail-field-label">Label</span>
-                  <span className="leads-detail-field-value">{leadData?.lead_label || lead?.lead_label || lead?.label || "-"}</span>
+              {/* Formatted Info List */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                <div style={{ display: "flex", alignItems: "flex-start" }}>
+                  <span style={{ minWidth: "140px", color: "var(--dash-muted)", fontSize: "0.875rem" }}>Email</span>
+                  <span style={{ marginRight: "0.5rem", color: "var(--dash-muted)", fontSize: "0.875rem" }}>:</span>
+                  <span style={{ flex: 1, color: "var(--dash-text)", fontSize: "0.875rem" }}>{customerEmail}</span>
                 </div>
-                <div className="leads-detail-field">
-                  <span className="leads-detail-field-label">Status</span>
-                  <span className={`leads-status ${(leadData?.status || lead?.status) ? `status-${(leadData?.status || lead?.status).toLowerCase()}` : "status-default"}`}>
+                <div style={{ display: "flex", alignItems: "flex-start" }}>
+                  <span style={{ minWidth: "140px", color: "var(--dash-muted)", fontSize: "0.875rem" }}>WhatsApp</span>
+                  <span style={{ marginRight: "0.5rem", color: "var(--dash-muted)", fontSize: "0.875rem" }}>:</span>
+                  <span style={{ flex: 1, color: "var(--dash-text)", fontSize: "0.875rem" }}>{customerPhone}</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "flex-start" }}>
+                  <span style={{ minWidth: "140px", color: "var(--dash-muted)", fontSize: "0.875rem" }}>Pendapatan</span>
+                  <span style={{ marginRight: "0.5rem", color: "var(--dash-muted)", fontSize: "0.875rem" }}>:</span>
+                  <span style={{ flex: 1, color: "var(--dash-text)", fontSize: "0.875rem" }}>{formatPendapatan(customerPendapatan)}</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "flex-start" }}>
+                  <span style={{ minWidth: "140px", color: "var(--dash-muted)", fontSize: "0.875rem" }}>Label</span>
+                  <span style={{ marginRight: "0.5rem", color: "var(--dash-muted)", fontSize: "0.875rem" }}>:</span>
+                  <span style={{ flex: 1, color: "var(--dash-text)", fontSize: "0.875rem" }}>{leadData?.lead_label || lead?.lead_label || lead?.label || "-"}</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "flex-start" }}>
+                  <span style={{ minWidth: "140px", color: "var(--dash-muted)", fontSize: "0.875rem" }}>Status</span>
+                  <span style={{ marginRight: "0.5rem", color: "var(--dash-muted)", fontSize: "0.875rem" }}>:</span>
+                  <span style={{ flex: 1, color: "var(--dash-text)", fontSize: "0.875rem" }}>
                     {(leadData?.status || lead?.status) ? (leadData?.status || lead?.status).toUpperCase() : "-"}
                   </span>
                 </div>
-                <div className="leads-detail-field">
-                  <span className="leads-detail-field-label">Minat Produk</span>
-                  <span className="leads-detail-field-value">{leadData?.minat_produk || lead?.minat_produk || "-"}</span>
+                <div style={{ display: "flex", alignItems: "flex-start" }}>
+                  <span style={{ minWidth: "140px", color: "var(--dash-muted)", fontSize: "0.875rem" }}>Minat Produk</span>
+                  <span style={{ marginRight: "0.5rem", color: "var(--dash-muted)", fontSize: "0.875rem" }}>:</span>
+                  <span style={{ flex: 1, color: "var(--dash-text)", fontSize: "0.875rem" }}>{leadData?.minat_produk || lead?.minat_produk || "-"}</span>
                 </div>
-                <div className="leads-detail-field">
-                  <span className="leads-detail-field-label">Last Contact</span>
-                  <span className="leads-detail-field-value">{formatDate(leadData?.last_contact_at || lead?.last_contact_at || lead?.last_contact)}</span>
+                <div style={{ display: "flex", alignItems: "flex-start" }}>
+                  <span style={{ minWidth: "140px", color: "var(--dash-muted)", fontSize: "0.875rem" }}>Last Contact</span>
+                  <span style={{ marginRight: "0.5rem", color: "var(--dash-muted)", fontSize: "0.875rem" }}>:</span>
+                  <span style={{ flex: 1, color: "var(--dash-text)", fontSize: "0.875rem" }}>{formatDate(leadData?.last_contact_at || lead?.last_contact_at || lead?.last_contact)}</span>
                 </div>
-                <div className="leads-detail-field">
-                  <span className="leads-detail-field-label">Next Follow Up</span>
-                  <span className="leads-detail-field-value">{formatDate(leadData?.next_follow_up_at || lead?.next_follow_up_at || lead?.next_followup)}</span>
+                <div style={{ display: "flex", alignItems: "flex-start" }}>
+                  <span style={{ minWidth: "140px", color: "var(--dash-muted)", fontSize: "0.875rem" }}>Next Follow Up</span>
+                  <span style={{ marginRight: "0.5rem", color: "var(--dash-muted)", fontSize: "0.875rem" }}>:</span>
+                  <span style={{ flex: 1, color: "var(--dash-text)", fontSize: "0.875rem" }}>{formatDate(leadData?.next_follow_up_at || lead?.next_follow_up_at || lead?.next_followup)}</span>
                 </div>
-                <div className="leads-detail-field">
-                  <span className="leads-detail-field-label">Alasan Tertarik</span>
-                  <span className="leads-detail-field-value">{leadData?.alasan_tertarik || lead?.alasan_tertarik || "-"}</span>
+                <div style={{ display: "flex", alignItems: "flex-start" }}>
+                  <span style={{ minWidth: "140px", color: "var(--dash-muted)", fontSize: "0.875rem" }}>Alasan Tertarik</span>
+                  <span style={{ marginRight: "0.5rem", color: "var(--dash-muted)", fontSize: "0.875rem" }}>:</span>
+                  <span style={{ flex: 1, color: "var(--dash-text)", fontSize: "0.875rem" }}>{leadData?.alasan_tertarik || lead?.alasan_tertarik || "-"}</span>
                 </div>
-                <div className="leads-detail-field">
-                  <span className="leads-detail-field-label">Alasan Belum</span>
-                  <span className="leads-detail-field-value">{leadData?.alasan_belum || lead?.alasan_belum || lead?.alasan_belum_membeli || "-"}</span>
+                <div style={{ display: "flex", alignItems: "flex-start" }}>
+                  <span style={{ minWidth: "140px", color: "var(--dash-muted)", fontSize: "0.875rem" }}>Alasan Belum</span>
+                  <span style={{ marginRight: "0.5rem", color: "var(--dash-muted)", fontSize: "0.875rem" }}>:</span>
+                  <span style={{ flex: 1, color: "var(--dash-text)", fontSize: "0.875rem" }}>{leadData?.alasan_belum || lead?.alasan_belum || lead?.alasan_belum_membeli || "-"}</span>
                 </div>
-                <div className="leads-detail-field">
-                  <span className="leads-detail-field-label">Harapan</span>
-                  <span className="leads-detail-field-value">{leadData?.harapan || lead?.harapan || lead?.harapan_customer || "-"}</span>
+                <div style={{ display: "flex", alignItems: "flex-start" }}>
+                  <span style={{ minWidth: "140px", color: "var(--dash-muted)", fontSize: "0.875rem" }}>Harapan</span>
+                  <span style={{ marginRight: "0.5rem", color: "var(--dash-muted)", fontSize: "0.875rem" }}>:</span>
+                  <span style={{ flex: 1, color: "var(--dash-text)", fontSize: "0.875rem" }}>{leadData?.harapan || lead?.harapan || lead?.harapan_customer || "-"}</span>
                 </div>
               </div>
             </div>

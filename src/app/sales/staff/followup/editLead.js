@@ -182,7 +182,7 @@ export default function EditLeadModal({ lead, onClose, onSuccess }) {
       const payload = {
         customer_id: formData.customer_id,
         lead_label: formData.lead_label.trim(),
-        ...(formData.sales_id && { sales_id: formData.sales_id }),
+        sales_id: formData.sales_id || lead?.sales_id || lead?.sales_rel?.id || null,
         ...(formData.status && { status: formData.status.toUpperCase() }),
         ...(formData.minat_produk && formData.minat_produk.trim() && { minat_produk: formData.minat_produk.trim() }),
         ...(formData.alasan_tertarik && formData.alasan_tertarik.trim() && { alasan_tertarik: formData.alasan_tertarik.trim() }),
@@ -281,22 +281,6 @@ export default function EditLeadModal({ lead, onClose, onSuccess }) {
                 Dipilih: {selectedCustomer.nama}
               </small>
             )}
-          </div>
-
-          {/* Assign Sales */}
-          <div className="form-group form-group--primary">
-            <label>Assign Sales</label>
-            <Dropdown
-              value={formData.sales_id}
-              options={salesList}
-              onChange={(e) => handleChange("sales_id", e.value)}
-              placeholder="Pilih Sales"
-              className="w-full"
-              style={{ width: "100%" }}
-              optionLabel="label"
-              optionValue="value"
-              showClear
-            />
           </div>
 
           {/* Label Lead */}
