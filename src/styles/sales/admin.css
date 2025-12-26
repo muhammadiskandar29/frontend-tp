@@ -118,7 +118,7 @@ ADMIN USERS PAGE (Scoped Styles)
 }
 
 .customers-button--primary:hover {
-  background: var(--primary-hover);
+  background: #c85400;
 }
 
 .customers-button--primary:active,
