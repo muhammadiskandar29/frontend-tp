@@ -67,24 +67,24 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
   }, [isDP, updatedOrder.total_harga, order?.total_harga]);
 
   const computedStatus = () => {
-    // Gunakan status_pembayaran dari order jika ada, jika tidak hitung dari bukti
-    const statusPembayaran = updatedOrder.status_pembayaran ?? order?.status_pembayaran;
-    if (statusPembayaran !== null && statusPembayaran !== undefined) {
-      // Handle string "4" atau number 4
-      const statusNum = Number(statusPembayaran);
-      if (!isNaN(statusNum)) {
-        return statusNum;
-      }
+    const totalHarga = Number(order?.total_harga || 0);
+    const totalPaid = Number(order?.total_paid || 0);
+    const remaining =
+      order?.remaining !== null && order?.remaining !== undefined
+        ? Number(order.remaining)
+        : totalHarga - totalPaid;
+  
+    if (totalHarga > 0 && remaining <= 0) {
+      return 2; // Paid
     }
-    // Fallback: hitung dari bukti pembayaran
-    if (
-      updatedOrder.bukti_pembayaran &&
-      updatedOrder.waktu_pembayaran &&
-      updatedOrder.bukti_pembayaran !== ""
-    )
-      return 1;
-    return 0;
+  
+    if (totalPaid > 0 && remaining > 0) {
+      return 4; // DP
+    }
+  
+    return 0; // Unpaid (TERMASUK null)
   };
+  
 
   // Cek apakah masih bisa konfirmasi pembayaran
   const canConfirmPayment = () => {
