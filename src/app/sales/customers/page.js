@@ -96,6 +96,7 @@ export default function AdminCustomerPage() {
         return;
       }
 
+      console.log("📤 Fetching customers - page:", pageNumber, "perPage:", perPage, "filters:", filters);
       const result = await getCustomers(pageNumber, perPage, filters);
       
       if (result.success && result.data && Array.isArray(result.data)) {
@@ -145,13 +146,13 @@ export default function AdminCustomerPage() {
     setPage(1);
     setCustomers([]);
     setHasMore(true);
-    fetchCustomers(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Hanya sekali saat mount
 
   // Fetch data saat page atau filters berubah
   useEffect(() => {
-    if (page > 0 && !loading) {
+    if (page > 0) {
+      console.log("🔄 useEffect triggered - page:", page, "filters:", filters);
       fetchCustomers(page);
       // Tidak scroll ke atas, tetap di posisi saat ini
     }
@@ -249,20 +250,23 @@ export default function AdminCustomerPage() {
 
   // 🔹 Filter handlers
   const handleApplyFilter = () => {
-    setPage(1); // Reset to page 1 when filter changes
     setShowFilterModal(false);
-    // fetchCustomers will be triggered by useEffect when filters change
+    // Reset to page 1 when filter changes
+    setPage(1);
+    // fetchCustomers will be triggered by useEffect when page or filters change
   };
 
   const handleResetFilter = () => {
-    setFilters({
+    const resetFilters = {
       verifikasi: "all",
       status: "all",
       dateRange: null,
       jenis_kelamin: "all",
-    });
+    };
+    setFilters(resetFilters);
     setPage(1);
     setShowFilterModal(false);
+    // fetchCustomers will be triggered by useEffect
   };
 
   const hasActiveFilters = () => {

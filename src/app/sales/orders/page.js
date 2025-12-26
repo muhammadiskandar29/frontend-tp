@@ -1065,7 +1065,7 @@ export default function DaftarPesanan() {
 
         .payment-label.payment-clickable:hover {
           opacity: 0.8;
-          color: #3b82f6;
+          color: #c85400;
           text-decoration: underline;
         }
 

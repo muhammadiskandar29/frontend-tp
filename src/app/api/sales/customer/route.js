@@ -15,22 +15,38 @@ export async function GET(request) {
     backendParams.append('page', page);
     backendParams.append('per_page', perPage);
     
-    // Add filter parameters if present
-    if (searchParams.get('verifikasi')) {
-      backendParams.append('verifikasi', searchParams.get('verifikasi'));
+    // Add filter parameters if present (only if not empty and not "all")
+    const verifikasi = searchParams.get('verifikasi');
+    if (verifikasi && verifikasi !== 'all' && verifikasi !== '') {
+      backendParams.append('verifikasi', verifikasi);
+      console.log("🔍 Filter verifikasi:", verifikasi);
     }
-    if (searchParams.get('status')) {
-      backendParams.append('status', searchParams.get('status'));
+    
+    const status = searchParams.get('status');
+    if (status && status !== 'all' && status !== '') {
+      backendParams.append('status', status);
+      console.log("🔍 Filter status:", status);
     }
-    if (searchParams.get('jenis_kelamin')) {
-      backendParams.append('jenis_kelamin', searchParams.get('jenis_kelamin'));
+    
+    const jenisKelamin = searchParams.get('jenis_kelamin');
+    if (jenisKelamin && jenisKelamin !== 'all' && jenisKelamin !== '') {
+      backendParams.append('jenis_kelamin', jenisKelamin);
+      console.log("🔍 Filter jenis_kelamin:", jenisKelamin);
     }
-    if (searchParams.get('date_from')) {
-      backendParams.append('date_from', searchParams.get('date_from'));
+    
+    const dateFrom = searchParams.get('date_from');
+    if (dateFrom) {
+      backendParams.append('date_from', dateFrom);
+      console.log("🔍 Filter date_from:", dateFrom);
     }
-    if (searchParams.get('date_to')) {
-      backendParams.append('date_to', searchParams.get('date_to'));
+    
+    const dateTo = searchParams.get('date_to');
+    if (dateTo) {
+      backendParams.append('date_to', dateTo);
+      console.log("🔍 Filter date_to:", dateTo);
     }
+    
+    console.log("🔍 Final backend URL:", `${BACKEND_URL}/api/sales/customer?${backendParams.toString()}`);
     
     // Build backend URL with query parameters
     const backendUrl = `${BACKEND_URL}/api/sales/customer?${backendParams.toString()}`;
