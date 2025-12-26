@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-// CSS sudah di-import di page.js untuk menghindari preload warning
+import "@/styles/sales/customer.css";
 
 const STATUS_MAP = {
   0: "Unpaid",

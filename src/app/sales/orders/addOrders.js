@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import useOrders from "@/hooks/sales/useOrders";
 import { api } from "@/lib/api"; // supaya handleSearchCustomer & handleSearchProduct ikut pakai api()
-// CSS sudah di-import di page.js untuk menghindari preload warning
+import "@/styles/sales/pesanan.css";
 
 export default function AddOrders({ onClose, onAdd }) {
   const [formData, setFormData] = useState({

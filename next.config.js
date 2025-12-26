@@ -22,6 +22,9 @@ const nextConfig = {
     optimizeCss: true,
   },
 
+  // Optimize CSS loading
+  optimizeFonts: true,
+
   // Turbopack config to silence warning
   turbopack: {},
 
