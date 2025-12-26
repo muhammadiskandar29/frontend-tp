@@ -134,3 +134,81 @@ export async function GET(request) {
   }
 }
 
+export async function POST(request) {
+  try {
+    const authHeader = request.headers.get("authorization");
+    
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return NextResponse.json(
+        { success: false, message: "Token tidak ditemukan" },
+        { status: 401 }
+      );
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    const body = await request.json();
+
+    // Forward ke backend
+    const response = await fetch(`${BACKEND_URL}/api/sales/customer`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    const text = await response.text();
+    
+    // Check if response is HTML
+    if (text.trim().startsWith("<!DOCTYPE") || text.trim().startsWith("<html")) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Backend mengembalikan HTML, bukan JSON. Kemungkinan endpoint tidak ditemukan atau ada error di backend.",
+          error: "HTML response received",
+        },
+        { status: 500 }
+      );
+    }
+
+    let json;
+    
+    try {
+      json = JSON.parse(text);
+    } catch (parseError) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Invalid JSON response from backend",
+          error: text.substring(0, 200),
+        },
+        { status: 500 }
+      );
+    }
+
+    if (!response.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: json?.message || "Gagal menambahkan customer",
+          error: json?.error || json,
+        },
+        { status: response.status }
+      );
+    }
+
+    return NextResponse.json(json);
+  } catch (error) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Terjadi kesalahan saat menambahkan customer",
+        error: error.message,
+      },
+      { status: 500 }
+    );
+  }
+}
+
