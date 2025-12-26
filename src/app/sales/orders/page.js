@@ -301,6 +301,9 @@ export default function DaftarPesanan() {
             ? Number(order.remaining)
             : (totalHarga - totalPaid);
           
+          // Pastikan waktu_pembayaran ada - ambil dari order data
+          const waktuPembayaran = order.waktu_pembayaran || "";
+          
           // LOGIKA STATUS PEMBAYARAN:
           // - Jika sudah lunas (total_paid >= total_harga), set ke 2 (Paid)
           // - Jika masih ada remaining (total_paid < total_harga), set ke 4 (DP)
@@ -335,6 +338,7 @@ export default function DaftarPesanan() {
             status_order: statusOrder,
             total_paid: totalPaid,
             remaining: remaining,
+            waktu_pembayaran: waktuPembayaran, // Pastikan waktu_pembayaran ada
           };
         });
         
@@ -969,7 +973,13 @@ export default function DaftarPesanan() {
                           {order.sumber ? `#${order.sumber}` : "-"}
                         </div>
                         <div className="orders-table__cell" data-label="Waktu Pembayaran">
-                          {order.waktu_pembayaran || "-"}
+                          {order.waktu_pembayaran ? (
+                            <span style={{ fontSize: "0.875rem", color: "#374151", whiteSpace: "nowrap" }}>
+                              {order.waktu_pembayaran}
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: "0.875rem", color: "#9ca3af", fontStyle: "italic" }}>-</span>
+                          )}
                         </div>
                         <div className="orders-table__cell" data-label="Metode Bayar">
                           {order.metode_bayar || "-"}

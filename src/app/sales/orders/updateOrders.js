@@ -57,12 +57,42 @@ export default function UpdateOrders({ order, onClose, onSave }) {
     }
   }, [order]);
 
+  // === Format currency helper ===
+  const formatCurrency = (value) => {
+    if (!value && value !== 0) return "";
+    const numValue = typeof value === "string" ? value.replace(/,/g, "") : value;
+    const num = Number(numValue);
+    if (isNaN(num)) return "";
+    return num.toLocaleString("id-ID");
+  };
+
+  // === Parse currency to number ===
+  const parseCurrency = (value) => {
+    if (!value && value !== 0) return 0;
+    if (value === "" || value === null || value === undefined) return 0;
+    // Remove all non-numeric characters (commas, spaces, etc)
+    const numValue = typeof value === "string" ? value.replace(/\D/g, "") : String(value).replace(/\D/g, "");
+    if (!numValue || numValue === "") return 0;
+    const num = Number(numValue);
+    return isNaN(num) ? 0 : num;
+  };
+
+  // Handle amount change with auto-format
+  const handleAmountChange = (e) => {
+    const value = e.target.value;
+    // Remove all non-numeric characters
+    const numericValue = value.replace(/\D/g, "");
+    // Format with thousand separator if has value
+    const formattedValue = numericValue ? formatCurrency(numericValue) : "";
+    setAmount(formattedValue);
+  };
+
   // Update amount ketika isDP atau total_harga berubah
   useEffect(() => {
     if (!isDP) {
-      // Jika bukan DP, amount otomatis dari total_harga
+      // Jika bukan DP, amount otomatis dari total_harga (formatted)
       const totalHarga = updatedOrder.total_harga || order?.total_harga || 0;
-      setAmount(totalHarga.toString());
+      setAmount(totalHarga > 0 ? formatCurrency(totalHarga) : "");
     }
     // Jika DP, biarkan user input manual (tidak diubah otomatis)
   }, [isDP, updatedOrder.total_harga, order?.total_harga]);
@@ -139,7 +169,8 @@ export default function UpdateOrders({ order, onClose, onSave }) {
     if (!order?.id) return setErrorMsg("Order ID tidak valid.");
     if (!bukti?.file) return setErrorMsg("Harap upload bukti pembayaran baru.");
     if (!metodeBayar) return setErrorMsg("Isi metode pembayaran terlebih dahulu.");
-    if (!amount || parseFloat(amount) <= 0) return setErrorMsg("Jumlah pembayaran harus diisi dan lebih dari 0.");
+    const amountValue = parseCurrency(amount);
+    if (!amount || amountValue <= 0) return setErrorMsg("Jumlah pembayaran harus diisi dan lebih dari 0.");
 
     // Validasi untuk DP: amount tidak boleh melebihi remaining
     const statusPembayaran = computedStatus();
@@ -147,7 +178,6 @@ export default function UpdateOrders({ order, onClose, onSave }) {
       const totalHarga = Number(updatedOrder.total_harga || order?.total_harga || 0);
       const totalPaid = Number(updatedOrder.total_paid || order?.total_paid || 0);
       const remaining = totalHarga - totalPaid;
-      const amountValue = parseFloat(amount);
       
       if (amountValue > remaining) {
         return setErrorMsg(`Jumlah pembayaran tidak boleh melebihi sisa yang harus dibayar (Rp ${remaining.toLocaleString("id-ID")})`);
@@ -167,7 +197,7 @@ export default function UpdateOrders({ order, onClose, onSave }) {
       formData.append("bukti_pembayaran", bukti.file);
       formData.append("waktu_pembayaran", waktuPembayaran);
       formData.append("metode_pembayaran", metodeBayar);
-      formData.append("amount", amount);
+      formData.append("amount", String(amountValue));
 
       const token = localStorage.getItem("token");
       const url = `${BASE_URL}/sales/order-konfirmasi/${order.id}`;
@@ -468,6 +498,20 @@ const handleSubmitUpdate = async (e) => {
                   />
                 </label>
 
+                {/* Waktu Pembayaran - hanya tampil jika sudah ada */}
+                {(order?.waktu_pembayaran || updatedOrder?.waktu_pembayaran) && (
+                  <label className="form-field">
+                    <span className="field-label">Waktu Pembayaran</span>
+                    <input
+                      type="text"
+                      className="field-input field-input--readonly"
+                      value={updatedOrder?.waktu_pembayaran || order?.waktu_pembayaran || "-"}
+                      readOnly
+                      disabled
+                    />
+                  </label>
+                )}
+
                 {/* Total Paid & Remaining - hanya tampil jika status pembayaran = 4 (DP) */}
                 {computedStatus() === 4 && (
                   <div style={{ marginBottom: "16px", padding: "16px", background: "#f9fafb", borderRadius: "12px", border: "1px solid #e5e7eb" }}>
@@ -514,7 +558,7 @@ const handleSubmitUpdate = async (e) => {
       setIsDP(true);
     } else {
       // selain DP → auto isi total
-      setAmount(totalHarga.toString());
+      setAmount(totalHarga > 0 ? formatCurrency(totalHarga) : "");
       setIsDP(false);
     }
 
@@ -886,14 +930,12 @@ const handleSubmitUpdate = async (e) => {
                 <div className="field-input-wrapper">
                   <span className="input-prefix">Rp</span>
                   <input
-                    type="number"
+                    type="text"
                     className="field-input"
                     value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
+                    onChange={handleAmountChange}
                     disabled={!isDP}
                     placeholder={isDP ? "Masukkan jumlah DP" : "Jumlah pembayaran"}
-                    min="0"
-                    step="0.01"
                     required
                   />
                 </div>
@@ -1187,19 +1229,23 @@ const handleSubmitUpdate = async (e) => {
         .konfirmasi-form .input-prefix {
           position: absolute;
           left: 12px;
-          color: #6b7280;
-          font-size: 14px;
+          color: #1f2937;
+          font-size: 15px;
+          font-weight: 600;
           z-index: 1;
         }
 
         .konfirmasi-form .field-input-wrapper .field-input {
-          padding-left: 36px;
+          padding-left: 42px;
           width: 100%;
-          padding: 10px 12px;
-          border: 1px solid #d1d5db;
+          padding: 12px 14px;
+          border: 1.5px solid #d1d5db;
           border-radius: 8px;
-          font-size: 14px;
+          font-size: 15px;
+          font-weight: 500;
+          color: #1f2937;
           transition: all 0.2s;
+          background: #ffffff;
         }
 
         .konfirmasi-form .field-input-wrapper .field-input:focus {
