@@ -87,6 +87,7 @@ export default function DaftarPesanan() {
   // Filter modal state
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState([]); // Array of product IDs
+  const [selectedProductsData, setSelectedProductsData] = useState([]); // Array of full product objects
   const [selectedStatusOrder, setSelectedStatusOrder] = useState([]); // Array of status order values
   const [selectedStatusPembayaran, setSelectedStatusPembayaran] = useState([]); // Array of status pembayaran values
   const [productSearch, setProductSearch] = useState("");
@@ -140,15 +141,30 @@ export default function DaftarPesanan() {
   }, [debouncedProductSearch, handleSearchProduct]);
 
   // 🔹 Handle product selection (multiple)
-  const handleToggleProduct = useCallback((productId) => {
+  const handleToggleProduct = useCallback((product) => {
+    const productId = typeof product === 'object' ? product.id : product;
+    const productData = typeof product === 'object' ? product : productResults.find(p => p.id === productId);
+    
     setSelectedProducts((prev) => {
       if (prev.includes(productId)) {
+        // Remove from selected
+        setSelectedProductsData((prevData) => prevData.filter(p => p.id !== productId));
         return prev.filter((id) => id !== productId);
       } else {
+        // Add to selected
+        if (productData) {
+          setSelectedProductsData((prevData) => {
+            // Check if already exists
+            if (prevData.find(p => p.id === productId)) {
+              return prevData;
+            }
+            return [...prevData, productData];
+          });
+        }
         return [...prev, productId];
       }
     });
-  }, []);
+  }, [productResults]);
 
   // 🔹 Handle status order toggle (multiple)
   const handleToggleStatusOrder = useCallback((status) => {
@@ -176,6 +192,7 @@ export default function DaftarPesanan() {
   const handleResetFilters = useCallback(() => {
     setDateRange(null);
     setSelectedProducts([]);
+    setSelectedProductsData([]);
     setSelectedStatusOrder([]);
     setSelectedStatusPembayaran([]);
     setProductSearch("");
@@ -1409,96 +1426,189 @@ export default function DaftarPesanan() {
                     pointerEvents: "none",
                   }} />
                 </div>
-                {productResults.length > 0 && (
+                {/* Show selected products first, then search results */}
+                {(selectedProductsData.length > 0 || productResults.length > 0) && (
                   <div style={{
-                    marginTop: "0.5rem",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "0.5rem",
-                    maxHeight: "250px",
+                    marginTop: "0.75rem",
+                    border: "1.5px solid #e5e7eb",
+                    borderRadius: "0.625rem",
+                    maxHeight: "280px",
                     overflowY: "auto",
                     background: "#ffffff",
-                    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
+                    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
                   }}>
-                    {productResults.map((prod) => {
-                      const isSelected = selectedProducts.includes(prod.id);
-                      return (
-                        <div
-                          key={prod.id}
-                          onClick={() => handleToggleProduct(prod.id)}
-                          style={{
-                            padding: "0.75rem 1rem",
-                            cursor: "pointer",
-                            borderBottom: "1px solid #f3f4f6",
-                            background: isSelected ? "#fff5ed" : "#ffffff",
-                            borderLeft: isSelected ? "3px solid #ff6c00" : "3px solid transparent",
-                            transition: "all 0.2s",
-                          }}
-                          onMouseEnter={(e) => {
-                            if (!isSelected) {
-                              e.currentTarget.style.background = "#f9fafb";
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!isSelected) {
-                              e.currentTarget.style.background = "#ffffff";
-                            }
-                          }}
-                        >
-                          <span style={{
-                            color: isSelected ? "#c85400" : "#1f2937",
-                            fontWeight: isSelected ? "600" : "400",
-                            fontSize: "0.875rem",
+                    {/* Selected products section */}
+                    {selectedProductsData.length > 0 && (
+                      <>
+                        {selectedProductsData.map((prod) => {
+                          const isSelected = selectedProducts.includes(prod.id);
+                          return (
+                            <div
+                              key={`selected-${prod.id}`}
+                              onClick={() => handleToggleProduct(prod)}
+                              style={{
+                                padding: "0.875rem 1.125rem",
+                                cursor: "pointer",
+                                borderBottom: "1px solid #f3f4f6",
+                                background: isSelected ? "#fff5ed" : "#ffffff",
+                                borderLeft: isSelected ? "4px solid #ff6c00" : "4px solid transparent",
+                                transition: "all 0.15s",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.75rem",
+                              }}
+                              onMouseEnter={(e) => {
+                                if (!isSelected) {
+                                  e.currentTarget.style.background = "#f9fafb";
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (!isSelected) {
+                                  e.currentTarget.style.background = "#ffffff";
+                                }
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => {}}
+                                style={{
+                                  width: "18px",
+                                  height: "18px",
+                                  cursor: "pointer",
+                                  accentColor: "#ff6c00",
+                                }}
+                              />
+                              <span style={{
+                                color: isSelected ? "#c85400" : "#111827",
+                                fontWeight: isSelected ? "600" : "500",
+                                fontSize: "0.9375rem",
+                                flex: 1,
+                              }}>
+                                {prod.nama}
+                              </span>
+                              {isSelected && (
+                                <span style={{
+                                  fontSize: "0.75rem",
+                                  color: "#c85400",
+                                  fontWeight: "600",
+                                  background: "#fff5ed",
+                                  padding: "0.25rem 0.5rem",
+                                  borderRadius: "0.25rem",
+                                }}>
+                                  Dipilih
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                        {productResults.length > 0 && productResults.some(prod => !selectedProducts.includes(prod.id)) && (
+                          <div style={{
+                            padding: "0.5rem 1rem",
+                            background: "#f9fafb",
+                            borderTop: "1px solid #e5e7eb",
+                            borderBottom: "1px solid #e5e7eb",
+                            fontSize: "0.75rem",
+                            color: "#6b7280",
+                            fontWeight: "600",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.05em",
                           }}>
-                            {prod.nama}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-                {selectedProducts.length > 0 && (
-                  <div style={{ marginTop: "0.75rem", display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
-                    {selectedProducts.map((productId) => {
-                      const product = productResults.find(p => p.id === productId);
-                      return product ? (
-                        <span
-                          key={productId}
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "0.5rem",
-                            padding: "0.5rem 0.75rem",
-                            background: "#fff5ed",
-                            border: "1px solid #ff6c00",
-                            borderRadius: "0.375rem",
-                            fontSize: "0.8125rem",
-                            color: "#c85400",
-                            fontWeight: "500",
-                          }}
-                        >
-                          {product.nama}
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleProduct(productId);
-                            }}
+                            Hasil Pencarian
+                          </div>
+                        )}
+                      </>
+                    )}
+                    {/* Search results (exclude already selected) */}
+                    {productResults
+                      .filter(prod => !selectedProducts.includes(prod.id))
+                      .map((prod) => {
+                        return (
+                          <div
+                            key={`result-${prod.id}`}
+                            onClick={() => handleToggleProduct(prod)}
                             style={{
-                              background: "none",
-                              border: "none",
-                              color: "#c85400",
+                              padding: "0.875rem 1.125rem",
                               cursor: "pointer",
-                              padding: 0,
-                              margin: 0,
+                              borderBottom: "1px solid #f3f4f6",
+                              background: "#ffffff",
+                              borderLeft: "4px solid transparent",
+                              transition: "all 0.15s",
                               display: "flex",
                               alignItems: "center",
+                              gap: "0.75rem",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = "#f9fafb";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = "#ffffff";
                             }}
                           >
-                            <i className="pi pi-times" style={{ fontSize: "0.75rem" }} />
-                          </button>
-                        </span>
-                      ) : null;
-                    })}
+                            <input
+                              type="checkbox"
+                              checked={false}
+                              onChange={() => {}}
+                              style={{
+                                width: "18px",
+                                height: "18px",
+                                cursor: "pointer",
+                                accentColor: "#ff6c00",
+                              }}
+                            />
+                            <span style={{
+                              color: "#111827",
+                              fontWeight: "500",
+                              fontSize: "0.9375rem",
+                              flex: 1,
+                            }}>
+                              {prod.nama}
+                            </span>
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
+                {selectedProductsData.length > 0 && (
+                  <div style={{ marginTop: "0.75rem", display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+                    {selectedProductsData.map((product) => (
+                      <span
+                        key={product.id}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.5rem",
+                          padding: "0.5rem 0.75rem",
+                          background: "#fff5ed",
+                          border: "1px solid #ff6c00",
+                          borderRadius: "0.375rem",
+                          fontSize: "0.8125rem",
+                          color: "#c85400",
+                          fontWeight: "500",
+                        }}
+                      >
+                        {product.nama}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleProduct(product);
+                          }}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            color: "#c85400",
+                            cursor: "pointer",
+                            padding: 0,
+                            margin: 0,
+                            display: "flex",
+                            alignItems: "center",
+                          }}
+                        >
+                          <i className="pi pi-times" style={{ fontSize: "0.75rem" }} />
+                        </button>
+                      </span>
+                    ))}
                   </div>
                 )}
               </div>
