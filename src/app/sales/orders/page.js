@@ -1310,29 +1310,69 @@ export default function DaftarPesanan() {
               flexShrink: 0,
             }}
           >
-            <div className="modal-header">
-              <h3>Filter Orders</h3>
+            <div className="modal-header" style={{ 
+              padding: "1.5rem 1.75rem",
+              borderBottom: "1px solid #e5e7eb",
+              background: "#ffffff"
+            }}>
+              <h3 style={{ 
+                margin: 0, 
+                fontSize: "1.25rem", 
+                fontWeight: "700", 
+                color: "#111827",
+                letterSpacing: "-0.01em"
+              }}>
+                Filter Orders
+              </h3>
               <button
                 type="button"
                 className="modal-close"
                 onClick={() => setShowFilterModal(false)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "#6b7280",
+                  cursor: "pointer",
+                  padding: "0.5rem",
+                  borderRadius: "0.5rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "32px",
+                  height: "32px",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#f3f4f6";
+                  e.currentTarget.style.color = "#111827";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "transparent";
+                  e.currentTarget.style.color = "#6b7280";
+                }}
               >
-                <i className="pi pi-times" />
+                <i className="pi pi-times" style={{ fontSize: "1.125rem" }} />
               </button>
             </div>
-            <div className="modal-body" style={{ maxHeight: "70vh", overflowY: "auto", padding: "1.5rem" }}>
+            <div className="modal-body" style={{ 
+              maxHeight: "70vh", 
+              overflowY: "auto", 
+              padding: "1.75rem",
+              background: "#ffffff"
+            }}>
               {/* Produk Filter */}
               <div style={{ marginBottom: "2rem" }}>
                 <label className="field-label" style={{ 
-                  marginBottom: "0.75rem", 
+                  marginBottom: "0.875rem", 
                   display: "block",
-                  fontSize: "0.9rem",
+                  fontSize: "0.9375rem",
                   fontWeight: "600",
-                  color: "#1f2937"
+                  color: "#111827",
+                  letterSpacing: "-0.01em"
                 }}>
                   Produk
                 </label>
-                <div style={{ position: "relative", marginBottom: "0.75rem" }}>
+                <div style={{ position: "relative", marginBottom: "0.875rem" }}>
                   <input
                     type="text"
                     placeholder="Cari produk..."
@@ -1341,23 +1381,32 @@ export default function DaftarPesanan() {
                     className="field-input"
                     style={{ 
                       width: "100%", 
-                      padding: "0.75rem 2.5rem 0.75rem 0.75rem",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: "0.5rem",
-                      fontSize: "0.875rem",
+                      padding: "0.875rem 2.75rem 0.875rem 1rem",
+                      border: "1.5px solid #e5e7eb",
+                      borderRadius: "0.625rem",
+                      fontSize: "0.9375rem",
                       background: "#ffffff",
-                      transition: "border-color 0.2s",
+                      transition: "all 0.2s",
+                      color: "#111827",
+                      boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
                     }}
-                    onFocus={(e) => e.target.style.borderColor = "#c85400"}
-                    onBlur={(e) => e.target.style.borderColor = "#e5e7eb"}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = "#ff6c00";
+                      e.target.style.boxShadow = "0 0 0 3px rgba(255, 108, 0, 0.1)";
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = "#e5e7eb";
+                      e.target.style.boxShadow = "0 1px 2px rgba(0, 0, 0, 0.05)";
+                    }}
                   />
                   <span className="pi pi-search" style={{
                     position: "absolute",
-                    right: "0.75rem",
+                    right: "1rem",
                     top: "50%",
                     transform: "translateY(-50%)",
                     color: "#9ca3af",
-                    fontSize: "0.875rem",
+                    fontSize: "1rem",
+                    pointerEvents: "none",
                   }} />
                 </div>
                 {productResults.length > 0 && (
@@ -1455,87 +1504,209 @@ export default function DaftarPesanan() {
               </div>
 
               {/* Status Order Filter */}
-              <div style={{ marginBottom: "1.5rem" }}>
-                <label className="field-label" style={{ marginBottom: "0.5rem", display: "block" }}>
+              <div style={{ marginBottom: "2rem" }}>
+                <label className="field-label" style={{ 
+                  marginBottom: "0.875rem", 
+                  display: "block",
+                  fontSize: "0.9375rem",
+                  fontWeight: "600",
+                  color: "#111827",
+                  letterSpacing: "-0.01em"
+                }}>
                   Status Order
                 </label>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  {Object.entries(STATUS_ORDER_MAP).map(([value, { label }]) => (
-                    <label
-                      key={value}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        cursor: "pointer",
-                        padding: "0.5rem",
-                        borderRadius: "0.25rem",
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = "#f8f9fa"}
-                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedStatusOrder.includes(value)}
-                        onChange={() => handleToggleStatusOrder(value)}
-                        style={{ marginRight: "0.5rem" }}
-                      />
-                      <span>{label}</span>
-                    </label>
-                  ))}
+                <div style={{ 
+                  display: "flex", 
+                  flexDirection: "column", 
+                  gap: "0.625rem",
+                  background: "#f9fafb",
+                  padding: "0.75rem",
+                  borderRadius: "0.625rem",
+                  border: "1.5px solid #e5e7eb",
+                }}>
+                  {Object.entries(STATUS_ORDER_MAP).map(([value, { label }]) => {
+                    const isChecked = selectedStatusOrder.includes(value);
+                    return (
+                      <label
+                        key={value}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          cursor: "pointer",
+                          padding: "0.75rem 1rem",
+                          borderRadius: "0.5rem",
+                          background: isChecked ? "#fff5ed" : "transparent",
+                          border: isChecked ? "1.5px solid #ff6c00" : "1.5px solid transparent",
+                          transition: "all 0.15s",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isChecked) {
+                            e.currentTarget.style.background = "#ffffff";
+                            e.currentTarget.style.borderColor = "#e5e7eb";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isChecked) {
+                            e.currentTarget.style.background = "transparent";
+                            e.currentTarget.style.borderColor = "transparent";
+                          }
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => handleToggleStatusOrder(value)}
+                          style={{ 
+                            marginRight: "0.75rem",
+                            width: "18px",
+                            height: "18px",
+                            cursor: "pointer",
+                            accentColor: "#ff6c00",
+                          }}
+                        />
+                        <span style={{
+                          color: isChecked ? "#c85400" : "#111827",
+                          fontWeight: isChecked ? "600" : "500",
+                          fontSize: "0.9375rem",
+                        }}>{label}</span>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
 
               {/* Status Pembayaran Filter */}
-              <div style={{ marginBottom: "1.5rem" }}>
-                <label className="field-label" style={{ marginBottom: "0.5rem", display: "block" }}>
+              <div style={{ marginBottom: "2rem" }}>
+                <label className="field-label" style={{ 
+                  marginBottom: "0.875rem", 
+                  display: "block",
+                  fontSize: "0.9375rem",
+                  fontWeight: "600",
+                  color: "#111827",
+                  letterSpacing: "-0.01em"
+                }}>
                   Status Pembayaran
                 </label>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  {Object.entries(STATUS_PEMBAYARAN_MAP).map(([value, { label }]) => (
-                    <label
-                      key={value}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        cursor: "pointer",
-                        padding: "0.5rem",
-                        borderRadius: "0.25rem",
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = "#f8f9fa"}
-                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedStatusPembayaran.includes(String(value))}
-                        onChange={() => handleToggleStatusPembayaran(String(value))}
-                        style={{ marginRight: "0.5rem" }}
-                      />
-                      <span>{label}</span>
-                    </label>
-                  ))}
+                <div style={{ 
+                  display: "flex", 
+                  flexDirection: "column", 
+                  gap: "0.625rem",
+                  background: "#f9fafb",
+                  padding: "0.75rem",
+                  borderRadius: "0.625rem",
+                  border: "1.5px solid #e5e7eb",
+                }}>
+                  {Object.entries(STATUS_PEMBAYARAN_MAP).map(([value, { label }]) => {
+                    const isChecked = selectedStatusPembayaran.includes(String(value));
+                    return (
+                      <label
+                        key={value}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          cursor: "pointer",
+                          padding: "0.75rem 1rem",
+                          borderRadius: "0.5rem",
+                          background: isChecked ? "#fff5ed" : "transparent",
+                          border: isChecked ? "1.5px solid #ff6c00" : "1.5px solid transparent",
+                          transition: "all 0.15s",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isChecked) {
+                            e.currentTarget.style.background = "#ffffff";
+                            e.currentTarget.style.borderColor = "#e5e7eb";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isChecked) {
+                            e.currentTarget.style.background = "transparent";
+                            e.currentTarget.style.borderColor = "transparent";
+                          }
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => handleToggleStatusPembayaran(String(value))}
+                          style={{ 
+                            marginRight: "0.75rem",
+                            width: "18px",
+                            height: "18px",
+                            cursor: "pointer",
+                            accentColor: "#ff6c00",
+                          }}
+                        />
+                        <span style={{
+                          color: isChecked ? "#c85400" : "#111827",
+                          fontWeight: isChecked ? "600" : "500",
+                          fontSize: "0.9375rem",
+                        }}>{label}</span>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
             </div>
-            <div className="modal-footer" style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem", padding: "1rem" }}>
+            <div className="modal-footer" style={{ 
+              display: "flex", 
+              justifyContent: "flex-end", 
+              gap: "0.75rem", 
+              padding: "1.5rem 1.75rem",
+              borderTop: "1px solid #e5e7eb",
+              background: "#f9fafb",
+            }}>
               <button
                 type="button"
                 onClick={handleResetFilters}
-                className="btn-cancel"
                 style={{
-                  padding: "0.55rem 0.75rem",
-                  fontSize: "0.85rem",
-                  display: "inline-flex",
+                  padding: "0.75rem 1.5rem",
+                  background: "#ffffff",
+                  border: "1.5px solid #e5e7eb",
+                  borderRadius: "0.625rem",
+                  color: "#374151",
+                  fontWeight: "600",
+                  fontSize: "0.9375rem",
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                  display: "flex",
                   alignItems: "center",
-                  gap: "0.35rem",
+                  gap: "0.5rem",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#f3f4f6";
+                  e.currentTarget.style.borderColor = "#d1d5db";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "#ffffff";
+                  e.currentTarget.style.borderColor = "#e5e7eb";
                 }}
               >
-                <i className="pi pi-times" style={{ fontSize: "0.85rem" }} />
+                <i className="pi pi-times" style={{ fontSize: "0.875rem" }} />
                 Reset
               </button>
               <button
                 type="button"
                 onClick={() => setShowFilterModal(false)}
-                className="btn-save"
+                style={{
+                  padding: "0.75rem 1.5rem",
+                  background: "#ff6c00",
+                  border: "none",
+                  borderRadius: "0.625rem",
+                  color: "#ffffff",
+                  fontWeight: "600",
+                  fontSize: "0.9375rem",
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                  boxShadow: "0 2px 4px rgba(255, 108, 0, 0.2)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#e55a00";
+                  e.currentTarget.style.boxShadow = "0 4px 8px rgba(255, 108, 0, 0.3)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "#ff6c00";
+                  e.currentTarget.style.boxShadow = "0 2px 4px rgba(255, 108, 0, 0.2)";
+                }}
               >
                 Terapkan
               </button>
