@@ -652,28 +652,6 @@ export default function DaftarPesanan() {
               <span className="orders-search__icon pi pi-search" />
             </div>
             <div className="orders-toolbar-buttons">
-              <div className="orders-filters" aria-label="Filter pesanan">
-                <button
-                  type="button"
-                  className={`orders-filter-btn ${filterPreset === "all" ? "is-active" : ""}`}
-                  onClick={() => setFilterPreset("all")}
-                  style={{
-                    color: filterPreset === "all" ? "#c85400" : undefined,
-                  }}
-                >
-                  Semua
-                </button>
-                <button
-                  type="button"
-                  className={`orders-filter-btn ${filterPreset === "today" ? "is-active" : ""}`}
-                  onClick={() => setFilterPreset("today")}
-                  style={{
-                    color: filterPreset === "today" ? "#c85400" : undefined,
-                  }}
-                >
-                  Hari Ini
-                </button>
-              </div>
               {/* Filter Icon Button */}
               <button
                 type="button"
