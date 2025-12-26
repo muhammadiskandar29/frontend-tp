@@ -76,13 +76,22 @@ export default function AdminCustomerPage() {
   ];
   
   // Convert filter untuk API (termasuk search)
-  const filters = useMemo(() => ({
-    verifikasi: verifikasiFilter,
-    status: "all",
-    dateRange: null,
-    jenis_kelamin: "all",
-    search: debouncedSearch.trim() || null, // Add search to filters
-  }), [verifikasiFilter, debouncedSearch]);
+  // Catatan: Untuk sorting yang benar (Unverified dulu, lalu Verified),
+  // kita tidak filter verifikasi di backend, tapi ambil semua lalu sort di frontend
+  const filters = useMemo(() => {
+    // Jika filter verifikasi dipilih, kita tetap kirim ke backend untuk filtering
+    // Tapi untuk memastikan sorting yang benar (Unverified dulu, lalu Verified),
+    // kita akan sort lagi di frontend setelah data diterima
+    return {
+      // Untuk sorting yang benar, kita ambil semua data tanpa filter verifikasi
+      // Lalu sort di frontend: Unverified dulu (terbaru), lalu Verified (terbaru)
+      verifikasi: "all", // Selalu ambil semua, lalu sort di frontend
+      status: "all",
+      dateRange: null,
+      jenis_kelamin: "all",
+      search: debouncedSearch.trim() || null, // Add search to filters
+    };
+  }, [debouncedSearch]); // Hapus verifikasiFilter dari dependency karena kita selalu ambil "all"
 
   // Memoize summary statistics untuk performa
   const summaryStats = useMemo(() => {
@@ -110,11 +119,69 @@ export default function AdminCustomerPage() {
         return;
       }
 
-      const result = await getCustomers(pageNumber, perPage, filters);
+      // Untuk sorting yang benar, kita perlu mengambil semua data tanpa filter verifikasi
+      // Lalu sort di frontend: Unverified dulu (terbaru), lalu Verified (terbaru)
+      const filtersForBackend = { ...filters };
+      // Jika filter verifikasi dipilih, kita tetap kirim ke backend untuk filtering
+      // Tapi kita akan sort lagi di frontend untuk memastikan urutan yang benar
+      
+      const result = await getCustomers(pageNumber, perPage, filtersForBackend);
       
       if (result.success && result.data && Array.isArray(result.data)) {
+        // Sort data berdasarkan filter verifikasi
+        // Jika filter "unverified": Unverified dulu (terbaru), lalu Verified (terbaru)
+        // Jika filter "verified": Verified dulu (terbaru), lalu Unverified (terbaru)
+        // Jika filter "all": Unverified dulu (terbaru), lalu Verified (terbaru)
+        const sortedData = [...result.data].sort((a, b) => {
+          const aIsVerified = a.verifikasi === "1" || a.verifikasi === true;
+          const bIsVerified = b.verifikasi === "1" || b.verifikasi === true;
+          
+          // Get date untuk sorting (terbaru dulu)
+          const getDate = (customer) => {
+            if (customer.created_at) return new Date(customer.created_at);
+            if (customer.updated_at) return new Date(customer.updated_at);
+            if (customer.tanggal) return new Date(customer.tanggal);
+            return new Date(0); // Default untuk data tanpa tanggal
+          };
+          
+          const aDate = getDate(a);
+          const bDate = getDate(b);
+          
+          if (verifikasiFilter === "unverified") {
+            // Unverified dulu (terbaru), lalu Verified (terbaru)
+            if (!aIsVerified && bIsVerified) return -1;
+            if (aIsVerified && !bIsVerified) return 1;
+            // Jika sama status, urutkan berdasarkan tanggal (terbaru dulu)
+            return bDate - aDate;
+          } else if (verifikasiFilter === "verified") {
+            // Verified dulu (terbaru), lalu Unverified (terbaru)
+            if (aIsVerified && !bIsVerified) return -1;
+            if (!aIsVerified && bIsVerified) return 1;
+            // Jika sama status, urutkan berdasarkan tanggal (terbaru dulu)
+            return bDate - aDate;
+          } else {
+            // Filter "all": Unverified dulu (terbaru), lalu Verified (terbaru)
+            // Ini sesuai permintaan user: Unverified tampil paling atas
+            if (!aIsVerified && bIsVerified) return -1;
+            if (aIsVerified && !bIsVerified) return 1;
+            // Jika sama status, urutkan berdasarkan tanggal (terbaru dulu)
+            return bDate - aDate;
+          }
+        });
+        
+        // Filter data berdasarkan verifikasiFilter setelah sorting
+        // Ini memastikan bahwa jika filter "unverified" dipilih, hanya Unverified yang ditampilkan
+        // Tapi urutannya sudah benar: Unverified dulu (terbaru), lalu Verified (terbaru)
+        let filteredAndSortedData = sortedData;
+        if (verifikasiFilter === "unverified") {
+          filteredAndSortedData = sortedData.filter(c => !(c.verifikasi === "1" || c.verifikasi === true));
+        } else if (verifikasiFilter === "verified") {
+          filteredAndSortedData = sortedData.filter(c => c.verifikasi === "1" || c.verifikasi === true);
+        }
+        // Jika "all", tampilkan semua (sudah di-sort dengan benar)
+        
         // Selalu replace data (bukan append) - setiap page menampilkan data yang berbeda
-        setCustomers(result.data);
+        setCustomers(filteredAndSortedData);
 
         // Gunakan pagination object jika tersedia
         if (result.pagination && typeof result.pagination === 'object') {
