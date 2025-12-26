@@ -41,7 +41,7 @@ export default function AdminCustomerPage() {
   const [paginationInfo, setPaginationInfo] = useState(null); // Store pagination info from backend
   const perPage = 15; // Data per halaman
   
-  const [filterPreset, setFilterPreset] = useState("all"); // all | today
+  const [searchInput, setSearchInput] = useState("");
   const [showEdit, setShowEdit] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -69,6 +69,20 @@ export default function AdminCustomerPage() {
     jenis_kelamin: "all",
   }), [verifikasiFilter]);
   
+  // Memoize filtered customers berdasarkan search
+  const filteredCustomers = useMemo(() => {
+    if (!searchInput.trim()) {
+      return customers;
+    }
+    const searchLower = searchInput.toLowerCase().trim();
+    return customers.filter((c) => {
+      const nama = (c.nama || "").toLowerCase();
+      const email = (c.email || "").toLowerCase();
+      const wa = (c.wa || "").toLowerCase();
+      return nama.includes(searchLower) || email.includes(searchLower) || wa.includes(searchLower);
+    });
+  }, [customers, searchInput]);
+
   // Memoize summary statistics untuk performa
   const summaryStats = useMemo(() => {
     const verified = customers.filter((c) => c.verifikasi === "1" || c.verifikasi === true).length;
@@ -175,13 +189,13 @@ export default function AdminCustomerPage() {
     setHasMore(true);
     await fetchCustomers(1);
     if (message) {
-      if (type === "error") {
-        toastError(message);
-      } else if (type === "warning") {
-        toastWarning(message);
-      } else {
-        toastSuccess(message);
-      }
+    if (type === "error") {
+      toastError(message);
+    } else if (type === "warning") {
+      toastWarning(message);
+    } else {
+      toastSuccess(message);
+    }
     }
   };
 
@@ -242,23 +256,17 @@ export default function AdminCustomerPage() {
       <div className="dashboard-shell customers-shell">
         <section className="dashboard-hero customers-hero">
           <div className="customers-toolbar">
+            <div className="customers-search">
+              <input
+                type="search"
+                placeholder="Cari nama, email, atau WhatsApp"
+                className="customers-search__input"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+              />
+              <span className="customers-search__icon pi pi-search" />
+            </div>
             <div className="customers-filters" aria-label="Filter pelanggan" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <button
-                type="button"
-                className={`customers-filter-btn ${filterPreset === "all" ? "is-active" : ""}`}
-                onClick={() => setFilterPreset("all")}
-              >
-                Semua
-              </button>
-              <button
-                type="button"
-                className={`customers-filter-btn ${filterPreset === "today" ? "is-active" : ""}`}
-                onClick={() => setFilterPreset("today")}
-                title="Filter customer yang tanggalnya hari ini (butuh field tanggal dari API)"
-              >
-                Hari Ini
-              </button>
-              
               {/* Verifikasi Filter Dropdown */}
               <div className="leads-filter-dropdown" style={{ position: "relative" }}>
                 <button
@@ -356,8 +364,10 @@ export default function AdminCustomerPage() {
                 ))}
               </div>
               <div className="customers-table__body">
-                {customers.length > 0 ? (
-                  customers.map((cust, i) => (
+                {loading && customers.length === 0 ? (
+                  <p className="customers-empty">Loading data...</p>
+                ) : filteredCustomers.length > 0 ? (
+                  filteredCustomers.map((cust, i) => (
                   <div className="customers-table__row" key={cust.id || `${cust.email}-${i}`}>
                     <div className="customers-table__cell" data-label="#">
                       {(page - 1) * perPage + i + 1}
@@ -451,7 +461,7 @@ export default function AdminCustomerPage() {
                 ))
               ) : (
                 <p className="customers-empty">
-                  Tidak ada data customer
+                  {searchInput.trim() ? "Tidak ada hasil pencarian." : "Tidak ada data customer"}
                 </p>
               )}
               </div>
@@ -461,8 +471,8 @@ export default function AdminCustomerPage() {
           {/* Pagination dengan Next/Previous Button */}
           <div className="customers-pagination" style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "1rem", padding: "1.5rem", flexWrap: "wrap" }}>
             {/* Previous Button */}
-            <button
-              className="customers-pagination__btn"
+              <button
+                className="customers-pagination__btn"
               onClick={handlePrevPage}
               disabled={page === 1 || loading}
               aria-label="Previous page"
@@ -481,10 +491,10 @@ export default function AdminCustomerPage() {
                 justifyContent: "center",
                 transition: "all 0.2s ease"
               }}
-            >
-              <i className="pi pi-chevron-left" />
+              >
+                <i className="pi pi-chevron-left" />
               Previous
-            </button>
+              </button>
 
             {/* Page Info */}
             <div style={{ 
@@ -504,13 +514,13 @@ export default function AdminCustomerPage() {
                 <span>
                   Page {paginationInfo?.current_page || page} of {paginationInfo?.last_page || "?"}
                   {paginationInfo?.total && ` (${paginationInfo.total} total)`}
-                </span>
+              </span>
               )}
             </div>
 
             {/* Next Button */}
-            <button
-              className="customers-pagination__btn"
+              <button
+                className="customers-pagination__btn"
               onClick={handleNextPage}
               disabled={!hasMore || loading}
               aria-label="Next page"
@@ -531,9 +541,9 @@ export default function AdminCustomerPage() {
               }}
             >
               Next
-              <i className="pi pi-chevron-right" />
-            </button>
-          </div>
+                <i className="pi pi-chevron-right" />
+              </button>
+            </div>
         </section>
 
         {/* MODALS */}
