@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import "@/styles/sales/customer.css";
+// CSS sudah di-import di page.js untuk menghindari preload warning
 import { createPortal } from "react-dom";
 
 // Use Next.js proxy to avoid CORS

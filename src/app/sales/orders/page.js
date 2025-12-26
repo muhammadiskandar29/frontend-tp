@@ -9,13 +9,28 @@ import "primereact/resources/themes/lara-light-cyan/theme.css";
 import "primereact/resources/primereact.min.css";
 import "@/styles/sales/dashboard.css";
 import "@/styles/sales/admin.css";
+// Import CSS untuk modals di sini agar tidak di-preload
+import "@/styles/sales/customer.css";
+import "@/styles/sales/pesanan.css";
 import { getOrders, updateOrderAdmin, getOrderStatistics } from "@/lib/sales/orders";
 
-// Lazy load modals
-const ViewOrders = dynamic(() => import("./viewOrders"), { ssr: false });
-const UpdateOrders = dynamic(() => import("./updateOrders"), { ssr: false });
-const AddOrders = dynamic(() => import("./addOrders"), { ssr: false });
-const PaymentHistoryModal = dynamic(() => import("./paymentHistoryModal"), { ssr: false });
+// Lazy load modals - CSS sudah di-import di atas
+const ViewOrders = dynamic(() => import("./viewOrders"), { 
+  ssr: false,
+  loading: () => null
+});
+const UpdateOrders = dynamic(() => import("./updateOrders"), { 
+  ssr: false,
+  loading: () => null
+});
+const AddOrders = dynamic(() => import("./addOrders"), { 
+  ssr: false,
+  loading: () => null
+});
+const PaymentHistoryModal = dynamic(() => import("./paymentHistoryModal"), { 
+  ssr: false,
+  loading: () => null
+});
 
 // Use Next.js proxy to avoid CORS
 const BASE_URL = "/api";
