@@ -84,7 +84,7 @@ export async function POST(request) {
 
     console.log("[ORDER_SALES] Payload ke backend:", JSON.stringify(cleanPayload, null, 2));
 
-    const response = await fetch(`${BACKEND_URL}/api/sales/order-sales`, {
+    const response = await fetch(`${BACKEND_URL}/api/sales/order-admin`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
