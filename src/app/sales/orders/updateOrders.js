@@ -510,34 +510,22 @@ const handleSubmitUpdate = async (e) => {
                 )}
                   
                 {/* Button Konfirmasi Pembayaran */}
-                {canConfirmPayment() ? (
-                  <button
-                    type="button"
-                    className="btn-konfirmasi"
-                    disabled={false}
-                    onClick={() => {
-                      const statusPembayaran = computedStatus();
-                      if (statusPembayaran !== 4) {
-                        const totalHarga = updatedOrder.total_harga || order?.total_harga || 0;
-                        setAmount(totalHarga.toString());
-                        setIsDP(false);
-                      } else {
-                        setAmount("");
-                        setIsDP(true);
-                      }
-                      setShowKonfirmasiModal(true);
-                    }}
-                  >
-                    <i className="pi pi-check-circle" />
-                    {computedStatus() === 4
-                      ? "Konfirmasi Pembayaran Lanjutan"
-                      : "Konfirmasi Pembayaran"}
-                  </button>
-                ) : (
-                  computedStatus() === 2 && (
-                    <div>✅ Pembayaran Lunas</div>
-                  )
-                )}
+                <button
+  type="button"
+  className="btn-konfirmasi"
+  onClick={() => {
+    const totalHarga = updatedOrder.total_harga || order?.total_harga || 0;
+
+    // BIAR MAU LUNAS / DP / UNPAID, MODAL TETAP KEBUKA
+    setIsDP(false);
+    setAmount(totalHarga.toString());
+
+    setShowKonfirmasiModal(true);
+  }}
+>
+  <i className="pi pi-check-circle" />
+  Konfirmasi Pembayaran
+</button>
 
                 {/* Bukti Pembayaran Preview */}
                 {bukti && (
