@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { toast } from "react-hot-toast";
 import useOrders from "@/hooks/sales/useOrders";
 import { api } from "@/lib/api"; // supaya handleSearchCustomer & handleSearchProduct ikut pakai api()
 import "@/styles/sales/pesanan.css";
@@ -159,17 +158,17 @@ export default function AddOrders({ onClose, onAdd }) {
 
     if (res?.success) {
       // Sukses tanpa warning
-      toast.success(res?.message || "Order berhasil dibuat!");
+      setMessage(res?.message || "Order berhasil dibuat!");
       onAdd?.(res.data);
       onClose?.();
     } else if (res?.warning && res?.data) {
       // Sukses dengan warning (tetap lanjut, tapi beri tahu)
       console.warn("Order warning:", res.warning);
-      toast.success("Order berhasil dibuat!");
+      setMessage("Order berhasil dibuat!");
       onAdd?.(res.data);
       onClose?.();
     } else {
-      toast.error(res?.message || "Gagal membuat order.");
+      setMessage(res?.message || "Gagal membuat order.");
     }
 
     setLoading(false);

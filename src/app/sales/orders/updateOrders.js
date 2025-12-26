@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "react-hot-toast";
 import "@/styles/sales/customer.css";
 import { createPortal } from "react-dom";
 
@@ -270,7 +269,8 @@ export default function UpdateOrders({ order, onClose, onSave }) {
         ? "Pembayaran berhasil dikonfirmasi! Order sudah lunas." 
         : `Pembayaran berhasil dikonfirmasi! Sisa yang harus dibayar: Rp ${newRemaining.toLocaleString("id-ID")}`;
       
-      toast.success(successMessage);
+      setErrorMsg("");
+      // Success handled by onSave callback
 
       // Tutup modal dan redirect ke halaman orders setelah delay
       // Button akan tetap muncul ketika user buka modal edit lagi untuk status 4 yang masih ada remaining
@@ -284,7 +284,7 @@ export default function UpdateOrders({ order, onClose, onSave }) {
       setErrorMsg("Terjadi kesalahan saat konfirmasi pembayaran.");
       setSubmitting(false);
 
-      toast.error("Gagal mengkonfirmasi pembayaran.");
+      setErrorMsg("Gagal mengkonfirmasi pembayaran.");
     }
   };
 

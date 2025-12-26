@@ -3,14 +3,12 @@
 import { useEffect, useState, useRef, useMemo, useCallback, memo } from "react";
 import Layout from "@/components/Layout";
 import dynamic from "next/dynamic";
-import { toast } from "react-hot-toast";
 import { ShoppingCart, Clock, CheckCircle, PartyPopper, XCircle, Filter } from "lucide-react";
 import { Calendar } from "primereact/calendar";
 import "primereact/resources/themes/lara-light-cyan/theme.css";
 import "primereact/resources/primereact.min.css";
 import "@/styles/sales/dashboard.css";
 import "@/styles/sales/admin.css";
-import "@/styles/sales/customers-premium.css";
 import { getOrders, updateOrderAdmin, getOrderStatistics } from "@/lib/sales/orders";
 
 // Lazy load modals
@@ -18,7 +16,6 @@ const ViewOrders = dynamic(() => import("./viewOrders"), { ssr: false });
 const UpdateOrders = dynamic(() => import("./updateOrders"), { ssr: false });
 const AddOrders = dynamic(() => import("./addOrders"), { ssr: false });
 const PaymentHistoryModal = dynamic(() => import("./paymentHistoryModal"), { ssr: false });
-const FilterModal = dynamic(() => import("./filterModal"), { ssr: false });
 
 // Use Next.js proxy to avoid CORS
 const BASE_URL = "/api";
@@ -68,17 +65,9 @@ export default function DaftarPesanan() {
   
   // Filter state
   const [searchInput, setSearchInput] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [dateRange, setDateRange] = useState(null); // [startDate, endDate] atau null
   const [filterPreset, setFilterPreset] = useState("all"); // all | today
-  const [showFilterModal, setShowFilterModal] = useState(false);
-  const [filters, setFilters] = useState({
-    statusOrder: [],
-    statusPembayaran: [],
-    sumber: [],
-    tanggalRange: null,
-    waktuPembayaranRange: null,
-  });
+  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
   
   // State lainnya
   const [statistics, setStatistics] = useState(null);
@@ -91,20 +80,6 @@ export default function DaftarPesanan() {
   const [selectedOrderIdForHistory, setSelectedOrderIdForHistory] = useState(null);
 
   const fetchingRef = useRef(false); // Prevent multiple simultaneous fetches
-  const searchTimeoutRef = useRef(null);
-
-  // Debounce search input
-  useEffect(() => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-    searchTimeoutRef.current = setTimeout(() => {
-      setDebouncedSearch(searchInput);
-    }, 500);
-    return () => {
-      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-    };
-  }, [searchInput]);
 
   // 🔹 Load statistics
   const loadStatistics = useCallback(async () => {
@@ -147,27 +122,8 @@ export default function DaftarPesanan() {
       });
 
       // Add search parameter
-      if (debouncedSearch && debouncedSearch.trim()) {
-        params.append("search", debouncedSearch.trim());
-      }
-
-      // Add filter parameters
-      if (filters.statusOrder.length > 0) {
-        params.append("status_order", filters.statusOrder.join(","));
-      }
-      if (filters.statusPembayaran.length > 0) {
-        params.append("status_pembayaran", filters.statusPembayaran.join(","));
-      }
-      if (filters.sumber.length > 0) {
-        params.append("sumber", filters.sumber.join(","));
-      }
-      if (filters.tanggalRange && Array.isArray(filters.tanggalRange) && filters.tanggalRange.length === 2) {
-        params.append("tanggal_from", filters.tanggalRange[0].toISOString().split("T")[0]);
-        params.append("tanggal_to", filters.tanggalRange[1].toISOString().split("T")[0]);
-      }
-      if (filters.waktuPembayaranRange && Array.isArray(filters.waktuPembayaranRange) && filters.waktuPembayaranRange.length === 2) {
-        params.append("waktu_pembayaran_from", filters.waktuPembayaranRange[0].toISOString().split("T")[0]);
-        params.append("waktu_pembayaran_to", filters.waktuPembayaranRange[1].toISOString().split("T")[0]);
+      if (searchInput && searchInput.trim()) {
+        params.append("search", searchInput.trim());
       }
 
       const res = await fetch(`/api/sales/order?${params.toString()}`, {
@@ -267,11 +223,11 @@ export default function DaftarPesanan() {
       fetchingRef.current = false;
     } catch (err) {
       console.error("Error fetching orders:", err);
-      toast.error("Gagal memuat data");
+      setToast({ show: true, message: "Gagal memuat data", type: "error" });
       setLoading(false);
       fetchingRef.current = false;
     }
-  }, [debouncedSearch, filters, perPage]);
+  }, [searchInput, perPage]);
 
   // Load statistics on mount
   useEffect(() => {
@@ -283,24 +239,17 @@ export default function DaftarPesanan() {
     setPage(1);
     setOrders([]);
     setHasMore(true);
+    fetchOrders(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Hanya sekali saat mount
 
-  // Reset to page 1 when search or filter changes
-  useEffect(() => {
-    setPage(1);
-    setOrders([]);
-    setHasMore(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, filters]); // Reset when search or filter changes
-
-  // Fetch data saat page berubah (page akan reset ke 1 ketika search/filter berubah)
+  // Fetch data saat page atau search berubah
   useEffect(() => {
     if (page > 0) {
       fetchOrders(page);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, fetchOrders]); // Depend pada page dan fetchOrders (yang sudah include debouncedSearch dan filters)
+  }, [page, searchInput]); // Depend pada page dan searchInput
 
   // 🔹 Next page
   const handleNextPage = useCallback(() => {
@@ -327,8 +276,8 @@ export default function DaftarPesanan() {
     setHasMore(true);
     await Promise.all([loadStatistics(), fetchOrders(1)]);
     if (message) {
-      if (type === "error") toast.error(message);
-      else toast.success(message);
+      setToast({ show: true, message, type });
+      setTimeout(() => setToast({ show: false, message: "", type: "success" }), 3000);
     }
   };
 
@@ -360,13 +309,6 @@ export default function DaftarPesanan() {
     return 0; // Unpaid
   }
 
-  // Handler untuk apply filters dari modal
-  const handleApplyFilters = useCallback((newFilters) => {
-    setFilters(newFilters);
-    setPage(1); // Reset to page 1 when filters change
-    setOrders([]); // Clear existing data
-    setHasMore(true); // Reset hasMore
-  }, []);
 
   // === SUMMARY ===
   // Gunakan data dari statistics API
@@ -399,7 +341,8 @@ export default function DaftarPesanan() {
   const handleSuccessEdit = async (updatedFromForm) => {
       try {
       if (!selectedOrder?.id) {
-        toast.error("Order ID tidak valid");
+        setToast({ show: true, message: "Order ID tidak valid", type: "error" });
+        setTimeout(() => setToast({ show: false, message: "", type: "success" }), 3000);
         return;
       }
 
@@ -468,7 +411,8 @@ export default function DaftarPesanan() {
         // Reset selected
         setSelectedOrder(null);
 
-        toast.success(updatedFromForm.message || "Pembayaran berhasil dikonfirmasi!");
+        setToast({ show: true, message: updatedFromForm.message || "Pembayaran berhasil dikonfirmasi!", type: "success" });
+        setTimeout(() => setToast({ show: false, message: "", type: "success" }), 3000);
 
         // Refresh statistics dan data dari backend
         await Promise.all([loadStatistics(), fetchOrders(page)]);
@@ -527,16 +471,19 @@ export default function DaftarPesanan() {
         // Reset selected
         setSelectedOrder(null);
 
-        toast.success(result.message || "Order berhasil diupdate!");
+        setToast({ show: true, message: result.message || "Order berhasil diupdate!", type: "success" });
+        setTimeout(() => setToast({ show: false, message: "", type: "success" }), 3000);
 
         // Refresh statistics
         await loadStatistics();
       } else {
-        toast.error(result.message || "Gagal mengupdate order");
+        setToast({ show: true, message: result.message || "Gagal mengupdate order", type: "error" });
+        setTimeout(() => setToast({ show: false, message: "", type: "success" }), 3000);
       }
     } catch (err) {
       console.error("Error updating order:", err);
-      toast.error("Terjadi kesalahan saat mengupdate order");
+      setToast({ show: true, message: "Terjadi kesalahan saat mengupdate order", type: "error" });
+      setTimeout(() => setToast({ show: false, message: "", type: "success" }), 3000);
     }
   };
   
@@ -585,18 +532,6 @@ export default function DaftarPesanan() {
                   }}
                 >
                   Hari Ini
-                </button>
-                <button
-                  type="button"
-                  className="orders-filter-btn orders-filter-icon-btn"
-                  title="Filter"
-                  aria-label="Filter"
-                  onClick={() => setShowFilterModal(true)}
-                  style={{
-                    color: "#c85400",
-                  }}
-                >
-                  <Filter size={16} color="#c85400" />
                 </button>
               </div>
               <div style={{ position: "relative" }}>
@@ -649,7 +584,7 @@ export default function DaftarPesanan() {
           </div>
         </section>
 
-        <section className="dashboard-summary customers-summary">
+        <section className="dashboard-summary orders-summary">
           <article className="summary-card summary-card--combined">
             <div className="summary-card__column">
               <div className={`summary-card__icon accent-orange`}>
@@ -1170,13 +1105,39 @@ export default function DaftarPesanan() {
         }}
       />
 
-      {/* Filter Modal */}
-      <FilterModal
-        isOpen={showFilterModal}
-        onClose={() => setShowFilterModal(false)}
-        filters={filters}
-        onApplyFilters={handleApplyFilters}
-      />
+      {/* Toast Notification */}
+      {toast.show && (
+        <div
+          style={{
+            position: "fixed",
+            top: "20px",
+            right: "20px",
+            padding: "12px 20px",
+            background: toast.type === "error" ? "#ef4444" : "#10b981",
+            color: "#fff",
+            borderRadius: "8px",
+            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+          }}
+        >
+          <span>{toast.message}</span>
+          <button
+            onClick={() => setToast({ show: false, message: "", type: "success" })}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "#fff",
+              cursor: "pointer",
+              fontSize: "18px",
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
     </Layout>
   );
 }
