@@ -41,6 +41,12 @@ export async function GET(request) {
       backendParams.append('date_to', dateTo);
     }
     
+    // Add search parameter if provided
+    const search = searchParams.get('search');
+    if (search && search.trim()) {
+      backendParams.append('search', search.trim());
+    }
+    
     // Build backend URL with query parameters
     const backendUrl = `${BACKEND_URL}/api/sales/customer?${backendParams.toString()}`;
     

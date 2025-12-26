@@ -20,6 +20,19 @@ const HistoryCustomerModal = dynamic(() => import("./historyCustomer"), { ssr: f
 const FollowupLogModal = dynamic(() => import("./followupLog"), { ssr: false });
 
 import { toastSuccess, toastError, toastWarning } from "@/lib/toast";
+
+/**
+ * Simple debounce hook to avoid rerunning expensive computations
+ */
+function useDebouncedValue(value, delay = 500) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(id);
+  }, [value, delay]);
+  return debounced;
+}
+
 const CUSTOMERS_COLUMNS = [
   "#",
   "Nama",
@@ -42,6 +55,7 @@ export default function AdminCustomerPage() {
   const perPage = 15; // Data per halaman
   
   const [searchInput, setSearchInput] = useState("");
+  const debouncedSearch = useDebouncedValue(searchInput, 500); // Debounce 500ms
   const [showEdit, setShowEdit] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -61,27 +75,14 @@ export default function AdminCustomerPage() {
     { value: "unverified", label: "Unverified" },
   ];
   
-  // Convert filter untuk API
+  // Convert filter untuk API (termasuk search)
   const filters = useMemo(() => ({
     verifikasi: verifikasiFilter,
     status: "all",
     dateRange: null,
     jenis_kelamin: "all",
-  }), [verifikasiFilter]);
-  
-  // Memoize filtered customers berdasarkan search
-  const filteredCustomers = useMemo(() => {
-    if (!searchInput.trim()) {
-      return customers;
-    }
-    const searchLower = searchInput.toLowerCase().trim();
-    return customers.filter((c) => {
-      const nama = (c.nama || "").toLowerCase();
-      const email = (c.email || "").toLowerCase();
-      const wa = (c.wa || "").toLowerCase();
-      return nama.includes(searchLower) || email.includes(searchLower) || wa.includes(searchLower);
-    });
-  }, [customers, searchInput]);
+    search: debouncedSearch.trim() || null, // Add search to filters
+  }), [verifikasiFilter, debouncedSearch]);
 
   // Memoize summary statistics untuk performa
   const summaryStats = useMemo(() => {
@@ -152,6 +153,14 @@ export default function AdminCustomerPage() {
     setHasMore(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Hanya sekali saat mount
+
+  // Reset to page 1 when search or filter changes
+  useEffect(() => {
+    setPage(1);
+    setCustomers([]);
+    setHasMore(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, verifikasiFilter]); // Reset when search or filter changes
 
   // Fetch data saat page atau filters berubah
   useEffect(() => {
@@ -366,8 +375,8 @@ export default function AdminCustomerPage() {
               <div className="customers-table__body">
                 {loading && customers.length === 0 ? (
                   <p className="customers-empty">Loading data...</p>
-                ) : filteredCustomers.length > 0 ? (
-                  filteredCustomers.map((cust, i) => (
+                ) : customers.length > 0 ? (
+                  customers.map((cust, i) => (
                   <div className="customers-table__row" key={cust.id || `${cust.email}-${i}`}>
                     <div className="customers-table__cell" data-label="#">
                       {(page - 1) * perPage + i + 1}
@@ -461,7 +470,7 @@ export default function AdminCustomerPage() {
                 ))
               ) : (
                 <p className="customers-empty">
-                  {searchInput.trim() ? "Tidak ada hasil pencarian." : "Tidak ada data customer"}
+                  {debouncedSearch.trim() ? "Tidak ada hasil pencarian." : "Tidak ada data customer"}
                 </p>
               )}
               </div>

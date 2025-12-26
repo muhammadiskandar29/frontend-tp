@@ -37,6 +37,10 @@ export async function getCustomers(page = 1, per_page = 15, filters = {}) {
       params.append("date_from", startDate.toISOString().split('T')[0]);
       params.append("date_to", endDate.toISOString().split('T')[0]);
     }
+    // Add search parameter if provided
+    if (filters.search && filters.search.trim()) {
+      params.append("search", filters.search.trim());
+    }
     
     const res = await fetch(`${BASE_URL}/sales/customer?${params.toString()}`, { headers });
     if (!res.ok) throw new Error("Gagal mengambil data customer");
