@@ -1083,7 +1083,7 @@ ADMIN USERS PAGE (Scoped Styles)
   will-change: auto !important;
 }
 
-/* Pastikan icon summary card tetap menggunakan style yang benar - sama dengan customers */
+/* Pastikan icon summary card tetap menggunakan style yang benar - simple solid orange (sama dengan customers) */
 .orders-shell .dashboard-summary.orders-summary .summary-card__icon,
 .orders-shell .dashboard-summary.orders-summary .summary-card__icon.accent-orange,
 .dashboard-summary.orders-summary .summary-card__icon,
@@ -1094,7 +1094,7 @@ ADMIN USERS PAGE (Scoped Styles)
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  background: linear-gradient(135deg, #ff6c00 0%, #c85400 100%) !important;
+  background: #fb8500 !important;
   color: #ffffff !important;
   flex-shrink: 0 !important;
   box-shadow: 0 4px 14px 0 rgba(251, 133, 0, 0.25) !important;
@@ -2009,10 +2009,10 @@ body:has(.modal-overlay) .dashboard-summary .summary-card__icon svg {
   letter-spacing: inherit !important;
 }
 
-/* Kecualikan icon dari color inherit - pastikan icon putih dan background orange - sama dengan customers */
+/* Kecualikan icon dari color inherit - pastikan icon putih dan background orange solid (simple, sama dengan customers) */
 .dashboard-summary.orders-summary .summary-card__icon,
 .dashboard-summary.orders-summary .summary-card__icon.accent-orange {
-  background: linear-gradient(135deg, #ff6c00 0%, #c85400 100%) !important;
+  background: #fb8500 !important;
   color: #ffffff !important;
   width: 2.5rem !important;
   height: 2.5rem !important;
@@ -2033,7 +2033,7 @@ body:has(.modal-overlay) .dashboard-summary .summary-card__icon svg {
 /* Label dan value styling - sama dengan customers */
 .dashboard-summary.orders-summary .summary-card__label {
   font-size: 0.75rem !important;
-  color: var(--dash-muted, #6c757d) !important;
+  color: #a0aec0 !important;
   margin: 0 !important;
   font-weight: 500 !important;
   text-transform: uppercase !important;
@@ -2044,7 +2044,7 @@ body:has(.modal-overlay) .dashboard-summary .summary-card__icon svg {
 .dashboard-summary.orders-summary .summary-card__value {
   font-size: 1.875rem !important;
   font-weight: 700 !important;
-  color: var(--dash-text, #212529) !important;
+  color: #252f40 !important;
   margin: 0 !important;
   line-height: 1.25 !important;
   letter-spacing: -0.03em !important;
