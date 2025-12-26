@@ -113,20 +113,24 @@ export default function AddOrders({ onClose, onAdd }) {
 
   // === Parse currency to number ===
   const parseCurrency = (value) => {
-    if (!value) return 0;
-    const numValue = typeof value === "string" ? value.replace(/,/g, "") : value;
-    return Number(numValue) || 0;
+    if (!value && value !== 0) return 0;
+    if (value === "" || value === null || value === undefined) return 0;
+    // Remove all non-numeric characters (commas, spaces, etc)
+    const numValue = typeof value === "string" ? value.replace(/\D/g, "") : String(value).replace(/\D/g, "");
+    if (!numValue || numValue === "") return 0;
+    const num = Number(numValue);
+    return isNaN(num) ? 0 : num;
   };
 
   // === Pilih Produk ===
   const handleSelectProduct = (prod) => {
     const hargaValue = Number(prod.harga) || 0;
-    const ongkirValue = parseCurrency(formData.ongkir);
+    const ongkirValue = parseCurrency(formData.ongkir || "");
     setFormData((prev) => ({
       ...prev,
       produk: prod.id,
       harga: hargaValue ? formatCurrency(hargaValue) : "",
-      total_harga: (hargaValue + ongkirValue) ? formatCurrency(hargaValue + ongkirValue) : "",
+      total_harga: (hargaValue + ongkirValue) > 0 ? formatCurrency(hargaValue + ongkirValue) : "",
     }));
     setProductSearch(prod.nama);
     setProductResults([]);
@@ -143,15 +147,28 @@ export default function AddOrders({ onClose, onAdd }) {
       // Format with thousand separator if has value
       const formattedValue = numericValue ? formatCurrency(numericValue) : "";
       
-      // Calculate total
-      const harga = name === "harga" ? parseCurrency(numericValue) : parseCurrency(formData.harga);
-      const ongkir = name === "ongkir" ? parseCurrency(numericValue) : parseCurrency(formData.ongkir);
-      const total = harga + ongkir;
+      // Calculate total - parse both values correctly
+      // For the field being edited, use the numericValue directly (already cleaned)
+      // For the other field, parse from formData (which may have commas)
+      let hargaNum = 0;
+      let ongkirNum = 0;
+      
+      if (name === "harga") {
+        hargaNum = numericValue ? Number(numericValue) : 0;
+        // Parse ongkir from formData (remove commas and convert to number)
+        ongkirNum = parseCurrency(formData.ongkir || "");
+      } else {
+        // Parse harga from formData (remove commas and convert to number)
+        hargaNum = parseCurrency(formData.harga || "");
+        ongkirNum = numericValue ? Number(numericValue) : 0;
+      }
+      
+      const total = hargaNum + ongkirNum;
       
       setFormData({
         ...formData,
         [name]: formattedValue,
-        total_harga: total ? formatCurrency(total) : "",
+        total_harga: total > 0 ? formatCurrency(total) : "",
       });
     } else if (type === "checkbox") {
       setFormData({ ...formData, [name]: checked });
