@@ -1850,9 +1850,9 @@ ADMIN USERS PAGE (Scoped Styles)
   opacity: 0.7;
 }
 
-/* Value styling - persis customers (bold dan besar) */
+/* Value styling - diperbesar dan persis customers (bold dan besar) */
 .dashboard-summary.orders-summary .summary-card__value {
-  font-size: 1.875rem;
+  font-size: 2.5rem;
   font-weight: 700;
   color: #252f40;
   margin: 0;
