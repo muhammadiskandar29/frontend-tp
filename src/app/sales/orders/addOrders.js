@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { toast } from "react-hot-toast";
 import useOrders from "@/hooks/sales/useOrders";
 import { api } from "@/lib/api"; // supaya handleSearchCustomer & handleSearchProduct ikut pakai api()
 import "@/styles/sales/pesanan.css";
 
-export default function AddOrders({ onClose, onAdd, showToast }) {
+export default function AddOrders({ onClose, onAdd }) {
   const [formData, setFormData] = useState({
     nama: "",
     wa: "",
@@ -158,17 +159,17 @@ export default function AddOrders({ onClose, onAdd, showToast }) {
 
     if (res?.success) {
       // Sukses tanpa warning
-      showToast?.(res?.message || "Order berhasil dibuat!", "success");
+      toast.success(res?.message || "Order berhasil dibuat!");
       onAdd?.(res.data);
       onClose?.();
     } else if (res?.warning && res?.data) {
       // Sukses dengan warning (tetap lanjut, tapi beri tahu)
       console.warn("Order warning:", res.warning);
-      showToast?.("Order berhasil dibuat!", "success");
+      toast.success("Order berhasil dibuat!");
       onAdd?.(res.data);
       onClose?.();
     } else {
-      showToast?.(res?.message || "Gagal membuat order.", "error");
+      toast.error(res?.message || "Gagal membuat order.");
     }
 
     setLoading(false);
@@ -494,9 +495,14 @@ export default function AddOrders({ onClose, onAdd, showToast }) {
         .orders-link-btn {
           border: none;
           background: transparent;
-          color: #2563eb;
+          color: #c85400;
           font-weight: 600;
           cursor: pointer;
+        }
+        
+        .orders-link-btn:hover {
+          color: #c85400;
+          opacity: 0.8;
         }
         .orders-empty-state {
           background: #fef3c7;

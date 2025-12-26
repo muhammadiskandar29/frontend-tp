@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useMemo, useCallback, memo } from "react";
 import Layout from "@/components/Layout";
 import dynamic from "next/dynamic";
+import { toast } from "react-hot-toast";
 import { ShoppingCart, Clock, CheckCircle, PartyPopper, XCircle, Filter } from "lucide-react";
 import { Calendar } from "primereact/calendar";
 import "primereact/resources/themes/lara-light-cyan/theme.css";
@@ -16,6 +17,7 @@ const ViewOrders = dynamic(() => import("./viewOrders"), { ssr: false });
 const UpdateOrders = dynamic(() => import("./updateOrders"), { ssr: false });
 const AddOrders = dynamic(() => import("./addOrders"), { ssr: false });
 const PaymentHistoryModal = dynamic(() => import("./paymentHistoryModal"), { ssr: false });
+const FilterModal = dynamic(() => import("./filterModal"), { ssr: false });
 
 // Use Next.js proxy to avoid CORS
 const BASE_URL = "/api";
@@ -54,8 +56,6 @@ const ORDERS_COLUMNS = [
 ];
 
 
-const DEFAULT_TOAST = { show: false, message: "", type: "success" };
-
 export default function DaftarPesanan() {
   // Pagination state dengan fallback pagination
   const [page, setPage] = useState(1);
@@ -67,8 +67,17 @@ export default function DaftarPesanan() {
   
   // Filter state
   const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [dateRange, setDateRange] = useState(null); // [startDate, endDate] atau null
   const [filterPreset, setFilterPreset] = useState("all"); // all | today
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [filters, setFilters] = useState({
+    statusOrder: [],
+    statusPembayaran: [],
+    sumber: [],
+    tanggalRange: null,
+    waktuPembayaranRange: null,
+  });
   
   // State lainnya
   const [statistics, setStatistics] = useState(null);
@@ -80,23 +89,22 @@ export default function DaftarPesanan() {
   const [showPaymentHistory, setShowPaymentHistory] = useState(false);
   const [selectedOrderIdForHistory, setSelectedOrderIdForHistory] = useState(null);
 
-  const [toast, setToast] = useState(DEFAULT_TOAST);
-  const toastTimeoutRef = useRef(null);
   const fetchingRef = useRef(false); // Prevent multiple simultaneous fetches
+  const searchTimeoutRef = useRef(null);
 
-  const showToast = (message, type = "success") => {
-    setToast({ show: true, message, type });
-    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-    toastTimeoutRef.current = setTimeout(() => {
-      setToast({ show: false, message: "", type });
-    }, 2500);
-  };
-
+  // Debounce search input
   useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    searchTimeoutRef.current = setTimeout(() => {
+      setDebouncedSearch(searchInput);
+      setPage(1); // Reset to page 1 when search changes
+    }, 500);
     return () => {
-      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     };
-  }, []);
+  }, [searchInput]);
 
   // 🔹 Load statistics
   const loadStatistics = useCallback(async () => {
@@ -132,7 +140,37 @@ export default function DaftarPesanan() {
         return;
       }
 
-      const res = await fetch(`/api/sales/order?page=${pageNumber}&per_page=${perPage}`, {
+      // Build query parameters
+      const params = new URLSearchParams({
+        page: String(pageNumber),
+        per_page: String(perPage),
+      });
+
+      // Add search parameter
+      if (debouncedSearch && debouncedSearch.trim()) {
+        params.append("search", debouncedSearch.trim());
+      }
+
+      // Add filter parameters
+      if (filters.statusOrder.length > 0) {
+        params.append("status_order", filters.statusOrder.join(","));
+      }
+      if (filters.statusPembayaran.length > 0) {
+        params.append("status_pembayaran", filters.statusPembayaran.join(","));
+      }
+      if (filters.sumber.length > 0) {
+        params.append("sumber", filters.sumber.join(","));
+      }
+      if (filters.tanggalRange && Array.isArray(filters.tanggalRange) && filters.tanggalRange.length === 2) {
+        params.append("tanggal_from", filters.tanggalRange[0].toISOString().split("T")[0]);
+        params.append("tanggal_to", filters.tanggalRange[1].toISOString().split("T")[0]);
+      }
+      if (filters.waktuPembayaranRange && Array.isArray(filters.waktuPembayaranRange) && filters.waktuPembayaranRange.length === 2) {
+        params.append("waktu_pembayaran_from", filters.waktuPembayaranRange[0].toISOString().split("T")[0]);
+        params.append("waktu_pembayaran_to", filters.waktuPembayaranRange[1].toISOString().split("T")[0]);
+      }
+
+      const res = await fetch(`/api/sales/order?${params.toString()}`, {
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
@@ -229,11 +267,11 @@ export default function DaftarPesanan() {
       fetchingRef.current = false;
     } catch (err) {
       console.error("Error fetching orders:", err);
-      showToast("Gagal memuat data", "error");
+      toast.error("Gagal memuat data");
       setLoading(false);
       fetchingRef.current = false;
     }
-  }, [showToast, perPage]);
+  }, [debouncedSearch, filters, perPage]);
 
   // Load statistics on mount
   useEffect(() => {
@@ -249,14 +287,14 @@ export default function DaftarPesanan() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Hanya sekali saat mount
 
-  // Fetch data saat page berubah
+  // Fetch data saat page, search, atau filter berubah
   useEffect(() => {
     if (page > 0 && !loading) {
       fetchOrders(page);
       // Tidak scroll ke atas, tetap di posisi saat ini
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]); // Hanya depend pada page
+  }, [page, debouncedSearch, filters]); // Depend pada page, search, dan filters
 
   // 🔹 Next page
   const handleNextPage = useCallback(() => {
@@ -282,7 +320,10 @@ export default function DaftarPesanan() {
     setOrders([]);
     setHasMore(true);
     await Promise.all([loadStatistics(), fetchOrders(1)]);
-    if (message) showToast(message, type);
+    if (message) {
+      if (type === "error") toast.error(message);
+      else toast.success(message);
+    }
   };
 
   // 🔹 Format date range untuk display
@@ -313,44 +354,11 @@ export default function DaftarPesanan() {
     return 0; // Unpaid
   }
 
-  // === FILTER ===
-  // Filter orders berdasarkan search dan date range
-  const filteredOrders = useMemo(() => {
-    let filtered = [...orders];
-
-    // Filter by search (customer name, product name, alamat, total harga)
-    if (searchInput && searchInput.trim()) {
-      const searchLower = searchInput.toLowerCase().trim();
-      filtered = filtered.filter((order) => {
-        const customerName = order.customer_rel?.nama?.toLowerCase() || "";
-        const productName = order.produk_rel?.nama?.toLowerCase() || "";
-        const alamat = order.alamat?.toLowerCase() || "";
-        const totalHarga = order.total_harga?.toString() || "";
-        
-        return (
-          customerName.includes(searchLower) ||
-          productName.includes(searchLower) ||
-          alamat.includes(searchLower) ||
-          totalHarga.includes(searchLower)
-        );
-      });
-    }
-
-    // Filter by date range
-    if (dateRange && Array.isArray(dateRange) && dateRange.length === 2 && dateRange[0] && dateRange[1]) {
-      filtered = filtered.filter((order) => {
-        if (!order.tanggal) return false;
-        const orderDate = new Date(order.tanggal);
-        const fromDate = new Date(dateRange[0]);
-        fromDate.setHours(0, 0, 0, 0);
-        const toDate = new Date(dateRange[1]);
-        toDate.setHours(23, 59, 59, 999);
-        return orderDate >= fromDate && orderDate <= toDate;
-      });
-    }
-
-    return filtered;
-  }, [orders, searchInput, dateRange]);
+  // Handler untuk apply filters dari modal
+  const handleApplyFilters = useCallback((newFilters) => {
+    setFilters(newFilters);
+    setPage(1); // Reset to page 1 when filters change
+  }, []);
 
   // === SUMMARY ===
   // Gunakan data dari statistics API
@@ -381,9 +389,9 @@ export default function DaftarPesanan() {
   };
 
   const handleSuccessEdit = async (updatedFromForm) => {
-    try {
+      try {
       if (!selectedOrder?.id) {
-        showToast("Order ID tidak valid", "error");
+        toast.error("Order ID tidak valid");
         return;
       }
 
@@ -452,7 +460,7 @@ export default function DaftarPesanan() {
         // Reset selected
         setSelectedOrder(null);
 
-        showToast(updatedFromForm.message || "Pembayaran berhasil dikonfirmasi!", "success");
+        toast.success(updatedFromForm.message || "Pembayaran berhasil dikonfirmasi!");
 
         // Refresh statistics dan data dari backend
         await Promise.all([loadStatistics(), fetchOrders(page)]);
@@ -510,17 +518,17 @@ export default function DaftarPesanan() {
   
         // Reset selected
         setSelectedOrder(null);
-  
-        showToast(result.message || "Order berhasil diupdate!", "success");
+
+        toast.success(result.message || "Order berhasil diupdate!");
 
         // Refresh statistics
         await loadStatistics();
       } else {
-        showToast(result.message || "Gagal mengupdate order", "error");
+        toast.error(result.message || "Gagal mengupdate order");
       }
     } catch (err) {
       console.error("Error updating order:", err);
-      showToast("Terjadi kesalahan saat mengupdate order", "error");
+      toast.error("Terjadi kesalahan saat mengupdate order");
     }
   };
   
@@ -575,7 +583,7 @@ export default function DaftarPesanan() {
                   className="orders-filter-btn orders-filter-icon-btn"
                   title="Filter"
                   aria-label="Filter"
-                  onClick={() => {}}
+                  onClick={() => setShowFilterModal(true)}
                   style={{
                     color: "#c85400",
                   }}
@@ -730,8 +738,8 @@ export default function DaftarPesanan() {
                 ))}
               </div>
               <div className="orders-table__body">
-                {filteredOrders.length > 0 ? (
-                  filteredOrders.map((order, i) => {
+                {orders.length > 0 ? (
+                  orders.map((order, i) => {
                     // Handle produk name - dari produk_rel
                     const produkNama = order.produk_rel?.nama || "-";
 
@@ -940,16 +948,6 @@ export default function DaftarPesanan() {
           </div>
         </section>
 
-        {/* TOAST */}
-        {toast.show && (
-          <div
-            className={`toast ${toast.type === "error" ? "toast-error" : ""} ${
-              toast.type === "warning" ? "toast-warning" : ""
-            }`}
-          >
-            {toast.message}
-          </div>
-        )}
       </div>
 
       {/* MODALS - Render di luar main content untuk memastikan z-index bekerja */}
@@ -961,7 +959,6 @@ export default function DaftarPesanan() {
             // Refresh data and show success message
             await requestRefresh("Pesanan baru berhasil ditambahkan!");
           }}
-          showToast={showToast}
         />
       )}
 
@@ -990,7 +987,6 @@ export default function DaftarPesanan() {
             requestRefresh(""); // Auto refresh setelah edit
           }}
           onSave={handleSuccessEdit}
-          setToast={setToast}
           refreshOrders={() => requestRefresh("")}
         />
       )}
@@ -1164,6 +1160,14 @@ export default function DaftarPesanan() {
           setShowPaymentHistory(false);
           setSelectedOrderIdForHistory(null);
         }}
+      />
+
+      {/* Filter Modal */}
+      <FilterModal
+        isOpen={showFilterModal}
+        onClose={() => setShowFilterModal(false)}
+        filters={filters}
+        onApplyFilters={handleApplyFilters}
       />
     </Layout>
   );

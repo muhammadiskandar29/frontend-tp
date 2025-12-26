@@ -1053,6 +1053,35 @@ ADMIN USERS PAGE (Scoped Styles)
 /* === ORDERS SECTION === */
 .orders-shell {
   gap: 2rem;
+  /* Pastikan tidak ada perubahan style ketika modal dibuka */
+  position: relative;
+  isolation: isolate;
+}
+
+/* Lock style untuk summary card agar tidak berubah */
+.orders-shell .dashboard-summary.orders-summary {
+  position: relative !important;
+  z-index: 1 !important;
+  isolation: isolate !important;
+}
+
+.orders-shell .dashboard-summary.orders-summary .summary-card--combined,
+.orders-shell .dashboard-summary.orders-summary .summary-card__column,
+.orders-shell .dashboard-summary.orders-summary .summary-card__icon,
+.orders-shell .dashboard-summary.orders-summary .summary-card__label,
+.orders-shell .dashboard-summary.orders-summary .summary-card__value {
+  /* Lock semua property yang bisa berubah */
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  color: inherit !important;
+  line-height: inherit !important;
+  letter-spacing: inherit !important;
+  text-transform: inherit !important;
+  transform: none !important;
+  opacity: 1 !important;
+  filter: none !important;
+  will-change: auto !important;
 }
 
 /* Global override untuk menghilangkan semua warna biru di orders page */
@@ -1748,6 +1777,18 @@ ADMIN USERS PAGE (Scoped Styles)
   align-items: center;
   gap: 1.5rem;
   padding: 1.25rem 1.75rem;
+  /* Lock style untuk konsistensi */
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  color: inherit !important;
+  line-height: inherit !important;
+  letter-spacing: inherit !important;
+  position: relative !important;
+  transform: none !important;
+  opacity: 1 !important;
+  filter: none !important;
+  will-change: auto !important;
 }
 
 .dashboard-summary.orders-summary .summary-card__column {
@@ -1897,6 +1938,56 @@ ADMIN USERS PAGE (Scoped Styles)
   justify-content: center;
   z-index: 999;
   backdrop-filter: blur(3px);
+  /* Pastikan tidak mempengaruhi body atau html */
+  isolation: isolate;
+}
+
+/* Pastikan body dan html tidak berubah style ketika modal dibuka */
+body:has(.modal-overlay),
+html:has(.modal-overlay) {
+  overflow: hidden;
+  /* Jangan ubah font atau style lainnya */
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  color: inherit !important;
+  line-height: inherit !important;
+}
+
+/* Pastikan modal overlay tidak mempengaruhi elemen di belakangnya */
+.modal-overlay ~ *,
+body:has(.modal-overlay) .orders-shell,
+body:has(.modal-overlay) .dashboard-summary,
+body:has(.modal-overlay) .summary-card {
+  /* Lock semua style agar tidak berubah */
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  color: inherit !important;
+  line-height: inherit !important;
+  transform: none !important;
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+/* Pastikan summary card tetap konsisten */
+.dashboard-summary.orders-summary,
+.dashboard-summary.orders-summary * {
+  /* Lock semua style summary card */
+  font-family: inherit !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  color: inherit !important;
+  line-height: inherit !important;
+  letter-spacing: inherit !important;
+}
+
+.dashboard-summary.orders-summary .summary-card--combined {
+  /* Pastikan tidak ada perubahan layout */
+  position: relative !important;
+  transform: none !important;
+  opacity: 1 !important;
+  filter: none !important;
 }
 
 .modal-card {

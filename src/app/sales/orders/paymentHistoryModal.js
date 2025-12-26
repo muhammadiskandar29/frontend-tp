@@ -162,7 +162,7 @@ export default function PaymentHistoryModal({ orderId, isOpen, onClose }) {
           >
             {loading ? (
               <div style={{ textAlign: "center", padding: "3rem" }}>
-                <i className="pi pi-spin pi-spinner" style={{ fontSize: "2rem", color: "#3b82f6" }} />
+                <i className="pi pi-spin pi-spinner" style={{ fontSize: "2rem", color: "#ff6c00" }} />
                 <p style={{ marginTop: "1rem", color: "#6b7280" }}>Memuat data...</p>
               </div>
             ) : error ? (
@@ -173,12 +173,18 @@ export default function PaymentHistoryModal({ orderId, isOpen, onClose }) {
                   style={{
                     marginTop: "1rem",
                     padding: "0.5rem 1rem",
-                    background: "#3b82f6",
+                    background: "#ff6c00",
                     color: "#fff",
                     border: "none",
                     borderRadius: "6px",
                     cursor: "pointer",
                     fontWeight: 500
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = "#c85400";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = "#ff6c00";
                   }}
                 >
                   Coba Lagi
@@ -310,7 +316,7 @@ export default function PaymentHistoryModal({ orderId, isOpen, onClose }) {
                                   href={`${BACKEND_URL}/storage/${payment.bukti_pembayaran}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  style={{ display: "block", color: "#3b82f6", textDecoration: "underline" }}
+                                  style={{ display: "block", color: "#c85400", textDecoration: "underline" }}
                                 >
                                   Lihat Bukti
                                 </a>
@@ -354,7 +360,7 @@ export default function PaymentHistoryModal({ orderId, isOpen, onClose }) {
               className="orders-btn orders-btn--primary"
               style={{
                 padding: "0.625rem 1.25rem",
-                background: "#3b82f6",
+                background: "#ff6c00",
                 color: "#fff",
                 border: "none",
                 borderRadius: "6px",
@@ -364,10 +370,10 @@ export default function PaymentHistoryModal({ orderId, isOpen, onClose }) {
                 transition: "all 0.2s"
               }}
               onMouseEnter={(e) => {
-                e.target.style.background = "#2563eb";
+                e.target.style.background = "#c85400";
               }}
               onMouseLeave={(e) => {
-                e.target.style.background = "#3b82f6";
+                e.target.style.background = "#ff6c00";
               }}
             >
               Tutup

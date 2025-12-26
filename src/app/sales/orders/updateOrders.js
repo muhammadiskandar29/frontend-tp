@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
 import "@/styles/sales/customer.css";
 import { createPortal } from "react-dom";
 
@@ -27,7 +28,7 @@ const cleanOrderData = (orderData) => {
   return cleaned;
 };
 
-export default function UpdateOrders({ order, onClose, onSave, setToast }) {
+export default function UpdateOrders({ order, onClose, onSave }) {
   const router = useRouter();
   const [updatedOrder, setUpdatedOrder] = useState(order ? cleanOrderData(order) : {});
   const [showKonfirmasiModal, setShowKonfirmasiModal] = useState(false);
@@ -269,16 +270,11 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
         ? "Pembayaran berhasil dikonfirmasi! Order sudah lunas." 
         : `Pembayaran berhasil dikonfirmasi! Sisa yang harus dibayar: Rp ${newRemaining.toLocaleString("id-ID")}`;
       
-      setToast?.({
-        show: true,
-        type: "success",
-        message: successMessage,
-      });
+      toast.success(successMessage);
 
       // Tutup modal dan redirect ke halaman orders setelah delay
       // Button akan tetap muncul ketika user buka modal edit lagi untuk status 4 yang masih ada remaining
       setTimeout(() => {
-        setToast?.((prev) => ({ ...prev, show: false }));
         onClose();
         // Redirect ke halaman orders
         router.push("/sales/orders");
@@ -288,15 +284,7 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
       setErrorMsg("Terjadi kesalahan saat konfirmasi pembayaran.");
       setSubmitting(false);
 
-      setToast?.({
-        show: true,
-        type: "error",
-        message: "Gagal mengkonfirmasi pembayaran.",
-      });
-
-      setTimeout(() => {
-        setToast?.((prev) => ({ ...prev, show: false }));
-      }, 2000);
+      toast.error("Gagal mengkonfirmasi pembayaran.");
     }
   };
 
@@ -678,8 +666,8 @@ const handleSubmitUpdate = async (e) => {
 
         .field-input:focus {
           outline: none;
-          border-color: #3b82f6;
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+          border-color: #ff6c00;
+          box-shadow: 0 0 0 3px rgba(255, 108, 0, 0.15);
         }
 
         .field-input--readonly {
@@ -761,7 +749,7 @@ const handleSubmitUpdate = async (e) => {
         }
 
         .badge-dp {
-          background: #3b82f6;
+          background: #ff6c00;
           color: white;
         }
 
@@ -775,7 +763,7 @@ const handleSubmitUpdate = async (e) => {
           align-items: center;
           gap: 6px;
           padding: 10px 16px;
-          background: #3b82f6;
+          background: #ff6c00;
           color: white;
           border: none;
           border-radius: 8px;
@@ -786,7 +774,7 @@ const handleSubmitUpdate = async (e) => {
         }
 
         .btn-konfirmasi:hover:not(:disabled) {
-          background: #2563eb;
+          background: #c85400;
         }
 
         .btn-konfirmasi:disabled {
@@ -1041,8 +1029,8 @@ const handleSubmitUpdate = async (e) => {
         }
 
         .upload-label:hover {
-          border-color: #3b82f6;
-          background: #eff6ff;
+          border-color: #ff6c00;
+          background: rgba(255, 108, 0, 0.05);
         }
 
         .upload-preview {
@@ -1152,7 +1140,7 @@ const handleSubmitUpdate = async (e) => {
           width: 18px;
           height: 18px;
           cursor: pointer;
-          accent-color: #3b82f6;
+          accent-color: #ff6c00;
         }
 
         .dp-checkbox-label {
@@ -1216,8 +1204,8 @@ const handleSubmitUpdate = async (e) => {
 
         .konfirmasi-form .field-input-wrapper .field-input:focus {
           outline: none;
-          border-color: #3b82f6;
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+          border-color: #ff6c00;
+          box-shadow: 0 0 0 3px rgba(255, 108, 0, 0.15);
         }
       `}</style>
     </>

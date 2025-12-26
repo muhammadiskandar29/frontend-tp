@@ -9,9 +9,25 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const page = searchParams.get('page') || '1';
     const perPage = searchParams.get('per_page') || '15';
+    const search = searchParams.get('search') || '';
+    const statusOrder = searchParams.get('status_order') || '';
+    const statusPembayaran = searchParams.get('status_pembayaran') || '';
+    const sumber = searchParams.get('sumber') || '';
+    const tanggalFrom = searchParams.get('tanggal_from') || '';
+    const tanggalTo = searchParams.get('tanggal_to') || '';
+    const waktuPembayaranFrom = searchParams.get('waktu_pembayaran_from') || '';
+    const waktuPembayaranTo = searchParams.get('waktu_pembayaran_to') || '';
     
     // Build backend URL with query parameters
-    const backendUrl = `${BACKEND_URL}/api/sales/order?page=${page}&per_page=${perPage}`;
+    let backendUrl = `${BACKEND_URL}/api/sales/order?page=${page}&per_page=${perPage}`;
+    if (search) backendUrl += `&search=${encodeURIComponent(search)}`;
+    if (statusOrder) backendUrl += `&status_order=${encodeURIComponent(statusOrder)}`;
+    if (statusPembayaran) backendUrl += `&status_pembayaran=${encodeURIComponent(statusPembayaran)}`;
+    if (sumber) backendUrl += `&sumber=${encodeURIComponent(sumber)}`;
+    if (tanggalFrom) backendUrl += `&tanggal_from=${encodeURIComponent(tanggalFrom)}`;
+    if (tanggalTo) backendUrl += `&tanggal_to=${encodeURIComponent(tanggalTo)}`;
+    if (waktuPembayaranFrom) backendUrl += `&waktu_pembayaran_from=${encodeURIComponent(waktuPembayaranFrom)}`;
+    if (waktuPembayaranTo) backendUrl += `&waktu_pembayaran_to=${encodeURIComponent(waktuPembayaranTo)}`;
     
     console.log("🔍 Fetching orders from:", backendUrl);
     console.log("🔑 Auth header present:", !!authHeader);
