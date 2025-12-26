@@ -649,7 +649,7 @@ export default function DaftarPesanan() {
           </div>
         </section>
 
-        <section className="dashboard-summary orders-summary">
+        <section className="dashboard-summary customers-summary">
           <article className="summary-card summary-card--combined">
             <div className="summary-card__column">
               <div className={`summary-card__icon accent-orange`}>
