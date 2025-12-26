@@ -3,140 +3,303 @@
 import "@/styles/sales/dashboard-premium.css";
 import Layout from "@/components/Layout";
 import GreetingBanner from "@/components/GreetingBanner";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
-  TrendingUp,
-  ShoppingCart,
-  Percent,
-  DollarSign,
-  Clock,
-  Package,
-  Target,
-  Star,
   User,
   CheckCircle,
-  BarChart3,
-  Wallet,
-  Activity,
-  Award,
+  Clock,
+  Package,
+  ShoppingCart,
+  AlertCircle,
+  Target,
+  Calendar,
 } from "lucide-react";
 
+const BASE_URL = "/api";
+
 export default function Dashboard() {
-  // Dummy data statistik performa
-  const performanceStats = {
-            totalLeads: 0,
-            totalClosing: 0,
-    conversionRate: 0.0,
-            totalRevenue: 0,
-            averageDealSize: 0,
-            responseTime: "N/A",
+  const [loading, setLoading] = useState(true);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [stats, setStats] = useState({
+    leadsAssignedToday: 0,
+    leadsAssignedThisMonth: 0,
+    followUpDoneToday: 0,
+    followUpOverdue: 0,
             activeDeals: 0,
             closedThisMonth: 0,
-            targetAchievement: 0,
-            customerSatisfaction: 0,
+    avgResponseTime: "N/A",
+    monthlyTarget: 0,
+    monthlyProgress: 0,
+    closingTarget: 0,
+    closingProgress: 0,
+  });
+
+  // Update time every minute
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Fetch dashboard data
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      // Get current user ID
+      const userDataStr = localStorage.getItem("user");
+      let currentUserId = null;
+      if (userDataStr) {
+        try {
+          const user = JSON.parse(userDataStr);
+          currentUserId = user.id;
+        } catch (e) {
+          console.error("Error parsing user data:", e);
+        }
+      }
+
+      // Fetch leads statistics
+      const leadsParams = new URLSearchParams();
+      if (currentUserId) {
+        leadsParams.append("sales_id", currentUserId.toString());
+      }
+      
+      const leadsRes = await fetch(`${BASE_URL}/sales/lead?${leadsParams.toString()}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (leadsRes.ok) {
+        const leadsData = await leadsRes.json();
+        if (leadsData.success && leadsData.data) {
+          const leads = Array.isArray(leadsData.data) ? leadsData.data : [];
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          const thisMonth = new Date();
+          thisMonth.setDate(1);
+          thisMonth.setHours(0, 0, 0, 0);
+
+          // Calculate statistics
+          const leadsAssignedToday = leads.filter(lead => {
+            if (!lead.created_at) return false;
+            const leadDate = new Date(lead.created_at);
+            leadDate.setHours(0, 0, 0, 0);
+            return leadDate.getTime() === today.getTime();
+          }).length;
+
+          const leadsAssignedThisMonth = leads.filter(lead => {
+            if (!lead.created_at) return false;
+            const leadDate = new Date(lead.created_at);
+            return leadDate >= thisMonth;
+          }).length;
+
+          // Active deals (leads with status CONTACTED, QUALIFIED, or CONVERTED)
+          const activeDeals = leads.filter(lead => {
+            const status = lead.status?.toUpperCase();
+            return status === "CONTACTED" || status === "QUALIFIED" || status === "CONVERTED";
+          }).length;
+
+          // Closed this month (CONVERTED leads this month)
+          const closedThisMonth = leads.filter(lead => {
+            if (lead.status?.toUpperCase() !== "CONVERTED") return false;
+            if (!lead.updated_at) return false;
+            const leadDate = new Date(lead.updated_at);
+            return leadDate >= thisMonth;
+          }).length;
+
+          // Overdue follow-ups (leads with follow_up_date in the past and status not CONVERTED/LOST)
+          const followUpOverdue = leads.filter(lead => {
+            if (!lead.follow_up_date) return false;
+            const followUpDate = new Date(lead.follow_up_date);
+            const status = lead.status?.toUpperCase();
+            return followUpDate < today && status !== "CONVERTED" && status !== "LOST";
+          }).length;
+
+          setStats(prev => ({
+            ...prev,
+            leadsAssignedToday,
+            leadsAssignedThisMonth,
+            activeDeals,
+            closedThisMonth,
+            followUpOverdue,
+          }));
+        }
+      }
+
+      // Fetch dashboard statistics if available
+      const dashboardRes = await fetch(`${BASE_URL}/sales/dashboard`, {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (dashboardRes.ok) {
+        const dashboardData = await dashboardRes.json();
+        if (dashboardData.success && dashboardData.data) {
+          const data = dashboardData.data;
+          
+          // Extract follow-up done today if available
+          // This would need to come from follow-up logs API
+          // For now, we'll set it to 0 and can be enhanced later
+          
+          // Extract target and progress if available
+          if (data.monthly_target) {
+            setStats(prev => ({
+              ...prev,
+              monthlyTarget: data.monthly_target,
+              monthlyProgress: data.monthly_progress || 0,
+            }));
+          }
+
+          if (data.closing_target) {
+            setStats(prev => ({
+              ...prev,
+              closingTarget: data.closing_target,
+              closingProgress: data.closing_progress || 0,
+            }));
+          }
+
+          // Average response time
+          if (data.avg_response_time) {
+            setStats(prev => ({
+              ...prev,
+              avgResponseTime: data.avg_response_time,
+            }));
+          }
+        }
+      }
+
+      // Fetch follow-up done today from follow-up logs
+      // This is a simplified approach - you may need to adjust based on your API
+      const followUpParams = new URLSearchParams();
+      if (currentUserId) {
+        followUpParams.append("sales_id", currentUserId.toString());
+      }
+      const todayStr = new Date().toISOString().split("T")[0];
+      followUpParams.append("date_from", todayStr);
+      followUpParams.append("date_to", todayStr);
+
+      try {
+        const followUpRes = await fetch(`${BASE_URL}/sales/logs-follup?${followUpParams.toString()}`, {
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (followUpRes.ok) {
+          const followUpData = await followUpRes.json();
+          if (followUpData.success && followUpData.data) {
+            const followUps = Array.isArray(followUpData.data) ? followUpData.data : [];
+            setStats(prev => ({
+              ...prev,
+              followUpDoneToday: followUps.length,
+            }));
+          }
+        }
+      } catch (err) {
+        console.log("Could not fetch follow-up logs:", err);
+      }
+
+    } catch (err) {
+      console.error("Error fetching dashboard data:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
+  // Format date and time
+  const formatDate = (date) => {
+    const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+    const months = [
+      "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+      "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+    ];
+    return `${days[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
   };
 
-  // Kelompokkan statistik berdasarkan fungsi/indikator
-  const statGroups = [
+  const formatTime = (date) => {
+    return date.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+  };
+
+  // Activity summary cards
+  const activityCards = [
     {
-      title: "Lead Performance",
-      icon: <BarChart3 size={20} />,
-      description: "Kinerja dalam mengelola dan mengkonversi leads",
-      cards: [
-        {
-          label: "Total Leads",
-          value: performanceStats.totalLeads.toLocaleString("id-ID"),
+      label: "Leads Assigned (Hari Ini)",
+      value: loading ? "..." : stats.leadsAssignedToday.toLocaleString("id-ID"),
+      icon: <User size={20} />,
+      color: "#3B82F6",
+      bgColor: "#DBEAFE",
+    },
+    {
+      label: "Leads Assigned (Bulan Ini)",
+      value: loading ? "..." : stats.leadsAssignedThisMonth.toLocaleString("id-ID"),
           icon: <User size={20} />,
           color: "#3B82F6",
           bgColor: "#DBEAFE",
         },
         {
-          label: "Total Closing",
-          value: performanceStats.totalClosing.toLocaleString("id-ID"),
+      label: "Follow Up Selesai Hari Ini",
+      value: loading ? "..." : stats.followUpDoneToday.toLocaleString("id-ID"),
           icon: <CheckCircle size={20} />,
           color: "#10B981",
           bgColor: "#D1FAE5",
         },
         {
-          label: "Conversion Rate",
-          value: `${performanceStats.conversionRate.toFixed(2)}%`,
-          icon: <Percent size={20} />,
-          color: "#F59E0B",
-          bgColor: "#FEF3C7",
-        },
-      ],
-    },
-    {
-      title: "Revenue Performance",
-      icon: <Wallet size={20} />,
-      description: "Pencapaian revenue dan nilai transaksi",
-      cards: [
-        {
-          label: "Total Revenue",
-          value: `Rp ${performanceStats.totalRevenue.toLocaleString("id-ID")}`,
-          icon: <DollarSign size={20} />,
-          color: "#8B5CF6",
-          bgColor: "#EDE9FE",
-        },
-        {
-          label: "Average Deal Size",
-          value: `Rp ${performanceStats.averageDealSize.toLocaleString("id-ID")}`,
-          icon: <TrendingUp size={20} />,
-          color: "#EC4899",
-          bgColor: "#FCE7F3",
-        },
-      ],
-    },
-    {
-      title: "Activity & Engagement",
-      icon: <Activity size={20} />,
-      description: "Tingkat aktivitas dan responsivitas",
-      cards: [
-        {
-          label: "Response Time",
-          value: performanceStats.responseTime,
-          icon: <Clock size={20} />,
-          color: "#06B6D4",
-          bgColor: "#CFFAFE",
+      label: "Follow Up Terlambat",
+      value: loading ? "..." : stats.followUpOverdue.toLocaleString("id-ID"),
+      icon: <AlertCircle size={20} />,
+      color: "#EF4444",
+      bgColor: "#FEE2E2",
         },
         {
           label: "Active Deals",
-          value: performanceStats.activeDeals.toLocaleString("id-ID"),
+      value: loading ? "..." : stats.activeDeals.toLocaleString("id-ID"),
           icon: <Package size={20} />,
           color: "#14B8A6",
           bgColor: "#CCFBF1",
         },
         {
-          label: "Closed This Month",
-          value: performanceStats.closedThisMonth.toLocaleString("id-ID"),
+      label: "Closed Bulan Ini",
+      value: loading ? "..." : stats.closedThisMonth.toLocaleString("id-ID"),
           icon: <ShoppingCart size={20} />,
           color: "#F97316",
           bgColor: "#FFEDD5",
-        },
-      ],
     },
     {
-      title: "Goals & Satisfaction",
-      icon: <Award size={20} />,
-      description: "Pencapaian target dan kepuasan customer",
-      cards: [
-        {
-          label: "Target Achievement",
-          value: `${performanceStats.targetAchievement}%`,
-          icon: <Target size={20} />,
-          color: "#EF4444",
-          bgColor: "#FEE2E2",
-        },
-        {
-          label: "Customer Satisfaction",
-          value: `${performanceStats.customerSatisfaction}/5.0`,
-          icon: <Star size={20} />,
-          color: "#FBBF24",
-          bgColor: "#FEF3C7",
-        },
-      ],
+      label: "Avg Response Time",
+      value: loading ? "..." : stats.avgResponseTime,
+      icon: <Clock size={20} />,
+      color: "#06B6D4",
+      bgColor: "#CFFAFE",
     },
   ];
+
+  // Calculate progress percentages
+  const monthlyProgressPercent = stats.monthlyTarget > 0 
+    ? Math.min((stats.monthlyProgress / stats.monthlyTarget) * 100, 100)
+    : 0;
+  
+  const closingProgressPercent = stats.closingTarget > 0
+    ? Math.min((stats.closingProgress / stats.closingTarget) * 100, 100)
+    : 0;
 
   return (
     <Layout title="Dashboard" aboveContent={<GreetingBanner />}>
@@ -144,236 +307,289 @@ export default function Dashboard() {
         <style jsx>{`
           .staff-dashboard {
             padding: 0;
+            max-width: 1400px;
+            margin: 0 auto;
           }
 
-          .stats-section {
-            margin-top: 0;
-          }
-
-          .stats-section-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #1f2937;
+          .time-context {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
             margin-bottom: 2rem;
+            padding: 0.75rem 1rem;
+            background: #f9fafb;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            color: #6b7280;
+          }
+
+          .time-context-item {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            gap: 0.5rem;
           }
 
-          .stat-groups-container {
-            display: flex;
-            flex-direction: column;
-            gap: 2.5rem;
+          .time-context-item svg {
+            width: 16px;
+            height: 16px;
           }
 
-          .stat-group {
-            background: white;
-            border-radius: 16px;
-            padding: 2rem;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-            border: 1px solid #e5e7eb;
-            transition: all 0.2s ease;
+          .activity-summary {
+            margin-bottom: 2rem;
           }
 
-          .stat-group:hover {
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-          }
-
-          .stat-group-header {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            margin-bottom: 0.5rem;
-            padding-bottom: 1rem;
-            border-bottom: 2px solid #f3f4f6;
-          }
-
-          .stat-group-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #fb8500 0%, #ff9500 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            flex-shrink: 0;
-          }
-
-          .stat-group-title {
+          .activity-summary-title {
             font-size: 1.25rem;
             font-weight: 600;
             color: #1f2937;
-            margin: 0;
+            margin-bottom: 1.5rem;
           }
 
-          .stat-group-description {
-            font-size: 0.875rem;
-            color: #6b7280;
-            margin: 0;
-            margin-top: 0.25rem;
-          }
-
-          .stat-group-cards {
+          .activity-cards-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.25rem;
-            margin-top: 1.5rem;
-          }
-
-          .stat-card {
-            background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
-            border-radius: 12px;
-            padding: 1.5rem;
-            border: 1px solid #e5e7eb;
-            transition: all 0.2s ease;
-            position: relative;
-            overflow: hidden;
-          }
-
-          .stat-card::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 4px;
-            height: 100%;
-            background: var(--card-accent-color);
-            transition: width 0.2s ease;
-          }
-
-          .stat-card:hover {
-            box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.1);
-            transform: translateY(-2px);
-            border-color: var(--card-accent-color);
-          }
-
-          .stat-card:hover::before {
-            width: 100%;
-            opacity: 0.05;
-          }
-
-          .stat-card-header {
-            display: flex;
-            align-items: flex-start;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1rem;
-            margin-bottom: 1rem;
           }
 
-          .stat-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
+          .activity-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.25rem;
+            border: 1px solid #e5e7eb;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+          }
+
+          .activity-card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+          }
+
+          .activity-card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            transition: all 0.2s ease;
           }
 
-          .stat-card:hover .stat-icon {
-            transform: scale(1.1);
-          }
-
-          .stat-card-content {
+          .activity-card-content {
             flex: 1;
             min-width: 0;
           }
 
-          .stat-label {
-            font-size: 0.875rem;
+          .activity-card-label {
+            font-size: 0.75rem;
             color: #6b7280;
             font-weight: 500;
-            margin-bottom: 0.5rem;
-            line-height: 1.4;
+            margin-bottom: 0.25rem;
+            line-height: 1.3;
           }
 
-          .stat-value {
+          .activity-card-value {
             font-size: 1.5rem;
             font-weight: 700;
             color: #1f2937;
             line-height: 1.2;
-            word-break: break-word;
+          }
+
+          .progress-section {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            border: 1px solid #e5e7eb;
+            margin-bottom: 2rem;
+          }
+
+          .progress-section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+          }
+
+          .progress-section-title svg {
+            width: 20px;
+            height: 20px;
+            color: #6b7280;
+          }
+
+          .progress-item {
+            margin-bottom: 1.5rem;
+          }
+
+          .progress-item:last-child {
+            margin-bottom: 0;
+          }
+
+          .progress-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+          }
+
+          .progress-item-label {
+            font-size: 0.875rem;
+            color: #6b7280;
+            font-weight: 500;
+          }
+
+          .progress-item-value {
+            font-size: 0.875rem;
+            color: #1f2937;
+            font-weight: 600;
+          }
+
+          .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background: #f3f4f6;
+            border-radius: 4px;
+            overflow: hidden;
+          }
+
+          .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+          }
+
+          .progress-bar-fill.warning {
+            background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+          }
+
+          .progress-bar-fill.success {
+            background: linear-gradient(90deg, #10b981 0%, #059669 100%);
           }
 
           @media (max-width: 1024px) {
-            .stat-group-cards {
-              grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            .activity-cards-grid {
+              grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             }
           }
 
           @media (max-width: 768px) {
-            .stat-group {
-              padding: 1.5rem;
+            .activity-cards-grid {
+              grid-template-columns: repeat(2, 1fr);
             }
 
-            .stat-group-cards {
-              grid-template-columns: 1fr;
-              gap: 1rem;
-            }
-
-            .stat-group-header {
+            .time-context {
               flex-direction: column;
               align-items: flex-start;
               gap: 0.5rem;
             }
+            }
 
-            .stats-section-title {
-              font-size: 1.25rem;
+          @media (max-width: 480px) {
+            .activity-cards-grid {
+              grid-template-columns: 1fr;
             }
           }
         `}</style>
 
         <div className="staff-dashboard">
-          {/* Section Statistik Performa */}
-          <div className="stats-section">
-            <h3 className="stats-section-title">
-              <TrendingUp size={28} />
-              Statistik Performa Follow Up & Kinerja
-            </h3>
-
-            <div className="stat-groups-container">
-              {statGroups.map((group, groupIndex) => (
-                <div key={groupIndex} className="stat-group">
-                  <div className="stat-group-header">
-                    <div className="stat-group-icon">{group.icon}</div>
-                    <div>
-                      <h4 className="stat-group-title">{group.title}</h4>
-                      <p className="stat-group-description">{group.description}</p>
+          {/* Time Context */}
+          <div className="time-context">
+            <div className="time-context-item">
+              <Calendar size={16} />
+              <span>{formatDate(currentTime)}</span>
+            </div>
+            <div className="time-context-item">
+              <Clock size={16} />
+              <span>{formatTime(currentTime)}</span>
                     </div>
                   </div>
                   
-                  <div className="stat-group-cards">
-                    {group.cards.map((stat, cardIndex) => (
-                      <div
-                        key={cardIndex}
-                        className="stat-card"
+          {/* Activity Summary */}
+          <div className="activity-summary">
+            <h2 className="activity-summary-title">Ringkasan Aktivitas</h2>
+            <div className="activity-cards-grid">
+              {activityCards.map((card, index) => (
+                <div key={index} className="activity-card">
+                  <div className="activity-card-header">
+                    <div
+                      className="activity-card-icon"
                         style={{
-                          "--card-accent-color": stat.color,
-                        }}
-                      >
-                        <div className="stat-card-header">
-                          <div
-                            className="stat-icon"
-                            style={{
-                              backgroundColor: stat.bgColor,
-                              color: stat.color,
-                            }}
-                          >
-                            {stat.icon}
+                        backgroundColor: card.bgColor,
+                        color: card.color,
+                      }}
+                    >
+                      {card.icon}
                       </div>
-                          <div className="stat-card-content">
-                            <div className="stat-label">{stat.label}</div>
-                            <div className="stat-value">{stat.value}</div>
-                      </div>
+                    <div className="activity-card-content">
+                      <div className="activity-card-label">{card.label}</div>
+                      <div className="activity-card-value">{card.value}</div>
                     </div>
-                      </div>
-                    ))}
                   </div>
                 </div>
                 ))}
               </div>
           </div>
+
+          {/* Progress Section */}
+          {(stats.monthlyTarget > 0 || stats.closingTarget > 0) && (
+            <div className="progress-section">
+              <h2 className="progress-section-title">
+                <Target size={20} />
+                Progress Target
+              </h2>
+              
+              {stats.monthlyTarget > 0 && (
+                <div className="progress-item">
+                  <div className="progress-item-header">
+                    <span className="progress-item-label">Target Bulanan</span>
+                    <span className="progress-item-value">
+                      {stats.monthlyProgress.toLocaleString("id-ID")} / {stats.monthlyTarget.toLocaleString("id-ID")}
+                    </span>
+                  </div>
+                  <div className="progress-bar-container">
+                    <div
+                      className={`progress-bar-fill ${
+                        monthlyProgressPercent >= 100
+                          ? "success"
+                          : monthlyProgressPercent >= 75
+                          ? "warning"
+                          : ""
+                      }`}
+                      style={{ width: `${monthlyProgressPercent}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {stats.closingTarget > 0 && (
+                <div className="progress-item">
+                  <div className="progress-item-header">
+                    <span className="progress-item-label">Target Closing</span>
+                    <span className="progress-item-value">
+                      {stats.closingProgress.toLocaleString("id-ID")} / {stats.closingTarget.toLocaleString("id-ID")}
+                    </span>
+                  </div>
+                  <div className="progress-bar-container">
+                    <div
+                      className={`progress-bar-fill ${
+                        closingProgressPercent >= 100
+                          ? "success"
+                          : closingProgressPercent >= 75
+                          ? "warning"
+                          : ""
+                      }`}
+                      style={{ width: `${closingProgressPercent}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </Layout>

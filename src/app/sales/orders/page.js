@@ -9,6 +9,20 @@ import "primereact/resources/themes/lara-light-cyan/theme.css";
 import "primereact/resources/primereact.min.css";
 import "@/styles/sales/orders-page.css";
 import { getOrders, updateOrderAdmin, getOrderStatistics } from "@/lib/sales/orders";
+import { api } from "@/lib/api";
+import { createPortal } from "react-dom";
+
+/**
+ * Simple debounce hook to avoid rerunning expensive computations
+ */
+function useDebouncedValue(value, delay = 500) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(id);
+  }, [value, delay]);
+  return debounced;
+}
 
 // Lazy load modals - sama seperti customers
 // CSS di-import di dalam komponen masing-masing
@@ -65,9 +79,18 @@ export default function DaftarPesanan() {
   
   // Filter state
   const [searchInput, setSearchInput] = useState("");
+  const debouncedSearch = useDebouncedValue(searchInput, 500); // Debounce 500ms
   const [dateRange, setDateRange] = useState(null); // [startDate, endDate] atau null
   const [filterPreset, setFilterPreset] = useState("all"); // all | today
   const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+  
+  // Filter modal state
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [selectedProducts, setSelectedProducts] = useState([]); // Array of product IDs
+  const [selectedStatusOrder, setSelectedStatusOrder] = useState([]); // Array of status order values
+  const [selectedStatusPembayaran, setSelectedStatusPembayaran] = useState([]); // Array of status pembayaran values
+  const [productSearch, setProductSearch] = useState("");
+  const [productResults, setProductResults] = useState([]);
   
   // State lainnya
   const [statistics, setStatistics] = useState(null);
@@ -80,6 +103,84 @@ export default function DaftarPesanan() {
   const [selectedOrderIdForHistory, setSelectedOrderIdForHistory] = useState(null);
 
   const fetchingRef = useRef(false); // Prevent multiple simultaneous fetches
+
+  // 🔹 Search produk untuk filter
+  const handleSearchProduct = useCallback(async (keyword) => {
+    if (!keyword.trim()) {
+      setProductResults([]);
+      return;
+    }
+
+    try {
+      const res = await api("/sales/produk", { method: "GET" });
+      if (res?.success && Array.isArray(res.data)) {
+        const filtered = res.data.filter((prod) =>
+          (prod.status === "1" || prod.status === 1) &&
+          prod.nama?.toLowerCase().includes(keyword.toLowerCase())
+        );
+        setProductResults(filtered);
+      } else {
+        setProductResults([]);
+      }
+    } catch (err) {
+      console.error("Error searching products:", err);
+      setProductResults([]);
+    }
+  }, []);
+
+  // Debounce product search
+  const debouncedProductSearch = useDebouncedValue(productSearch, 300);
+
+  useEffect(() => {
+    if (debouncedProductSearch.trim().length >= 2) {
+      handleSearchProduct(debouncedProductSearch);
+    } else {
+      setProductResults([]);
+    }
+  }, [debouncedProductSearch, handleSearchProduct]);
+
+  // 🔹 Handle product selection (multiple)
+  const handleToggleProduct = useCallback((productId) => {
+    setSelectedProducts((prev) => {
+      if (prev.includes(productId)) {
+        return prev.filter((id) => id !== productId);
+      } else {
+        return [...prev, productId];
+      }
+    });
+  }, []);
+
+  // 🔹 Handle status order toggle (multiple)
+  const handleToggleStatusOrder = useCallback((status) => {
+    setSelectedStatusOrder((prev) => {
+      if (prev.includes(status)) {
+        return prev.filter((s) => s !== status);
+      } else {
+        return [...prev, status];
+      }
+    });
+  }, []);
+
+  // 🔹 Handle status pembayaran toggle (multiple)
+  const handleToggleStatusPembayaran = useCallback((status) => {
+    setSelectedStatusPembayaran((prev) => {
+      if (prev.includes(status)) {
+        return prev.filter((s) => s !== status);
+      } else {
+        return [...prev, status];
+      }
+    });
+  }, []);
+
+  // 🔹 Reset all filters
+  const handleResetFilters = useCallback(() => {
+    setDateRange(null);
+    setSelectedProducts([]);
+    setSelectedStatusOrder([]);
+    setSelectedStatusPembayaran([]);
+    setProductSearch("");
+    setProductResults([]);
+  }, []);
 
   // 🔹 Load statistics
   const loadStatistics = useCallback(async () => {
@@ -121,9 +222,41 @@ export default function DaftarPesanan() {
         per_page: String(perPage),
       });
 
-      // Add search parameter
-      if (searchInput && searchInput.trim()) {
-        params.append("search", searchInput.trim());
+      // Add search parameter (gunakan debouncedSearch untuk konsistensi)
+      if (debouncedSearch && debouncedSearch.trim()) {
+        params.append("search", debouncedSearch.trim());
+      }
+
+      // Add date range filter (tanggal orderan)
+      if (dateRange && Array.isArray(dateRange) && dateRange.length === 2 && dateRange[0] && dateRange[1]) {
+        const fromDate = new Date(dateRange[0]);
+        const toDate = new Date(dateRange[1]);
+        // Set time to start and end of day
+        fromDate.setHours(0, 0, 0, 0);
+        toDate.setHours(23, 59, 59, 999);
+        params.append("tanggal_from", fromDate.toISOString().split('T')[0]);
+        params.append("tanggal_to", toDate.toISOString().split('T')[0]);
+      }
+
+      // Add status order filter (multiple)
+      if (selectedStatusOrder.length > 0) {
+        selectedStatusOrder.forEach(status => {
+          params.append("status_order", status);
+        });
+      }
+
+      // Add status pembayaran filter (multiple)
+      if (selectedStatusPembayaran.length > 0) {
+        selectedStatusPembayaran.forEach(status => {
+          params.append("status_pembayaran", status);
+        });
+      }
+
+      // Add produk filter (multiple) - jika backend support produk_id
+      if (selectedProducts.length > 0) {
+        selectedProducts.forEach(productId => {
+          params.append("produk_id", productId);
+        });
       }
 
       const res = await fetch(`/api/sales/order?${params.toString()}`, {
@@ -227,7 +360,7 @@ export default function DaftarPesanan() {
       setLoading(false);
       fetchingRef.current = false;
     }
-  }, [searchInput, perPage]);
+  }, [debouncedSearch, perPage, dateRange, selectedStatusOrder, selectedStatusPembayaran, selectedProducts]);
 
   // Load statistics on mount
   useEffect(() => {
@@ -239,17 +372,24 @@ export default function DaftarPesanan() {
     setPage(1);
     setOrders([]);
     setHasMore(true);
-    fetchOrders(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Hanya sekali saat mount
 
-  // Fetch data saat page atau search berubah
+  // Reset to page 1 when search changes (sama seperti customers)
+  useEffect(() => {
+    setPage(1);
+    setOrders([]);
+    setHasMore(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch]); // Reset when search changes
+
+  // Fetch data saat page atau debouncedSearch berubah
   useEffect(() => {
     if (page > 0) {
       fetchOrders(page);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, searchInput]); // Depend pada page dan searchInput
+  }, [page, debouncedSearch]); // Depend pada page dan debouncedSearch
 
   // 🔹 Next page
   const handleNextPage = useCallback(() => {
@@ -534,6 +674,21 @@ export default function DaftarPesanan() {
                   Hari Ini
                 </button>
               </div>
+              {/* Filter Icon Button */}
+              <button
+                type="button"
+                onClick={() => setShowFilterModal(true)}
+                className="orders-filter-btn"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.35rem",
+                  padding: "0.35rem 0.6rem",
+                }}
+                title="Filter"
+              >
+                <Filter size={16} />
+              </button>
               <div style={{ position: "relative" }}>
                 <Calendar
                   value={dateRange}
@@ -570,16 +725,22 @@ export default function DaftarPesanan() {
                   }}
                 />
               </div>
-              {dateRange && Array.isArray(dateRange) && dateRange.length === 2 && dateRange[0] && dateRange[1] && (
+              {(dateRange && Array.isArray(dateRange) && dateRange.length === 2 && dateRange[0] && dateRange[1]) ||
+               selectedProducts.length > 0 ||
+               selectedStatusOrder.length > 0 ||
+               selectedStatusPembayaran.length > 0 ? (
                 <button
-                  onClick={() => setDateRange(null)}
+                  onClick={handleResetFilters}
                   className="orders-button orders-button--secondary"
-                  style={{ whiteSpace: "nowrap" }}
+                  style={{
+                    whiteSpace: "nowrap",
+                    borderRadius: "0.5rem", // Kotak, bukan pill
+                  }}
                 >
                   <i className="pi pi-times" style={{ marginRight: "0.25rem" }} />
                   Reset
                 </button>
-              )}
+              ) : null}
             </div>
           </div>
         </section>
@@ -1096,6 +1257,200 @@ export default function DaftarPesanan() {
       `}</style>
 
       {/* Modal Payment History */}
+      {/* Filter Modal */}
+      {showFilterModal && typeof window !== "undefined" && createPortal(
+        <div className="modal-overlay" onClick={() => setShowFilterModal(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "600px", width: "90%" }}>
+            <div className="modal-header">
+              <h3>Filter Orders</h3>
+              <button
+                type="button"
+                className="modal-close"
+                onClick={() => setShowFilterModal(false)}
+              >
+                <i className="pi pi-times" />
+              </button>
+            </div>
+            <div className="modal-body" style={{ maxHeight: "70vh", overflowY: "auto" }}>
+              {/* Produk Filter */}
+              <div style={{ marginBottom: "1.5rem" }}>
+                <label className="field-label" style={{ marginBottom: "0.5rem", display: "block" }}>
+                  Produk
+                </label>
+                <div style={{ position: "relative" }}>
+                  <input
+                    type="text"
+                    placeholder="Cari produk..."
+                    value={productSearch}
+                    onChange={(e) => setProductSearch(e.target.value)}
+                    className="field-input"
+                    style={{ width: "100%", paddingRight: "2.5rem" }}
+                  />
+                  <span className="pi pi-search" style={{
+                    position: "absolute",
+                    right: "0.75rem",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "#6c757d",
+                  }} />
+                </div>
+                {productResults.length > 0 && (
+                  <div style={{
+                    marginTop: "0.5rem",
+                    border: "1px solid #e9ecef",
+                    borderRadius: "0.5rem",
+                    maxHeight: "200px",
+                    overflowY: "auto",
+                    background: "#ffffff",
+                  }}>
+                    {productResults.map((prod) => (
+                      <label
+                        key={prod.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          padding: "0.5rem 0.75rem",
+                          cursor: "pointer",
+                          borderBottom: "1px solid #f1f3f5",
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = "#f8f9fa"}
+                        onMouseLeave={(e) => e.currentTarget.style.background = "#ffffff"}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedProducts.includes(prod.id)}
+                          onChange={() => handleToggleProduct(prod.id)}
+                          style={{ marginRight: "0.5rem" }}
+                        />
+                        <span>{prod.nama}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+                {selectedProducts.length > 0 && (
+                  <div style={{ marginTop: "0.5rem", display: "flex", flexWrap: "wrap", gap: "0.25rem" }}>
+                    {selectedProducts.map((productId) => {
+                      const product = productResults.find(p => p.id === productId);
+                      return product ? (
+                        <span
+                          key={productId}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "0.25rem",
+                            padding: "0.25rem 0.5rem",
+                            background: "#fff5ed",
+                            border: "1px solid #ff6c00",
+                            borderRadius: "0.25rem",
+                            fontSize: "0.75rem",
+                            color: "#c85400",
+                          }}
+                        >
+                          {product.nama}
+                          <button
+                            type="button"
+                            onClick={() => handleToggleProduct(productId)}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              color: "#c85400",
+                              cursor: "pointer",
+                              padding: 0,
+                              margin: 0,
+                            }}
+                          >
+                            <i className="pi pi-times" style={{ fontSize: "0.7rem" }} />
+                          </button>
+                        </span>
+                      ) : null;
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Status Order Filter */}
+              <div style={{ marginBottom: "1.5rem" }}>
+                <label className="field-label" style={{ marginBottom: "0.5rem", display: "block" }}>
+                  Status Order
+                </label>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  {Object.entries(STATUS_ORDER_MAP).map(([value, { label }]) => (
+                    <label
+                      key={value}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        cursor: "pointer",
+                        padding: "0.5rem",
+                        borderRadius: "0.25rem",
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "#f8f9fa"}
+                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedStatusOrder.includes(value)}
+                        onChange={() => handleToggleStatusOrder(value)}
+                        style={{ marginRight: "0.5rem" }}
+                      />
+                      <span>{label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Status Pembayaran Filter */}
+              <div style={{ marginBottom: "1.5rem" }}>
+                <label className="field-label" style={{ marginBottom: "0.5rem", display: "block" }}>
+                  Status Pembayaran
+                </label>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  {Object.entries(STATUS_PEMBAYARAN_MAP).map(([value, { label }]) => (
+                    <label
+                      key={value}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        cursor: "pointer",
+                        padding: "0.5rem",
+                        borderRadius: "0.25rem",
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "#f8f9fa"}
+                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedStatusPembayaran.includes(String(value))}
+                        onChange={() => handleToggleStatusPembayaran(String(value))}
+                        style={{ marginRight: "0.5rem" }}
+                      />
+                      <span>{label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer" style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem", padding: "1rem" }}>
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="btn-cancel"
+              >
+                Reset
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowFilterModal(false)}
+                className="btn-save"
+              >
+                Terapkan
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       <PaymentHistoryModal
         orderId={selectedOrderIdForHistory}
         isOpen={showPaymentHistory}
@@ -1137,6 +1492,200 @@ export default function DaftarPesanan() {
             ×
           </button>
         </div>
+      )}
+
+      {/* Filter Modal */}
+      {showFilterModal && typeof window !== "undefined" && createPortal(
+        <div className="modal-overlay" onClick={() => setShowFilterModal(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "600px", width: "90%" }}>
+            <div className="modal-header">
+              <h3>Filter Orders</h3>
+              <button
+                type="button"
+                className="modal-close"
+                onClick={() => setShowFilterModal(false)}
+              >
+                <i className="pi pi-times" />
+              </button>
+            </div>
+            <div className="modal-body" style={{ maxHeight: "70vh", overflowY: "auto" }}>
+              {/* Produk Filter */}
+              <div style={{ marginBottom: "1.5rem" }}>
+                <label className="field-label" style={{ marginBottom: "0.5rem", display: "block" }}>
+                  Produk
+                </label>
+                <div style={{ position: "relative" }}>
+                  <input
+                    type="text"
+                    placeholder="Cari produk..."
+                    value={productSearch}
+                    onChange={(e) => setProductSearch(e.target.value)}
+                    className="field-input"
+                    style={{ width: "100%", paddingRight: "2.5rem" }}
+                  />
+                  <span className="pi pi-search" style={{
+                    position: "absolute",
+                    right: "0.75rem",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "#6c757d",
+                  }} />
+                </div>
+                {productResults.length > 0 && (
+                  <div style={{
+                    marginTop: "0.5rem",
+                    border: "1px solid #e9ecef",
+                    borderRadius: "0.5rem",
+                    maxHeight: "200px",
+                    overflowY: "auto",
+                    background: "#ffffff",
+                  }}>
+                    {productResults.map((prod) => (
+                      <label
+                        key={prod.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          padding: "0.5rem 0.75rem",
+                          cursor: "pointer",
+                          borderBottom: "1px solid #f1f3f5",
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = "#f8f9fa"}
+                        onMouseLeave={(e) => e.currentTarget.style.background = "#ffffff"}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedProducts.includes(prod.id)}
+                          onChange={() => handleToggleProduct(prod.id)}
+                          style={{ marginRight: "0.5rem" }}
+                        />
+                        <span>{prod.nama}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+                {selectedProducts.length > 0 && (
+                  <div style={{ marginTop: "0.5rem", display: "flex", flexWrap: "wrap", gap: "0.25rem" }}>
+                    {selectedProducts.map((productId) => {
+                      const product = productResults.find(p => p.id === productId);
+                      return product ? (
+                        <span
+                          key={productId}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "0.25rem",
+                            padding: "0.25rem 0.5rem",
+                            background: "#fff5ed",
+                            border: "1px solid #ff6c00",
+                            borderRadius: "0.25rem",
+                            fontSize: "0.75rem",
+                            color: "#c85400",
+                          }}
+                        >
+                          {product.nama}
+                          <button
+                            type="button"
+                            onClick={() => handleToggleProduct(productId)}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              color: "#c85400",
+                              cursor: "pointer",
+                              padding: 0,
+                              margin: 0,
+                            }}
+                          >
+                            <i className="pi pi-times" style={{ fontSize: "0.7rem" }} />
+                          </button>
+                        </span>
+                      ) : null;
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Status Order Filter */}
+              <div style={{ marginBottom: "1.5rem" }}>
+                <label className="field-label" style={{ marginBottom: "0.5rem", display: "block" }}>
+                  Status Order
+                </label>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  {Object.entries(STATUS_ORDER_MAP).map(([value, { label }]) => (
+                    <label
+                      key={value}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        cursor: "pointer",
+                        padding: "0.5rem",
+                        borderRadius: "0.25rem",
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "#f8f9fa"}
+                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedStatusOrder.includes(value)}
+                        onChange={() => handleToggleStatusOrder(value)}
+                        style={{ marginRight: "0.5rem" }}
+                      />
+                      <span>{label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Status Pembayaran Filter */}
+              <div style={{ marginBottom: "1.5rem" }}>
+                <label className="field-label" style={{ marginBottom: "0.5rem", display: "block" }}>
+                  Status Pembayaran
+                </label>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  {Object.entries(STATUS_PEMBAYARAN_MAP).map(([value, { label }]) => (
+                    <label
+                      key={value}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        cursor: "pointer",
+                        padding: "0.5rem",
+                        borderRadius: "0.25rem",
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "#f8f9fa"}
+                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedStatusPembayaran.includes(String(value))}
+                        onChange={() => handleToggleStatusPembayaran(String(value))}
+                        style={{ marginRight: "0.5rem" }}
+                      />
+                      <span>{label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer" style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem", padding: "1rem" }}>
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="btn-cancel"
+              >
+                Reset
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowFilterModal(false)}
+                className="btn-save"
+              >
+                Terapkan
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </Layout>
   );
