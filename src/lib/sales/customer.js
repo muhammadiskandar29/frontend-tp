@@ -38,8 +38,6 @@ export async function getCustomers(page = 1, per_page = 15, filters = {}) {
       params.append("date_to", endDate.toISOString().split('T')[0]);
     }
     
-    console.log("🔍 Filter params:", Object.fromEntries(params));
-
     const res = await fetch(`${BASE_URL}/sales/customer?${params.toString()}`, { headers });
     if (!res.ok) throw new Error("Gagal mengambil data customer");
 
@@ -50,7 +48,6 @@ export async function getCustomers(page = 1, per_page = 15, filters = {}) {
       success: result.success !== false,
     };
   } catch (err) {
-    console.error("❌ Error getCustomers:", err);
     return {
       data: [],
       pagination: null,
@@ -80,7 +77,6 @@ export async function deleteCustomer(id) {
 
     return true;
   } catch (err) {
-    console.error("❌ Error deleteCustomer:", err);
     return false;
   }
 }

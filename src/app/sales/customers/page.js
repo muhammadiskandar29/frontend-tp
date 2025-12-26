@@ -1,17 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import { getCustomers, deleteCustomer } from "@/lib/sales/customer";
-import { Users, CheckCircle, Filter } from "lucide-react";
-import { Calendar } from "primereact/calendar";
-import "primereact/resources/themes/lara-light-cyan/theme.css";
-import "primereact/resources/primereact.min.css";
+import { Users, CheckCircle, Filter, ChevronDown } from "lucide-react";
 import dynamic from "next/dynamic";
 import "@/styles/sales/dashboard-premium.css";
 import "@/styles/sales/admin.css";
 import "@/styles/sales/customers-premium.css";
+import "@/styles/sales/leads.css";
 
 // Lazy load modals
 const EditCustomerModal = dynamic(() => import("./editCustomer"), { ssr: false });
@@ -20,18 +18,6 @@ const DeleteCustomerModal = dynamic(() => import("./deleteCustomer"), { ssr: fal
 const AddCustomerModal = dynamic(() => import("./addCustomer"), { ssr: false });
 const HistoryCustomerModal = dynamic(() => import("./historyCustomer"), { ssr: false });
 const FollowupLogModal = dynamic(() => import("./followupLog"), { ssr: false });
-
-/**
- * Simple debounce hook to avoid rerunning expensive computations
- */
-function useDebouncedValue(value, delay = 250) {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const id = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(id);
-  }, [value, delay]);
-  return debounced;
-}
 
 import { toastSuccess, toastError, toastWarning } from "@/lib/toast";
 const CUSTOMERS_COLUMNS = [
@@ -55,8 +41,6 @@ export default function AdminCustomerPage() {
   const [paginationInfo, setPaginationInfo] = useState(null); // Store pagination info from backend
   const perPage = 15; // Data per halaman
   
-  const [searchInput, setSearchInput] = useState("");
-  const debouncedSearch = useDebouncedValue(searchInput);
   const [filterPreset, setFilterPreset] = useState("all"); // all | today
   const [showEdit, setShowEdit] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
@@ -65,23 +49,39 @@ export default function AdminCustomerPage() {
   const [showHistory, setShowHistory] = useState(false);
   const [showFollowupLog, setShowFollowupLog] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
-  const [showFilterModal, setShowFilterModal] = useState(false);
   
-  // Filter state
-  const [filters, setFilters] = useState({
-    verifikasi: "all", // all | verified | unverified
-    status: "all", // all | active | inactive
-    dateRange: null, // [startDate, endDate] atau null
-    jenis_kelamin: "all", // all | l | p
-  });
+  // Filter state - hanya verifikasi
+  const [verifikasiFilter, setVerifikasiFilter] = useState("all"); // all | verified | unverified
+  const [showVerifikasiDropdown, setShowVerifikasiDropdown] = useState(false);
+  
+  // Filter options
+  const VERIFIKASI_OPTIONS = [
+    { value: "all", label: "Semua Verifikasi" },
+    { value: "verified", label: "Verified" },
+    { value: "unverified", label: "Unverified" },
+  ];
+  
+  // Convert filter untuk API
+  const filters = useMemo(() => ({
+    verifikasi: verifikasiFilter,
+    status: "all",
+    dateRange: null,
+    jenis_kelamin: "all",
+  }), [verifikasiFilter]);
+  
+  // Memoize summary statistics untuk performa
+  const summaryStats = useMemo(() => {
+    const verified = customers.filter((c) => c.verifikasi === "1" || c.verifikasi === true).length;
+    const unverified = customers.filter((c) => c.verifikasi !== "1" && c.verifikasi !== true).length;
+    return { verified, unverified };
+  }, [customers]);
   
   const fetchingRef = useRef(false); // Prevent multiple simultaneous fetches
 
-  // 🔹 Fetch customers dengan fallback pagination
+  // 🔹 Fetch customers dengan fallback pagination - optimized
   const fetchCustomers = useCallback(async (pageNumber = 1) => {
     // Prevent multiple simultaneous calls using ref
     if (fetchingRef.current) {
-      console.log("⏸️ Already fetching, skipping duplicate request for page", pageNumber);
       return;
     }
 
@@ -90,13 +90,11 @@ export default function AdminCustomerPage() {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
-        console.warn("No token found");
         setLoading(false);
         fetchingRef.current = false;
         return;
       }
 
-      console.log("📤 Fetching customers - page:", pageNumber, "perPage:", perPage, "filters:", filters);
       const result = await getCustomers(pageNumber, perPage, filters);
       
       if (result.success && result.data && Array.isArray(result.data)) {
@@ -109,12 +107,6 @@ export default function AdminCustomerPage() {
           const isLastPage = result.pagination.current_page >= result.pagination.last_page;
           setHasMore(!isLastPage);
           setPaginationInfo(result.pagination);
-          console.log("📄 Pagination info:", {
-            current_page: result.pagination.current_page,
-            last_page: result.pagination.last_page,
-            total: result.pagination.total,
-            hasMore: !isLastPage
-          });
         } else {
           setPaginationInfo(null);
           // Fallback pagination: cek jumlah data untuk menentukan hasMore
@@ -126,7 +118,6 @@ export default function AdminCustomerPage() {
         }
       } else {
         // Jika response tidak sesuai format yang diharapkan
-        console.warn("⚠️ Unexpected response format:", result);
         setCustomers([]);
         setHasMore(false);
       }
@@ -134,7 +125,6 @@ export default function AdminCustomerPage() {
       setLoading(false);
       fetchingRef.current = false;
     } catch (err) {
-      console.error("Error fetching customers:", err);
       toastError("Gagal memuat data customer");
       setLoading(false);
       fetchingRef.current = false;
@@ -152,29 +142,21 @@ export default function AdminCustomerPage() {
   // Fetch data saat page atau filters berubah
   useEffect(() => {
     if (page > 0) {
-      console.log("🔄 useEffect triggered - page:", page, "filters:", filters);
       fetchCustomers(page);
-      // Tidak scroll ke atas, tetap di posisi saat ini
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, filters]); // Depend pada page dan filters
 
   // 🔹 Next page
   const handleNextPage = useCallback(() => {
-    if (loading || !hasMore) return; // Jangan load jika sedang loading atau sudah habis
-    
-    const nextPage = page + 1;
-    console.log("🔄 Next page clicked, loading page:", nextPage);
-    setPage(nextPage);
-  }, [page, hasMore, loading]);
+    if (loading || !hasMore) return;
+    setPage(prev => prev + 1);
+  }, [hasMore, loading]);
 
   // 🔹 Previous page
   const handlePrevPage = useCallback(() => {
-    if (loading || page <= 1) return; // Jangan load jika sedang loading atau sudah di page 1
-    
-    const prevPage = page - 1;
-    console.log("🔄 Previous page clicked, loading page:", prevPage);
-    setPage(prevPage);
+    if (loading || page <= 1) return;
+    setPage(prev => prev - 1);
   }, [page, loading]);
 
   // 🔹 Helpers
@@ -248,34 +230,11 @@ export default function AdminCustomerPage() {
     setShowFollowupLog(true);
   };
 
-  // 🔹 Filter handlers
-  const handleApplyFilter = () => {
-    setShowFilterModal(false);
-    // Reset to page 1 when filter changes
-    setPage(1);
-    // fetchCustomers will be triggered by useEffect when page or filters change
-  };
-
-  const handleResetFilter = () => {
-    const resetFilters = {
-      verifikasi: "all",
-      status: "all",
-      dateRange: null,
-      jenis_kelamin: "all",
-    };
-    setFilters(resetFilters);
-    setPage(1);
-    setShowFilterModal(false);
-    // fetchCustomers will be triggered by useEffect
-  };
-
-  const hasActiveFilters = () => {
-    return (
-      filters.verifikasi !== "all" ||
-      filters.status !== "all" ||
-      filters.jenis_kelamin !== "all" ||
-      (filters.dateRange && Array.isArray(filters.dateRange) && filters.dateRange.length === 2 && filters.dateRange[0] && filters.dateRange[1])
-    );
+  // 🔹 Filter handler - verifikasi filter langsung terapkan saat dipilih
+  const handleVerifikasiFilterChange = (value) => {
+    setVerifikasiFilter(value);
+    setShowVerifikasiDropdown(false);
+    setPage(1); // Reset to page 1 when filter changes
   };
 
   return (
@@ -283,17 +242,7 @@ export default function AdminCustomerPage() {
       <div className="dashboard-shell customers-shell">
         <section className="dashboard-hero customers-hero">
           <div className="customers-toolbar">
-            <div className="customers-search">
-              <input
-                type="search"
-                placeholder="Cari nama, email, atau WhatsApp"
-                className="customers-search__input"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-              />
-              <span className="customers-search__icon pi pi-search" />
-            </div>
-            <div className="customers-filters" aria-label="Filter pelanggan">
+            <div className="customers-filters" aria-label="Filter pelanggan" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <button
                 type="button"
                 className={`customers-filter-btn ${filterPreset === "all" ? "is-active" : ""}`}
@@ -309,15 +258,34 @@ export default function AdminCustomerPage() {
               >
                 Hari Ini
               </button>
-              <button
-                type="button"
-                className={`customers-filter-btn customers-filter-icon-btn ${Object.values(filters).some(v => v !== "all" && v !== null) ? "is-active" : ""}`}
-                title="Filter"
-                aria-label="Filter"
-                onClick={() => setShowFilterModal(true)}
-              >
-                <Filter size={16} />
-              </button>
+              
+              {/* Verifikasi Filter Dropdown */}
+              <div className="leads-filter-dropdown" style={{ position: "relative" }}>
+                <button
+                  type="button"
+                  className={`leads-filter-btn ${verifikasiFilter !== "all" ? "is-active" : ""}`}
+                  onClick={() => {
+                    setShowVerifikasiDropdown(!showVerifikasiDropdown);
+                  }}
+                >
+                  {VERIFIKASI_OPTIONS.find((opt) => opt.value === verifikasiFilter)?.label || "Semua Verifikasi"}
+                  <ChevronDown size={16} style={{ marginLeft: "0.5rem" }} />
+                </button>
+                {showVerifikasiDropdown && (
+                  <div className="leads-filter-dropdown-menu">
+                    {VERIFIKASI_OPTIONS.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={`leads-filter-dropdown-item ${verifikasiFilter === option.value ? "is-selected" : ""}`}
+                        onClick={() => handleVerifikasiFilterChange(option.value)}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </section>
@@ -330,7 +298,7 @@ export default function AdminCustomerPage() {
               </div>
               <div>
                 <p className="summary-card__label">Total customers</p>
-                <p className="summary-card__value">{customers.length}</p>
+                <p className="summary-card__value">{paginationInfo?.total || customers.length}</p>
               </div>
             </div>
             <div className="summary-card__divider"></div>
@@ -341,7 +309,7 @@ export default function AdminCustomerPage() {
               <div>
                 <p className="summary-card__label">Verified</p>
                 <p className="summary-card__value">
-                  {customers.filter((c) => c.verifikasi === "1" || c.verifikasi === true).length}
+                  {summaryStats.verified}
                 </p>
               </div>
             </div>
@@ -353,7 +321,7 @@ export default function AdminCustomerPage() {
               <div>
                 <p className="summary-card__label">Unverified</p>
                 <p className="summary-card__value">
-                  {customers.filter((c) => c.verifikasi !== "1" && c.verifikasi !== true).length}
+                  {summaryStats.unverified}
                 </p>
               </div>
             </div>
@@ -483,7 +451,7 @@ export default function AdminCustomerPage() {
                 ))
               ) : (
                 <p className="customers-empty">
-                  {customers.length ? "Tidak ada hasil pencarian." : "Loading data..."}
+                  Tidak ada data customer
                 </p>
               )}
               </div>
@@ -633,185 +601,19 @@ export default function AdminCustomerPage() {
           />
         )}
 
-        {/* Filter Modal */}
-        {showFilterModal && (
+        {/* Close dropdown when clicking outside */}
+        {showVerifikasiDropdown && (
           <div
-            className="modal-overlay"
-            onClick={() => setShowFilterModal(false)}
             style={{
               position: "fixed",
               top: 0,
               left: 0,
               right: 0,
               bottom: 0,
-              background: "rgba(0, 0, 0, 0.5)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: 1000,
+              zIndex: 999,
             }}
-          >
-            <div
-              className="modal-content"
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                background: "#ffffff",
-                borderRadius: "0.75rem",
-                padding: "1.5rem",
-                width: "90%",
-                maxWidth: "500px",
-                maxHeight: "90vh",
-                overflowY: "auto",
-                boxShadow: "0 10px 25px rgba(0, 0, 0, 0.2)",
-              }}
-            >
-              <div style={{ marginBottom: "1.5rem" }}>
-                <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 600, color: "var(--dash-text-dark)" }}>
-                  Filter Customer
-                </h3>
-                <p style={{ margin: "0.5rem 0 0 0", fontSize: "0.875rem", color: "var(--dash-muted)" }}>
-                  Pilih filter untuk menyaring data customer
-                </p>
-              </div>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-                {/* Verifikasi Filter */}
-                <div>
-                  <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 600, color: "var(--dash-text)" }}>
-                    Verifikasi
-                  </label>
-                  <select
-                    value={filters.verifikasi}
-                    onChange={(e) => setFilters({ ...filters, verifikasi: e.target.value })}
-                    style={{
-                      width: "100%",
-                      padding: "0.55rem 0.75rem",
-                      border: "1px solid var(--dash-border)",
-                      borderRadius: "0.5rem",
-                      fontSize: "0.875rem",
-                      background: "var(--dash-surface)",
-                      color: "var(--dash-text)",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <option value="all">Semua</option>
-                    <option value="verified">Verified</option>
-                    <option value="unverified">Unverified</option>
-                  </select>
-                </div>
-
-                {/* Status Filter */}
-                <div>
-                  <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 600, color: "var(--dash-text)" }}>
-                    Status
-                  </label>
-                  <select
-                    value={filters.status}
-                    onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                    style={{
-                      width: "100%",
-                      padding: "0.55rem 0.75rem",
-                      border: "1px solid var(--dash-border)",
-                      borderRadius: "0.5rem",
-                      fontSize: "0.875rem",
-                      background: "var(--dash-surface)",
-                      color: "var(--dash-text)",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <option value="all">Semua</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
-                </div>
-
-                {/* Jenis Kelamin Filter */}
-                <div>
-                  <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 600, color: "var(--dash-text)" }}>
-                    Jenis Kelamin
-                  </label>
-                  <select
-                    value={filters.jenis_kelamin}
-                    onChange={(e) => setFilters({ ...filters, jenis_kelamin: e.target.value })}
-                    style={{
-                      width: "100%",
-                      padding: "0.55rem 0.75rem",
-                      border: "1px solid var(--dash-border)",
-                      borderRadius: "0.5rem",
-                      fontSize: "0.875rem",
-                      background: "var(--dash-surface)",
-                      color: "var(--dash-text)",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <option value="all">Semua</option>
-                    <option value="l">Laki-laki</option>
-                    <option value="p">Perempuan</option>
-                  </select>
-                </div>
-
-                {/* Date Range Filter */}
-                <div>
-                  <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 600, color: "var(--dash-text)" }}>
-                    Tanggal Registrasi
-                  </label>
-                  <Calendar
-                    value={filters.dateRange}
-                    onChange={(e) => setFilters({ ...filters, dateRange: e.value })}
-                    selectionMode="range"
-                    readOnlyInput
-                    showIcon
-                    icon="pi pi-calendar"
-                    placeholder="Pilih rentang tanggal"
-                    dateFormat="dd M yyyy"
-                    monthNavigator
-                    yearNavigator
-                    yearRange="2020:2030"
-                    style={{
-                      width: "100%",
-                    }}
-                    inputStyle={{
-                      width: "100%",
-                      padding: "0.55rem 2.2rem 0.55rem 0.75rem",
-                      border: "1px solid var(--dash-border)",
-                      borderRadius: "0.5rem",
-                      fontSize: "0.875rem",
-                      background: "var(--dash-surface)",
-                      color: "var(--dash-text)",
-                      boxShadow: "none",
-                      cursor: "pointer",
-                    }}
-                    panelStyle={{
-                      background: "#ffffff",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: "0.5rem",
-                      boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.5rem", justifyContent: "flex-end" }}>
-                <button
-                  type="button"
-                  onClick={handleResetFilter}
-                  className="customers-button customers-button--secondary"
-                  style={{ whiteSpace: "nowrap" }}
-                >
-                  Reset
-                </button>
-                <button
-                  type="button"
-                  onClick={handleApplyFilter}
-                  className="customers-button customers-button--primary"
-                  style={{ whiteSpace: "nowrap" }}
-                >
-                  Terapkan Filter
-                </button>
-              </div>
-            </div>
-          </div>
+            onClick={() => setShowVerifikasiDropdown(false)}
+          />
         )}
 
       </div>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import "@/styles/sales/customer.css";
+import { toastSuccess, toastError } from "@/lib/toast";
 
 // Use Next.js proxy to avoid CORS
 const BASE_URL = "/api";
@@ -22,12 +23,6 @@ export default function AddCustomerModal({ onClose, onSuccess }) {
   });
 
   const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
-
-  const showToast = (message, type = "success") => {
-    setToast({ show: true, message, type });
-    setTimeout(() => setToast({ show: false, message: "", type }), 2500);
-  };
 
   const validatePhone = (phone) => {
     const digitsOnly = phone.replace(/\D/g, "");
@@ -63,7 +58,7 @@ export default function AddCustomerModal({ onClose, onSuccess }) {
     e.preventDefault();
 
     if (!validatePhone(formData.wa)) {
-      showToast("Nomor WA minimal 10 angka!", "error");
+      toastError("Nomor WA minimal 10 angka!");
       return;
     }
 
@@ -83,14 +78,13 @@ export default function AddCustomerModal({ onClose, onSuccess }) {
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.message || "Gagal menambahkan customer");
 
-      showToast("" + data.message);
+      toastSuccess(data.message || "Customer berhasil ditambahkan");
       setTimeout(() => {
         onSuccess(data.message || "Customer berhasil ditambahkan");
         onClose();
       }, 1000);
     } catch (err) {
-      console.error(err);
-      showToast("Gagal menambahkan customer: " + err.message, "error");
+      toastError("Gagal menambahkan customer: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -214,16 +208,6 @@ export default function AddCustomerModal({ onClose, onSuccess }) {
           </button>
         </div>
 
-        {/* TOAST */}
-        {toast.show && (
-          <div
-            className={`toast ${toast.type === "error" ? "toast-error" : ""} ${
-              toast.type === "warning" ? "toast-warning" : ""
-            }`}
-          >
-            {toast.message}
-          </div>
-        )}
       </div>
     </div>
   );

@@ -554,6 +554,9 @@ export default function DaftarPesanan() {
                   type="button"
                   className={`orders-filter-btn ${filterPreset === "all" ? "is-active" : ""}`}
                   onClick={() => setFilterPreset("all")}
+                  style={{
+                    color: filterPreset === "all" ? "#c85400" : undefined,
+                  }}
                 >
                   Semua
                 </button>
@@ -561,6 +564,9 @@ export default function DaftarPesanan() {
                   type="button"
                   className={`orders-filter-btn ${filterPreset === "today" ? "is-active" : ""}`}
                   onClick={() => setFilterPreset("today")}
+                  style={{
+                    color: filterPreset === "today" ? "#c85400" : undefined,
+                  }}
                 >
                   Hari Ini
                 </button>
@@ -570,8 +576,11 @@ export default function DaftarPesanan() {
                   title="Filter"
                   aria-label="Filter"
                   onClick={() => {}}
+                  style={{
+                    color: "#c85400",
+                  }}
                 >
-                  <Filter size={16} />
+                  <Filter size={16} color="#c85400" />
                 </button>
               </div>
               <div style={{ position: "relative" }}>
@@ -686,7 +695,29 @@ export default function DaftarPesanan() {
             </div>
             <div className="customers-toolbar-buttons">
 
-            <button className="customers-button customers-button--primary" onClick={() => setShowAdd(true)}>
+            <button 
+              className="customers-button customers-button--primary" 
+              onClick={() => setShowAdd(true)}
+              style={{
+                background: "#f1a124",
+                color: "#fff",
+                border: "none",
+                outline: "none",
+              }}
+              onMouseDown={(e) => {
+                e.currentTarget.style.background = "#c85400";
+              }}
+              onMouseUp={(e) => {
+                e.currentTarget.style.background = "#f1a124";
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.outline = "2px solid rgba(255, 108, 0, 0.3)";
+                e.currentTarget.style.outlineOffset = "2px";
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.outline = "none";
+              }}
+            >
                 + Tambah Pesanan
               </button>
               </div>

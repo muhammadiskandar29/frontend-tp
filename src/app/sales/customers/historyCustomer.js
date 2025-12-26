@@ -92,7 +92,6 @@ export default function HistoryCustomerModal({ customer, onClose }) {
 
       setOrders(Array.isArray(data.data) ? data.data : []);
     } catch (err) {
-      console.error("❌ [CUSTOMER HISTORY] fetch error:", err);
       setError(err.message || "Terjadi kesalahan saat memuat data");
       setOrders([]);
     } finally {

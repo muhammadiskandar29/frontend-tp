@@ -114,13 +114,16 @@ ADMIN USERS PAGE (Scoped Styles)
 }
 
 .customers-button--primary {
-  background: var(--primary);
-  color: #fff;
-  box-shadow: none;
+  background: var(--primary) !important;
+  color: #fff !important;
+  box-shadow: none !important;
+  border: none !important;
+  outline: none !important;
 }
 
 .customers-button--primary:hover {
-  background: #c85400;
+  background: #c85400 !important;
+  color: #fff !important;
 }
 
 .customers-button--primary:active,
@@ -129,8 +132,9 @@ ADMIN USERS PAGE (Scoped Styles)
   background: #c85400 !important;
   color: #fff !important;
   outline: 2px solid rgba(255, 108, 0, 0.3) !important;
-  outline-offset: 2px;
+  outline-offset: 2px !important;
   border-color: transparent !important;
+  box-shadow: 0 0 0 2px rgba(255, 108, 0, 0.2) !important;
 }
 
 .customers-button--primary:visited {
@@ -275,9 +279,9 @@ ADMIN USERS PAGE (Scoped Styles)
 }
 
 .orders-filter-btn:hover {
-  background: rgba(255, 108, 0, 0.06);
-  border-color: rgba(255, 108, 0, 0.3);
-  color: var(--primary);
+  background: rgba(255, 108, 0, 0.06) !important;
+  border-color: rgba(255, 108, 0, 0.3) !important;
+  color: #c85400 !important;
 }
 
 .orders-filter-btn:active,
@@ -285,20 +289,21 @@ ADMIN USERS PAGE (Scoped Styles)
 .orders-filter-btn:focus-visible {
   background: rgba(255, 108, 0, 0.08) !important;
   border-color: rgba(255, 108, 0, 0.5) !important;
-  color: var(--primary) !important;
+  color: #c85400 !important;
   outline: 2px solid rgba(255, 108, 0, 0.2) !important;
-  outline-offset: 2px;
+  outline-offset: 2px !important;
 }
 
 .orders-filter-btn.is-active {
-  border-color: rgba(255, 108, 0, 0.5);
-  color: var(--primary);
-  background: rgba(255, 108, 0, 0.08);
+  border-color: rgba(255, 108, 0, 0.5) !important;
+  color: #c85400 !important;
+  background: rgba(255, 108, 0, 0.08) !important;
 }
 
 .orders-filter-btn.is-active:hover {
-  background: rgba(255, 108, 0, 0.12);
-  border-color: rgba(255, 108, 0, 0.6);
+  background: rgba(255, 108, 0, 0.12) !important;
+  border-color: rgba(255, 108, 0, 0.6) !important;
+  color: #c85400 !important;
 }
 
 .orders-filter-btn.is-active:active,
@@ -306,7 +311,7 @@ ADMIN USERS PAGE (Scoped Styles)
 .orders-filter-btn.is-active:focus-visible {
   background: rgba(255, 108, 0, 0.15) !important;
   border-color: rgba(255, 108, 0, 0.7) !important;
-  color: var(--primary) !important;
+  color: #c85400 !important;
   outline: 2px solid rgba(255, 108, 0, 0.3) !important;
 }
 
@@ -315,12 +320,30 @@ ADMIN USERS PAGE (Scoped Styles)
   height: 32px;
   padding: 0;
   justify-content: center;
-  color: var(--primary);
-  border-color: rgba(255, 108, 0, 0.35);
+  color: #c85400 !important;
+  border-color: rgba(255, 108, 0, 0.35) !important;
+  outline: none !important;
+}
+
+.orders-filter-icon-btn:hover {
+  color: #c85400 !important;
+  border-color: rgba(255, 108, 0, 0.5) !important;
+  background: rgba(255, 108, 0, 0.06) !important;
+}
+
+.orders-filter-icon-btn:active,
+.orders-filter-icon-btn:focus,
+.orders-filter-icon-btn:focus-visible {
+  color: #c85400 !important;
+  border-color: rgba(255, 108, 0, 0.6) !important;
+  background: rgba(255, 108, 0, 0.08) !important;
+  outline: 2px solid rgba(255, 108, 0, 0.3) !important;
+  outline-offset: 2px;
 }
 
 .orders-filter-icon-btn svg {
-  color: currentColor;
+  color: #c85400 !important;
+  stroke: #c85400 !important;
 }
 
 /* Remove any browser default blue outline/ring for orders buttons */
@@ -781,9 +804,20 @@ ADMIN USERS PAGE (Scoped Styles)
   transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease, border 0.2s ease;
   gap: 0.2rem;
   min-height: 28px;
-  background: #f0f9ff;
-  color: #0369a1;
-  border-color: #bae6fd;
+  background: rgba(255, 108, 0, 0.1);
+  color: #c85400;
+  border-color: rgba(255, 108, 0, 0.3);
+  outline: none !important;
+}
+
+.customers-action-btn:active,
+.customers-action-btn:focus,
+.customers-action-btn:focus-visible {
+  background: rgba(255, 108, 0, 0.2) !important;
+  border-color: rgba(255, 108, 0, 0.5) !important;
+  color: #c85400 !important;
+  outline: 2px solid rgba(255, 108, 0, 0.3) !important;
+  outline-offset: 2px;
 }
 
 .customers-action-btn:hover {
@@ -1021,6 +1055,35 @@ ADMIN USERS PAGE (Scoped Styles)
   gap: 2rem;
 }
 
+/* Global override untuk menghilangkan semua warna biru di orders page */
+.orders-shell * {
+  /* Remove any blue link colors */
+  --p-primary-color: #ff6c00 !important;
+  --p-primary-color-text: #ffffff !important;
+  --p-focus-ring: 0 0 0 0.2rem rgba(255, 108, 0, 0.2) !important;
+}
+
+/* Force remove blue from all buttons */
+.orders-shell button,
+.orders-shell .customers-button,
+.orders-shell .orders-button,
+.orders-shell .orders-filter-btn {
+  /* Remove browser default blue */
+  -webkit-tap-highlight-color: rgba(255, 108, 0, 0.2) !important;
+}
+
+/* Remove blue from all active/focus states */
+.orders-shell button:not(:disabled):active,
+.orders-shell button:not(:disabled):focus,
+.orders-shell .customers-button:not(:disabled):active,
+.orders-shell .customers-button:not(:disabled):focus,
+.orders-shell .orders-button:not(:disabled):active,
+.orders-shell .orders-button:not(:disabled):focus {
+  color: #c85400 !important;
+  border-color: rgba(255, 108, 0, 0.5) !important;
+  background-color: rgba(255, 108, 0, 0.1) !important;
+}
+
 /* Remove all blue colors from clickable elements in orders page */
 .orders-shell button:focus,
 .orders-shell button:active,
@@ -1030,11 +1093,36 @@ ADMIN USERS PAGE (Scoped Styles)
 .orders-shell .customers-button:focus-visible,
 .orders-shell .orders-button:focus,
 .orders-shell .orders-button:active,
-.orders-shell .orders-button:focus-visible {
+.orders-shell .orders-button:focus-visible,
+.orders-shell .orders-filter-btn:focus,
+.orders-shell .orders-filter-btn:active,
+.orders-shell .orders-filter-btn:focus-visible,
+.orders-shell .orders-filter-btn.is-active,
+.orders-shell .orders-filter-icon-btn:focus,
+.orders-shell .orders-filter-icon-btn:active,
+.orders-shell .orders-filter-icon-btn:focus-visible {
   outline-color: rgba(255, 108, 0, 0.3) !important;
   outline-style: solid !important;
   outline-width: 2px !important;
   outline-offset: 2px !important;
+  color: #c85400 !important;
+  border-color: rgba(255, 108, 0, 0.5) !important;
+}
+
+/* Force orange color for all text and icons in active filter buttons */
+.orders-shell .orders-filter-btn.is-active,
+.orders-shell .orders-filter-btn.is-active *,
+.orders-shell .orders-filter-icon-btn,
+.orders-shell .orders-filter-icon-btn * {
+  color: #c85400 !important;
+}
+
+/* Remove any blue from SVG icons */
+.orders-shell .orders-filter-icon-btn svg,
+.orders-shell .orders-filter-icon-btn svg * {
+  stroke: #c85400 !important;
+  fill: #c85400 !important;
+  color: #c85400 !important;
 }
 
 /* Remove blue from PrimeReact Calendar focus */
@@ -1050,6 +1138,36 @@ ADMIN USERS PAGE (Scoped Styles)
 .orders-shell .p-calendar .p-datepicker-trigger:focus,
 .orders-shell .p-calendar .p-datepicker-trigger:active,
 .orders-shell .p-calendar .p-datepicker-trigger:focus-visible {
+  outline: 2px solid rgba(255, 108, 0, 0.3) !important;
+  outline-offset: 2px !important;
+  color: #c85400 !important;
+  background: rgba(255, 108, 0, 0.1) !important;
+  border-color: rgba(255, 108, 0, 0.3) !important;
+}
+
+/* Override all PrimeReact blue colors to orange */
+.orders-shell .p-calendar .p-datepicker-trigger {
+  color: #c85400 !important;
+  background: rgba(255, 108, 0, 0.1) !important;
+  border-color: rgba(255, 108, 0, 0.3) !important;
+}
+
+.orders-shell .p-calendar .p-datepicker-trigger:hover {
+  color: #c85400 !important;
+  background: rgba(255, 108, 0, 0.15) !important;
+  border-color: rgba(255, 108, 0, 0.4) !important;
+}
+
+/* Override PrimeReact datepicker colors */
+.orders-shell .p-datepicker .p-datepicker-header,
+.orders-shell .p-datepicker .p-datepicker-calendar th,
+.orders-shell .p-datepicker .p-datepicker-calendar td > span.p-highlight {
+  background: rgba(255, 108, 0, 0.1) !important;
+  color: #c85400 !important;
+  border-color: rgba(255, 108, 0, 0.3) !important;
+}
+
+.orders-shell .p-datepicker .p-datepicker-calendar td > span:focus {
   outline: 2px solid rgba(255, 108, 0, 0.3) !important;
   outline-offset: 2px !important;
 }
@@ -1339,8 +1457,8 @@ ADMIN USERS PAGE (Scoped Styles)
 
 /* Status Pembayaran Badge Styles */
 .orders-status-badge--pending {
-  background-color: #dbeafe;
-  color: #1e40af;
+  background-color: rgba(255, 108, 0, 0.15);
+  color: #c85400;
 }
 
 .orders-status-badge--rejected {
