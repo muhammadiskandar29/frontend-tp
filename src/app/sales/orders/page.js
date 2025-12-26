@@ -7,8 +7,7 @@ import { ShoppingCart, Clock, CheckCircle, PartyPopper, XCircle, Filter } from "
 import { Calendar } from "primereact/calendar";
 import "primereact/resources/themes/lara-light-cyan/theme.css";
 import "primereact/resources/primereact.min.css";
-import "@/styles/sales/dashboard.css";
-import "@/styles/sales/admin.css";
+import "@/styles/sales/orders-page.css";
 import { getOrders, updateOrderAdmin, getOrderStatistics } from "@/lib/sales/orders";
 
 // Lazy load modals - sama seperti customers

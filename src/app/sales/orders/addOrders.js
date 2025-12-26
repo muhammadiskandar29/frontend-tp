@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import useOrders from "@/hooks/sales/useOrders";
 import { api } from "@/lib/api"; // supaya handleSearchCustomer & handleSearchProduct ikut pakai api()
+import "@/styles/sales/orders.css";
 import "@/styles/sales/pesanan.css";
 
 export default function AddOrders({ onClose, onAdd }) {
