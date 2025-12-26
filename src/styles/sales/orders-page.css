@@ -1,49 +1,46 @@
 /* ===========================
-ORDERS PAGE STYLES
-Isolated from admin.css and dashboard.css to prevent CSS preload warnings
+ORDERS PAGE STYLES - FULLY ISOLATED
+Completely independent from other pages to ensure consistent rendering
 =========================== */
-
-/* Root variables */
-:root {
-  --dash-bg: #f8f9fa;
-  --dash-surface: #ffffff;
-  --dash-border: #e9ecef;
-  --dash-text: #212529;
-  --dash-muted: #6c757d;
-  --dash-muted-strong: #495057;
-  --dash-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --dash-radius: 0.75rem;
-  --dash-radius-sm: 0.5rem;
-  --accent-orange: #ff6c00;
-  --accent-orange-dark: #c85400;
-  --primary: #F1A124;
-  --primary-hover: #df9620;
-}
 
 /* ===========================
-DASHBOARD SHELL & HERO
+ORDERS SHELL - Root Container with Scoped Variables
+Completely isolated from global CSS to ensure consistent rendering
 =========================== */
 
-.dashboard-shell {
+.orders-shell {
+  /* Define all variables locally to prevent dependency on global CSS */
+  --orders-bg: #f8f9fa;
+  --orders-surface: #ffffff;
+  --orders-border: #e9ecef;
+  --orders-text: #212529;
+  --orders-muted: #6c757d;
+  --orders-muted-strong: #495057;
+  --orders-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --orders-radius: 0.75rem;
+  --orders-radius-sm: 0.5rem;
+  --orders-accent-orange: #ff6c00;
+  --orders-accent-orange-dark: #c85400;
+  --orders-primary: #F1A124;
+  --orders-primary-hover: #df9620;
+  --orders-white: #ffffff;
+  
+  /* Layout */
   display: flex;
   flex-direction: column;
-  gap: 1.75rem;
-}
-
-.orders-shell {
   gap: 2rem;
   position: relative;
   isolation: isolate;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-.dashboard-hero {
+.orders-shell .orders-hero {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
-}
-
-.orders-hero {
-  /* Specific styles for orders hero if needed */
 }
 
 /* ===========================
@@ -66,24 +63,24 @@ ORDERS TOOLBAR & SEARCH
 
 .orders-search__input {
   width: 100%;
-  border: 1px solid var(--dash-border);
+  border: 1px solid var(--orders-border);
   border-radius: 0.5rem;
-  background: var(--dash-surface);
-  color: var(--dash-text);
+  background: var(--orders-surface);
+  color: var(--orders-text);
   padding: 0.55rem 2.2rem 0.55rem 0.75rem;
   font-size: 0.85rem;
   transition: border 0.2s ease, background 0.2s ease;
 }
 
 .orders-search__input::placeholder {
-  color: var(--dash-muted);
+  color: var(--orders-muted);
 }
 
 .orders-search__input:focus {
   outline: none;
-  border-color: var(--primary);
+  border-color: var(--orders-primary);
   box-shadow: none;
-  background: #fff;
+  background: var(--orders-white);
 }
 
 .orders-search__icon {
@@ -91,7 +88,7 @@ ORDERS TOOLBAR & SEARCH
   right: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--dash-muted);
+  color: var(--orders-muted);
   font-size: 0.9rem;
 }
 
@@ -113,9 +110,9 @@ ORDERS FILTERS
 }
 
 .orders-filter-btn {
-  border: 1px solid var(--dash-border);
-  background: var(--white);
-  color: var(--dash-text);
+  border: 1px solid var(--orders-border);
+  background: var(--orders-white);
+  color: var(--orders-text);
   border-radius: 0.5rem;
   padding: 0.35rem 0.6rem;
   font-size: 0.8rem;
@@ -213,8 +210,8 @@ ORDERS BUTTONS
 }
 
 .orders-button--secondary {
-  background: var(--white);
-  color: var(--primary);
+  background: var(--orders-white);
+  color: var(--orders-primary);
   border: 1px solid rgba(255, 108, 0, 0.35);
   box-shadow: none;
   outline: none !important;
@@ -230,7 +227,7 @@ ORDERS BUTTONS
 .orders-button--secondary:focus-visible {
   background: rgba(255, 108, 0, 0.08) !important;
   border-color: rgba(255, 108, 0, 0.65) !important;
-  color: var(--primary) !important;
+  color: var(--orders-primary) !important;
   outline: 2px solid rgba(255, 108, 0, 0.2) !important;
   outline-offset: 2px;
 }
@@ -264,22 +261,22 @@ CUSTOMERS BUTTONS (used in orders page)
   outline-offset: 2px;
 }
 
-.customers-button--primary {
-  background: var(--primary) !important;
+.orders-shell .customers-button--primary {
+  background: var(--orders-primary) !important;
   color: #fff !important;
   box-shadow: none !important;
   border: none !important;
   outline: none !important;
 }
 
-.customers-button--primary:hover {
+.orders-shell .customers-button--primary:hover {
   background: #c85400 !important;
   color: #fff !important;
 }
 
-.customers-button--primary:active,
-.customers-button--primary:focus,
-.customers-button--primary:focus-visible {
+.orders-shell .customers-button--primary:active,
+.orders-shell .customers-button--primary:focus,
+.orders-shell .customers-button--primary:focus-visible {
   background: #c85400 !important;
   color: #fff !important;
   outline: 2px solid rgba(255, 108, 0, 0.3) !important;
@@ -288,8 +285,8 @@ CUSTOMERS BUTTONS (used in orders page)
   box-shadow: 0 0 0 2px rgba(255, 108, 0, 0.2) !important;
 }
 
-.customers-button--primary:visited {
-  background: var(--primary) !important;
+.orders-shell .customers-button--primary:visited {
+  background: var(--orders-primary) !important;
   color: #fff !important;
 }
 
@@ -297,20 +294,14 @@ CUSTOMERS BUTTONS (used in orders page)
 DASHBOARD SUMMARY & SUMMARY CARD
 =========================== */
 
-.dashboard-summary {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
-}
-
-.dashboard-summary.orders-summary {
+.orders-shell .orders-summary {
   display: block !important;
   grid-template-columns: 1fr !important;
   width: 100%;
   max-width: 100%;
 }
 
-.dashboard-summary.orders-summary .summary-card--combined {
+.orders-shell .orders-summary .summary-card--combined {
   width: 100%;
   max-width: 100%;
   display: grid;
@@ -320,7 +311,7 @@ DASHBOARD SUMMARY & SUMMARY CARD
   padding: 1.5rem;
 }
 
-.dashboard-summary.orders-summary .summary-card__column {
+.orders-shell .orders-summary .summary-card__column {
   display: flex;
   align-items: flex-start;
   gap: 1rem;
@@ -328,8 +319,8 @@ DASHBOARD SUMMARY & SUMMARY CARD
   width: 100%;
 }
 
-.dashboard-summary.orders-summary .summary-card__icon,
-.dashboard-summary.orders-summary .summary-card__icon.accent-orange {
+.orders-shell .orders-summary .summary-card__icon,
+.orders-shell .orders-summary .summary-card__icon.accent-orange {
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 0.75rem;
@@ -342,20 +333,20 @@ DASHBOARD SUMMARY & SUMMARY CARD
   box-shadow: 0 4px 14px 0 rgba(251, 133, 0, 0.25);
 }
 
-.dashboard-summary.orders-summary .summary-card__icon svg {
+.orders-shell .orders-summary .summary-card__icon svg {
   width: 20px;
   height: 20px;
   color: #ffffff;
 }
 
-.dashboard-summary.orders-summary .summary-card__column > div:not(.summary-card__icon) {
+.orders-shell .orders-summary .summary-card__column > div:not(.summary-card__icon) {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
   flex: 1;
 }
 
-.dashboard-summary.orders-summary .summary-card__label {
+.orders-shell .orders-summary .summary-card__label {
   font-size: 0.75rem;
   color: #a0aec0;
   margin: 0;
@@ -365,7 +356,7 @@ DASHBOARD SUMMARY & SUMMARY CARD
   opacity: 0.7;
 }
 
-.dashboard-summary.orders-summary .summary-card__value {
+.orders-shell .orders-summary .summary-card__value {
   font-size: 2.5rem;
   font-weight: 700;
   color: #252f40;
@@ -374,7 +365,7 @@ DASHBOARD SUMMARY & SUMMARY CARD
   letter-spacing: -0.03em;
 }
 
-.dashboard-summary.orders-summary .summary-card__divider {
+.orders-shell .orders-summary .summary-card__divider {
   width: 1px;
   height: 60%;
   background: #e9ecef;
@@ -382,10 +373,10 @@ DASHBOARD SUMMARY & SUMMARY CARD
   flex-shrink: 0;
 }
 
-.summary-card {
-  background: var(--dash-surface);
-  border: 1px solid var(--dash-border);
-  border-radius: var(--dash-radius);
+.orders-shell .summary-card {
+  background: var(--orders-surface);
+  border: 1px solid var(--orders-border);
+  border-radius: var(--orders-radius);
   padding: 1rem;
   display: flex;
   gap: 0.875rem;
@@ -393,7 +384,7 @@ DASHBOARD SUMMARY & SUMMARY CARD
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.summary-card--combined {
+.orders-shell .summary-card--combined {
   display: grid;
   grid-template-columns: repeat(5, 1fr) auto repeat(4, 1fr) auto repeat(3, 1fr) auto repeat(2, 1fr) auto 1fr;
   align-items: center;
@@ -401,17 +392,17 @@ DASHBOARD SUMMARY & SUMMARY CARD
   padding: 1rem 1.5rem;
 }
 
-.summary-card__column {
+.orders-shell .summary-card__column {
   display: flex;
   align-items: center;
   gap: 0.85rem;
   justify-content: flex-start;
 }
 
-.summary-card__divider {
+.orders-shell .summary-card__divider {
   width: 1px;
   height: 60%;
-  background: var(--dash-border);
+  background: var(--orders-border);
   flex-shrink: 0;
 }
 
@@ -419,10 +410,10 @@ DASHBOARD SUMMARY & SUMMARY CARD
 PANEL STYLES
 =========================== */
 
-.panel {
-  background: var(--dash-surface);
-  border: 1px solid var(--dash-border);
-  border-radius: var(--dash-radius);
+.orders-shell .panel {
+  background: var(--orders-surface);
+  border: 1px solid var(--orders-border);
+  border-radius: var(--orders-radius);
   padding: 1.75rem;
   display: flex;
   flex-direction: column;
@@ -430,11 +421,11 @@ PANEL STYLES
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.orders-panel {
+.orders-shell .orders-panel {
   overflow: hidden;
 }
 
-.panel__header {
+.orders-shell .panel__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -442,17 +433,17 @@ PANEL STYLES
   gap: 0.75rem;
 }
 
-.panel__eyebrow {
+.orders-shell .panel__eyebrow {
   font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: var(--dash-muted);
+  color: var(--orders-muted);
 }
 
-.panel__title {
+.orders-shell .panel__title {
   font-size: 0.95rem;
   font-weight: 600;
-  color: var(--dash-text);
+  color: var(--orders-text);
 }
 
 /* ===========================
@@ -470,7 +461,7 @@ ORDERS TABLE
 }
 
 .orders-table__wrapper::-webkit-scrollbar-thumb {
-  background: var(--dash-border);
+  background: var(--orders-border);
   border-radius: 999px;
 }
 
@@ -508,7 +499,7 @@ ORDERS TABLE
 
 .orders-table__head {
   padding: 0.6rem 0.75rem;
-  color: var(--dash-muted);
+  color: var(--orders-muted);
   font-size: 0.7rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -521,11 +512,11 @@ ORDERS TABLE
 }
 
 .orders-table__row {
-  background: var(--dash-surface);
-  border: 1px solid var(--dash-border);
+  background: var(--orders-surface);
+  border: 1px solid var(--orders-border);
   border-radius: 1rem;
   padding: 0.5rem 0.65rem;
-  box-shadow: var(--dash-shadow);
+  box-shadow: var(--orders-shadow);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -536,7 +527,7 @@ ORDERS TABLE
 
 .orders-table__cell {
   font-size: 0.8rem;
-  color: var(--dash-text);
+  color: var(--orders-text);
   min-width: 0;
   word-break: break-word;
   white-space: normal;
@@ -547,7 +538,7 @@ ORDERS TABLE
 
 .orders-table__cell--strong {
   font-weight: 600;
-  color: var(--dash-text);
+  color: var(--orders-text);
 }
 
 .orders-table__cell--actions {
@@ -570,12 +561,12 @@ PAYMENT DETAILS
 .payment-main {
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--dash-text);
+  color: var(--orders-text);
 }
 
 .payment-main strong {
   font-size: 0.9rem;
-  color: var(--dash-text);
+  color: var(--orders-text);
 }
 
 .payment-breakdown {
@@ -584,7 +575,7 @@ PAYMENT DETAILS
   gap: 0.25rem;
   margin-top: 0.25rem;
   padding-top: 0.5rem;
-  border-top: 1px solid var(--dash-border);
+  border-top: 1px solid var(--orders-border);
   font-size: 0.75rem;
 }
 
@@ -596,24 +587,24 @@ PAYMENT DETAILS
 }
 
 .payment-label {
-  color: var(--dash-muted);
+  color: var(--orders-muted);
   font-weight: 500;
 }
 
 .payment-label.payment-clickable {
   cursor: pointer;
   text-decoration: underline;
-  color: var(--accent-orange);
+  color: var(--orders-accent-orange);
   transition: color 0.2s;
 }
 
 .payment-label.payment-clickable:hover {
-  color: var(--accent-orange-dark);
+  color: var(--orders-accent-orange-dark);
 }
 
 .payment-value {
   font-weight: 600;
-  color: var(--dash-text);
+  color: var(--orders-text);
 }
 
 .payment-value.paid {
@@ -780,9 +771,9 @@ ORDERS EMPTY STATE
 
 .orders-empty {
   text-align: center;
-  color: var(--dash-muted-strong);
+  color: var(--orders-muted-strong);
   padding: 1.5rem;
-  border: 1px dashed var(--dash-border);
+  border: 1px dashed var(--orders-border);
   border-radius: 1rem;
   margin: 1rem 0;
 }
@@ -798,13 +789,13 @@ ORDERS PAGINATION
   gap: 0.75rem;
   padding: 0.75rem;
   margin-top: 0.75rem;
-  border-top: 1px solid var(--dash-border);
+  border-top: 1px solid var(--orders-border);
 }
 
 .orders-pagination__btn {
-  border: 1px solid var(--dash-border);
-  background: var(--dash-surface);
-  color: var(--dash-text);
+  border: 1px solid var(--orders-border);
+  background: var(--orders-surface);
+  color: var(--orders-text);
   border-radius: 0.5rem;
   padding: 0.4rem 0.7rem;
   font-size: 0.8rem;
@@ -816,7 +807,7 @@ ORDERS PAGINATION
 }
 
 .orders-pagination__btn:hover:not(:disabled) {
-  background: var(--dash-border);
+  background: var(--orders-border);
   transform: translateY(-1px);
 }
 
@@ -827,7 +818,7 @@ ORDERS PAGINATION
 
 .orders-pagination__info {
   font-size: 0.8rem;
-  color: var(--dash-muted-strong);
+  color: var(--orders-muted-strong);
   font-weight: 500;
 }
 
@@ -836,28 +827,24 @@ RESPONSIVE STYLES
 =========================== */
 
 @media (max-width: 1200px) {
-  .dashboard-summary.orders-summary .summary-card--combined {
+  .orders-shell .orders-summary .summary-card--combined {
     grid-template-columns: repeat(3, 1fr);
     gap: 1.25rem;
   }
   
-  .dashboard-summary.orders-summary .summary-card__divider {
+  .orders-shell .orders-summary .summary-card__divider {
     display: none;
   }
 }
 
 @media (max-width: 768px) {
-  .dashboard-summary {
-    grid-template-columns: 1fr;
-  }
-
-  .dashboard-summary.orders-summary .summary-card--combined {
+  .orders-shell .orders-summary .summary-card--combined {
     grid-template-columns: 1fr;
     gap: 1rem;
     padding: 1rem 1.25rem;
   }
   
-  .dashboard-summary.orders-summary .summary-card__divider {
+  .orders-shell .orders-summary .summary-card__divider {
     display: none;
   }
 
@@ -876,7 +863,7 @@ RESPONSIVE STYLES
   .orders-table__cell::before {
     content: attr(data-label);
     font-weight: 600;
-    color: var(--dash-muted);
+    color: var(--orders-muted);
     margin-right: 0.5rem;
   }
 

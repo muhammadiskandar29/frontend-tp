@@ -498,8 +498,8 @@ export default function DaftarPesanan() {
 
   return (
     <Layout title="Manage Orders">
-      <div className="dashboard-shell orders-shell">
-        <section className="dashboard-hero orders-hero">
+      <div className="orders-shell">
+        <section className="orders-hero">
           <div className="orders-toolbar">
             <div className="orders-search">
               <input
@@ -554,11 +554,11 @@ export default function DaftarPesanan() {
                   inputStyle={{
                     width: "100%",
                     padding: "0.55rem 2.2rem 0.55rem 0.75rem",
-                    border: "1px solid var(--dash-border)",
+                    border: "1px solid #e9ecef",
                     borderRadius: "0.5rem",
                     fontSize: "0.85rem",
-                    background: "var(--dash-surface)",
-                    color: "var(--dash-text)",
+                    background: "#ffffff",
+                    color: "#212529",
                     boxShadow: "none",
                     cursor: "pointer"
                   }}
@@ -584,7 +584,7 @@ export default function DaftarPesanan() {
           </div>
         </section>
 
-        <section className="dashboard-summary orders-summary">
+        <section className="orders-summary">
           <article className="summary-card summary-card--combined">
             <div className="summary-card__column">
               <div className={`summary-card__icon accent-orange`}>
