@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useCallback, memo } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import { getCustomers, deleteCustomer } from "@/lib/sales/customer";
 import { Users, CheckCircle, Filter } from "lucide-react";
+import { Calendar } from "primereact/calendar";
+import "primereact/resources/themes/lara-light-cyan/theme.css";
+import "primereact/resources/primereact.min.css";
 import dynamic from "next/dynamic";
 import "@/styles/sales/dashboard-premium.css";
 import "@/styles/sales/admin.css";
@@ -44,7 +47,14 @@ const CUSTOMERS_COLUMNS = [
 
 export default function AdminCustomerPage() {
   const router = useRouter();
+  // Pagination state dengan fallback pagination
+  const [page, setPage] = useState(1);
   const [customers, setCustomers] = useState([]);
+  const [hasMore, setHasMore] = useState(true); // penentu masih ada halaman berikutnya
+  const [loading, setLoading] = useState(false);
+  const [paginationInfo, setPaginationInfo] = useState(null); // Store pagination info from backend
+  const perPage = 15; // Data per halaman
+  
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearch = useDebouncedValue(searchInput);
   const [filterPreset, setFilterPreset] = useState("all"); // all | today
@@ -55,73 +65,116 @@ export default function AdminCustomerPage() {
   const [showHistory, setShowHistory] = useState(false);
   const [showFollowupLog, setShowFollowupLog] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
-  const [needsRefresh, setNeedsRefresh] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 25;
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  
+  // Filter state
+  const [filters, setFilters] = useState({
+    verifikasi: "all", // all | verified | unverified
+    status: "all", // all | active | inactive
+    dateRange: null, // [startDate, endDate] atau null
+    jenis_kelamin: "all", // all | l | p
+  });
+  
+  const fetchingRef = useRef(false); // Prevent multiple simultaneous fetches
 
-  const getCustomerDate = useCallback((c) => {
-    const raw =
-      c?.created_at ||
-      c?.createdAt ||
-      c?.tanggal ||
-      c?.date ||
-      c?.created ||
-      c?.updated_at ||
-      c?.updatedAt;
-    if (!raw) return null;
-    const d = new Date(raw);
-    return Number.isNaN(d.getTime()) ? null : d;
-  }, []);
+  // 🔹 Fetch customers dengan fallback pagination
+  const fetchCustomers = useCallback(async (pageNumber = 1) => {
+    // Prevent multiple simultaneous calls using ref
+    if (fetchingRef.current) {
+      console.log("⏸️ Already fetching, skipping duplicate request for page", pageNumber);
+      return;
+    }
 
-  // 🔹 Load data dari backend, batched via needsRefresh flag
-  useEffect(() => {
-    if (!needsRefresh) return;
-    const loadCustomers = async () => {
-      try {
-        const data = await getCustomers();
-        setCustomers(data);
-      } catch (err) {
-        console.error("Error fetching customers:", err);
-        toastError("Gagal memuat data customer");
-      } finally {
-        setNeedsRefresh(false);
+    fetchingRef.current = true;
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.warn("No token found");
+        setLoading(false);
+        fetchingRef.current = false;
+        return;
       }
-    };
-    loadCustomers();
-  }, [needsRefresh]);
 
-  // 🔹 Filter pencarian (memoized + debounced input)
-  const filtered = useMemo(() => {
-    const term = debouncedSearch.trim().toLowerCase();
-    return customers.filter((c) => {
-      if (c.status !== "1") return false;
-      if (filterPreset === "today") {
-        const d = getCustomerDate(c);
-        if (!d) return false;
-        const now = new Date();
-        const sameDay =
-          d.getFullYear() === now.getFullYear() &&
-          d.getMonth() === now.getMonth() &&
-          d.getDate() === now.getDate();
-        if (!sameDay) return false;
+      const result = await getCustomers(pageNumber, perPage, filters);
+      
+      if (result.success && result.data && Array.isArray(result.data)) {
+        // Selalu replace data (bukan append) - setiap page menampilkan data yang berbeda
+        setCustomers(result.data);
+
+        // Gunakan pagination object jika tersedia
+        if (result.pagination && typeof result.pagination === 'object') {
+          // Struktur pagination: { current_page, last_page, per_page, total }
+          const isLastPage = result.pagination.current_page >= result.pagination.last_page;
+          setHasMore(!isLastPage);
+          setPaginationInfo(result.pagination);
+          console.log("📄 Pagination info:", {
+            current_page: result.pagination.current_page,
+            last_page: result.pagination.last_page,
+            total: result.pagination.total,
+            hasMore: !isLastPage
+          });
+        } else {
+          setPaginationInfo(null);
+          // Fallback pagination: cek jumlah data untuk menentukan hasMore
+          if (result.data.length < perPage) {
+            setHasMore(false); // sudah halaman terakhir
+          } else {
+            setHasMore(true); // masih ada halaman berikutnya
+          }
+        }
+      } else {
+        // Jika response tidak sesuai format yang diharapkan
+        console.warn("⚠️ Unexpected response format:", result);
+        setCustomers([]);
+        setHasMore(false);
       }
-      if (!term) return true;
-      return [c.nama, c.email, c.wa].some((field) => field?.toLowerCase().includes(term));
-    });
-  }, [customers, debouncedSearch, filterPreset, getCustomerDate]);
+      
+      setLoading(false);
+      fetchingRef.current = false;
+    } catch (err) {
+      console.error("Error fetching customers:", err);
+      toastError("Gagal memuat data customer");
+      setLoading(false);
+      fetchingRef.current = false;
+    }
+  }, [perPage, filters]);
 
-  // 🔹 Pagination logic
-  const totalPages = Math.ceil(filtered.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedData = useMemo(() => {
-    return filtered.slice(startIndex, endIndex);
-  }, [filtered, startIndex, endIndex]);
-
-  // Reset to page 1 when search changes
+  // Initial load: fetch page 1
   useEffect(() => {
-    setCurrentPage(1);
-  }, [debouncedSearch, filterPreset]);
+    setPage(1);
+    setCustomers([]);
+    setHasMore(true);
+    fetchCustomers(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Hanya sekali saat mount
+
+  // Fetch data saat page atau filters berubah
+  useEffect(() => {
+    if (page > 0 && !loading) {
+      fetchCustomers(page);
+      // Tidak scroll ke atas, tetap di posisi saat ini
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, filters]); // Depend pada page dan filters
+
+  // 🔹 Next page
+  const handleNextPage = useCallback(() => {
+    if (loading || !hasMore) return; // Jangan load jika sedang loading atau sudah habis
+    
+    const nextPage = page + 1;
+    console.log("🔄 Next page clicked, loading page:", nextPage);
+    setPage(nextPage);
+  }, [page, hasMore, loading]);
+
+  // 🔹 Previous page
+  const handlePrevPage = useCallback(() => {
+    if (loading || page <= 1) return; // Jangan load jika sedang loading atau sudah di page 1
+    
+    const prevPage = page - 1;
+    console.log("🔄 Previous page clicked, loading page:", prevPage);
+    setPage(prevPage);
+  }, [page, loading]);
 
   // 🔹 Helpers
   const closeAllModals = () => {
@@ -132,15 +185,21 @@ export default function AdminCustomerPage() {
     setSelectedCustomer(null);
   };
 
-  const requestRefresh = (message, type = "success") => {
-    if (type === "error") {
-      toastError(message);
-    } else if (type === "warning") {
-      toastWarning(message);
-    } else {
-      toastSuccess(message);
+  // 🔹 Refresh all data (reset to page 1)
+  const requestRefresh = async (message, type = "success") => {
+    setPage(1);
+    setCustomers([]);
+    setHasMore(true);
+    await fetchCustomers(1);
+    if (message) {
+      if (type === "error") {
+        toastError(message);
+      } else if (type === "warning") {
+        toastWarning(message);
+      } else {
+        toastSuccess(message);
+      }
     }
-    setNeedsRefresh(true);
   };
 
   // 🔹 Handler edit
@@ -188,6 +247,33 @@ export default function AdminCustomerPage() {
     setShowFollowupLog(true);
   };
 
+  // 🔹 Filter handlers
+  const handleApplyFilter = () => {
+    setPage(1); // Reset to page 1 when filter changes
+    setShowFilterModal(false);
+    // fetchCustomers will be triggered by useEffect when filters change
+  };
+
+  const handleResetFilter = () => {
+    setFilters({
+      verifikasi: "all",
+      status: "all",
+      dateRange: null,
+      jenis_kelamin: "all",
+    });
+    setPage(1);
+    setShowFilterModal(false);
+  };
+
+  const hasActiveFilters = () => {
+    return (
+      filters.verifikasi !== "all" ||
+      filters.status !== "all" ||
+      filters.jenis_kelamin !== "all" ||
+      (filters.dateRange && Array.isArray(filters.dateRange) && filters.dateRange.length === 2 && filters.dateRange[0] && filters.dateRange[1])
+    );
+  };
+
   return (
     <Layout title="Manage Customers">
       <div className="dashboard-shell customers-shell">
@@ -221,10 +307,10 @@ export default function AdminCustomerPage() {
               </button>
               <button
                 type="button"
-                className="customers-filter-btn customers-filter-icon-btn"
+                className={`customers-filter-btn customers-filter-icon-btn ${Object.values(filters).some(v => v !== "all" && v !== null) ? "is-active" : ""}`}
                 title="Filter"
                 aria-label="Filter"
-                onClick={() => {}}
+                onClick={() => setShowFilterModal(true)}
               >
                 <Filter size={16} />
               </button>
@@ -298,11 +384,11 @@ export default function AdminCustomerPage() {
                 ))}
               </div>
               <div className="customers-table__body">
-                {paginatedData.length > 0 ? (
-                  paginatedData.map((cust, i) => (
+                {customers.length > 0 ? (
+                  customers.map((cust, i) => (
                   <div className="customers-table__row" key={cust.id || `${cust.email}-${i}`}>
                     <div className="customers-table__cell" data-label="#">
-                      {startIndex + i + 1}
+                      {(page - 1) * perPage + i + 1}
                     </div>
                     <div className="customers-table__cell customers-table__cell--strong" data-label="Nama">
                       {cust.nama || "-"}
@@ -400,27 +486,82 @@ export default function AdminCustomerPage() {
             </div>
           </div>
 
-          {totalPages > 1 && (
-            <div className="customers-pagination">
-              <button
-                className="customers-pagination__btn"
-                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-              >
-                <i className="pi pi-chevron-left" />
-              </button>
-              <span className="customers-pagination__info">
-                Page {currentPage} of {totalPages} ({filtered.length} total)
-              </span>
-              <button
-                className="customers-pagination__btn"
-                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-              >
-                <i className="pi pi-chevron-right" />
-              </button>
+          {/* Pagination dengan Next/Previous Button */}
+          <div className="customers-pagination" style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "1rem", padding: "1.5rem", flexWrap: "wrap" }}>
+            {/* Previous Button */}
+            <button
+              className="customers-pagination__btn"
+              onClick={handlePrevPage}
+              disabled={page === 1 || loading}
+              aria-label="Previous page"
+              style={{
+                padding: "0.75rem 1rem",
+                minWidth: "100px",
+                background: page === 1 || loading ? "#e5e7eb" : "#f1a124",
+                color: page === 1 || loading ? "#9ca3af" : "#fff",
+                border: "none",
+                borderRadius: "0.5rem",
+                cursor: page === 1 || loading ? "not-allowed" : "pointer",
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                justifyContent: "center",
+                transition: "all 0.2s ease"
+              }}
+            >
+              <i className="pi pi-chevron-left" />
+              Previous
+            </button>
+
+            {/* Page Info */}
+            <div style={{ 
+              display: "flex", 
+              alignItems: "center", 
+              gap: "0.5rem",
+              fontSize: "0.95rem",
+              color: "var(--dash-text)",
+              fontWeight: 500
+            }}>
+              {loading ? (
+                <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <i className="pi pi-spin pi-spinner" />
+                  Loading...
+                </span>
+              ) : (
+                <span>
+                  Page {paginationInfo?.current_page || page} of {paginationInfo?.last_page || "?"}
+                  {paginationInfo?.total && ` (${paginationInfo.total} total)`}
+                </span>
+              )}
             </div>
-          )}
+
+            {/* Next Button */}
+            <button
+              className="customers-pagination__btn"
+              onClick={handleNextPage}
+              disabled={!hasMore || loading}
+              aria-label="Next page"
+              style={{
+                padding: "0.75rem 1rem",
+                minWidth: "100px",
+                background: !hasMore || loading ? "#e5e7eb" : "#f1a124",
+                color: !hasMore || loading ? "#9ca3af" : "#fff",
+                border: "none",
+                borderRadius: "0.5rem",
+                cursor: !hasMore || loading ? "not-allowed" : "pointer",
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                justifyContent: "center",
+                transition: "all 0.2s ease"
+              }}
+            >
+              Next
+              <i className="pi pi-chevron-right" />
+            </button>
+          </div>
         </section>
 
         {/* MODALS */}
@@ -486,6 +627,187 @@ export default function AdminCustomerPage() {
               setShowAdd(false);
             }}
           />
+        )}
+
+        {/* Filter Modal */}
+        {showFilterModal && (
+          <div
+            className="modal-overlay"
+            onClick={() => setShowFilterModal(false)}
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: "rgba(0, 0, 0, 0.5)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1000,
+            }}
+          >
+            <div
+              className="modal-content"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: "#ffffff",
+                borderRadius: "0.75rem",
+                padding: "1.5rem",
+                width: "90%",
+                maxWidth: "500px",
+                maxHeight: "90vh",
+                overflowY: "auto",
+                boxShadow: "0 10px 25px rgba(0, 0, 0, 0.2)",
+              }}
+            >
+              <div style={{ marginBottom: "1.5rem" }}>
+                <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 600, color: "var(--dash-text-dark)" }}>
+                  Filter Customer
+                </h3>
+                <p style={{ margin: "0.5rem 0 0 0", fontSize: "0.875rem", color: "var(--dash-muted)" }}>
+                  Pilih filter untuk menyaring data customer
+                </p>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                {/* Verifikasi Filter */}
+                <div>
+                  <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 600, color: "var(--dash-text)" }}>
+                    Verifikasi
+                  </label>
+                  <select
+                    value={filters.verifikasi}
+                    onChange={(e) => setFilters({ ...filters, verifikasi: e.target.value })}
+                    style={{
+                      width: "100%",
+                      padding: "0.55rem 0.75rem",
+                      border: "1px solid var(--dash-border)",
+                      borderRadius: "0.5rem",
+                      fontSize: "0.875rem",
+                      background: "var(--dash-surface)",
+                      color: "var(--dash-text)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <option value="all">Semua</option>
+                    <option value="verified">Verified</option>
+                    <option value="unverified">Unverified</option>
+                  </select>
+                </div>
+
+                {/* Status Filter */}
+                <div>
+                  <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 600, color: "var(--dash-text)" }}>
+                    Status
+                  </label>
+                  <select
+                    value={filters.status}
+                    onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                    style={{
+                      width: "100%",
+                      padding: "0.55rem 0.75rem",
+                      border: "1px solid var(--dash-border)",
+                      borderRadius: "0.5rem",
+                      fontSize: "0.875rem",
+                      background: "var(--dash-surface)",
+                      color: "var(--dash-text)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <option value="all">Semua</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+
+                {/* Jenis Kelamin Filter */}
+                <div>
+                  <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 600, color: "var(--dash-text)" }}>
+                    Jenis Kelamin
+                  </label>
+                  <select
+                    value={filters.jenis_kelamin}
+                    onChange={(e) => setFilters({ ...filters, jenis_kelamin: e.target.value })}
+                    style={{
+                      width: "100%",
+                      padding: "0.55rem 0.75rem",
+                      border: "1px solid var(--dash-border)",
+                      borderRadius: "0.5rem",
+                      fontSize: "0.875rem",
+                      background: "var(--dash-surface)",
+                      color: "var(--dash-text)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <option value="all">Semua</option>
+                    <option value="l">Laki-laki</option>
+                    <option value="p">Perempuan</option>
+                  </select>
+                </div>
+
+                {/* Date Range Filter */}
+                <div>
+                  <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 600, color: "var(--dash-text)" }}>
+                    Tanggal Registrasi
+                  </label>
+                  <Calendar
+                    value={filters.dateRange}
+                    onChange={(e) => setFilters({ ...filters, dateRange: e.value })}
+                    selectionMode="range"
+                    readOnlyInput
+                    showIcon
+                    icon="pi pi-calendar"
+                    placeholder="Pilih rentang tanggal"
+                    dateFormat="dd M yyyy"
+                    monthNavigator
+                    yearNavigator
+                    yearRange="2020:2030"
+                    style={{
+                      width: "100%",
+                    }}
+                    inputStyle={{
+                      width: "100%",
+                      padding: "0.55rem 2.2rem 0.55rem 0.75rem",
+                      border: "1px solid var(--dash-border)",
+                      borderRadius: "0.5rem",
+                      fontSize: "0.875rem",
+                      background: "var(--dash-surface)",
+                      color: "var(--dash-text)",
+                      boxShadow: "none",
+                      cursor: "pointer",
+                    }}
+                    panelStyle={{
+                      background: "#ffffff",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "0.5rem",
+                      boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.5rem", justifyContent: "flex-end" }}>
+                <button
+                  type="button"
+                  onClick={handleResetFilter}
+                  className="customers-button customers-button--secondary"
+                  style={{ whiteSpace: "nowrap" }}
+                >
+                  Reset
+                </button>
+                <button
+                  type="button"
+                  onClick={handleApplyFilter}
+                  className="customers-button customers-button--primary"
+                  style={{ whiteSpace: "nowrap" }}
+                >
+                  Terapkan Filter
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
       </div>

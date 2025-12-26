@@ -93,6 +93,8 @@ ADMIN USERS PAGE (Scoped Styles)
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+  /* Remove blue color from all states */
+  outline: none !important;
 }
 
 .users-button:focus-visible,
@@ -124,9 +126,10 @@ ADMIN USERS PAGE (Scoped Styles)
 .customers-button--primary:active,
 .customers-button--primary:focus,
 .customers-button--primary:focus-visible {
-  background: var(--primary-hover) !important;
+  background: #c85400 !important;
   color: #fff !important;
-  outline: none;
+  outline: 2px solid rgba(255, 108, 0, 0.3) !important;
+  outline-offset: 2px;
   border-color: transparent !important;
 }
 
@@ -140,11 +143,22 @@ ADMIN USERS PAGE (Scoped Styles)
   color: var(--primary);
   border: 1px solid rgba(255, 108, 0, 0.35);
   box-shadow: none;
+  outline: none !important;
 }
 
 .customers-button--secondary:hover {
   background: rgba(255, 108, 0, 0.06);
   border-color: rgba(255, 108, 0, 0.55);
+}
+
+.customers-button--secondary:active,
+.customers-button--secondary:focus,
+.customers-button--secondary:focus-visible {
+  background: rgba(255, 108, 0, 0.08) !important;
+  border-color: rgba(255, 108, 0, 0.65) !important;
+  color: var(--primary) !important;
+  outline: 2px solid rgba(255, 108, 0, 0.2) !important;
+  outline-offset: 2px;
 }
 
 /* Filter bar inside customers toolbar */
@@ -167,10 +181,24 @@ ADMIN USERS PAGE (Scoped Styles)
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+  /* Remove blue color from all states */
+  outline: none !important;
 }
 
 .customers-filter-btn:hover {
   background: rgba(255, 108, 0, 0.06);
+  border-color: rgba(255, 108, 0, 0.3);
+  color: var(--primary);
+}
+
+.customers-filter-btn:active,
+.customers-filter-btn:focus,
+.customers-filter-btn:focus-visible {
+  background: rgba(255, 108, 0, 0.08) !important;
+  border-color: rgba(255, 108, 0, 0.5) !important;
+  color: var(--primary) !important;
+  outline: 2px solid rgba(255, 108, 0, 0.2) !important;
+  outline-offset: 2px;
 }
 
 .customers-filter-btn.is-active {
@@ -179,13 +207,43 @@ ADMIN USERS PAGE (Scoped Styles)
   background: rgba(255, 108, 0, 0.08);
 }
 
+.customers-filter-btn.is-active:hover {
+  background: rgba(255, 108, 0, 0.12);
+  border-color: rgba(255, 108, 0, 0.6);
+}
+
+.customers-filter-btn.is-active:active,
+.customers-filter-btn.is-active:focus,
+.customers-filter-btn.is-active:focus-visible {
+  background: rgba(255, 108, 0, 0.15) !important;
+  border-color: rgba(255, 108, 0, 0.7) !important;
+  color: var(--primary) !important;
+  outline: 2px solid rgba(255, 108, 0, 0.3) !important;
+}
+
 .customers-filter-icon-btn {
   width: 32px;
   height: 32px;
   padding: 0;
   justify-content: center;
-  color: var(--primary);
-  border-color: rgba(255, 108, 0, 0.35);
+}
+
+/* Ensure no blue color on any button state */
+.customers-filter-btn:visited,
+.customers-button:visited {
+  color: inherit !important;
+}
+
+/* Remove any browser default blue outline/ring */
+.customers-filter-btn::-moz-focus-inner,
+.customers-button::-moz-focus-inner {
+  border: 0 !important;
+}
+
+.customers-filter-btn:-moz-focusring,
+.customers-button:-moz-focusring {
+  outline: 2px solid rgba(255, 108, 0, 0.3) !important;
+  outline-offset: 2px;
 }
 
 .customers-filter-icon-btn svg {
