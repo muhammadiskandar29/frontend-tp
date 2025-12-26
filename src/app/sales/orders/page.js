@@ -731,13 +731,18 @@ export default function DaftarPesanan() {
                selectedStatusPembayaran.length > 0 ? (
                 <button
                   onClick={handleResetFilters}
-                  className="orders-button orders-button--secondary"
+                  className="orders-filter-btn"
                   style={{
                     whiteSpace: "nowrap",
-                    borderRadius: "0.5rem", // Kotak, bukan pill
+                    padding: "0.55rem 0.75rem",
+                    fontSize: "0.85rem",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.35rem",
                   }}
+                  title="Reset Filter"
                 >
-                  <i className="pi pi-times" style={{ marginRight: "0.25rem" }} />
+                  <i className="pi pi-times" style={{ fontSize: "0.85rem" }} />
                   Reset
                 </button>
               ) : null}
@@ -1271,64 +1276,95 @@ export default function DaftarPesanan() {
                 <i className="pi pi-times" />
               </button>
             </div>
-            <div className="modal-body" style={{ maxHeight: "70vh", overflowY: "auto" }}>
+            <div className="modal-body" style={{ maxHeight: "70vh", overflowY: "auto", padding: "1.5rem" }}>
               {/* Produk Filter */}
-              <div style={{ marginBottom: "1.5rem" }}>
-                <label className="field-label" style={{ marginBottom: "0.5rem", display: "block" }}>
+              <div style={{ marginBottom: "2rem" }}>
+                <label className="field-label" style={{ 
+                  marginBottom: "0.75rem", 
+                  display: "block",
+                  fontSize: "0.9rem",
+                  fontWeight: "600",
+                  color: "#1f2937"
+                }}>
                   Produk
                 </label>
-                <div style={{ position: "relative" }}>
+                <div style={{ position: "relative", marginBottom: "0.75rem" }}>
                   <input
                     type="text"
                     placeholder="Cari produk..."
                     value={productSearch}
                     onChange={(e) => setProductSearch(e.target.value)}
                     className="field-input"
-                    style={{ width: "100%", paddingRight: "2.5rem" }}
+                    style={{ 
+                      width: "100%", 
+                      padding: "0.75rem 2.5rem 0.75rem 0.75rem",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "0.5rem",
+                      fontSize: "0.875rem",
+                      background: "#ffffff",
+                      transition: "border-color 0.2s",
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = "#c85400"}
+                    onBlur={(e) => e.target.style.borderColor = "#e5e7eb"}
                   />
                   <span className="pi pi-search" style={{
                     position: "absolute",
                     right: "0.75rem",
                     top: "50%",
                     transform: "translateY(-50%)",
-                    color: "#6c757d",
+                    color: "#9ca3af",
+                    fontSize: "0.875rem",
                   }} />
                 </div>
                 {productResults.length > 0 && (
                   <div style={{
                     marginTop: "0.5rem",
-                    border: "1px solid #e9ecef",
+                    border: "1px solid #e5e7eb",
                     borderRadius: "0.5rem",
-                    maxHeight: "200px",
+                    maxHeight: "250px",
                     overflowY: "auto",
                     background: "#ffffff",
+                    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
                   }}>
-                    {productResults.map((prod) => (
-                      <label
-                        key={prod.id}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          padding: "0.5rem 0.75rem",
-                          cursor: "pointer",
-                          borderBottom: "1px solid #f1f3f5",
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = "#f8f9fa"}
-                        onMouseLeave={(e) => e.currentTarget.style.background = "#ffffff"}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedProducts.includes(prod.id)}
-                          onChange={() => handleToggleProduct(prod.id)}
-                          style={{ marginRight: "0.5rem" }}
-                        />
-                        <span>{prod.nama}</span>
-                      </label>
-                    ))}
+                    {productResults.map((prod) => {
+                      const isSelected = selectedProducts.includes(prod.id);
+                      return (
+                        <div
+                          key={prod.id}
+                          onClick={() => handleToggleProduct(prod.id)}
+                          style={{
+                            padding: "0.75rem 1rem",
+                            cursor: "pointer",
+                            borderBottom: "1px solid #f3f4f6",
+                            background: isSelected ? "#fff5ed" : "#ffffff",
+                            borderLeft: isSelected ? "3px solid #ff6c00" : "3px solid transparent",
+                            transition: "all 0.2s",
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isSelected) {
+                              e.currentTarget.style.background = "#f9fafb";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isSelected) {
+                              e.currentTarget.style.background = "#ffffff";
+                            }
+                          }}
+                        >
+                          <span style={{
+                            color: isSelected ? "#c85400" : "#1f2937",
+                            fontWeight: isSelected ? "600" : "400",
+                            fontSize: "0.875rem",
+                          }}>
+                            {prod.nama}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
                 {selectedProducts.length > 0 && (
-                  <div style={{ marginTop: "0.5rem", display: "flex", flexWrap: "wrap", gap: "0.25rem" }}>
+                  <div style={{ marginTop: "0.75rem", display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
                     {selectedProducts.map((productId) => {
                       const product = productResults.find(p => p.id === productId);
                       return product ? (
@@ -1337,19 +1373,23 @@ export default function DaftarPesanan() {
                           style={{
                             display: "inline-flex",
                             alignItems: "center",
-                            gap: "0.25rem",
-                            padding: "0.25rem 0.5rem",
+                            gap: "0.5rem",
+                            padding: "0.5rem 0.75rem",
                             background: "#fff5ed",
                             border: "1px solid #ff6c00",
-                            borderRadius: "0.25rem",
-                            fontSize: "0.75rem",
+                            borderRadius: "0.375rem",
+                            fontSize: "0.8125rem",
                             color: "#c85400",
+                            fontWeight: "500",
                           }}
                         >
                           {product.nama}
                           <button
                             type="button"
-                            onClick={() => handleToggleProduct(productId)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleProduct(productId);
+                            }}
                             style={{
                               background: "none",
                               border: "none",
@@ -1357,9 +1397,11 @@ export default function DaftarPesanan() {
                               cursor: "pointer",
                               padding: 0,
                               margin: 0,
+                              display: "flex",
+                              alignItems: "center",
                             }}
                           >
-                            <i className="pi pi-times" style={{ fontSize: "0.7rem" }} />
+                            <i className="pi pi-times" style={{ fontSize: "0.75rem" }} />
                           </button>
                         </span>
                       ) : null;
@@ -1435,7 +1477,15 @@ export default function DaftarPesanan() {
                 type="button"
                 onClick={handleResetFilters}
                 className="btn-cancel"
+                style={{
+                  padding: "0.55rem 0.75rem",
+                  fontSize: "0.85rem",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.35rem",
+                }}
               >
+                <i className="pi pi-times" style={{ fontSize: "0.85rem" }} />
                 Reset
               </button>
               <button
@@ -1494,199 +1544,6 @@ export default function DaftarPesanan() {
         </div>
       )}
 
-      {/* Filter Modal */}
-      {showFilterModal && typeof window !== "undefined" && createPortal(
-        <div className="modal-overlay" onClick={() => setShowFilterModal(false)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "600px", width: "90%" }}>
-            <div className="modal-header">
-              <h3>Filter Orders</h3>
-              <button
-                type="button"
-                className="modal-close"
-                onClick={() => setShowFilterModal(false)}
-              >
-                <i className="pi pi-times" />
-              </button>
-            </div>
-            <div className="modal-body" style={{ maxHeight: "70vh", overflowY: "auto" }}>
-              {/* Produk Filter */}
-              <div style={{ marginBottom: "1.5rem" }}>
-                <label className="field-label" style={{ marginBottom: "0.5rem", display: "block" }}>
-                  Produk
-                </label>
-                <div style={{ position: "relative" }}>
-                  <input
-                    type="text"
-                    placeholder="Cari produk..."
-                    value={productSearch}
-                    onChange={(e) => setProductSearch(e.target.value)}
-                    className="field-input"
-                    style={{ width: "100%", paddingRight: "2.5rem" }}
-                  />
-                  <span className="pi pi-search" style={{
-                    position: "absolute",
-                    right: "0.75rem",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    color: "#6c757d",
-                  }} />
-                </div>
-                {productResults.length > 0 && (
-                  <div style={{
-                    marginTop: "0.5rem",
-                    border: "1px solid #e9ecef",
-                    borderRadius: "0.5rem",
-                    maxHeight: "200px",
-                    overflowY: "auto",
-                    background: "#ffffff",
-                  }}>
-                    {productResults.map((prod) => (
-                      <label
-                        key={prod.id}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          padding: "0.5rem 0.75rem",
-                          cursor: "pointer",
-                          borderBottom: "1px solid #f1f3f5",
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = "#f8f9fa"}
-                        onMouseLeave={(e) => e.currentTarget.style.background = "#ffffff"}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedProducts.includes(prod.id)}
-                          onChange={() => handleToggleProduct(prod.id)}
-                          style={{ marginRight: "0.5rem" }}
-                        />
-                        <span>{prod.nama}</span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-                {selectedProducts.length > 0 && (
-                  <div style={{ marginTop: "0.5rem", display: "flex", flexWrap: "wrap", gap: "0.25rem" }}>
-                    {selectedProducts.map((productId) => {
-                      const product = productResults.find(p => p.id === productId);
-                      return product ? (
-                        <span
-                          key={productId}
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "0.25rem",
-                            padding: "0.25rem 0.5rem",
-                            background: "#fff5ed",
-                            border: "1px solid #ff6c00",
-                            borderRadius: "0.25rem",
-                            fontSize: "0.75rem",
-                            color: "#c85400",
-                          }}
-                        >
-                          {product.nama}
-                          <button
-                            type="button"
-                            onClick={() => handleToggleProduct(productId)}
-                            style={{
-                              background: "none",
-                              border: "none",
-                              color: "#c85400",
-                              cursor: "pointer",
-                              padding: 0,
-                              margin: 0,
-                            }}
-                          >
-                            <i className="pi pi-times" style={{ fontSize: "0.7rem" }} />
-                          </button>
-                        </span>
-                      ) : null;
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Status Order Filter */}
-              <div style={{ marginBottom: "1.5rem" }}>
-                <label className="field-label" style={{ marginBottom: "0.5rem", display: "block" }}>
-                  Status Order
-                </label>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  {Object.entries(STATUS_ORDER_MAP).map(([value, { label }]) => (
-                    <label
-                      key={value}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        cursor: "pointer",
-                        padding: "0.5rem",
-                        borderRadius: "0.25rem",
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = "#f8f9fa"}
-                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedStatusOrder.includes(value)}
-                        onChange={() => handleToggleStatusOrder(value)}
-                        style={{ marginRight: "0.5rem" }}
-                      />
-                      <span>{label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Status Pembayaran Filter */}
-              <div style={{ marginBottom: "1.5rem" }}>
-                <label className="field-label" style={{ marginBottom: "0.5rem", display: "block" }}>
-                  Status Pembayaran
-                </label>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  {Object.entries(STATUS_PEMBAYARAN_MAP).map(([value, { label }]) => (
-                    <label
-                      key={value}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        cursor: "pointer",
-                        padding: "0.5rem",
-                        borderRadius: "0.25rem",
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = "#f8f9fa"}
-                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedStatusPembayaran.includes(String(value))}
-                        onChange={() => handleToggleStatusPembayaran(String(value))}
-                        style={{ marginRight: "0.5rem" }}
-                      />
-                      <span>{label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="modal-footer" style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem", padding: "1rem" }}>
-              <button
-                type="button"
-                onClick={handleResetFilters}
-                className="btn-cancel"
-              >
-                Reset
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowFilterModal(false)}
-                className="btn-save"
-              >
-                Terapkan
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
     </Layout>
   );
 }
