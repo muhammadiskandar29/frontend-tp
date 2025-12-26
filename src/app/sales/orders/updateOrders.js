@@ -514,35 +514,28 @@ const handleSubmitUpdate = async (e) => {
                   <button
                     type="button"
                     className="btn-konfirmasi"
-                    disabled={!metodeBayar}
+                    disabled={false}
                     onClick={() => {
-                      // Set amount ke total_harga saat modal dibuka (jika bukan DP)
-                      // Jika DP, biarkan kosong untuk input manual
                       const statusPembayaran = computedStatus();
                       if (statusPembayaran !== 4) {
                         const totalHarga = updatedOrder.total_harga || order?.total_harga || 0;
                         setAmount(totalHarga.toString());
                         setIsDP(false);
                       } else {
-                        // Untuk DP, biarkan amount kosong untuk input manual (user bisa input berapa saja selama tidak melebihi remaining)
                         setAmount("");
                         setIsDP(true);
                       }
                       setShowKonfirmasiModal(true);
                     }}
-                    style={{
-                      width: "100%",
-                      marginBottom: "16px"
-                    }}
                   >
                     <i className="pi pi-check-circle" />
-                    {computedStatus() === 4 ? "Konfirmasi Pembayaran Lanjutan" : "Konfirmasi Pembayaran"}
+                    {computedStatus() === 4
+                      ? "Konfirmasi Pembayaran Lanjutan"
+                      : "Konfirmasi Pembayaran"}
                   </button>
                 ) : (
                   computedStatus() === 2 && (
-                    <div style={{ padding: "12px", background: "#d1fae5", borderRadius: "8px", textAlign: "center", color: "#065f46", fontWeight: 500, fontSize: "0.875rem" }}>
-                      ✅ Pembayaran Lunas
-                    </div>
+                    <div>✅ Pembayaran Lunas</div>
                   )
                 )}
 
