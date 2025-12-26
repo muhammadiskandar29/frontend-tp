@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import "@/styles/sales/customer.css";
+import { createPortal } from "react-dom";
 
 // Use Next.js proxy to avoid CORS
 const BASE_URL = "/api";
@@ -510,41 +511,39 @@ const handleSubmitUpdate = async (e) => {
                 )}
                   
                 {/* Button Konfirmasi Pembayaran */}
-                {canConfirmPayment() ? (
-                  <button
-                    type="button"
-                    className="btn-konfirmasi"
-                    disabled={!metodeBayar}
-                    onClick={() => {
-                      // Set amount ke total_harga saat modal dibuka (jika bukan DP)
-                      // Jika DP, biarkan kosong untuk input manual
-                      const statusPembayaran = computedStatus();
-                      if (statusPembayaran !== 4) {
-                        const totalHarga = updatedOrder.total_harga || order?.total_harga || 0;
-                        setAmount(totalHarga.toString());
-                        setIsDP(false);
-                      } else {
-                        // Untuk DP, biarkan amount kosong untuk input manual (user bisa input berapa saja selama tidak melebihi remaining)
-                        setAmount("");
-                        setIsDP(true);
-                      }
-                      setShowKonfirmasiModal(true);
-                    }}
-                    style={{
-                      width: "100%",
-                      marginBottom: "16px"
-                    }}
-                  >
-                    <i className="pi pi-check-circle" />
-                    {computedStatus() === 4 ? "Konfirmasi Pembayaran Lanjutan" : "Konfirmasi Pembayaran"}
-                  </button>
-                ) : (
-                  computedStatus() === 2 && (
-                    <div style={{ padding: "12px", background: "#d1fae5", borderRadius: "8px", textAlign: "center", color: "#065f46", fontWeight: 500, fontSize: "0.875rem" }}>
-                      ✅ Pembayaran Lunas
-                    </div>
-                  )
-                )}
+                <button
+  type="button"
+  className="btn-konfirmasi"
+  disabled={!metodeBayar}
+  onClick={() => {
+    const statusPembayaran = computedStatus();
+    const totalHarga =
+      updatedOrder.total_harga || order?.total_harga || 0;
+
+    // DP (status 4) → input manual
+    if (statusPembayaran === 4) {
+      setAmount("");
+      setIsDP(true);
+    } else {
+      // selain DP → auto isi total
+      setAmount(totalHarga.toString());
+      setIsDP(false);
+    }
+
+    // 🔥 APAPUN STATUSNYA, MODAL HARUS BUKA
+    setShowKonfirmasiModal(true);
+  }}
+  style={{
+    width: "100%",
+    marginBottom: "16px",
+  }}
+>
+  <i className="pi pi-check-circle" />
+  {computedStatus() === 4
+    ? "Konfirmasi Pembayaran Lanjutan"
+    : "Konfirmasi Pembayaran"}
+</button>
+
 
                 {/* Bukti Pembayaran Preview */}
                 {bukti && (
