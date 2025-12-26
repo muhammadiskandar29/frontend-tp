@@ -163,14 +163,13 @@ export default function DaftarPesanan() {
           // - Status pembayaran harus tetap 4 (DP) sampai remaining = 0
           // - Perubahan status payment individual (approve/reject) hanya mempengaruhi paymentHistoryModal.js, bukan page.js
           let statusPembayaran = order.status_pembayaran;
-          
-          if (totalPaid >= totalHarga) {
-            // Jika sudah lunas, set ke 2 (Paid)
-            statusPembayaran = 2;
-          } else if (remaining > 0 || totalPaid < totalHarga) {
-            // Jika masih ada remaining, set ke 4 (DP)
-            // Ini berlaku untuk semua kasus: konfirmasi pertama kali, konfirmasi lanjutan, setelah approve/reject
-            statusPembayaran = 4;
+
+          if (totalPaid >= totalHarga && totalHarga > 0) {
+            statusPembayaran = 2; // Paid
+          } else if (totalPaid > 0 && totalPaid < totalHarga) {
+            statusPembayaran = 4; // DP (ada pembayaran sebagian)
+          } else {
+            statusPembayaran = order.status_pembayaran ?? 0; // Unpaid / lainnya
           }
           
           // Pastikan status_order tetap "Proses" (1) meskipun ada payment yang di-reject
