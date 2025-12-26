@@ -16,7 +16,7 @@ export default function AddOrders({ onClose, onAdd }) {
     produk: "",
     harga: "",
     ongkir: "",
-    total_harga: 0,
+    total_harga: "",
     sumber: "",
     notif: true,
   });
@@ -102,13 +102,31 @@ export default function AddOrders({ onClose, onAdd }) {
     setShowCustomerForm(true);
   };
 
+  // === Format currency helper ===
+  const formatCurrency = (value) => {
+    if (!value && value !== 0) return "";
+    const numValue = typeof value === "string" ? value.replace(/,/g, "") : value;
+    const num = Number(numValue);
+    if (isNaN(num)) return "";
+    return num.toLocaleString("id-ID");
+  };
+
+  // === Parse currency to number ===
+  const parseCurrency = (value) => {
+    if (!value) return 0;
+    const numValue = typeof value === "string" ? value.replace(/,/g, "") : value;
+    return Number(numValue) || 0;
+  };
+
   // === Pilih Produk ===
   const handleSelectProduct = (prod) => {
+    const hargaValue = Number(prod.harga) || 0;
+    const ongkirValue = parseCurrency(formData.ongkir);
     setFormData((prev) => ({
       ...prev,
       produk: prod.id,
-      harga: Number(prod.harga) || 0,
-      total_harga: Number(prod.harga || 0) + Number(prev.ongkir || 0),
+      harga: hargaValue ? formatCurrency(hargaValue) : "",
+      total_harga: (hargaValue + ongkirValue) ? formatCurrency(hargaValue + ongkirValue) : "",
     }));
     setProductSearch(prod.nama);
     setProductResults([]);
@@ -119,12 +137,21 @@ export default function AddOrders({ onClose, onAdd }) {
     const { name, value, type, checked } = e.target;
 
     if (name === "harga" || name === "ongkir") {
-      const harga = name === "harga" ? Number(value) : Number(formData.harga);
-      const ongkir = name === "ongkir" ? Number(value) : Number(formData.ongkir);
+      // Remove all non-numeric characters (including commas)
+      const numericValue = value.replace(/\D/g, "");
+      
+      // Format with thousand separator if has value
+      const formattedValue = numericValue ? formatCurrency(numericValue) : "";
+      
+      // Calculate total
+      const harga = name === "harga" ? parseCurrency(numericValue) : parseCurrency(formData.harga);
+      const ongkir = name === "ongkir" ? parseCurrency(numericValue) : parseCurrency(formData.ongkir);
+      const total = harga + ongkir;
+      
       setFormData({
         ...formData,
-        [name]: Number(value) || 0,
-        total_harga: harga + ongkir,
+        [name]: formattedValue,
+        total_harga: total ? formatCurrency(total) : "",
       });
     } else if (type === "checkbox") {
       setFormData({ ...formData, [name]: checked });
@@ -148,9 +175,9 @@ export default function AddOrders({ onClose, onAdd }) {
 
     const payload = {
       ...formData,
-      harga: String(formData.harga ?? "0"),
-      ongkir: String(formData.ongkir ?? "0"),
-      total_harga: String(formData.total_harga ?? "0"),
+      harga: String(parseCurrency(formData.harga) || "0"),
+      ongkir: String(parseCurrency(formData.ongkir) || "0"),
+      total_harga: String(parseCurrency(formData.total_harga) || "0"),
     };
 
     console.log("[ADD_ORDERS] Payload sebelum kirim:", JSON.stringify(payload, null, 2));
@@ -379,7 +406,6 @@ export default function AddOrders({ onClose, onAdd }) {
                         onClick={() => handleSelectProduct(p)}
                       >
                         <strong>{p.nama}</strong>
-                        <span>Rp {Number(p.harga).toLocaleString("id-ID")}</span>
                       </button>
                     ))}
                   </div>
@@ -400,30 +426,72 @@ export default function AddOrders({ onClose, onAdd }) {
                 <div className="orders-dual-grid">
                   <label className="orders-field">
                     Harga Produk
-                    <input
-                      type="number"
-                      name="harga"
-                      value={formData.harga ?? ""}
-                      onChange={handleChange}
-                      min={0}
-                      required
-                    />
+                    <div style={{ position: "relative" }}>
+                      <span style={{
+                        position: "absolute",
+                        left: "12px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        color: "#6b7280",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                      }}>Rp</span>
+                      <input
+                        type="text"
+                        name="harga"
+                        value={formData.harga ?? ""}
+                        onChange={handleChange}
+                        placeholder="0"
+                        style={{ paddingLeft: "40px" }}
+                        required
+                      />
+                    </div>
                   </label>
                   <label className="orders-field">
                     Ongkir
-                    <input
-                      type="number"
-                      name="ongkir"
-                      value={formData.ongkir ?? ""}
-                      onChange={handleChange}
-                      min={0}
-                    />
+                    <div style={{ position: "relative" }}>
+                      <span style={{
+                        position: "absolute",
+                        left: "12px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        color: "#6b7280",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                      }}>Rp</span>
+                      <input
+                        type="text"
+                        name="ongkir"
+                        value={formData.ongkir ?? ""}
+                        onChange={handleChange}
+                        placeholder="0"
+                        style={{ paddingLeft: "40px" }}
+                      />
+                    </div>
                   </label>
                 </div>
 
                 <label className="orders-field">
                   Total Harga
-                  <input type="number" name="total_harga" value={formData.total_harga ?? ""} readOnly />
+                  <div style={{ position: "relative" }}>
+                    <span style={{
+                      position: "absolute",
+                      left: "12px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      color: "#6b7280",
+                      fontSize: "14px",
+                      fontWeight: "500",
+                    }}>Rp</span>
+                    <input 
+                      type="text" 
+                      name="total_harga" 
+                      value={formData.total_harga ?? ""} 
+                      readOnly 
+                      placeholder="0"
+                      style={{ paddingLeft: "40px", background: "#f9fafb" }}
+                    />
+                  </div>
                 </label>
 
                 <label className="orders-field">
