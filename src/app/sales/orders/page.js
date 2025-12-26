@@ -10,6 +10,7 @@ import "primereact/resources/themes/lara-light-cyan/theme.css";
 import "primereact/resources/primereact.min.css";
 import "@/styles/sales/dashboard.css";
 import "@/styles/sales/admin.css";
+import "@/styles/sales/customers-premium.css";
 import { getOrders, updateOrderAdmin, getOrderStatistics } from "@/lib/sales/orders";
 
 // Lazy load modals
@@ -92,17 +93,13 @@ export default function DaftarPesanan() {
   const fetchingRef = useRef(false); // Prevent multiple simultaneous fetches
   const searchTimeoutRef = useRef(null);
 
-  // Debounce search input dan reset ke page 1
+  // Debounce search input
   useEffect(() => {
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
     searchTimeoutRef.current = setTimeout(() => {
       setDebouncedSearch(searchInput);
-      // Reset ke page 1 dan clear data saat search berubah
-      setPage(1);
-      setOrders([]);
-      setHasMore(true);
     }, 500);
     return () => {
       if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
@@ -289,22 +286,21 @@ export default function DaftarPesanan() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Hanya sekali saat mount
 
-  // Reset to page 1 when search or filter changes, then fetch
+  // Reset to page 1 when search or filter changes
   useEffect(() => {
     setPage(1);
     setOrders([]);
     setHasMore(true);
-    // Fetch akan dipanggil oleh useEffect berikutnya ketika page berubah
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch, filters]); // Reset when search or filter changes
 
-  // Fetch data saat page, search, atau filter berubah
+  // Fetch data saat page berubah (page akan reset ke 1 ketika search/filter berubah)
   useEffect(() => {
     if (page > 0) {
       fetchOrders(page);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, debouncedSearch, filters]); // Depend pada page, search, dan filters
+  }, [page, fetchOrders]); // Depend pada page dan fetchOrders (yang sudah include debouncedSearch dan filters)
 
   // 🔹 Next page
   const handleNextPage = useCallback(() => {

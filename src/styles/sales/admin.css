@@ -1067,7 +1067,6 @@ ADMIN USERS PAGE (Scoped Styles)
 
 .orders-shell .dashboard-summary.orders-summary .summary-card--combined,
 .orders-shell .dashboard-summary.orders-summary .summary-card__column,
-.orders-shell .dashboard-summary.orders-summary .summary-card__icon,
 .orders-shell .dashboard-summary.orders-summary .summary-card__label,
 .orders-shell .dashboard-summary.orders-summary .summary-card__value {
   /* Lock semua property yang bisa berubah */
@@ -1082,6 +1081,30 @@ ADMIN USERS PAGE (Scoped Styles)
   opacity: 1 !important;
   filter: none !important;
   will-change: auto !important;
+}
+
+/* Pastikan icon summary card tetap menggunakan style yang benar - sama dengan customers */
+.orders-shell .dashboard-summary.orders-summary .summary-card__icon,
+.orders-shell .dashboard-summary.orders-summary .summary-card__icon.accent-orange,
+.dashboard-summary.orders-summary .summary-card__icon,
+.dashboard-summary.orders-summary .summary-card__icon.accent-orange {
+  width: 2.5rem !important;
+  height: 2.5rem !important;
+  border-radius: 0.5rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: linear-gradient(135deg, #ff6c00 0%, #c85400 100%) !important;
+  color: #ffffff !important;
+  flex-shrink: 0 !important;
+  box-shadow: 0 4px 14px 0 rgba(251, 133, 0, 0.25) !important;
+}
+
+.orders-shell .dashboard-summary.orders-summary .summary-card__icon svg,
+.dashboard-summary.orders-summary .summary-card__icon svg {
+  color: #ffffff !important;
+  width: 20px !important;
+  height: 20px !important;
 }
 
 /* Global override untuk menghilangkan semua warna biru di orders page */
@@ -1963,11 +1986,16 @@ body:has(.modal-overlay) .summary-card {
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif !important;
   font-size: inherit !important;
   font-weight: inherit !important;
-  color: inherit !important;
   line-height: inherit !important;
   transform: none !important;
   opacity: 1 !important;
   filter: none !important;
+}
+
+/* Kecualikan icon dari color inherit */
+body:has(.modal-overlay) .dashboard-summary .summary-card__icon,
+body:has(.modal-overlay) .dashboard-summary .summary-card__icon svg {
+  color: #ffffff !important;
 }
 
 /* Pastikan summary card tetap konsisten */
@@ -1977,9 +2005,49 @@ body:has(.modal-overlay) .summary-card {
   font-family: inherit !important;
   font-size: inherit !important;
   font-weight: inherit !important;
-  color: inherit !important;
   line-height: inherit !important;
   letter-spacing: inherit !important;
+}
+
+/* Kecualikan icon dari color inherit - pastikan icon putih dan background orange - sama dengan customers */
+.dashboard-summary.orders-summary .summary-card__icon,
+.dashboard-summary.orders-summary .summary-card__icon.accent-orange {
+  background: linear-gradient(135deg, #ff6c00 0%, #c85400 100%) !important;
+  color: #ffffff !important;
+  width: 2.5rem !important;
+  height: 2.5rem !important;
+  border-radius: 0.5rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  box-shadow: 0 4px 14px 0 rgba(251, 133, 0, 0.25) !important;
+}
+
+.dashboard-summary.orders-summary .summary-card__icon svg {
+  color: #ffffff !important;
+  width: 20px !important;
+  height: 20px !important;
+}
+
+/* Label dan value styling - sama dengan customers */
+.dashboard-summary.orders-summary .summary-card__label {
+  font-size: 0.75rem !important;
+  color: var(--dash-muted, #6c757d) !important;
+  margin: 0 !important;
+  font-weight: 500 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  opacity: 0.7 !important;
+}
+
+.dashboard-summary.orders-summary .summary-card__value {
+  font-size: 1.875rem !important;
+  font-weight: 700 !important;
+  color: var(--dash-text, #212529) !important;
+  margin: 0 !important;
+  line-height: 1.25 !important;
+  letter-spacing: -0.03em !important;
 }
 
 .dashboard-summary.orders-summary .summary-card--combined {
