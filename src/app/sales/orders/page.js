@@ -391,6 +391,34 @@ export default function DaftarPesanan() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, debouncedSearch]); // Depend pada page dan debouncedSearch
 
+  // Scroll to top and prevent body scroll when filter modal opens
+  useEffect(() => {
+    if (showFilterModal && typeof window !== "undefined") {
+      // Get current scroll position
+      const scrollY = window.scrollY;
+      
+      // Force scroll to top immediately BEFORE locking body
+      window.scrollTo(0, 0);
+      
+      // Then prevent body scroll and lock position
+      requestAnimationFrame(() => {
+        document.body.style.position = "fixed";
+        document.body.style.top = "0";
+        document.body.style.width = "100%";
+        document.body.style.overflow = "hidden";
+      });
+      
+      return () => {
+        // Restore body scroll
+        document.body.style.position = "";
+        document.body.style.top = "";
+        document.body.style.width = "";
+        document.body.style.overflow = "";
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [showFilterModal]);
+
   // 🔹 Next page
   const handleNextPage = useCallback(() => {
     if (loading || !hasMore) return; // Jangan load jika sedang loading atau sudah habis
@@ -1242,8 +1270,46 @@ export default function DaftarPesanan() {
       {/* Modal Payment History */}
       {/* Filter Modal */}
       {showFilterModal && typeof window !== "undefined" && createPortal(
-        <div className="modal-overlay" onClick={() => setShowFilterModal(false)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "600px", width: "90%" }}>
+        <div 
+          className="modal-overlay" 
+          onClick={() => setShowFilterModal(false)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: "100vw",
+            height: "100vh",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(17, 24, 39, 0.55)",
+            backdropFilter: "blur(3px)",
+            margin: 0,
+            padding: "1rem",
+            boxSizing: "border-box",
+            overflowY: "auto",
+            overflowX: "hidden",
+          }}
+          onWheel={(e) => {
+            // Prevent body scroll when scrolling modal content
+            e.stopPropagation();
+          }}
+        >
+          <div 
+            className="modal-card" 
+            onClick={(e) => e.stopPropagation()} 
+            style={{ 
+              maxWidth: "600px", 
+              width: "90%",
+              position: "relative",
+              zIndex: 10000,
+              margin: "auto",
+              flexShrink: 0,
+            }}
+          >
             <div className="modal-header">
               <h3>Filter Orders</h3>
               <button
