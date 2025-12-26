@@ -92,14 +92,17 @@ export default function DaftarPesanan() {
   const fetchingRef = useRef(false); // Prevent multiple simultaneous fetches
   const searchTimeoutRef = useRef(null);
 
-  // Debounce search input
+  // Debounce search input dan reset ke page 1
   useEffect(() => {
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
     searchTimeoutRef.current = setTimeout(() => {
       setDebouncedSearch(searchInput);
-      setPage(1); // Reset to page 1 when search changes
+      // Reset ke page 1 dan clear data saat search berubah
+      setPage(1);
+      setOrders([]);
+      setHasMore(true);
     }, 500);
     return () => {
       if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
@@ -283,15 +286,22 @@ export default function DaftarPesanan() {
     setPage(1);
     setOrders([]);
     setHasMore(true);
-    fetchOrders(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Hanya sekali saat mount
 
+  // Reset to page 1 when search or filter changes, then fetch
+  useEffect(() => {
+    setPage(1);
+    setOrders([]);
+    setHasMore(true);
+    // Fetch akan dipanggil oleh useEffect berikutnya ketika page berubah
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, filters]); // Reset when search or filter changes
+
   // Fetch data saat page, search, atau filter berubah
   useEffect(() => {
-    if (page > 0 && !loading) {
+    if (page > 0) {
       fetchOrders(page);
-      // Tidak scroll ke atas, tetap di posisi saat ini
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, debouncedSearch, filters]); // Depend pada page, search, dan filters
@@ -358,6 +368,8 @@ export default function DaftarPesanan() {
   const handleApplyFilters = useCallback((newFilters) => {
     setFilters(newFilters);
     setPage(1); // Reset to page 1 when filters change
+    setOrders([]); // Clear existing data
+    setHasMore(true); // Reset hasMore
   }, []);
 
   // === SUMMARY ===
@@ -645,7 +657,7 @@ export default function DaftarPesanan() {
           <article className="summary-card summary-card--combined">
             <div className="summary-card__column">
               <div className={`summary-card__icon accent-orange`}>
-                <ShoppingCart size={24} />
+                <ShoppingCart size={22} />
               </div>
               <div>
                 <p className="summary-card__label">Total orders</p>
@@ -655,7 +667,7 @@ export default function DaftarPesanan() {
             <div className="summary-card__divider"></div>
             <div className="summary-card__column">
               <div className={`summary-card__icon accent-orange`}>
-                <Clock size={24} />
+                <Clock size={22} />
               </div>
               <div>
                 <p className="summary-card__label">Unpaid</p>
@@ -665,7 +677,7 @@ export default function DaftarPesanan() {
             <div className="summary-card__divider"></div>
             <div className="summary-card__column">
               <div className={`summary-card__icon accent-orange`}>
-                <Clock size={24} />
+                <Clock size={22} />
               </div>
               <div>
                 <p className="summary-card__label">Menunggu</p>
@@ -675,7 +687,7 @@ export default function DaftarPesanan() {
             <div className="summary-card__divider"></div>
             <div className="summary-card__column">
               <div className={`summary-card__icon accent-orange`}>
-                <CheckCircle size={24} />
+                <CheckCircle size={22} />
               </div>
               <div>
                 <p className="summary-card__label">Sudah Approve</p>
@@ -685,7 +697,7 @@ export default function DaftarPesanan() {
             <div className="summary-card__divider"></div>
             <div className="summary-card__column">
               <div className={`summary-card__icon accent-orange`}>
-                <XCircle size={24} />
+                <XCircle size={22} />
               </div>
               <div>
                 <p className="summary-card__label">Ditolak</p>

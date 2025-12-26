@@ -1776,8 +1776,8 @@ ADMIN USERS PAGE (Scoped Styles)
   justify-items: start;
   align-items: center;
   gap: 1.5rem;
-  padding: 1.25rem 1.75rem;
-  /* Lock style untuk konsistensi */
+  padding: 1rem 1.5rem;
+  /* Lock style untuk konsistensi - sama dengan customers */
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif !important;
   font-size: inherit !important;
   font-weight: inherit !important;
