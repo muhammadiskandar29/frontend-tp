@@ -380,13 +380,6 @@ export default function ViewOrders({ order, onClose }) {
             </div>
           ) : null}
         </div>
-
-        {/* Footer */}
-        <div className="orders-modal-footer">
-          <button className="orders-btn orders-btn--primary" onClick={onClose} type="button">
-            Tutup
-          </button>
-        </div>
       </div>
 
       {/* Image Viewer Modal */}

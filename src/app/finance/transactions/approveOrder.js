@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import "@/styles/finance/pesanan.css";
+import "@/styles/finance/transactions-view.css";
 import { BACKEND_URL } from "@/config/env";
 
 // Helper function untuk build image URL via proxy
@@ -199,7 +200,7 @@ export default function ApproveOrder({ order, onClose, onApprove }) {
         <div className="orders-modal-header">
           <div>
             <p className="orders-modal-eyebrow">Konfirmasi</p>
-            <h2>Approve Pesanan</h2>
+            <h2>Approve Transactions</h2>
           </div>
           <button className="orders-modal-close" onClick={onClose} type="button" aria-label="Tutup">
             <i className="pi pi-times" />
@@ -221,186 +222,138 @@ export default function ApproveOrder({ order, onClose, onApprove }) {
                   <p style={{ marginTop: "1rem", color: "#ef4444" }}>{error}</p>
                 </div>
               ) : orderData ? (
-                <>
-                  <div className="orders-section">
-                    {/* Ringkasan Informasi Penting */}
-                    <div
-                      style={{
-                        padding: "1rem",
-                        background: "#f0fdf4",
-                        borderRadius: "8px",
-                        border: "1px solid #bbf7d0",
-                        marginBottom: "1.5rem",
-                      }}
-                    >
-                      <div className="orders-row">
-                        <p style={{ fontWeight: 600 }}>Customer</p>
-                        <span style={{ fontWeight: 600 }}>{orderData.customer?.nama || "-"}</span>
-                      </div>
-                      <div className="orders-row">
-                        <p>Produk</p>
-                        <span>{orderData.produk?.nama || "-"}</span>
-                      </div>
-                      <div className="orders-row">
-                        <p>Order ID</p>
-                        <span>#{orderData.order_id || "-"}</span>
-                      </div>
-                      <div className="orders-row">
-                        <p>Jumlah Pembayaran</p>
-                        <span style={{ fontWeight: 600, color: "#059669", fontSize: "1.1rem" }}>
-                          Rp {Number(orderData.amount || 0).toLocaleString("id-ID")}
-                        </span>
-                      </div>
-                      <div className="orders-row">
-                        <p>Pembayaran Ke-</p>
-                        <span>{orderData.payment_ke || "-"}</span>
-                      </div>
-                      <div className="orders-row">
-                        <p>Tipe Pembayaran</p>
-                        <span>
-                          {(() => {
-                            // Cek apakah order memiliki status_pembayaran === 4 (DP)
-                            const statusPembayaran = order?.order_rel?.status_pembayaran !== undefined && order?.order_rel?.status_pembayaran !== null
-                              ? Number(order.order_rel.status_pembayaran)
-                              : (orderData.order?.status_pembayaran !== undefined && orderData.order?.status_pembayaran !== null
-                                ? Number(orderData.order.status_pembayaran)
-                                : null);
-                            
-                            // Jika status_pembayaran === 4, berarti DP
-                            if (statusPembayaran === 4) {
-                              return "DP (Down Payment)";
-                            }
-                            
-                            // Jika bukan DP, tampilkan payment_type sesuai nilai
-                            if (orderData.payment_type === "1") {
-                              return "Pembayaran Pertama";
-                            } else if (orderData.payment_type === "2") {
-                              return "Pelunasan";
-                            } else if (orderData.payment_type) {
-                              return orderData.payment_type;
-                            }
-                            
-                            return "-";
-                          })()}
-                        </span>
-                      </div>
-                      <div className="orders-row">
-                        <p>Metode Pembayaran</p>
-                        <span>{getPaymentMethodLabel(orderData.payment_method) || "-"}</span>
-                      </div>
+                <div className="detail-list">
+                  {/* Informasi Pembayaran */}
+                  <div className="detail-section">
+                    <h4 className="detail-section-title">Informasi Pembayaran</h4>
+                    <div className="detail-item">
+                      <span className="detail-label">Customer</span>
+                      <span className="detail-colon">:</span>
+                      <span className="detail-value" style={{ fontWeight: 600 }}>{orderData.customer?.nama || "-"}</span>
                     </div>
-
-                    {/* Bukti Pembayaran - Penting untuk approve */}
-                    <div
-                      className="orders-row"
-                      style={{ flexDirection: "column", alignItems: "flex-start", gap: "0.5rem" }}
-                    >
-                      <p style={{ fontWeight: 600, marginBottom: "0.5rem" }}>Bukti Pembayaran</p>
-                      {buktiUrl ? (
-                        <div
-                          style={{
-                            position: "relative",
-                            display: "inline-block",
-                            cursor: "pointer",
-                          }}
-                          onClick={() => setShowImageModal(true)}
-                          onMouseEnter={(e) => {
-                            const img = e.currentTarget.querySelector("img");
-                            if (img) {
-                              img.style.transform = "scale(1.02)";
-                              img.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.2)";
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            const img = e.currentTarget.querySelector("img");
-                            if (img) {
-                              img.style.transform = "scale(1)";
-                              img.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1)";
-                            }
-                          }}
-                        >
+                    <div className="detail-item">
+                      <span className="detail-label">Produk</span>
+                      <span className="detail-colon">:</span>
+                      <span className="detail-value">{orderData.produk?.nama || "-"}</span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Order ID</span>
+                      <span className="detail-colon">:</span>
+                      <span className="detail-value">#{orderData.order_id || "-"}</span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Jumlah Pembayaran</span>
+                      <span className="detail-colon">:</span>
+                      <span className="detail-value" style={{ fontWeight: 600, color: "#059669", fontSize: "1.1rem" }}>
+                        Rp {Number(orderData.amount || 0).toLocaleString("id-ID")}
+                      </span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Pembayaran Ke-</span>
+                      <span className="detail-colon">:</span>
+                      <span className="detail-value">{orderData.payment_ke || "-"}</span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Tipe Pembayaran</span>
+                      <span className="detail-colon">:</span>
+                      <span className="detail-value">
+                        {(() => {
+                          const statusPembayaran = order?.order_rel?.status_pembayaran !== undefined && order?.order_rel?.status_pembayaran !== null
+                            ? Number(order.order_rel.status_pembayaran)
+                            : (orderData.order?.status_pembayaran !== undefined && orderData.order?.status_pembayaran !== null
+                              ? Number(orderData.order.status_pembayaran)
+                              : null);
+                          
+                          if (statusPembayaran === 4) {
+                            return "DP (Down Payment)";
+                          }
+                          
+                          if (orderData.payment_type === "1") {
+                            return "Pembayaran Pertama";
+                          } else if (orderData.payment_type === "2") {
+                            return "Pelunasan";
+                          } else if (orderData.payment_type) {
+                            return orderData.payment_type;
+                          }
+                          
+                          return "-";
+                        })()}
+                      </span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Metode Pembayaran</span>
+                      <span className="detail-colon">:</span>
+                      <span className="detail-value">{getPaymentMethodLabel(orderData.payment_method) || "-"}</span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Bukti Pembayaran</span>
+                      <span className="detail-colon">:</span>
+                      <span className="detail-value">
+                        {buktiUrl ? (
                           <img
                             src={buktiUrl}
                             alt={`Bukti Pembayaran ${orderData.customer?.nama || "-"}`}
+                            onClick={() => setShowImageModal(true)}
                             style={{
-                              width: "100%",
-                              maxWidth: "300px",
-                              height: "auto",
-                              maxHeight: "200px",
-                              objectFit: "contain",
-                              borderRadius: "8px",
-                              border: "2px solid #e5e7eb",
-                              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
-                              transition: "all 0.3s ease",
-                              backgroundColor: "#f9fafb",
-                              display: "block",
+                              maxWidth: 150,
+                              maxHeight: 120,
+                              objectFit: "cover",
+                              marginTop: 4,
+                              borderRadius: 6,
+                              border: "1px solid #e5e7eb",
+                              cursor: "pointer",
+                              transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.transform = "scale(1.05)";
+                              e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.transform = "scale(1)";
+                              e.currentTarget.style.boxShadow = "none";
                             }}
                             onError={(e) => {
                               e.target.style.display = "none";
-                              const parent = e.target.parentElement;
-                              if (parent) {
-                                parent.innerHTML = '<span style="color: #ef4444;">Gagal memuat gambar</span>';
-                              }
                               console.error("Gagal memuat gambar:", buktiUrl);
                             }}
                           />
-                          <div
-                            style={{
-                              position: "absolute",
-                              bottom: "8px",
-                              right: "8px",
-                              background: "rgba(0, 0, 0, 0.7)",
-                              color: "#fff",
-                              padding: "0.25rem 0.5rem",
-                              borderRadius: "4px",
-                              fontSize: "0.75rem",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "0.25rem",
-                            }}
-                          >
-                            <i className="pi pi-search-plus" style={{ fontSize: "0.875rem" }} />
-                            Klik untuk memperbesar
-                          </div>
-                        </div>
-                      ) : (
-                        <span style={{ color: "#6b7280" }}>-</span>
-                      )}
+                        ) : (
+                          "-"
+                        )}
+                      </span>
                     </div>
                   </div>
-                </>
+                </div>
               ) : null}
             </>
           ) : (
-            <div className="orders-section">
-              <p style={{ marginBottom: "1.5rem", color: "var(--dash-text)", fontSize: "1rem", textAlign: "center", fontWeight: 500 }}>
-                Apakah anda yakin ingin approve pembayaran ini?
-              </p>
-              {orderData && (
-                <div style={{ 
-                  padding: "1rem", 
-                  background: "#f0fdf4", 
-                  borderRadius: "8px",
-                  border: "1px solid #bbf7d0",
-                  fontSize: "0.875rem"
-                }}>
-                  <p style={{ marginBottom: "0.75rem", fontWeight: 600, color: "#111827" }}>Ringkasan Pembayaran:</p>
-                  <div className="orders-row">
-                    <p>Customer</p>
-                    <span style={{ fontWeight: 600 }}>{orderData.customer?.nama || "-"}</span>
-                  </div>
-                  <div className="orders-row">
-                    <p>Order ID</p>
-                    <span>#{orderData.order_id || "-"}</span>
-                  </div>
-                  <div className="orders-row">
-                    <p>Jumlah Pembayaran</p>
-                    <span style={{ fontWeight: 600, color: "#059669", fontSize: "1rem" }}>
-                      Rp {Number(orderData.amount || 0).toLocaleString("id-ID")}
-                    </span>
-                  </div>
-                </div>
-              )}
+            <div className="detail-list">
+              <div className="detail-section">
+                <p style={{ marginBottom: "1.5rem", color: "#111827", fontSize: "1rem", textAlign: "center", fontWeight: 500 }}>
+                  Apakah anda yakin ingin approve pembayaran ini?
+                </p>
+                {orderData && (
+                  <>
+                    <div className="detail-item">
+                      <span className="detail-label">Customer</span>
+                      <span className="detail-colon">:</span>
+                      <span className="detail-value" style={{ fontWeight: 600 }}>{orderData.customer?.nama || "-"}</span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Order ID</span>
+                      <span className="detail-colon">:</span>
+                      <span className="detail-value">#{orderData.order_id || "-"}</span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Jumlah Pembayaran</span>
+                      <span className="detail-colon">:</span>
+                      <span className="detail-value" style={{ fontWeight: 600, color: "#059669", fontSize: "1rem" }}>
+                        Rp {Number(orderData.amount || 0).toLocaleString("id-ID")}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           )}
         </div>
