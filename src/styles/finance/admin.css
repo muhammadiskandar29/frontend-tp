@@ -82,6 +82,119 @@
   }
 }
 
+/* ============================================
+   FINANCE TRANSACTIONS SUMMARY - Full Width (4 cols) - Maximized
+   ============================================ */
+.dashboard-summary.finance-transactions-summary {
+  display: block !important;
+  grid-template-columns: 1fr !important;
+  width: 100%;
+  max-width: 100%;
+}
+
+.dashboard-summary.finance-transactions-summary .summary-card--combined.summary-card--four-cols {
+  width: 100%;
+  max-width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
+  justify-items: start;
+  align-items: center;
+  gap: 2.5rem;
+  padding: 2rem 2.5rem;
+  background: var(--dash-surface);
+  border: 1px solid var(--dash-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.dashboard-summary.finance-transactions-summary .summary-card__column {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  justify-content: flex-start;
+  flex: 1;
+  min-width: 0;
+}
+
+.dashboard-summary.finance-transactions-summary .summary-card__icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dashboard-summary.finance-transactions-summary .summary-card__divider {
+  width: 1px;
+  height: 70%;
+  background: var(--dash-border);
+  flex-shrink: 0;
+  align-self: center;
+  min-width: 1px;
+  max-width: 1px;
+}
+
+.dashboard-summary.finance-transactions-summary .summary-card__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--dash-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.25;
+}
+
+.dashboard-summary.finance-transactions-summary .summary-card__value {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: var(--dash-text-dark);
+  margin: 0;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+@media (max-width: 1400px) {
+  .dashboard-summary.finance-transactions-summary .summary-card--combined.summary-card--four-cols {
+    gap: 2rem;
+    padding: 1.75rem 2rem;
+  }
+}
+
+@media (max-width: 1200px) {
+  .dashboard-summary.finance-transactions-summary .summary-card--combined.summary-card--four-cols {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    padding: 1.5rem 1.75rem;
+  }
+  
+  .dashboard-summary.finance-transactions-summary .summary-card__divider {
+    display: none;
+  }
+  
+  .dashboard-summary.finance-transactions-summary .summary-card__value {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-summary.finance-transactions-summary .summary-card--combined.summary-card--four-cols {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    padding: 1.25rem 1.5rem;
+  }
+  
+  .dashboard-summary.finance-transactions-summary .summary-card__divider {
+    display: none;
+  }
+  
+  .dashboard-summary.finance-transactions-summary .summary-card__value {
+    font-size: 1.25rem;
+  }
+}
+
 .finance-orders {
   padding: 2rem;
   min-height: 100vh;

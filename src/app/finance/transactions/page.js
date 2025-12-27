@@ -628,44 +628,47 @@ export default function FinanceOrders() {
         </section>
  
         <section className="dashboard-summary finance-transactions-summary">
-          <div className="transactions-summary-grid">
-            <article className="transactions-summary-card">
-              <div className="transactions-summary-card__icon accent-orange">
+          <article className="summary-card summary-card--combined summary-card--four-cols">
+            <div className="summary-card__column">
+              <div className="summary-card__icon accent-orange">
                 <Clock size={24} />
               </div>
               <div>
-                <p className="transactions-summary-card__label">Menunggu Validasi</p>
-                <p className="transactions-summary-card__value">{menungguOrders}</p>
+                <p className="summary-card__label">Menunggu Validasi</p>
+                <p className="summary-card__value">{menungguOrders}</p>
               </div>
-            </article>
-            <article className="transactions-summary-card">
-              <div className="transactions-summary-card__icon accent-orange">
+            </div>
+            <div className="summary-card__divider"></div>
+            <div className="summary-card__column">
+              <div className="summary-card__icon accent-orange">
                 <CheckCircle size={24} />
               </div>
               <div>
-                <p className="transactions-summary-card__label">Sudah Approve</p>
-                <p className="transactions-summary-card__value">{approvedOrders}</p>
+                <p className="summary-card__label">Sudah Approve</p>
+                <p className="summary-card__value">{approvedOrders}</p>
               </div>
-            </article>
-            <article className="transactions-summary-card">
-              <div className="transactions-summary-card__icon accent-orange">
+            </div>
+            <div className="summary-card__divider"></div>
+            <div className="summary-card__column">
+              <div className="summary-card__icon accent-orange">
                 <XCircle size={24} />
               </div>
               <div>
-                <p className="transactions-summary-card__label">Ditolak</p>
-                <p className="transactions-summary-card__value">{ditolakOrders}</p>
+                <p className="summary-card__label">Ditolak</p>
+                <p className="summary-card__value">{ditolakOrders}</p>
               </div>
-            </article>
-            <article className="transactions-summary-card">
-              <div className="transactions-summary-card__icon accent-orange">
+            </div>
+            <div className="summary-card__divider"></div>
+            <div className="summary-card__column">
+              <div className="summary-card__icon accent-orange">
                 <DollarSign size={24} />
               </div>
               <div>
-                <p className="transactions-summary-card__label">Total Nilai Menunggu</p>
-                <p className="transactions-summary-card__value">{totalNilaiMenunggu}</p>
+                <p className="summary-card__label">Total Nilai Menunggu</p>
+                <p className="summary-card__value">{totalNilaiMenunggu}</p>
               </div>
-            </article>
-          </div>
+            </div>
+          </article>
         </section>
         
         <section className="panel orders-panel">
