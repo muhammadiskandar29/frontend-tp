@@ -196,6 +196,7 @@ export default function UpdateOrders({ order, onClose, onSave }) {
       const formData = new FormData();
       
       // Pastikan semua field dikirim dengan benar
+      // Backend mengharapkan field name sesuai dengan database column
       if (bukti?.file) {
         formData.append("bukti_pembayaran", bukti.file);
       }
@@ -207,8 +208,10 @@ export default function UpdateOrders({ order, onClose, onSave }) {
         console.error("❌ [KONFIRMASI] waktu_pembayaran kosong atau tidak valid!");
       }
       
+      // Backend mengharapkan metode_bayar (bukan metode_pembayaran) sesuai dengan database column
       if (metodeBayar && metodeBayar.trim() !== "") {
-        formData.append("metode_pembayaran", metodeBayar);
+        formData.append("metode_bayar", metodeBayar); // Gunakan metode_bayar sesuai database
+        formData.append("metode_pembayaran", metodeBayar); // Juga kirim metode_pembayaran untuk kompatibilitas
       }
       
       formData.append("amount", String(amountValue));

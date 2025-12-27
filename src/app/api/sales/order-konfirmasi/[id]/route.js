@@ -63,12 +63,14 @@ export async function POST(request, { params }) {
       // Verify waktu_pembayaran is included dan pastikan di-forward
       const waktuPembayaranValue = formData.get("waktu_pembayaran");
       const metodePembayaranValue = formData.get("metode_pembayaran");
+      const metodeBayarValue = formData.get("metode_bayar"); // Backend mungkin mengharapkan metode_bayar
       const amountValue = formData.get("amount");
       const buktiPembayaranValue = formData.get("bukti_pembayaran");
       
       console.log(`🔍 [ORDER-KONFIRMASI] ========== VERIFIKASI DATA ==========`);
       console.log(`🔍 [ORDER-KONFIRMASI] waktu_pembayaran dari FormData:`, waktuPembayaranValue);
       console.log(`🔍 [ORDER-KONFIRMASI] metode_pembayaran dari FormData:`, metodePembayaranValue);
+      console.log(`🔍 [ORDER-KONFIRMASI] metode_bayar dari FormData:`, metodeBayarValue);
       console.log(`🔍 [ORDER-KONFIRMASI] amount dari FormData:`, amountValue);
       console.log(`🔍 [ORDER-KONFIRMASI] bukti_pembayaran dari FormData:`, buktiPembayaranValue instanceof File ? `[File] ${buktiPembayaranValue.name}` : buktiPembayaranValue);
       
@@ -86,8 +88,18 @@ export async function POST(request, { params }) {
       }
       
       // Pastikan semua field penting di-forward
-      if (metodePembayaranValue && !forwardFormData.has("metode_pembayaran")) {
-        forwardFormData.append("metode_pembayaran", String(metodePembayaranValue));
+      // Backend mengharapkan metode_bayar (bukan metode_pembayaran) sesuai dengan database column
+      const metodeValue = metodeBayarValue || metodePembayaranValue;
+      if (metodeValue) {
+        // Kirim kedua field untuk kompatibilitas - backend mungkin mengharapkan metode_bayar
+        if (!forwardFormData.has("metode_bayar")) {
+          forwardFormData.append("metode_bayar", String(metodeValue));
+          console.log(`✅ [ORDER-KONFIRMASI] metode_bayar ditambahkan: ${metodeValue}`);
+        }
+        if (!forwardFormData.has("metode_pembayaran")) {
+          forwardFormData.append("metode_pembayaran", String(metodeValue));
+          console.log(`✅ [ORDER-KONFIRMASI] metode_pembayaran ditambahkan: ${metodeValue}`);
+        }
       }
       if (amountValue && !forwardFormData.has("amount")) {
         forwardFormData.append("amount", String(amountValue));
