@@ -3,10 +3,20 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import "@/styles/sales/orders.css";
+import "@/styles/sales/orders-page.css";
 import { createPortal } from "react-dom";
 
 // Use Next.js proxy to avoid CORS
 const BASE_URL = "/api";
+
+const STATUS_PEMBAYARAN_MAP = {
+  0:    { label: "Unpaid", class: "unpaid" },
+  null: { label: "Unpaid", class: "unpaid" },
+  1:    { label: "Menunggu", class: "pending" },
+  2:    { label: "Paid", class: "paid" },
+  3:    { label: "Ditolak", class: "rejected" },
+  4:    { label: "DP", class: "dp" },
+};
 
 // Helper function to clean order data
 const cleanOrderData = (orderData) => {
@@ -107,10 +117,11 @@ export default function UpdateOrders({ order, onClose, onSave }) {
         return statusNum;
       }
     }
-    // Fallback: hitung dari bukti pembayaran
+    // Fallback: hitung dari bukti pembayaran atau order_payment_rel
+    const waktuPembayaran = getWaktuPembayaran(updatedOrder || order);
     if (
       updatedOrder.bukti_pembayaran &&
-      updatedOrder.waktu_pembayaran &&
+      (waktuPembayaran || updatedOrder.waktu_pembayaran) &&
       updatedOrder.bukti_pembayaran !== ""
     )
       return 1;
@@ -157,7 +168,49 @@ export default function UpdateOrders({ order, onClose, onSave }) {
     }
   };
 
+  // Helper untuk mengambil waktu_pembayaran dari order_payment_rel
+  const getWaktuPembayaran = (orderData) => {
+    // Jika sudah ada di level order, gunakan itu
+    if (orderData?.waktu_pembayaran) {
+      return orderData.waktu_pembayaran;
+    }
+    // Ambil dari order_payment_rel jika ada
+    if (orderData?.order_payment_rel && Array.isArray(orderData.order_payment_rel) && orderData.order_payment_rel.length > 0) {
+      // Cari payment yang statusnya approved (status "2") terlebih dahulu
+      const approvedPayment = orderData.order_payment_rel.find(p => String(p.status).trim() === "2");
+      if (approvedPayment && approvedPayment.create_at) {
+        const date = new Date(approvedPayment.create_at);
+        const pad = (n) => n.toString().padStart(2, "0");
+        return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+      }
+      // Jika tidak ada yang approved, ambil yang terbaru
+      const latestPayment = orderData.order_payment_rel.sort((a, b) => {
+        const dateA = new Date(a.create_at || 0);
+        const dateB = new Date(b.create_at || 0);
+        return dateB - dateA;
+      })[0];
+      if (latestPayment && latestPayment.create_at) {
+        const date = new Date(latestPayment.create_at);
+        const pad = (n) => n.toString().padStart(2, "0");
+        return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+      }
+    }
+    return null;
+  };
+
   const getPaymentStatus = (orderData) => {
+    // Cek dari order_payment_rel jika ada
+    if (orderData?.order_payment_rel && Array.isArray(orderData.order_payment_rel) && orderData.order_payment_rel.length > 0) {
+      const hasApprovedPayment = orderData.order_payment_rel.some(p => String(p.status).trim() === "2");
+      if (hasApprovedPayment) {
+        return 1; // Paid
+      }
+      const hasPendingPayment = orderData.order_payment_rel.some(p => String(p.status).trim() === "1");
+      if (hasPendingPayment) {
+        return 1; // Menunggu
+      }
+    }
+    // Fallback ke logika lama
     if (orderData.bukti_pembayaran && orderData.waktu_pembayaran && orderData.metode_bayar) return 1;
     return Number(orderData.status_pembayaran) || 0;
   };
@@ -364,7 +417,7 @@ const handleSubmitUpdate = async (e) => {
       harga: String(updatedOrder.harga ?? order?.harga ?? ""),
       ongkir: String(updatedOrder.ongkir ?? order?.ongkir ?? ""),
       total_harga: String(updatedOrder.total_harga ?? order?.total_harga ?? ""),
-      waktu_pembayaran: updatedOrder.waktu_pembayaran ?? order?.waktu_pembayaran ?? null,
+      waktu_pembayaran: getWaktuPembayaran(updatedOrder || order) || updatedOrder?.waktu_pembayaran || order?.waktu_pembayaran || null,
       bukti_pembayaran: updatedOrder.bukti_pembayaran ?? order?.bukti_pembayaran ?? null,
       metode_bayar: metodeBayar || order?.metode_bayar || null,
       sumber: updatedOrder.sumber ?? order?.sumber ?? "",
@@ -545,18 +598,21 @@ const handleSubmitUpdate = async (e) => {
                 </label>
 
                 {/* Waktu Pembayaran - hanya tampil jika sudah ada */}
-                {(order?.waktu_pembayaran || updatedOrder?.waktu_pembayaran) && (
-                  <label className="form-field">
-                    <span className="field-label">Waktu Pembayaran</span>
-                    <input
-                      type="text"
-                      className="field-input field-input--readonly"
-                      value={updatedOrder?.waktu_pembayaran || order?.waktu_pembayaran || "-"}
-                      readOnly
-                      disabled
-                    />
-                  </label>
-                )}
+                {(() => {
+                  const waktuPembayaran = getWaktuPembayaran(updatedOrder || order);
+                  return waktuPembayaran ? (
+                    <label className="form-field">
+                      <span className="field-label">Waktu Pembayaran</span>
+                      <input
+                        type="text"
+                        className="field-input field-input--readonly"
+                        value={waktuPembayaran}
+                        readOnly
+                        disabled
+                      />
+                    </label>
+                  ) : null;
+                })()}
 
                 {/* Total Paid & Remaining - hanya tampil jika status pembayaran = 4 (DP) */}
                 {computedStatus() === 4 && (

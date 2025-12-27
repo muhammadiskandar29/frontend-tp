@@ -301,8 +301,31 @@ export default function DaftarPesanan() {
             ? Number(order.remaining)
             : (totalHarga - totalPaid);
           
-          // Pastikan waktu_pembayaran ada - ambil dari order data
-          const waktuPembayaran = order.waktu_pembayaran || "";
+          // Ambil waktu_pembayaran dari order_payment_rel jika ada
+          // Prioritas: ambil dari payment yang statusnya approved (status "2") atau yang terbaru
+          let waktuPembayaran = order.waktu_pembayaran || "";
+          if (!waktuPembayaran && order.order_payment_rel && Array.isArray(order.order_payment_rel) && order.order_payment_rel.length > 0) {
+            // Cari payment yang statusnya approved (status "2") terlebih dahulu
+            const approvedPayment = order.order_payment_rel.find(p => String(p.status).trim() === "2");
+            if (approvedPayment && approvedPayment.create_at) {
+              // Format create_at dari "2025-12-27 08:57:53" ke format yang diinginkan
+              const date = new Date(approvedPayment.create_at);
+              const pad = (n) => n.toString().padStart(2, "0");
+              waktuPembayaran = `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+            } else {
+              // Jika tidak ada yang approved, ambil yang terbaru (create_at terakhir)
+              const latestPayment = order.order_payment_rel.sort((a, b) => {
+                const dateA = new Date(a.create_at || 0);
+                const dateB = new Date(b.create_at || 0);
+                return dateB - dateA;
+              })[0];
+              if (latestPayment && latestPayment.create_at) {
+                const date = new Date(latestPayment.create_at);
+                const pad = (n) => n.toString().padStart(2, "0");
+                waktuPembayaran = `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+              }
+            }
+          }
           
           // LOGIKA STATUS PEMBAYARAN:
           // - Jika sudah lunas (total_paid >= total_harga), set ke 2 (Paid)
@@ -487,6 +510,20 @@ export default function DaftarPesanan() {
 
   // === Helper ===
   const computeStatusBayar = useCallback((o) => {
+    // Cek dari order_payment_rel jika ada
+    if (o.order_payment_rel && Array.isArray(o.order_payment_rel) && o.order_payment_rel.length > 0) {
+      // Jika ada payment yang approved (status "2"), berarti sudah paid
+      const hasApprovedPayment = o.order_payment_rel.some(p => String(p.status).trim() === "2");
+      if (hasApprovedPayment) {
+        return 1; // Paid
+      }
+      // Jika ada payment yang pending (status "1"), berarti menunggu
+      const hasPendingPayment = o.order_payment_rel.some(p => String(p.status).trim() === "1");
+      if (hasPendingPayment) {
+        return 1; // Menunggu (dianggap sebagai status pembayaran yang sudah ada)
+      }
+    }
+    // Fallback ke logika lama
     if (
       o.bukti_pembayaran &&
       o.bukti_pembayaran !== "" &&
