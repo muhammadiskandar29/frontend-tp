@@ -471,7 +471,7 @@ export default function DaftarPesanan() {
   };
 
   // 🔹 Format date range untuk display
-  const formatDateRange = (range) => {
+  const formatDateRange = useCallback((range) => {
     if (!range || !Array.isArray(range) || range.length !== 2 || !range[0] || !range[1]) {
       return "Pilih tanggal";
     }
@@ -483,10 +483,10 @@ export default function DaftarPesanan() {
     };
     
     return `${formatDate(range[0])} - ${formatDate(range[1])}`;
-  };
+  }, []);
 
   // === Helper ===
-  function computeStatusBayar(o) {
+  const computeStatusBayar = useCallback((o) => {
     if (
       o.bukti_pembayaran &&
       o.bukti_pembayaran !== "" &&
@@ -496,7 +496,7 @@ export default function DaftarPesanan() {
       return 1; // Paid
     }
     return 0; // Unpaid
-  }
+  }, []);
 
 
   // === SUMMARY ===

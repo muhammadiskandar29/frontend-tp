@@ -46,7 +46,19 @@ export async function POST(request, { params }) {
         } else if (typeof value === "string") {
           console.log(`  📝 ${key}: ${value}`);
           forwardFormData.append(key, value);
+        } else {
+          // Handle other types (number, etc)
+          console.log(`  📝 ${key}: ${String(value)}`);
+          forwardFormData.append(key, String(value));
         }
+      }
+      
+      // Verify waktu_pembayaran is included
+      const waktuPembayaranValue = formData.get("waktu_pembayaran");
+      if (waktuPembayaranValue) {
+        console.log(`✅ [ORDER-KONFIRMASI] waktu_pembayaran ditemukan: ${waktuPembayaranValue}`);
+      } else {
+        console.warn(`⚠️ [ORDER-KONFIRMASI] waktu_pembayaran TIDAK ditemukan di FormData!`);
       }
 
       // Forward to backend

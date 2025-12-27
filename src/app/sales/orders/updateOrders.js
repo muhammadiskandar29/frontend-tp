@@ -199,6 +199,17 @@ export default function UpdateOrders({ order, onClose, onSave }) {
       formData.append("metode_pembayaran", metodeBayar);
       formData.append("amount", String(amountValue));
 
+      // Log untuk debugging
+      console.log("🔍 [KONFIRMASI] Mengirim waktu_pembayaran:", waktuPembayaran);
+      console.log("🔍 [KONFIRMASI] FormData entries:");
+      for (const [key, value] of formData.entries()) {
+        if (value instanceof File) {
+          console.log(`  ${key}: [File] ${value.name} (${value.size} bytes)`);
+        } else {
+          console.log(`  ${key}: ${value}`);
+        }
+      }
+
       const token = localStorage.getItem("token");
       const url = `${BASE_URL}/sales/order-konfirmasi/${order.id}`;
 
@@ -1228,24 +1239,29 @@ const handleSubmitUpdate = async (e) => {
 
         .konfirmasi-form .input-prefix {
           position: absolute;
-          left: 12px;
+          left: 14px;
+          top: 50%;
+          transform: translateY(-50%);
           color: #1f2937;
-          font-size: 15px;
-          font-weight: 600;
-          z-index: 1;
+          font-size: 16px;
+          font-weight: 700;
+          z-index: 2;
+          line-height: 1;
+          pointer-events: none;
         }
 
         .konfirmasi-form .field-input-wrapper .field-input {
-          padding-left: 42px;
+          padding-left: 50px;
           width: 100%;
           padding: 12px 14px;
           border: 1.5px solid #d1d5db;
           border-radius: 8px;
-          font-size: 15px;
-          font-weight: 500;
+          font-size: 16px;
+          font-weight: 600;
           color: #1f2937;
           transition: all 0.2s;
           background: #ffffff;
+          line-height: 1.5;
         }
 
         .konfirmasi-form .field-input-wrapper .field-input:focus {
