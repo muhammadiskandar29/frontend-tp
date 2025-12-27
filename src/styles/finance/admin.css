@@ -934,7 +934,7 @@
     minmax(150px, 1.1fr);                  /* Actions */
   gap: 1rem;
   align-items: center;
-  min-width: 1100px;
+  min-width: 1200px;
 }
 
 .finance-transactions-table__head {
