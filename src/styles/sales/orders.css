@@ -995,12 +995,15 @@ RESPONSIVE STYLES
 .money-input {
   display: flex;
   align-items: center;
-  padding: 0 5px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0 12px;
 }
 
 .money-prefix {
   font-weight: 600;
   margin-right: 8px;
+  color: #374151;
 }
 
 .money-input input {
