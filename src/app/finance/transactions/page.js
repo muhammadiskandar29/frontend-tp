@@ -687,19 +687,19 @@ export default function FinanceOrders() {
         <section className="panel orders-panel">
           <div className="panel__header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
             <div>
-              <p className="panel__eyebrow">Validasi Pembayaran</p>
-              <h3 className="panel__title">Daftar Pembayaran Order</h3>
+              <p className="panel__eyebrow">Validasi Transactions</p>
+              <h3 className="panel__title">Daftar Transactions</h3>
             </div>
           </div>
 
-          <div className="orders-table__wrapper">
-            <div className="orders-table">
-              <div className="orders-table__head">
+          <div className="finance-transactions-table__wrapper">
+            <div className="finance-transactions-table">
+              <div className="finance-transactions-table__head">
                 {ORDERS_COLUMNS.map((column) => (
                   <span key={column}>{column}</span>
                 ))}
               </div>
-              <div className="orders-table__body">
+              <div className="finance-transactions-table__body">
                 {filteredOrders.length > 0 ? (
                   filteredOrders.map((payment, i) => {
                     const orderRel = payment.order_rel || {};
@@ -755,17 +755,14 @@ export default function FinanceOrders() {
                       ? payment.payment_ke
                       : "-";
 
-                    // Format tanggal bayar: "15-12-2025 14:35:36" (konsisten dengan sales)
+                    // Format tanggal bayar: "27-12-2025" (hanya tanggal, tanpa jam)
                     const formatTanggalBayar = (tanggal) => {
                       if (!tanggal) return "-";
                       const date = new Date(tanggal);
                       const day = String(date.getDate()).padStart(2, "0");
                       const month = String(date.getMonth() + 1).padStart(2, "0");
                       const year = date.getFullYear();
-                      const hours = String(date.getHours()).padStart(2, "0");
-                      const minutes = String(date.getMinutes()).padStart(2, "0");
-                      const seconds = String(date.getSeconds()).padStart(2, "0");
-                      return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
+                      return `${day}-${month}-${year}`;
                     };
 
                     const tanggalBayar = formatTanggalBayar(payment.tanggal);
@@ -787,25 +784,25 @@ export default function FinanceOrders() {
 
                     return (
                       <div
-                        className="orders-table__row"
+                        className="finance-transactions-table__row"
                         key={payment.id || `payment-${i}`}
                       >
-                        <div className="orders-table__cell" data-label="#">
+                        <div className="finance-transactions-table__cell" data-label="#">
                           {(page - 1) * perPage + i + 1}
                         </div>
-                        <div className="orders-table__cell" data-label="Order ID">
+                        <div className="finance-transactions-table__cell" data-label="Order ID">
                           {orderId}
                         </div>
                         <div
-                          className="orders-table__cell orders-table__cell--strong"
+                          className="finance-transactions-table__cell finance-transactions-table__cell--strong"
                           data-label="Customer"
                         >
                           {customerNama}
                         </div>
-                        <div className="orders-table__cell" data-label="Produk">
+                        <div className="finance-transactions-table__cell" data-label="Produk">
                           {produkNama}
                         </div>
-                        <div className="orders-table__cell" data-label="Total Harga">
+                        <div className="finance-transactions-table__cell" data-label="Total Harga">
                           <div className="payment-details">
                             <div className="payment-main">
                               <strong>Rp {totalOrder.toLocaleString("id-ID")}</strong>
@@ -834,24 +831,24 @@ export default function FinanceOrders() {
                             )}
                           </div>
                         </div>
-                        <div className="orders-table__cell" data-label="Pembayaran Ke -">
+                        <div className="finance-transactions-table__cell" data-label="Pembayaran Ke -">
                           {paymentKe}
                         </div>
-                        <div className="orders-table__cell" data-label="Amount">
+                        <div className="finance-transactions-table__cell" data-label="Amount">
                           <span style={{ fontWeight: 600, color: "#059669" }}>
                             Rp {Number(payment.amount || 0).toLocaleString("id-ID")}
                           </span>
                         </div>
-                        <div className="orders-table__cell" data-label="Status Validasi">
+                        <div className="finance-transactions-table__cell" data-label="Status Validasi">
                           <span className={`orders-status-badge orders-status-badge--${validationInfo.class}`}>
                             {validationInfo.label}
                           </span>
                         </div>
-                        <div className="orders-table__cell" data-label="Tanggal Bayar">
+                        <div className="finance-transactions-table__cell" data-label="Tanggal Bayar">
                           {tanggalBayar}
                         </div>
                         <div
-                          className="orders-table__cell orders-table__cell--actions"
+                          className="finance-transactions-table__cell finance-transactions-table__cell--actions"
                           data-label="Actions"
                         >
                           <button
@@ -897,7 +894,7 @@ export default function FinanceOrders() {
                     );
                   })
                 ) : (
-                  <p className="orders-empty">
+                  <p className="finance-transactions-table__empty">
                     {orders.length
                       ? "Tidak ada hasil pencarian."
                       : "Loading data pembayaran..."}
