@@ -889,6 +889,7 @@
    ============================================ */
 .finance-transactions-table__wrapper {
   width: 1100px;
+  max-width: 100%;
   overflow-x: auto;
   padding: 1rem;
   padding-bottom: 0.5rem;
