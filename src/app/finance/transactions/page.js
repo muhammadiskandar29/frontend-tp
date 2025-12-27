@@ -426,7 +426,20 @@ export default function FinanceOrders() {
   const menungguOrders = statistics?.menunggu_validasi || 0;
   const approvedOrders = statistics?.sudah_diapprove || 0;
   const ditolakOrders = statistics?.ditolak || 0;
-  const totalNilaiMenunggu = statistics?.total_nilai_menunggu_formatted || "Rp 0";
+  
+  // Format total nilai menunggu - handle nilai besar hingga ratusan juta
+  const formatCurrency = (value) => {
+    if (!value && value !== 0) return "Rp 0";
+    // Jika sudah string yang diformat, return langsung
+    if (typeof value === "string" && value.startsWith("Rp")) return value;
+    // Format number dengan separator ribuan
+    const numValue = typeof value === "number" ? value : parseFloat(value) || 0;
+    return `Rp ${numValue.toLocaleString("id-ID")}`;
+  };
+  
+  const totalNilaiMenunggu = statistics?.total_nilai_menunggu_formatted 
+    ? statistics.total_nilai_menunggu_formatted 
+    : formatCurrency(statistics?.total_nilai_menunggu || 0);
 
   // === EVENT HANDLERS ===
   const handleView = (order) => {

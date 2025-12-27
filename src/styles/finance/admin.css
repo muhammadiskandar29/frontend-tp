@@ -159,6 +159,11 @@
   margin: 0;
   line-height: 1.2;
   letter-spacing: -0.02em;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  min-width: 0;
+  flex: 1;
 }
 
 @media (max-width: 1400px) {
