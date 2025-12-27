@@ -383,18 +383,12 @@
 }
 
 /* ============================================
-   FINANCIAL GRID - Horizontal Layout (4 cards in 1 row)
+   FINANCIAL GRID - 2x2 Layout (2 columns, 2 rows)
    ============================================ */
 .financial-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: var(--space-6);
-}
-
-@media (max-width: 1200px) {
-  .financial-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
 }
 
 @media (max-width: 768px) {
