@@ -41,20 +41,40 @@ export default function PaymentHistoryModal({ orderId, isOpen, onClose }) {
         },
       });
 
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
+      const json = await res.json().catch((parseErr) => {
+        console.error("❌ [PAYMENT-HISTORY] JSON parse error:", parseErr);
+        return { success: false, message: "Gagal memparse response dari server" };
+      });
 
-      const json = await res.json();
+      if (!res.ok) {
+        // Handle error response dari backend
+        const errorMessage = json?.message || json?.error || `HTTP error! status: ${res.status}`;
+        console.error("❌ [PAYMENT-HISTORY] Backend error:", errorMessage);
+        
+        // Jika error terkait database (seperti column tidak ada), tampilkan pesan yang lebih user-friendly
+        if (errorMessage.includes("column") || errorMessage.includes("does not exist") || errorMessage.includes("SQLSTATE")) {
+          setError("Terjadi kesalahan pada database. Silakan hubungi administrator.");
+        } else {
+          setError(errorMessage || "Gagal memuat riwayat pembayaran");
+        }
+        setLoading(false);
+        return;
+      }
       
       if (json.success && json.data) {
         setPaymentHistoryData(json.data);
       } else {
-        setError(json.message || "Gagal memuat riwayat pembayaran");
+        // Handle error dari response yang success: false
+        const errorMessage = json?.message || json?.error || "Gagal memuat riwayat pembayaran";
+        if (errorMessage.includes("column") || errorMessage.includes("does not exist") || errorMessage.includes("SQLSTATE")) {
+          setError("Terjadi kesalahan pada database. Silakan hubungi administrator.");
+        } else {
+          setError(errorMessage);
+        }
       }
     } catch (err) {
-      console.error("Error fetching payment history:", err);
-      setError("Terjadi kesalahan saat memuat riwayat pembayaran");
+      console.error("❌ [PAYMENT-HISTORY] Error fetching payment history:", err);
+      setError("Terjadi kesalahan saat memuat riwayat pembayaran. Silakan coba lagi.");
     } finally {
       setLoading(false);
     }

@@ -39,14 +39,22 @@ export async function GET(request, { params }) {
       return null;
     });
 
-    if (!res.ok) {
+    if (!res.ok || (data && data.success === false)) {
+      // Handle nested error structure: {success: false, data: {success: false, ...}}
+      const errorData = data?.data || data;
+      const errorMessage = errorData?.message || data?.message || "Gagal mengambil riwayat pembayaran";
+      const errorDetail = errorData?.error || data?.error || errorData;
+      
+      console.error("❌ [PAYMENT-HISTORY] Backend error:", errorMessage);
+      console.error("❌ [PAYMENT-HISTORY] Error detail:", errorDetail);
+      
       return NextResponse.json(
         {
           success: false,
-          message: data?.message || "Gagal mengambil riwayat pembayaran",
-          error: data?.error || data,
+          message: errorMessage,
+          error: errorDetail,
         },
-        { status: res.status }
+        { status: res.status || 500 }
       );
     }
 
