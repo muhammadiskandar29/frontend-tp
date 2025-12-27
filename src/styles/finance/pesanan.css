@@ -1177,71 +1177,90 @@ body:has(.update-modal-overlay) {
 .orders-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.55);
-  backdrop-filter: blur(6px);
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(3px);
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding: clamp(1.5rem, 3vw, 2.5rem);
-  overflow-y: auto;
+  padding-top: 6vh;
   z-index: 10000;
+  overflow: hidden !important; /* Tidak ada scrollbar di overlay - force */
 }
 
 .orders-modal-card {
-  width: min(960px, 95vw);
+  width: 100%;
+  max-width: 650px; /* Diperkecil dari 960px */
   background: #ffffff;
-  border-radius: 20px;
-  box-shadow: 0 25px 80px rgba(15, 23, 42, 0.25);
-  overflow: hidden;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  overflow: hidden !important; /* Tidak ada scrollbar di card - force */
   display: flex;
   flex-direction: column;
+  max-height: 85vh; /* Batasi tinggi maksimal */
+  margin: auto;
 }
 
 .orders-modal-header {
-  padding: 1.5rem 1.75rem;
+  padding: 1rem 1.25rem; /* Diperkecil dari 1.5rem 1.75rem */
   border-bottom: 1px solid #e5e7eb;
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 1rem;
+  flex-shrink: 0; /* Header tidak shrink */
+}
+
+.orders-modal-header h2 {
+  font-size: 1.1rem; /* Diperkecil */
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
 }
 
 .orders-modal-eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  font-size: 0.75rem;
+  font-size: 0.7rem; /* Diperkecil */
   color: #94a3b8;
   font-weight: 600;
-  margin: 0 0 0.25rem;
+  margin: 0 0 0.2rem;
 }
 
 .orders-modal-close {
-  width: 40px;
-  height: 40px;
+  width: 32px; /* Diperkecil dari 40px */
+  height: 32px;
   border-radius: 50%;
   border: none;
   background: #f1f5f9;
   color: #0f172a;
-  font-size: 1rem;
+  font-size: 0.9rem;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s ease, transform 0.2s ease;
+  transition: background 0.2s ease;
+  flex-shrink: 0;
 }
 
 .orders-modal-close:hover {
   background: #e2e8f0;
-  transform: rotate(90deg);
 }
 
 .orders-modal-body {
-  padding: 1.5rem 1.75rem 2rem;
+  padding: 1rem 1.25rem; /* Diperkecil dari 1.5rem 1.75rem */
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  max-height: 80vh;
-  overflow-y: auto;
+  gap: 0;
+  overflow-y: auto; /* Hanya body yang scrollable */
+  overflow-x: hidden;
+  flex: 1; /* Ambil sisa ruang */
+  min-height: 0; /* Penting untuk flex scroll */
+}
+
+/* Pastikan detail-list tidak membuat scrollbar sendiri */
+.orders-modal-body .detail-list {
+  overflow: visible;
+  height: auto;
 }
 
 .orders-form-grid {
@@ -1351,9 +1370,9 @@ body:has(.update-modal-overlay) {
   display: flex;
   justify-content: flex-end;
   gap: 0.65rem;
-  padding-top: 1rem;
+  padding: 0.75rem 1.25rem; /* Diperkecil */
   border-top: 1px solid #e5e7eb;
-  margin-top: 0.5rem;
+  flex-shrink: 0; /* Footer tidak shrink */
 }
 
 .orders-btn {

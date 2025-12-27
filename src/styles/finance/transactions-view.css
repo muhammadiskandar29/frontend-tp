@@ -3,6 +3,7 @@
    (Mirror dari sales/orders/viewOrders.js tapi dengan style terpisah)
    ============================================ */
 
+/* Detail List - Tidak ada overflow, biarkan parent yang handle scroll */
 .detail-list {
   display: flex;
   flex-direction: column;
