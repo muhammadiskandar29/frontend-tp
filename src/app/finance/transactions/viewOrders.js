@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import "@/styles/finance/pesanan.css";
+import "@/styles/finance/transactions-view.css";
 import { BACKEND_URL } from "@/config/env";
 
 // Helper function untuk build image URL via proxy
@@ -174,8 +175,8 @@ export default function ViewOrders({ order, onClose }) {
         {/* Header */}
         <div className="orders-modal-header">
           <div>
-            <p className="orders-modal-eyebrow">Detail Validasi Pembayaran</p>
-            <h2>Detail Pembayaran Order</h2>
+            <p className="orders-modal-eyebrow">Detail Validasi Transactions</p>
+            <h2>Detail Transactions</h2>
           </div>
           <button className="orders-modal-close" onClick={onClose} type="button" aria-label="Tutup detail">
             <i className="pi pi-times" />
@@ -197,96 +198,80 @@ export default function ViewOrders({ order, onClose }) {
           ) : orderData ? (
             <>
               {/* Informasi Pelanggan */}
-              <div className="orders-section">
-                <h4>Informasi Pelanggan</h4>
-                <div className="orders-row">
-                  <p>Nama</p>
-                  <span>{orderData.customer?.nama || "-"}</span>
+              <div className="finance-transactions-info-section">
+                <h4 className="finance-transactions-info-title">Informasi Pelanggan</h4>
+                <div className="finance-transactions-info-row">
+                  <span className="finance-transactions-info-label">Nama:</span>
+                  <span className="finance-transactions-info-value">{orderData.customer?.nama || "-"}</span>
                 </div>
-                <div className="orders-row">
-                  <p>Email</p>
-                  <span>{orderData.customer?.email || "-"}</span>
+                <div className="finance-transactions-info-row">
+                  <span className="finance-transactions-info-label">No. WhatsApp:</span>
+                  <span className="finance-transactions-info-value">{orderData.customer?.wa || "-"}</span>
                 </div>
-                <div className="orders-row">
-                  <p>No. WhatsApp</p>
-                  <span>{orderData.customer?.wa || "-"}</span>
-                </div>
-                <div className="orders-row">
-                  <p>Alamat</p>
-                  <span>{orderData.customer?.alamat || "-"}</span>
+                <div className="finance-transactions-info-row">
+                  <span className="finance-transactions-info-label">Alamat:</span>
+                  <span className="finance-transactions-info-value">{orderData.customer?.alamat || "-"}</span>
                 </div>
               </div>
+
+              <hr className="finance-transactions-divider" />
 
               {/* Detail Produk */}
-              <div className="orders-section">
-                <h4>Detail Produk</h4>
-                <div className="orders-row">
-                  <p>Nama Produk</p>
-                  <span>{orderData.produk?.nama || "-"}</span>
+              <div className="finance-transactions-info-section">
+                <h4 className="finance-transactions-info-title">Detail Produk</h4>
+                <div className="finance-transactions-info-row">
+                  <span className="finance-transactions-info-label">Nama Produk:</span>
+                  <span className="finance-transactions-info-value">{orderData.produk?.nama || "-"}</span>
                 </div>
-                <div className="orders-row">
-                  <p>Kode Produk</p>
-                  <span>{orderData.produk?.kode || "-"}</span>
+                <div className="finance-transactions-info-row">
+                  <span className="finance-transactions-info-label">Harga:</span>
+                  <span className="finance-transactions-info-value">Rp {Number(orderData.produk?.harga || orderData.order?.total_harga || 0).toLocaleString("id-ID")}</span>
                 </div>
-              </div>
-
-              {/* Informasi Order */}
-              <div className="orders-section">
-                <h4>Informasi Order</h4>
-                <div className="orders-row">
-                  <p>Order ID</p>
-                  <span>#{orderData.order_id || "-"}</span>
+                <div className="finance-transactions-info-row">
+                  <span className="finance-transactions-info-label">Ongkir:</span>
+                  <span className="finance-transactions-info-value">Rp {Number(orderData.order?.ongkir || 0).toLocaleString("id-ID")}</span>
                 </div>
-                <div className="orders-row">
-                  <p>Total Harga</p>
-                  <span>Rp {Number(orderData.order?.total_harga || 0).toLocaleString("id-ID")}</span>
-                </div>
-                <div className="orders-row">
-                  <p>Ongkir</p>
-                  <span>Rp {Number(orderData.order?.ongkir || 0).toLocaleString("id-ID")}</span>
+                <div className="finance-transactions-info-row">
+                  <span className="finance-transactions-info-label">Total Harga:</span>
+                  <span className="finance-transactions-info-value">Rp {Number(orderData.order?.total_harga || 0).toLocaleString("id-ID")}</span>
                 </div>
               </div>
 
               {/* Informasi Pembayaran */}
-              <div className="orders-section">
-                <h4>Informasi Pembayaran</h4>
-                <div className="orders-row">
-                  <p>ID Validasi</p>
-                  <span>#{orderData.id || "-"}</span>
+              <div className="finance-transactions-info-section">
+                <h4 className="finance-transactions-info-title">Informasi Pembayaran</h4>
+                <div className="finance-transactions-info-row">
+                  <span className="finance-transactions-info-label">ID Validasi:</span>
+                  <span className="finance-transactions-info-value">#{orderData.id || "-"}</span>
                 </div>
-                <div className="orders-row">
-                  <p>Jumlah Pembayaran</p>
-                  <span style={{ fontWeight: 600, color: "#059669" }}>
+                <div className="finance-transactions-info-row">
+                  <span className="finance-transactions-info-label">Jumlah Pembayaran:</span>
+                  <span className="finance-transactions-info-value" style={{ fontWeight: 600, color: "#059669" }}>
                     Rp {Number(orderData.amount || 0).toLocaleString("id-ID")}
                   </span>
                 </div>
-                <div className="orders-row">
-                  <p>Pembayaran Ke-</p>
-                  <span>{orderData.payment_ke || "-"}</span>
+                <div className="finance-transactions-info-row">
+                  <span className="finance-transactions-info-label">Pembayaran Ke-:</span>
+                  <span className="finance-transactions-info-value">{orderData.payment_ke || "-"}</span>
                 </div>
-                <div className="orders-row">
-                  <p>Metode Pembayaran</p>
-                  <span>{getPaymentMethodLabel(orderData.payment_method) || "-"}</span>
+                <div className="finance-transactions-info-row">
+                  <span className="finance-transactions-info-label">Metode Pembayaran:</span>
+                  <span className="finance-transactions-info-value">{getPaymentMethodLabel(orderData.payment_method) || "-"}</span>
                 </div>
-                <div className="orders-row">
-                  <p>Tipe Pembayaran</p>
-                  <span>
+                <div className="finance-transactions-info-row">
+                  <span className="finance-transactions-info-label">Tipe Pembayaran:</span>
+                  <span className="finance-transactions-info-value">
                     {(() => {
-                      // Cek apakah order memiliki status_pembayaran === 4 (DP)
-                      // Cek dari order prop yang dikirim ke modal (order.order_rel?.status_pembayaran)
-                      // atau dari orderData jika tersedia
                       const statusPembayaran = order?.order_rel?.status_pembayaran !== undefined && order?.order_rel?.status_pembayaran !== null
                         ? Number(order.order_rel.status_pembayaran)
                         : (orderData.order?.status_pembayaran !== undefined && orderData.order?.status_pembayaran !== null
                           ? Number(orderData.order.status_pembayaran)
                           : null);
                       
-                      // Jika status_pembayaran === 4, berarti DP
                       if (statusPembayaran === 4) {
                         return "DP (Down Payment)";
                       }
                       
-                      // Jika bukan DP, tampilkan payment_type sesuai nilai (jangan asumsikan "1" = DP)
                       if (orderData.payment_type === "1") {
                         return "Pembayaran Pertama";
                       } else if (orderData.payment_type === "2") {
@@ -299,13 +284,14 @@ export default function ViewOrders({ order, onClose }) {
                     })()}
                   </span>
                 </div>
-                <div className="orders-row">
-                  <p>Tanggal Pembayaran</p>
-                  <span>{formatTanggal(orderData.tanggal) || "-"}</span>
+                <div className="finance-transactions-info-row">
+                  <span className="finance-transactions-info-label">Tanggal Pembayaran:</span>
+                  <span className="finance-transactions-info-value">{formatTanggal(orderData.tanggal) || "-"}</span>
                 </div>
-                <div className="orders-row">
-                  <p>Status Validasi</p>
+                <div className="finance-transactions-info-row">
+                  <span className="finance-transactions-info-label">Status Validasi:</span>
                   <span
+                    className="finance-transactions-info-value"
                     style={{
                       padding: "0.25rem 0.75rem",
                       borderRadius: "0.375rem",
@@ -330,16 +316,13 @@ export default function ViewOrders({ order, onClose }) {
                   </span>
                 </div>
                 {orderData.catatan && (
-                  <div className="orders-row">
-                    <p>Catatan</p>
-                    <span>{orderData.catatan}</span>
+                  <div className="finance-transactions-info-row">
+                    <span className="finance-transactions-info-label">Catatan:</span>
+                    <span className="finance-transactions-info-value">{orderData.catatan}</span>
                   </div>
                 )}
-                <div
-                  className="orders-row"
-                  style={{ flexDirection: "column", alignItems: "flex-start", gap: "0.5rem" }}
-                >
-                  <p>Bukti Pembayaran</p>
+                <div className="finance-transactions-info-row" style={{ flexDirection: "column", alignItems: "flex-start", gap: "0.5rem" }}>
+                  <span className="finance-transactions-info-label">Bukti Pembayaran:</span>
                   {buktiUrl ? (
                     <div
                       style={{
@@ -408,7 +391,7 @@ export default function ViewOrders({ order, onClose }) {
                       </div>
                     </div>
                   ) : (
-                    <span style={{ color: "#6b7280" }}>-</span>
+                    <span className="finance-transactions-info-value" style={{ color: "#6b7280" }}>-</span>
                   )}
                 </div>
               </div>
