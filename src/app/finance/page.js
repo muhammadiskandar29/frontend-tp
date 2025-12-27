@@ -163,25 +163,25 @@ export default function FinanceDashboard() {
         title: "Net Revenue",
         value: financial?.net_revenue ? formatCurrency(financial.net_revenue) : (loading ? "…" : "Rp0"),
         icon: <TrendingUp size={24} />,
-        color: "accent-indigo",
+        color: "accent-orange",
       },
       {
         title: "Net Profit",
         value: financial?.net_profit ? formatCurrency(financial.net_profit) : (loading ? "…" : "Rp0"),
         icon: <PiggyBank size={24} />,
-        color: "accent-teal",
+        color: "accent-orange",
       },
       {
         title: "Cash Flow",
         value: financial?.cash_flow ? formatCurrency(financial.cash_flow) : (loading ? "…" : "Rp0"),
         icon: <Wallet size={24} />,
-        color: "accent-blue",
+        color: "accent-orange",
       },
       {
         title: "Outstanding Payments",
         value: financial?.outstanding_payments ? formatCurrency(financial.outstanding_payments) : (loading ? "…" : "Rp0"),
         icon: <AlertCircle size={24} />,
-        color: "accent-amber",
+        color: "accent-orange",
       },
     ];
   }, [financial, loading]);
@@ -192,25 +192,25 @@ export default function FinanceDashboard() {
         title: "Total Orders",
         value: overview?.orders_total?.toLocaleString("id-ID") ?? (loading ? "…" : "0"),
         icon: <ShoppingCart size={24} />,
-        color: "accent-blue",
+        color: "accent-orange",
       },
       {
         title: "Total Paid",
         value: overview?.orders_paid?.toLocaleString("id-ID") ?? (loading ? "…" : "0"),
         icon: <CreditCard size={24} />,
-        color: "accent-emerald",
+        color: "accent-orange",
       },
       {
         title: "Paid Ratio",
         value: overview?.paid_ratio ? `${overview.paid_ratio}%` : (loading ? "…" : "0%"),
         icon: <Percent size={24} />,
-        color: "accent-amber",
+        color: "accent-orange",
       },
       {
         title: "Unpaid Orders",
         value: overview?.orders_unpaid?.toLocaleString("id-ID") ?? (loading ? "…" : "0"),
         icon: <Package size={24} />,
-        color: "accent-red",
+        color: "accent-orange",
       },
     ];
   }, [overview, loading]);
@@ -233,9 +233,9 @@ export default function FinanceDashboard() {
         {error && <div className="dashboard-alert">{error}</div>}
 
         <section className="financial-snapshot-section">
-          <div className="revenue-grid">
+          <div className="revenue-grid revenue-grid--2x2">
             {revenueCards.map((card) => (
-              <article className="revenue-card revenue-card--solid" key={card.title}>
+              <article className="revenue-card revenue-card--solid revenue-card--orange" key={card.title}>
                 <div className={`revenue-card__icon ${card.color}`}>{card.icon}</div>
                 <div>
                   <p className="revenue-card__label">{card.title}</p>
@@ -295,13 +295,13 @@ export default function FinanceDashboard() {
               </div>
             </div>
 
-            <div className="revenue-grid">
+            <div className="order-summary-list">
               {orderSummaryCards.map((card) => (
-                <article className="revenue-card" key={card.title}>
-                  <div className={`revenue-card__icon ${card.color}`}>{card.icon}</div>
+                <article className="order-summary-card" key={card.title}>
+                  <div className={`order-summary-card__icon ${card.color}`}>{card.icon}</div>
                   <div>
-                    <p className="revenue-card__label">{card.title}</p>
-                    <p className="revenue-card__value">{card.value}</p>
+                    <p className="order-summary-card__label">{card.title}</p>
+                    <p className="order-summary-card__value">{card.value}</p>
                   </div>
                 </article>
               ))}

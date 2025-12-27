@@ -236,6 +236,17 @@
   gap: var(--space-6);
 }
 
+.revenue-grid--2x2 {
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-6);
+}
+
+@media (max-width: 768px) {
+  .revenue-grid--2x2 {
+    grid-template-columns: 1fr;
+  }
+}
+
 .revenue-card {
   background: var(--dash-surface);
   border: 1px solid var(--dash-border);
@@ -251,6 +262,12 @@
 .revenue-card--solid {
   background: linear-gradient(135deg, var(--dash-surface) 0%, rgba(251, 133, 0, 0.02) 100%);
   border-color: rgba(251, 133, 0, 0.15);
+}
+
+.revenue-card--orange {
+  background: var(--dash-surface);
+  border: 1px solid var(--dash-border);
+  box-shadow: var(--shadow-card);
 }
 
 .revenue-card__icon {
@@ -314,5 +331,54 @@
 .accent-teal {
   background: #14b8a6;
   color: #ffffff;
+}
+
+/* ============================================
+   ORDER SUMMARY LIST - Vertical Layout
+   ============================================ */
+.order-summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.order-summary-card {
+  background: var(--dash-surface);
+  border: 1px solid var(--dash-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+  box-shadow: var(--shadow-card);
+  transition: all var(--transition-base);
+}
+
+.order-summary-card__icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.order-summary-card__label {
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: var(--dash-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 0 0 var(--space-1) 0;
+  line-height: var(--leading-tight);
+}
+
+.order-summary-card__value {
+  font-size: var(--text-xl);
+  font-weight: var(--font-bold);
+  color: var(--dash-text-dark);
+  margin: 0;
+  line-height: var(--leading-tight);
 }
 
