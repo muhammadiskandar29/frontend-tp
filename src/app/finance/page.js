@@ -233,13 +233,13 @@ export default function FinanceDashboard() {
         {error && <div className="dashboard-alert">{error}</div>}
 
         <section className="financial-snapshot-section">
-          <div className="revenue-grid revenue-grid--2x2">
+          <div className="financial-grid">
             {revenueCards.map((card) => (
-              <article className="revenue-card revenue-card--solid revenue-card--orange" key={card.title}>
-                <div className={`revenue-card__icon ${card.color}`}>{card.icon}</div>
+              <article className="financial-card" key={card.title}>
+                <div className={`financial-card__icon ${card.color}`}>{card.icon}</div>
                 <div>
-                  <p className="revenue-card__label">{card.title}</p>
-                  <p className="revenue-card__value">{card.value}</p>
+                  <p className="financial-card__label">{card.title}</p>
+                  <p className="financial-card__value">{card.value}</p>
                 </div>
               </article>
             ))}
