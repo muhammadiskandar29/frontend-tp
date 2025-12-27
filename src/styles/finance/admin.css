@@ -888,8 +888,7 @@
    FINANCE TRANSACTIONS TABLE - 10 Columns (Optimized)
    ============================================ */
 .finance-transactions-table__wrapper {
-  width: 100%;
-  max-width: 100%;
+  width: 1100px;
   overflow-x: auto;
   padding: 1rem;
   padding-bottom: 0.5rem;
@@ -957,10 +956,9 @@
   background: var(--dash-surface);
   border: 1px solid var(--dash-border);
   border-radius: 0.75rem;
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 0.6rem;
   box-shadow: var(--dash-shadow);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  margin-bottom: 0.5rem;
 }
 
 .finance-transactions-table__row:hover {
