@@ -115,6 +115,163 @@ export default function BroadcastPage() {
     return statusMap[status?.trim()] || "default";
   };
 
+  // Status Order Mapping
+  const STATUS_ORDER_MAP = {
+    "1": "Proses",
+    "2": "Sukses",
+    "3": "Failed",
+    "4": "Upselling",
+    "N": "Dihapus",
+  };
+
+  // Status Pembayaran Mapping
+  const STATUS_PEMBAYARAN_MAP = {
+    null: "Unpaid",
+    0: "Unpaid",
+    1: "Menunggu",
+    2: "Paid",
+    3: "Ditolak",
+    4: "DP",
+  };
+
+  // Fetch products untuk mendapatkan nama produk
+  const [products, setProducts] = useState([]);
+  
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const res = await fetch("/api/sales/produk", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && json.data) {
+            setProducts(Array.isArray(json.data) ? json.data : []);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching products:", err);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  // Helper function untuk mendapatkan nama produk dari ID
+  const getProductName = (productId) => {
+    const product = products.find(p => p.id === productId);
+    return product?.nama || `Produk ID: ${productId}`;
+  };
+
+  // Helper function untuk mendapatkan label status order
+  const getStatusOrderLabel = (status) => {
+    if (Array.isArray(status)) {
+      return status.map(s => STATUS_ORDER_MAP[s] || s).join(", ");
+    }
+    return STATUS_ORDER_MAP[status] || status || "-";
+  };
+
+  // Helper function untuk mendapatkan label status pembayaran
+  const getStatusPembayaranLabel = (status) => {
+    if (Array.isArray(status)) {
+      return status.map(s => STATUS_PEMBAYARAN_MAP[s] || s).join(", ");
+    }
+    return STATUS_PEMBAYARAN_MAP[status] || status || "-";
+  };
+
+  // Format target untuk ditampilkan
+  const formatTarget = (targetData) => {
+    if (!targetData || Object.keys(targetData).length === 0) {
+      return "-";
+    }
+
+    const parts = [];
+    
+    // Format Produk
+    if (targetData.produk) {
+      const produkList = Array.isArray(targetData.produk) ? targetData.produk : [targetData.produk];
+      const validProduk = produkList.filter(id => id !== null && id !== undefined && id !== "");
+      if (validProduk.length > 0) {
+        const produkNames = validProduk.map(id => getProductName(id));
+        parts.push(
+          <div key="produk" style={{ marginBottom: produkNames.length > 1 ? "0.5rem" : "0.25rem" }}>
+            <strong>Produk:</strong>
+            {produkNames.length === 1 ? (
+              <span style={{ marginLeft: "0.5rem" }}>{produkNames[0]}</span>
+            ) : (
+              produkNames.map((name, idx) => (
+                <div key={idx} style={{ marginLeft: "1rem", marginTop: idx === 0 ? "0.25rem" : "0.125rem" }}>
+                  {name}
+                </div>
+              ))
+            )}
+          </div>
+        );
+      }
+    }
+
+    // Format Status Order
+    if (targetData.status_order !== undefined && targetData.status_order !== null && targetData.status_order !== "") {
+      const statusOrderList = Array.isArray(targetData.status_order) 
+        ? targetData.status_order 
+        : [targetData.status_order];
+      const validStatus = statusOrderList.filter(s => s !== null && s !== undefined && s !== "");
+      if (validStatus.length > 0) {
+        const statusLabels = validStatus.map(s => STATUS_ORDER_MAP[s] || s);
+        parts.push(
+          <div key="status_order" style={{ marginBottom: statusLabels.length > 1 ? "0.5rem" : "0.25rem" }}>
+            <strong>Status Order:</strong>
+            {statusLabels.length === 1 ? (
+              <span style={{ marginLeft: "0.5rem" }}>{statusLabels[0]}</span>
+            ) : (
+              statusLabels.map((label, idx) => (
+                <div key={idx} style={{ marginLeft: "1rem", marginTop: idx === 0 ? "0.25rem" : "0.125rem" }}>
+                  {label}
+                </div>
+              ))
+            )}
+          </div>
+        );
+      }
+    }
+
+    // Format Status Pembayaran
+    if (targetData.status_pembayaran !== undefined && targetData.status_pembayaran !== null && targetData.status_pembayaran !== "") {
+      const statusPembayaranList = Array.isArray(targetData.status_pembayaran)
+        ? targetData.status_pembayaran
+        : [targetData.status_pembayaran];
+      const validStatus = statusPembayaranList.filter(s => s !== null && s !== undefined && s !== "");
+      if (validStatus.length > 0) {
+        const statusLabels = validStatus.map(s => STATUS_PEMBAYARAN_MAP[s] || s || "Unpaid");
+        parts.push(
+          <div key="status_pembayaran" style={{ marginBottom: statusLabels.length > 1 ? "0.5rem" : "0.25rem" }}>
+            <strong>Status Pembayaran:</strong>
+            {statusLabels.length === 1 ? (
+              <span style={{ marginLeft: "0.5rem" }}>{statusLabels[0]}</span>
+            ) : (
+              statusLabels.map((label, idx) => (
+                <div key={idx} style={{ marginLeft: "1rem", marginTop: idx === 0 ? "0.25rem" : "0.125rem" }}>
+                  {label}
+                </div>
+              ))
+            )}
+          </div>
+        );
+      }
+    }
+
+    return parts.length > 0 ? parts : "-";
+  };
+
   // Handle Delete Broadcast
   const handleDelete = async (broadcastId, broadcastNama) => {
     if (!confirm(`Apakah Anda yakin ingin menghapus broadcast "${broadcastNama}"?`)) {
@@ -202,6 +359,56 @@ export default function BroadcastPage() {
 
   return (
     <Layout title="Manage Broadcast">
+      <style jsx>{`
+        .orders-modal-footer {
+          display: flex;
+          justify-content: flex-end;
+          gap: 0.75rem;
+          padding: 1.25rem 1.5rem;
+          border-top: 1px solid #e5e7eb;
+          background: #f9fafb;
+        }
+
+        .orders-modal-footer .orders-button {
+          padding: 0.625rem 1.25rem;
+          border-radius: 0.5rem;
+          font-size: 0.875rem;
+          font-weight: 500;
+          border: 1px solid #e5e7eb;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .orders-modal-footer .orders-button--ghost {
+          background: #ffffff;
+          color: #374151;
+          border-color: #d1d5db;
+        }
+
+        .orders-modal-footer .orders-button--ghost:hover:not(:disabled) {
+          background: #f9fafb;
+          border-color: #9ca3af;
+        }
+
+        .orders-modal-footer .orders-button--primary {
+          background: #c85400;
+          color: #ffffff;
+          border-color: #c85400;
+        }
+
+        .orders-modal-footer .orders-button--primary:hover:not(:disabled) {
+          background: #b04800;
+          border-color: #b04800;
+        }
+
+        .orders-modal-footer .orders-button:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+      `}</style>
       <div className="dashboard-shell orders-shell">
         <section className="dashboard-hero orders-hero">
           <div className="orders-toolbar">
@@ -279,9 +486,8 @@ export default function BroadcastPage() {
                         <div className="orders-table__cell" data-label="Tanggal Kirim">
                           {formatDate(broadcast.tanggal_kirim)}
                         </div>
-                        <div className="orders-table__cell" data-label="Target">
-                          {targetData.produk ? `Produk: ${targetData.produk.join(", ")}` : "-"}
-                          {targetData.status_order ? ` | Status: ${targetData.status_order}` : ""}
+                        <div className="orders-table__cell" data-label="Target" style={{ fontSize: "0.875rem", lineHeight: "1.5" }}>
+                          {formatTarget(targetData)}
                         </div>
                         <div className="orders-table__cell" data-label="Total Target">
                           {broadcast.total_target || "0"}
