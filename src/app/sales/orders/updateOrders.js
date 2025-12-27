@@ -194,21 +194,40 @@ export default function UpdateOrders({ order, onClose, onSave }) {
 
       // Build FormData sesuai API spec
       const formData = new FormData();
-      formData.append("bukti_pembayaran", bukti.file);
-      formData.append("waktu_pembayaran", waktuPembayaran);
-      formData.append("metode_pembayaran", metodeBayar);
+      
+      // Pastikan semua field dikirim dengan benar
+      if (bukti?.file) {
+        formData.append("bukti_pembayaran", bukti.file);
+      }
+      
+      // Pastikan waktu_pembayaran selalu dikirim (tidak boleh null atau empty)
+      if (waktuPembayaran && waktuPembayaran.trim() !== "") {
+        formData.append("waktu_pembayaran", waktuPembayaran);
+      } else {
+        console.error("❌ [KONFIRMASI] waktu_pembayaran kosong atau tidak valid!");
+      }
+      
+      if (metodeBayar && metodeBayar.trim() !== "") {
+        formData.append("metode_pembayaran", metodeBayar);
+      }
+      
       formData.append("amount", String(amountValue));
 
-      // Log untuk debugging
-      console.log("🔍 [KONFIRMASI] Mengirim waktu_pembayaran:", waktuPembayaran);
+      // Log untuk debugging - pastikan semua field ada
+      console.log("🔍 [KONFIRMASI] ========== REQUEST DATA ==========");
+      console.log("🔍 [KONFIRMASI] waktu_pembayaran:", waktuPembayaran);
+      console.log("🔍 [KONFIRMASI] metode_pembayaran:", metodeBayar);
+      console.log("🔍 [KONFIRMASI] amount:", amountValue);
+      console.log("🔍 [KONFIRMASI] bukti_pembayaran:", bukti?.file ? `[File] ${bukti.file.name} (${bukti.file.size} bytes)` : "TIDAK ADA");
       console.log("🔍 [KONFIRMASI] FormData entries:");
       for (const [key, value] of formData.entries()) {
         if (value instanceof File) {
-          console.log(`  ${key}: [File] ${value.name} (${value.size} bytes)`);
+          console.log(`  ✅ ${key}: [File] ${value.name} (${value.size} bytes)`);
         } else {
-          console.log(`  ${key}: ${value}`);
+          console.log(`  ✅ ${key}: ${value}`);
         }
       }
+      console.log("🔍 [KONFIRMASI] ====================================");
 
       const token = localStorage.getItem("token");
       const url = `${BASE_URL}/sales/order-konfirmasi/${order.id}`;
