@@ -248,7 +248,7 @@ export default function FinanceOrders() {
           }
         }
       } else {
-        console.warn("⚠️ Unexpected response format (finance/orders):", json);
+        console.warn("⚠️ Unexpected response format (finance/transactions):", json);
         setOrders([]);
         setHasMore(false);
         setPaginationInfo(null);
@@ -1049,3 +1049,4 @@ export default function FinanceOrders() {
     </Layout>
   );
 }
+
