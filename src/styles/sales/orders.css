@@ -995,26 +995,23 @@ RESPONSIVE STYLES
 .money-input {
   display: flex;
   align-items: center;
-  border: 1px solid #d1d5db;
+  border: 1.5px solid #d1d5db;
   border-radius: 8px;
   padding: 10px 12px;
-  background: #ffffff;
+  background: #fff;
 }
 
 .money-prefix {
   font-weight: 600;
   margin-right: 8px;
   color: #374151;
-  white-space: nowrap;
 }
 
-.money-input input {
-  border: none;
-  outline: none;
-  background: transparent;   /* 🔥 penting */
+.money-input-field {
+  all: unset;   /* ⬅️ PEMBUNUH SEMUA BORDER */
   flex: 1;
   font-size: 14px;
   color: #111827;
-  padding: 0;               
 }
+
 

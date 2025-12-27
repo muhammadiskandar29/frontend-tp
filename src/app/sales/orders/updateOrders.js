@@ -955,7 +955,7 @@ const handleSubmitUpdate = async (e) => {
                   <span className="money-prefix">Rp</span>
                   <input
                     type="text"
-                    className="field-input"
+                    className="money-input-field"
                     value={amount}
                     onChange={handleAmountChange}
                     disabled={!isDP}
