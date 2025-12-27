@@ -137,19 +137,19 @@ export default function FinanceDashboard() {
         color: "accent-amber",
       },
       {
-        title: "Approved Orders",
+        title: "Approved Transactions",
         value: overview?.orders_approved?.toLocaleString("id-ID") ?? (loading ? "…" : "0"),
         icon: <CheckCircle size={24} />,
         color: "accent-emerald",
       },
       {
-        title: "Rejected Orders",
+        title: "Rejected Transactions",
         value: overview?.orders_rejected?.toLocaleString("id-ID") ?? (loading ? "…" : "0"),
         icon: <XCircle size={24} />,
         color: "accent-red",
       },
       {
-        title: "DP Orders",
+        title: "DP Transactions",
         value: overview?.orders_dp?.toLocaleString("id-ID") ?? (loading ? "…" : "0"),
         icon: <FileCheck size={24} />,
         color: "accent-blue",
@@ -189,7 +189,7 @@ export default function FinanceDashboard() {
   const orderSummaryCards = useMemo(() => {
     return [
       {
-        title: "Total Orders",
+        title: "Total Transactions",
         value: overview?.orders_total?.toLocaleString("id-ID") ?? (loading ? "…" : "0"),
         icon: <ShoppingCart size={24} />,
         color: "accent-orange",
@@ -207,7 +207,7 @@ export default function FinanceDashboard() {
         color: "accent-orange",
       },
       {
-        title: "Unpaid Orders",
+        title: "Unpaid Transactions",
         value: overview?.orders_unpaid?.toLocaleString("id-ID") ?? (loading ? "…" : "0"),
         icon: <Package size={24} />,
         color: "accent-orange",
@@ -290,8 +290,8 @@ export default function FinanceDashboard() {
           <article className="panel panel--summary">
             <div className="panel__header">
               <div>
-                <p className="panel__eyebrow">Order Summary</p>
-                <h3 className="panel__title">Orders Overview</h3>
+                <p className="panel__eyebrow">Transaction Summary</p>
+                <h3 className="panel__title">Transactions Overview</h3>
               </div>
             </div>
 
