@@ -336,16 +336,29 @@ const handleSubmitUpdate = async (e) => {
   try {
     const token = localStorage.getItem("token");
 
+    // Pastikan semua field yang diperlukan dikirim sesuai API spec
+    const payload = {
+      alamat: updatedOrder.alamat ?? order?.alamat ?? "",
+      harga: String(updatedOrder.harga ?? order?.harga ?? ""),
+      ongkir: String(updatedOrder.ongkir ?? order?.ongkir ?? ""),
+      total_harga: String(updatedOrder.total_harga ?? order?.total_harga ?? ""),
+      waktu_pembayaran: updatedOrder.waktu_pembayaran ?? order?.waktu_pembayaran ?? null,
+      bukti_pembayaran: updatedOrder.bukti_pembayaran ?? order?.bukti_pembayaran ?? null,
+      metode_bayar: metodeBayar || order?.metode_bayar || null,
+      sumber: updatedOrder.sumber ?? order?.sumber ?? "",
+    };
+
+    // Log untuk debugging
+    console.log("🔍 [UPDATE ORDER] Payload yang dikirim:", payload);
+
     const res = await fetch(`${BASE_URL}/sales/order/${order.id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
+        Accept: "application/json",
       },
-      body: JSON.stringify({
-        ...updatedOrder,
-        metode_bayar: metodeBayar,
-      }),
+      body: JSON.stringify(payload),
     });
 
     const json = await res.json();
@@ -354,7 +367,7 @@ const handleSubmitUpdate = async (e) => {
     onSave(newOrder);             // ⬅️ langsung update parent
     onClose();
   } catch (err) {
-    console.error(err);
+    console.error("❌ [UPDATE ORDER] Error:", err);
   }
 };
 
@@ -938,8 +951,8 @@ const handleSubmitUpdate = async (e) => {
                 <span className="field-label">
                   💰 Jumlah Pembayaran {isDP && <span className="dp-badge">(DP)</span>}
                 </span>
-                <div className="field-input-wrapper">
-                  <span className="input-prefix">Rp</span>
+                <div className="money-input">
+                  <span className="money-prefix">Rp</span>
                   <input
                     type="text"
                     className="field-input"

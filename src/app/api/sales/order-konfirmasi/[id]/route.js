@@ -53,12 +53,27 @@ export async function POST(request, { params }) {
         }
       }
       
-      // Verify waktu_pembayaran is included
+      // Verify waktu_pembayaran is included dan pastikan di-forward
       const waktuPembayaranValue = formData.get("waktu_pembayaran");
       if (waktuPembayaranValue) {
         console.log(`✅ [ORDER-KONFIRMASI] waktu_pembayaran ditemukan: ${waktuPembayaranValue}`);
+        // Pastikan waktu_pembayaran di-forward dengan benar
+        if (!forwardFormData.has("waktu_pembayaran")) {
+          console.log(`⚠️ [ORDER-KONFIRMASI] waktu_pembayaran tidak ada di forwardFormData, menambahkan...`);
+          forwardFormData.append("waktu_pembayaran", String(waktuPembayaranValue));
+        }
       } else {
         console.warn(`⚠️ [ORDER-KONFIRMASI] waktu_pembayaran TIDAK ditemukan di FormData!`);
+      }
+      
+      // Log semua field yang akan di-forward untuk verifikasi
+      console.log(`🔍 [ORDER-KONFIRMASI] ForwardFormData fields yang akan dikirim ke backend:`);
+      for (const [key, value] of forwardFormData.entries()) {
+        if (value instanceof File) {
+          console.log(`  📎 ${key}: [File] ${value.name} (${value.size} bytes)`);
+        } else {
+          console.log(`  📝 ${key}: ${value}`);
+        }
       }
 
       // Forward to backend
