@@ -196,71 +196,85 @@ export default function ViewOrders({ order, onClose }) {
               <p style={{ marginTop: "1rem", color: "#ef4444" }}>{error}</p>
             </div>
           ) : orderData ? (
-            <>
+            <div className="detail-list">
               {/* Informasi Pelanggan */}
-              <div className="finance-transactions-info-section">
-                <h4 className="finance-transactions-info-title">Informasi Pelanggan</h4>
-                <div className="finance-transactions-info-row">
-                  <span className="finance-transactions-info-label">Nama:</span>
-                  <span className="finance-transactions-info-value">{orderData.customer?.nama || "-"}</span>
+              <div className="detail-section">
+                <h4 className="detail-section-title">Informasi Pelanggan</h4>
+                <div className="detail-item">
+                  <span className="detail-label">Nama</span>
+                  <span className="detail-colon">:</span>
+                  <span className="detail-value">{orderData.customer?.nama || "-"}</span>
                 </div>
-                <div className="finance-transactions-info-row">
-                  <span className="finance-transactions-info-label">No. WhatsApp:</span>
-                  <span className="finance-transactions-info-value">{orderData.customer?.wa || "-"}</span>
+                <div className="detail-item">
+                  <span className="detail-label">No. WhatsApp</span>
+                  <span className="detail-colon">:</span>
+                  <span className="detail-value">{orderData.customer?.wa || "-"}</span>
                 </div>
-                <div className="finance-transactions-info-row">
-                  <span className="finance-transactions-info-label">Alamat:</span>
-                  <span className="finance-transactions-info-value">{orderData.customer?.alamat || "-"}</span>
+                <div className="detail-item">
+                  <span className="detail-label">Alamat</span>
+                  <span className="detail-colon">:</span>
+                  <span className="detail-value">{orderData.customer?.alamat || "-"}</span>
                 </div>
               </div>
 
-              <hr className="finance-transactions-divider" />
+              <div className="detail-section-divider"></div>
 
               {/* Detail Produk */}
-              <div className="finance-transactions-info-section">
-                <h4 className="finance-transactions-info-title">Detail Produk</h4>
-                <div className="finance-transactions-info-row">
-                  <span className="finance-transactions-info-label">Nama Produk:</span>
-                  <span className="finance-transactions-info-value">{orderData.produk?.nama || "-"}</span>
+              <div className="detail-section">
+                <h4 className="detail-section-title">Detail Produk</h4>
+                <div className="detail-item">
+                  <span className="detail-label">Nama Produk</span>
+                  <span className="detail-colon">:</span>
+                  <span className="detail-value">{orderData.produk?.nama || "-"}</span>
                 </div>
-                <div className="finance-transactions-info-row">
-                  <span className="finance-transactions-info-label">Harga:</span>
-                  <span className="finance-transactions-info-value">Rp {Number(orderData.produk?.harga || orderData.order?.total_harga || 0).toLocaleString("id-ID")}</span>
+                <div className="detail-item">
+                  <span className="detail-label">Harga</span>
+                  <span className="detail-colon">:</span>
+                  <span className="detail-value">Rp {Number(orderData.produk?.harga || orderData.order?.total_harga || 0).toLocaleString("id-ID")}</span>
                 </div>
-                <div className="finance-transactions-info-row">
-                  <span className="finance-transactions-info-label">Ongkir:</span>
-                  <span className="finance-transactions-info-value">Rp {Number(orderData.order?.ongkir || 0).toLocaleString("id-ID")}</span>
+                <div className="detail-item">
+                  <span className="detail-label">Ongkir</span>
+                  <span className="detail-colon">:</span>
+                  <span className="detail-value">Rp {Number(orderData.order?.ongkir || 0).toLocaleString("id-ID")}</span>
                 </div>
-                <div className="finance-transactions-info-row">
-                  <span className="finance-transactions-info-label">Total Harga:</span>
-                  <span className="finance-transactions-info-value">Rp {Number(orderData.order?.total_harga || 0).toLocaleString("id-ID")}</span>
+                <div className="detail-item">
+                  <span className="detail-label">Total Harga</span>
+                  <span className="detail-colon">:</span>
+                  <span className="detail-value">Rp {Number(orderData.order?.total_harga || 0).toLocaleString("id-ID")}</span>
                 </div>
               </div>
 
+              <div className="detail-section-divider"></div>
+
               {/* Informasi Pembayaran */}
-              <div className="finance-transactions-info-section">
-                <h4 className="finance-transactions-info-title">Informasi Pembayaran</h4>
-                <div className="finance-transactions-info-row">
-                  <span className="finance-transactions-info-label">ID Validasi:</span>
-                  <span className="finance-transactions-info-value">#{orderData.id || "-"}</span>
+              <div className="detail-section">
+                <h4 className="detail-section-title">Informasi Pembayaran</h4>
+                <div className="detail-item">
+                  <span className="detail-label">ID Validasi</span>
+                  <span className="detail-colon">:</span>
+                  <span className="detail-value">#{orderData.id || "-"}</span>
                 </div>
-                <div className="finance-transactions-info-row">
-                  <span className="finance-transactions-info-label">Jumlah Pembayaran:</span>
-                  <span className="finance-transactions-info-value" style={{ fontWeight: 600, color: "#059669" }}>
+                <div className="detail-item">
+                  <span className="detail-label">Jumlah Pembayaran</span>
+                  <span className="detail-colon">:</span>
+                  <span className="detail-value" style={{ fontWeight: 600, color: "#059669" }}>
                     Rp {Number(orderData.amount || 0).toLocaleString("id-ID")}
                   </span>
                 </div>
-                <div className="finance-transactions-info-row">
-                  <span className="finance-transactions-info-label">Pembayaran Ke-:</span>
-                  <span className="finance-transactions-info-value">{orderData.payment_ke || "-"}</span>
+                <div className="detail-item">
+                  <span className="detail-label">Pembayaran Ke-</span>
+                  <span className="detail-colon">:</span>
+                  <span className="detail-value">{orderData.payment_ke || "-"}</span>
                 </div>
-                <div className="finance-transactions-info-row">
-                  <span className="finance-transactions-info-label">Metode Pembayaran:</span>
-                  <span className="finance-transactions-info-value">{getPaymentMethodLabel(orderData.payment_method) || "-"}</span>
+                <div className="detail-item">
+                  <span className="detail-label">Metode Pembayaran</span>
+                  <span className="detail-colon">:</span>
+                  <span className="detail-value">{getPaymentMethodLabel(orderData.payment_method) || "-"}</span>
                 </div>
-                <div className="finance-transactions-info-row">
-                  <span className="finance-transactions-info-label">Tipe Pembayaran:</span>
-                  <span className="finance-transactions-info-value">
+                <div className="detail-item">
+                  <span className="detail-label">Tipe Pembayaran</span>
+                  <span className="detail-colon">:</span>
+                  <span className="detail-value">
                     {(() => {
                       const statusPembayaran = order?.order_rel?.status_pembayaran !== undefined && order?.order_rel?.status_pembayaran !== null
                         ? Number(order.order_rel.status_pembayaran)
@@ -284,118 +298,86 @@ export default function ViewOrders({ order, onClose }) {
                     })()}
                   </span>
                 </div>
-                <div className="finance-transactions-info-row">
-                  <span className="finance-transactions-info-label">Tanggal Pembayaran:</span>
-                  <span className="finance-transactions-info-value">{formatTanggal(orderData.tanggal) || "-"}</span>
+                <div className="detail-item">
+                  <span className="detail-label">Tanggal Pembayaran</span>
+                  <span className="detail-colon">:</span>
+                  <span className="detail-value">{formatTanggal(orderData.tanggal) || "-"}</span>
                 </div>
-                <div className="finance-transactions-info-row">
-                  <span className="finance-transactions-info-label">Status Validasi:</span>
-                  <span
-                    className="finance-transactions-info-value"
-                    style={{
-                      padding: "0.25rem 0.75rem",
-                      borderRadius: "0.375rem",
-                      fontSize: "0.875rem",
-                      fontWeight: 600,
-                      display: "inline-block",
-                      backgroundColor:
-                        getStatusLabel(orderData.status) === "Valid"
-                          ? "#d1fae5"
-                          : getStatusLabel(orderData.status) === "Ditolak"
-                          ? "#fee2e2"
-                          : "#fef3c7",
-                      color:
-                        getStatusLabel(orderData.status) === "Valid"
-                          ? "#059669"
-                          : getStatusLabel(orderData.status) === "Ditolak"
-                          ? "#dc2626"
-                          : "#d97706",
-                    }}
-                  >
-                    {getStatusLabel(orderData.status)}
+                <div className="detail-item">
+                  <span className="detail-label">Status Validasi</span>
+                  <span className="detail-colon">:</span>
+                  <span className="detail-value">
+                    <span
+                      style={{
+                        padding: "0.25rem 0.75rem",
+                        borderRadius: "0.375rem",
+                        fontSize: "0.875rem",
+                        fontWeight: 600,
+                        display: "inline-block",
+                        backgroundColor:
+                          getStatusLabel(orderData.status) === "Valid"
+                            ? "#d1fae5"
+                            : getStatusLabel(orderData.status) === "Ditolak"
+                            ? "#fee2e2"
+                            : "#fef3c7",
+                        color:
+                          getStatusLabel(orderData.status) === "Valid"
+                            ? "#059669"
+                            : getStatusLabel(orderData.status) === "Ditolak"
+                            ? "#dc2626"
+                            : "#d97706",
+                      }}
+                    >
+                      {getStatusLabel(orderData.status)}
+                    </span>
                   </span>
                 </div>
                 {orderData.catatan && (
-                  <div className="finance-transactions-info-row">
-                    <span className="finance-transactions-info-label">Catatan:</span>
-                    <span className="finance-transactions-info-value">{orderData.catatan}</span>
+                  <div className="detail-item">
+                    <span className="detail-label">Catatan</span>
+                    <span className="detail-colon">:</span>
+                    <span className="detail-value">{orderData.catatan}</span>
                   </div>
                 )}
-                <div className="finance-transactions-info-row" style={{ flexDirection: "column", alignItems: "flex-start", gap: "0.5rem" }}>
-                  <span className="finance-transactions-info-label">Bukti Pembayaran:</span>
-                  {buktiUrl ? (
-                    <div
-                      style={{
-                        position: "relative",
-                        display: "inline-block",
-                        cursor: "pointer",
-                      }}
-                      onClick={() => setShowImageModal(true)}
-                      onMouseEnter={(e) => {
-                        const img = e.currentTarget.querySelector("img");
-                        if (img) {
-                          img.style.transform = "scale(1.02)";
-                          img.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.2)";
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        const img = e.currentTarget.querySelector("img");
-                        if (img) {
-                          img.style.transform = "scale(1)";
-                          img.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1)";
-                        }
-                      }}
-                    >
+                <div className="detail-item">
+                  <span className="detail-label">Bukti Pembayaran</span>
+                  <span className="detail-colon">:</span>
+                  <span className="detail-value">
+                    {buktiUrl ? (
                       <img
                         src={buktiUrl}
                         alt={`Bukti Pembayaran ${orderData.customer?.nama || "-"}`}
+                        onClick={() => setShowImageModal(true)}
                         style={{
-                          width: "100%",
-                          maxWidth: "300px",
-                          height: "auto",
-                          maxHeight: "200px",
-                          objectFit: "contain",
-                          borderRadius: "8px",
-                          border: "2px solid #e5e7eb",
-                          boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
-                          transition: "all 0.3s ease",
-                          backgroundColor: "#f9fafb",
-                          display: "block",
+                          maxWidth: 150,
+                          maxHeight: 120,
+                          objectFit: "cover",
+                          marginTop: 4,
+                          borderRadius: 6,
+                          border: "1px solid #e5e7eb",
+                          cursor: "pointer",
+                          transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = "scale(1.05)";
+                          e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = "scale(1)";
+                          e.currentTarget.style.boxShadow = "none";
                         }}
                         onError={(e) => {
                           e.target.style.display = "none";
-                          const parent = e.target.parentElement;
-                          if (parent) {
-                            parent.innerHTML = '<span style="color: #ef4444;">Gagal memuat gambar</span>';
-                          }
                           console.error("Gagal memuat gambar:", buktiUrl);
                         }}
                       />
-                      <div
-                        style={{
-                          position: "absolute",
-                          bottom: "8px",
-                          right: "8px",
-                          background: "rgba(0, 0, 0, 0.7)",
-                          color: "#fff",
-                          padding: "0.25rem 0.5rem",
-                          borderRadius: "4px",
-                          fontSize: "0.75rem",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "0.25rem",
-                        }}
-                      >
-                        <i className="pi pi-search-plus" style={{ fontSize: "0.875rem" }} />
-                        Klik untuk memperbesar
-                      </div>
-                    </div>
-                  ) : (
-                    <span className="finance-transactions-info-value" style={{ color: "#6b7280" }}>-</span>
-                  )}
+                    ) : (
+                      "-"
+                    )}
+                  </span>
                 </div>
               </div>
-            </>
+            </div>
           ) : null}
         </div>
 
