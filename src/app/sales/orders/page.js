@@ -288,40 +288,7 @@ export default function DaftarPesanan() {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
 
-      const json = await res.json().catch((parseErr) => {
-        console.error("❌ [FETCH-ORDERS] JSON parse error:", parseErr);
-        setLoading(false);
-        fetchingRef.current = false;
-        setToast({ show: true, message: "Gagal memparse response dari server", type: "error" });
-        setTimeout(() => setToast({ show: false, message: "", type: "error" }), 3000);
-        return null;
-      });
-
-      if (!json) {
-        return; // Early return jika JSON parse error
-      }
-
-      // Handle error response dari backend
-      if (!json.success && json.error) {
-        console.error("❌ [FETCH-ORDERS] Backend error:", json.error);
-        console.error("❌ [FETCH-ORDERS] Error message:", json.message);
-        
-        // Jika error terkait database (seperti column tidak ada), tampilkan pesan yang lebih user-friendly
-        const errorMessage = json.message || json.error || "Terjadi kesalahan saat mengambil data";
-        if (errorMessage.includes("column") || errorMessage.includes("does not exist") || errorMessage.includes("SQLSTATE")) {
-          setToast({ 
-            show: true, 
-            message: "Terjadi kesalahan pada database. Silakan hubungi administrator atau refresh halaman.", 
-            type: "error" 
-          });
-        } else {
-          setToast({ show: true, message: errorMessage, type: "error" });
-        }
-        setTimeout(() => setToast({ show: false, message: "", type: "error" }), 5000);
-        setLoading(false);
-        fetchingRef.current = false;
-        return;
-      }
+      const json = await res.json();
       
       // Handle response dengan struktur baru: { success: true, message: "...", data: [...], pagination: {...} }
       if (json.success && json.data && Array.isArray(json.data)) {

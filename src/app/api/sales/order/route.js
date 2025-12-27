@@ -82,26 +82,6 @@ export async function GET(request) {
       );
     }
 
-    // Handle nested error structure: {success: false, data: {success: false, ...}}
-    if (json && json.success === false) {
-      const errorData = json.data || json;
-      const errorMessage = errorData?.message || json?.message || "Gagal mengambil data orders";
-      const errorDetail = errorData?.error || json?.error || errorData;
-      
-      console.error("❌ [ORDERS] Backend error:", errorMessage);
-      console.error("❌ [ORDERS] Error detail:", errorDetail);
-      
-      return NextResponse.json(
-        {
-          success: false,
-          message: errorMessage,
-          error: errorDetail,
-          data: [],
-        },
-        { status: response.status || 500 }
-      );
-    }
-
     // Logging struktur JSON lengkap sesuai requirement
     console.log("✅ Success:", json.success);
     console.log("📊 Data:", json.data);
