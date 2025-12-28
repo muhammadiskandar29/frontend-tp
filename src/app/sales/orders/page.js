@@ -725,6 +725,59 @@ export default function DaftarPesanan() {
   return (
     <Layout title="Manage Orders">
       <div className="orders-shell">
+        <section className="orders-summary">
+          <article className="summary-card summary-card--combined">
+            <div className="summary-card__column">
+              <div className={`summary-card__icon accent-orange`}>
+                <ShoppingCart size={22} />
+              </div>
+              <div>
+                <p className="summary-card__label">Total orders</p>
+                <p className="summary-card__value">{totalOrders}</p>
+              </div>
+            </div>
+            <div className="summary-card__divider"></div>
+            <div className="summary-card__column">
+              <div className={`summary-card__icon accent-orange`}>
+                <Clock size={22} />
+              </div>
+              <div>
+                <p className="summary-card__label">Unpaid</p>
+                <p className="summary-card__value">{unpaidOrders}</p>
+              </div>
+            </div>
+            <div className="summary-card__divider"></div>
+            <div className="summary-card__column">
+              <div className={`summary-card__icon accent-orange`}>
+                <Clock size={22} />
+              </div>
+              <div>
+                <p className="summary-card__label">Menunggu</p>
+                <p className="summary-card__value">{menungguOrders}</p>
+              </div>
+            </div>
+            <div className="summary-card__divider"></div>
+            <div className="summary-card__column">
+              <div className={`summary-card__icon accent-orange`}>
+                <CheckCircle size={22} />
+              </div>
+              <div>
+                <p className="summary-card__label">Sudah Approve</p>
+                <p className="summary-card__value">{approvedOrders}</p>
+              </div>
+            </div>
+            <div className="summary-card__divider"></div>
+            <div className="summary-card__column">
+              <div className={`summary-card__icon accent-orange`}>
+                <XCircle size={22} />
+              </div>
+              <div>
+                <p className="summary-card__label">Ditolak</p>
+                <p className="summary-card__value">{ditolakOrders}</p>
+              </div>
+            </div>
+          </article>
+        </section>
         <section className="orders-hero">
           <div className="orders-toolbar">
             <div className="orders-search">
@@ -813,61 +866,6 @@ export default function DaftarPesanan() {
             </div>
           </div>
         </section>
-
-        <section className="orders-summary">
-          <article className="summary-card summary-card--combined">
-            <div className="summary-card__column">
-              <div className={`summary-card__icon accent-orange`}>
-                <ShoppingCart size={22} />
-              </div>
-              <div>
-                <p className="summary-card__label">Total orders</p>
-                <p className="summary-card__value">{totalOrders}</p>
-              </div>
-            </div>
-            <div className="summary-card__divider"></div>
-            <div className="summary-card__column">
-              <div className={`summary-card__icon accent-orange`}>
-                <Clock size={22} />
-              </div>
-              <div>
-                <p className="summary-card__label">Unpaid</p>
-                <p className="summary-card__value">{unpaidOrders}</p>
-              </div>
-            </div>
-            <div className="summary-card__divider"></div>
-            <div className="summary-card__column">
-              <div className={`summary-card__icon accent-orange`}>
-                <Clock size={22} />
-              </div>
-              <div>
-                <p className="summary-card__label">Menunggu</p>
-                <p className="summary-card__value">{menungguOrders}</p>
-              </div>
-            </div>
-            <div className="summary-card__divider"></div>
-            <div className="summary-card__column">
-              <div className={`summary-card__icon accent-orange`}>
-                <CheckCircle size={22} />
-              </div>
-              <div>
-                <p className="summary-card__label">Sudah Approve</p>
-                <p className="summary-card__value">{approvedOrders}</p>
-              </div>
-            </div>
-            <div className="summary-card__divider"></div>
-            <div className="summary-card__column">
-              <div className={`summary-card__icon accent-orange`}>
-                <XCircle size={22} />
-              </div>
-              <div>
-                <p className="summary-card__label">Ditolak</p>
-                <p className="summary-card__value">{ditolakOrders}</p>
-              </div>
-            </div>
-          </article>
-        </section>
-        
         <section className="panel orders-panel">
           <div className="panel__header">
             <div>

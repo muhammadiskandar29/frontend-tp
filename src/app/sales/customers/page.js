@@ -263,6 +263,43 @@ export default function AdminCustomerPage() {
   return (
     <Layout title="Manage Customers">
       <div className="dashboard-shell customers-shell">
+      <section className="dashboard-summary customers-summary">
+          <article className="summary-card summary-card--combined summary-card--three-cols">
+            <div className="summary-card__column">
+              <div className={`summary-card__icon accent-orange`}>
+                <Users size={22} />
+              </div>
+              <div>
+                <p className="summary-card__label">Total customers</p>
+                <p className="summary-card__value">{paginationInfo?.total || customers.length}</p>
+              </div>
+            </div>
+            <div className="summary-card__divider"></div>
+            <div className="summary-card__column">
+              <div className={`summary-card__icon accent-orange`}>
+                <CheckCircle size={22} />
+              </div>
+              <div>
+                <p className="summary-card__label">Verified</p>
+                <p className="summary-card__value">
+                  {summaryStats.verified}
+                </p>
+              </div>
+            </div>
+            <div className="summary-card__divider"></div>
+            <div className="summary-card__column">
+              <div className={`summary-card__icon accent-orange`}>
+                <Filter size={22} />
+              </div>
+              <div>
+                <p className="summary-card__label">Unverified</p>
+                <p className="summary-card__value">
+                  {summaryStats.unverified}
+                </p>
+              </div>
+            </div>
+          </article>
+        </section>
         <section className="dashboard-hero customers-hero">
           <div className="customers-toolbar">
             <div className="customers-search">
@@ -305,44 +342,6 @@ export default function AdminCustomerPage() {
               </div>
             </div>
           </div>
-        </section>
-
-        <section className="dashboard-summary customers-summary">
-          <article className="summary-card summary-card--combined summary-card--three-cols">
-            <div className="summary-card__column">
-              <div className={`summary-card__icon accent-orange`}>
-                <Users size={22} />
-              </div>
-              <div>
-                <p className="summary-card__label">Total customers</p>
-                <p className="summary-card__value">{paginationInfo?.total || customers.length}</p>
-              </div>
-            </div>
-            <div className="summary-card__divider"></div>
-            <div className="summary-card__column">
-              <div className={`summary-card__icon accent-orange`}>
-                <CheckCircle size={22} />
-              </div>
-              <div>
-                <p className="summary-card__label">Verified</p>
-                <p className="summary-card__value">
-                  {summaryStats.verified}
-                </p>
-              </div>
-            </div>
-            <div className="summary-card__divider"></div>
-            <div className="summary-card__column">
-              <div className={`summary-card__icon accent-orange`}>
-                <Filter size={22} />
-              </div>
-              <div>
-                <p className="summary-card__label">Unverified</p>
-                <p className="summary-card__value">
-                  {summaryStats.unverified}
-                </p>
-              </div>
-            </div>
-          </article>
         </section>
 
         <section className="panel customers-panel">

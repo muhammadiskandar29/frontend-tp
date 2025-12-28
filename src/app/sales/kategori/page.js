@@ -125,20 +125,7 @@ export default function AdminKategoriPage() {
   return (
     <Layout title="Manage Categories">
       <div className="dashboard-shell customers-shell">
-        <section className="dashboard-hero customers-hero">
-          <div className="customers-toolbar">
-            <div className="customers-search">
-              <input
-                type="search"
-                placeholder="Cari kategori..."
-                className="customers-search__input"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-              />
-              <span className="customers-search__icon pi pi-search" />
-            </div>
-          </div>
-        </section>
+
 
         <section className="dashboard-summary kategori-summary">
           <article className="summary-card summary-card--combined summary-card--two-cols">
@@ -162,6 +149,21 @@ export default function AdminKategoriPage() {
               </div>
             </div>
           </article>
+        </section>
+
+        <section className="dashboard-hero customers-hero">
+          <div className="customers-toolbar">
+            <div className="customers-search">
+              <input
+                type="search"
+                placeholder="Cari kategori..."
+                className="customers-search__input"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+              />
+              <span className="customers-search__icon pi pi-search" />
+            </div>
+          </div>
         </section>
 
         <section className="panel users-panel">

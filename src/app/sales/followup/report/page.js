@@ -159,22 +159,6 @@ export default function FollowupReportPage() {
   return (
     <Layout title="Log Report Follow Up">
       <div className="dashboard-shell customers-shell">
-        {/* HERO SECTION */}
-        <section className="dashboard-hero customers-hero">
-          <div className="customers-toolbar">
-            <div className="customers-search">
-              <input
-                type="search"
-                placeholder="Cari customer, event, produk..."
-                className="customers-search__input"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-              />
-              <span className="customers-search__icon pi pi-search" />
-            </div>
-          </div>
-        </section>
-
         {/* SUMMARY CARDS */}
         <section className="dashboard-summary followup-summary">
           <article className="summary-card summary-card--combined summary-card--four-cols">
@@ -235,7 +219,21 @@ export default function FollowupReportPage() {
             ))}
           </div>
         </section>
-
+        {/* HERO SECTION */}
+        <section className="dashboard-hero customers-hero">
+          <div className="customers-toolbar">
+            <div className="customers-search">
+              <input
+                type="search"
+                placeholder="Cari customer, event, produk..."
+                className="customers-search__input"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+              />
+              <span className="customers-search__icon pi pi-search" />
+            </div>
+          </div>
+        </section>
         {/* TABLE PANEL */}
         <section className="panel customers-panel">
           <div className="panel__header">

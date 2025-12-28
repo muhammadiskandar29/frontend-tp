@@ -93,21 +93,6 @@ export default function AdminProductsPage() {
   return (
     <Layout title="Manage Products">
       <div className="dashboard-shell customers-shell">
-        <section className="dashboard-hero customers-hero">
-          <div className="customers-toolbar">
-            <div className="customers-search">
-              <input
-                type="search"
-                placeholder="Cari produk, kategori, atau pembuat"
-                className="customers-search__input"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-              />
-              <span className="customers-search__icon pi pi-search" />
-            </div>
-          </div>
-        </section>
-
         <section className="dashboard-summary products-summary">
           <article className="summary-card summary-card--combined summary-card--three-cols">
             <div className="summary-card__column">
@@ -140,6 +125,21 @@ export default function AdminProductsPage() {
               </div>
             </div>
           </article>
+        </section>
+
+        <section className="dashboard-hero customers-hero">
+          <div className="customers-toolbar">
+            <div className="customers-search">
+              <input
+                type="search"
+                placeholder="Cari produk, kategori, atau pembuat"
+                className="customers-search__input"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+              />
+              <span className="customers-search__icon pi pi-search" />
+            </div>
+          </div>
         </section>
 
         <section className="panel products-panel">
