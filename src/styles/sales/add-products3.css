@@ -1,36 +1,84 @@
 /* ===== ADD PRODUCTS 3 - PAGE BUILDER ===== */
 
 /* ===== GLOBAL PRIMEREACT OVERRIDE FOR PENGATURAN TAB ===== */
-/* Force solid white background for all PrimeReact components in pengaturan */
-.pengaturan-content .p-dropdown,
-.pengaturan-content .p-multiselect,
-.pengaturan-content .p-calendar,
-.pengaturan-content .p-inputnumber {
+/* Styling sama seperti di addProducts - menggunakan form-input class */
+.pengaturan-content .form-input.p-dropdown,
+.pengaturan-content .form-input.p-multiselect,
+.pengaturan-content .form-input.p-calendar,
+.pengaturan-content .form-input.p-inputnumber,
+.pengaturan-content .w-full.form-input.p-dropdown,
+.pengaturan-content .w-full.form-input.p-multiselect,
+.pengaturan-content .w-full.form-input.p-calendar,
+.pengaturan-content .w-full.form-input.p-inputnumber {
+  width: 100% !important;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border: 1.5px solid #e5e7eb !important;
+  border-radius: 10px !important;
+  transition: all 0.2s ease !important;
+}
+
+.pengaturan-content .form-input.p-dropdown:not(.p-disabled):hover,
+.pengaturan-content .form-input.p-multiselect:not(.p-disabled):hover,
+.pengaturan-content .form-input.p-calendar:not(.p-disabled):hover,
+.pengaturan-content .w-full.form-input.p-dropdown:not(.p-disabled):hover,
+.pengaturan-content .w-full.form-input.p-multiselect:not(.p-disabled):hover,
+.pengaturan-content .w-full.form-input.p-calendar:not(.p-disabled):hover {
+  border-color: #F1A124 !important;
+}
+
+.pengaturan-content .form-input.p-dropdown:not(.p-disabled).p-focus,
+.pengaturan-content .form-input.p-multiselect:not(.p-disabled).p-focus,
+.pengaturan-content .form-input.p-calendar:not(.p-disabled).p-focus,
+.pengaturan-content .w-full.form-input.p-dropdown:not(.p-disabled).p-focus,
+.pengaturan-content .w-full.form-input.p-multiselect:not(.p-disabled).p-focus,
+.pengaturan-content .w-full.form-input.p-calendar:not(.p-disabled).p-focus {
+  border-color: #F1A124 !important;
+  box-shadow: 0 0 0 4px rgba(241, 161, 36, 0.1) !important;
+  outline: none !important;
+}
+
+.pengaturan-content .form-input.p-dropdown .p-dropdown-label-container,
+.pengaturan-content .form-input.p-multiselect .p-multiselect-label-container,
+.pengaturan-content .form-input.p-calendar .p-inputtext-wrapper,
+.pengaturan-content .w-full.form-input.p-dropdown .p-dropdown-label-container,
+.pengaturan-content .w-full.form-input.p-multiselect .p-multiselect-label-container,
+.pengaturan-content .w-full.form-input.p-calendar .p-inputtext-wrapper {
   background: #ffffff !important;
   background-color: #ffffff !important;
 }
 
-.pengaturan-content .p-dropdown .p-dropdown-label-container,
-.pengaturan-content .p-multiselect .p-multiselect-label-container,
-.pengaturan-content .p-calendar .p-inputtext-wrapper {
+.pengaturan-content .form-input.p-dropdown-panel,
+.pengaturan-content .form-input.p-multiselect-panel,
+.pengaturan-content .form-input.p-datepicker,
+.pengaturan-content .w-full.form-input ~ .p-dropdown-panel,
+.pengaturan-content .w-full.form-input ~ .p-multiselect-panel,
+.pengaturan-content .w-full.form-input ~ .p-datepicker {
   background: #ffffff !important;
   background-color: #ffffff !important;
+  border: 1.5px solid #e5e7eb !important;
+  border-radius: 10px !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
 }
 
-.pengaturan-content .p-dropdown-panel,
-.pengaturan-content .p-multiselect-panel,
-.pengaturan-content .p-datepicker {
-  background: #ffffff !important;
-  background-color: #ffffff !important;
+/* ===== BODY & HTML OVERFLOW FIX ===== */
+/* Prevent main scrollbar - only sidebar and canvas should scroll */
+body:has(.add-products3-container),
+html:has(.add-products3-container) {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
 }
 
 .add-products3-container {
   width: 100%;
   height: 100vh;
+  max-height: 100vh;
   display: flex;
   flex-direction: column;
   background: #f5f5f5;
   overflow: hidden;
+  position: relative;
 }
 
 /* ===== HEADER SECTION ===== */
@@ -38,6 +86,9 @@
   padding: 20px 24px;
   background: #ffffff;
   border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0; /* Prevent header from shrinking */
+  min-height: 80px;
+  box-sizing: border-box;
 }
 
 .back-to-products-btn {
@@ -67,6 +118,8 @@
   display: flex;
   overflow: hidden;
   min-height: 0; /* Important untuk flex child dengan overflow */
+  max-height: calc(100vh - 80px); /* Kurangi tinggi header */
+  position: relative;
 }
 
 /* ===== SIDEBAR ===== */
@@ -77,6 +130,9 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  height: 100%;
+  max-height: 100%;
+  position: relative;
 }
 
 /* ===== SIDEBAR TABS ===== */
@@ -120,7 +176,9 @@
   overflow-y: auto;
   overflow-x: hidden;
   flex: 1;
-  height: 100%;
+  min-height: 0;
+  max-height: 100%;
+  height: 0; /* Force flex child to respect max-height */
 }
 
 .pengaturan-content {
@@ -765,6 +823,145 @@
   line-height: 1.4;
 }
 
+/* ===== FORM LABEL & FIELD HINT - Same as addProducts ===== */
+.pengaturan-content .form-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #111827;
+  margin-bottom: 0.25rem;
+}
+
+.pengaturan-content .field-hint {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+  font-style: italic;
+}
+
+.pengaturan-content .form-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* ===== PRIMEREACT STYLING SAMA SEPERTI addProducts ===== */
+/* Dropdown, MultiSelect, Calendar, InputNumber dengan form-input class */
+.pengaturan-content .form-input.p-dropdown,
+.pengaturan-content .w-full.form-input.p-dropdown,
+.pengaturan-content .form-input.p-multiselect,
+.pengaturan-content .w-full.form-input.p-multiselect,
+.pengaturan-content .form-input.p-calendar,
+.pengaturan-content .w-full.form-input.p-calendar,
+.pengaturan-content .form-input.p-inputnumber,
+.pengaturan-content .w-full.form-input.p-inputnumber {
+  width: 100% !important;
+  background: #ffffff !important;
+  color: #111827 !important;
+  border: 1.5px solid #e5e7eb !important;
+  border-radius: 10px !important;
+  padding: 0.75rem 1rem !important;
+  font-size: 0.95rem !important;
+  transition: all 0.2s ease !important;
+}
+
+.pengaturan-content .form-input.p-dropdown:not(.p-disabled):hover,
+.pengaturan-content .w-full.form-input.p-dropdown:not(.p-disabled):hover,
+.pengaturan-content .form-input.p-multiselect:not(.p-disabled):hover,
+.pengaturan-content .w-full.form-input.p-multiselect:not(.p-disabled):hover,
+.pengaturan-content .form-input.p-calendar:not(.p-disabled):hover,
+.pengaturan-content .w-full.form-input.p-calendar:not(.p-disabled):hover {
+  border-color: #F1A124 !important;
+}
+
+.pengaturan-content .form-input.p-dropdown:not(.p-disabled).p-focus,
+.pengaturan-content .w-full.form-input.p-dropdown:not(.p-disabled).p-focus,
+.pengaturan-content .form-input.p-multiselect:not(.p-disabled).p-focus,
+.pengaturan-content .w-full.form-input.p-multiselect:not(.p-disabled).p-focus,
+.pengaturan-content .form-input.p-calendar:not(.p-disabled).p-focus,
+.pengaturan-content .w-full.form-input.p-calendar:not(.p-disabled).p-focus {
+  border-color: #F1A124 !important;
+  box-shadow: 0 0 0 4px rgba(241, 161, 36, 0.1) !important;
+  outline: none !important;
+}
+
+.pengaturan-content .form-input.p-dropdown .p-dropdown-label,
+.pengaturan-content .w-full.form-input.p-dropdown .p-dropdown-label,
+.pengaturan-content .form-input.p-multiselect .p-multiselect-label,
+.pengaturan-content .w-full.form-input.p-multiselect .p-multiselect-label {
+  padding: 0 !important;
+  font-size: 0.95rem !important;
+  color: #111827 !important;
+}
+
+.pengaturan-content .form-input.p-dropdown .p-dropdown-label-container,
+.pengaturan-content .w-full.form-input.p-dropdown .p-dropdown-label-container,
+.pengaturan-content .form-input.p-multiselect .p-multiselect-label-container,
+.pengaturan-content .w-full.form-input.p-multiselect .p-multiselect-label-container {
+  padding: 0.65rem 1rem !important;
+}
+
+/* Panel Styling */
+.pengaturan-content .p-dropdown-panel,
+.pengaturan-content .p-multiselect-panel,
+.pengaturan-content .p-datepicker {
+  background: #ffffff !important;
+  border: 1.5px solid #e5e7eb !important;
+  border-radius: 10px !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
+  margin-top: 0.25rem !important;
+}
+
+.pengaturan-content .p-dropdown-item,
+.pengaturan-content .p-multiselect-item {
+  color: #111827 !important;
+  padding: 0.65rem 1rem !important;
+  border-radius: 6px !important;
+  margin: 0.15rem 0.5rem !important;
+  transition: all 0.15s ease !important;
+}
+
+.pengaturan-content .p-dropdown-item:hover,
+.pengaturan-content .p-multiselect-item:hover {
+  background: #f9fafb !important;
+  color: #111827 !important;
+}
+
+.pengaturan-content .p-dropdown-item.p-highlight,
+.pengaturan-content .p-multiselect-item.p-highlight {
+  background: #F1A124 !important;
+  color: white !important;
+}
+
+/* MultiSelect Chip/Token - Box Style seperti di addProducts */
+.pengaturan-content .form-input.p-multiselect .p-multiselect-token,
+.pengaturan-content .w-full.form-input.p-multiselect .p-multiselect-token,
+.pengaturan-content .form-input.p-multiselect .p-multiselect-chip,
+.pengaturan-content .w-full.form-input.p-multiselect .p-multiselect-chip {
+  background: linear-gradient(135deg, #F1A124 0%, #e8940f 100%) !important;
+  color: #fff !important;
+  border-radius: 6px !important;
+  padding: 4px 10px !important;
+  margin: 0.15rem !important;
+  font-weight: 500 !important;
+  font-size: 0.85rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  box-shadow: 0 1px 3px rgba(241, 161, 36, 0.3) !important;
+}
+
+.pengaturan-content .form-input.p-multiselect .p-multiselect-token-icon,
+.pengaturan-content .w-full.form-input.p-multiselect .p-multiselect-token-icon,
+.pengaturan-content .form-input.p-multiselect .p-multiselect-chip-icon,
+.pengaturan-content .w-full.form-input.p-multiselect .p-multiselect-chip-icon {
+  color: #fff !important;
+  margin-left: 6px !important;
+  cursor: pointer !important;
+}
+
 /* Custom scrollbar untuk sidebar */
 .sidebar-content::-webkit-scrollbar {
   width: 8px;
@@ -833,10 +1030,14 @@
   background: #f5f5f5;
   position: relative;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 40px;
   display: flex;
   align-items: flex-start;
   justify-content: center;
+  min-height: 0;
+  max-height: 100%;
+  height: 100%;
 }
 
 .canvas-wrapper {
@@ -848,6 +1049,7 @@
   border-radius: 4px;
   padding: 40px;
   position: relative;
+  overflow: visible; /* Tidak perlu scroll di wrapper, scroll di parent */
 }
 
 .canvas-preview-block {

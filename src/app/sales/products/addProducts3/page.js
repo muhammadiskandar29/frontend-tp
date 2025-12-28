@@ -954,12 +954,12 @@ export default function AddProducts3Page() {
                     />
                   </div>
 
-                  <div className="pengaturan-form-group">
-                    <label className="pengaturan-label">
+                  <div className="form-field-group">
+                    <label className="form-label">
                       Kategori <span className="required">*</span>
                     </label>
                     <Dropdown
-                      className="pengaturan-input"
+                      className="w-full form-input"
                       value={pengaturanForm.kategori}
                       options={kategoriOptions}
                       optionLabel="label"
@@ -978,7 +978,7 @@ export default function AddProducts3Page() {
                       filterPlaceholder="Cari kategori..."
                     />
                     {!pengaturanForm.kategori && (
-                      <small className="pengaturan-hint" style={{ color: "#ef4444" }}>
+                      <small className="field-hint" style={{ color: "#ef4444" }}>
                         Kategori wajib dipilih
                       </small>
                     )}
@@ -1061,12 +1061,12 @@ export default function AddProducts3Page() {
 
                 {/* Penanggung Jawab */}
                 <div className="pengaturan-section">
-                  <div className="pengaturan-form-group">
-                    <label className="pengaturan-label">
+                  <div className="form-field-group">
+                    <label className="form-label">
                       Penanggung Jawab (Assign By) <span className="required">*</span>
                     </label>
                     <MultiSelect
-                      className="pengaturan-input"
+                      className="w-full form-input"
                       value={pengaturanForm.assign}
                       options={userOptions}
                       onChange={(e) => handlePengaturanChange("assign", e.value || [])}
@@ -1076,7 +1076,7 @@ export default function AddProducts3Page() {
                       filter
                       filterPlaceholder="Cari user..."
                     />
-                    <p className="pengaturan-hint">Pilih user yang bertanggung jawab menangani produk ini</p>
+                    <p className="field-hint">Pilih user yang bertanggung jawab menangani produk ini</p>
                   </div>
                 </div>
               </div>
