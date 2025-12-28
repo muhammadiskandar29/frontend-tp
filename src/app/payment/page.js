@@ -8,16 +8,54 @@ export default function BankTransferPage() {
   const params = useSearchParams();
   const product = params.get("product");
   const harga = params.get("harga");
-  const downPayment = params.get("down_payment");
-  const orderId = params.get("order_id");
+  const downPaymentFromQuery = params.get("down_payment");
+  const orderIdFromQuery = params.get("order_id");
   const via = params.get("via") || "manual";
   const sumber = params.get("sumber") || "website";
 
   const [bukti, setBukti] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [downPayment, setDownPayment] = useState(downPaymentFromQuery || "");
+  const [orderId, setOrderId] = useState(orderIdFromQuery || "");
+
+  // Cek dari localStorage sebagai fallback
+  useEffect(() => {
+    const storedOrder = localStorage.getItem("pending_order");
+    if (storedOrder) {
+      try {
+        const orderData = JSON.parse(storedOrder);
+        console.log("[PAYMENT] Order data from localStorage:", orderData);
+        
+        // Gunakan dari localStorage jika query param tidak ada
+        if (!downPayment && orderData.downPayment) {
+          setDownPayment(orderData.downPayment);
+          console.log("[PAYMENT] Using downPayment from localStorage:", orderData.downPayment);
+        }
+        if (!orderId && orderData.orderId) {
+          setOrderId(orderData.orderId);
+          console.log("[PAYMENT] Using orderId from localStorage:", orderData.orderId);
+        }
+      } catch (e) {
+        console.error("[PAYMENT] Error parsing stored order:", e);
+      }
+    }
+  }, []);
 
   const isWorkshop = downPayment && parseFloat(downPayment) > 0;
+
+  // Debug log
+  useEffect(() => {
+    console.log("[PAYMENT] Debug info:", {
+      downPaymentFromQuery,
+      downPayment,
+      orderIdFromQuery,
+      orderId,
+      isWorkshop,
+      product,
+      harga
+    });
+  }, [downPayment, orderId, isWorkshop]);
 
   // Nomor rekening BCA (bisa dipindahkan ke env)
   const rekeningBCA = {
@@ -55,8 +93,22 @@ export default function BankTransferPage() {
     e.preventDefault();
     setErrorMsg("");
 
-    if (!orderId) {
-      return setErrorMsg("Order ID tidak ditemukan. Silakan refresh halaman.");
+    // Cek orderId dari state atau localStorage
+    let finalOrderId = orderId;
+    if (!finalOrderId) {
+      const storedOrder = localStorage.getItem("pending_order");
+      if (storedOrder) {
+        try {
+          const orderData = JSON.parse(storedOrder);
+          finalOrderId = orderData.orderId;
+        } catch (e) {
+          console.error("[PAYMENT] Error parsing stored order:", e);
+        }
+      }
+    }
+
+    if (!finalOrderId) {
+      return setErrorMsg("Order ID tidak ditemukan. Silakan refresh halaman atau hubungi customer service.");
     }
 
     if (!bukti?.file) {
@@ -100,7 +152,7 @@ export default function BankTransferPage() {
       }
 
       console.log("🔍 [PAYMENT] Submitting payment confirmation:", {
-        orderId,
+        orderId: finalOrderId,
         amount: amountValue,
         metode_bayar: via,
         waktu_pembayaran,
@@ -109,7 +161,7 @@ export default function BankTransferPage() {
       });
 
       // Submit ke API order-konfirmasi
-      const response = await fetch(`/api/sales/order-konfirmasi/${orderId}`, {
+      const response = await fetch(`/api/sales/order-konfirmasi/${finalOrderId}`, {
         method: "POST",
         headers,
         body: formData,
@@ -233,7 +285,7 @@ export default function BankTransferPage() {
         </div>
 
         {/* Form Upload Bukti Pembayaran (untuk Workshop) */}
-        {isWorkshop && orderId && (
+        {isWorkshop && (
           <div className="instruksi-card" style={{ marginTop: "24px" }}>
             <h3 className="instruksi-title">📤 Upload Bukti Pembayaran</h3>
             <form onSubmit={handleKonfirmasiPembayaran}>

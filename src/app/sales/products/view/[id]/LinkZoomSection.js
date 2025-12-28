@@ -178,9 +178,9 @@ export default function LinkZoomSection({ productId, productName }) {
       let method = "POST";
 
       if (modalMode === "edit" && selectedWebinar?.id) {
-        // Menggunakan POST untuk update karena backend tidak mendukung PUT
-        url = `/api/sales/webinar/${selectedWebinar.id}`;
-        method = "POST"; // Changed from PUT to POST
+        // Menggunakan PUT untuk update
+        url = `/api/admin/webinar/${selectedWebinar.id}`;
+        method = "PUT";
       } else {
         payload.produk = Number(productId);
       }
