@@ -239,56 +239,55 @@ export default function Dashboard() {
     return date.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
   };
 
-  // Activity summary cards
-  const activityCards = [
+  // Grouped activity cards
+  const leadsCards = [
     {
       label: "Leads Assigned (Hari Ini)",
       value: loading ? "..." : stats.leadsAssignedToday.toLocaleString("id-ID"),
-      icon: <User size={20} />,
-      color: "#3B82F6",
-      bgColor: "#DBEAFE",
+      icon: <User size={24} />,
+      color: "accent-blue",
     },
     {
       label: "Leads Assigned (Bulan Ini)",
       value: loading ? "..." : stats.leadsAssignedThisMonth.toLocaleString("id-ID"),
-          icon: <User size={20} />,
-          color: "#3B82F6",
-          bgColor: "#DBEAFE",
-        },
-        {
+      icon: <User size={24} />,
+      color: "accent-blue",
+    },
+  ];
+
+  const followUpCards = [
+    {
       label: "Follow Up Selesai Hari Ini",
       value: loading ? "..." : stats.followUpDoneToday.toLocaleString("id-ID"),
-          icon: <CheckCircle size={20} />,
-          color: "#10B981",
-          bgColor: "#D1FAE5",
-        },
-        {
+      icon: <CheckCircle size={24} />,
+      color: "accent-emerald",
+    },
+    {
       label: "Follow Up Terlambat",
       value: loading ? "..." : stats.followUpOverdue.toLocaleString("id-ID"),
-      icon: <AlertCircle size={20} />,
-      color: "#EF4444",
-      bgColor: "#FEE2E2",
-        },
-        {
-          label: "Active Deals",
+      icon: <AlertCircle size={24} />,
+      color: "accent-red",
+    },
+  ];
+
+  const dealsCards = [
+    {
+      label: "Active Deals",
       value: loading ? "..." : stats.activeDeals.toLocaleString("id-ID"),
-          icon: <Package size={20} />,
-          color: "#14B8A6",
-          bgColor: "#CCFBF1",
-        },
-        {
+      icon: <Package size={24} />,
+      color: "accent-orange",
+    },
+    {
       label: "Closed Bulan Ini",
       value: loading ? "..." : stats.closedThisMonth.toLocaleString("id-ID"),
-          icon: <ShoppingCart size={20} />,
-          color: "#F97316",
-          bgColor: "#FFEDD5",
+      icon: <ShoppingCart size={24} />,
+      color: "accent-orange",
     },
     {
       label: "Avg Response Time",
       value: loading ? "..." : stats.avgResponseTime,
-      icon: <Clock size={20} />,
-      color: "#06B6D4",
-      bgColor: "#CFFAFE",
+      icon: <Clock size={24} />,
+      color: "accent-cyan",
     },
   ];
 
@@ -304,293 +303,204 @@ export default function Dashboard() {
   return (
     <Layout title="Dashboard" aboveContent={<GreetingBanner />}>
       <div className="dashboard-shell">
-        <style jsx>{`
-          .staff-dashboard {
-            padding: 0;
-            max-width: 1400px;
-            margin: 0 auto;
-          }
-
-          .time-context {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            padding: 0.75rem 1rem;
-            background: #f9fafb;
-            border-radius: 8px;
-            font-size: 0.875rem;
-            color: #6b7280;
-          }
-
-          .time-context-item {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-          }
-
-          .time-context-item svg {
-            width: 16px;
-            height: 16px;
-          }
-
-          .activity-summary {
-            margin-bottom: 2rem;
-          }
-
-          .activity-summary-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 1.5rem;
-          }
-
-          .activity-cards-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-          }
-
-          .activity-card {
-            background: white;
-            border-radius: 8px;
-            padding: 1.25rem;
-            border: 1px solid #e5e7eb;
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-          }
-
-          .activity-card-header {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-          }
-
-          .activity-card-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-          }
-
-          .activity-card-content {
-            flex: 1;
-            min-width: 0;
-          }
-
-          .activity-card-label {
-            font-size: 0.75rem;
-            color: #6b7280;
-            font-weight: 500;
-            margin-bottom: 0.25rem;
-            line-height: 1.3;
-          }
-
-          .activity-card-value {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #1f2937;
-            line-height: 1.2;
-          }
-
-          .progress-section {
-            background: white;
-            border-radius: 8px;
-            padding: 1.5rem;
-            border: 1px solid #e5e7eb;
-            margin-bottom: 2rem;
-          }
-
-          .progress-section-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-          }
-
-          .progress-section-title svg {
-            width: 20px;
-            height: 20px;
-            color: #6b7280;
-          }
-
-          .progress-item {
-            margin-bottom: 1.5rem;
-          }
-
-          .progress-item:last-child {
-            margin-bottom: 0;
-          }
-
-          .progress-item-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.5rem;
-          }
-
-          .progress-item-label {
-            font-size: 0.875rem;
-            color: #6b7280;
-            font-weight: 500;
-          }
-
-          .progress-item-value {
-            font-size: 0.875rem;
-            color: #1f2937;
-            font-weight: 600;
-          }
-
-          .progress-bar-container {
-            width: 100%;
-            height: 8px;
-            background: #f3f4f6;
-            border-radius: 4px;
-            overflow: hidden;
-          }
-
-          .progress-bar-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
-            border-radius: 4px;
-            transition: width 0.3s ease;
-          }
-
-          .progress-bar-fill.warning {
-            background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
-          }
-
-          .progress-bar-fill.success {
-            background: linear-gradient(90deg, #10b981 0%, #059669 100%);
-          }
-
-          @media (max-width: 1024px) {
-            .activity-cards-grid {
-              grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            }
-          }
-
-          @media (max-width: 768px) {
-            .activity-cards-grid {
-              grid-template-columns: repeat(2, 1fr);
-            }
-
-            .time-context {
-              flex-direction: column;
-              align-items: flex-start;
-              gap: 0.5rem;
-            }
-            }
-
-          @media (max-width: 480px) {
-            .activity-cards-grid {
-              grid-template-columns: 1fr;
-            }
-          }
-        `}</style>
-
-        <div className="staff-dashboard">
-          {/* Time Context */}
-          <div className="time-context">
-            <div className="time-context-item">
+        {/* Time Context */}
+        <section className="dashboard-hero" style={{ marginBottom: "2rem" }}>
+          <div style={{ 
+            display: "flex", 
+            alignItems: "center", 
+            gap: "1rem",
+            padding: "0.75rem 1rem",
+            background: "var(--dash-surface)",
+            border: "1px solid var(--dash-border)",
+            borderRadius: "var(--radius-lg)",
+            fontSize: "0.875rem",
+            color: "var(--dash-muted)"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <Calendar size={16} />
               <span>{formatDate(currentTime)}</span>
             </div>
-            <div className="time-context-item">
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <Clock size={16} />
               <span>{formatTime(currentTime)}</span>
-                    </div>
-                  </div>
-                  
-          {/* Activity Summary */}
-          <div className="activity-summary">
-            <h2 className="activity-summary-title">Ringkasan Aktivitas</h2>
-            <div className="activity-cards-grid">
-              {activityCards.map((card, index) => (
-                <div key={index} className="activity-card">
-                  <div className="activity-card-header">
-                    <div
-                      className="activity-card-icon"
-                        style={{
-                        backgroundColor: card.bgColor,
-                        color: card.color,
-                      }}
-                    >
-                      {card.icon}
-                      </div>
-                    <div className="activity-card-content">
-                      <div className="activity-card-label">{card.label}</div>
-                      <div className="activity-card-value">{card.value}</div>
-                    </div>
-                  </div>
-                </div>
-                ))}
-              </div>
-          </div>
-
-          {/* Progress Section */}
-          {(stats.monthlyTarget > 0 || stats.closingTarget > 0) && (
-            <div className="progress-section">
-              <h2 className="progress-section-title">
-                <Target size={20} />
-                Progress Target
-              </h2>
-              
-              {stats.monthlyTarget > 0 && (
-                <div className="progress-item">
-                  <div className="progress-item-header">
-                    <span className="progress-item-label">Target Bulanan</span>
-                    <span className="progress-item-value">
-                      {stats.monthlyProgress.toLocaleString("id-ID")} / {stats.monthlyTarget.toLocaleString("id-ID")}
-                    </span>
-                  </div>
-                  <div className="progress-bar-container">
-                    <div
-                      className={`progress-bar-fill ${
-                        monthlyProgressPercent >= 100
-                          ? "success"
-                          : monthlyProgressPercent >= 75
-                          ? "warning"
-                          : ""
-                      }`}
-                      style={{ width: `${monthlyProgressPercent}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {stats.closingTarget > 0 && (
-                <div className="progress-item">
-                  <div className="progress-item-header">
-                    <span className="progress-item-label">Target Closing</span>
-                    <span className="progress-item-value">
-                      {stats.closingProgress.toLocaleString("id-ID")} / {stats.closingTarget.toLocaleString("id-ID")}
-                    </span>
-                  </div>
-                  <div className="progress-bar-container">
-                    <div
-                      className={`progress-bar-fill ${
-                        closingProgressPercent >= 100
-                          ? "success"
-                          : closingProgressPercent >= 75
-                          ? "warning"
-                          : ""
-                      }`}
-                      style={{ width: `${closingProgressPercent}%` }}
-                    />
-                  </div>
-                </div>
-              )}
             </div>
-          )}
-        </div>
+          </div>
+        </section>
+
+        {/* Leads Activity Panel */}
+        <section className="dashboard-panels">
+          <article className="panel panel--summary">
+            <div className="panel__header">
+              <div>
+                <p className="panel__eyebrow">Leads Management</p>
+                <h3 className="panel__title">Leads Activity</h3>
+              </div>
+            </div>
+            <div className="dashboard-summary-horizontal">
+              {leadsCards.map((card) => (
+                <article className="summary-card" key={card.label}>
+                  <div className={`summary-card__icon ${card.color}`}>{card.icon}</div>
+                  <div>
+                    <p className="summary-card__label">{card.label}</p>
+                    <p className="summary-card__value">{card.value}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </article>
+        </section>
+
+        {/* Follow Up Activity Panel */}
+        <section className="dashboard-panels">
+          <article className="panel panel--summary">
+            <div className="panel__header">
+              <div>
+                <p className="panel__eyebrow">Follow Up Tracking</p>
+                <h3 className="panel__title">Follow Up Activity</h3>
+              </div>
+            </div>
+            <div className="dashboard-summary-horizontal">
+              {followUpCards.map((card) => (
+                <article className="summary-card" key={card.label}>
+                  <div className={`summary-card__icon ${card.color}`}>{card.icon}</div>
+                  <div>
+                    <p className="summary-card__label">{card.label}</p>
+                    <p className="summary-card__value">{card.value}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </article>
+        </section>
+
+        {/* Deals & Performance Panel */}
+        <section className="dashboard-panels">
+          <article className="panel panel--summary">
+            <div className="panel__header">
+              <div>
+                <p className="panel__eyebrow">Deals & Performance</p>
+                <h3 className="panel__title">Deals Overview</h3>
+              </div>
+            </div>
+            <div className="dashboard-summary-horizontal">
+              {dealsCards.map((card) => (
+                <article className="summary-card" key={card.label}>
+                  <div className={`summary-card__icon ${card.color}`}>{card.icon}</div>
+                  <div>
+                    <p className="summary-card__label">{card.label}</p>
+                    <p className="summary-card__value">{card.value}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </article>
+        </section>
+
+        {/* Progress Target Panel */}
+        {(stats.monthlyTarget > 0 || stats.closingTarget > 0) && (
+          <section className="dashboard-panels">
+            <article className="panel panel--summary">
+              <div className="panel__header">
+                <div>
+                  <p className="panel__eyebrow">Target Progress</p>
+                  <h3 className="panel__title">Monthly Goals</h3>
+                </div>
+              </div>
+              
+              <div style={{ padding: "1.5rem" }}>
+                {stats.monthlyTarget > 0 && (
+                  <div style={{ marginBottom: "1.5rem" }}>
+                    <div style={{ 
+                      display: "flex", 
+                      justifyContent: "space-between", 
+                      alignItems: "center",
+                      marginBottom: "0.5rem"
+                    }}>
+                      <span style={{ 
+                        fontSize: "0.875rem", 
+                        color: "var(--dash-muted)",
+                        fontWeight: 500
+                      }}>
+                        Target Bulanan
+                      </span>
+                      <span style={{ 
+                        fontSize: "0.875rem", 
+                        color: "var(--dash-text-dark)",
+                        fontWeight: 600
+                      }}>
+                        {stats.monthlyProgress.toLocaleString("id-ID")} / {stats.monthlyTarget.toLocaleString("id-ID")}
+                      </span>
+                    </div>
+                    <div style={{
+                      width: "100%",
+                      height: "8px",
+                      background: "var(--dash-border)",
+                      borderRadius: "4px",
+                      overflow: "hidden"
+                    }}>
+                      <div style={{
+                        height: "100%",
+                        width: `${monthlyProgressPercent}%`,
+                        background: monthlyProgressPercent >= 100
+                          ? "linear-gradient(90deg, #10b981 0%, #059669 100%)"
+                          : monthlyProgressPercent >= 75
+                          ? "linear-gradient(90deg, #f59e0b 0%, #d97706 100%)"
+                          : "linear-gradient(90deg, #3b82f6 0%, #2563eb 100%)",
+                        borderRadius: "4px",
+                        transition: "width 0.3s ease"
+                      }} />
+                    </div>
+                  </div>
+                )}
+
+                {stats.closingTarget > 0 && (
+                  <div>
+                    <div style={{ 
+                      display: "flex", 
+                      justifyContent: "space-between", 
+                      alignItems: "center",
+                      marginBottom: "0.5rem"
+                    }}>
+                      <span style={{ 
+                        fontSize: "0.875rem", 
+                        color: "var(--dash-muted)",
+                        fontWeight: 500
+                      }}>
+                        Target Closing
+                      </span>
+                      <span style={{ 
+                        fontSize: "0.875rem", 
+                        color: "var(--dash-text-dark)",
+                        fontWeight: 600
+                      }}>
+                        {stats.closingProgress.toLocaleString("id-ID")} / {stats.closingTarget.toLocaleString("id-ID")}
+                      </span>
+                    </div>
+                    <div style={{
+                      width: "100%",
+                      height: "8px",
+                      background: "var(--dash-border)",
+                      borderRadius: "4px",
+                      overflow: "hidden"
+                    }}>
+                      <div style={{
+                        height: "100%",
+                        width: `${closingProgressPercent}%`,
+                        background: closingProgressPercent >= 100
+                          ? "linear-gradient(90deg, #10b981 0%, #059669 100%)"
+                          : closingProgressPercent >= 75
+                          ? "linear-gradient(90deg, #f59e0b 0%, #d97706 100%)"
+                          : "linear-gradient(90deg, #3b82f6 0%, #2563eb 100%)",
+                        borderRadius: "4px",
+                        transition: "width 0.3s ease"
+                      }} />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </article>
+          </section>
+        )}
       </div>
     </Layout>
   );
