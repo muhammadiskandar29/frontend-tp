@@ -401,7 +401,24 @@ export default function LeadsPage() {
     };
     return labelMap[labelLower] || "label-default";
   };
-
+  const searchedLeads = useMemo(() => {
+    const q = searchInput.trim().toLowerCase();
+    if (!q) return leads;
+  
+    return leads.filter((lead) => {
+      const customer = lead.customer_rel || {};
+      return (
+        customer.nama?.toLowerCase().includes(q) ||
+        customer.email?.toLowerCase().includes(q) ||
+        customer.wa?.toLowerCase().includes(q) ||
+        lead.nama?.toLowerCase().includes(q) ||
+        lead.email?.toLowerCase().includes(q) ||
+        lead.wa?.toLowerCase().includes(q) ||
+        lead.minat_produk?.toLowerCase().includes(q)
+      );
+    });
+  }, [leads, searchInput]);
+  
   return (
     <Layout>
       <div className="dashboard-shell leads-shell">
@@ -620,8 +637,8 @@ export default function LeadsPage() {
                 ))}
               </div>
               <div className="leads-table__body">
-                {leads.length > 0 ? (
-                  leads.map((lead, i) => {
+              {searchedLeads.length > 0 ? (
+  searchedLeads.map((lead, i) => {
                     const customer = lead.customer_rel || {};
                     const customerName = customer.nama || lead.nama || "-";
                     const customerEmail = customer.email || lead.email || "";
