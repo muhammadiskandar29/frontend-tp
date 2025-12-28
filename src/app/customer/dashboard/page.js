@@ -6,7 +6,6 @@ import CustomerLayout from "@/components/customer/CustomerLayout";
 import UpdateCustomerModal from "./updateCustomer";
 import HeroSection from "./components/HeroSection";
 import StatsSection from "./components/StatsSection";
-import OrdersSection from "./components/OrdersSection";
 import ProductsSection from "./components/ProductsSection";
 import QuickActions from "./components/QuickActions";
 import { useDashboardData } from "./hooks/useDashboardData";
@@ -18,11 +17,9 @@ export default function DashboardPage() {
   const router = useRouter();
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [updateModalReason, setUpdateModalReason] = useState("password");
-  const [currentTime, setCurrentTime] = useState(() => Date.now());
   
   const { 
     stats, 
-    activeOrders, 
     customerInfo, 
     unpaidCount,
     loading: dashboardLoading, 
@@ -31,13 +28,6 @@ export default function DashboardPage() {
   } = useDashboardData();
   
   const { products, loading: productsLoading } = useProducts();
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(Date.now());
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   const handleUpdateSuccess = (data) => {
     console.log("[DASHBOARD] Update success, data received:", data);
@@ -105,13 +95,6 @@ export default function DashboardPage() {
 
         {/* Stats Section */}
         <StatsSection stats={stats} isLoading={dashboardLoading} />
-
-        {/* Orders Section */}
-        <OrdersSection 
-          orders={activeOrders}
-          isLoading={dashboardLoading}
-          currentTime={currentTime}
-        />
 
         {/* Products Section */}
         {products.length > 0 && (

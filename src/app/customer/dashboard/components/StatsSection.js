@@ -14,6 +14,16 @@ export default function StatsSection({ stats, isLoading }) {
             <div className="stat-card__icon-wrapper">
               <div className="stat-icon">{stat.icon}</div>
             </div>
+            <div className="stat-card__content">
+              <p className="stat-label">{stat.label}</p>
+              <strong className="stat-value">
+                {isLoading ? (
+                  <span className="stat-loading">-</span>
+                ) : (
+                  stat.value
+                )}
+              </strong>
+            </div>
           </div>
         ))}
       </div>
