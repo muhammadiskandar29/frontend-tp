@@ -98,7 +98,9 @@ export default function OrdersSection({
 
         {!isLoading && orders.map((order) => {
           const countdown = getCountdownLabel(order);
-          const isPaid = order.isPaid !== false; // Default to true if not specified
+          // isPaid sudah dihitung di useDashboardData berdasarkan status_pembayaran
+          // false jika belum terbayar (status_pembayaran bukan 3)
+          const isPaid = order.isPaid === true;
           
           return (
             <div key={order.id} className={`order-card ${!isPaid ? 'order-card--locked' : ''}`}>

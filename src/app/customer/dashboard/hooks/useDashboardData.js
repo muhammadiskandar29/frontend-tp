@@ -82,9 +82,9 @@ export function useDashboardData() {
       const startDate = getOrderStartDate(order);
       const statusPembayaran = order.status_pembayaran || order.status_pembayaran_id;
       
-      // If order is from orders_aktif, it should be paid
-      // Otherwise check status_pembayaran
-      const isPaid = order._isFromActive || statusPembayaran === 3 || statusPembayaran === "3";
+      // Check if order is paid (status_pembayaran 3 = sukses/terbayar)
+      // Order dari order_proses bisa belum terbayar, jadi harus cek status
+      const isPaid = statusPembayaran === 3 || statusPembayaran === "3";
       
       return {
         id: order.id,
@@ -141,12 +141,10 @@ export function useDashboardData() {
         { id: "active", label: "Order Aktif", value: data?.statistik?.order_aktif ?? 0, icon: "✅" },
       ];
 
-      // orders_aktif from API should already be paid orders
-      // But we'll still check status_pembayaran to be safe
-      const activeOrders = (data?.orders_aktif || []).map((order) => ({
-        ...order,
-        _isFromActive: true, // Mark as from orders_aktif (should be paid)
-      }));
+      // Order Aktif diambil dari order_proses (bukan orders_aktif)
+      // order_proses bisa berisi order yang belum terbayar, jadi perlu cek status_pembayaran
+      const orderProses = data?.order_proses || data?.orders_proses || [];
+      const activeOrders = orderProses;
 
       // Get unpaid orders for count
       const unpaidOrders = (data?.orders_pending || []).filter((order) => {
