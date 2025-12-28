@@ -3084,8 +3084,8 @@ html:has(.add-products3-container) {
 }
 
 .preview-image-full {
-  width: 100%;
-  max-width: 350px;
+  width: auto;
+  max-width: 300px;
   height: auto;
   border-radius: 8px;
   margin: 0 auto;
@@ -3609,6 +3609,8 @@ html:has(.add-products3-container) {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  align-items: center;
+  width: 100%;
 }
 
 .preview-video-wrapper {
@@ -3623,8 +3625,11 @@ html:has(.add-products3-container) {
 
 /* Video thumbnail style - persegi panjang landscape seperti thumbnail YouTube */
 .preview-video-wrapper.preview-video-thumbnail {
-  max-width: 320px;
-  padding-bottom: 56.25%; /* 16:9 aspect ratio - landscape seperti thumbnail YouTube */
+  width: 100% !important;
+  max-width: 400px !important;
+  padding-bottom: 56.25% !important; /* 16:9 aspect ratio - landscape seperti thumbnail YouTube */
+  margin: 0 auto;
+  aspect-ratio: 16 / 9;
 }
 
 .preview-video-wrapper iframe {
@@ -3638,7 +3643,8 @@ html:has(.add-products3-container) {
 
 /* Image auto aspect - menyesuaikan bentuk gambar */
 .preview-image-auto-aspect {
-  max-width: 100% !important;
+  width: auto !important;
+  max-width: 300px !important;
   height: auto !important;
   object-fit: contain;
   display: block;
