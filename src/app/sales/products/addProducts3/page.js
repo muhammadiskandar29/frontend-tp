@@ -88,6 +88,7 @@ export default function AddProducts3Page() {
     kategori: null,
     kode: "",
     url: "",
+    harga_asli: null,
     harga_promo: null,
     tanggal_event: null,
     assign: []
@@ -780,6 +781,20 @@ export default function AddProducts3Page() {
                 <div className="pengaturan-section">
                   <h3 className="pengaturan-section-title">Harga Asli</h3>
                   
+                  <div className="pengaturan-form-group">
+                    <label className="pengaturan-label">Harga Asli</label>
+                    <InputNumber
+                      className="pengaturan-input"
+                      value={pengaturanForm.harga_asli}
+                      onValueChange={(e) => handlePengaturanChange("harga_asli", e.value)}
+                      placeholder="Masukkan harga asli"
+                      mode="currency"
+                      currency="IDR"
+                      locale="id-ID"
+                      useGrouping={true}
+                    />
+                  </div>
+
                   <div className="pengaturan-form-group">
                     <label className="pengaturan-label">
                       Harga Promo <span className="required">*</span>
