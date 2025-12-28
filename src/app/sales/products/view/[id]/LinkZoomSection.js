@@ -179,7 +179,7 @@ export default function LinkZoomSection({ productId, productName }) {
 
       if (modalMode === "edit" && selectedWebinar?.id) {
         // Menggunakan PUT untuk update
-        url = `/api/admin/webinar/${selectedWebinar.id}`;
+        url = `/api/sales/webinar/${selectedWebinar.id}`;
         method = "PUT";
       } else {
         payload.produk = Number(productId);
