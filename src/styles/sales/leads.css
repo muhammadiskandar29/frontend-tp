@@ -375,21 +375,11 @@
 }
 
 .leads-table__cell--actions {
-  justify-content: flex-start;
-  align-items: flex-start;
-}
-
-.leads-table__actions {
   display: flex;
-  align-items: stretch;
-  gap: 0;
-  width: 100%;
-}
-
-.leads-table__actions--vertical {
-  flex-direction: column;
-  gap: 0.375rem;
-  width: 100%;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
 }
 
 .leads-table__action-btn {

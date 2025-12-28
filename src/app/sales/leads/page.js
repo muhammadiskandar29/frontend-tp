@@ -756,59 +756,57 @@ export default function LeadsPage() {
 
                         {/* Aksi */}
                         <span className="leads-table__cell leads-table__cell--actions">
-                          <div className="leads-table__actions leads-table__actions--vertical">
-                            <button
-                              className="leads-action-btn leads-action-btn--detail"
-                              onClick={() => {
-                                setSelectedLead(lead);
-                                setShowViewLead(true);
-                              }}
-                              title="Detail"
-                            >
-                              Detail
-                            </button>
-                            <button
-                              className="leads-action-btn leads-action-btn--edit"
-                              onClick={() => {
-                                setSelectedLead(lead);
-                                setShowEditLead(true);
-                              }}
-                              title="Edit"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              className="leads-action-btn leads-action-btn--delete"
-                              onClick={async () => {
-                                if (confirm(`Apakah Anda yakin ingin menghapus lead ini?`)) {
-                                  try {
-                                    const token = localStorage.getItem("token");
-                                    const res = await fetch(`/api/sales/lead/${lead.id}`, {
-                                      method: "DELETE",
-                                      headers: {
-                                        "Content-Type": "application/json",
-                                        Accept: "application/json",
-                                        Authorization: `Bearer ${token}`,
-                                      },
-                                    });
-                                    const data = await res.json();
-                                    if (res.ok && data.success) {
-                                      toastSuccess(data.message || "Lead berhasil dihapus");
-                                      requestRefresh("Lead berhasil dihapus", "success");
-                                    } else {
-                                      throw new Error(data.message || "Gagal menghapus lead");
-                                    }
-                                  } catch (err) {
-                                    console.error(err);
-                                    toastError("Gagal menghapus lead: " + err.message);
+                          <button
+                            className="customers-action-btn"
+                            onClick={() => {
+                              setSelectedLead(lead);
+                              setShowViewLead(true);
+                            }}
+                            title="Lihat"
+                          >
+                            <i className="pi pi-eye" />
+                          </button>
+                          <button
+                            className="customers-action-btn customers-action-btn--ghost"
+                            onClick={() => {
+                              setSelectedLead(lead);
+                              setShowEditLead(true);
+                            }}
+                            title="Edit"
+                          >
+                            <i className="pi pi-pencil" />
+                          </button>
+                          <button
+                            className="customers-action-btn customers-action-btn--danger"
+                            onClick={async () => {
+                              if (confirm(`Apakah Anda yakin ingin menghapus lead ini?`)) {
+                                try {
+                                  const token = localStorage.getItem("token");
+                                  const res = await fetch(`/api/sales/lead/${lead.id}`, {
+                                    method: "DELETE",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                      Accept: "application/json",
+                                      Authorization: `Bearer ${token}`,
+                                    },
+                                  });
+                                  const data = await res.json();
+                                  if (res.ok && data.success) {
+                                    toastSuccess(data.message || "Lead berhasil dihapus");
+                                    requestRefresh("Lead berhasil dihapus", "success");
+                                  } else {
+                                    throw new Error(data.message || "Gagal menghapus lead");
                                   }
+                                } catch (err) {
+                                  console.error(err);
+                                  toastError("Gagal menghapus lead: " + err.message);
                                 }
-                              }}
-                              title="Hapus"
-                            >
-                              Hapus
-                            </button>
-                          </div>
+                              }
+                            }}
+                            title="Hapus"
+                          >
+                            <i className="pi pi-trash" />
+                          </button>
                         </span>
                       </div>
                     );
