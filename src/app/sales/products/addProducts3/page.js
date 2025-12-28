@@ -583,9 +583,40 @@ export default function AddProducts3Page() {
     fetchInitialData();
   }, []);
 
+  // Fungsi untuk generate kode dari nama (slugify)
+  const generateKode = (text) => {
+    if (!text) return "";
+    
+    return text
+      .toLowerCase()
+      .trim()
+      // Hapus karakter khusus, hanya simpan huruf, angka, spasi, dan dash
+      .replace(/[^a-z0-9\s-]/g, "")
+      // Ganti multiple spaces dengan single space
+      .replace(/\s+/g, " ")
+      // Ganti spasi dengan dash
+      .replace(/\s/g, "-")
+      // Hapus multiple dash menjadi single dash
+      .replace(/-+/g, "-")
+      // Hapus dash di awal dan akhir
+      .replace(/^-+|-+$/g, "");
+  };
+
   // Handler untuk update form pengaturan
   const handlePengaturanChange = (key, value) => {
-    setPengaturanForm((prev) => ({ ...prev, [key]: value }));
+    if (key === "nama") {
+      // Auto-generate kode dan URL dari nama
+      const kode = generateKode(value);
+      const url = kode ? `/${kode}` : "";
+      setPengaturanForm((prev) => ({ 
+        ...prev, 
+        nama: value,
+        kode: kode,
+        url: url
+      }));
+    } else {
+      setPengaturanForm((prev) => ({ ...prev, [key]: value }));
+    }
   };
 
   // Render grid komponen dalam modal
@@ -733,8 +764,11 @@ export default function AddProducts3Page() {
                       className="pengaturan-input"
                       value={pengaturanForm.kode}
                       onChange={(e) => handlePengaturanChange("kode", e.target.value)}
-                      placeholder="Masukkan kode produk"
+                      placeholder="Otomatis dari nama produk"
+                      readOnly
+                      style={{ background: "#f9fafb", cursor: "not-allowed" }}
                     />
+                    <small className="pengaturan-hint">Kode otomatis di-generate dari nama produk</small>
                   </div>
 
                   <div className="pengaturan-form-group">
@@ -743,8 +777,11 @@ export default function AddProducts3Page() {
                       className="pengaturan-input"
                       value={pengaturanForm.url}
                       onChange={(e) => handlePengaturanChange("url", e.target.value)}
-                      placeholder="Masukkan URL produk"
+                      placeholder="Otomatis dari kode produk"
+                      readOnly
+                      style={{ background: "#f9fafb", cursor: "not-allowed" }}
                     />
+                    <small className="pengaturan-hint">URL otomatis di-generate dari kode produk</small>
                   </div>
                 </div>
 

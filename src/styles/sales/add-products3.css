@@ -257,6 +257,22 @@
   margin-bottom: 24px;
 }
 
+.canvas-product-title-block {
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.preview-product-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+  line-height: 1.2;
+  word-wrap: break-word;
+}
+}
+
 .canvas-empty {
   position: absolute;
   top: 50%;

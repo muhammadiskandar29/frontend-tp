@@ -627,8 +627,11 @@ export default function AddProducts3Page() {
                       className="pengaturan-input"
                       value={pengaturanForm.kode}
                       onChange={(e) => handlePengaturanChange("kode", e.target.value)}
-                      placeholder="Masukkan kode produk"
+                      placeholder="Otomatis dari nama produk"
+                      readOnly
+                      style={{ background: "#f9fafb", cursor: "not-allowed" }}
                     />
+                    <small className="pengaturan-hint">Kode otomatis di-generate dari nama produk</small>
                   </div>
 
                   <div className="pengaturan-form-group">
@@ -637,8 +640,11 @@ export default function AddProducts3Page() {
                       className="pengaturan-input"
                       value={pengaturanForm.url}
                       onChange={(e) => handlePengaturanChange("url", e.target.value)}
-                      placeholder="Masukkan URL produk"
+                      placeholder="Otomatis dari kode produk"
+                      readOnly
+                      style={{ background: "#f9fafb", cursor: "not-allowed" }}
                     />
+                    <small className="pengaturan-hint">URL otomatis di-generate dari kode produk</small>
                   </div>
                 </div>
 
@@ -718,8 +724,15 @@ export default function AddProducts3Page() {
         {/* Right Canvas - Preview */}
         <div className="page-builder-canvas">
           <div className="canvas-wrapper">
+            {/* Nama Produk - Selalu muncul di paling atas, tidak bisa dipindahkan */}
+            {pengaturanForm.nama && (
+              <div className="canvas-preview-block canvas-product-title-block">
+                <h1 className="preview-product-title">{pengaturanForm.nama}</h1>
+              </div>
+            )}
+            
             {/* Placeholder jika belum ada komponen */}
-            {blocks.length === 0 && (
+            {blocks.length === 0 && !pengaturanForm.nama && (
               <div className="canvas-empty">
                 <p>Klik "Tambah Komponen Baru" untuk memulai</p>
               </div>
