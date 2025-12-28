@@ -1,10 +1,10 @@
 /* ============================================
    ADD PRODUCTS 3 - PAGE BUILDER
-   Modern SaaS Custom Styling (No PrimeReact Dependencies)
+   Modern SaaS Styling with Lara Light Orange Theme
    ============================================ */
 
 /* ============================================
-   CUSTOM DROPDOWN - MODERN SAAS STYLING
+   CUSTOM DROPDOWN - LARA LIGHT ORANGE THEME
    ============================================ */
 .pengaturan-content .p-dropdown,
 .pengaturan-content .form-input.p-dropdown,
@@ -13,72 +13,70 @@
   width: 100% !important;
   min-height: 44px !important;
   background: #ffffff !important;
-  border: 1.5px solid #e5e7eb !important;
-  border-radius: 10px !important;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  border: 1px solid #dee2e6 !important;
+  border-radius: 6px !important;
+  transition: all 0.2s ease !important;
   cursor: pointer !important;
   display: flex !important;
   align-items: center !important;
 }
 
 .pengaturan-content .p-dropdown:not(.p-disabled):hover {
-  border-color: #d1d5db !important;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) !important;
+  border-color: #ff9800 !important;
 }
 
 .pengaturan-content .p-dropdown:not(.p-disabled).p-focus {
-  border-color: #3b82f6 !important;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 2px 4px rgba(0, 0, 0, 0.08) !important;
+  border-color: #ff9800 !important;
+  box-shadow: 0 0 0 0.2rem rgba(255, 152, 0, 0.2) !important;
   outline: none !important;
 }
 
 .pengaturan-content .p-dropdown .p-dropdown-label {
-  padding: 10px 14px !important;
-  font-size: 14px !important;
+  padding: 0.75rem !important;
+  font-size: 1rem !important;
   font-weight: 400 !important;
-  color: #111827 !important;
+  color: #495057 !important;
   line-height: 1.5 !important;
   flex: 1 !important;
   min-width: 0 !important;
 }
 
 .pengaturan-content .p-dropdown .p-dropdown-label.p-placeholder {
-  color: #9ca3af !important;
+  color: #6c757d !important;
 }
 
 .pengaturan-content .p-dropdown .p-dropdown-trigger {
-  width: 40px !important;
+  width: 2.5rem !important;
   height: 100% !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  color: #6b7280 !important;
-  border-left: 1px solid #e5e7eb !important;
+  color: #6c757d !important;
+  border-left: 1px solid #dee2e6 !important;
   transition: all 0.2s ease !important;
   flex-shrink: 0 !important;
 }
 
 .pengaturan-content .p-dropdown .p-dropdown-trigger:hover {
-  background: #f9fafb !important;
-  color: #374151 !important;
+  background: #f8f9fa !important;
+  color: #ff9800 !important;
 }
 
 .pengaturan-content .p-dropdown .p-dropdown-clear-icon {
-  width: 32px !important;
-  height: 32px !important;
+  width: 2rem !important;
+  height: 2rem !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  color: #9ca3af !important;
-  border-radius: 6px !important;
+  color: #6c757d !important;
+  border-radius: 50% !important;
   transition: all 0.2s ease !important;
-  margin-right: 4px !important;
+  margin-right: 0.5rem !important;
 }
 
 .pengaturan-content .p-dropdown .p-dropdown-clear-icon:hover {
-  background: #f3f4f6 !important;
-  color: #374151 !important;
+  background: #f8f9fa !important;
+  color: #ff9800 !important;
 }
 
 /* Dropdown Panel */
@@ -87,16 +85,15 @@
   top: 100% !important;
   left: 0 !important;
   right: 0 !important;
-  margin-top: 6px !important;
+  margin-top: 0.25rem !important;
   background: #ffffff !important;
-  border: 1px solid #e5e7eb !important;
-  border-radius: 12px !important;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05) !important;
+  border: 0 none !important;
+  border-radius: 6px !important;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1) !important;
   z-index: 1000 !important;
   min-width: 100% !important;
   max-width: 100% !important;
   overflow: hidden !important;
-  animation: dropdownSlideDown 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 @keyframes dropdownSlideDown {
@@ -112,89 +109,89 @@
 
 .pengaturan-content .p-dropdown-panel .p-dropdown-items-wrapper {
   background: #ffffff !important;
-  padding: 6px !important;
+  padding: 0.5rem 0 !important;
   max-height: 280px !important;
   overflow-y: auto !important;
 }
 
 .pengaturan-content .p-dropdown-panel .p-dropdown-items-wrapper::-webkit-scrollbar {
-  width: 6px !important;
+  width: 8px !important;
 }
 
 .pengaturan-content .p-dropdown-panel .p-dropdown-items-wrapper::-webkit-scrollbar-track {
-  background: #f9fafb !important;
+  background: #f8f9fa !important;
 }
 
 .pengaturan-content .p-dropdown-panel .p-dropdown-items-wrapper::-webkit-scrollbar-thumb {
-  background: #d1d5db !important;
-  border-radius: 3px !important;
+  background: #dee2e6 !important;
+  border-radius: 4px !important;
 }
 
 .pengaturan-content .p-dropdown-panel .p-dropdown-items-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af !important;
+  background: #adb5bd !important;
 }
 
 /* Dropdown Items */
 .pengaturan-content .p-dropdown-panel .p-dropdown-item {
-  padding: 10px 14px !important;
-  font-size: 14px !important;
+  padding: 0.75rem 1.25rem !important;
+  font-size: 1rem !important;
   font-weight: 400 !important;
-  color: #374151 !important;
-  border-radius: 8px !important;
+  color: #495057 !important;
+  border-radius: 0 !important;
   transition: all 0.15s ease !important;
   cursor: pointer !important;
-  margin: 2px 0 !important;
+  margin: 0 !important;
   line-height: 1.5 !important;
 }
 
 .pengaturan-content .p-dropdown-panel .p-dropdown-item:not(.p-highlight):not(.p-disabled):hover {
-  background: #f3f4f6 !important;
-  color: #111827 !important;
+  background: #f8f9fa !important;
+  color: #495057 !important;
 }
 
 .pengaturan-content .p-dropdown-panel .p-dropdown-item.p-highlight {
-  background: #3b82f6 !important;
+  background: #ff9800 !important;
   color: #ffffff !important;
-  font-weight: 500 !important;
+  font-weight: 400 !important;
 }
 
 .pengaturan-content .p-dropdown-panel .p-dropdown-item.p-disabled {
-  color: #d1d5db !important;
+  color: #6c757d !important;
   cursor: not-allowed !important;
   opacity: 0.6 !important;
 }
 
 /* Dropdown Filter */
 .pengaturan-content .p-dropdown-panel .p-dropdown-filter-container {
-  padding: 10px !important;
+  padding: 0.75rem !important;
   background: #ffffff !important;
-  border-bottom: 1px solid #e5e7eb !important;
+  border-bottom: 1px solid #dee2e6 !important;
 }
 
 .pengaturan-content .p-dropdown-panel .p-dropdown-filter {
   width: 100% !important;
-  padding: 10px 12px !important;
-  font-size: 14px !important;
-  color: #111827 !important;
-  background: #f9fafb !important;
-  border: 1px solid #e5e7eb !important;
-  border-radius: 8px !important;
+  padding: 0.5rem 0.75rem !important;
+  font-size: 1rem !important;
+  color: #495057 !important;
+  background: #ffffff !important;
+  border: 1px solid #ced4da !important;
+  border-radius: 6px !important;
   transition: all 0.2s ease !important;
 }
 
 .pengaturan-content .p-dropdown-panel .p-dropdown-filter:focus {
   background: #ffffff !important;
-  border-color: #3b82f6 !important;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+  border-color: #ff9800 !important;
+  box-shadow: 0 0 0 0.2rem rgba(255, 152, 0, 0.2) !important;
   outline: none !important;
 }
 
 .pengaturan-content .p-dropdown-panel .p-dropdown-filter::placeholder {
-  color: #9ca3af !important;
+  color: #6c757d !important;
 }
 
 /* ============================================
-   CUSTOM MULTISELECT - MODERN SAAS STYLING
+   CUSTOM MULTISELECT - LARA LIGHT ORANGE THEME
    ============================================ */
 .pengaturan-content .p-multiselect,
 .pengaturan-content .form-input.p-multiselect,
@@ -203,25 +200,23 @@
   width: 100% !important;
   min-height: 44px !important;
   background: #ffffff !important;
-  border: 1.5px solid #e5e7eb !important;
-  border-radius: 10px !important;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  border: 1px solid #dee2e6 !important;
+  border-radius: 6px !important;
+  transition: all 0.2s ease !important;
   cursor: pointer !important;
   display: flex !important;
   align-items: center !important;
-  padding: 4px 8px !important;
+  padding: 0.25rem 0.5rem !important;
   box-sizing: border-box !important;
 }
 
 .pengaturan-content .p-multiselect:not(.p-disabled):hover {
-  border-color: #d1d5db !important;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) !important;
+  border-color: #ff9800 !important;
 }
 
 .pengaturan-content .p-multiselect:not(.p-disabled).p-focus {
-  border-color: #3b82f6 !important;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 2px 4px rgba(0, 0, 0, 0.08) !important;
+  border-color: #ff9800 !important;
+  box-shadow: 0 0 0 0.2rem rgba(255, 152, 0, 0.2) !important;
   outline: none !important;
 }
 
@@ -253,23 +248,21 @@
 
 /* Multiselect Chips */
 .pengaturan-content .p-multiselect .p-multiselect-token {
-  padding: 4px 10px !important;
-  background: #3b82f6 !important;
+  padding: 0.25rem 0.5rem !important;
+  background: #ff9800 !important;
   color: #ffffff !important;
-  border-radius: 6px !important;
-  font-size: 13px !important;
+  border-radius: 16px !important;
+  font-size: 0.875rem !important;
   font-weight: 500 !important;
   display: inline-flex !important;
   align-items: center !important;
-  gap: 6px !important;
-  margin: 0 !important;
-  box-shadow: 0 1px 2px rgba(59, 130, 246, 0.2) !important;
+  gap: 0.5rem !important;
+  margin: 0.125rem !important;
   transition: all 0.2s ease !important;
 }
 
 .pengaturan-content .p-multiselect .p-multiselect-token:hover {
-  background: #2563eb !important;
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3) !important;
+  background: #f57c00 !important;
 }
 
 .pengaturan-content .p-multiselect .p-multiselect-token .p-multiselect-token-icon {
@@ -387,9 +380,9 @@
 }
 
 .pengaturan-content .p-multiselect-panel .p-multiselect-item.p-highlight {
-  background: #eff6ff !important;
-  color: #3b82f6 !important;
-  font-weight: 500 !important;
+  background: #fff3e0 !important;
+  color: #ff9800 !important;
+  font-weight: 400 !important;
 }
 
 .pengaturan-content .p-multiselect-panel .p-multiselect-item.p-disabled {
@@ -409,8 +402,8 @@
 }
 
 .pengaturan-content .p-multiselect-panel .p-multiselect-item.p-highlight .p-checkbox {
-  background: #3b82f6 !important;
-  border-color: #3b82f6 !important;
+  background: #ff9800 !important;
+  border-color: #ff9800 !important;
 }
 
 .pengaturan-content .p-multiselect-panel .p-multiselect-item .p-checkbox-icon {
@@ -438,8 +431,8 @@
 
 .pengaturan-content .p-multiselect-panel .p-multiselect-filter:focus {
   background: #ffffff !important;
-  border-color: #3b82f6 !important;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+  border-color: #ff9800 !important;
+  box-shadow: 0 0 0 0.2rem rgba(255, 152, 0, 0.2) !important;
   outline: none !important;
 }
 
@@ -448,7 +441,7 @@
 }
 
 /* ============================================
-   CUSTOM CALENDAR - MODERN SAAS STYLING
+   CUSTOM CALENDAR - LARA LIGHT ORANGE THEME
    ============================================ */
 .pengaturan-content .p-calendar,
 .pengaturan-content .form-input.p-calendar,
@@ -475,8 +468,8 @@
 
 .pengaturan-content .p-calendar:not(.p-disabled).p-focus,
 .pengaturan-input .p-calendar:not(.p-disabled).p-focus {
-  border-color: #10b981 !important;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1), 0 2px 4px rgba(0, 0, 0, 0.08) !important;
+  border-color: #ff9800 !important;
+  box-shadow: 0 0 0 0.2rem rgba(255, 152, 0, 0.2) !important;
   outline: none !important;
 }
 
@@ -586,10 +579,9 @@
 .pengaturan-content .p-datepicker-next:hover,
 .pengaturan-input .p-datepicker-prev:hover,
 .pengaturan-input .p-datepicker-next:hover {
-  background: #3b82f6 !important;
-  border-color: #3b82f6 !important;
+  background: #ff9800 !important;
+  border-color: #ff9800 !important;
   color: #ffffff !important;
-  transform: scale(1.05) !important;
 }
 
 /* Calendar Grid */
@@ -654,11 +646,10 @@
 
 .pengaturan-content .p-datepicker-calendar td > span.p-highlight,
 .pengaturan-input .p-datepicker-calendar td > span.p-highlight {
-  background: #3b82f6 !important;
+  background: #ff9800 !important;
   color: #ffffff !important;
-  font-weight: 600 !important;
-  border: 2px solid #2563eb !important;
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3) !important;
+  font-weight: 400 !important;
+  border: 0 none !important;
 }
 
 .pengaturan-content .p-datepicker-calendar td > span.p-datepicker-day-today:not(.p-highlight),
@@ -696,10 +687,9 @@
 
 .pengaturan-content .p-timepicker-button:hover,
 .pengaturan-input .p-timepicker-button:hover {
-  background: #3b82f6 !important;
-  border-color: #3b82f6 !important;
+  background: #ff9800 !important;
+  border-color: #ff9800 !important;
   color: #ffffff !important;
-  transform: scale(1.1) !important;
 }
 
 /* Calendar Button Bar */

@@ -22,6 +22,9 @@ import {
   FAQComponent,
   PriceComponent,
 } from './components';
+// PrimeReact Theme & Core
+import "primereact/resources/themes/lara-light-orange/theme.css";
+import "primereact/resources/primereact.min.css";
 import "@/styles/sales/add-products3.css";
 import "@/styles/ongkir.css";
 
