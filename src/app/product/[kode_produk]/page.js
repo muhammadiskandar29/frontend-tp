@@ -690,11 +690,18 @@ export default function ProductPage() {
       console.warn("[PRODUCT] 💡 Solusi: Pastikan ada produk real di database, atau buat produk dummy di backend");
     }
     
+    const isWorkshop = isKategoriWorkshop();
+    const kategoriId = getKategoriId();
+    
     console.log("[PRODUCT] Submitting order with product ID:", productIdToUse, {
       isDummy: isDummyProduct(kode_produk),
       validProductId: validProductId,
       dataId: data.id,
-      willUse: productIdToUse
+      willUse: productIdToUse,
+      kategoriId: kategoriId,
+      isWorkshop: isWorkshop,
+      kategori: data.kategori,
+      kategori_rel: data.kategori_rel
     });
 
     const payload = {
@@ -705,7 +712,7 @@ export default function ProductPage() {
       produk: productIdToUse, // Gunakan validProductId untuk dummy products
       harga: String(hargaProduk),
       ongkir: String(ongkirValue),
-      down_payment: isKategoriWorkshop() ? String(downPaymentValue) : undefined,
+      down_payment: isWorkshop ? String(downPaymentValue) : undefined,
       total_harga: String(totalHarga),
       metode_bayar: paymentMethod,
       sumber: sumber || 'website',
@@ -713,10 +720,18 @@ export default function ProductPage() {
         ? customerForm.custom_value 
         : (customerForm.custom_value ? [customerForm.custom_value] : []),
       // Untuk Workshop (kategori 15), tambahkan status_pembayaran: 4
-      ...(isKategoriWorkshop() ? { status_pembayaran: 4 } : {}),
+      ...(isWorkshop ? { status_pembayaran: 4 } : {}),
       // Tambahkan flag untuk dummy products (opsional, untuk tracking)
       ...(isDummyProduct(kode_produk) ? { dummy_product_kode: kode_produk } : {}),
     };
+
+    console.log("[PRODUCT] Order payload:", {
+      ...payload,
+      hasStatusPembayaran: payload.status_pembayaran !== undefined,
+      statusPembayaran: payload.status_pembayaran,
+      hasDownPayment: payload.down_payment !== undefined,
+      downPayment: payload.down_payment
+    });
 
     try {
       const { product_name, ...orderPayload } = payload;

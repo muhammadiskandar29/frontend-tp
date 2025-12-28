@@ -32,6 +32,10 @@ export async function POST(request) {
       metode_bayar: String(body.metode_bayar),
       sumber: String(body.sumber),
       custom_value: Array.isArray(body.custom_value) ? body.custom_value : [],
+      // Tambahkan down_payment jika ada (untuk workshop)
+      ...(body.down_payment !== undefined && body.down_payment !== null ? { down_payment: String(body.down_payment) } : {}),
+      // Tambahkan status_pembayaran jika ada (untuk workshop = 4)
+      ...(body.status_pembayaran !== undefined && body.status_pembayaran !== null ? { status_pembayaran: Number(body.status_pembayaran) } : {}),
     };
 
     console.log('📤 [ORDER] Payload:', JSON.stringify(payload, null, 2));
