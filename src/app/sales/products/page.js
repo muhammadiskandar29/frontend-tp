@@ -150,7 +150,7 @@ export default function AdminProductsPage() {
             </div>
             <button
               className="customers-button customers-button--primary"
-              onClick={() => router.push("/sales/products/addProducts")}
+              onClick={() => router.push("/sales/products/addProducts3")}
             >
               + Tambah Produk
             </button>          

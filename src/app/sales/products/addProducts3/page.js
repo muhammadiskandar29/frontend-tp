@@ -1056,7 +1056,9 @@ export default function AddProducts3Page() {
                       showIcon
                       showTime
                       hourFormat="24"
-                      dateFormat="dd/mm/yy HH:mm"
+                      dateFormat="dd/mm/yyyy HH:mm"
+                      timeOnly={false}
+                      showSeconds={false}
                       showButtonBar
                     />
                   </div>
