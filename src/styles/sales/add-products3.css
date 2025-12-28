@@ -3100,12 +3100,6 @@ html:has(.add-products3-container) {
   font-style: italic;
 }
 
-.preview-video-iframe {
-  width: 100%;
-  height: 350px;
-  border-radius: 8px;
-  border: none;
-}
 
 /* ===== PREVIEW TESTIMONI - Google Review Style ===== */
 .preview-testimonials {
@@ -3615,12 +3609,12 @@ html:has(.add-products3-container) {
 
 .preview-video-wrapper {
   width: 100%;
-  max-width: 600px;
+  max-width: 360px;      /* ukuran thumbnail YouTube */
+  aspect-ratio: 16 / 9;
   position: relative;
-  padding-bottom: 56.25%; /* 16:9 aspect ratio */
-  height: 0;
   overflow: hidden;
   margin: 0 auto;
+  border-radius: 10px;
 }
 
 /* Video thumbnail style - persegi panjang landscape seperti thumbnail YouTube */
@@ -3632,11 +3626,9 @@ html:has(.add-products3-container) {
 }
 
 .preview-video-wrapper iframe {
-  position: absolute;
-  top: 0;
-  left: 0;
   width: 100%;
   height: 100%;
+  border: none;
   border-radius: 8px;
 }
 
