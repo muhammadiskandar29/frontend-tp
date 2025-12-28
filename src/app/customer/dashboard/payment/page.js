@@ -12,6 +12,7 @@ export default function PaymentPage() {
   const [unpaidOrders, setUnpaidOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [customerInfo, setCustomerInfo] = useState(null);
 
   const formatCurrency = (value) => {
     if (!value) return "Rp 0";
@@ -42,6 +43,11 @@ export default function PaymentPage() {
     try {
       const data = await fetchCustomerDashboard(session.token);
       
+      // Simpan customer info untuk digunakan saat pembayaran
+      if (data?.customer) {
+        setCustomerInfo(data.customer);
+      }
+      
       // Kumpulkan semua order dari berbagai sumber
       const allOrders = [
         ...(data?.orders_aktif || []),
@@ -71,6 +77,10 @@ export default function PaymentPage() {
         paymentMethod: order.metode_bayar || "manual",
         tanggalOrder: order.tanggal_order || "-",
         statusPembayaran: order.status_pembayaran || order.status_pembayaran_id,
+        // Simpan data lengkap untuk Midtrans
+        nama: order.nama || data?.customer?.nama || data?.customer?.nama_lengkap || session?.user?.nama || "",
+        email: order.email || data?.customer?.email || session?.user?.email || "",
+        rawOrder: order, // Simpan order lengkap untuk kebutuhan lainnya
       }));
 
       setUnpaidOrders(formattedOrders);
@@ -86,20 +96,110 @@ export default function PaymentPage() {
     loadUnpaidOrders();
   }, [loadUnpaidOrders]);
 
-  const handleContinuePayment = (order) => {
-    // Redirect ke flow checkout/payment gateway sesuai metode pembayaran
-    const { paymentMethod, productName, totalHarga } = order;
+  const handleContinuePayment = async (order) => {
+    const { paymentMethod, productName, totalHarga, nama, email, orderId } = order;
     
+    // Jika metode pembayaran adalah E-Payment (ewallet, cc, va), panggil Midtrans
     if (paymentMethod === "ewallet" || paymentMethod === "cc" || paymentMethod === "va") {
-      // Untuk Midtrans, perlu hit API dulu untuk mendapatkan redirect_url
-      // Untuk sementara, redirect ke payment page dengan query params
-      const query = new URLSearchParams({
-        product: productName || "",
-        harga: totalHarga || "0",
-        via: paymentMethod,
-        sumber: "dashboard",
-      });
-      router.push(`/payment?${query.toString()}`);
+      // Ambil data customer dari session sebagai fallback
+      const session = getCustomerSession();
+      const finalNama = nama || customerInfo?.nama || customerInfo?.nama_lengkap || session?.user?.nama || "";
+      const finalEmail = email || customerInfo?.email || session?.user?.email || "";
+      
+      // Validasi data yang diperlukan
+      if (!finalNama || !finalEmail) {
+        toast.error("Data customer tidak lengkap. Silakan lengkapi profil Anda terlebih dahulu.");
+        return;
+      }
+
+      // Parse total harga (bisa berupa string dengan format currency atau number)
+      let amount = 0;
+      if (typeof totalHarga === "string") {
+        // Hapus semua karakter non-digit
+        const numericValue = totalHarga.replace(/\D/g, "");
+        amount = parseInt(numericValue, 10) || 0;
+      } else {
+        amount = parseInt(totalHarga, 10) || 0;
+      }
+
+      if (amount <= 0) {
+        toast.error("Jumlah pembayaran tidak valid.");
+        return;
+      }
+
+      try {
+        setLoading(true);
+        
+        // Tentukan endpoint berdasarkan metode pembayaran
+        let endpoint = "";
+        if (paymentMethod === "ewallet") {
+          endpoint = "/api/midtrans/create-snap-ewallet";
+        } else if (paymentMethod === "cc") {
+          endpoint = "/api/midtrans/create-snap-cc";
+        } else if (paymentMethod === "va") {
+          endpoint = "/api/midtrans/create-snap-va";
+        }
+
+        console.log("[PAYMENT] Calling Midtrans API:", {
+          endpoint,
+          name: finalNama,
+          email: finalEmail,
+          amount,
+          product_name: productName,
+          order_id: orderId,
+        });
+
+        // Panggil API Midtrans
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: finalNama,
+            email: finalEmail,
+            amount: amount,
+            product_name: productName,
+            order_id: orderId,
+          }),
+        });
+
+        const data = await response.json();
+        console.log("[PAYMENT] Midtrans response:", data);
+
+        if (data.redirect_url) {
+          // Redirect ke Midtrans gateway
+          console.log("[PAYMENT] Redirecting to Midtrans:", data.redirect_url);
+          window.location.href = data.redirect_url;
+        } else {
+          // Jika tidak ada redirect_url, tampilkan error dan fallback ke payment page
+          console.error("[PAYMENT] Midtrans tidak mengembalikan redirect_url:", data);
+          toast.error(data.message || "Gagal membuat transaksi pembayaran");
+          
+          // Fallback: redirect ke payment page manual
+          const query = new URLSearchParams({
+            product: productName || "",
+            harga: totalHarga || "0",
+            via: "manual",
+            sumber: "dashboard",
+          });
+          router.push(`/payment?${query.toString()}`);
+        }
+      } catch (error) {
+        console.error("[PAYMENT] Error calling Midtrans:", error);
+        toast.error("Terjadi kesalahan saat memproses pembayaran. Silakan coba lagi.");
+        
+        // Fallback: redirect ke payment page manual
+        const query = new URLSearchParams({
+          product: productName || "",
+          harga: totalHarga || "0",
+          via: "manual",
+          sumber: "dashboard",
+        });
+        router.push(`/payment?${query.toString()}`);
+      } finally {
+        setLoading(false);
+      }
     } else {
       // Manual transfer
       const query = new URLSearchParams({
@@ -186,11 +286,26 @@ export default function PaymentPage() {
                   <button
                     className="payment-order-card__button"
                     onClick={() => handleContinuePayment(order)}
+                    disabled={loading}
                   >
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '8px' }}>
-                      <path d="M4.16667 10H15.8333M15.8333 10L11.6667 5.83333M15.8333 10L11.6667 14.1667" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    Lanjutkan Pembayaran
+                    {loading ? (
+                      <>
+                        <div className="loading-spinner" style={{ 
+                          width: '16px', 
+                          height: '16px', 
+                          marginRight: '8px',
+                          display: 'inline-block'
+                        }}></div>
+                        Memproses...
+                      </>
+                    ) : (
+                      <>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '8px' }}>
+                          <path d="M4.16667 10H15.8333M15.8333 10L11.6667 5.83333M15.8333 10L11.6667 14.1667" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        Lanjutkan Pembayaran
+                      </>
+                    )}
                   </button>
                 </div>
               </div>

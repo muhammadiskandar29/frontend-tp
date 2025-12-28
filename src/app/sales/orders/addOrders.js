@@ -19,6 +19,7 @@ export default function AddOrders({ onClose, onAdd }) {
     total_harga: "",
     sumber: "",
     notif: true,
+    status_pembayaran: null, // null/0 untuk Full, 4 untuk Bertahap
   });
 
   const [showCustomerForm, setShowCustomerForm] = useState(true);
@@ -195,6 +196,8 @@ export default function AddOrders({ onClose, onAdd }) {
       harga: String(parseCurrency(formData.harga) || "0"),
       ongkir: String(parseCurrency(formData.ongkir) || "0"),
       total_harga: String(parseCurrency(formData.total_harga) || "0"),
+      // Tambahkan status_pembayaran: null/0 untuk Full, 4 untuk Bertahap
+      status_pembayaran: formData.status_pembayaran === 4 ? 4 : (formData.status_pembayaran === null ? null : 0),
     };
 
     console.log("[ADD_ORDERS] Payload sebelum kirim:", JSON.stringify(payload, null, 2));
@@ -524,6 +527,49 @@ export default function AddOrders({ onClose, onAdd }) {
                   </select>
                 </label>
 
+                {/* Form Pembayaran */}
+                <div className="orders-field" style={{ marginTop: "16px" }}>
+                  <label style={{ display: "block", marginBottom: "8px", fontWeight: 500, color: "#374151" }}>
+                    Metode Pembayaran
+                  </label>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <label className="orders-radio-option">
+                      <input
+                        type="radio"
+                        name="status_pembayaran"
+                        value="0"
+                        checked={formData.status_pembayaran === null || formData.status_pembayaran === 0}
+                        onChange={(e) => {
+                          setFormData({ ...formData, status_pembayaran: null });
+                        }}
+                      />
+                      <div>
+                        <strong>Pembayaran Full</strong>
+                        <span style={{ display: "block", fontSize: "13px", color: "#6b7280", marginTop: "2px" }}>
+                          Pembayaran dilakukan sekaligus (Lunas)
+                        </span>
+                      </div>
+                    </label>
+                    <label className="orders-radio-option">
+                      <input
+                        type="radio"
+                        name="status_pembayaran"
+                        value="4"
+                        checked={formData.status_pembayaran === 4}
+                        onChange={(e) => {
+                          setFormData({ ...formData, status_pembayaran: 4 });
+                        }}
+                      />
+                      <div>
+                        <strong>Pembayaran Bertahap</strong>
+                        <span style={{ display: "block", fontSize: "13px", color: "#6b7280", marginTop: "2px" }}>
+                          Pembayaran dilakukan secara bertahap (Down Payment)
+                        </span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
                 <label className="orders-checkbox">
                   <input
                     type="checkbox"
@@ -637,6 +683,32 @@ export default function AddOrders({ onClose, onAdd }) {
           margin: 0;
           font-size: 13px;
           color: #6b7280;
+        }
+        .orders-radio-option {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          padding: 12px;
+          border: 2px solid #e5e7eb;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.2s;
+          background: #fff;
+        }
+        .orders-radio-option:hover {
+          border-color: #c85400;
+          background: #fff7ed;
+        }
+        .orders-radio-option input[type="radio"] {
+          margin-top: 2px;
+          cursor: pointer;
+        }
+        .orders-radio-option input[type="radio"]:checked + div strong {
+          color: #c85400;
+        }
+        .orders-radio-option:has(input[type="radio"]:checked) {
+          border-color: #c85400;
+          background: #fff7ed;
         }
         @media (max-width: 640px) {
           .orders-section--customer,
