@@ -218,7 +218,7 @@ export default function AddProducts3Page() {
       case "form":
         return <FormComponent {...commonProps} productKategori={productKategori} />;
       case "faq":
-        return <FAQComponent {...commonProps} />;
+        return <FAQComponent {...commonProps} productKategori={productKategori} />;
       case "slider":
         return <SliderComponent {...commonProps} />;
       case "button":
@@ -375,6 +375,59 @@ export default function AddProducts3Page() {
             )}
           </ul>
         );
+      case "faq":
+        // Generate FAQ berdasarkan kategori produk
+        const faqItems = generateFAQByKategori(productKategori);
+        
+        // FAQ Item Component untuk preview
+        const FAQItem = ({ question, answer }) => {
+          const [isOpen, setIsOpen] = useState(false);
+          return (
+            <div className="faq-item">
+              <button 
+                className="faq-question" 
+                onClick={() => setIsOpen(!isOpen)}
+                aria-expanded={isOpen}
+              >
+                <span>{question}</span>
+                <span className="faq-icon">{isOpen ? "−" : "+"}</span>
+              </button>
+              {isOpen && (
+                <div className="faq-answer">
+                  <p>{answer}</p>
+                </div>
+              )}
+            </div>
+          );
+        };
+        
+        if (!productKategori) {
+          return (
+            <section className="preview-faq-section">
+              <h2 className="faq-title">Pertanyaan yang Sering Diajukan</h2>
+              <div className="faq-container">
+                <div className="preview-placeholder">
+                  Pilih kategori produk di tab Pengaturan untuk melihat FAQ otomatis
+                </div>
+              </div>
+            </section>
+          );
+        }
+        
+        return (
+          <section className="preview-faq-section" aria-label="Frequently Asked Questions">
+            <h2 className="faq-title">Pertanyaan yang Sering Diajukan</h2>
+            <div className="faq-container">
+              {faqItems.map((faq, index) => (
+                <FAQItem 
+                  key={index}
+                  question={faq.question} 
+                  answer={faq.answer}
+                />
+              ))}
+            </div>
+          </section>
+        );
       case "form":
         // Gunakan productKategori dari state pengaturan, bukan dari block.data.kategori
         const isFormBuku = productKategori === 13;
@@ -499,6 +552,13 @@ export default function AddProducts3Page() {
                 </label>
               </div>
             </section>
+
+            {/* Button Pesan Sekarang */}
+            <div className="preview-form-submit-wrapper">
+              <button type="button" className="preview-form-submit-btn">
+                Pesan Sekarang
+              </button>
+            </div>
           </>
         );
       case "price":
@@ -541,6 +601,198 @@ export default function AddProducts3Page() {
       default:
         return <div className="preview-placeholder">{block.type}</div>;
     }
+  };
+
+  // Fungsi untuk generate FAQ berdasarkan kategori
+  const generateFAQByKategori = (kategoriId) => {
+    // Mapping FAQ berdasarkan kategori
+    const faqMap = {
+      // Kategori Ebook (10)
+      10: [
+        {
+          question: "Apa saja yang akan saya dapatkan jika membeli ebook ini?",
+          answer: "Anda akan mendapatkan akses ke file ebook dalam format PDF yang dapat diunduh dan dibaca kapan saja, plus bonus materi tambahan jika tersedia."
+        },
+        {
+          question: "Bagaimana cara mengakses ebook setelah pembelian?",
+          answer: "Setelah pembayaran dikonfirmasi, Anda akan menerima email berisi link download dan akses ke member area untuk mengunduh ebook."
+        },
+        {
+          question: "Apakah ebook bisa diunduh berkali-kali?",
+          answer: "Ya, setelah pembelian, Anda memiliki akses seumur hidup dan dapat mengunduh ebook berkali-kali sesuai kebutuhan."
+        },
+        {
+          question: "Apakah ebook bisa dibaca di semua perangkat?",
+          answer: "Ya, ebook dalam format PDF dapat dibaca di smartphone, tablet, laptop, dan komputer dengan aplikasi PDF reader."
+        },
+        {
+          question: "Apakah ada garansi untuk ebook yang dibeli?",
+          answer: "Kami memberikan garansi kepuasan. Jika tidak puas dengan konten ebook, silakan hubungi customer service kami untuk bantuan."
+        }
+      ],
+      // Kategori Webinar (11)
+      11: [
+        {
+          question: "Apa saja yang akan saya dapatkan dari webinar ini?",
+          answer: "Anda akan mendapatkan akses live webinar, rekaman lengkap yang dapat ditonton ulang, materi presentasi, dan sertifikat kehadiran."
+        },
+        {
+          question: "Bagaimana cara mengikuti webinar?",
+          answer: "Setelah pembayaran dikonfirmasi, Anda akan menerima email berisi link Zoom/meeting room dan jadwal webinar. Link akan dikirim 1 hari sebelum acara."
+        },
+        {
+          question: "Apakah ada rekaman jika saya tidak bisa hadir live?",
+          answer: "Ya, semua peserta akan mendapatkan akses ke rekaman webinar yang dapat ditonton ulang kapan saja setelah acara selesai."
+        },
+        {
+          question: "Berapa lama akses rekaman webinar tersedia?",
+          answer: "Akses rekaman webinar tersedia seumur hidup. Anda dapat menonton ulang kapan saja melalui member area."
+        },
+        {
+          question: "Apakah saya bisa bertanya langsung kepada pembicara?",
+          answer: "Ya, pada sesi live webinar akan ada waktu untuk tanya jawab langsung dengan pembicara melalui fitur Q&A atau chat."
+        }
+      ],
+      // Kategori Seminar (12)
+      12: [
+        {
+          question: "Apa saja yang akan saya dapatkan dari seminar ini?",
+          answer: "Anda akan mendapatkan tiket masuk seminar, materi presentasi, sertifikat kehadiran, networking session, dan coffee break."
+        },
+        {
+          question: "Di mana lokasi seminar akan dilaksanakan?",
+          answer: "Lokasi seminar akan diinformasikan melalui email setelah pembayaran dikonfirmasi. Biasanya di hotel atau venue yang mudah dijangkau."
+        },
+        {
+          question: "Apakah ada rekaman seminar yang bisa saya akses?",
+          answer: "Tergantung kebijakan acara. Jika tersedia, rekaman akan dibagikan kepada peserta setelah seminar selesai melalui email."
+        },
+        {
+          question: "Bagaimana jika saya tidak bisa hadir di tanggal yang ditentukan?",
+          answer: "Silakan hubungi customer service kami untuk informasi refund atau transfer tiket ke peserta lain. Kebijakan dapat berbeda tergantung waktu pemberitahuan."
+        },
+        {
+          question: "Apakah ada diskon untuk pembelian tiket grup?",
+          answer: "Ya, tersedia diskon khusus untuk pembelian tiket grup minimal 5 orang. Hubungi customer service kami untuk informasi lebih lanjut."
+        }
+      ],
+      // Kategori Buku (13)
+      13: [
+        {
+          question: "Apa saja yang akan saya dapatkan jika membeli buku ini?",
+          answer: "Anda akan mendapatkan buku fisik berkualitas tinggi dengan konten lengkap dan terpercaya, plus akses ke materi tambahan jika tersedia."
+        },
+        {
+          question: "Berapa lama waktu pengiriman buku?",
+          answer: "Waktu pengiriman bervariasi tergantung lokasi Anda. Untuk wilayah Jabodetabek biasanya 2-3 hari kerja, sedangkan luar kota 3-7 hari kerja."
+        },
+        {
+          question: "Apakah buku ini tersedia dalam format digital?",
+          answer: "Saat ini buku tersedia dalam format fisik. Format digital akan diinformasikan lebih lanjut jika tersedia."
+        },
+        {
+          question: "Bagaimana cara menghitung ongkos kirim?",
+          answer: "Ongkos kirim akan dihitung otomatis berdasarkan alamat pengiriman Anda. Anda dapat melihat estimasi ongkir setelah memasukkan alamat lengkap."
+        },
+        {
+          question: "Apakah ada garansi untuk buku yang dibeli?",
+          answer: "Kami memberikan garansi untuk buku yang rusak atau cacat saat pengiriman. Silakan hubungi customer service kami jika mengalami masalah."
+        }
+      ],
+      // Kategori Ecourse (14)
+      14: [
+        {
+          question: "Apa saja yang akan saya dapatkan dari ecourse ini?",
+          answer: "Anda akan mendapatkan akses ke semua modul pembelajaran, video tutorial, materi download, quiz, sertifikat, dan akses ke komunitas eksklusif."
+        },
+        {
+          question: "Berapa lama akses ke ecourse tersedia?",
+          answer: "Akses ke ecourse tersedia seumur hidup. Anda dapat belajar kapan saja dan mengulang materi sesuai kebutuhan."
+        },
+        {
+          question: "Apakah ada support atau mentoring selama belajar?",
+          answer: "Ya, tersedia support melalui grup komunitas, email, atau sesi Q&A berkala dengan instruktur untuk membantu proses pembelajaran Anda."
+        },
+        {
+          question: "Apakah ecourse bisa diakses dari mobile?",
+          answer: "Ya, platform ecourse kami mobile-friendly dan dapat diakses melalui smartphone, tablet, atau laptop dengan koneksi internet."
+        },
+        {
+          question: "Apakah ada ujian atau sertifikat setelah menyelesaikan ecourse?",
+          answer: "Ya, setelah menyelesaikan semua modul dan quiz, Anda akan mendapatkan sertifikat kelulusan yang dapat diunduh dan dicetak."
+        }
+      ],
+      // Kategori Workshop (15)
+      15: [
+        {
+          question: "Apa saja yang akan saya dapatkan dari workshop ini?",
+          answer: "Anda akan mendapatkan materi lengkap, sertifikat, akses ke recording, dan komunitas eksklusif peserta workshop."
+        },
+        {
+          question: "Apakah workshop ini cocok untuk pemula?",
+          answer: "Ya, workshop ini dirancang untuk semua level, termasuk pemula. Materi akan disampaikan secara bertahap dan mudah dipahami."
+        },
+        {
+          question: "Bagaimana sistem pembayaran untuk workshop?",
+          answer: "Anda dapat melakukan pembayaran penuh atau menggunakan sistem down payment (uang muka) terlebih dahulu, kemudian melunasi sebelum workshop dimulai."
+        },
+        {
+          question: "Apakah ada rekaman workshop yang bisa saya akses nanti?",
+          answer: "Ya, semua peserta akan mendapatkan akses ke rekaman workshop yang dapat ditonton ulang kapan saja."
+        },
+        {
+          question: "Bagaimana jika saya tidak bisa hadir di tanggal yang ditentukan?",
+          answer: "Anda tetap bisa mengikuti workshop melalui rekaman yang akan diberikan. Namun, untuk interaksi langsung, disarankan hadir sesuai jadwal."
+        }
+      ],
+      // Kategori Private Mentoring (16)
+      16: [
+        {
+          question: "Apa saja yang akan saya dapatkan dari private mentoring ini?",
+          answer: "Anda akan mendapatkan sesi mentoring one-on-one dengan mentor berpengalaman, personalized action plan, follow-up support, dan akses ke materi eksklusif."
+        },
+        {
+          question: "Berapa kali sesi mentoring yang akan saya dapatkan?",
+          answer: "Jumlah sesi mentoring tergantung paket yang dipilih. Detail lengkap akan diinformasikan setelah pembayaran dikonfirmasi."
+        },
+        {
+          question: "Bagaimana cara menjadwalkan sesi mentoring?",
+          answer: "Setelah pembayaran dikonfirmasi, tim kami akan menghubungi Anda untuk mengatur jadwal sesi mentoring yang sesuai dengan waktu luang Anda."
+        },
+        {
+          question: "Apakah sesi mentoring dilakukan online atau offline?",
+          answer: "Tersedia pilihan online (via Zoom/Google Meet) atau offline (jika memungkinkan). Detail akan dibahas saat konfirmasi jadwal."
+        },
+        {
+          question: "Apakah ada follow-up setelah sesi mentoring selesai?",
+          answer: "Ya, tersedia follow-up support melalui email atau grup komunitas untuk memastikan Anda dapat menerapkan ilmu yang didapat."
+        }
+      ]
+    };
+
+    // Return FAQ sesuai kategori, atau default jika tidak ada
+    return faqMap[kategoriId] || [
+      {
+        question: "Apa saja yang akan saya dapatkan dari produk ini?",
+        answer: "Anda akan mendapatkan akses penuh ke semua fitur dan konten yang tersedia dalam paket produk ini."
+      },
+      {
+        question: "Bagaimana cara menggunakan produk ini?",
+        answer: "Setelah pembayaran dikonfirmasi, Anda akan mendapatkan panduan lengkap dan akses ke platform produk."
+      },
+      {
+        question: "Apakah ada garansi untuk produk ini?",
+        answer: "Kami memberikan garansi kepuasan. Jika tidak puas, silakan hubungi customer service kami untuk bantuan."
+      },
+      {
+        question: "Bagaimana sistem pembayarannya?",
+        answer: "Pembayaran dapat dilakukan melalui berbagai metode yang tersedia. Setelah pembayaran dikonfirmasi, akses akan segera diberikan."
+      },
+      {
+        question: "Apakah ada dukungan setelah pembelian?",
+        answer: "Ya, tim customer service kami siap membantu Anda selama menggunakan produk ini. Hubungi kami kapan saja jika ada pertanyaan."
+      }
+    ];
   };
 
   // Fetch kategori dan user options

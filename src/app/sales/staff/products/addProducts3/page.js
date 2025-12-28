@@ -213,7 +213,7 @@ export default function AddProducts3Page() {
       case "form":
         return <FormComponent {...commonProps} productKategori={productKategori} />;
       case "faq":
-        return <FAQComponent {...commonProps} />;
+        return <FAQComponent {...commonProps} productKategori={productKategori} />;
       case "slider":
         return <SliderComponent {...commonProps} />;
       case "button":
@@ -466,7 +466,67 @@ export default function AddProducts3Page() {
                 </label>
               </div>
             </section>
+
+            {/* Button Pesan Sekarang */}
+            <div className="preview-form-submit-wrapper">
+              <button type="button" className="preview-form-submit-btn">
+                Pesan Sekarang
+              </button>
+            </div>
           </>
+        );
+      case "faq":
+        // Generate FAQ berdasarkan kategori produk
+        const faqItems = generateFAQByKategori(productKategori);
+        
+        // FAQ Item Component untuk preview
+        const FAQItem = ({ question, answer }) => {
+          const [isOpen, setIsOpen] = useState(false);
+          return (
+            <div className="faq-item">
+              <button 
+                className="faq-question" 
+                onClick={() => setIsOpen(!isOpen)}
+                aria-expanded={isOpen}
+              >
+                <span>{question}</span>
+                <span className="faq-icon">{isOpen ? "−" : "+"}</span>
+              </button>
+              {isOpen && (
+                <div className="faq-answer">
+                  <p>{answer}</p>
+                </div>
+              )}
+            </div>
+          );
+        };
+        
+        if (!productKategori) {
+          return (
+            <section className="preview-faq-section">
+              <h2 className="faq-title">Pertanyaan yang Sering Diajukan</h2>
+              <div className="faq-container">
+                <div className="preview-placeholder">
+                  Pilih kategori produk di tab Pengaturan untuk melihat FAQ otomatis
+                </div>
+              </div>
+            </section>
+          );
+        }
+        
+        return (
+          <section className="preview-faq-section" aria-label="Frequently Asked Questions">
+            <h2 className="faq-title">Pertanyaan yang Sering Diajukan</h2>
+            <div className="faq-container">
+              {faqItems.map((faq, index) => (
+                <FAQItem 
+                  key={index}
+                  question={faq.question} 
+                  answer={faq.answer}
+                />
+              ))}
+            </div>
+          </section>
         );
       case "price":
         // Format harga untuk ditampilkan
@@ -508,6 +568,86 @@ export default function AddProducts3Page() {
       default:
         return <div className="preview-placeholder">{block.type}</div>;
     }
+  };
+
+  // Fungsi untuk generate FAQ berdasarkan kategori
+  const generateFAQByKategori = (kategoriId) => {
+    // Mapping FAQ berdasarkan kategori
+    const faqMap = {
+      // Kategori Buku (13)
+      13: [
+        {
+          question: "Apa saja yang akan saya dapatkan jika membeli buku ini?",
+          answer: "Anda akan mendapatkan buku fisik berkualitas tinggi dengan konten lengkap dan terpercaya, plus akses ke materi tambahan jika tersedia."
+        },
+        {
+          question: "Berapa lama waktu pengiriman buku?",
+          answer: "Waktu pengiriman bervariasi tergantung lokasi Anda. Untuk wilayah Jabodetabek biasanya 2-3 hari kerja, sedangkan luar kota 3-7 hari kerja."
+        },
+        {
+          question: "Apakah buku ini tersedia dalam format digital?",
+          answer: "Saat ini buku tersedia dalam format fisik. Format digital akan diinformasikan lebih lanjut jika tersedia."
+        },
+        {
+          question: "Bagaimana cara menghitung ongkos kirim?",
+          answer: "Ongkos kirim akan dihitung otomatis berdasarkan alamat pengiriman Anda. Anda dapat melihat estimasi ongkir setelah memasukkan alamat lengkap."
+        },
+        {
+          question: "Apakah ada garansi untuk buku yang dibeli?",
+          answer: "Kami memberikan garansi untuk buku yang rusak atau cacat saat pengiriman. Silakan hubungi customer service kami jika mengalami masalah."
+        }
+      ],
+      // Kategori Workshop (15)
+      15: [
+        {
+          question: "Apa saja yang akan saya dapatkan dari workshop ini?",
+          answer: "Anda akan mendapatkan materi lengkap, sertifikat, akses ke recording, dan komunitas eksklusif peserta workshop."
+        },
+        {
+          question: "Apakah workshop ini cocok untuk pemula?",
+          answer: "Ya, workshop ini dirancang untuk semua level, termasuk pemula. Materi akan disampaikan secara bertahap dan mudah dipahami."
+        },
+        {
+          question: "Bagaimana sistem pembayaran untuk workshop?",
+          answer: "Anda dapat melakukan pembayaran penuh atau menggunakan sistem down payment (uang muka) terlebih dahulu, kemudian melunasi sebelum workshop dimulai."
+        },
+        {
+          question: "Apakah ada rekaman workshop yang bisa saya akses nanti?",
+          answer: "Ya, semua peserta akan mendapatkan akses ke rekaman workshop yang dapat ditonton ulang kapan saja."
+        },
+        {
+          question: "Bagaimana jika saya tidak bisa hadir di tanggal yang ditentukan?",
+          answer: "Anda tetap bisa mengikuti workshop melalui rekaman yang akan diberikan. Namun, untuk interaksi langsung, disarankan hadir sesuai jadwal."
+        }
+      ]
+    };
+
+    // Default FAQ untuk kategori lainnya
+    const defaultFAQ = [
+      {
+        question: "Apa saja yang akan saya dapatkan dari produk ini?",
+        answer: "Anda akan mendapatkan akses penuh ke semua fitur dan konten yang tersedia dalam paket produk ini."
+      },
+      {
+        question: "Bagaimana cara menggunakan produk ini?",
+        answer: "Setelah pembayaran dikonfirmasi, Anda akan mendapatkan panduan lengkap dan akses ke platform produk."
+      },
+      {
+        question: "Apakah ada garansi untuk produk ini?",
+        answer: "Kami memberikan garansi kepuasan. Jika tidak puas, silakan hubungi customer service kami untuk bantuan."
+      },
+      {
+        question: "Bagaimana sistem pembayarannya?",
+        answer: "Pembayaran dapat dilakukan melalui berbagai metode yang tersedia. Setelah pembayaran dikonfirmasi, akses akan segera diberikan."
+      },
+      {
+        question: "Apakah ada dukungan setelah pembelian?",
+        answer: "Ya, tim customer service kami siap membantu Anda selama menggunakan produk ini. Hubungi kami kapan saja jika ada pertanyaan."
+      }
+    ];
+
+    // Return FAQ sesuai kategori, atau default jika tidak ada
+    return faqMap[kategoriId] || defaultFAQ;
   };
 
   // Fetch kategori dan sales list options
