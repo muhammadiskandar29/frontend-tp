@@ -31,7 +31,9 @@
   min-width: 100% !important;
   max-width: 100% !important;
 }
-
+.p-dropdown-items-wrapper {
+background-color: white;
+}
 .pengaturan-content .p-dropdown-panel .p-dropdown-items-wrapper,
 .pengaturan-content .p-multiselect-panel .p-multiselect-items-wrapper {
   background: #ffffff !important;
