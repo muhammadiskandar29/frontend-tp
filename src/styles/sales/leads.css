@@ -375,11 +375,20 @@
 }
 
 .leads-table__cell--actions {
-  display: flex;
+  display: flex !important;
   justify-content: flex-end;
-  align-items: center;
+  align-items: center !important;
   gap: var(--space-2);
-  flex-wrap: wrap;
+  flex-wrap: nowrap !important;
+  white-space: nowrap;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+.leads-table__cell--actions .customers-action-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
 }
 
 .leads-table__action-btn {
