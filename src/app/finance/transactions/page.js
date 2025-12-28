@@ -552,6 +552,51 @@ export default function FinanceOrders() {
   return (
     <Layout>
       <div className="dashboard-shell orders-shell">
+        <section className="dashboard-summary finance-transactions-summary">
+          <article className="summary-card summary-card--combined summary-card--four-cols">
+            <div className="summary-card__column">
+              <div className="summary-card__icon accent-orange">
+                <Clock size={24} />
+              </div>
+              <div>
+                <p className="summary-card__label">Menunggu Validasi</p>
+                <p className="summary-card__value">{menungguOrders}</p>
+              </div>
+            </div>
+            <div className="summary-card__divider"></div>
+            <div className="summary-card__column">
+              <div className="summary-card__icon accent-orange">
+                <CheckCircle size={24} />
+              </div>
+              <div>
+                <p className="summary-card__label">Sudah Approve</p>
+                <p className="summary-card__value">{approvedOrders}</p>
+              </div>
+            </div>
+            <div className="summary-card__divider"></div>
+            <div className="summary-card__column">
+              <div className="summary-card__icon accent-orange">
+                <XCircle size={24} />
+              </div>
+              <div>
+                <p className="summary-card__label">Ditolak</p>
+                <p className="summary-card__value">{ditolakOrders}</p>
+              </div>
+            </div>
+            <div className="summary-card__divider"></div>
+            <div className="summary-card__column">
+              <div className="summary-card__icon accent-orange">
+                <DollarSign size={24} />
+              </div>
+              <div>
+                <p className="summary-card__label">Total Nilai Menunggu</p>
+                <p className="summary-card__value">{totalNilaiMenunggu}</p>
+              </div>
+            </div>
+          </article>
+        </section>
+        
+
         <section className="dashboard-hero orders-hero">
           <div className="orders-toolbar">
             <div className="orders-search">
@@ -639,51 +684,7 @@ export default function FinanceOrders() {
             </div>
           </div>
         </section>
- 
-        <section className="dashboard-summary finance-transactions-summary">
-          <article className="summary-card summary-card--combined summary-card--four-cols">
-            <div className="summary-card__column">
-              <div className="summary-card__icon accent-orange">
-                <Clock size={24} />
-              </div>
-              <div>
-                <p className="summary-card__label">Menunggu Validasi</p>
-                <p className="summary-card__value">{menungguOrders}</p>
-              </div>
-            </div>
-            <div className="summary-card__divider"></div>
-            <div className="summary-card__column">
-              <div className="summary-card__icon accent-orange">
-                <CheckCircle size={24} />
-              </div>
-              <div>
-                <p className="summary-card__label">Sudah Approve</p>
-                <p className="summary-card__value">{approvedOrders}</p>
-              </div>
-            </div>
-            <div className="summary-card__divider"></div>
-            <div className="summary-card__column">
-              <div className="summary-card__icon accent-orange">
-                <XCircle size={24} />
-              </div>
-              <div>
-                <p className="summary-card__label">Ditolak</p>
-                <p className="summary-card__value">{ditolakOrders}</p>
-              </div>
-            </div>
-            <div className="summary-card__divider"></div>
-            <div className="summary-card__column">
-              <div className="summary-card__icon accent-orange">
-                <DollarSign size={24} />
-              </div>
-              <div>
-                <p className="summary-card__label">Total Nilai Menunggu</p>
-                <p className="summary-card__value">{totalNilaiMenunggu}</p>
-              </div>
-            </div>
-          </article>
-        </section>
-        
+
         <section className="panel orders-panel">
           <div className="panel__header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
             <div>
