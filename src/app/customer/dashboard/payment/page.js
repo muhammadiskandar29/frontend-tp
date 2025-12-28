@@ -42,11 +42,27 @@ export default function PaymentPage() {
     try {
       const data = await fetchCustomerDashboard(session.token);
       
-      // Filter hanya orders_pending (unpaid orders)
-      const pendingOrders = data?.orders_pending || [];
+      // Kumpulkan semua order dari berbagai sumber
+      const allOrders = [
+        ...(data?.orders_aktif || []),
+        ...(data?.orders_pending || []),
+        ...(data?.order_proses || []),
+        ...(data?.orders_proses || []),
+      ];
+
+      // Filter untuk menghindari duplikat berdasarkan ID
+      const uniqueOrders = allOrders.filter((order, index, self) =>
+        index === self.findIndex((o) => o.id === order.id)
+      );
+
+      // Filter order yang status_pembayaran belum 2 (belum terbayar)
+      const unpaidOrdersList = uniqueOrders.filter((order) => {
+        const statusPembayaran = order.status_pembayaran || order.status_pembayaran_id;
+        return statusPembayaran !== 2 && statusPembayaran !== "2";
+      });
       
       // Format orders untuk ditampilkan
-      const formattedOrders = pendingOrders.map((order) => ({
+      const formattedOrders = unpaidOrdersList.map((order) => ({
         id: order.id,
         orderId: order.id,
         productName: order.produk_nama || "Produk Tanpa Nama",
@@ -54,6 +70,7 @@ export default function PaymentPage() {
         status: "Menunggu Pembayaran",
         paymentMethod: order.metode_bayar || "manual",
         tanggalOrder: order.tanggal_order || "-",
+        statusPembayaran: order.status_pembayaran || order.status_pembayaran_id,
       }));
 
       setUnpaidOrders(formattedOrders);

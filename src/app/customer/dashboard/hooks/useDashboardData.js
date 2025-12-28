@@ -82,9 +82,8 @@ export function useDashboardData() {
       const startDate = getOrderStartDate(order);
       const statusPembayaran = order.status_pembayaran || order.status_pembayaran_id;
       
-      // Check if order is paid (status_pembayaran 3 = sukses/terbayar)
-      // Order dari order_proses bisa belum terbayar, jadi harus cek status
-      const isPaid = statusPembayaran === 3 || statusPembayaran === "3";
+      // Order dianggap terbayar jika status_pembayaran === 2 (Paid/Sukses)
+      const isPaid = statusPembayaran === 2 || statusPembayaran === "2";
       
       return {
         id: order.id,
@@ -141,15 +140,25 @@ export function useDashboardData() {
         { id: "active", label: "Order Aktif", value: data?.statistik?.order_aktif ?? 0, icon: "✅" },
       ];
 
-      // Order Aktif diambil dari order_proses (bukan orders_aktif)
-      // order_proses bisa berisi order yang belum terbayar, jadi perlu cek status_pembayaran
-      const orderProses = data?.order_proses || data?.orders_proses || [];
-      const activeOrders = orderProses;
+      // Kumpulkan semua order dari berbagai sumber
+      const allOrders = [
+        ...(data?.orders_aktif || []),
+        ...(data?.orders_pending || []),
+        ...(data?.order_proses || []),
+        ...(data?.orders_proses || []),
+      ];
 
-      // Get unpaid orders for count
-      const unpaidOrders = (data?.orders_pending || []).filter((order) => {
+      // Order Aktif: semua order (tidak peduli status pembayaran)
+      // Filter untuk menghindari duplikat berdasarkan ID
+      const uniqueOrders = allOrders.filter((order, index, self) =>
+        index === self.findIndex((o) => o.id === order.id)
+      );
+      const activeOrders = uniqueOrders;
+
+      // Get unpaid orders for count (status_pembayaran belum 2)
+      const unpaidOrders = uniqueOrders.filter((order) => {
         const statusPembayaran = order.status_pembayaran || order.status_pembayaran_id;
-        return statusPembayaran !== 3 && statusPembayaran !== "3";
+        return statusPembayaran !== 2 && statusPembayaran !== "2";
       });
 
       const unpaidCount = unpaidOrders.length;

@@ -98,24 +98,32 @@ export default function OrdersSection({
 
         {!isLoading && orders.map((order) => {
           const countdown = getCountdownLabel(order);
-          // isPaid sudah dihitung di useDashboardData berdasarkan status_pembayaran
-          // false jika belum terbayar (status_pembayaran bukan 3)
+          // isPaid berdasarkan status_pembayaran === 2
           const isPaid = order.isPaid === true;
           
           return (
-            <div key={order.id} className={`order-card ${!isPaid ? 'order-card--locked' : ''}`}>
+            <div 
+              key={order.id} 
+              className={`order-card ${!isPaid ? 'order-card--locked' : ''}`}
+              style={{ position: 'relative' }}
+            >
               {!isPaid && (
-                <div className="order-card__lock-overlay">
-                  <div className="order-lock-notification">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                      <path d="M6 10V8C6 5.79086 7.79086 4 10 4H14C16.2091 4 18 5.79086 18 8V10M6 10H4C2.89543 10 2 10.8954 2 12V20C2 21.1046 2.89543 22 4 22H20C21.1046 22 22 21.1046 22 20V12C22 10.8954 21.1046 10 20 10H18M6 10V10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <span>Selesaikan Pembayaran</span>
-                  </div>
+                <div className="order-card__lock-overlay" style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                  backdropFilter: 'blur(2px)',
+                  zIndex: 1,
+                  borderRadius: 'inherit',
+                  pointerEvents: 'none'
+                }}>
                 </div>
               )}
 
-              <div className="order-card__banner">
+              <div className="order-card__banner" style={{ position: 'relative', zIndex: 2 }}>
                 <span className="order-badge">{order.type}</span>
                 {countdown && isPaid && (
                   <div className="order-countdown">
@@ -128,7 +136,7 @@ export default function OrdersSection({
                 )}
               </div>
 
-              <div className="order-body">
+              <div className="order-body" style={{ position: 'relative', zIndex: 2 }}>
                 <div className="order-header">
                   <h3>{order.title}</h3>
                   <p className="order-subtitle">{order.slug}</p>
@@ -146,7 +154,7 @@ export default function OrdersSection({
                 </div>
               </div>
 
-              <div className="order-footer">
+              <div className="order-footer" style={{ position: 'relative', zIndex: 2 }}>
                 {order.schedule && isPaid && (
                   <div className="order-schedule">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -162,15 +170,27 @@ export default function OrdersSection({
                   </div>
                 )}
                 
-                <button 
-                  className={`order-action ${!isPaid ? 'order-action--payment' : ''}`}
-                  onClick={() => handleOrderClick(order)}
-                >
-                  <span>{!isPaid ? 'Selesaikan Pembayaran' : order.actionLabel}</span>
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                    <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
+                {isPaid ? (
+                  <button 
+                    className="order-action"
+                    onClick={() => handleOrderClick(order)}
+                  >
+                    <span>{order.actionLabel}</span>
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                ) : (
+                  <div style={{ 
+                    padding: '12px 16px', 
+                    textAlign: 'center', 
+                    color: '#666',
+                    fontSize: '14px',
+                    opacity: 0.7
+                  }}>
+                    Selesaikan pembayaran di halaman Pembayaran
+                  </div>
+                )}
               </div>
             </div>
           );
