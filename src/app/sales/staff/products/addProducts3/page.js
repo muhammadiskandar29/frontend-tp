@@ -31,6 +31,7 @@ import {
   AnimationComponent,
 } from './components';
 import "@/styles/sales/add-products3.css";
+import "@/styles/ongkir.css";
 
 // Komponen yang tersedia sesuai gambar
 const COMPONENT_CATEGORIES = {
@@ -467,6 +468,33 @@ export default function AddProducts3Page() {
             </section>
           </>
         );
+      case "price":
+        // Format harga untuk ditampilkan
+        const formatHarga = (harga) => {
+          if (!harga || harga === 0) return "0";
+          return harga.toLocaleString("id-ID");
+        };
+        
+        const hargaAsli = pengaturanForm.harga_asli || 0;
+        const hargaPromo = pengaturanForm.harga_promo || 0;
+        
+        return (
+          <section className="preview-price-section special-offer-card" aria-label="Special offer" itemScope itemType="https://schema.org/Offer">
+            <h2 className="special-offer-title">Special Offer!</h2>
+            <div className="special-offer-price">
+              {hargaAsli > 0 && hargaAsli > hargaPromo && (
+                <span className="price-old" aria-label="Harga lama">
+                  Rp {formatHarga(hargaAsli)}
+                </span>
+              )}
+              <span className="price-new" itemProp="price" content={hargaPromo}>
+                Rp {formatHarga(hargaPromo)}
+              </span>
+            </div>
+            <meta itemProp="priceCurrency" content="IDR" />
+            <meta itemProp="availability" content="https://schema.org/InStock" />
+          </section>
+        );
       case "button":
         return (
           <button className={`preview-button preview-button-${block.data.style || 'primary'}`}>
@@ -479,6 +507,81 @@ export default function AddProducts3Page() {
         return <div dangerouslySetInnerHTML={{ __html: block.data.code || "" }} />;
       default:
         return <div className="preview-placeholder">{block.type}</div>;
+    }
+  };
+
+  // Fetch kategori dan sales list options
+  useEffect(() => {
+    async function fetchInitialData() {
+      try {
+        const token = localStorage.getItem("token");
+        const headers = { Authorization: `Bearer ${token}` };
+
+        // Fetch kategori
+        const kategoriRes = await fetch("/api/sales/kategori-produk", { headers });
+        const kategoriData = await kategoriRes.json();
+        
+        const activeCategories = Array.isArray(kategoriData.data)
+          ? kategoriData.data.filter((k) => k.status === "1")
+          : [];
+        
+        const kategoriOpts = activeCategories.map((k) => ({
+          label: `${k.id} - ${k.nama}`,
+          value: String(k.id),
+        }));
+        setKategoriOptions(kategoriOpts);
+
+        // Fetch sales list from /api/sales/lead/sales-list
+        const salesRes = await fetch("/api/sales/lead/sales-list", { headers });
+        const salesJson = await salesRes.json();
+        
+        const salesOpts = Array.isArray(salesJson.data)
+          ? salesJson.data.map((sales) => ({
+              label: sales.nama || sales.name || `Sales ${sales.id}`,
+              value: String(sales.id),
+            }))
+          : [];
+        setUserOptions(salesOpts);
+      } catch (err) {
+        console.error("Error fetching initial data:", err);
+      }
+    }
+    fetchInitialData();
+  }, []);
+
+  // Fungsi untuk generate kode dari nama (slugify)
+  const generateKode = (text) => {
+    if (!text) return "";
+    
+    return text
+      .toLowerCase()
+      .trim()
+      // Hapus karakter khusus, hanya simpan huruf, angka, spasi, dan dash
+      .replace(/[^a-z0-9\s-]/g, "")
+      // Ganti multiple spaces dengan single space
+      .replace(/\s+/g, " ")
+      // Ganti spasi dengan dash
+      .replace(/\s/g, "-")
+      // Hapus multiple dash menjadi single dash
+      .replace(/-+/g, "-")
+      // Hapus dash di awal dan akhir
+      .replace(/^-+|-+$/g, "");
+  };
+
+  // Handler untuk update form pengaturan
+  const handlePengaturanChange = (key, value) => {
+    if (key === "nama") {
+      // Auto-generate kode dan URL dari nama
+      const kode = generateKode(value);
+      const url = kode ? `/${kode}` : "";
+      setPengaturanForm((prev) => ({ 
+        ...prev, 
+        nama: value,
+        kode: kode,
+        url: url
+      }));
+    } else {
+      setPengaturanForm((prev) => ({ ...prev, [key]: value }));
     }
   };
 
@@ -686,9 +789,11 @@ export default function AddProducts3Page() {
                       className="pengaturan-input"
                       value={pengaturanForm.tanggal_event}
                       onChange={(e) => handlePengaturanChange("tanggal_event", e.value)}
-                      placeholder="Pilih tanggal event"
+                      placeholder="Pilih tanggal dan jam event"
                       showIcon
-                      dateFormat="dd/mm/yy"
+                      showTime
+                      hourFormat="24"
+                      dateFormat="dd/mm/yy HH:mm"
                       showButtonBar
                     />
                   </div>

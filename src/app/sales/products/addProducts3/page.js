@@ -502,15 +502,26 @@ export default function AddProducts3Page() {
           </>
         );
       case "price":
+        // Format harga untuk ditampilkan
+        const formatHarga = (harga) => {
+          if (!harga || harga === 0) return "0";
+          return harga.toLocaleString("id-ID");
+        };
+        
+        const hargaAsli = pengaturanForm.harga_asli || 0;
+        const hargaPromo = pengaturanForm.harga_promo || 0;
+        
         return (
           <section className="preview-price-section special-offer-card" aria-label="Special offer" itemScope itemType="https://schema.org/Offer">
             <h2 className="special-offer-title">Special Offer!</h2>
             <div className="special-offer-price">
-              <span className="price-old" aria-label="Harga lama">
-                Rp 0
-              </span>
-              <span className="price-new" itemProp="price" content="0">
-                Rp 0
+              {hargaAsli > 0 && hargaAsli > hargaPromo && (
+                <span className="price-old" aria-label="Harga lama">
+                  Rp {formatHarga(hargaAsli)}
+                </span>
+              )}
+              <span className="price-new" itemProp="price" content={hargaPromo}>
+                Rp {formatHarga(hargaPromo)}
               </span>
             </div>
             <meta itemProp="priceCurrency" content="IDR" />
@@ -553,29 +564,17 @@ export default function AddProducts3Page() {
         }));
         setKategoriOptions(kategoriOpts);
 
-        // Fetch users
-        const usersRes = await fetch("/api/sales/users", { headers });
-        const usersJson = await usersRes.json();
+        // Fetch sales list from /api/sales/lead/sales-list
+        const salesRes = await fetch("/api/sales/lead/sales-list", { headers });
+        const salesJson = await salesRes.json();
         
-        const userOpts = Array.isArray(usersJson.data)
-          ? usersJson.data
-              .filter((u) => u.status === "1" || u.status === 1)
-              .map((u) => {
-                const nama = u.user_rel?.nama 
-                  || u.sales_rel?.nama 
-                  || u.user?.nama
-                  || u.sales?.nama
-                  || u.nama 
-                  || u.name 
-                  || `User #${u.id}`;
-                
-                return {
-                  label: nama,
-                  value: String(u.id),
-                };
-              })
+        const salesOpts = Array.isArray(salesJson.data)
+          ? salesJson.data.map((sales) => ({
+              label: sales.nama || sales.name || `Sales ${sales.id}`,
+              value: String(sales.id),
+            }))
           : [];
-        setUserOptions(userOpts);
+        setUserOptions(salesOpts);
       } catch (err) {
         console.error("Error fetching initial data:", err);
       }
@@ -789,7 +788,7 @@ export default function AddProducts3Page() {
                   <h3 className="pengaturan-section-title">Harga</h3>
                   
                   <div className="pengaturan-form-group">
-                    <label className="pengaturan-label">Harga Asli</label>
+                    <label className="pengaturan-label">Harga Normal</label>
                     <InputNumber
                       className="pengaturan-input"
                       value={pengaturanForm.harga_asli}
@@ -824,9 +823,11 @@ export default function AddProducts3Page() {
                       className="pengaturan-input"
                       value={pengaturanForm.tanggal_event}
                       onChange={(e) => handlePengaturanChange("tanggal_event", e.value)}
-                      placeholder="Pilih tanggal event"
+                      placeholder="Pilih tanggal dan jam event"
                       showIcon
-                      dateFormat="dd/mm/yy"
+                      showTime
+                      hourFormat="24"
+                      dateFormat="dd/mm/yy HH:mm"
                       showButtonBar
                     />
                   </div>
