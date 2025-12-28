@@ -1936,7 +1936,7 @@ html:has(.add-products3-container) {
 
 .canvas-wrapper {
   width: 100%;
-  max-width: 1200px;
+  max-width: 800px;
   min-height: 600px;
   background: #ffffff;
   border: 1px solid #3b82f6;
