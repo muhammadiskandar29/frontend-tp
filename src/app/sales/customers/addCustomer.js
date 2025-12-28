@@ -32,14 +32,22 @@ export default function AddCustomerModal({ onClose, onSuccess }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // format tanggal lahir otomatis dd-mm-yyyy
+    // format tanggal lahir otomatis dd-mm-yyyy dengan pemisah
     if (name === "tanggal_lahir") {
       let digits = value.replace(/\D/g, ""); // hanya angka
-      if (digits.length > 2 && digits.length <= 4)
-        digits = digits.slice(0, 2) + "-" + digits.slice(2);
-      else if (digits.length > 4)
-        digits = digits.slice(0, 2) + "-" + digits.slice(2, 4) + "-" + digits.slice(4, 8);
-      setFormData({ ...formData, [name]: digits });
+      let formatted = "";
+      
+      if (digits.length > 0) {
+        formatted = digits.slice(0, 2); // hari
+        if (digits.length > 2) {
+          formatted += "-" + digits.slice(2, 4); // bulan
+        }
+        if (digits.length > 4) {
+          formatted += "-" + digits.slice(4, 8); // tahun (maks 4 digit)
+        }
+      }
+      
+      setFormData({ ...formData, [name]: formatted });
       return;
     }
 
@@ -193,6 +201,7 @@ export default function AddCustomerModal({ onClose, onSuccess }) {
                 onChange={handleChange}
                 placeholder="dd-mm-yyyy"
                 maxLength="10"
+                type="text"
               />
             </div>
           </form>

@@ -7,6 +7,21 @@ import { toastSuccess, toastError } from "@/lib/toast";
 // Use Next.js proxy to avoid CORS
 const BASE_URL = "/api";
 
+// Helper untuk format tanggal lahir dengan pemisah
+const formatTanggalLahirForInput = (tanggal) => {
+  if (!tanggal) return "";
+  // Jika sudah ada pemisah, biarkan seperti itu
+  if (tanggal.includes("-") || tanggal.includes("/")) {
+    return tanggal;
+  }
+  // Jika tidak ada pemisah, format menjadi dd-mm-yyyy
+  const digits = tanggal.replace(/\D/g, "");
+  if (digits.length === 8) {
+    return `${digits.slice(0, 2)}-${digits.slice(2, 4)}-${digits.slice(4, 8)}`;
+  }
+  return tanggal;
+};
+
 export default function EditCustomerModal({ customer, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
     nama: customer.nama || "",
@@ -18,7 +33,7 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
     pendapatan_bln: customer.pendapatan_bln || "",
     industri_pekerjaan: customer.industri_pekerjaan || "",
     jenis_kelamin: customer.jenis_kelamin || "l",
-    tanggal_lahir: customer.tanggal_lahir || "",
+    tanggal_lahir: formatTanggalLahirForInput(customer.tanggal_lahir || ""),
     alamat: customer.alamat || "",
   });
 
@@ -32,6 +47,29 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // format tanggal lahir otomatis dd-mm-yyyy dengan pemisah
+    if (name === "tanggal_lahir") {
+      let digits = value.replace(/\D/g, ""); // hanya angka
+      let formatted = "";
+      
+      if (digits.length > 0) {
+        formatted = digits.slice(0, 2); // hari
+        if (digits.length > 2) {
+          formatted += "-" + digits.slice(2, 4); // bulan
+        }
+        if (digits.length > 4) {
+          formatted += "-" + digits.slice(4, 8); // tahun (maks 4 digit)
+        }
+      }
+      
+      setFormData((prev) => ({
+        ...prev,
+        [name]: formatted,
+      }));
+      return;
+    }
+    
     setFormData((prev) => ({
       ...prev,
       [name]: name === "instagram" ? value.replace(/^@/, "") : value,
@@ -193,6 +231,8 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
                   value={formData.tanggal_lahir}
                   onChange={handleChange}
                   placeholder="dd-mm-yyyy"
+                  maxLength="10"
+                  type="text"
                 />
               </div>
 
