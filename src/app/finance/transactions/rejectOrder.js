@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import "@/styles/finance/pesanan.css";
+import "@/styles/finance/transactions-view.css";
 import { BACKEND_URL } from "@/config/env";
 
 // Helper function untuk build image URL via proxy
@@ -198,81 +199,51 @@ export default function RejectOrder({ order, onClose, onReject }) {
               <p style={{ marginTop: "1rem", color: "#ef4444" }}>{error}</p>
             </div>
           ) : orderData ? (
-            <>
-              <div className="orders-section">
-                <p style={{ marginBottom: "1.5rem", color: "var(--dash-text)", fontSize: "1rem", textAlign: "center", fontWeight: 500 }}>
+            <div className="detail-list">
+              <div className="detail-section">
+                <p style={{ marginBottom: "1.5rem", color: "#111827", fontSize: "1rem", textAlign: "center", fontWeight: 500 }}>
                   Apakah Anda yakin ingin menolak pembayaran ini?
                 </p>
 
-                {/* Ringkasan Informasi Penting */}
-                <div
-                  style={{
-                    padding: "1rem",
-                    background: "#fef2f2",
-                    borderRadius: "8px",
-                    border: "1px solid #fecaca",
-                    marginBottom: "1.5rem",
-                  }}
-                >
-                  <div className="orders-row">
-                    <p style={{ fontWeight: 600 }}>Customer</p>
-                    <span style={{ fontWeight: 600 }}>{orderData.customer?.nama || "-"}</span>
-                  </div>
-                  <div className="orders-row">
-                    <p>Produk</p>
-                    <span>{orderData.produk?.nama || "-"}</span>
-                  </div>
-                  <div className="orders-row">
-                    <p>Order ID</p>
-                    <span>#{orderData.order_id || "-"}</span>
-                  </div>
-                  <div className="orders-row">
-                    <p>Jumlah Pembayaran</p>
-                    <span style={{ fontWeight: 600, color: "#dc2626", fontSize: "1.1rem" }}>
-                      Rp {Number(orderData.amount || 0).toLocaleString("id-ID")}
-                    </span>
-                  </div>
-                  <div className="orders-row">
-                    <p>Pembayaran Ke-</p>
-                    <span>{orderData.payment_ke || "-"}</span>
-                  </div>
-                  <div className="orders-row">
-                    <p>Tipe Pembayaran</p>
-                    <span>
-                      {(() => {
-                        // Cek apakah order memiliki status_pembayaran === 4 (DP)
-                        const statusPembayaran = order?.order_rel?.status_pembayaran !== undefined && order?.order_rel?.status_pembayaran !== null
-                          ? Number(order.order_rel.status_pembayaran)
-                          : (orderData.order?.status_pembayaran !== undefined && orderData.order?.status_pembayaran !== null
-                            ? Number(orderData.order.status_pembayaran)
-                            : null);
-                        
-                        // Jika status_pembayaran === 4, berarti DP
-                        if (statusPembayaran === 4) {
-                          return "DP (Down Payment)";
-                        }
-                        
-                        // Jika bukan DP, tampilkan payment_type sesuai nilai
-                        if (orderData.payment_type === "1") {
-                          return "Pembayaran Pertama";
-                        } else if (orderData.payment_type === "2") {
-                          return "Pelunasan";
-                        } else if (orderData.payment_type) {
-                          return orderData.payment_type;
-                        }
-                        
-                        return "-";
-                      })()}
-                    </span>
-                  </div>
-                  <div className="orders-row">
-                    <p>Metode Pembayaran</p>
-                    <span>{getPaymentMethodLabel(orderData.payment_method) || "-"}</span>
-                  </div>
+                {/* Informasi Pembayaran */}
+                <div className="detail-item">
+                  <span className="detail-label">Customer</span>
+                  <span className="detail-colon">:</span>
+                  <span className="detail-value" style={{ fontWeight: 600 }}>{orderData.customer?.nama || "-"}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Produk</span>
+                  <span className="detail-colon">:</span>
+                  <span className="detail-value">{orderData.produk?.nama || "-"}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Order ID</span>
+                  <span className="detail-colon">:</span>
+                  <span className="detail-value">#{orderData.order_id || "-"}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Jumlah Pembayaran</span>
+                  <span className="detail-colon">:</span>
+                  <span className="detail-value" style={{ fontWeight: 600, color: "#dc2626", fontSize: "1.1rem" }}>
+                    Rp {Number(orderData.amount || 0).toLocaleString("id-ID")}
+                  </span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Pembayaran Ke-</span>
+                  <span className="detail-colon">:</span>
+                  <span className="detail-value">{orderData.payment_ke || "-"}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Metode Pembayaran</span>
+                  <span className="detail-colon">:</span>
+                  <span className="detail-value">{getPaymentMethodLabel(orderData.payment_method) || "-"}</span>
                 </div>
 
-                <div className="orders-field">
-                  <label htmlFor="reject-catatan" style={{ fontWeight: 600, marginBottom: "0.5rem", display: "block" }}>
+                <div className="detail-section-divider"></div>
+
+                {/* Catatan Penolakan */}
+                <div style={{ marginTop: "1rem" }}>
+                  <label htmlFor="reject-catatan" style={{ fontWeight: 600, marginBottom: "0.5rem", display: "block", fontSize: "0.875rem", color: "#111827" }}>
                     Catatan Penolakan *
                   </label>
                   <textarea
@@ -296,7 +267,7 @@ export default function RejectOrder({ order, onClose, onReject }) {
                   </p>
                 </div>
               </div>
-            </>
+            </div>
           ) : null}
         </div>
 

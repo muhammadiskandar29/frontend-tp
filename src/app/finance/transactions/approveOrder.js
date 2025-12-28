@@ -254,33 +254,6 @@ export default function ApproveOrder({ order, onClose, onApprove }) {
                       <span className="detail-value">{orderData.payment_ke || "-"}</span>
                     </div>
                     <div className="detail-item">
-                      <span className="detail-label">Tipe Pembayaran</span>
-                      <span className="detail-colon">:</span>
-                      <span className="detail-value">
-                        {(() => {
-                          const statusPembayaran = order?.order_rel?.status_pembayaran !== undefined && order?.order_rel?.status_pembayaran !== null
-                            ? Number(order.order_rel.status_pembayaran)
-                            : (orderData.order?.status_pembayaran !== undefined && orderData.order?.status_pembayaran !== null
-                              ? Number(orderData.order.status_pembayaran)
-                              : null);
-                          
-                          if (statusPembayaran === 4) {
-                            return "DP (Down Payment)";
-                          }
-                          
-                          if (orderData.payment_type === "1") {
-                            return "Pembayaran Pertama";
-                          } else if (orderData.payment_type === "2") {
-                            return "Pelunasan";
-                          } else if (orderData.payment_type) {
-                            return orderData.payment_type;
-                          }
-                          
-                          return "-";
-                        })()}
-                      </span>
-                    </div>
-                    <div className="detail-item">
                       <span className="detail-label">Metode Pembayaran</span>
                       <span className="detail-colon">:</span>
                       <span className="detail-value">{getPaymentMethodLabel(orderData.payment_method) || "-"}</span>
