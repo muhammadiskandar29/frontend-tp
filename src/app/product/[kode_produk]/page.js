@@ -793,6 +793,8 @@ export default function ProductPage() {
         totalHarga: String(totalHargaFinal),
         paymentMethod: paymentMethod,
         landingUrl: window.location.pathname,
+        // Tambahkan down_payment untuk workshop
+        ...(isKategoriWorkshop() && downPaymentValueFinal > 0 ? { downPayment: String(downPaymentValueFinal) } : {}),
       };
 
       console.log("📦 [PRODUCT] Saving pending order:", pendingOrder);

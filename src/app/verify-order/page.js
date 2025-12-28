@@ -271,7 +271,18 @@ export default function VerifyOrderOTPPage() {
         const query = new URLSearchParams({
           product: productName || "",
           harga: totalHarga || "0",
+          via: paymentMethod || "manual",
+          sumber: dataToUse?.sumber || "website",
         });
+        
+        // Tambahkan down_payment dan order_id jika ada (untuk workshop)
+        if (dataToUse?.downPayment) {
+          query.append("down_payment", dataToUse.downPayment);
+        }
+        if (dataToUse?.orderId) {
+          query.append("order_id", dataToUse.orderId);
+        }
+        
         router.push(`/payment?${query.toString()}`);
         
         // Redirect halaman verify-order kembali ke landing page dan kosongkan data
