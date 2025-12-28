@@ -180,8 +180,30 @@ export default function VerifyOrderOTPPage() {
             console.log("[VERIFY_ORDER] Auto-login successful! Redirecting to dashboard...");
             toast.success("Login berhasil! Mengarahkan ke dashboard...");
             
-            // Hapus pending order dari localStorage
-            localStorage.removeItem("pending_order");
+            // Simpan data order ke localStorage dengan key yang persisten untuk payment page
+            // Jangan hapus pending_order, tapi simpan juga ke customer_order_data untuk referensi
+            if (currentOrderData) {
+              // Simpan data order lengkap termasuk metode pembayaran dan order ID
+              const orderDataForPayment = {
+                orderId: currentOrderData.orderId,
+                paymentMethod: currentOrderData.paymentMethod,
+                productName: currentOrderData.productName,
+                totalHarga: currentOrderData.totalHarga,
+                nama: currentOrderData.nama,
+                email: currentOrderData.email,
+                wa: currentOrderData.wa,
+                downPayment: currentOrderData.downPayment,
+                customerId: currentOrderData.customerId,
+                timestamp: Date.now(), // Untuk tracking kapan data disimpan
+              };
+              
+              // Simpan ke localStorage dengan key yang tidak akan dihapus
+              localStorage.setItem("customer_order_data", JSON.stringify(orderDataForPayment));
+              console.log("[VERIFY_ORDER] Saved order data for payment:", orderDataForPayment);
+            }
+            
+            // Jangan hapus pending_order dulu, biarkan tetap ada untuk fallback
+            // localStorage.removeItem("pending_order");
             
             // Redirect ke halaman pembayaran (default landing dashboard)
             await new Promise((r) => setTimeout(r, 500));
@@ -344,16 +366,29 @@ export default function VerifyOrderOTPPage() {
       const json = await response.json();
       console.log("[VERIFY_ORDER] Midtrans response:", json);
 
-      if (json.redirect_url) {
-        console.log("[VERIFY_ORDER] Redirecting to Midtrans:", json.redirect_url);
-        // Buka Midtrans payment page di tab baru
+      // Sesuai dokumentasi: response harus memiliki success: true dan redirect_url
+      if (json.success === true && json.redirect_url) {
+        console.log("[VERIFY_ORDER] Opening Midtrans in new tab:", json.redirect_url);
+        
+        // Simpan snap_token dan order_id dari Midtrans jika ada
+        if (json.snap_token) {
+          sessionStorage.setItem("midtrans_snap_token", json.snap_token);
+        }
+        if (json.order_id) {
+          sessionStorage.setItem("midtrans_order_id_midtrans", json.order_id);
+        }
+        if (orderId) {
+          sessionStorage.setItem("midtrans_order_id", String(orderId));
+        }
+        
+        // Buka Midtrans payment page di tab baru sesuai dokumentasi
         window.open(json.redirect_url, "_blank");
         
         // Redirect halaman verify-order kembali ke landing page dan kosongkan data
         const landingUrl = dataToUse?.landingUrl || "/";
         clearAndRedirect(landingUrl);
       } else {
-        console.error("[VERIFY_ORDER] Midtrans tidak mengembalikan redirect_url:", json);
+        console.error("[VERIFY_ORDER] Midtrans tidak mengembalikan redirect_url atau success false:", json);
         toast.error(json.message || "Gagal membuat transaksi");
         // Jika gagal, redirect ke payment page manual
         const query = new URLSearchParams({

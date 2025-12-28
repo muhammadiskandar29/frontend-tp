@@ -67,23 +67,69 @@ export default function PaymentPage() {
         return statusPembayaran !== 2 && statusPembayaran !== "2";
       });
       
+      // Ambil data order dari localStorage (dari verify-order) untuk melengkapi data
+      const storedOrderData = localStorage.getItem("customer_order_data");
+      let localStorageOrderData = null;
+      if (storedOrderData) {
+        try {
+          localStorageOrderData = JSON.parse(storedOrderData);
+          console.log("[PAYMENT] Order data from localStorage:", localStorageOrderData);
+        } catch (e) {
+          console.error("[PAYMENT] Error parsing stored order data:", e);
+        }
+      }
+      
       // Format orders untuk ditampilkan
-      const formattedOrders = unpaidOrdersList.map((order) => ({
-        id: order.id,
-        orderId: order.id,
-        productName: order.produk_nama || "Produk Tanpa Nama",
-        totalHarga: order.total_harga || order.total_harga_formatted || "0",
-        status: "Menunggu Pembayaran",
-        paymentMethod: order.metode_bayar || "manual",
-        tanggalOrder: order.tanggal_order || "-",
-        statusPembayaran: order.status_pembayaran || order.status_pembayaran_id,
-        // Simpan data lengkap untuk Midtrans
-        nama: order.nama || data?.customer?.nama || data?.customer?.nama_lengkap || session?.user?.nama || "",
-        email: order.email || data?.customer?.email || session?.user?.email || "",
-        rawOrder: order, // Simpan order lengkap untuk kebutuhan lainnya
-      }));
+      const formattedOrders = unpaidOrdersList.map((order) => {
+        // Cek apakah order ini sesuai dengan order dari localStorage (berdasarkan orderId)
+        const isMatchingOrder = localStorageOrderData && 
+          (localStorageOrderData.orderId === order.id || 
+           localStorageOrderData.orderId === String(order.id));
+        
+        // Gabungkan data dari API dengan data dari localStorage
+        // Prioritaskan data dari localStorage untuk metode pembayaran dan order ID
+        return {
+          id: order.id,
+          orderId: isMatchingOrder ? localStorageOrderData.orderId : order.id,
+          productName: order.produk_nama || localStorageOrderData?.productName || "Produk Tanpa Nama",
+          totalHarga: order.total_harga || order.total_harga_formatted || localStorageOrderData?.totalHarga || "0",
+          status: "Menunggu Pembayaran",
+          // Prioritaskan metode pembayaran dari localStorage jika ada
+          paymentMethod: isMatchingOrder 
+            ? (localStorageOrderData.paymentMethod || order.metode_bayar || "manual")
+            : (order.metode_bayar || "manual"),
+          tanggalOrder: order.tanggal_order || "-",
+          statusPembayaran: order.status_pembayaran || order.status_pembayaran_id,
+          // Simpan data lengkap untuk Midtrans
+          nama: order.nama || localStorageOrderData?.nama || data?.customer?.nama || data?.customer?.nama_lengkap || session?.user?.nama || "",
+          email: order.email || localStorageOrderData?.email || data?.customer?.email || session?.user?.email || "",
+          downPayment: localStorageOrderData?.downPayment || order.down_payment || "",
+          rawOrder: order, // Simpan order lengkap untuk kebutuhan lainnya
+        };
+      });
 
       setUnpaidOrders(formattedOrders);
+      
+      // Hapus data dari localStorage jika semua order sudah terbayar
+      // atau jika order dari localStorage sudah tidak ada di unpaid orders
+      if (localStorageOrderData && unpaidOrdersList.length > 0) {
+        const orderStillUnpaid = unpaidOrdersList.some(order => 
+          order.id === localStorageOrderData.orderId || 
+          String(order.id) === String(localStorageOrderData.orderId)
+        );
+        
+        if (!orderStillUnpaid) {
+          // Order sudah terbayar, hapus data dari localStorage
+          console.log("[PAYMENT] Order sudah terbayar, removing from localStorage");
+          localStorage.removeItem("customer_order_data");
+          localStorage.removeItem("pending_order");
+        }
+      } else if (unpaidOrdersList.length === 0 && localStorageOrderData) {
+        // Tidak ada unpaid orders, hapus data
+        console.log("[PAYMENT] No unpaid orders, removing from localStorage");
+        localStorage.removeItem("customer_order_data");
+        localStorage.removeItem("pending_order");
+      }
     } catch (error) {
       console.error("[PAYMENT] Failed to load unpaid orders:", error);
       setError(error.message || "Gagal memuat data pembayaran.");
@@ -167,13 +213,30 @@ export default function PaymentPage() {
         const data = await response.json();
         console.log("[PAYMENT] Midtrans response:", data);
 
-        if (data.redirect_url) {
-          // Redirect ke Midtrans gateway
-          console.log("[PAYMENT] Redirecting to Midtrans:", data.redirect_url);
-          window.location.href = data.redirect_url;
+        // Sesuai dokumentasi: response harus memiliki success: true dan redirect_url
+        if (data.success === true && data.redirect_url) {
+          // Simpan order ID ke sessionStorage untuk tracking setelah kembali dari Midtrans
+          if (orderId) {
+            sessionStorage.setItem("midtrans_order_id", String(orderId));
+          }
+          
+          // Simpan snap_token dan order_id dari Midtrans jika ada
+          if (data.snap_token) {
+            sessionStorage.setItem("midtrans_snap_token", data.snap_token);
+          }
+          if (data.order_id) {
+            sessionStorage.setItem("midtrans_order_id_midtrans", data.order_id);
+          }
+          
+          // Buka Midtrans gateway di tab baru sesuai dokumentasi
+          console.log("[PAYMENT] Opening Midtrans in new tab:", data.redirect_url);
+          window.open(data.redirect_url, "_blank");
+          
+          // Tampilkan toast info
+          toast.success("Halaman pembayaran Midtrans dibuka di tab baru");
         } else {
-          // Jika tidak ada redirect_url, tampilkan error dan fallback ke payment page
-          console.error("[PAYMENT] Midtrans tidak mengembalikan redirect_url:", data);
+          // Jika tidak ada redirect_url atau success false, tampilkan error
+          console.error("[PAYMENT] Midtrans tidak mengembalikan redirect_url atau success false:", data);
           toast.error(data.message || "Gagal membuat transaksi pembayaran");
           
           // Fallback: redirect ke payment page manual
