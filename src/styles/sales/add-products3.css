@@ -856,7 +856,11 @@ html:has(.add-products3-container) {
 .pengaturan-content .form-input.p-calendar,
 .pengaturan-content .w-full.form-input.p-calendar,
 .pengaturan-content .form-input.p-inputnumber,
-.pengaturan-content .w-full.form-input.p-inputnumber {
+.pengaturan-content .w-full.form-input.p-inputnumber,
+.pengaturan-content .p-dropdown,
+.pengaturan-content .p-multiselect,
+.pengaturan-content .p-calendar,
+.pengaturan-content .p-inputnumber {
   width: 100% !important;
   background: #ffffff !important;
   color: #111827 !important;
@@ -872,7 +876,11 @@ html:has(.add-products3-container) {
 .pengaturan-content .form-input.p-multiselect:not(.p-disabled):hover,
 .pengaturan-content .w-full.form-input.p-multiselect:not(.p-disabled):hover,
 .pengaturan-content .form-input.p-calendar:not(.p-disabled):hover,
-.pengaturan-content .w-full.form-input.p-calendar:not(.p-disabled):hover {
+.pengaturan-content .w-full.form-input.p-calendar:not(.p-disabled):hover,
+.pengaturan-content .p-dropdown:not(.p-disabled):hover,
+.pengaturan-content .p-multiselect:not(.p-disabled):hover,
+.pengaturan-content .p-calendar:not(.p-disabled):hover,
+.pengaturan-content .p-inputnumber:not(.p-disabled):hover {
   border-color: #F1A124 !important;
 }
 
@@ -881,7 +889,11 @@ html:has(.add-products3-container) {
 .pengaturan-content .form-input.p-multiselect:not(.p-disabled).p-focus,
 .pengaturan-content .w-full.form-input.p-multiselect:not(.p-disabled).p-focus,
 .pengaturan-content .form-input.p-calendar:not(.p-disabled).p-focus,
-.pengaturan-content .w-full.form-input.p-calendar:not(.p-disabled).p-focus {
+.pengaturan-content .w-full.form-input.p-calendar:not(.p-disabled).p-focus,
+.pengaturan-content .p-dropdown:not(.p-disabled).p-focus,
+.pengaturan-content .p-multiselect:not(.p-disabled).p-focus,
+.pengaturan-content .p-calendar:not(.p-disabled).p-focus,
+.pengaturan-content .p-inputnumber:not(.p-disabled).p-focus {
   border-color: #F1A124 !important;
   box-shadow: 0 0 0 4px rgba(241, 161, 36, 0.1) !important;
   outline: none !important;
@@ -890,7 +902,9 @@ html:has(.add-products3-container) {
 .pengaturan-content .form-input.p-dropdown .p-dropdown-label,
 .pengaturan-content .w-full.form-input.p-dropdown .p-dropdown-label,
 .pengaturan-content .form-input.p-multiselect .p-multiselect-label,
-.pengaturan-content .w-full.form-input.p-multiselect .p-multiselect-label {
+.pengaturan-content .w-full.form-input.p-multiselect .p-multiselect-label,
+.pengaturan-content .p-dropdown .p-dropdown-label,
+.pengaturan-content .p-multiselect .p-multiselect-label {
   padding: 0 !important;
   font-size: 0.95rem !important;
   color: #111827 !important;
@@ -899,23 +913,27 @@ html:has(.add-products3-container) {
 .pengaturan-content .form-input.p-dropdown .p-dropdown-label-container,
 .pengaturan-content .w-full.form-input.p-dropdown .p-dropdown-label-container,
 .pengaturan-content .form-input.p-multiselect .p-multiselect-label-container,
-.pengaturan-content .w-full.form-input.p-multiselect .p-multiselect-label-container {
-  padding: 0.65rem 1rem !important;
+.pengaturan-content .w-full.form-input.p-multiselect .p-multiselect-label-container,
+.pengaturan-content .p-dropdown .p-dropdown-label-container,
+.pengaturan-content .p-multiselect .p-multiselect-label-container {
+  padding: 0 !important;
 }
 
-/* Panel Styling */
+/* Panel Styling - Same as addProducts */
 .pengaturan-content .p-dropdown-panel,
 .pengaturan-content .p-multiselect-panel,
-.pengaturan-content .p-datepicker {
+.pengaturan-content .p-datepicker,
+.pengaturan-content .p-datepicker-calendar-container {
   background: #ffffff !important;
   border: 1.5px solid #e5e7eb !important;
   border-radius: 10px !important;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
   margin-top: 0.25rem !important;
 }
 
 .pengaturan-content .p-dropdown-item,
-.pengaturan-content .p-multiselect-item {
+.pengaturan-content .p-multiselect-item,
+.pengaturan-content .p-datepicker-day {
   color: #111827 !important;
   padding: 0.65rem 1rem !important;
   border-radius: 6px !important;
@@ -929,37 +947,58 @@ html:has(.add-products3-container) {
   color: #111827 !important;
 }
 
+.pengaturan-content .p-highlight,
 .pengaturan-content .p-dropdown-item.p-highlight,
 .pengaturan-content .p-multiselect-item.p-highlight {
   background: #F1A124 !important;
   color: white !important;
 }
 
-/* MultiSelect Chip/Token - Box Style seperti di addProducts */
+/* MultiSelect Chip/Token - Same as addProducts */
 .pengaturan-content .form-input.p-multiselect .p-multiselect-token,
 .pengaturan-content .w-full.form-input.p-multiselect .p-multiselect-token,
 .pengaturan-content .form-input.p-multiselect .p-multiselect-chip,
-.pengaturan-content .w-full.form-input.p-multiselect .p-multiselect-chip {
-  background: linear-gradient(135deg, #F1A124 0%, #e8940f 100%) !important;
+.pengaturan-content .w-full.form-input.p-multiselect .p-multiselect-chip,
+.pengaturan-content .p-multiselect-token {
+  background: #F1A124 !important;
   color: #fff !important;
   border-radius: 6px !important;
-  padding: 4px 10px !important;
+  padding: 0.25rem 0.5rem !important;
   margin: 0.15rem !important;
-  font-weight: 500 !important;
-  font-size: 0.85rem !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 6px !important;
-  box-shadow: 0 1px 3px rgba(241, 161, 36, 0.3) !important;
 }
 
 .pengaturan-content .form-input.p-multiselect .p-multiselect-token-icon,
 .pengaturan-content .w-full.form-input.p-multiselect .p-multiselect-token-icon,
 .pengaturan-content .form-input.p-multiselect .p-multiselect-chip-icon,
-.pengaturan-content .w-full.form-input.p-multiselect .p-multiselect-chip-icon {
+.pengaturan-content .w-full.form-input.p-multiselect .p-multiselect-chip-icon,
+.pengaturan-content .p-multiselect-token-icon {
   color: #fff !important;
-  margin-left: 6px !important;
-  cursor: pointer !important;
+}
+
+/* Form Field Group MultiSelect - Same as addProducts */
+.pengaturan-content .form-field-group .p-multiselect {
+  border-radius: 10px;
+}
+
+.pengaturan-content .form-field-group .p-multiselect-panel {
+  border-radius: 10px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+.pengaturan-content .form-field-group .p-multiselect-item {
+  padding: 10px 14px;
+}
+
+.pengaturan-content .form-field-group .p-multiselect-token {
+  background: linear-gradient(135deg, #F1A124 0%, #e8940f 100%);
+  color: #fff;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-weight: 500;
+}
+
+.pengaturan-content .form-field-group .p-multiselect-token-icon {
+  color: #fff;
 }
 
 /* Custom scrollbar untuk sidebar */
@@ -1680,15 +1719,33 @@ html:has(.add-products3-container) {
 }
 
 /* ===== FORM FIELD GROUP - Enhanced Styling ===== */
+/* ===== FORM FIELD GROUP - Same as addProducts ===== */
 .form-field-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 16px;
+  gap: 0.5rem;
 }
 
-.form-field-group:last-child {
-  margin-bottom: 0;
+.form-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #111827;
+  margin-bottom: 0.25rem;
+}
+
+.required {
+  color: #ef4444;
+  font-weight: 700;
+}
+
+.field-hint {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+  font-style: italic;
 }
 
 .form-label-small {
@@ -1715,42 +1772,14 @@ html:has(.add-products3-container) {
   width: 30px;
 }
 
-/* ===== FORM INPUT - Enhanced Styling ===== */
+/* ===== FORM INPUT - Same as addProducts ===== */
 .form-input {
-  width: 100%;
-  padding: 10px 14px;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 8px;
-  background: #ffffff;
-  font-size: 14px;
-  color: #1f2937;
   transition: all 0.2s ease;
-  font-family: inherit;
-  box-sizing: border-box;
-}
-
-.form-input::placeholder {
-  color: #9ca3af;
-  font-weight: 400;
-}
-
-.form-input:hover {
-  border-color: #d1d5db;
-  background: #fafafa;
 }
 
 .form-input:focus {
-  outline: none;
   border-color: #F1A124 !important;
-  background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(241, 161, 36, 0.1) !important;
-}
-
-.form-input:disabled {
-  background: #f3f4f6;
-  color: #6b7280;
-  cursor: not-allowed;
-  border-color: #e5e7eb;
+  box-shadow: 0 0 0 4px rgba(241, 161, 36, 0.1) !important;
 }
 
 /* ===== PRIMEREACT INPUT TEXT - Enhanced ===== */
