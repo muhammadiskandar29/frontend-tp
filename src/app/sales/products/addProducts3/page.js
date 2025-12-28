@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
   Type, Image as ImageIcon, FileText, List, MessageSquare, 
-  HelpCircle, Image as SliderIcon, Square, Youtube, Link as LinkIcon,
-  MapPin, Film, Minus, Code, X, ArrowLeft
+  HelpCircle, Youtube, X, ArrowLeft
 } from "lucide-react";
 import { InputText } from "primereact/inputtext";
 import { Dropdown } from "primereact/dropdown";
@@ -21,20 +20,12 @@ import {
   ListComponent,
   FormComponent,
   FAQComponent,
-  SliderComponent,
-  ButtonComponent,
-  EmbedComponent,
-  SectionComponent,
-  HTMLComponent,
-  DividerComponent,
-  ScrollTargetComponent,
-  AnimationComponent,
   PriceComponent,
 } from './components';
 import "@/styles/sales/add-products3.css";
 import "@/styles/ongkir.css";
 
-// Komponen yang tersedia sesuai gambar
+// Komponen yang tersedia
 const COMPONENT_CATEGORIES = {
   seringDigunakan: {
     label: "Sering Digunakan",
@@ -42,6 +33,7 @@ const COMPONENT_CATEGORIES = {
       { id: "text", name: "Teks", icon: Type, color: "#3b82f6" },
       { id: "image", name: "Gambar", icon: ImageIcon, color: "#10b981" },
       { id: "price", name: "Harga", icon: FileText, color: "#F1A124" },
+      { id: "youtube", name: "Video", icon: Youtube, color: "#dc2626", description: "Video berupa link YouTube" },
     ]
   },
   formPemesanan: {
@@ -51,25 +43,6 @@ const COMPONENT_CATEGORIES = {
       { id: "list", name: "Daftar", icon: List, color: "#f59e0b" },
       { id: "testimoni", name: "Testimoni", icon: MessageSquare, color: "#ec4899" },
       { id: "faq", name: "FAQ", icon: HelpCircle, color: "#06b6d4" },
-    ]
-  },
-  salesPage: {
-    label: "Sales Page",
-    components: [
-      { id: "slider", name: "Gambar Slider", icon: SliderIcon, color: "#ef4444" },
-      { id: "button", name: "Tombol", icon: Square, color: "#F1A124" },
-      { id: "youtube", name: "YouTube", icon: Youtube, color: "#dc2626" },
-      { id: "embed", name: "Embed", icon: LinkIcon, color: "#6366f1" },
-      { id: "scroll-target", name: "Scroll Target", icon: MapPin, color: "#14b8a6" },
-      { id: "animation", name: "Animation", icon: Film, color: "#a855f7" },
-    ]
-  },
-  lainnya: {
-    label: "Lainnya",
-    components: [
-      { id: "section", name: "Section", icon: Minus, color: "#64748b" },
-      { id: "html", name: "HTML", icon: Code, color: "#475569" },
-      { id: "divider", name: "Divider", icon: Minus, color: "#94a3b8" },
     ]
   }
 };
@@ -886,6 +859,7 @@ export default function AddProducts3Page() {
                     key={component.id}
                     className="component-item"
                     onClick={() => handleAddComponent(component.id)}
+                    title={component.description || component.name}
                   >
                     <div 
                       className="component-icon"
@@ -896,7 +870,12 @@ export default function AddProducts3Page() {
                         style={{ color: component.color }}
                       />
                     </div>
-                    <span className="component-name">{component.name}</span>
+                    <div className="component-info">
+                      <span className="component-name">{component.name}</span>
+                      {component.description && (
+                        <span className="component-description">{component.description}</span>
+                      )}
+                    </div>
                   </div>
                 );
               })}
