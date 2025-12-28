@@ -113,8 +113,40 @@ export default function AdminCustomerPage() {
       const result = await getCustomers(pageNumber, perPage, filters);
       
       if (result.success && result.data && Array.isArray(result.data)) {
+        // Filter dan sort data di frontend untuk memastikan filter bekerja dengan benar
+        let filteredData = [...result.data];
+        
+        // Apply verifikasi filter jika bukan "all" (fallback jika backend tidak memproses filter)
+        if (filters.verifikasi && filters.verifikasi !== "all") {
+          if (filters.verifikasi === "verified") {
+            filteredData = filteredData.filter(
+              (c) => c.verifikasi === "1" || c.verifikasi === true || c.verifikasi === 1
+            );
+          } else if (filters.verifikasi === "unverified") {
+            filteredData = filteredData.filter(
+              (c) => !(c.verifikasi === "1" || c.verifikasi === true || c.verifikasi === 1)
+            );
+          }
+        }
+        
+        // Sort data dari terbaru ke terlama berdasarkan create_at atau id
+        filteredData.sort((a, b) => {
+          // Prioritas: create_at jika ada, fallback ke id
+          const dateA = a.create_at ? new Date(a.create_at).getTime() : 0;
+          const dateB = b.create_at ? new Date(b.create_at).getTime() : 0;
+          
+          if (dateA !== 0 && dateB !== 0) {
+            return dateB - dateA; // Terbaru di atas
+          }
+          
+          // Fallback ke id jika create_at tidak ada
+          const idA = a.id || 0;
+          const idB = b.id || 0;
+          return idB - idA; // ID lebih besar (terbaru) di atas
+        });
+        
         // Selalu replace data (bukan append) - setiap page menampilkan data yang berbeda
-        setCustomers(result.data);
+        setCustomers(filteredData);
 
         // Gunakan pagination object jika tersedia
         if (result.pagination && typeof result.pagination === 'object') {

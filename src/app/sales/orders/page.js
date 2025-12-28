@@ -239,16 +239,15 @@ export default function DaftarPesanan() {
         per_page: String(perPage),
       });
 
-      // Add search parameter (gunakan debouncedSearch untuk konsistensi)
-      if (debouncedSearch && debouncedSearch.trim()) {
-        params.append("search", debouncedSearch.trim());
-        console.log("🔍 Search parameter added:", debouncedSearch.trim());
+      // Add search parameter (gunakan filters.search untuk konsistensi)
+      if (filters.search && filters.search.trim()) {
+        params.append("search", filters.search.trim());
       }
 
       // Add date range filter (tanggal orderan)
-      if (dateRange && Array.isArray(dateRange) && dateRange.length === 2 && dateRange[0] && dateRange[1]) {
-        const fromDate = new Date(dateRange[0]);
-        const toDate = new Date(dateRange[1]);
+      if (filters.dateRange && Array.isArray(filters.dateRange) && filters.dateRange.length === 2 && filters.dateRange[0] && filters.dateRange[1]) {
+        const fromDate = new Date(filters.dateRange[0]);
+        const toDate = new Date(filters.dateRange[1]);
         // Set time to start and end of day
         fromDate.setHours(0, 0, 0, 0);
         toDate.setHours(23, 59, 59, 999);
@@ -257,30 +256,27 @@ export default function DaftarPesanan() {
       }
 
       // Add status order filter (multiple)
-      if (selectedStatusOrder.length > 0) {
-        selectedStatusOrder.forEach(status => {
+      if (filters.statusOrder && filters.statusOrder.length > 0) {
+        filters.statusOrder.forEach(status => {
           params.append("status_order", status);
         });
       }
 
       // Add status pembayaran filter (multiple)
-      if (selectedStatusPembayaran.length > 0) {
-        selectedStatusPembayaran.forEach(status => {
+      if (filters.statusPembayaran && filters.statusPembayaran.length > 0) {
+        filters.statusPembayaran.forEach(status => {
           params.append("status_pembayaran", status);
         });
       }
 
       // Add produk filter (multiple) - jika backend support produk_id
-      if (selectedProducts.length > 0) {
-        selectedProducts.forEach(productId => {
+      if (filters.products && filters.products.length > 0) {
+        filters.products.forEach(productId => {
           params.append("produk_id", productId);
         });
       }
 
-      const url = `/api/sales/order?${params.toString()}`;
-      console.log("📡 Fetching orders with URL:", url);
-      
-      const res = await fetch(url, {
+      const res = await fetch(`/api/sales/order?${params.toString()}`, {
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
@@ -408,7 +404,7 @@ export default function DaftarPesanan() {
       setLoading(false);
       fetchingRef.current = false;
     }
-  }, [debouncedSearch, perPage, dateRange, selectedStatusOrder, selectedStatusPembayaran, selectedProducts]);
+  }, [perPage, filters]);
 
   // Load statistics on mount
   useEffect(() => {
@@ -424,23 +420,21 @@ export default function DaftarPesanan() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Hanya sekali saat mount
 
-  // Reset to page 1 when search or filters change
+  // Reset to page 1 when search or filter changes
   useEffect(() => {
-    console.log("🔄 Search/filter changed, resetting to page 1. Search:", debouncedSearch);
     setPage(1);
     setOrders([]);
     setHasMore(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, dateRange, selectedStatusOrder, selectedStatusPembayaran, selectedProducts]); // Reset when search or filters change
+  }, [debouncedSearch, dateRange, selectedStatusOrder, selectedStatusPembayaran, selectedProducts]); // Reset when search or filter changes
 
   // Fetch data saat page atau filters berubah
   useEffect(() => {
-    console.log("📥 Fetching orders - Page:", page, "Search:", debouncedSearch);
     if (page > 0) {
       fetchOrders(page);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, debouncedSearch, dateRange, selectedStatusOrder, selectedStatusPembayaran, selectedProducts]); // Depend pada page dan semua filters
+  }, [page, filters]); // Depend pada page dan filters (sama seperti customers)
 
   // Scroll to top and prevent body scroll when filter modal opens
   useEffect(() => {
