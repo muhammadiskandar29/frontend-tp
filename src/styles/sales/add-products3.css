@@ -1,5 +1,29 @@
 /* ===== ADD PRODUCTS 3 - PAGE BUILDER ===== */
 
+/* ===== GLOBAL PRIMEREACT OVERRIDE FOR PENGATURAN TAB ===== */
+/* Force solid white background for all PrimeReact components in pengaturan */
+.pengaturan-content .p-dropdown,
+.pengaturan-content .p-multiselect,
+.pengaturan-content .p-calendar,
+.pengaturan-content .p-inputnumber {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+}
+
+.pengaturan-content .p-dropdown .p-dropdown-label-container,
+.pengaturan-content .p-multiselect .p-multiselect-label-container,
+.pengaturan-content .p-calendar .p-inputtext-wrapper {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+}
+
+.pengaturan-content .p-dropdown-panel,
+.pengaturan-content .p-multiselect-panel,
+.pengaturan-content .p-datepicker {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+}
+
 .add-products3-container {
   width: 100%;
   height: 100vh;
@@ -200,22 +224,34 @@
   border-color: #e5e7eb !important;
 }
 
-/* ===== PENGATURAN DROPDOWN - Enhanced Focus ===== */
-.pengaturan-input .p-dropdown {
+/* ===== PENGATURAN DROPDOWN - Enhanced Focus with Solid Background ===== */
+.pengaturan-input .p-dropdown,
+.pengaturan-form-group .p-dropdown {
   border: 1.5px solid #e5e7eb !important;
   border-radius: 8px !important;
   background: #ffffff !important;
+  background-color: #ffffff !important;
   transition: all 0.2s ease !important;
+  min-height: 42px !important;
+  box-sizing: border-box !important;
+}
+
+.pengaturan-input .p-dropdown .p-dropdown-label-container,
+.pengaturan-form-group .p-dropdown .p-dropdown-label-container {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
 }
 
 .pengaturan-input .p-dropdown:not(.p-disabled):hover {
   border-color: #d1d5db !important;
   background: #fafafa !important;
+  background-color: #fafafa !important;
 }
 
 .pengaturan-input .p-dropdown:not(.p-disabled).p-focus {
   border-color: #F1A124 !important;
   background: #ffffff !important;
+  background-color: #ffffff !important;
   box-shadow: 0 0 0 3px rgba(241, 161, 36, 0.15) !important;
   outline: none !important;
 }
@@ -226,6 +262,8 @@
   color: #1f2937 !important;
   font-family: inherit !important;
   font-weight: 400 !important;
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
 .pengaturan-input .p-dropdown .p-dropdown-label.p-placeholder {
@@ -236,10 +274,13 @@
   width: 2.5rem !important;
   color: #6b7280 !important;
   background: transparent !important;
+  background-color: transparent !important;
+  border-left: 1px solid #e5e7eb !important;
 }
 
 .pengaturan-input .p-dropdown .p-dropdown-trigger:hover {
   background: #f3f4f6 !important;
+  background-color: #f3f4f6 !important;
   color: #374151 !important;
 }
 
@@ -249,6 +290,16 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
   margin-top: 4px !important;
   background: #ffffff !important;
+  background-color: #ffffff !important;
+  z-index: 1000 !important;
+}
+
+/* Removed wildcard selector - using specific selectors instead */
+
+.pengaturan-input .p-dropdown-items-wrapper {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  padding: 4px !important;
 }
 
 .pengaturan-input .p-dropdown-item {
@@ -258,45 +309,101 @@
   transition: all 0.15s ease !important;
   border-radius: 4px !important;
   margin: 2px 4px !important;
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
 .pengaturan-input .p-dropdown-item:not(.p-highlight):not(.p-disabled):hover {
   background: #f9fafb !important;
+  background-color: #f9fafb !important;
   color: #F1A124 !important;
 }
 
 .pengaturan-input .p-dropdown-item.p-highlight {
   background: #F1A124 !important;
+  background-color: #F1A124 !important;
   color: #ffffff !important;
   font-weight: 500 !important;
 }
 
-/* ===== PENGATURAN MULTISELECT - Enhanced Focus ===== */
-.pengaturan-input .p-multiselect {
+.pengaturan-input .p-dropdown-filter-container {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  padding: 8px !important;
+  border-bottom: 1px solid #e5e7eb !important;
+}
+
+.pengaturan-input .p-dropdown-filter {
+  width: 100% !important;
+  padding: 8px 12px !important;
+  border: 1.5px solid #e5e7eb !important;
+  border-radius: 6px !important;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  font-size: 14px !important;
+}
+
+.pengaturan-input .p-dropdown-filter:focus {
+  border-color: #F1A124 !important;
+  box-shadow: 0 0 0 2px rgba(241, 161, 36, 0.1) !important;
+  outline: none !important;
+}
+
+/* ===== PENGATURAN MULTISELECT - Enhanced Focus with Solid Background & Chip Boxes ===== */
+.pengaturan-input .p-multiselect,
+.pengaturan-form-group .p-multiselect {
   border: 1.5px solid #e5e7eb !important;
   border-radius: 8px !important;
   background: #ffffff !important;
+  background-color: #ffffff !important;
   transition: all 0.2s ease !important;
+  min-height: 42px !important;
+  box-sizing: border-box !important;
+}
+
+.pengaturan-input .p-multiselect .p-multiselect-label-container,
+.pengaturan-form-group .p-multiselect .p-multiselect-label-container {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
 }
 
 .pengaturan-input .p-multiselect:not(.p-disabled):hover {
   border-color: #d1d5db !important;
   background: #fafafa !important;
+  background-color: #fafafa !important;
 }
 
 .pengaturan-input .p-multiselect:not(.p-disabled).p-focus {
   border-color: #F1A124 !important;
   background: #ffffff !important;
+  background-color: #ffffff !important;
   box-shadow: 0 0 0 3px rgba(241, 161, 36, 0.15) !important;
   outline: none !important;
 }
 
+.pengaturan-input .p-multiselect .p-multiselect-label-container {
+  padding: 8px 14px !important;
+  min-height: 42px !important;
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
 .pengaturan-input .p-multiselect .p-multiselect-label {
-  padding: 10px 14px !important;
+  padding: 0 !important;
   font-size: 14px !important;
   color: #1f2937 !important;
   font-family: inherit !important;
   font-weight: 400 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
 }
 
 .pengaturan-input .p-multiselect .p-multiselect-label.p-placeholder {
@@ -307,23 +414,44 @@
   width: 2.5rem !important;
   color: #6b7280 !important;
   background: transparent !important;
+  background-color: transparent !important;
+  border-left: 1px solid #e5e7eb !important;
+  flex-shrink: 0 !important;
 }
 
 .pengaturan-input .p-multiselect .p-multiselect-trigger:hover {
   background: #f3f4f6 !important;
+  background-color: #f3f4f6 !important;
   color: #374151 !important;
 }
 
-.pengaturan-input .p-multiselect-panel {
+.pengaturan-input .p-multiselect-panel,
+.pengaturan-form-group .p-multiselect-panel {
   border: 1.5px solid #e5e7eb !important;
   border-radius: 8px !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
   margin-top: 4px !important;
   background: #ffffff !important;
+  background-color: #ffffff !important;
+  z-index: 1000 !important;
+}
+
+.pengaturan-input .p-multiselect-panel .p-multiselect-items-wrapper,
+.pengaturan-form-group .p-multiselect-panel .p-multiselect-items-wrapper {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+}
+
+.pengaturan-input .p-multiselect-panel .p-multiselect-item,
+.pengaturan-form-group .p-multiselect-panel .p-multiselect-item {
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
 .pengaturan-input .p-multiselect-items-wrapper {
   padding: 4px !important;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
 }
 
 .pengaturan-input .p-multiselect-item {
@@ -333,15 +461,21 @@
   transition: all 0.15s ease !important;
   border-radius: 4px !important;
   margin: 2px 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  display: flex !important;
+  align-items: center !important;
 }
 
 .pengaturan-input .p-multiselect-item:not(.p-highlight):not(.p-disabled):hover {
   background: #f9fafb !important;
+  background-color: #f9fafb !important;
   color: #F1A124 !important;
 }
 
 .pengaturan-input .p-multiselect-item.p-highlight {
   background: #F1A124 !important;
+  background-color: #F1A124 !important;
   color: #ffffff !important;
   font-weight: 500 !important;
 }
@@ -350,37 +484,101 @@
   margin-right: 8px !important;
 }
 
+/* MultiSelect Chip - Box Style seperti di kategori */
 .pengaturan-input .p-multiselect-chip {
   background: #F1A124 !important;
+  background-color: #F1A124 !important;
   color: #ffffff !important;
-  padding: 4px 10px !important;
+  padding: 6px 12px !important;
   border-radius: 6px !important;
-  font-size: 12px !important;
+  font-size: 13px !important;
   font-weight: 500 !important;
   margin: 2px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  border: none !important;
+  box-shadow: 0 1px 3px rgba(241, 161, 36, 0.3) !important;
+  transition: all 0.2s ease !important;
+}
+
+.pengaturan-input .p-multiselect-chip:hover {
+  background: #d68910 !important;
+  background-color: #d68910 !important;
+  box-shadow: 0 2px 4px rgba(241, 161, 36, 0.4) !important;
 }
 
 .pengaturan-input .p-multiselect-chip .p-multiselect-chip-icon {
   color: #ffffff !important;
-  margin-left: 6px !important;
+  margin-left: 0 !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 16px !important;
+  height: 16px !important;
+  border-radius: 50% !important;
+  transition: all 0.2s ease !important;
 }
 
-/* ===== PENGATURAN CALENDAR - Enhanced Focus ===== */
-.pengaturan-input .p-calendar {
+.pengaturan-input .p-multiselect-chip .p-multiselect-chip-icon:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+.pengaturan-input .p-multiselect-filter-container {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  padding: 8px !important;
+  border-bottom: 1px solid #e5e7eb !important;
+}
+
+.pengaturan-input .p-multiselect-filter {
+  width: 100% !important;
+  padding: 8px 12px !important;
+  border: 1.5px solid #e5e7eb !important;
+  border-radius: 6px !important;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  font-size: 14px !important;
+}
+
+.pengaturan-input .p-multiselect-filter:focus {
+  border-color: #F1A124 !important;
+  box-shadow: 0 0 0 2px rgba(241, 161, 36, 0.1) !important;
+  outline: none !important;
+}
+
+/* ===== PENGATURAN CALENDAR - Enhanced Focus with Solid Background ===== */
+.pengaturan-input .p-calendar,
+.pengaturan-form-group .p-calendar {
   border: 1.5px solid #e5e7eb !important;
   border-radius: 8px !important;
   background: #ffffff !important;
+  background-color: #ffffff !important;
   transition: all 0.2s ease !important;
+  min-height: 42px !important;
+  display: flex !important;
+  align-items: center !important;
+  box-sizing: border-box !important;
+}
+
+.pengaturan-input .p-calendar .p-inputtext-wrapper,
+.pengaturan-form-group .p-calendar .p-inputtext-wrapper {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  flex: 1 !important;
 }
 
 .pengaturan-input .p-calendar:not(.p-disabled):hover {
   border-color: #d1d5db !important;
   background: #fafafa !important;
+  background-color: #fafafa !important;
 }
 
 .pengaturan-input .p-calendar:not(.p-disabled).p-focus {
   border-color: #F1A124 !important;
   background: #ffffff !important;
+  background-color: #ffffff !important;
   box-shadow: 0 0 0 3px rgba(241, 161, 36, 0.15) !important;
   outline: none !important;
 }
@@ -391,12 +589,15 @@
   font-size: 14px !important;
   color: #1f2937 !important;
   background: transparent !important;
+  background-color: transparent !important;
   box-shadow: none !important;
+  flex: 1 !important;
 }
 
 .pengaturan-input .p-calendar .p-inputtext:focus {
   box-shadow: none !important;
   border: none !important;
+  outline: none !important;
 }
 
 .pengaturan-input .p-calendar .p-inputtext::placeholder {
@@ -407,11 +608,14 @@
   width: 2.5rem !important;
   color: #6b7280 !important;
   background: transparent !important;
+  background-color: transparent !important;
   border-left: 1px solid #e5e7eb !important;
+  flex-shrink: 0 !important;
 }
 
 .pengaturan-input .p-calendar .p-datepicker-trigger:hover {
   background: #f3f4f6 !important;
+  background-color: #f3f4f6 !important;
   color: #374151 !important;
 }
 
@@ -421,11 +625,20 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
   margin-top: 4px !important;
   background: #ffffff !important;
+  background-color: #ffffff !important;
   padding: 12px !important;
+  z-index: 1000 !important;
+}
+
+.pengaturan-input .p-datepicker .p-datepicker-header,
+.pengaturan-input .p-datepicker .p-datepicker-calendar,
+.pengaturan-input .p-datepicker .p-timepicker {
+  background-color: #ffffff !important;
 }
 
 .pengaturan-input .p-datepicker-header {
   background: #ffffff !important;
+  background-color: #ffffff !important;
   border-bottom: 1px solid #e5e7eb !important;
   padding: 12px !important;
   border-radius: 8px 8px 0 0 !important;
@@ -435,28 +648,74 @@
 .pengaturan-input .p-datepicker-next {
   color: #6b7280 !important;
   transition: all 0.2s ease !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border-radius: 4px !important;
+  padding: 4px !important;
 }
 
 .pengaturan-input .p-datepicker-prev:hover,
 .pengaturan-input .p-datepicker-next:hover {
   color: #F1A124 !important;
   background: #f9fafb !important;
+  background-color: #f9fafb !important;
+}
+
+.pengaturan-input .p-datepicker-calendar {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+}
+
+.pengaturan-input .p-datepicker-calendar td {
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
 .pengaturan-input .p-datepicker-calendar td > span {
   border-radius: 6px !important;
   transition: all 0.15s ease !important;
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
 .pengaturan-input .p-datepicker-calendar td > span:not(.p-disabled):not(.p-highlight):hover {
   background: #f9fafb !important;
+  background-color: #f9fafb !important;
   color: #F1A124 !important;
 }
 
 .pengaturan-input .p-datepicker-calendar td > span.p-highlight {
   background: #F1A124 !important;
+  background-color: #F1A124 !important;
   color: #ffffff !important;
   font-weight: 600 !important;
+}
+
+.pengaturan-input .p-timepicker {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  padding: 8px !important;
+  border-top: 1px solid #e5e7eb !important;
+}
+
+.pengaturan-input .p-timepicker * {
+  background-color: #ffffff !important;
+}
+
+.pengaturan-input .p-timepicker-button {
+  background: #f9fafb !important;
+  background-color: #f9fafb !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 4px !important;
+  color: #374151 !important;
+  transition: all 0.2s ease !important;
+}
+
+.pengaturan-input .p-timepicker-button:hover {
+  background: #F1A124 !important;
+  background-color: #F1A124 !important;
+  color: #ffffff !important;
+  border-color: #F1A124 !important;
 }
 
 /* ===== PENGATURAN INPUT NUMBER - Enhanced Focus ===== */
