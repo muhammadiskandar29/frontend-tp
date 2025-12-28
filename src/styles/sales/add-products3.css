@@ -3621,6 +3621,12 @@ html:has(.add-products3-container) {
   margin: 0 auto;
 }
 
+/* Video thumbnail style - persegi panjang seperti thumbnail YouTube */
+.preview-video-wrapper.preview-video-thumbnail {
+  max-width: 400px;
+  padding-bottom: 75%; /* 4:3 aspect ratio - lebih persegi panjang seperti thumbnail */
+}
+
 .preview-video-wrapper iframe {
   position: absolute;
   top: 0;
@@ -3628,6 +3634,14 @@ html:has(.add-products3-container) {
   width: 100%;
   height: 100%;
   border-radius: 8px;
+}
+
+/* Image auto aspect - menyesuaikan bentuk gambar */
+.preview-image-auto-aspect {
+  max-width: 100% !important;
+  height: auto !important;
+  object-fit: contain;
+  display: block;
 }
 
 /* ===== PRICE COMPONENT ===== */

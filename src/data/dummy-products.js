@@ -150,7 +150,7 @@ export const dummyProducts = {
         id: "block-2",
         type: "image",
         data: {
-          src: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=1200&h=600&fit=crop",
+          src: "https://ternakproperti.com/wp-content/uploads/2025/05/foto-buku-1024x1024.jpeg",
           alt: "Buku Panduan Investasi Properti",
           caption: "Buku Panduan Lengkap Investasi Properti - Edisi Terbaru 2024"
         },
@@ -180,6 +180,21 @@ export const dummyProducts = {
       },
       {
         id: "block-5",
+        type: "youtube",
+        data: {
+          items: [
+            {
+              embedUrl: "https://www.youtube.com/watch?v=qD78YeMNY1k"
+            },
+            {
+              embedUrl: "https://www.youtube.com/watch?v=BDYeihxGY1E"
+            }
+          ]
+        },
+        order: 5
+      },
+      {
+        id: "block-6",
         type: "testimoni",
         data: {
           items: [
@@ -205,21 +220,21 @@ export const dummyProducts = {
             }
           ]
         },
-        order: 5
-      },
-      {
-        id: "block-6",
-        type: "form",
-        data: {
-          kategori: "13"
-        },
         order: 6
       },
       {
         id: "block-7",
+        type: "form",
+        data: {
+          kategori: "13"
+        },
+        order: 7
+      },
+      {
+        id: "block-8",
         type: "faq",
         data: {},
-        order: 7
+        order: 8
       }
     ]
   },
@@ -253,7 +268,7 @@ export const dummyProducts = {
         id: "block-2",
         type: "image",
         data: {
-          src: "https://images.unsplash.com/photo-1511578314322-379afb476865?w=1200&h=600&fit=crop",
+          src: "https://ternakproperti.com/wp-content/uploads/2025/07/img-wstp-v4-1024x1024.png",
           alt: "Workshop Investasi Properti",
           caption: "Workshop Investasi Properti - Hands On Learning Experience"
         },
@@ -288,7 +303,10 @@ export const dummyProducts = {
         data: {
           items: [
             {
-              embedUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ"
+              embedUrl: "https://www.youtube.com/watch?v=rKrrFWkbUtw"
+            },
+            {
+              embedUrl: "https://www.youtube.com/watch?v=Hv1llEx_hsA"
             }
           ]
         },

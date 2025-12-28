@@ -220,6 +220,12 @@ Form order **selalu fungsional**:
 - Hanya order yang dikirim ke backend
 - **Form order sudah terintegrasi dan bisa submit ke backend**
 
+#### ⚠️ Important: Product ID untuk Dummy Products
+- Sistem akan **otomatis fetch produk pertama** yang ada di database
+- Menggunakan **ID produk real** tersebut untuk submit order
+- Jika **tidak ada produk di database**, akan tetap menggunakan dummy ID dan backend akan error
+- **Solusi**: Pastikan ada minimal 1 produk real di database, atau buat produk dummy di backend juga
+
 ## 📝 Catatan Penting
 
 1. **Dummy products hanya untuk testing** sebelum backend siap
@@ -239,6 +245,16 @@ Form order **selalu fungsional**:
 - Check network tab di browser
 - Pastikan backend `/api/order` berjalan
 - Check console untuk error message
+
+### Error: "No query results for model [App\Models\Produk] 998"
+**Penyebab**: Backend mencoba validasi produk dengan ID 998 (dummy ID), tapi produk tersebut tidak ada di database.
+
+**Solusi**:
+1. **Pastikan ada produk real di database** - Sistem akan otomatis menggunakan ID produk real tersebut
+2. **Atau buat produk dummy di backend** dengan ID 998, 997, 999
+3. **Atau gunakan produk real yang sudah ada** - Sistem akan otomatis fetch dan gunakan ID-nya
+
+**Cara cek**: Buka console browser, cari log `[PRODUCT] Using valid product ID for dummy product: X`
 
 ### Style tidak sesuai?
 - Pastikan `add-products3.css` sudah di-import
