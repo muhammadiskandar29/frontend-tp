@@ -493,6 +493,34 @@ export default function DaftarPesanan() {
     }
   };
 
+  // Format tanggal hanya menampilkan tanggal tanpa jam (YYYY-MM-DD)
+  const formatDateOnly = useCallback((dateString) => {
+    if (!dateString) return "-";
+    try {
+      // Jika sudah format YYYY-MM-DD, langsung return
+      if (typeof dateString === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        return dateString;
+      }
+      // Jika ada jam, ambil hanya bagian tanggal
+      if (typeof dateString === "string" && dateString.includes(" ")) {
+        return dateString.split(" ")[0];
+      }
+      // Jika ada T (ISO format), ambil hanya bagian tanggal
+      if (typeof dateString === "string" && dateString.includes("T")) {
+        return dateString.split("T")[0];
+      }
+      // Jika Date object, format ke YYYY-MM-DD
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "-";
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    } catch {
+      return "-";
+    }
+  }, []);
+
   // 🔹 Format date range untuk display
   const formatDateRange = useCallback((range) => {
     if (!range || !Array.isArray(range) || range.length !== 2 || !range[0] || !range[1]) {
@@ -795,13 +823,7 @@ export default function DaftarPesanan() {
               <button
                 type="button"
                 onClick={() => setShowFilterModal(true)}
-                className="orders-filter-btn"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "0.35rem",
-                  padding: "0.35rem 0.6rem",
-                }}
+                className="customers-button customers-button--secondary"
                 title="Filter"
               >
                 <Filter size={16} />
@@ -848,18 +870,10 @@ export default function DaftarPesanan() {
                selectedStatusPembayaran.length > 0 ? (
                 <button
                   onClick={handleResetFilters}
-                  className="orders-filter-btn"
-                  style={{
-                    whiteSpace: "nowrap",
-                    padding: "0.55rem 0.75rem",
-                    fontSize: "0.85rem",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "0.35rem",
-                  }}
+                  className="customers-button customers-button--secondary"
                   title="Reset Filter"
                 >
-                  <i className="pi pi-times" style={{ fontSize: "0.85rem" }} />
+                  <i className="pi pi-times" />
                   Reset
                 </button>
               ) : null}
@@ -877,28 +891,9 @@ export default function DaftarPesanan() {
             <button 
               className="customers-button customers-button--primary" 
               onClick={() => setShowAdd(true)}
-              style={{
-                background: "#f1a124",
-                color: "#fff",
-                border: "none",
-                outline: "none",
-              }}
-              onMouseDown={(e) => {
-                e.currentTarget.style.background = "#c85400";
-              }}
-              onMouseUp={(e) => {
-                e.currentTarget.style.background = "#f1a124";
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.outline = "2px solid rgba(255, 108, 0, 0.3)";
-                e.currentTarget.style.outlineOffset = "2px";
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.outline = "none";
-              }}
             >
-                + Tambah Pesanan
-              </button>
+              + Tambah Pesanan
+            </button>
               </div>
           </div>
           <div className="orders-table__wrapper">
@@ -1002,19 +997,13 @@ export default function DaftarPesanan() {
                           </span>
                         </div>
                         <div className="orders-table__cell" data-label="Tanggal">
-                          {order.tanggal || "-"}
+                          {formatDateOnly(order.tanggal)}
                         </div>
                         <div className="orders-table__cell" data-label="Sumber">
                           {order.sumber ? `#${order.sumber}` : "-"}
                         </div>
                         <div className="orders-table__cell" data-label="Waktu Pembayaran">
-                          {order.waktu_pembayaran ? (
-                            <span style={{ fontSize: "0.875rem", color: "#374151", whiteSpace: "nowrap" }}>
-                              {order.waktu_pembayaran}
-                            </span>
-                          ) : (
-                            <span style={{ fontSize: "0.875rem", color: "#9ca3af", fontStyle: "italic" }}>-</span>
-                          )}
+                          {formatDateOnly(order.waktu_pembayaran)}
                         </div>
                         <div className="orders-table__cell" data-label="Metode Bayar">
                           {order.metode_bayar || "-"}
