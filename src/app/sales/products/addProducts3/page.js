@@ -779,7 +779,7 @@ export default function AddProducts3Page() {
 
                 {/* Harga Asli */}
                 <div className="pengaturan-section">
-                  <h3 className="pengaturan-section-title">Harga Asli</h3>
+                  <h3 className="pengaturan-section-title">Harga</h3>
                   
                   <div className="pengaturan-form-group">
                     <label className="pengaturan-label">Harga Asli</label>
