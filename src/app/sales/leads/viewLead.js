@@ -104,17 +104,18 @@ export default function ViewLeadModal({ lead, onClose, onEdit }) {
     }
   };
 
-  const formatPendapatan = (pendapatan) => {
-    if (!pendapatan || pendapatan === "-" || pendapatan === 0) return "-";
-    if (typeof pendapatan === "number") {
-      return `Rp ${pendapatan.toLocaleString("id-ID")}`;
-    }
-    if (typeof pendapatan === "string") {
-      const num = parseInt(pendapatan.replace(/[^\d]/g, ""));
-      if (isNaN(num)) return "-";
-      return `Rp ${num.toLocaleString("id-ID")}`;
-    }
-    return "-";
+  // Helper untuk format pendapatan dalam format readable (range)
+  const formatPendapatan = (value) => {
+    if (!value || value === "-") return "—";
+    const mapping = {
+      "<1jt": "< 1 Juta",
+      "1-5jt": "1 - 5 Juta",
+      "5-10jt": "5 - 10 Juta",
+      "10-15jt": "10 - 15 Juta",
+      "15-20jt": "15 - 20 Juta",
+      ">20jt": "> 20 Juta",
+    };
+    return mapping[value] || value;
   };
 
   const formatDate = (dateString) => {
@@ -252,7 +253,7 @@ export default function ViewLeadModal({ lead, onClose, onEdit }) {
                   <span style={{ flex: 1, color: "var(--dash-text)", fontSize: "0.875rem" }}>{customerPhone}</span>
                 </div>
                 <div style={{ display: "flex", alignItems: "flex-start" }}>
-                  <span style={{ minWidth: "140px", color: "var(--dash-muted)", fontSize: "0.875rem" }}>Pendapatan</span>
+                  <span style={{ minWidth: "140px", color: "var(--dash-muted)", fontSize: "0.875rem" }}>Pendapatan per Bulan</span>
                   <span style={{ marginRight: "0.5rem", color: "var(--dash-muted)", fontSize: "0.875rem" }}>:</span>
                   <span style={{ flex: 1, color: "var(--dash-text)", fontSize: "0.875rem" }}>{formatPendapatan(customerPendapatan)}</span>
                 </div>
