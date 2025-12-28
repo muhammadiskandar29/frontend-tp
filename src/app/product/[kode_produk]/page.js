@@ -201,12 +201,6 @@ export default function ProductPage() {
                     alt={block.data.alt || ""} 
                     className="preview-image-full preview-image-auto-aspect"
                     loading="lazy"
-                    style={{ 
-                      width: "100%", 
-                      height: "auto",
-                      objectFit: "contain",
-                      display: "block"
-                    }}
                   />
                   {block.data.caption && <p className="preview-caption">{block.data.caption}</p>}
                 </div>
