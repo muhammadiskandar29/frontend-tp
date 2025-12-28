@@ -528,12 +528,17 @@ export default function ProductPage() {
                     <span className="rincian-pesanan-total-label">Total</span>
                     <span className="rincian-pesanan-total-price">
                       Rp {formatPrice(
-                        isFormWorkshop 
-                          ? downPayment 
-                          : (isFormBuku ? (parseInt(productData?.harga_promo || productData?.harga_asli || 0) + ongkir) : parseInt(productData?.harga_promo || productData?.harga_asli || 0))
+                        isFormBuku 
+                          ? (parseInt(productData?.harga_promo || productData?.harga_asli || 0) + ongkir) 
+                          : parseInt(productData?.harga_promo || productData?.harga_asli || 0)
                       )}
                     </span>
                   </div>
+                  {isFormWorkshop && downPayment > 0 && (
+                    <div style={{ marginTop: '8px', fontSize: '12px', color: '#6b7280', textAlign: 'center' }}>
+                      Pembayaran pertama: Rp {formatPrice(downPayment)}
+                    </div>
+                  )}
                 </div>
               </section>
 
@@ -663,6 +668,11 @@ export default function ProductPage() {
       return toast.error("Silakan hitung ongkir terlebih dahulu");
     }
 
+    const isWorkshopCheck = isKategoriWorkshop();
+    if (isWorkshopCheck && (!downPayment || downPayment === 0)) {
+      return toast.error("Silakan masukkan jumlah down payment");
+    }
+
     setSubmitting(true);
 
     if (!data) {
@@ -673,9 +683,11 @@ export default function ProductPage() {
     const ongkirValue = isKategoriBuku() ? (ongkir || 0) : 0;
     const downPaymentValue = isKategoriWorkshop() ? (downPayment || 0) : 0;
     
-    const totalHarga = isKategoriWorkshop() 
-      ? downPaymentValue 
-      : (isKategoriBuku() ? hargaProduk + ongkirValue : hargaProduk);
+    // Total harga untuk workshop tetap harga produk penuh (bukan down payment)
+    // Down payment adalah pembayaran pertama, bukan total harga
+    const totalHarga = isKategoriBuku() 
+      ? hargaProduk + ongkirValue 
+      : hargaProduk; // Workshop tetap harga produk penuh
 
     // Untuk dummy products, gunakan validProductId jika ada, jika tidak gunakan data.id
     // Backend akan validasi produk ID, jadi kita perlu ID yang valid dari database
@@ -766,9 +778,10 @@ export default function ProductPage() {
       const hargaProdukFinal = parseInt(data.harga_promo || data.harga_asli || '0', 10);
       const ongkirValueFinal = isKategoriBuku() ? (ongkir || 0) : 0;
       const downPaymentValueFinal = isKategoriWorkshop() ? (downPayment || 0) : 0;
-      const totalHargaFinal = isKategoriWorkshop() 
-        ? downPaymentValueFinal 
-        : (isKategoriBuku() ? hargaProdukFinal + ongkirValueFinal : hargaProdukFinal);
+      // Total harga untuk workshop tetap harga produk penuh (bukan down payment)
+      const totalHargaFinal = isKategoriBuku() 
+        ? hargaProdukFinal + ongkirValueFinal 
+        : hargaProdukFinal; // Workshop tetap harga produk penuh
 
       const pendingOrder = {
         orderId: orderId,
