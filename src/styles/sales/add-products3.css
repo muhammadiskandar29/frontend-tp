@@ -645,10 +645,10 @@ html:has(.add-products3-container) {
 }
 
 .pengaturan-input .p-calendar:not(.p-disabled).p-focus {
-  border-color: #F1A124 !important;
+  border-color: #10b981 !important;
   background: #ffffff !important;
   background-color: #ffffff !important;
-  box-shadow: 0 0 0 3px rgba(241, 161, 36, 0.15) !important;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1) !important;
   outline: none !important;
 }
 
@@ -787,6 +787,12 @@ html:has(.add-products3-container) {
   background: transparent !important;
 }
 
+/* ===== WEEKEND HEADER (Sunday & Saturday) ===== */
+.pengaturan-input .p-datepicker-calendar th:first-child,
+.pengaturan-input .p-datepicker-calendar th:last-child {
+  color: #dc2626 !important;
+}
+
 .pengaturan-input .p-datepicker-calendar td {
   background: transparent !important;
   background-color: transparent !important;
@@ -809,19 +815,43 @@ html:has(.add-products3-container) {
   cursor: pointer !important;
 }
 
+/* ===== WEEKEND DATES (Sunday & Saturday) - RED COLOR ===== */
+.pengaturan-input .p-datepicker-calendar td:first-child > span:not(.p-disabled):not(.p-highlight),
+.pengaturan-input .p-datepicker-calendar td:last-child > span:not(.p-disabled):not(.p-highlight) {
+  color: #dc2626 !important;
+}
+
+.pengaturan-input .p-datepicker-calendar td:first-child > span:not(.p-disabled):not(.p-highlight):hover,
+.pengaturan-input .p-datepicker-calendar td:last-child > span:not(.p-disabled):not(.p-highlight):hover {
+  background: #fee2e2 !important;
+  background-color: #fee2e2 !important;
+  color: #dc2626 !important;
+}
+
+/* ===== REGULAR DATE HOVER ===== */
 .pengaturan-input .p-datepicker-calendar td > span:not(.p-disabled):not(.p-highlight):hover {
   background: #f3f4f6 !important;
   background-color: #f3f4f6 !important;
-  color: #F1A124 !important;
-  transform: scale(1.1) !important;
+  color: #374151 !important;
+  transform: scale(1.05) !important;
 }
 
+/* ===== SELECTED DATE - BLUE BACKGROUND (Like in Image) ===== */
 .pengaturan-input .p-datepicker-calendar td > span.p-highlight {
-  background: #F1A124 !important;
-  background-color: #F1A124 !important;
+  background: #3b82f6 !important;
+  background-color: #3b82f6 !important;
   color: #ffffff !important;
   font-weight: 600 !important;
-  box-shadow: 0 2px 4px rgba(241, 161, 36, 0.3) !important;
+  border: 2px solid #2563eb !important;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3) !important;
+}
+
+/* ===== TODAY DATE - LIGHT GRAY BACKGROUND ===== */
+.pengaturan-input .p-datepicker-calendar td > span.p-datepicker-day-today:not(.p-highlight) {
+  background: #f3f4f6 !important;
+  background-color: #f3f4f6 !important;
+  color: #374151 !important;
+  font-weight: 600 !important;
 }
 
 .pengaturan-input .p-datepicker-calendar td > span.p-disabled {
@@ -894,8 +924,8 @@ html:has(.add-products3-container) {
   border-top: 1px solid #e5e7eb !important;
   display: flex !important;
   gap: 8px !important;
-  justify-content: flex-end !important;
-  background: #f9fafb !important;
+  justify-content: flex-start !important;
+  background: #ffffff !important;
   border-radius: 0 0 12px 12px !important;
 }
 
@@ -903,32 +933,47 @@ html:has(.add-products3-container) {
   padding: 8px 16px !important;
   font-size: 13px !important;
   font-weight: 500 !important;
-  border-radius: 6px !important;
+  border-radius: 8px !important;
   transition: all 0.2s ease !important;
   border: 1px solid #e5e7eb !important;
+  min-height: 36px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .pengaturan-input .p-datepicker-buttonbar .p-button.p-button-text {
-  background: transparent !important;
+  background: #ffffff !important;
   color: #6b7280 !important;
+  border-color: #e5e7eb !important;
 }
 
 .pengaturan-input .p-datepicker-buttonbar .p-button.p-button-text:hover {
-  background: #f3f4f6 !important;
+  background: #f9fafb !important;
   color: #374151 !important;
+  border-color: #d1d5db !important;
+  transform: translateY(-1px) !important;
+}
+
+.pengaturan-input .p-datepicker-buttonbar .p-button.p-button-text:active {
+  transform: translateY(0) !important;
 }
 
 .pengaturan-input .p-datepicker-buttonbar .p-button.p-button-primary {
-  background: #F1A124 !important;
-  border-color: #F1A124 !important;
+  background: #3b82f6 !important;
+  border-color: #3b82f6 !important;
   color: #ffffff !important;
 }
 
 .pengaturan-input .p-datepicker-buttonbar .p-button.p-button-primary:hover {
-  background: #d68910 !important;
-  border-color: #d68910 !important;
+  background: #2563eb !important;
+  border-color: #2563eb !important;
   transform: translateY(-1px) !important;
-  box-shadow: 0 2px 4px rgba(241, 161, 36, 0.3) !important;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3) !important;
+}
+
+.pengaturan-input .p-datepicker-buttonbar .p-button.p-button-primary:active {
+  transform: translateY(0) !important;
 }
 
 /* ===== PENGATURAN INPUT NUMBER - Enhanced Focus ===== */
