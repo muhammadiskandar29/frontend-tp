@@ -83,8 +83,8 @@
 }
 
 .sidebar-tab.active {
-  color: #3b82f6;
-  border-bottom-color: #3b82f6;
+  color: #F1A124;
+  border-bottom-color: #F1A124;
   background: #f9fafb;
 }
 
@@ -100,9 +100,72 @@
 }
 
 .pengaturan-content {
-  padding: 20px 0;
+  padding: 20px;
   color: #6b7280;
   font-size: 14px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.pengaturan-section {
+  margin-bottom: 32px;
+}
+
+.pengaturan-section:last-child {
+  margin-bottom: 0;
+}
+
+.pengaturan-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 4px 0;
+}
+
+.pengaturan-section-description {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0 0 20px 0;
+}
+
+.pengaturan-form-group {
+  margin-bottom: 20px;
+}
+
+.pengaturan-form-group:last-child {
+  margin-bottom: 0;
+}
+
+.pengaturan-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.pengaturan-label .required {
+  color: #ef4444;
+}
+
+.pengaturan-input {
+  width: 100%;
+}
+
+.pengaturan-input .p-inputtext,
+.pengaturan-input .p-dropdown,
+.pengaturan-input .p-calendar,
+.pengaturan-input .p-inputnumber,
+.pengaturan-input .p-multiselect {
+  width: 100%;
+}
+
+.pengaturan-hint {
+  display: block;
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 6px;
+  margin-bottom: 0;
 }
 
 /* Custom scrollbar untuk sidebar */
@@ -135,7 +198,7 @@
 .add-component-btn {
   width: 100%;
   padding: 16px;
-  background: #3b82f6;
+  background: #F1A124;
   color: #ffffff;
   border: none;
   border-radius: 8px;
@@ -147,13 +210,13 @@
   justify-content: center;
   gap: 8px;
   transition: all 0.2s;
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+  box-shadow: 0 2px 4px rgba(241, 161, 36, 0.2);
   margin-top: auto;
 }
 
 .add-component-btn:hover {
-  background: #2563eb;
-  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+  background: #d68910;
+  box-shadow: 0 4px 8px rgba(241, 161, 36, 0.3);
   transform: translateY(-1px);
 }
 

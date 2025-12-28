@@ -1,12 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
   Type, Image as ImageIcon, FileText, List, MessageSquare, 
   HelpCircle, Image as SliderIcon, Square, Youtube, Link as LinkIcon,
   MapPin, Film, Minus, Code, X, ArrowLeft
 } from "lucide-react";
+import { InputText } from "primereact/inputtext";
+import { Dropdown } from "primereact/dropdown";
+import { Calendar } from "primereact/calendar";
+import { InputNumber } from "primereact/inputnumber";
+import { MultiSelect } from "primereact/multiselect";
 import {
   TextComponent,
   ImageComponent,
@@ -74,6 +79,21 @@ export default function AddProducts3Page() {
   const [testimoniIndices, setTestimoniIndices] = useState({});
   const [productKategori, setProductKategori] = useState(null); // Untuk menentukan kategori produk
   const [activeTab, setActiveTab] = useState("konten"); // State untuk tab aktif
+  
+  // State untuk form pengaturan
+  const [pengaturanForm, setPengaturanForm] = useState({
+    nama: "",
+    kategori: null,
+    kode: "",
+    url: "",
+    harga_promo: null,
+    tanggal_event: null,
+    assign: []
+  });
+  
+  // State untuk options dropdown
+  const [kategoriOptions, setKategoriOptions] = useState([]);
+  const [userOptions, setUserOptions] = useState([]);
 
   // Default data untuk setiap komponen
   const getDefaultData = (componentId) => {
@@ -583,7 +603,128 @@ export default function AddProducts3Page() {
               </>
             ) : (
               <div className="pengaturan-content">
-                {/* Konten Pengaturan akan diisi nanti */}
+                {/* Informasi Dasar */}
+                <div className="pengaturan-section">
+                  <h3 className="pengaturan-section-title">Informasi Dasar</h3>
+                  <p className="pengaturan-section-description">Data utama produk yang akan ditampilkan</p>
+                  
+                  <div className="pengaturan-form-group">
+                    <label className="pengaturan-label">
+                      Nama Produk <span className="required">*</span>
+                    </label>
+                    <InputText
+                      className="pengaturan-input"
+                      value={pengaturanForm.nama}
+                      onChange={(e) => handlePengaturanChange("nama", e.target.value)}
+                      placeholder="Masukkan nama produk"
+                    />
+                  </div>
+
+                  <div className="pengaturan-form-group">
+                    <label className="pengaturan-label">
+                      Kategori <span className="required">*</span>
+                    </label>
+                    <Dropdown
+                      className="pengaturan-input"
+                      value={pengaturanForm.kategori}
+                      options={kategoriOptions}
+                      optionLabel="label"
+                      optionValue="value"
+                      onChange={(e) => {
+                        const selectedValue = e.value;
+                        const finalValue = selectedValue !== null && selectedValue !== undefined && selectedValue !== ""
+                          ? String(selectedValue) 
+                          : null;
+                        handlePengaturanChange("kategori", finalValue);
+                        setProductKategori(finalValue ? Number(finalValue) : null);
+                      }}
+                      placeholder="Pilih Kategori"
+                      showClear
+                      filter
+                      filterPlaceholder="Cari kategori..."
+                    />
+                    {!pengaturanForm.kategori && (
+                      <small className="pengaturan-hint" style={{ color: "#ef4444" }}>
+                        Kategori wajib dipilih
+                      </small>
+                    )}
+                  </div>
+
+                  <div className="pengaturan-form-group">
+                    <label className="pengaturan-label">Kode Produk</label>
+                    <InputText
+                      className="pengaturan-input"
+                      value={pengaturanForm.kode}
+                      onChange={(e) => handlePengaturanChange("kode", e.target.value)}
+                      placeholder="Masukkan kode produk"
+                    />
+                  </div>
+
+                  <div className="pengaturan-form-group">
+                    <label className="pengaturan-label">URL</label>
+                    <InputText
+                      className="pengaturan-input"
+                      value={pengaturanForm.url}
+                      onChange={(e) => handlePengaturanChange("url", e.target.value)}
+                      placeholder="Masukkan URL produk"
+                    />
+                  </div>
+                </div>
+
+                {/* Harga Asli */}
+                <div className="pengaturan-section">
+                  <h3 className="pengaturan-section-title">Harga Asli</h3>
+                  
+                  <div className="pengaturan-form-group">
+                    <label className="pengaturan-label">
+                      Harga Promo <span className="required">*</span>
+                    </label>
+                    <InputNumber
+                      className="pengaturan-input"
+                      value={pengaturanForm.harga_promo}
+                      onValueChange={(e) => handlePengaturanChange("harga_promo", e.value)}
+                      placeholder="Masukkan harga promo"
+                      mode="currency"
+                      currency="IDR"
+                      locale="id-ID"
+                      useGrouping={true}
+                    />
+                  </div>
+
+                  <div className="pengaturan-form-group">
+                    <label className="pengaturan-label">Tanggal Event</label>
+                    <Calendar
+                      className="pengaturan-input"
+                      value={pengaturanForm.tanggal_event}
+                      onChange={(e) => handlePengaturanChange("tanggal_event", e.value)}
+                      placeholder="Pilih tanggal event"
+                      showIcon
+                      dateFormat="dd/mm/yy"
+                      showButtonBar
+                    />
+                  </div>
+                </div>
+
+                {/* Penanggung Jawab */}
+                <div className="pengaturan-section">
+                  <div className="pengaturan-form-group">
+                    <label className="pengaturan-label">
+                      Penanggung Jawab (Assign By) <span className="required">*</span>
+                    </label>
+                    <MultiSelect
+                      className="pengaturan-input"
+                      value={pengaturanForm.assign}
+                      options={userOptions}
+                      onChange={(e) => handlePengaturanChange("assign", e.value || [])}
+                      placeholder="Pilih penanggung jawab produk"
+                      display="chip"
+                      showClear
+                      filter
+                      filterPlaceholder="Cari user..."
+                    />
+                    <p className="pengaturan-hint">Pilih user yang bertanggung jawab menangani produk ini</p>
+                  </div>
+                </div>
               </div>
             )}
           </div>
