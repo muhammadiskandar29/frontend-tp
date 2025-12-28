@@ -439,7 +439,7 @@ export default function AddProducts3Page() {
                 </div>
                 
                 {/* Form Ongkir - Kategori Buku (13) */}
-                {isFormBuku && (
+            {isFormBuku && (
                   <div className="compact-field">
                     <OngkirCalculator
                       onSelectOngkir={(info) => {
@@ -453,11 +453,11 @@ export default function AddProducts3Page() {
                       defaultCourier="jne"
                       compact={true}
                     />
-                  </div>
+                    </div>
                 )}
 
                 {/* Form Down Payment - Kategori Workshop (15) */}
-                {isFormWorkshop && (
+            {isFormWorkshop && (
                   <div className="compact-field">
                     <label className="compact-label">
                       Jumlah Down Payment <span className="required">*</span>
@@ -465,8 +465,8 @@ export default function AddProducts3Page() {
                     <input type="text" placeholder="Rp 0" className="compact-input" />
                   </div>
                 )}
-              </div>
-            </section>
+                </div>
+              </section>
 
             {/* Rincian Pesanan - General untuk semua kategori */}
             <section className="preview-form-section rincian-pesanan-section" aria-label="Rincian Pesanan">
@@ -552,9 +552,9 @@ export default function AddProducts3Page() {
             <h2 className="special-offer-title">Special Offer!</h2>
             <div className="special-offer-price">
               {hargaAsli > 0 && hargaAsli > hargaPromo && (
-                <span className="price-old" aria-label="Harga lama">
+              <span className="price-old" aria-label="Harga lama">
                   Rp {formatHarga(hargaAsli)}
-                </span>
+              </span>
               )}
               <span className="price-new" itemProp="price" content={hargaPromo}>
                 Rp {formatHarga(hargaPromo)}
@@ -922,21 +922,21 @@ export default function AddProducts3Page() {
           <div className="sidebar-content">
             {activeTab === "konten" ? (
               <>
-                {/* Komponen yang sudah ditambahkan */}
-                {blocks.map((block, index) => (
-                  <div key={block.id} className="sidebar-component-item">
-                    {renderComponent(block, index)}
-                  </div>
-                ))}
-                
-                {/* Button Tambah Komponen Baru - Selalu di bawah komponen terakhir */}
-                <button
-                  className="add-component-btn"
-                  onClick={() => setShowComponentModal(true)}
-                >
-                  <span className="add-component-icon">+</span>
-                  <span className="add-component-text">Tambah Komponen Baru</span>
-                </button>
+            {/* Komponen yang sudah ditambahkan */}
+            {blocks.map((block, index) => (
+              <div key={block.id} className="sidebar-component-item">
+                {renderComponent(block, index)}
+              </div>
+            ))}
+            
+            {/* Button Tambah Komponen Baru - Selalu di bawah komponen terakhir */}
+            <button
+              className="add-component-btn"
+              onClick={() => setShowComponentModal(true)}
+            >
+              <span className="add-component-icon">+</span>
+              <span className="add-component-text">Tambah Komponen Baru</span>
+            </button>
               </>
             ) : (
               <div className="pengaturan-content">
@@ -1056,7 +1056,7 @@ export default function AddProducts3Page() {
                       showIcon
                       showTime
                       hourFormat="24"
-                      dateFormat="dd/mm/yyyy"
+                      dateFormat="dd/mm/yy HH:mm"
                       timeOnly={false}
                       showSeconds={false}
                       showButtonBar
