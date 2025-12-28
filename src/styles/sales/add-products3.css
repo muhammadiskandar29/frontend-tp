@@ -1,64 +1,40 @@
 /* ===== ADD PRODUCTS 3 - PAGE BUILDER ===== */
 
-/* ===== GLOBAL PRIMEREACT OVERRIDE FOR PENGATURAN TAB ===== */
-/* Styling sama seperti di addProducts - menggunakan form-input class */
-.pengaturan-content .form-input.p-dropdown,
-.pengaturan-content .form-input.p-multiselect,
-.pengaturan-content .form-input.p-calendar,
-.pengaturan-content .form-input.p-inputnumber,
-.pengaturan-content .w-full.form-input.p-dropdown,
-.pengaturan-content .w-full.form-input.p-multiselect,
-.pengaturan-content .w-full.form-input.p-calendar,
-.pengaturan-content .w-full.form-input.p-inputnumber {
-  width: 100% !important;
-  background: #ffffff !important;
-  background-color: #ffffff !important;
-  border: 1.5px solid #e5e7eb !important;
-  border-radius: 10px !important;
-  transition: all 0.2s ease !important;
+/* ===== SIMPLE DROPDOWN STYLING ===== */
+/* Simple styling untuk dropdown dan multiselect di pengaturan */
+.pengaturan-content .p-dropdown,
+.pengaturan-content .p-multiselect {
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
 }
 
-.pengaturan-content .form-input.p-dropdown:not(.p-disabled):hover,
-.pengaturan-content .form-input.p-multiselect:not(.p-disabled):hover,
-.pengaturan-content .form-input.p-calendar:not(.p-disabled):hover,
-.pengaturan-content .w-full.form-input.p-dropdown:not(.p-disabled):hover,
-.pengaturan-content .w-full.form-input.p-multiselect:not(.p-disabled):hover,
-.pengaturan-content .w-full.form-input.p-calendar:not(.p-disabled):hover {
+.pengaturan-content .p-dropdown.p-focus,
+.pengaturan-content .p-multiselect.p-focus {
   border-color: #F1A124 !important;
 }
 
-.pengaturan-content .form-input.p-dropdown:not(.p-disabled).p-focus,
-.pengaturan-content .form-input.p-multiselect:not(.p-disabled).p-focus,
-.pengaturan-content .form-input.p-calendar:not(.p-disabled).p-focus,
-.pengaturan-content .w-full.form-input.p-dropdown:not(.p-disabled).p-focus,
-.pengaturan-content .w-full.form-input.p-multiselect:not(.p-disabled).p-focus,
-.pengaturan-content .w-full.form-input.p-calendar:not(.p-disabled).p-focus {
-  border-color: #F1A124 !important;
-  box-shadow: 0 0 0 4px rgba(241, 161, 36, 0.1) !important;
-  outline: none !important;
+.pengaturan-content .p-dropdown-panel,
+.pengaturan-content .p-multiselect-panel {
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
 }
 
-.pengaturan-content .form-input.p-dropdown .p-dropdown-label-container,
-.pengaturan-content .form-input.p-multiselect .p-multiselect-label-container,
-.pengaturan-content .form-input.p-calendar .p-inputtext-wrapper,
-.pengaturan-content .w-full.form-input.p-dropdown .p-dropdown-label-container,
-.pengaturan-content .w-full.form-input.p-multiselect .p-multiselect-label-container,
-.pengaturan-content .w-full.form-input.p-calendar .p-inputtext-wrapper {
-  background: #ffffff !important;
-  background-color: #ffffff !important;
+.pengaturan-content .p-dropdown-item,
+.pengaturan-content .p-multiselect-item {
+  color: #3b82f6 !important;
+  padding: 8px 12px !important;
 }
 
-.pengaturan-content .form-input.p-dropdown-panel,
-.pengaturan-content .form-input.p-multiselect-panel,
-.pengaturan-content .form-input.p-datepicker,
-.pengaturan-content .w-full.form-input ~ .p-dropdown-panel,
-.pengaturan-content .w-full.form-input ~ .p-multiselect-panel,
-.pengaturan-content .w-full.form-input ~ .p-datepicker {
-  background: #ffffff !important;
-  background-color: #ffffff !important;
-  border: 1.5px solid #e5e7eb !important;
-  border-radius: 10px !important;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
+.pengaturan-content .p-dropdown-item:hover,
+.pengaturan-content .p-multiselect-item:hover {
+  background: #f3f4f6 !important;
+}
+
+.pengaturan-content .p-dropdown-item.p-highlight,
+.pengaturan-content .p-multiselect-item.p-highlight {
+  background: #f3f4f6 !important;
+  color: #3b82f6 !important;
 }
 
 /* ===== BODY & HTML OVERFLOW FIX ===== */
@@ -881,106 +857,7 @@ html:has(.add-products3-container) {
 .pengaturan-content .form-input.p-calendar:not(.p-disabled).p-focus,
 .pengaturan-content .w-full.form-input.p-calendar:not(.p-disabled).p-focus {
   border-color: #F1A124 !important;
-  box-shadow: 0 0 0 4px rgba(241, 161, 36, 0.1) !important;
   outline: none !important;
-}
-
-.pengaturan-content .form-input.p-dropdown .p-dropdown-label,
-.pengaturan-content .w-full.form-input.p-dropdown .p-dropdown-label,
-.pengaturan-content .form-input.p-multiselect .p-multiselect-label,
-.pengaturan-content .w-full.form-input.p-multiselect .p-multiselect-label {
-  padding: 0 !important;
-  font-size: 0.95rem !important;
-  color: #111827 !important;
-}
-
-.pengaturan-content .form-input.p-dropdown .p-dropdown-label-container,
-.pengaturan-content .w-full.form-input.p-dropdown .p-dropdown-label-container,
-.pengaturan-content .form-input.p-multiselect .p-multiselect-label-container,
-.pengaturan-content .w-full.form-input.p-multiselect .p-multiselect-label-container {
-  padding: 0.65rem 1rem !important;
-}
-
-/* Panel Styling - Same as addProducts */
-.pengaturan-content .p-dropdown-panel,
-.pengaturan-content .p-multiselect-panel,
-.pengaturan-content .p-datepicker,
-.pengaturan-content .p-datepicker-calendar-container {
-  background: #ffffff !important;
-  border: 1.5px solid #e5e7eb !important;
-  border-radius: 10px !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
-  margin-top: 0.25rem !important;
-}
-
-.pengaturan-content .p-dropdown-item,
-.pengaturan-content .p-multiselect-item,
-.pengaturan-content .p-datepicker-day {
-  color: #111827 !important;
-  padding: 0.65rem 1rem !important;
-  border-radius: 6px !important;
-  margin: 0.15rem 0.5rem !important;
-  transition: all 0.15s ease !important;
-}
-
-.pengaturan-content .p-dropdown-item:hover,
-.pengaturan-content .p-multiselect-item:hover {
-  background: #f9fafb !important;
-  color: #111827 !important;
-}
-
-.pengaturan-content .p-highlight,
-.pengaturan-content .p-dropdown-item.p-highlight,
-.pengaturan-content .p-multiselect-item.p-highlight {
-  background: #F1A124 !important;
-  color: white !important;
-}
-
-/* MultiSelect Chip/Token - Same as addProducts */
-.pengaturan-content .form-input.p-multiselect .p-multiselect-token,
-.pengaturan-content .w-full.form-input.p-multiselect .p-multiselect-token,
-.pengaturan-content .form-input.p-multiselect .p-multiselect-chip,
-.pengaturan-content .w-full.form-input.p-multiselect .p-multiselect-chip,
-.pengaturan-content .p-multiselect-token {
-  background: #F1A124 !important;
-  color: #fff !important;
-  border-radius: 6px !important;
-  padding: 0.25rem 0.5rem !important;
-  margin: 0.15rem !important;
-}
-
-.pengaturan-content .form-input.p-multiselect .p-multiselect-token-icon,
-.pengaturan-content .w-full.form-input.p-multiselect .p-multiselect-token-icon,
-.pengaturan-content .form-input.p-multiselect .p-multiselect-chip-icon,
-.pengaturan-content .w-full.form-input.p-multiselect .p-multiselect-chip-icon,
-.pengaturan-content .p-multiselect-token-icon {
-  color: #fff !important;
-}
-
-/* Form Field Group MultiSelect - Same as addProducts */
-.pengaturan-content .form-field-group .p-multiselect {
-  border-radius: 10px;
-}
-
-.pengaturan-content .form-field-group .p-multiselect-panel {
-  border-radius: 10px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-}
-
-.pengaturan-content .form-field-group .p-multiselect-item {
-  padding: 10px 14px;
-}
-
-.pengaturan-content .form-field-group .p-multiselect-token {
-  background: linear-gradient(135deg, #F1A124 0%, #e8940f 100%);
-  color: #fff;
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-weight: 500;
-}
-
-.pengaturan-content .form-field-group .p-multiselect-token-icon {
-  color: #fff;
 }
 
 /* Custom scrollbar untuk sidebar */
