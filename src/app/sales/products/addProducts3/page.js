@@ -12,6 +12,7 @@ import { Dropdown } from "primereact/dropdown";
 import { Calendar } from "primereact/calendar";
 import { InputNumber } from "primereact/inputnumber";
 import { MultiSelect } from "primereact/multiselect";
+import OngkirCalculator from "@/components/OngkirCalculator";
 import {
   TextComponent,
   ImageComponent,
@@ -31,6 +32,7 @@ import {
   PriceComponent,
 } from './components';
 import "@/styles/sales/add-products3.css";
+import "@/styles/ongkir.css";
 
 // Komponen yang tersedia sesuai gambar
 const COMPONENT_CATEGORIES = {
@@ -374,9 +376,9 @@ export default function AddProducts3Page() {
           </ul>
         );
       case "form":
-        const formKategori = block.data.kategori;
-        const isFormBuku = formKategori === 13;
-        const isFormWorkshop = formKategori === 15;
+        // Gunakan productKategori dari state pengaturan, bukan dari block.data.kategori
+        const isFormBuku = productKategori === 13;
+        const isFormWorkshop = productKategori === 15;
         
         return (
           <>
@@ -406,67 +408,36 @@ export default function AddProducts3Page() {
                   <label className="compact-label">Alamat <span className="required">*</span></label>
                   <textarea placeholder="Contoh: Jl. Peta Utara 1, No 62 RT 01/07" className="compact-input compact-textarea" rows={3} />
                 </div>
+                
+                {/* Form Ongkir - Kategori Buku (13) */}
                 {isFormBuku && (
-                  <div className="form-info-box">
-                    <p className="text-sm text-gray-600">Kalkulator ongkir akan muncul di sini</p>
+                  <div className="compact-field">
+                    <OngkirCalculator
+                      onSelectOngkir={(info) => {
+                        // Handle ongkir selection if needed
+                        console.log('Ongkir selected:', info);
+                      }}
+                      onAddressChange={(address) => {
+                        // Handle address change if needed
+                        console.log('Address changed:', address);
+                      }}
+                      defaultCourier="jne"
+                      compact={true}
+                    />
                   </div>
                 )}
-              </div>
-            </section>
 
-            {/* Rincian Pesanan - Kategori Buku */}
-            {isFormBuku && (
-              <section className="preview-form-section compact-form-section" aria-label="Rincian Pesanan">
-                <div className="compact-form-card">
-                  <div style={{ marginBottom: "16px" }}>
-                    <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#111827', margin: 0 }}>
-                      Rincian Pesanan
-                    </h3>
-                  </div>
-                  <div className="compact-field">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '8px 0' }}>
-                      <span className="compact-label" style={{ margin: 0 }}>Produk</span>
-                      <span style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}>Rp 0</span>
-                    </div>
-                  </div>
-                  <div className="compact-field">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '8px 0' }}>
-                      <span className="compact-label" style={{ margin: 0 }}>Ongkir</span>
-                      <span style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}>Rp 0</span>
-                    </div>
-                  </div>
-                  <div style={{ height: '1px', background: '#e5e7eb', margin: '12px 0' }}></div>
-                  <div className="compact-field">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '8px 0' }}>
-                      <span className="compact-label" style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#111827' }}>Total Pesanan</span>
-                      <span style={{ fontSize: '18px', fontWeight: 700, color: '#111827' }}>Rp 0</span>
-                    </div>
-                  </div>
-                </div>
-              </section>
-            )}
-
-            {/* Down Payment - Kategori Workshop */}
-            {isFormWorkshop && (
-              <section className="preview-form-section compact-form-section" aria-label="Down Payment">
-                <div className="compact-form-card">
-                  <div style={{ marginBottom: "16px" }}>
-                    <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#111827', margin: 0 }}>
-                      Masukan Jumlah Down Payment
-                    </h3>
-                    <p style={{ fontSize: '14px', color: '#6b7280', margin: '4px 0 0' }}>
-                      Masukkan jumlah uang muka yang ingin Anda bayar
-                    </p>
-                  </div>
+                {/* Form Down Payment - Kategori Workshop (15) */}
+                {isFormWorkshop && (
                   <div className="compact-field">
                     <label className="compact-label">
                       Jumlah Down Payment <span className="required">*</span>
                     </label>
                     <input type="text" placeholder="Rp 0" className="compact-input" />
                   </div>
-                </div>
-              </section>
-            )}
+                )}
+              </div>
+            </section>
 
             {/* Rincian Pesanan - General untuk semua kategori */}
             <section className="preview-form-section rincian-pesanan-section" aria-label="Rincian Pesanan">
