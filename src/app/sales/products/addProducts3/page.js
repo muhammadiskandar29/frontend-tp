@@ -608,6 +608,7 @@ export default function AddProducts3Page() {
       // Auto-generate kode dan URL dari nama
       const kode = generateKode(value);
       const url = kode ? `/${kode}` : "";
+      console.log("[AUTO-GENERATE] Nama:", value, "→ Kode:", kode, "→ URL:", url);
       setPengaturanForm((prev) => ({ 
         ...prev, 
         nama: value,
@@ -762,8 +763,7 @@ export default function AddProducts3Page() {
                     <label className="pengaturan-label">Kode Produk</label>
                     <InputText
                       className="pengaturan-input"
-                      value={pengaturanForm.kode}
-                      onChange={(e) => handlePengaturanChange("kode", e.target.value)}
+                      value={pengaturanForm.kode || ""}
                       placeholder="Otomatis dari nama produk"
                       readOnly
                       style={{ background: "#f9fafb", cursor: "not-allowed" }}
@@ -775,8 +775,7 @@ export default function AddProducts3Page() {
                     <label className="pengaturan-label">URL</label>
                     <InputText
                       className="pengaturan-input"
-                      value={pengaturanForm.url}
-                      onChange={(e) => handlePengaturanChange("url", e.target.value)}
+                      value={pengaturanForm.url || ""}
                       placeholder="Otomatis dari kode produk"
                       readOnly
                       style={{ background: "#f9fafb", cursor: "not-allowed" }}
