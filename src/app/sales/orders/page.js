@@ -242,6 +242,7 @@ export default function DaftarPesanan() {
       // Add search parameter (gunakan debouncedSearch untuk konsistensi)
       if (debouncedSearch && debouncedSearch.trim()) {
         params.append("search", debouncedSearch.trim());
+        console.log("🔍 Search parameter added:", debouncedSearch.trim());
       }
 
       // Add date range filter (tanggal orderan)
@@ -276,7 +277,10 @@ export default function DaftarPesanan() {
         });
       }
 
-      const res = await fetch(`/api/sales/order?${params.toString()}`, {
+      const url = `/api/sales/order?${params.toString()}`;
+      console.log("📡 Fetching orders with URL:", url);
+      
+      const res = await fetch(url, {
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
@@ -416,24 +420,27 @@ export default function DaftarPesanan() {
     setPage(1);
     setOrders([]);
     setHasMore(true);
+    fetchOrders(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Hanya sekali saat mount
 
-  // Reset to page 1 when search changes (sama seperti customers)
+  // Reset to page 1 when search or filters change
   useEffect(() => {
+    console.log("🔄 Search/filter changed, resetting to page 1. Search:", debouncedSearch);
     setPage(1);
     setOrders([]);
     setHasMore(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch]); // Reset when search changes
+  }, [debouncedSearch, dateRange, selectedStatusOrder, selectedStatusPembayaran, selectedProducts]); // Reset when search or filters change
 
-  // Fetch data saat page atau debouncedSearch berubah
+  // Fetch data saat page atau filters berubah
   useEffect(() => {
+    console.log("📥 Fetching orders - Page:", page, "Search:", debouncedSearch);
     if (page > 0) {
       fetchOrders(page);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, debouncedSearch]); // Depend pada page dan debouncedSearch
+  }, [page, debouncedSearch, dateRange, selectedStatusOrder, selectedStatusPembayaran, selectedProducts]); // Depend pada page dan semua filters
 
   // Scroll to top and prevent body scroll when filter modal opens
   useEffect(() => {
