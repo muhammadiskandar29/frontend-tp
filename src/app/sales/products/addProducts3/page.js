@@ -860,8 +860,15 @@ export default function AddProducts3Page() {
         {/* Right Canvas - Preview */}
         <div className="page-builder-canvas">
           <div className="canvas-wrapper">
+            {/* Nama Produk - Selalu muncul di paling atas, tidak bisa dipindahkan */}
+            {pengaturanForm.nama && (
+              <div className="canvas-preview-block canvas-product-title-block">
+                <h1 className="preview-product-title">{pengaturanForm.nama}</h1>
+              </div>
+            )}
+            
             {/* Placeholder jika belum ada komponen */}
-            {blocks.length === 0 && (
+            {blocks.length === 0 && !pengaturanForm.nama && (
               <div className="canvas-empty">
                 <p>Klik "Tambah Komponen Baru" untuk memulai</p>
               </div>
