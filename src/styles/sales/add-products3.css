@@ -82,8 +82,8 @@
 }
 
 .pengaturan-content .p-dropdown .p-dropdown-clear-icon {
-  width: 2rem !important;
-  height: 2rem !important;
+  width: 1.25rem !important;
+  height: 1.25rem !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -91,6 +91,7 @@
   border-radius: 50% !important;
   transition: all 0.2s ease !important;
   margin-right: 0.5rem !important;
+  font-size: 0.75rem !important;
 }
 
 .pengaturan-content .p-dropdown .p-dropdown-clear-icon:hover {
@@ -319,8 +320,8 @@
 }
 
 .pengaturan-content .p-multiselect .p-multiselect-clear-icon {
-  width: 1.5rem !important;
-  height: 1.5rem !important;
+  width: 1.25rem !important;
+  height: 1.25rem !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -328,7 +329,7 @@
   border-radius: 50% !important;
   transition: all 0.2s ease !important;
   margin-right: 0.5rem !important;
-  font-size: 0.875rem !important;
+  font-size: 0.75rem !important;
 }
 
 .pengaturan-content .p-multiselect .p-multiselect-clear-icon:hover {
