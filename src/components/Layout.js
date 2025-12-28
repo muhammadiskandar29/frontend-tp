@@ -133,7 +133,7 @@ export default function Layout({ children, title, description, aboveContent = nu
 
     if (!token || !userData || isTokenExpired()) {
       localStorage.clear();
-      toast.error("🚫 Anda belum login!");
+      toast.error("Anda belum login!");
       setIsAuthorized(false);
       // Don't return null immediately, let redirect happen
       setTimeout(() => router.replace("/login"), 1000);
