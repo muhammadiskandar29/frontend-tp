@@ -967,6 +967,7 @@ html:has(.add-products3-container) {
   margin: 0;
   line-height: 1.2;
   word-wrap: break-word;
+  text-align: center;
 }
 
 /* FAQ Preview Styles */
@@ -2088,8 +2089,11 @@ html:has(.add-products3-container) {
 
 .preview-image-full {
   width: 100%;
+  max-width: 600px;
   height: auto;
   border-radius: 8px;
+  margin: 0 auto;
+  display: block;
 }
 
 .preview-caption {
@@ -2159,6 +2163,7 @@ html:has(.add-products3-container) {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
+  gap: 12px;
   transition: box-shadow 0.3s ease;
 }
 
@@ -2170,7 +2175,7 @@ html:has(.add-products3-container) {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 0;
 }
 
 .testi-avatar-wrapper-new {
@@ -2179,16 +2184,17 @@ html:has(.add-products3-container) {
 }
 
 .testi-avatar-new {
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid #e5e7eb;
+  display: block;
 }
 
 .testi-avatar-placeholder-new {
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
@@ -2196,27 +2202,30 @@ html:has(.add-products3-container) {
   justify-content: center;
   color: white;
   font-weight: 700;
-  font-size: 18px;
+  font-size: 20px;
   border: 2px solid #e5e7eb;
 }
 
 .testi-info-new {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .testi-name-new {
   font-weight: 600;
   font-size: 15px;
   color: #1f2937;
-  margin-bottom: 6px;
   line-height: 1.3;
+  margin: 0;
 }
 
 .testi-stars-new {
-  margin-bottom: 12px;
   display: flex;
   gap: 2px;
+  margin: 0;
 }
 
 .testi-stars-new .star-new {
@@ -2229,7 +2238,7 @@ html:has(.add-products3-container) {
   color: #1f2937;
   line-height: 1.6;
   font-size: 14px;
-  flex: 1;
+  margin-top: 8px;
 }
 
 /* Navigation Buttons - New */
@@ -2608,10 +2617,12 @@ html:has(.add-products3-container) {
 
 .preview-video-wrapper {
   width: 100%;
+  max-width: 600px;
   position: relative;
   padding-bottom: 56.25%; /* 16:9 aspect ratio */
   height: 0;
   overflow: hidden;
+  margin: 0 auto;
 }
 
 .preview-video-wrapper iframe {
@@ -2803,10 +2814,22 @@ html:has(.add-products3-container) {
 .preview-list li {
   padding: 12px 16px;
   margin-bottom: 8px;
-  background: #f0f9ff;
-  border-left: 4px solid #3b82f6;
+  background: #f9fafb;
+  border-left: 4px solid #e5e7eb;
   border-radius: 6px;
-  color: #1e40af;
+  color: #374151;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.preview-list li::before {
+  content: "•";
+  color: #6b7280;
+  font-size: 20px;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
 .preview-button {
