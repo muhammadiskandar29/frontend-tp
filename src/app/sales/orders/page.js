@@ -105,6 +105,15 @@ export default function DaftarPesanan() {
 
   const fetchingRef = useRef(false); // Prevent multiple simultaneous fetches
 
+  // Convert filter untuk API (termasuk search) - sama seperti customers
+  const filters = useMemo(() => ({
+    search: debouncedSearch.trim() || null,
+    dateRange: dateRange,
+    statusOrder: selectedStatusOrder,
+    statusPembayaran: selectedStatusPembayaran,
+    products: selectedProducts,
+  }), [debouncedSearch, dateRange, selectedStatusOrder, selectedStatusPembayaran, selectedProducts]);
+
   // 🔹 Search produk untuk filter
   const handleSearchProduct = useCallback(async (keyword) => {
     if (!keyword.trim()) {
