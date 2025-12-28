@@ -55,6 +55,39 @@
   overflow: hidden;
 }
 
+/* ===== SIDEBAR TABS ===== */
+.sidebar-tabs {
+  display: flex;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0;
+}
+
+.sidebar-tab {
+  flex: 1;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.sidebar-tab:hover {
+  background: #f9fafb;
+  color: #374151;
+}
+
+.sidebar-tab.active {
+  color: #3b82f6;
+  border-bottom-color: #3b82f6;
+  background: #f9fafb;
+}
+
 .sidebar-content {
   padding: 20px;
   display: flex;
@@ -64,6 +97,12 @@
   overflow-x: hidden;
   flex: 1;
   height: 100%;
+}
+
+.pengaturan-content {
+  padding: 20px 0;
+  color: #6b7280;
+  font-size: 14px;
 }
 
 /* Custom scrollbar untuk sidebar */

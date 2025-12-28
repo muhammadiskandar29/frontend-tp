@@ -43,7 +43,55 @@ export function showToast(message, type = "success", status = null) {
   // Create toast element
   const toast = document.createElement("div");
   toast.className = `toast toast-${type}`;
-  toast.textContent = message;
+  
+  // Icon mapping
+  const icons = {
+    success: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+    </svg>`,
+    error: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+    </svg>`,
+    warning: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+    </svg>`,
+    info: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>`,
+  };
+  
+  // Close button
+  const closeIcon = `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+  </svg>`;
+  
+  // Build toast HTML
+  toast.innerHTML = `
+    <div class="toast-icon">${icons[type] || icons.info}</div>
+    <div class="toast-content">
+      <div class="toast-message">${message}</div>
+    </div>
+    <button class="toast-close" aria-label="Close">${closeIcon}</button>
+    <div class="toast-progress"></div>
+  `;
+  
+  // Add close button handler
+  const closeBtn = toast.querySelector('.toast-close');
+  closeBtn.addEventListener('click', () => {
+    toast.classList.remove("toast-show");
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.remove();
+      }
+      if (currentToast === toast) {
+        currentToast = null;
+      }
+      if (toastTimeout) {
+        clearTimeout(toastTimeout);
+        toastTimeout = null;
+      }
+    }, 300);
+  });
   
   // Add to container
   toastContainer.appendChild(toast);

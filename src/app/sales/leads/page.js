@@ -638,7 +638,7 @@ export default function LeadsPage() {
               </div>
               <div className="leads-table__body">
               {searchedLeads.length > 0 ? (
-  searchedLeads.map((lead, i) => {
+                searchedLeads.map((lead, i) => {
                     const customer = lead.customer_rel || {};
                     const customerName = customer.nama || lead.nama || "-";
                     const customerEmail = customer.email || lead.email || "";

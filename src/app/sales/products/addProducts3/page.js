@@ -75,6 +75,7 @@ export default function AddProducts3Page() {
   const [expandedBlockId, setExpandedBlockId] = useState(null);
   const [testimoniIndices, setTestimoniIndices] = useState({});
   const [productKategori, setProductKategori] = useState(null); // Untuk menentukan kategori produk
+  const [activeTab, setActiveTab] = useState("konten"); // State untuk tab aktif
 
   // Default data untuk setiap komponen
   const getDefaultData = (componentId) => {
@@ -593,22 +594,47 @@ export default function AddProducts3Page() {
       <div className="page-builder-main">
         {/* Left Sidebar - Form Editing */}
         <div className="page-builder-sidebar">
-          <div className="sidebar-content">
-            {/* Komponen yang sudah ditambahkan */}
-            {blocks.map((block, index) => (
-              <div key={block.id} className="sidebar-component-item">
-                {renderComponent(block, index)}
-              </div>
-            ))}
-            
-            {/* Button Tambah Komponen Baru - Selalu di bawah komponen terakhir */}
+          {/* Tabs */}
+          <div className="sidebar-tabs">
             <button
-              className="add-component-btn"
-              onClick={() => setShowComponentModal(true)}
+              className={`sidebar-tab ${activeTab === "konten" ? "active" : ""}`}
+              onClick={() => setActiveTab("konten")}
             >
-              <span className="add-component-icon">+</span>
-              <span className="add-component-text">Tambah Komponen Baru</span>
+              Konten
             </button>
+            <button
+              className={`sidebar-tab ${activeTab === "pengaturan" ? "active" : ""}`}
+              onClick={() => setActiveTab("pengaturan")}
+            >
+              Pengaturan
+            </button>
+          </div>
+
+          {/* Tab Content */}
+          <div className="sidebar-content">
+            {activeTab === "konten" ? (
+              <>
+                {/* Komponen yang sudah ditambahkan */}
+                {blocks.map((block, index) => (
+                  <div key={block.id} className="sidebar-component-item">
+                    {renderComponent(block, index)}
+                  </div>
+                ))}
+                
+                {/* Button Tambah Komponen Baru - Selalu di bawah komponen terakhir */}
+                <button
+                  className="add-component-btn"
+                  onClick={() => setShowComponentModal(true)}
+                >
+                  <span className="add-component-icon">+</span>
+                  <span className="add-component-text">Tambah Komponen Baru</span>
+                </button>
+              </>
+            ) : (
+              <div className="pengaturan-content">
+                {/* Konten Pengaturan akan diisi nanti */}
+              </div>
+            )}
           </div>
         </div>
 
