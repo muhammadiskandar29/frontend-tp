@@ -856,18 +856,12 @@ html:has(.add-products3-container) {
 .pengaturan-content .form-input.p-calendar,
 .pengaturan-content .w-full.form-input.p-calendar,
 .pengaturan-content .form-input.p-inputnumber,
-.pengaturan-content .w-full.form-input.p-inputnumber,
-.pengaturan-content .p-dropdown,
-.pengaturan-content .p-multiselect,
-.pengaturan-content .p-calendar,
-.pengaturan-content .p-inputnumber {
+.pengaturan-content .w-full.form-input.p-inputnumber {
   width: 100% !important;
   background: #ffffff !important;
-  color: #111827 !important;
+  background-color: #ffffff !important;
   border: 1.5px solid #e5e7eb !important;
   border-radius: 10px !important;
-  padding: 0.75rem 1rem !important;
-  font-size: 0.95rem !important;
   transition: all 0.2s ease !important;
 }
 
@@ -876,11 +870,7 @@ html:has(.add-products3-container) {
 .pengaturan-content .form-input.p-multiselect:not(.p-disabled):hover,
 .pengaturan-content .w-full.form-input.p-multiselect:not(.p-disabled):hover,
 .pengaturan-content .form-input.p-calendar:not(.p-disabled):hover,
-.pengaturan-content .w-full.form-input.p-calendar:not(.p-disabled):hover,
-.pengaturan-content .p-dropdown:not(.p-disabled):hover,
-.pengaturan-content .p-multiselect:not(.p-disabled):hover,
-.pengaturan-content .p-calendar:not(.p-disabled):hover,
-.pengaturan-content .p-inputnumber:not(.p-disabled):hover {
+.pengaturan-content .w-full.form-input.p-calendar:not(.p-disabled):hover {
   border-color: #F1A124 !important;
 }
 
@@ -889,11 +879,7 @@ html:has(.add-products3-container) {
 .pengaturan-content .form-input.p-multiselect:not(.p-disabled).p-focus,
 .pengaturan-content .w-full.form-input.p-multiselect:not(.p-disabled).p-focus,
 .pengaturan-content .form-input.p-calendar:not(.p-disabled).p-focus,
-.pengaturan-content .w-full.form-input.p-calendar:not(.p-disabled).p-focus,
-.pengaturan-content .p-dropdown:not(.p-disabled).p-focus,
-.pengaturan-content .p-multiselect:not(.p-disabled).p-focus,
-.pengaturan-content .p-calendar:not(.p-disabled).p-focus,
-.pengaturan-content .p-inputnumber:not(.p-disabled).p-focus {
+.pengaturan-content .w-full.form-input.p-calendar:not(.p-disabled).p-focus {
   border-color: #F1A124 !important;
   box-shadow: 0 0 0 4px rgba(241, 161, 36, 0.1) !important;
   outline: none !important;
@@ -902,9 +888,7 @@ html:has(.add-products3-container) {
 .pengaturan-content .form-input.p-dropdown .p-dropdown-label,
 .pengaturan-content .w-full.form-input.p-dropdown .p-dropdown-label,
 .pengaturan-content .form-input.p-multiselect .p-multiselect-label,
-.pengaturan-content .w-full.form-input.p-multiselect .p-multiselect-label,
-.pengaturan-content .p-dropdown .p-dropdown-label,
-.pengaturan-content .p-multiselect .p-multiselect-label {
+.pengaturan-content .w-full.form-input.p-multiselect .p-multiselect-label {
   padding: 0 !important;
   font-size: 0.95rem !important;
   color: #111827 !important;
@@ -913,10 +897,8 @@ html:has(.add-products3-container) {
 .pengaturan-content .form-input.p-dropdown .p-dropdown-label-container,
 .pengaturan-content .w-full.form-input.p-dropdown .p-dropdown-label-container,
 .pengaturan-content .form-input.p-multiselect .p-multiselect-label-container,
-.pengaturan-content .w-full.form-input.p-multiselect .p-multiselect-label-container,
-.pengaturan-content .p-dropdown .p-dropdown-label-container,
-.pengaturan-content .p-multiselect .p-multiselect-label-container {
-  padding: 0 !important;
+.pengaturan-content .w-full.form-input.p-multiselect .p-multiselect-label-container {
+  padding: 0.65rem 1rem !important;
 }
 
 /* Panel Styling - Same as addProducts */
@@ -1719,33 +1701,16 @@ html:has(.add-products3-container) {
 }
 
 /* ===== FORM FIELD GROUP - Enhanced Styling ===== */
-/* ===== FORM FIELD GROUP - Same as addProducts ===== */
+/* ===== FORM FIELD GROUP - Enhanced Styling ===== */
 .form-field-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 
-.form-label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 600;
-  font-size: 0.95rem;
-  color: #111827;
-  margin-bottom: 0.25rem;
-}
-
-.required {
-  color: #ef4444;
-  font-weight: 700;
-}
-
-.field-hint {
-  font-size: 0.8rem;
-  color: #6b7280;
-  margin-top: 0.25rem;
-  font-style: italic;
+.form-field-group:last-child {
+  margin-bottom: 0;
 }
 
 .form-label-small {
@@ -1772,14 +1737,42 @@ html:has(.add-products3-container) {
   width: 30px;
 }
 
-/* ===== FORM INPUT - Same as addProducts ===== */
+/* ===== FORM INPUT - Enhanced Styling ===== */
 .form-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  font-size: 14px;
+  color: #1f2937;
   transition: all 0.2s ease;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.form-input::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.form-input:hover {
+  border-color: #d1d5db;
+  background: #fafafa;
 }
 
 .form-input:focus {
+  outline: none;
   border-color: #F1A124 !important;
-  box-shadow: 0 0 0 4px rgba(241, 161, 36, 0.1) !important;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(241, 161, 36, 0.1) !important;
+}
+
+.form-input:disabled {
+  background: #f3f4f6;
+  color: #6b7280;
+  cursor: not-allowed;
+  border-color: #e5e7eb;
 }
 
 /* ===== PRIMEREACT INPUT TEXT - Enhanced ===== */
