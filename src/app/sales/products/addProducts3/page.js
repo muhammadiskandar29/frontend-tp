@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
 import { 
   Type, Image as ImageIcon, FileText, List, MessageSquare, 
   HelpCircle, Youtube, X, ArrowLeft
@@ -847,6 +848,91 @@ export default function AddProducts3Page() {
     }
   };
 
+  // Handler untuk save dan publish
+  const handleSaveAndPublish = async () => {
+    // Validasi
+    if (!pengaturanForm.nama || !pengaturanForm.nama.trim()) {
+      toast.error("Nama produk wajib diisi");
+      return;
+    }
+
+    if (!pengaturanForm.kategori) {
+      toast.error("Kategori wajib dipilih");
+      return;
+    }
+
+    if (!pengaturanForm.harga_promo) {
+      toast.error("Harga promo wajib diisi");
+      return;
+    }
+
+    if (!pengaturanForm.assign || pengaturanForm.assign.length === 0) {
+      toast.error("Penanggung jawab wajib dipilih");
+      return;
+    }
+
+    // Format tanggal event
+    let formattedDate = null;
+    if (pengaturanForm.tanggal_event) {
+      const date = new Date(pengaturanForm.tanggal_event);
+      formattedDate = date.toISOString();
+    }
+
+    // Prepare payload
+    const payload = {
+      nama: pengaturanForm.nama.trim(),
+      kategori: String(pengaturanForm.kategori),
+      kode: pengaturanForm.kode || generateKode(pengaturanForm.nama),
+      url: pengaturanForm.url || `/${generateKode(pengaturanForm.nama)}`,
+      harga_asli: pengaturanForm.harga_asli ? String(pengaturanForm.harga_asli) : "0",
+      harga_promo: String(pengaturanForm.harga_promo),
+      tanggal_event: formattedDate,
+      assign: pengaturanForm.assign,
+      landingpage: "1",
+      status: "1",
+      blocks: blocks.map(block => ({
+        type: block.type,
+        data: block.data,
+        order: block.order
+      }))
+    };
+
+    try {
+      toast.loading("Menyimpan produk...", { id: "save-product" });
+      
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      
+      const response = await fetch("/api/sales/produk", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data?.success) {
+        const errorMessage = data?.message || "Gagal menyimpan produk";
+        toast.error(errorMessage, { id: "save-product" });
+        return;
+      }
+
+      toast.success("Produk berhasil disimpan dan dipublish!", { id: "save-product" });
+      
+      // Redirect ke halaman products
+      setTimeout(() => {
+        router.push("/sales/products");
+      }, 1000);
+
+    } catch (error) {
+      console.error("Error saving product:", error);
+      toast.error("Terjadi kesalahan saat menyimpan produk", { id: "save-product" });
+    }
+  };
+
   // Render grid komponen dalam modal
   const renderComponentGrid = () => {
     return (
@@ -886,7 +972,7 @@ export default function AddProducts3Page() {
 
   return (
     <div className="add-products3-container">
-      {/* Back Button */}
+      {/* Header Section with Back Button and Save Button */}
       <div className="page-header-section">
         <button
           className="back-to-products-btn"
@@ -895,6 +981,13 @@ export default function AddProducts3Page() {
         >
           <ArrowLeft size={18} />
           <span>Back to Products</span>
+        </button>
+        <button
+          className="save-publish-btn"
+          onClick={handleSaveAndPublish}
+          aria-label="Simpan dan Publish"
+        >
+          <span>Simpan dan Publish</span>
         </button>
       </div>
 

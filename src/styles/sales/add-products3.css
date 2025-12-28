@@ -834,6 +834,9 @@ html:has(.add-products3-container) {
   flex-shrink: 0; /* Prevent header from shrinking */
   min-height: 80px;
   box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .back-to-products-btn {
@@ -1885,6 +1888,34 @@ html:has(.add-products3-container) {
 
 .add-component-text {
   font-size: 14px;
+}
+
+/* Save and Publish Button */
+.save-publish-btn {
+  padding: 12px 24px;
+  background: #F1A124;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(241, 161, 36, 0.2);
+}
+
+.save-publish-btn:hover {
+  background: #d68910;
+  box-shadow: 0 4px 8px rgba(241, 161, 36, 0.3);
+  transform: translateY(-1px);
+}
+
+.save-publish-btn:active {
+  transform: translateY(0);
 }
 
 /* ===== CANVAS ===== */
