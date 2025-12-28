@@ -3620,7 +3620,7 @@ html:has(.add-products3-container) {
 /* Video thumbnail style - persegi panjang landscape seperti thumbnail YouTube */
 .preview-video-wrapper.preview-video-thumbnail {
   width: 100% !important;
-  max-width: 600px !important;
+  max-width: 800px !important;
   padding-bottom: 56.25% !important; /* 16:9 aspect ratio - landscape seperti thumbnail YouTube */
   margin: 0 auto;
 }
