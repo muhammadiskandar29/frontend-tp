@@ -2,9 +2,11 @@
 
 ## 🎯 Overview
 
-Sistem ini mendukung **2 format produk**:
-1. **Format Lama** - Produk dengan struktur data tradisional (gambar[], testimoni[], list_point[], dll)
-2. **Format Canvas (Blocks)** - Produk dengan struktur blocks dari `addProducts3` (untuk testing sebelum backend siap)
+Sistem ini menggunakan **folder baru** untuk produk canvas style:
+- **Folder**: `/product/[kode_produk]` (baru, terpisah dari landing lama)
+- **Format**: Blocks (canvas style) dari `addProducts3`
+- **Saat ini**: Dummy data untuk testing
+- **Nanti**: Bisa digunakan untuk data real dari backend
 
 ## 🚀 Cara Menggunakan
 
@@ -13,36 +15,40 @@ Sistem ini mendukung **2 format produk**:
 Saat ini ada **2 produk dummy** yang bisa diakses:
 
 #### Produk 1: Webinar Ternak Properti
-- **URL**: `/landing/webinar-ternak-properti`
+- **URL**: `/product/webinar-ternak-properti`
 - **Kategori**: Webinar (11)
 - **Harga**: Rp 299.000 (dari Rp 500.000)
 - **Fitur**: Text, Image, Price, List, Video, Testimoni, Form, FAQ
 
 #### Produk 2: Buku Panduan Investasi Properti
-- **URL**: `/landing/buku-panduan-investasi-properti`
+- **URL**: `/product/buku-panduan-investasi-properti`
 - **Kategori**: Buku (13) - **Dengan Ongkir**
 - **Harga**: Rp 120.000 (dari Rp 250.000)
 - **Fitur**: Text, Image, Price, List, Testimoni, Form (dengan Ongkir Calculator), FAQ
 
 #### Produk 3: Workshop Investasi Properti
-- **URL**: `/landing/workshop-investasi-properti`
+- **URL**: `/product/workshop-investasi-properti`
 - **Kategori**: Workshop (15) - **Dengan Down Payment**
 - **Harga**: Rp 2.000.000 (dari Rp 3.500.000)
 - **Fitur**: Text, Image, Price, List, Video, Testimoni, Form (dengan Down Payment Input), FAQ
 
 ### 2. Cara Buka Produk
 
-#### Via Browser:
+#### Via Browser (Local):
 ```
-http://localhost:3000/landing/webinar-ternak-properti
-http://localhost:3000/landing/buku-panduan-investasi-properti
+http://localhost:3000/product/webinar-ternak-properti
+http://localhost:3000/product/buku-panduan-investasi-properti
+http://localhost:3000/product/workshop-investasi-properti
 ```
 
 #### Via Production:
 ```
-https://onedashboard.vercel.app/landing/webinar-ternak-properti
-https://onedashboard.vercel.app/landing/buku-panduan-investasi-properti
+https://onedashboard.vercel.app/product/webinar-ternak-properti
+https://onedashboard.vercel.app/product/buku-panduan-investasi-properti
+https://onedashboard.vercel.app/product/workshop-investasi-properti
 ```
+
+**Note**: URL menggunakan `/product/` bukan `/landing/` (folder baru, terpisah dari landing lama)
 
 ### 3. Cara Menambah Produk Dummy Baru
 
@@ -190,23 +196,29 @@ export const dummyProducts = {
 
 ## 🔄 Cara Kerja Sistem
 
-### 1. Deteksi Format
-Sistem otomatis mendeteksi format produk:
-- Jika `data.blocks` ada → Render **Canvas Style**
-- Jika tidak → Render **Old Style**
+### 1. Folder Baru
+- **Folder**: `src/app/product/[kode_produk]/page.js`
+- **Terpisah** dari landing page lama (`/landing/`)
+- **Khusus** untuk format blocks (canvas style)
+- **Bisa digunakan** untuk data real nanti
 
-### 2. Form Order
-Form order **selalu fungsional** untuk kedua format:
+### 2. Deteksi Data
+- **Dummy**: Check di `dummy-products.js` dulu
+- **Real**: Nanti fetch dari API `/api/product/[kode_produk]` (TODO)
+
+### 3. Form Order
+Form order **selalu fungsional**:
 - ✅ Input: Nama, WhatsApp, Email, Alamat
 - ✅ Ongkir Calculator (untuk kategori 13 - Buku)
 - ✅ Down Payment (untuk kategori 15 - Workshop)
 - ✅ Metode Pembayaran
 - ✅ Submit ke `/api/order` (backend)
 
-### 3. Backend Integration
-- Form order submit ke `/api/order` (sudah ada)
+### 4. Backend Integration
+- Form order submit ke `/api/order` (sudah ada) ✅
 - Data produk dummy **tidak** disimpan ke backend
 - Hanya order yang dikirim ke backend
+- **Form order sudah terintegrasi dan bisa submit ke backend**
 
 ## 📝 Catatan Penting
 
@@ -220,7 +232,8 @@ Form order **selalu fungsional** untuk kedua format:
 ### Produk tidak muncul?
 - Pastikan kode produk ada di `dummy-products.js`
 - Check console browser untuk error
-- Pastikan URL sesuai: `/landing/[kode-produk]`
+- Pastikan URL sesuai: `/product/[kode-produk]` (bukan `/landing/`)
+- Pastikan file `src/app/product/[kode_produk]/page.js` sudah ada
 
 ### Form order tidak submit?
 - Check network tab di browser
@@ -249,5 +262,6 @@ Jika ada masalah atau pertanyaan, silakan hubungi tim development.
 ---
 
 **Last Updated**: 2024
-**Version**: 1.0.0
+**Version**: 2.0.0
+**Folder**: `/product/[kode_produk]` (baru, terpisah dari landing lama)
 
