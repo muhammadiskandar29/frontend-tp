@@ -30,19 +30,19 @@ const COMPONENT_CATEGORIES = {
   seringDigunakan: {
     label: "Sering Digunakan",
     components: [
-      { id: "text", name: "Teks", icon: Type, color: "#3b82f6" },
-      { id: "image", name: "Gambar", icon: ImageIcon, color: "#10b981" },
-      { id: "price", name: "Harga", icon: FileText, color: "#F1A124" },
-      { id: "youtube", name: "Video", icon: Youtube, color: "#dc2626", description: "Video berupa link YouTube" },
+      { id: "text", name: "Teks", icon: Type, color: "#6b7280" },
+      { id: "image", name: "Gambar", icon: ImageIcon, color: "#6b7280" },
+      { id: "price", name: "Harga", icon: FileText, color: "#6b7280" },
+      { id: "youtube", name: "Video", icon: Youtube, color: "#6b7280" },
     ]
   },
   formPemesanan: {
     label: "Form Pemesanan Online",
     components: [
-      { id: "form", name: "Form Pemesanan", icon: FileText, color: "#8b5cf6" },
-      { id: "list", name: "Daftar", icon: List, color: "#f59e0b" },
-      { id: "testimoni", name: "Testimoni", icon: MessageSquare, color: "#ec4899" },
-      { id: "faq", name: "FAQ", icon: HelpCircle, color: "#06b6d4" },
+      { id: "form", name: "Form Pemesanan", icon: FileText, color: "#6b7280" },
+      { id: "list", name: "Daftar", icon: List, color: "#6b7280" },
+      { id: "testimoni", name: "Testimoni", icon: MessageSquare, color: "#6b7280" },
+      { id: "faq", name: "FAQ", icon: HelpCircle, color: "#6b7280" },
     ]
   }
 };
@@ -859,23 +859,18 @@ export default function AddProducts3Page() {
                     key={component.id}
                     className="component-item"
                     onClick={() => handleAddComponent(component.id)}
-                    title={component.description || component.name}
+                    title={component.name}
                   >
                     <div 
                       className="component-icon"
-                      style={{ backgroundColor: `${component.color}15` }}
+                      style={{ backgroundColor: "#f3f4f6" }}
                     >
                       <IconComponent 
                         size={24} 
-                        style={{ color: component.color }}
+                        style={{ color: "#6b7280" }}
                       />
                     </div>
-                    <div className="component-info">
-                      <span className="component-name">{component.name}</span>
-                      {component.description && (
-                        <span className="component-description">{component.description}</span>
-                      )}
-                    </div>
+                    <span className="component-name">{component.name}</span>
                   </div>
                 );
               })}

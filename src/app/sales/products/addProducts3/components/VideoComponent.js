@@ -2,7 +2,7 @@
 
 import { InputText } from "primereact/inputtext";
 import { Button } from "primereact/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, Info } from "lucide-react";
 import ComponentWrapper from "./ComponentWrapper";
 
 export default function VideoComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index }) {
@@ -34,12 +34,34 @@ export default function VideoComponent({ data = {}, onUpdate, onMoveUp, onMoveDo
 
   return (
     <ComponentWrapper
-      title="Video YouTube"
+      title="Video"
       index={index}
       onMoveUp={onMoveUp}
       onMoveDown={onMoveDown}
       onDelete={onDelete}
     >
+      {/* Info Box */}
+      <div className="component-info-box" style={{ 
+        padding: '12px 14px', 
+        background: '#f0f9ff', 
+        borderRadius: '8px',
+        border: '1px solid #bae6fd',
+        marginBottom: '16px',
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: '10px'
+      }}>
+        <Info size={16} style={{ color: '#0284c7', flexShrink: 0, marginTop: '2px' }} />
+        <p style={{ 
+          margin: 0, 
+          fontSize: '13px', 
+          color: '#0c4a6e',
+          lineHeight: '1.5'
+        }}>
+          <strong>Info:</strong> Video berupa link YouTube. Contoh: https://youtube.com/watch?v=...
+        </p>
+      </div>
+
       <div className="video-component-content">
         {items.map((item, i) => (
           <div key={i} className="video-item-card">

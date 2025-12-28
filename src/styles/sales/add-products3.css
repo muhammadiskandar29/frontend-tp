@@ -160,12 +160,350 @@
   width: 100%;
 }
 
+/* ===== PENGATURAN INPUT TEXT - Enhanced Focus ===== */
+.pengaturan-input.p-inputtext,
+.pengaturan-input .p-inputtext {
+  border: 1.5px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  padding: 10px 14px !important;
+  font-size: 14px !important;
+  color: #1f2937 !important;
+  transition: all 0.2s ease !important;
+  font-family: inherit !important;
+}
+
+.pengaturan-input.p-inputtext::placeholder,
+.pengaturan-input .p-inputtext::placeholder {
+  color: #9ca3af !important;
+}
+
+.pengaturan-input.p-inputtext:hover:not(:disabled),
+.pengaturan-input .p-inputtext:hover:not(:disabled) {
+  border-color: #d1d5db !important;
+  background: #fafafa !important;
+}
+
+.pengaturan-input.p-inputtext:focus,
+.pengaturan-input .p-inputtext:focus {
+  border-color: #F1A124 !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(241, 161, 36, 0.15) !important;
+  outline: none !important;
+}
+
+.pengaturan-input.p-inputtext:disabled,
+.pengaturan-input .p-inputtext:disabled {
+  background: #f3f4f6 !important;
+  color: #6b7280 !important;
+  cursor: not-allowed !important;
+  border-color: #e5e7eb !important;
+}
+
+/* ===== PENGATURAN DROPDOWN - Enhanced Focus ===== */
+.pengaturan-input .p-dropdown {
+  border: 1.5px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  transition: all 0.2s ease !important;
+}
+
+.pengaturan-input .p-dropdown:not(.p-disabled):hover {
+  border-color: #d1d5db !important;
+  background: #fafafa !important;
+}
+
+.pengaturan-input .p-dropdown:not(.p-disabled).p-focus {
+  border-color: #F1A124 !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(241, 161, 36, 0.15) !important;
+  outline: none !important;
+}
+
+.pengaturan-input .p-dropdown .p-dropdown-label {
+  padding: 10px 14px !important;
+  font-size: 14px !important;
+  color: #1f2937 !important;
+  font-family: inherit !important;
+  font-weight: 400 !important;
+}
+
+.pengaturan-input .p-dropdown .p-dropdown-label.p-placeholder {
+  color: #9ca3af !important;
+}
+
+.pengaturan-input .p-dropdown .p-dropdown-trigger {
+  width: 2.5rem !important;
+  color: #6b7280 !important;
+  background: transparent !important;
+}
+
+.pengaturan-input .p-dropdown .p-dropdown-trigger:hover {
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+}
+
+.pengaturan-input .p-dropdown-panel {
+  border: 1.5px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  margin-top: 4px !important;
+  background: #ffffff !important;
+}
+
+.pengaturan-input .p-dropdown-item {
+  padding: 10px 14px !important;
+  font-size: 14px !important;
+  color: #1f2937 !important;
+  transition: all 0.15s ease !important;
+  border-radius: 4px !important;
+  margin: 2px 4px !important;
+}
+
+.pengaturan-input .p-dropdown-item:not(.p-highlight):not(.p-disabled):hover {
+  background: #f9fafb !important;
+  color: #F1A124 !important;
+}
+
+.pengaturan-input .p-dropdown-item.p-highlight {
+  background: #F1A124 !important;
+  color: #ffffff !important;
+  font-weight: 500 !important;
+}
+
+/* ===== PENGATURAN MULTISELECT - Enhanced Focus ===== */
+.pengaturan-input .p-multiselect {
+  border: 1.5px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  transition: all 0.2s ease !important;
+}
+
+.pengaturan-input .p-multiselect:not(.p-disabled):hover {
+  border-color: #d1d5db !important;
+  background: #fafafa !important;
+}
+
+.pengaturan-input .p-multiselect:not(.p-disabled).p-focus {
+  border-color: #F1A124 !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(241, 161, 36, 0.15) !important;
+  outline: none !important;
+}
+
+.pengaturan-input .p-multiselect .p-multiselect-label {
+  padding: 10px 14px !important;
+  font-size: 14px !important;
+  color: #1f2937 !important;
+  font-family: inherit !important;
+  font-weight: 400 !important;
+}
+
+.pengaturan-input .p-multiselect .p-multiselect-label.p-placeholder {
+  color: #9ca3af !important;
+}
+
+.pengaturan-input .p-multiselect .p-multiselect-trigger {
+  width: 2.5rem !important;
+  color: #6b7280 !important;
+  background: transparent !important;
+}
+
+.pengaturan-input .p-multiselect .p-multiselect-trigger:hover {
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+}
+
+.pengaturan-input .p-multiselect-panel {
+  border: 1.5px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  margin-top: 4px !important;
+  background: #ffffff !important;
+}
+
+.pengaturan-input .p-multiselect-items-wrapper {
+  padding: 4px !important;
+}
+
+.pengaturan-input .p-multiselect-item {
+  padding: 10px 14px !important;
+  font-size: 14px !important;
+  color: #1f2937 !important;
+  transition: all 0.15s ease !important;
+  border-radius: 4px !important;
+  margin: 2px 0 !important;
+}
+
+.pengaturan-input .p-multiselect-item:not(.p-highlight):not(.p-disabled):hover {
+  background: #f9fafb !important;
+  color: #F1A124 !important;
+}
+
+.pengaturan-input .p-multiselect-item.p-highlight {
+  background: #F1A124 !important;
+  color: #ffffff !important;
+  font-weight: 500 !important;
+}
+
+.pengaturan-input .p-multiselect-item .p-checkbox {
+  margin-right: 8px !important;
+}
+
+.pengaturan-input .p-multiselect-chip {
+  background: #F1A124 !important;
+  color: #ffffff !important;
+  padding: 4px 10px !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  margin: 2px !important;
+}
+
+.pengaturan-input .p-multiselect-chip .p-multiselect-chip-icon {
+  color: #ffffff !important;
+  margin-left: 6px !important;
+}
+
+/* ===== PENGATURAN CALENDAR - Enhanced Focus ===== */
+.pengaturan-input .p-calendar {
+  border: 1.5px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  transition: all 0.2s ease !important;
+}
+
+.pengaturan-input .p-calendar:not(.p-disabled):hover {
+  border-color: #d1d5db !important;
+  background: #fafafa !important;
+}
+
+.pengaturan-input .p-calendar:not(.p-disabled).p-focus {
+  border-color: #F1A124 !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(241, 161, 36, 0.15) !important;
+  outline: none !important;
+}
+
+.pengaturan-input .p-calendar .p-inputtext {
+  border: none !important;
+  padding: 10px 14px !important;
+  font-size: 14px !important;
+  color: #1f2937 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.pengaturan-input .p-calendar .p-inputtext:focus {
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.pengaturan-input .p-calendar .p-inputtext::placeholder {
+  color: #9ca3af !important;
+}
+
+.pengaturan-input .p-calendar .p-datepicker-trigger {
+  width: 2.5rem !important;
+  color: #6b7280 !important;
+  background: transparent !important;
+  border-left: 1px solid #e5e7eb !important;
+}
+
+.pengaturan-input .p-calendar .p-datepicker-trigger:hover {
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+}
+
+.pengaturan-input .p-datepicker {
+  border: 1.5px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  margin-top: 4px !important;
+  background: #ffffff !important;
+  padding: 12px !important;
+}
+
+.pengaturan-input .p-datepicker-header {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  padding: 12px !important;
+  border-radius: 8px 8px 0 0 !important;
+}
+
+.pengaturan-input .p-datepicker-prev,
+.pengaturan-input .p-datepicker-next {
+  color: #6b7280 !important;
+  transition: all 0.2s ease !important;
+}
+
+.pengaturan-input .p-datepicker-prev:hover,
+.pengaturan-input .p-datepicker-next:hover {
+  color: #F1A124 !important;
+  background: #f9fafb !important;
+}
+
+.pengaturan-input .p-datepicker-calendar td > span {
+  border-radius: 6px !important;
+  transition: all 0.15s ease !important;
+}
+
+.pengaturan-input .p-datepicker-calendar td > span:not(.p-disabled):not(.p-highlight):hover {
+  background: #f9fafb !important;
+  color: #F1A124 !important;
+}
+
+.pengaturan-input .p-datepicker-calendar td > span.p-highlight {
+  background: #F1A124 !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+/* ===== PENGATURAN INPUT NUMBER - Enhanced Focus ===== */
+.pengaturan-input .p-inputnumber {
+  border: 1.5px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  transition: all 0.2s ease !important;
+}
+
+.pengaturan-input .p-inputnumber:not(.p-disabled):hover {
+  border-color: #d1d5db !important;
+  background: #fafafa !important;
+}
+
+.pengaturan-input .p-inputnumber:not(.p-disabled).p-focus {
+  border-color: #F1A124 !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(241, 161, 36, 0.15) !important;
+  outline: none !important;
+}
+
+.pengaturan-input .p-inputnumber .p-inputtext {
+  border: none !important;
+  padding: 10px 14px !important;
+  font-size: 14px !important;
+  color: #1f2937 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.pengaturan-input .p-inputnumber .p-inputtext:focus {
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.pengaturan-input .p-inputnumber .p-inputtext::placeholder {
+  color: #9ca3af !important;
+}
+
 .pengaturan-hint {
   display: block;
   font-size: 12px;
   color: #6b7280;
   margin-top: 6px;
   margin-bottom: 0;
+  line-height: 1.4;
 }
 
 /* Custom scrollbar untuk sidebar */
