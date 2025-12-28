@@ -19,7 +19,7 @@ export default function BankTransferPage() {
   const [downPayment, setDownPayment] = useState(downPaymentFromQuery || "");
   const [orderId, setOrderId] = useState(orderIdFromQuery || "");
 
-  // Cek dari localStorage sebagai fallback
+  // Cek dari localStorage sebagai fallback - PRIORITAS localStorage
   useEffect(() => {
     const storedOrder = localStorage.getItem("pending_order");
     if (storedOrder) {
@@ -27,22 +27,69 @@ export default function BankTransferPage() {
         const orderData = JSON.parse(storedOrder);
         console.log("[PAYMENT] Order data from localStorage:", orderData);
         
-        // Gunakan dari localStorage jika query param tidak ada
-        if (!downPayment && orderData.downPayment) {
+        // Prioritaskan localStorage untuk downPayment dan orderId
+        if (orderData.downPayment) {
           setDownPayment(orderData.downPayment);
           console.log("[PAYMENT] Using downPayment from localStorage:", orderData.downPayment);
+        } else if (downPaymentFromQuery) {
+          setDownPayment(downPaymentFromQuery);
         }
-        if (!orderId && orderData.orderId) {
+        
+        if (orderData.orderId) {
           setOrderId(orderData.orderId);
           console.log("[PAYMENT] Using orderId from localStorage:", orderData.orderId);
+        } else if (orderIdFromQuery) {
+          setOrderId(orderIdFromQuery);
         }
       } catch (e) {
         console.error("[PAYMENT] Error parsing stored order:", e);
       }
+    } else {
+      // Jika tidak ada di localStorage, gunakan dari query param
+      if (downPaymentFromQuery) {
+        setDownPayment(downPaymentFromQuery);
+      }
+      if (orderIdFromQuery) {
+        setOrderId(orderIdFromQuery);
+      }
     }
   }, []);
 
-  const isWorkshop = downPayment && parseFloat(downPayment) > 0;
+  // Cek isWorkshop - gunakan state yang sudah di-update
+  // Cek isWorkshop - gunakan state yang sudah di-update
+  const [isWorkshop, setIsWorkshop] = useState(false);
+
+  // Update isWorkshop setiap kali downPayment berubah
+  useEffect(() => {
+    const checkWorkshop = () => {
+      // Cek dari state dulu
+      if (downPayment && parseFloat(downPayment) > 0) {
+        setIsWorkshop(true);
+        return;
+      }
+      
+      // Cek dari localStorage
+      const storedOrder = localStorage.getItem("pending_order");
+      if (storedOrder) {
+        try {
+          const orderData = JSON.parse(storedOrder);
+          if (orderData.downPayment && parseFloat(orderData.downPayment) > 0) {
+            setIsWorkshop(true);
+            if (!downPayment) {
+              setDownPayment(orderData.downPayment);
+            }
+            return;
+          }
+        } catch (e) {
+          console.error("[PAYMENT] Error parsing stored order:", e);
+        }
+      }
+      
+      setIsWorkshop(false);
+    };
+
+    checkWorkshop();
+  }, [downPayment]);
 
   // Debug log
   useEffect(() => {
@@ -115,9 +162,25 @@ export default function BankTransferPage() {
       return setErrorMsg("Harap upload bukti pembayaran terlebih dahulu.");
     }
 
-    const amountValue = parseFloat(downPayment || "0");
+    // Ambil amount dari downPayment (state atau localStorage)
+    let amountToUse = downPayment;
+    if (!amountToUse || parseFloat(amountToUse) <= 0) {
+      // Cek dari localStorage sebagai fallback
+      const storedOrder = localStorage.getItem("pending_order");
+      if (storedOrder) {
+        try {
+          const orderData = JSON.parse(storedOrder);
+          amountToUse = orderData.downPayment;
+          console.log("[PAYMENT] Using amount from localStorage:", amountToUse);
+        } catch (e) {
+          console.error("[PAYMENT] Error parsing stored order for amount:", e);
+        }
+      }
+    }
+    
+    const amountValue = parseFloat(amountToUse || "0");
     if (!amountValue || amountValue <= 0) {
-      return setErrorMsg("Jumlah pembayaran tidak valid.");
+      return setErrorMsg("Jumlah pembayaran tidak valid. Pastikan down payment sudah diisi.");
     }
 
     setSubmitting(true);
@@ -243,8 +306,8 @@ export default function BankTransferPage() {
           <p className="total-amount">Rp {Number(harga || 0).toLocaleString("id-ID")}</p>
         </div>
 
-        {/* Total Pembayaran Pertama (untuk Workshop) */}
-        {isWorkshop && (
+        {/* Total Pembayaran Pertama (untuk Workshop) - SELALU TAMPILKAN jika ada downPayment */}
+        {(isWorkshop || downPayment) && (
           <div className="total-card" style={{ background: "#fef3c7", border: "2px solid #f59e0b" }}>
             <p className="total-label" style={{ color: "#92400e", fontWeight: 600 }}>
               Total Pembayaran Pertama (Down Payment)
@@ -284,8 +347,8 @@ export default function BankTransferPage() {
           </div>
         </div>
 
-        {/* Form Upload Bukti Pembayaran (untuk Workshop) */}
-        {isWorkshop && (
+        {/* Form Upload Bukti Pembayaran (untuk Workshop) - SELALU TAMPILKAN jika ada downPayment */}
+        {(isWorkshop || downPayment) && (
           <div className="instruksi-card" style={{ marginTop: "24px" }}>
             <h3 className="instruksi-title">📤 Upload Bukti Pembayaran</h3>
             <form onSubmit={handleKonfirmasiPembayaran}>
