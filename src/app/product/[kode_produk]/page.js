@@ -849,29 +849,34 @@ export default function ProductPage() {
           const dummyData = getDummyProduct(kode_produk);
           if (dummyData) {
             console.log("[PRODUCT] Using dummy product:", kode_produk);
+            // Set data dulu agar halaman bisa render langsung
             setData(dummyData);
             
             // Untuk dummy products, kita perlu produk ID yang valid dari database
             // Fetch produk pertama yang ada di database untuk digunakan sebagai fallback
-            try {
-              const token = localStorage.getItem("token");
-              const headers = token ? { Authorization: `Bearer ${token}` } : {};
-              
-              const productsRes = await fetch("/api/sales/produk", { headers });
-              const productsJson = await productsRes.json();
-              
-              if (productsJson.success && Array.isArray(productsJson.data) && productsJson.data.length > 0) {
-                // Ambil produk pertama yang aktif
-                const firstProduct = productsJson.data.find(p => p.status === "1" || p.status === 1) || productsJson.data[0];
-                if (firstProduct && firstProduct.id) {
-                  console.log("[PRODUCT] Using valid product ID for dummy product:", firstProduct.id);
-                  setValidProductId(Number(firstProduct.id));
+            // Jangan blocking render, fetch di background dengan setTimeout
+            setTimeout(async () => {
+              try {
+                const token = localStorage.getItem("token");
+                const headers = token ? { Authorization: `Bearer ${token}` } : {};
+                
+                const productsRes = await fetch("/api/sales/produk", { headers });
+                const productsJson = await productsRes.json();
+                
+                if (productsJson.success && Array.isArray(productsJson.data) && productsJson.data.length > 0) {
+                  // Ambil produk pertama yang aktif
+                  const firstProduct = productsJson.data.find(p => p.status === "1" || p.status === 1) || productsJson.data[0];
+                  if (firstProduct && firstProduct.id) {
+                    console.log("[PRODUCT] Using valid product ID for dummy product:", firstProduct.id);
+                    setValidProductId(Number(firstProduct.id));
+                  }
                 }
+              } catch (err) {
+                console.warn("[PRODUCT] Failed to fetch valid product ID, will use dummy ID:", err);
+                // Jika gagal fetch, tetap gunakan dummy ID (backend akan handle error)
+                // Halaman tetap bisa digunakan, error akan muncul saat submit atau get ongkir
               }
-            } catch (err) {
-              console.warn("[PRODUCT] Failed to fetch valid product ID, will use dummy ID:", err);
-              // Jika gagal fetch, tetap gunakan dummy ID (backend akan handle error)
-            }
+            }, 0); // Execute di background, tidak blocking render
             
             return;
           }
@@ -886,6 +891,7 @@ export default function ProductPage() {
 
       } catch (err) {
         console.error("Product fetch failed:", err);
+        // Jangan block render, set data null dan biarkan error message muncul
       }
     }
 
