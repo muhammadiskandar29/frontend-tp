@@ -114,21 +114,18 @@ const divisionConfigs = {
   admin: {
     label: "Admin Overview",
     title: "Admin Dashboard Overview",
-    description: "Aggregated snapshot across divisions.",
     endpoint: "/api/admin/sales/dashboard",
     Icon: LayoutIcon,
   },
   sales: {
     label: "Sales Dashboard",
     title: "Sales Dashboard Overview",
-    description: "Sales pipeline, revenue, and fulfillment.",
     endpoint: "/api/admin/sales/dashboard",
     Icon: ShoppingBag,
   },
   hr: {
     label: "HR Dashboard",
     title: "HR Dashboard Overview",
-    description: "Workforce health, compliance, and hiring performance.",
     endpoint: null,
     mockData: hrMockData,
     Icon: Users2,
@@ -325,14 +322,6 @@ export default function Dashboard() {
             <p className="dashboard-hero__eyebrow">Performance</p>
             <h2 className="dashboard-hero__title">{activeConfig?.title || "Dashboard Overview"}</h2>
             <p className="dashboard-hero__subtitle">{activeConfig?.description}</p>
-            <span className="dashboard-hero__meta">
-              <span role="img" aria-label="calendar">
-                📅
-              </span>{" "}
-              {statistik?.total_penjualan_hari_ini_formatted
-                ? `Hari ini: ${statistik.total_penjualan_hari_ini_formatted}`
-                : "Last 30 Days"}
-            </span>
           </div>
 
           <div className="dashboard-summary-horizontal">
