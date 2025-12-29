@@ -216,16 +216,30 @@ export default function SendWhatsAppModal({ lead, onClose, onSuccess }) {
   };
 
   const formatPendapatan = (pendapatan) => {
-    if (!pendapatan || pendapatan === "-" || pendapatan === 0) return "-";
+    if (!pendapatan || pendapatan === "-" || pendapatan === 0) return "—";
+    // Format untuk range pendapatan (pendapatan_bln)
+    const mapping = {
+      "<1jt": "< 1 Juta",
+      "1-5jt": "1 - 5 Juta",
+      "5-10jt": "5 - 10 Juta",
+      "10-15jt": "10 - 15 Juta",
+      "15-20jt": "15 - 20 Juta",
+      ">20jt": "> 20 Juta",
+    };
+    // Jika sudah dalam format range, langsung return mapping
+    if (mapping[pendapatan]) {
+      return mapping[pendapatan];
+    }
+    // Fallback untuk format lama (number atau string dengan Rp)
     if (typeof pendapatan === "number") {
       return `Rp ${pendapatan.toLocaleString("id-ID")}`;
     }
     if (typeof pendapatan === "string") {
       const num = parseInt(pendapatan.replace(/[^\d]/g, ""));
-      if (isNaN(num)) return "-";
+      if (isNaN(num)) return "—";
       return `Rp ${num.toLocaleString("id-ID")}`;
     }
-    return "-";
+    return "—";
   };
 
   return (
@@ -254,7 +268,7 @@ export default function SendWhatsAppModal({ lead, onClose, onSuccess }) {
                 <span className="leads-whatsapp-detail-value">{customerEmail}</span>
               </div>
               <div className="leads-whatsapp-detail-row">
-                <span className="leads-whatsapp-detail-label">Pendapatan:</span>
+                <span className="leads-whatsapp-detail-label">Pendapatan per Bulan:</span>
                 <span className="leads-whatsapp-detail-value">{formatPendapatan(customerPendapatan)}</span>
               </div>
             </div>
