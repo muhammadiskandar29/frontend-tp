@@ -114,14 +114,10 @@ export default function DashboardPage() {
         <UpdateCustomerModal
           isOpen={showUpdateModal}
           onClose={() => {
-            // Cek apakah data sudah lengkap sebelum menutup modal
-            if (customerInfo && isCustomerDataComplete(customerInfo)) {
-              setShowUpdateModal(false);
-              localStorage.removeItem("customer_show_update_modal");
-            } else {
-              // Data belum lengkap, tidak bisa ditutup
-              toast.error("Silakan lengkapi data yang wajib diisi terlebih dahulu");
-            }
+            // Modal bisa ditutup kapan saja, tapi akan muncul lagi saat login jika data belum lengkap
+            setShowUpdateModal(false);
+            localStorage.removeItem("customer_show_update_modal");
+            toast.info("Anda bisa melengkapi data nanti. Modal akan muncul lagi saat login berikutnya jika data belum lengkap.");
           }}
           onSuccess={handleUpdateSuccess}
           title={
@@ -130,7 +126,7 @@ export default function DashboardPage() {
               : "Lengkapi Data Profil Anda"
           }
           requirePassword={updateModalReason === "password"}
-          allowClose={customerInfo ? isCustomerDataComplete(customerInfo) : false}
+          allowClose={true}
         />
       )}
 

@@ -271,9 +271,24 @@ export default function UpdateCustomerModal({
       <div className="customer-modal" onClick={(e) => e.stopPropagation()}>
         <div className="customer-modal__header">
           <h2>{title}</h2>
-          {loading && (
-            <span style={{ color: "#6b7280", fontSize: "14px" }}>Menyimpan...</span>
-          )}
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            {loading && (
+              <span style={{ color: "#6b7280", fontSize: "14px" }}>Menyimpan...</span>
+            )}
+            {allowClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="customer-modal__close-btn"
+                aria-label="Tutup"
+                disabled={loading}
+              >
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Info banner */}
@@ -434,6 +449,35 @@ export default function UpdateCustomerModal({
           margin: 0;
           color: #111827;
           letter-spacing: -0.02em;
+        }
+
+        .customer-modal__close-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          border: none;
+          background: transparent;
+          border-radius: 8px;
+          cursor: pointer;
+          color: #6b7280;
+          transition: all 0.2s ease;
+          padding: 0;
+        }
+
+        .customer-modal__close-btn:hover:not(:disabled) {
+          background: #f3f4f6;
+          color: #111827;
+        }
+
+        .customer-modal__close-btn:active:not(:disabled) {
+          background: #e5e7eb;
+        }
+
+        .customer-modal__close-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
         }
 
         .customer-modal__body {
