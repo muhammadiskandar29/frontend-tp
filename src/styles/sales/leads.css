@@ -531,7 +531,7 @@
 
 /* Label Text */
 .leads-label-text {
-  font-size: 0.75rem;
+  font-size: 1.2rem;
   color: var(--dash-muted);
   line-height: 1.25;
 }
