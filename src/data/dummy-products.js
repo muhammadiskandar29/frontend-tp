@@ -239,7 +239,125 @@ export const dummyProducts = {
     ]
   },
 
-  // Produk 3: Workshop Investasi Properti (Kategori 15 - dengan down payment)
+  // Produk 3: Buku Master Investasi Properti (Kategori 13 - Buku)
+  "buku-master-investasi-properti": {
+    id: 996,
+    nama: "Buku Master Investasi Properti",
+    kode: "buku-master-investasi-properti",
+    url: "/buku-master-investasi-properti",
+    kategori: "13",
+    kategori_id: 13,
+    kategori_rel: { id: 13, nama: "Buku" },
+    harga_asli: 180000,
+    harga_coret: 280000,
+    harga_promo: 150000,
+    tanggal_event: null,
+    landingpage: "2",
+    status: 1,
+    // Format blocks (canvas style)
+    blocks: [
+      {
+        id: "block-1",
+        type: "text",
+        data: {
+          content: "Buku Master Investasi Properti adalah panduan komprehensif untuk menguasai seni investasi properti. Buku ini dirancang khusus untuk membantu Anda membangun kekayaan melalui investasi properti yang cerdas dan strategis. Dapatkan insight dari para master properti yang telah sukses membangun portofolio properti bernilai miliaran rupiah."
+        },
+        order: 1
+      },
+      {
+        id: "block-2",
+        type: "image",
+        data: {
+          src: "https://ternakproperti.com/wp-content/uploads/2025/05/foto-buku-1024x1024.jpeg",
+          alt: "Buku Master Investasi Properti",
+          caption: "Buku Master Investasi Properti - Panduan Lengkap untuk Investor Properti"
+        },
+        order: 2
+      },
+      {
+        id: "block-3",
+        type: "price",
+        data: {},
+        order: 3
+      },
+      {
+        id: "block-4",
+        type: "list",
+        data: {
+          items: [
+            { nama: "Buku fisik premium dengan hard cover berkualitas tinggi" },
+            { nama: "Lebih dari 300 halaman konten masterclass yang teruji" },
+            { nama: "Strategi investasi properti dari level pemula hingga advanced" },
+            { nama: "Case study real dari investor properti sukses di Indonesia" },
+            { nama: "Formula rahasia untuk analisis properti yang profitable" },
+            { nama: "Bonus akses ke komunitas eksklusif investor properti" },
+            { nama: "Update konten berkala dan newsletter eksklusif" }
+          ]
+        },
+        order: 4
+      },
+      {
+        id: "block-5",
+        type: "youtube",
+        data: {
+          items: [
+            {
+              embedUrl: "https://www.youtube.com/watch?v=qD78YeMNY1k"
+            },
+            {
+              embedUrl: "https://www.youtube.com/watch?v=BDYeihxGY1E"
+            }
+          ]
+        },
+        order: 5
+      },
+      {
+        id: "block-6",
+        type: "testimoni",
+        data: {
+          items: [
+            {
+              nama: "Ahmad Fauzi",
+              deskripsi: "Buku Master ini benar-benar mengubah cara saya melihat investasi properti. Setelah membaca, saya langsung bisa apply strateginya dan dalam 6 bulan sudah punya 2 properti yang menghasilkan passive income.",
+              gambar: "https://i.pravatar.cc/150?img=10"
+            },
+            {
+              nama: "Dewi Sartika",
+              deskripsi: "Kontennya sangat mendalam dan praktis. Buku ini tidak hanya teori, tapi juga memberikan langkah-langkah konkret yang bisa langsung diaplikasikan. Highly recommended!",
+              gambar: "https://i.pravatar.cc/150?img=11"
+            },
+            {
+              nama: "Bambang Sutrisno",
+              deskripsi: "Sebagai investor yang sudah punya beberapa properti, buku ini tetap memberikan insight baru yang sangat berharga. Worth every penny!",
+              gambar: "https://i.pravatar.cc/150?img=12"
+            },
+            {
+              nama: "Lina Kurniawan",
+              deskripsi: "Buku Master ini adalah investasi terbaik yang pernah saya beli. Strategi-strateginya sudah terbukti dan sangat membantu untuk membangun portofolio properti.",
+              gambar: "https://i.pravatar.cc/150?img=13"
+            }
+          ]
+        },
+        order: 6
+      },
+      {
+        id: "block-7",
+        type: "form",
+        data: {
+          kategori: "13"
+        },
+        order: 7
+      },
+      {
+        id: "block-8",
+        type: "faq",
+        data: {},
+        order: 8
+      }
+    ]
+  },
+
+  // Produk 4: Workshop Investasi Properti (Kategori 15 - dengan down payment)
   "workshop-investasi-properti": {
     id: 997,
     nama: "Workshop Investasi Properti",
