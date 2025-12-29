@@ -907,12 +907,10 @@ export default function ProductPage() {
     fetchData();
   }, [kode_produk]);
 
+  // Render langsung tanpa loading state
+  // Data dummy langsung di-set, jadi tidak perlu loading
   if (!data) {
-    return (
-      <div style={{ padding: "2rem", textAlign: "center" }}>
-        <p>Memuat produk...</p>
-      </div>
-    );
+    return null; // Return null jika data belum ada, tidak tampilkan loading
   }
 
   return (
