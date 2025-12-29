@@ -531,7 +531,7 @@
 
 /* Label Text */
 .leads-label-text {
-  font-size: 1.2rem;
+  font-size: 0.9rem;
   color: var(--dash-muted);
   line-height: 1.25;
 }
@@ -587,14 +587,14 @@
 
 .leads-assign-sales-name {
   font-weight: 700;
-  font-size: 0.75rem;
+  font-size: 0.9rem;
   color: var(--dash-text-dark);
   line-height: 1.25;
   margin-bottom: 0.1rem;
 }
 
 .leads-assign-sales-role {
-  font-size: 0.6875rem;
+  font-size: 0.9rem;
   color: var(--dash-muted);
   line-height: 1.25;
 }
