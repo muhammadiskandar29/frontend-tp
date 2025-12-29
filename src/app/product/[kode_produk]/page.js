@@ -82,14 +82,29 @@ export default function ProductPage() {
   };
 
   const getKategoriId = () => {
-    if (!data) return null;
-    return data.kategori_id 
+    if (!data) {
+      console.warn("[PRODUCT] getKategoriId: data is null");
+      return null;
+    }
+    const kategoriId = data.kategori_id 
       || (data.kategori_rel?.id ? Number(data.kategori_rel.id) : null)
       || (data.kategori ? Number(data.kategori) : null);
+    
+    // Debug log untuk memastikan kategori terdeteksi
+    if (kategoriId === 13) {
+      console.log("[PRODUCT] Kategori Buku detected (ID: 13)");
+    }
+    
+    return kategoriId;
   };
 
   const isKategoriBuku = () => {
-    return getKategoriId() === 13;
+    const kategoriId = getKategoriId();
+    const isBuku = kategoriId === 13;
+    if (isBuku) {
+      console.log("[PRODUCT] isKategoriBuku: true - OngkirCalculator should appear");
+    }
+    return isBuku;
   };
 
   const isKategoriWorkshop = () => {
@@ -371,9 +386,9 @@ export default function ProductPage() {
             </div>
           );
 
-        case "faq":
-          const kategoriId = getKategoriId();
-          const faqItems = getFAQByKategori(kategoriId);
+        case "faq": {
+          const kategoriIdFaq = getKategoriId();
+          const faqItems = getFAQByKategori(kategoriIdFaq);
           
           return (
             <div key={block.id} className="canvas-preview-block">
@@ -391,10 +406,15 @@ export default function ProductPage() {
               </section>
             </div>
           );
+        }
 
-        case "form":
-          const isFormBuku = getKategoriId() === 13;
-          const isFormWorkshop = getKategoriId() === 15;
+        case "form": {
+          const kategoriId = getKategoriId();
+          const isFormBuku = kategoriId === 13;
+          const isFormWorkshop = kategoriId === 15;
+          
+          // Debug log untuk memastikan form block ter-render dengan benar
+          console.log("[PRODUCT] Form block rendering - kategoriId:", kategoriId, "isFormBuku:", isFormBuku, "isFormWorkshop:", isFormWorkshop);
           
           return (
             <div key={block.id} className="canvas-preview-block">
@@ -620,6 +640,7 @@ export default function ProductPage() {
               </div>
             </div>
           );
+        }
 
         case "price":
           const hargaAsli = productData?.harga_asli || productData?.harga_coret || 0;
@@ -818,22 +839,32 @@ export default function ProductPage() {
 
   // Fetch Data
   useEffect(() => {
-    async function fetchData() {
-      try {
-        // Check dummy product first
-        if (isDummyProduct(kode_produk)) {
-          const dummyData = getDummyProduct(kode_produk);
-          if (dummyData) {
-            console.log("[PRODUCT] Using dummy product:", kode_produk);
-            setData(dummyData);
+    // Set dummy data immediately (synchronous) untuk menghindari race condition
+    if (isDummyProduct(kode_produk)) {
+      const dummyData = getDummyProduct(kode_produk);
+      if (dummyData) {
+        console.log("[PRODUCT] Using dummy product:", kode_produk);
+        // Set data langsung tanpa await untuk memastikan render tidak blocked
+        setData(dummyData);
+        
+        // Fetch validProductId di background (non-blocking) dengan setTimeout
+        // Ini tidak menghalangi render halaman
+        setTimeout(async () => {
+          try {
+            const token = localStorage.getItem("token");
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
             
-            // Untuk dummy products, kita perlu produk ID yang valid dari database
-            // Fetch produk pertama yang ada di database untuk digunakan sebagai fallback
-            try {
-              const token = localStorage.getItem("token");
-              const headers = token ? { Authorization: `Bearer ${token}` } : {};
-              
-              const productsRes = await fetch("/api/sales/produk", { headers });
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 detik timeout
+            
+            const productsRes = await fetch("/api/sales/produk", { 
+              headers,
+              signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (productsRes && productsRes.ok) {
               const productsJson = await productsRes.json();
               
               if (productsJson.success && Array.isArray(productsJson.data) && productsJson.data.length > 0) {
@@ -844,36 +875,50 @@ export default function ProductPage() {
                   setValidProductId(Number(firstProduct.id));
                 }
               }
-            } catch (err) {
-              console.warn("[PRODUCT] Failed to fetch valid product ID, will use dummy ID:", err);
-              // Jika gagal fetch, tetap gunakan dummy ID (backend akan handle error)
             }
-            
-            return;
+          } catch (err) {
+            // Error handling yang tidak blocking - hanya log warning
+            if (err.name !== 'AbortError') {
+              console.warn("[PRODUCT] Failed to fetch valid product ID (non-blocking):", err.message);
+            }
+            // Jika gagal fetch, tetap gunakan dummy ID (backend akan handle error)
           }
-        }
-
-        // TODO: Fetch dari API untuk produk real (nanti saat backend siap)
-        // const res = await fetch(`/api/product/${kode_produk}`, { cache: "no-store" });
-        // const json = await res.json();
-        // if (json.success && json.data) {
-        //   setData(json.data);
-        // }
-
-      } catch (err) {
-        console.error("Product fetch failed:", err);
-        // Jangan block render, set data null dan biarkan error message muncul
+        }, 100); // Delay kecil untuk tidak blocking initial render
+        
+        return;
       }
     }
 
-    fetchData();
+    // TODO: Fetch dari API untuk produk real (nanti saat backend siap)
+    // async function fetchRealProduct() {
+    //   try {
+    //     const res = await fetch(`/api/product/${kode_produk}`, { cache: "no-store" });
+    //     const json = await res.json();
+    //     if (json.success && json.data) {
+    //       setData(json.data);
+    //     }
+    //   } catch (err) {
+    //     console.error("Product fetch failed:", err);
+    //   }
+    // }
+    // fetchRealProduct();
   }, [kode_produk]);
 
   // Render langsung tanpa loading state
-  // Data dummy langsung di-set, jadi tidak perlu loading
+  // Data dummy langsung di-set secara synchronous, jadi tidak perlu loading
+  // Tapi tetap check data untuk menghindari error
   if (!data) {
+    console.log("[PRODUCT] Waiting for data to load...");
     return null; // Return null jika data belum ada, tidak tampilkan loading
   }
+  
+  // Debug log untuk memastikan data sudah ter-set
+  console.log("[PRODUCT] Data loaded:", {
+    nama: data.nama,
+    kategori_id: data.kategori_id,
+    kategori: data.kategori,
+    kategori_rel: data.kategori_rel
+  });
 
   return (
     <div className="add-products3-container" itemScope itemType="https://schema.org/Product">
