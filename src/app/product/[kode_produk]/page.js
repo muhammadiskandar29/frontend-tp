@@ -689,45 +689,17 @@ export default function ProductPage() {
       ? hargaProduk + ongkirValue 
       : hargaProduk; // Workshop tetap harga produk penuh
 
-    // Untuk dummy products, gunakan validProductId jika ada
-    // Jika belum ter-fetch, coba fetch lagi saat submit
-    let productIdToUse = parseInt(data.id, 10);
+    // Untuk dummy products, gunakan validProductId jika ada, jika tidak gunakan data.id
+    // Backend akan validasi produk ID, jadi kita perlu ID yang valid dari database
+    const productIdToUse = isDummyProduct(kode_produk) && validProductId 
+      ? validProductId 
+      : parseInt(data.id, 10);
     
-    if (isDummyProduct(kode_produk)) {
-      // Khusus untuk buku-panduan-investasi-properti, gunakan ID 35
-      if (kode_produk === "buku-panduan-investasi-properti") {
-        productIdToUse = 35;
-        console.log("[PRODUCT] Using hardcoded product ID 35 for buku-panduan-investasi-properti");
-      } else if (validProductId) {
-        productIdToUse = validProductId;
-      } else {
-        // Coba fetch validProductId sekali lagi jika belum ada
-        try {
-          const token = localStorage.getItem("token");
-          const headers = token ? { Authorization: `Bearer ${token}` } : {};
-          
-          const productsRes = await fetch("/api/sales/produk", { headers });
-          const productsJson = await productsRes.json();
-          
-          if (productsJson.success && Array.isArray(productsJson.data) && productsJson.data.length > 0) {
-            const firstProduct = productsJson.data.find(p => p.status === "1" || p.status === 1) || productsJson.data[0];
-            if (firstProduct && firstProduct.id) {
-              console.log("[PRODUCT] Fetched valid product ID during submit:", firstProduct.id);
-              productIdToUse = Number(firstProduct.id);
-              setValidProductId(Number(firstProduct.id));
-            } else {
-              throw new Error("Tidak ada produk aktif di database");
-            }
-          } else {
-            throw new Error("Tidak ada produk di database");
-          }
-        } catch (err) {
-          console.error("[PRODUCT] Failed to fetch valid product ID:", err);
-          toast.error("Gagal memuat data produk. Pastikan ada produk aktif di database.");
-          setSubmitting(false);
-          return;
-        }
-      }
+    // Jika dummy product dan tidak ada validProductId, tampilkan warning
+    if (isDummyProduct(kode_produk) && !validProductId) {
+      console.warn("[PRODUCT] ⚠️ Dummy product tanpa validProductId, akan menggunakan dummy ID:", data.id);
+      console.warn("[PRODUCT] ⚠️ Backend mungkin akan error karena produk ID tidak ditemukan di database");
+      console.warn("[PRODUCT] 💡 Solusi: Pastikan ada produk real di database, atau buat produk dummy di backend");
     }
     
     const isWorkshop = isKategoriWorkshop();
