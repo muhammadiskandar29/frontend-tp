@@ -144,6 +144,7 @@ export default function UpdateCustomerModal({
   onSuccess,
   title = "Lengkapi Data Customer",
   requirePassword = true, // Password wajib diisi untuk user dengan password default
+  allowClose = true, // Apakah modal bisa ditutup (default true)
 }) {
   const [formData, setFormData] = useState(initialFormState);
   const [loading, setLoading] = useState(false);
@@ -254,9 +255,20 @@ export default function UpdateCustomerModal({
 
   if (!isOpen) return null;
 
+  // Handler untuk klik overlay - hanya tutup jika allowClose = true
+  const handleOverlayClick = (e) => {
+    if (e.target === e.currentTarget && allowClose && typeof onClose === "function") {
+      onClose();
+    }
+  };
+
   return (
-    <div className="customer-modal-overlay">
-      <div className="customer-modal">
+    <div 
+      className="customer-modal-overlay"
+      onClick={handleOverlayClick}
+      style={{ cursor: allowClose ? "pointer" : "default" }}
+    >
+      <div className="customer-modal" onClick={(e) => e.stopPropagation()}>
         <div className="customer-modal__header">
           <h2>{title}</h2>
           {loading && (

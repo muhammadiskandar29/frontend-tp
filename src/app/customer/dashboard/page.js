@@ -32,6 +32,43 @@ export default function DashboardPage() {
   
   const { products, loading: productsLoading } = useProducts();
 
+  // Fungsi untuk mengecek apakah data customer sudah lengkap
+  const isCustomerDataComplete = (customer) => {
+    if (!customer) return false;
+    
+    // Field required: nama_panggilan dan profesi
+    const hasNamaPanggilan = customer.nama_panggilan && customer.nama_panggilan.trim() !== "";
+    const hasProfesi = customer.profesi && customer.profesi.trim() !== "";
+    
+    return hasNamaPanggilan && hasProfesi;
+  };
+
+  // Cek apakah modal harus ditampilkan
+  useEffect(() => {
+    // Tunggu sampai loading selesai
+    if (dashboardLoading) return;
+
+    // Cek dari localStorage dulu (untuk trigger dari OTP page)
+    const showModalFlag = localStorage.getItem("customer_show_update_modal");
+    if (showModalFlag === "1") {
+      setShowUpdateModal(true);
+      setUpdateModalReason("password");
+      return;
+    }
+
+    // Cek apakah data customer sudah lengkap
+    if (customerInfo && !isCustomerDataComplete(customerInfo)) {
+      console.log("[DASHBOARD] Customer data incomplete, showing modal");
+      setShowUpdateModal(true);
+      setUpdateModalReason("data");
+    } else if (customerInfo && isCustomerDataComplete(customerInfo)) {
+      // Data sudah lengkap, pastikan modal tertutup
+      if (showUpdateModal) {
+        setShowUpdateModal(false);
+      }
+    }
+  }, [customerInfo, dashboardLoading]);
+
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTime(Date.now());
@@ -55,12 +92,18 @@ export default function DashboardPage() {
       };
 
       localStorage.setItem("customer_user", JSON.stringify(updatedUser));
+      
+      // Cek apakah data sudah lengkap setelah update
+      if (isCustomerDataComplete(updatedUser)) {
+        localStorage.removeItem("customer_show_update_modal");
+        setShowUpdateModal(false);
+        toast.success("Data berhasil diperbarui!");
+      } else {
+        // Data masih belum lengkap, tetap tampilkan modal
+        toast.success("Data berhasil disimpan. Silakan lengkapi data yang masih kosong.");
+      }
     }
 
-    localStorage.removeItem("customer_show_update_modal");
-    setShowUpdateModal(false);
-    
-    toast.success("Data berhasil diperbarui!");
     refetchDashboard();
   };
 
@@ -70,7 +113,16 @@ export default function DashboardPage() {
       {showUpdateModal && (
         <UpdateCustomerModal
           isOpen={showUpdateModal}
-          onClose={() => {}}
+          onClose={() => {
+            // Cek apakah data sudah lengkap sebelum menutup modal
+            if (customerInfo && isCustomerDataComplete(customerInfo)) {
+              setShowUpdateModal(false);
+              localStorage.removeItem("customer_show_update_modal");
+            } else {
+              // Data belum lengkap, tidak bisa ditutup
+              toast.error("Silakan lengkapi data yang wajib diisi terlebih dahulu");
+            }
+          }}
           onSuccess={handleUpdateSuccess}
           title={
             updateModalReason === "password"
@@ -78,6 +130,7 @@ export default function DashboardPage() {
               : "Lengkapi Data Profil Anda"
           }
           requirePassword={updateModalReason === "password"}
+          allowClose={customerInfo ? isCustomerDataComplete(customerInfo) : false}
         />
       )}
 
