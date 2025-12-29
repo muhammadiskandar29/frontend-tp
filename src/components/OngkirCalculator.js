@@ -221,7 +221,7 @@ export default function OngkirCalculator({
               backgroundColor: (loadingProvinces || loadingCost) ? '#f9fafb' : 'white'
             }}
           >
-            <option value="" disabled>Pilih Provinsi</option>
+            <option value="" disabled hidden>Pilih Provinsi</option>
             {provinces.map((province) => (
               <option key={province.id} value={province.id}>
                 {province.name}
@@ -249,7 +249,7 @@ export default function OngkirCalculator({
               backgroundColor: (!selectedProvince || loadingCities || loadingCost) ? '#f9fafb' : 'white'
             }}
           >
-            <option value="" disabled>Pilih Kota/Kabupaten</option>
+            <option value="" disabled hidden>Pilih Kota/Kabupaten</option>
             {cities.map((city) => (
               <option key={city.id} value={city.id}>
                 {city.name}
@@ -277,7 +277,7 @@ export default function OngkirCalculator({
               backgroundColor: (!selectedCity || loadingDistricts || loadingCost) ? '#f9fafb' : 'white'
             }}
           >
-            <option value="" disabled>Pilih Kecamatan</option>
+            <option value="" disabled hidden>Pilih Kecamatan</option>
             {districts.map((district) => (
               <option key={district.id || district.district_id} value={district.id || district.district_id}>
                 {district.name}
@@ -338,6 +338,17 @@ export default function OngkirCalculator({
           <p style={{ fontSize: "14px", color: "#6b7280" }}>Menghitung ongkir...</p>
         </div>
       )}
+      <style jsx>{`
+        /* Hide disabled placeholder options from dropdown list */
+        select option[value=""][disabled] {
+          display: none !important;
+        }
+        
+        /* Ensure placeholder is visible as default value but not selectable */
+        select option[value=""][disabled][hidden] {
+          display: none !important;
+        }
+      `}</style>
     </>
   );
 }
