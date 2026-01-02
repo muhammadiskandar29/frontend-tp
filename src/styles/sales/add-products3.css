@@ -3321,7 +3321,8 @@ html:has(.add-products3-container) {
 
 .rich-text-editor p {
   margin: 0 0 0px 0; /* No margin - very tight spacing */
-  font-size: inherit; /* Don't inherit font size from parent */
+  font-size: 16px; /* Default font size 16px */
+  font-weight: normal; /* Default not bold */
   line-height: 1.2; /* Tighter line height */
 }
 
@@ -3865,6 +3866,8 @@ html:has(.add-products3-container) {
 
 .preview-text p {
   margin: 0 0 0px 0 !important; /* No margin - very tight spacing in canvas */
+  font-size: 16px !important; /* Default font size 16px in canvas */
+  font-weight: normal !important; /* Default not bold in canvas */
   line-height: 1.2; /* Tighter line height */
 }
 

@@ -143,11 +143,11 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         offset: range.startOffset
       };
       
-      // Create a new paragraph without any formatting
+      // Create a new paragraph with default styles (16px, not bold)
       const p = document.createElement("p");
       p.innerHTML = "<br>";
-      // Explicitly reset styles to prevent inheritance
-      p.style.fontSize = "inherit";
+      // Set default styles: 16px font size, normal weight (not bold)
+      p.style.fontSize = "16px";
       p.style.fontWeight = "normal";
       p.style.fontStyle = "normal";
       p.style.textDecoration = "none";
