@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { InputTextarea } from "primereact/inputtextarea";
+import { InputText } from "primereact/inputtext";
 import { InputSwitch } from "primereact/inputswitch";
 import { Dropdown } from "primereact/dropdown";
 import { InputNumber } from "primereact/inputnumber";
