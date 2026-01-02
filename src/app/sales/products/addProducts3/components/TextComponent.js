@@ -31,17 +31,28 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   const [showAdvance, setShowAdvance] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showBgColorPicker, setShowBgColorPicker] = useState(false);
+  const [showMoreColors, setShowMoreColors] = useState(false);
+  const [showMoreBgColors, setShowMoreBgColors] = useState(false);
   const colorPickerRef = useRef(null);
   const bgColorPickerRef = useRef(null);
+
+  // Preset colors seperti MS Word
+  const presetColors = [
+    "#000000", "#FFFFFF", "#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF",
+    "#800000", "#008000", "#000080", "#808000", "#800080", "#008080", "#C0C0C0", "#808080",
+    "#FF9999", "#99FF99", "#9999FF", "#FFFF99", "#FF99FF", "#99FFFF", "#FFCC99", "#CC99FF"
+  ];
 
   // Close color picker when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (colorPickerRef.current && !colorPickerRef.current.contains(event.target)) {
         setShowColorPicker(false);
+        setShowMoreColors(false);
       }
       if (bgColorPickerRef.current && !bgColorPickerRef.current.contains(event.target)) {
         setShowBgColorPicker(false);
+        setShowMoreBgColors(false);
       }
     };
 
@@ -139,50 +150,81 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           >
             <Italic size={16} />
           </button>
-          <div className="toolbar-color-picker-wrapper" ref={colorPickerRef}>
+          {/* Text Color Button - MS Word Style */}
+          <div className="toolbar-color-picker-wrapper word-style-color-picker" ref={colorPickerRef}>
             <button 
-              className={`toolbar-btn ${showColorPicker ? "active" : ""}`}
-              title="Text Color (Warna Font)"
-              onClick={() => setShowColorPicker(!showColorPicker)}
+              className={`toolbar-btn-word-color ${showColorPicker ? "active" : ""}`}
+              title="Font Color (Warna Font)"
+              onClick={() => {
+                setShowColorPicker(!showColorPicker);
+                setShowMoreColors(false);
+              }}
             >
-              <span style={{ 
-                textDecoration: 'underline',
-                color: textColor,
-                fontWeight: 'bold'
-              }}>A</span>
-              <ChevronDownIcon size={12} />
+              <div className="word-color-icon">
+                <span 
+                  className="word-color-underline"
+                  style={{ 
+                    borderBottomColor: textColor,
+                    borderBottomWidth: '3px',
+                    borderBottomStyle: 'solid'
+                  }}
+                >
+                  A
+                </span>
+              </div>
+              <ChevronDownIcon size={10} style={{ marginLeft: "2px" }} />
             </button>
             {showColorPicker && (
-              <div className="toolbar-color-picker-popup">
-                <div style={{ fontSize: "12px", marginBottom: "8px", color: "#6b7280", fontWeight: "500" }}>
-                  Warna Font
+              <div className="word-color-picker-popup">
+                <div className="word-color-picker-header">Font Color</div>
+                <div className="word-color-preset-grid">
+                  {presetColors.map((color, idx) => (
+                    <button
+                      key={idx}
+                      className={`word-color-preset-item ${textColor === color ? "selected" : ""}`}
+                      style={{ backgroundColor: color }}
+                      onClick={() => {
+                        handleChange("textColor", color);
+                        setShowColorPicker(false);
+                      }}
+                      title={color}
+                    />
+                  ))}
                 </div>
-                <input
-                  type="color"
-                  value={textColor}
-                  onChange={(e) => {
-                    handleChange("textColor", e.target.value);
+                <div className="word-color-picker-divider"></div>
+                <button
+                  className="word-color-more-btn"
+                  onClick={() => {
+                    setShowMoreColors(!showMoreColors);
                   }}
-                  style={{ width: "100%", height: "40px", cursor: "pointer", marginBottom: "8px" }}
-                />
-                <input
-                  type="text"
-                  value={textColor}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (/^#[0-9A-Fa-f]{0,6}$/.test(value) || value === "") {
-                      handleChange("textColor", value || "#000000");
-                    }
-                  }}
-                  placeholder="#000000"
-                  style={{ 
-                    width: "100%", 
-                    padding: "6px 8px", 
-                    border: "1px solid #e5e7eb", 
-                    borderRadius: "4px",
-                    fontSize: "12px"
-                  }}
-                />
+                >
+                  More Colors...
+                </button>
+                {showMoreColors && (
+                  <div className="word-color-more-panel">
+                    <div className="word-color-more-label">Custom Color</div>
+                    <input
+                      type="color"
+                      value={textColor}
+                      onChange={(e) => {
+                        handleChange("textColor", e.target.value);
+                      }}
+                      style={{ width: "100%", height: "40px", cursor: "pointer", marginBottom: "8px" }}
+                    />
+                    <input
+                      type="text"
+                      value={textColor}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (/^#[0-9A-Fa-f]{0,6}$/.test(value) || value === "") {
+                          handleChange("textColor", value || "#000000");
+                        }
+                      }}
+                      placeholder="#000000"
+                      className="word-color-hex-input"
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -277,62 +319,106 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
               placeholder="1.5"
             />
           </div>
-          <div className="toolbar-color-picker-wrapper" ref={bgColorPickerRef}>
+          {/* Text Background Color Button - MS Word Style */}
+          <div className="toolbar-color-picker-wrapper word-style-color-picker" ref={bgColorPickerRef}>
             <button 
-              className={`toolbar-btn ${showBgColorPicker ? "active" : ""}`}
-              title="Text Background Color (Background Warna Font)"
-              onClick={() => setShowBgColorPicker(!showBgColorPicker)}
+              className={`toolbar-btn-word-bgcolor ${showBgColorPicker ? "active" : ""}`}
+              title="Text Highlight Color (Background Warna Font)"
+              onClick={() => {
+                setShowBgColorPicker(!showBgColorPicker);
+                setShowMoreBgColors(false);
+              }}
             >
-              <span style={{ 
-                backgroundColor: backgroundColor === "transparent" ? "#f0f0f0" : backgroundColor,
-                color: backgroundColor === "transparent" ? "#000" : "#fff",
-                padding: "2px 6px",
-                borderRadius: "2px",
-                fontWeight: "bold"
-              }}>Bg</span>
-            </button>
-            {showBgColorPicker && (
-              <div className="toolbar-color-picker-popup">
-                <div style={{ fontSize: "12px", marginBottom: "8px", color: "#6b7280", fontWeight: "500" }}>
-                  Background Warna Font
-                </div>
-                <input
-                  type="color"
-                  value={backgroundColor === "transparent" ? "#ffffff" : backgroundColor}
-                  onChange={(e) => {
-                    handleChange("backgroundColor", e.target.value);
-                  }}
-                  style={{ width: "100%", height: "40px", cursor: "pointer", marginBottom: "8px" }}
-                />
-                <input
-                  type="text"
-                  value={backgroundColor === "transparent" ? "" : backgroundColor}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (value === "") {
-                      handleChange("backgroundColor", "transparent");
-                    } else if (/^#[0-9A-Fa-f]{0,6}$/.test(value)) {
-                      handleChange("backgroundColor", value);
-                    }
-                  }}
-                  placeholder="Transparent atau #hex"
+              <div className="word-bgcolor-icon">
+                <span 
+                  className="word-bgcolor-highlight"
                   style={{ 
-                    width: "100%", 
-                    padding: "6px 8px", 
-                    border: "1px solid #e5e7eb", 
-                    borderRadius: "4px",
-                    fontSize: "12px",
-                    marginBottom: "8px"
-                  }}
-                />
-                <button 
-                  className="toolbar-transparent-btn"
-                  onClick={() => {
-                    handleChange("backgroundColor", "transparent");
+                    backgroundColor: backgroundColor === "transparent" ? "#FFFF00" : backgroundColor,
+                    padding: "2px 4px"
                   }}
                 >
-                  Transparent
+                  A
+                </span>
+              </div>
+              <ChevronDownIcon size={10} style={{ marginLeft: "2px" }} />
+            </button>
+            {showBgColorPicker && (
+              <div className="word-color-picker-popup">
+                <div className="word-color-picker-header">Text Highlight Color</div>
+                <div className="word-color-preset-grid">
+                  <button
+                    className={`word-color-preset-item ${backgroundColor === "transparent" ? "selected" : ""}`}
+                    style={{ 
+                      backgroundColor: "#f0f0f0",
+                      border: "1px solid #ccc",
+                      position: "relative"
+                    }}
+                    onClick={() => {
+                      handleChange("backgroundColor", "transparent");
+                      setShowBgColorPicker(false);
+                    }}
+                    title="No Color"
+                  >
+                    <span style={{ fontSize: "10px", color: "#999" }}>×</span>
+                  </button>
+                  {presetColors.map((color, idx) => (
+                    <button
+                      key={idx}
+                      className={`word-color-preset-item ${backgroundColor === color ? "selected" : ""}`}
+                      style={{ backgroundColor: color }}
+                      onClick={() => {
+                        handleChange("backgroundColor", color);
+                        setShowBgColorPicker(false);
+                      }}
+                      title={color}
+                    />
+                  ))}
+                </div>
+                <div className="word-color-picker-divider"></div>
+                <button
+                  className="word-color-more-btn"
+                  onClick={() => {
+                    setShowMoreBgColors(!showMoreBgColors);
+                  }}
+                >
+                  More Colors...
                 </button>
+                {showMoreBgColors && (
+                  <div className="word-color-more-panel">
+                    <div className="word-color-more-label">Custom Color</div>
+                    <input
+                      type="color"
+                      value={backgroundColor === "transparent" ? "#ffffff" : backgroundColor}
+                      onChange={(e) => {
+                        handleChange("backgroundColor", e.target.value);
+                      }}
+                      style={{ width: "100%", height: "40px", cursor: "pointer", marginBottom: "8px" }}
+                    />
+                    <input
+                      type="text"
+                      value={backgroundColor === "transparent" ? "" : backgroundColor}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === "") {
+                          handleChange("backgroundColor", "transparent");
+                        } else if (/^#[0-9A-Fa-f]{0,6}$/.test(value)) {
+                          handleChange("backgroundColor", value);
+                        }
+                      }}
+                      placeholder="Transparent atau #hex"
+                      className="word-color-hex-input"
+                      style={{ marginBottom: "8px" }}
+                    />
+                    <button 
+                      className="toolbar-transparent-btn"
+                      onClick={() => {
+                        handleChange("backgroundColor", "transparent");
+                      }}
+                    >
+                      No Color
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { 
   Type, Image as ImageIcon, FileText, List, MessageSquare, 
-  HelpCircle, Youtube, X, ArrowLeft
+  HelpCircle, Youtube, X, ArrowLeft, ChevronDown
 } from "lucide-react";
 import { InputText } from "primereact/inputtext";
 import { Dropdown } from "primereact/dropdown";
@@ -78,6 +78,45 @@ export default function AddProducts3Page() {
   // State untuk options dropdown
   const [kategoriOptions, setKategoriOptions] = useState([]);
   const [userOptions, setUserOptions] = useState([]);
+  const [showBgColorPicker, setShowBgColorPicker] = useState(false);
+  const bgColorPickerRef = useRef(null);
+
+  // Preset background colors
+  const presetBgColors = [
+    { name: "Putih", value: "#ffffff" },
+    { name: "Hitam", value: "#000000" },
+    { name: "Abu-abu Terang", value: "#f3f4f6" },
+    { name: "Abu-abu Gelap", value: "#374151" },
+    { name: "Biru Muda", value: "#dbeafe" },
+    { name: "Biru", value: "#3b82f6" },
+    { name: "Hijau Muda", value: "#d1fae5" },
+    { name: "Hijau", value: "#10b981" },
+    { name: "Kuning Muda", value: "#fef3c7" },
+    { name: "Kuning", value: "#f59e0b" },
+    { name: "Merah Muda", value: "#fce7f3" },
+    { name: "Merah", value: "#ef4444" },
+    { name: "Ungu Muda", value: "#e9d5ff" },
+    { name: "Ungu", value: "#8b5cf6" },
+    { name: "Orange Muda", value: "#fed7aa" },
+    { name: "Orange", value: "#f97316" },
+  ];
+
+  // Close background color picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (bgColorPickerRef.current && !bgColorPickerRef.current.contains(event.target)) {
+        setShowBgColorPicker(false);
+      }
+    };
+
+    if (showBgColorPicker) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showBgColorPicker]);
 
   // Default data untuk setiap komponen
   const getDefaultData = (componentId) => {
@@ -1250,32 +1289,91 @@ export default function AddProducts3Page() {
                     <label className="pengaturan-label">
                       Background Color
                     </label>
-                    <div className="background-color-picker-wrapper">
-                      <div className="background-color-preview" style={{ backgroundColor: pengaturanForm.background_color || "#ffffff" }}>
-                        <input
-                          type="color"
-                          value={pengaturanForm.background_color || "#ffffff"}
-                          onChange={(e) => handlePengaturanChange("background_color", e.target.value)}
-                          className="background-color-input"
-                          title="Pilih warna background"
-                        />
-                      </div>
-                      <InputText
-                        className="pengaturan-input"
-                        value={pengaturanForm.background_color || "#ffffff"}
-                        onChange={(e) => handlePengaturanChange("background_color", e.target.value)}
-                        placeholder="#ffffff"
-                        style={{ flex: 1 }}
-                      />
-                      <button
-                        type="button"
-                        className="background-color-reset-btn"
-                        onClick={() => handlePengaturanChange("background_color", "#ffffff")}
-                        title="Reset ke putih"
+                    
+                    {/* Modern Background Color Picker */}
+                    <div className="modern-bg-color-picker" ref={bgColorPickerRef}>
+                      {/* Current Color Preview */}
+                      <div 
+                        className="modern-bg-color-preview"
+                        style={{ backgroundColor: pengaturanForm.background_color || "#ffffff" }}
+                        onClick={() => setShowBgColorPicker(!showBgColorPicker)}
                       >
-                        Putih
-                      </button>
+                        <div className="modern-bg-color-preview-inner">
+                          <span className="modern-bg-color-hex">
+                            {pengaturanForm.background_color || "#ffffff"}
+                          </span>
+                          <ChevronDown size={16} />
+                        </div>
+                      </div>
+
+                      {/* Color Picker Dropdown */}
+                      {showBgColorPicker && (
+                        <div className="modern-bg-color-picker-popup">
+                          <div className="modern-bg-color-header">
+                            <span>Pilih Warna Background</span>
+                            <button
+                              className="modern-bg-color-close"
+                              onClick={() => setShowBgColorPicker(false)}
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+
+                          {/* Preset Colors Grid */}
+                          <div className="modern-bg-color-presets">
+                            <div className="modern-bg-color-presets-label">Warna Cepat</div>
+                            <div className="modern-bg-color-presets-grid">
+                              {presetBgColors.map((color, idx) => (
+                                <button
+                                  key={idx}
+                                  className={`modern-bg-color-preset-item ${
+                                    (pengaturanForm.background_color || "#ffffff") === color.value ? "selected" : ""
+                                  }`}
+                                  style={{ backgroundColor: color.value }}
+                                  onClick={() => {
+                                    handlePengaturanChange("background_color", color.value);
+                                    setShowBgColorPicker(false);
+                                  }}
+                                  title={color.name}
+                                >
+                                  {(pengaturanForm.background_color || "#ffffff") === color.value && (
+                                    <div className="modern-bg-color-check">✓</div>
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="modern-bg-color-divider"></div>
+
+                          {/* Custom Color Picker */}
+                          <div className="modern-bg-color-custom">
+                            <div className="modern-bg-color-custom-label">Warna Kustom</div>
+                            <div className="modern-bg-color-custom-picker">
+                              <input
+                                type="color"
+                                value={pengaturanForm.background_color || "#ffffff"}
+                                onChange={(e) => handlePengaturanChange("background_color", e.target.value)}
+                                className="modern-bg-color-input"
+                              />
+                              <InputText
+                                className="pengaturan-input"
+                                value={pengaturanForm.background_color || "#ffffff"}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  if (/^#[0-9A-Fa-f]{0,6}$/.test(value) || value === "") {
+                                    handlePengaturanChange("background_color", value || "#ffffff");
+                                  }
+                                }}
+                                placeholder="#ffffff"
+                                style={{ flex: 1, fontFamily: "monospace" }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
+                    
                     <small className="pengaturan-hint">Pilih warna background untuk halaman landing page</small>
                   </div>
                 </div>

@@ -1819,6 +1819,213 @@ html:has(.add-products3-container) {
   color: #111827;
 }
 
+/* ===== MODERN BACKGROUND COLOR PICKER ===== */
+.modern-bg-color-picker {
+  position: relative;
+  width: 100%;
+}
+
+.modern-bg-color-preview {
+  width: 100%;
+  min-height: 60px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  position: relative;
+  background: linear-gradient(45deg, #f9fafb 25%, transparent 25%), 
+              linear-gradient(-45deg, #f9fafb 25%, transparent 25%), 
+              linear-gradient(45deg, transparent 75%, #f9fafb 75%), 
+              linear-gradient(-45deg, transparent 75%, #f9fafb 75%);
+  background-size: 12px 12px;
+  background-position: 0 0, 0 6px, 6px -6px, -6px 0px;
+}
+
+.modern-bg-color-preview:hover {
+  border-color: #F1A124;
+  box-shadow: 0 4px 12px rgba(241, 161, 36, 0.2);
+  transform: translateY(-1px);
+}
+
+.modern-bg-color-preview-inner {
+  width: 100%;
+  height: 100%;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: inherit;
+  position: relative;
+  z-index: 1;
+}
+
+.modern-bg-color-hex {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+  letter-spacing: 0.5px;
+}
+
+.modern-bg-color-picker-popup {
+  position: absolute;
+  top: calc(100% + 12px);
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 16px;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modern-bg-color-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modern-bg-color-header span {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.modern-bg-color-close {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #6b7280;
+}
+
+.modern-bg-color-close:hover {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.modern-bg-color-presets {
+  margin-bottom: 16px;
+}
+
+.modern-bg-color-presets-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.modern-bg-color-presets-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 8px;
+}
+
+.modern-bg-color-preset-item {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+  background: none;
+}
+
+.modern-bg-color-preset-item:hover {
+  transform: scale(1.1);
+  border-color: #F1A124;
+  z-index: 1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.modern-bg-color-preset-item.selected {
+  border-color: #F1A124;
+  border-width: 3px;
+  box-shadow: 0 0 0 2px rgba(241, 161, 36, 0.2);
+}
+
+.modern-bg-color-check {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: bold;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  z-index: 2;
+}
+
+.modern-bg-color-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 16px 0;
+}
+
+.modern-bg-color-custom {
+  margin-top: 16px;
+}
+
+.modern-bg-color-custom-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.modern-bg-color-custom-picker {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.modern-bg-color-input {
+  width: 60px;
+  height: 60px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.modern-bg-color-input:hover {
+  border-color: #F1A124;
+  box-shadow: 0 2px 8px rgba(241, 161, 36, 0.2);
+}
+
 /* ===== FORM LABEL & FIELD HINT - Same as addProducts ===== */
 .pengaturan-content .form-label {
   display: flex;
@@ -2597,6 +2804,172 @@ html:has(.add-products3-container) {
 }
 
 .toolbar-color-picker-popup input[type="text"]:focus {
+  outline: none;
+  border-color: #F1A124;
+  box-shadow: 0 0 0 2px rgba(241, 161, 36, 0.1);
+}
+
+/* ===== MS WORD STYLE COLOR PICKER ===== */
+.toolbar-btn-word-color,
+.toolbar-btn-word-bgcolor {
+  width: auto;
+  min-width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #374151;
+  padding: 4px 8px;
+  gap: 4px;
+}
+
+.toolbar-btn-word-color:hover,
+.toolbar-btn-word-bgcolor:hover {
+  background: #F1A124;
+  border-color: #F1A124;
+  color: #ffffff;
+}
+
+.toolbar-btn-word-color.active,
+.toolbar-btn-word-bgcolor.active {
+  background: #F1A124;
+  border-color: #F1A124;
+  color: #ffffff;
+}
+
+.word-color-icon,
+.word-bgcolor-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.word-color-underline {
+  display: inline-block;
+  padding-bottom: 2px;
+  border-bottom: 3px solid;
+  line-height: 1.2;
+}
+
+.word-bgcolor-highlight {
+  display: inline-block;
+  border-radius: 2px;
+  line-height: 1.2;
+}
+
+/* Word Style Color Picker Popup */
+.word-color-picker-popup {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 1000;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  min-width: 220px;
+}
+
+.word-color-picker-header {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.word-color-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.word-color-preset-item {
+  width: 24px;
+  height: 24px;
+  border: 1px solid #d1d5db;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.word-color-preset-item:hover {
+  border-color: #F1A124;
+  transform: scale(1.1);
+  z-index: 1;
+  position: relative;
+}
+
+.word-color-preset-item.selected {
+  border: 2px solid #F1A124;
+  box-shadow: 0 0 0 2px rgba(241, 161, 36, 0.2);
+}
+
+.word-color-picker-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 8px 0;
+}
+
+.word-color-more-btn {
+  width: 100%;
+  padding: 8px 12px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.word-color-more-btn:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  color: #111827;
+}
+
+.word-color-more-panel {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.word-color-more-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.word-color-hex-input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: monospace;
+}
+
+.word-color-hex-input:focus {
   outline: none;
   border-color: #F1A124;
   box-shadow: 0 0 0 2px rgba(241, 161, 36, 0.1);
