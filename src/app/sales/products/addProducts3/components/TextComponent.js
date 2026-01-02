@@ -19,7 +19,6 @@ import ComponentWrapper from "./ComponentWrapper";
 export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index }) {
   const content = data.content || "<p>Text Baru</p>";
   const darkEditor = data.darkEditor || false;
-  const fontSize = data.fontSize || 16;
   const lineHeight = data.lineHeight || 1.5;
   const fontFamily = data.fontFamily || "Page Font";
   const textColor = data.textColor || "#000000";
@@ -49,6 +48,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   const [showMoreBgColors, setShowMoreBgColors] = useState(false);
   const [selectedColor, setSelectedColor] = useState("#000000");
   const [selectedBgColor, setSelectedBgColor] = useState("#FFFF00");
+  const [selectedFontSize, setSelectedFontSize] = useState(16);
   const colorPickerRef = useRef(null);
   const bgColorPickerRef = useRef(null);
   const editorRef = useRef(null);
@@ -120,6 +120,62 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     setShowBgColorPicker(false);
   };
 
+  // Apply font size to selection
+  const applyFontSize = (size) => {
+    if (!editorRef.current) return;
+    
+    // Focus editor first
+    editorRef.current.focus();
+    
+    const selection = window.getSelection();
+    if (selection.rangeCount === 0) return;
+    
+    const range = selection.getRangeAt(0);
+    
+    // Check if selection is within editor
+    if (!editorRef.current.contains(range.commonAncestorContainer)) {
+      return;
+    }
+    
+    // Create span with font size
+    const span = document.createElement("span");
+    span.style.fontSize = `${size}px`;
+    
+    if (range.collapsed) {
+      // If no selection, insert a span at cursor position
+      span.innerHTML = "&nbsp;";
+      try {
+        range.insertNode(span);
+        // Move cursor after the span
+        range.setStartAfter(span);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      } catch (e) {
+        console.error("Error inserting font size:", e);
+      }
+    } else {
+      // If there's a selection, wrap it in a span
+      try {
+        // Try to surround contents first (works for simple selections)
+        range.surroundContents(span);
+      } catch (e) {
+        // If surroundContents fails (e.g., selection spans multiple nodes),
+        // extract contents and wrap
+        try {
+          const contents = range.extractContents();
+          span.appendChild(contents);
+          range.insertNode(span);
+        } catch (e2) {
+          console.error("Error applying font size:", e2);
+          return;
+        }
+      }
+    }
+    
+    handleEditorInput();
+  };
+
   // Initialize editor content
   useEffect(() => {
     if (editorRef.current) {
@@ -129,6 +185,61 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         editorRef.current.innerHTML = content;
       }
     }
+  }, []);
+
+  // Detect font size from current selection
+  const detectFontSize = () => {
+    if (!editorRef.current) return;
+    
+    const selection = window.getSelection();
+    if (selection.rangeCount === 0) return;
+    
+    const range = selection.getRangeAt(0);
+    if (range.collapsed) {
+      // If cursor is at a position, find the parent element with fontSize
+      let node = range.startContainer;
+      if (node.nodeType === Node.TEXT_NODE) {
+        node = node.parentElement;
+      }
+      
+      while (node && node !== editorRef.current) {
+        if (node.style && node.style.fontSize) {
+          const fontSize = parseInt(node.style.fontSize);
+          if (!isNaN(fontSize)) {
+            setSelectedFontSize(fontSize);
+            return;
+          }
+        }
+        node = node.parentElement;
+      }
+    } else {
+      // If there's a selection, check the first element
+      const container = range.commonAncestorContainer;
+      let node = container.nodeType === Node.TEXT_NODE ? container.parentElement : container;
+      
+      while (node && node !== editorRef.current) {
+        if (node.style && node.style.fontSize) {
+          const fontSize = parseInt(node.style.fontSize);
+          if (!isNaN(fontSize)) {
+            setSelectedFontSize(fontSize);
+            return;
+          }
+        }
+        node = node.parentElement;
+      }
+    }
+  };
+
+  // Update font size display when selection changes
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      detectFontSize();
+    };
+
+    document.addEventListener("selectionchange", handleSelectionChange);
+    return () => {
+      document.removeEventListener("selectionchange", handleSelectionChange);
+    };
   }, []);
 
   const toggleFormat = (field, value) => {
@@ -332,13 +443,18 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           />
           <div className="toolbar-input-group">
             <InputNumber
-              value={fontSize}
-              onValueChange={(e) => handleChange("fontSize", e.value || 16)}
+              value={selectedFontSize}
+              onValueChange={(e) => {
+                const size = e.value || 16;
+                setSelectedFontSize(size);
+                applyFontSize(size);
+              }}
               min={8}
               max={200}
               suffix="px"
               className="toolbar-input"
               placeholder="16"
+              title="Font Size (Ukuran Font) - Pilih teks terlebih dahulu"
             />
           </div>
           <div className="toolbar-align-group">
@@ -484,11 +600,12 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           contentEditable
           onInput={handleEditorInput}
           onKeyDown={handleEditorKeyDown}
+          onMouseUp={detectFontSize}
+          onKeyUp={detectFontSize}
           className="rich-text-editor"
           style={{
             minHeight: "200px",
             padding: "12px 14px",
-            fontSize: `${fontSize}px`,
             lineHeight: lineHeight,
             fontFamily: fontFamily !== "Page Font" ? fontFamily : "inherit",
             color: textColor,

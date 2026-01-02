@@ -277,7 +277,7 @@ export default function AddProducts3Page() {
       case "text":
         const textData = block.data || {};
         const textStyles = {
-          fontSize: textData.fontSize ? `${textData.fontSize}px` : "16px",
+          // fontSize removed - now handled by inline styles in HTML content
           lineHeight: textData.lineHeight || 1.5,
           fontFamily: textData.fontFamily && textData.fontFamily !== "Page Font" 
             ? textData.fontFamily 
