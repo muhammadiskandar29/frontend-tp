@@ -10,7 +10,6 @@ import {
   HelpCircle, Youtube, Layout
 } from "lucide-react";
 import ComponentWrapper from "./ComponentWrapper";
-import SimpleColorPicker from "./SimpleColorPicker";
 
 // Import semua komponen untuk render children
 import {
@@ -421,12 +420,22 @@ export default function SectionComponent({
             {/* Warna Border */}
             <div className="advance-section-group">
               <div className="advance-section-label">Warna Border</div>
-              <SimpleColorPicker
-                value={borderColor.startsWith("#") ? borderColor : "#000000"}
-                onChange={(color) => handleChange("borderColor", color)}
-                presetColors={presetBorderColors.filter(c => c.startsWith("#"))}
-                label="Pilih Warna Border"
-              />
+              <div className="advance-border-color-grid">
+                {presetBorderColors.map((color, idx) => (
+                  <button
+                    key={idx}
+                    className={`advance-border-color-item ${
+                      borderColor === color ? "selected" : ""
+                    }`}
+                    style={{ 
+                      background: color,
+                      border: color === "#000000" ? "1px solid #ccc" : "none"
+                    }}
+                    onClick={() => handleChange("borderColor", color)}
+                    title={color}
+                  />
+                ))}
+              </div>
             </div>
 
             {/* Border Radius */}
