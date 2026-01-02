@@ -358,34 +358,38 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
 
   // Apply font size to selection
   const applyFontSize = (size) => {
-    if (!editorRef.current) return;
+    if (!editorRef.current || !size) return;
     
-    // Get current selection or use saved selection
+    // Always use saved selection if available, otherwise get current
     let rangeToUse = null;
-    const selection = window.getSelection();
     
-    if (selection.rangeCount > 0) {
-      const currentRange = selection.getRangeAt(0);
-      if (editorRef.current.contains(currentRange.commonAncestorContainer)) {
-        rangeToUse = currentRange;
-      }
-    }
-    
-    // If no current selection, try to use saved selection
-    if (!rangeToUse && savedSelectionRef.current) {
+    // First, try to use saved selection
+    if (savedSelectionRef.current) {
       rangeToUse = savedSelectionRef.current;
+    } else {
+      // If no saved selection, try current selection
+      const selection = window.getSelection();
+      if (selection.rangeCount > 0) {
+        const currentRange = selection.getRangeAt(0);
+        if (editorRef.current.contains(currentRange.commonAncestorContainer)) {
+          rangeToUse = currentRange;
+        }
+      }
     }
     
     // Focus editor
     editorRef.current.focus();
     
+    const selection = window.getSelection();
+    
     if (rangeToUse) {
       // Restore selection
       selection.removeAllRanges();
       try {
+        // Try to add the saved range directly
         selection.addRange(rangeToUse);
       } catch (e) {
-        // If range is invalid, create new range from saved positions
+        // If that fails, try to recreate from saved positions
         try {
           const newRange = document.createRange();
           newRange.setStart(rangeToUse.startContainer, rangeToUse.startOffset);
@@ -393,22 +397,22 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           selection.addRange(newRange);
           rangeToUse = newRange;
         } catch (e2) {
-          // If still fails, just continue without selection
-          rangeToUse = null;
+          console.error("Cannot restore selection for font size:", e2);
+          return;
         }
       }
     }
     
-    if (!rangeToUse || selection.rangeCount === 0) {
-      // If no selection, create a marker span at cursor for next typing
+    // Now apply font size
+    if (selection.rangeCount === 0) {
+      // No selection - create marker for next typing
       const range = document.createRange();
       range.selectNodeContents(editorRef.current);
-      range.collapse(false); // Move to end
+      range.collapse(false);
       
       const span = document.createElement("span");
       span.style.fontSize = `${size}px`;
-      span.innerHTML = "\u200B"; // Zero-width space
-      span.setAttribute("data-font-size", size);
+      span.innerHTML = "\u200B";
       
       try {
         range.insertNode(span);
@@ -432,44 +436,84 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     span.style.fontSize = `${size}px`;
     
     if (range.collapsed) {
-      // If no selection, insert a marker span at cursor position
-      span.innerHTML = "\u200B"; // Zero-width space
-      span.setAttribute("data-font-size", size);
+      // Cursor position - insert marker
+      span.innerHTML = "\u200B";
       try {
         range.insertNode(span);
-        // Move cursor after the span
         const newRange = document.createRange();
         newRange.setStartAfter(span);
         newRange.collapse(true);
         selection.removeAllRanges();
         selection.addRange(newRange);
       } catch (e) {
-        console.error("Error inserting font size:", e);
+        console.error("Error inserting font size at cursor:", e);
       }
     } else {
-      // If there's a selection, wrap it in a span
+      // Has selection - wrap it
+      const selectedText = range.toString();
+      if (!selectedText || selectedText.trim() === "") {
+        // Empty selection, just return
+        return;
+      }
+      
       try {
-        // Try to surround contents first (works for simple selections)
+        // Try surroundContents first (works for simple selections)
         range.surroundContents(span);
-        // Restore selection to the wrapped content
+        
+        // Restore selection to the wrapped span
         const newRange = document.createRange();
         newRange.selectNodeContents(span);
         selection.removeAllRanges();
         selection.addRange(newRange);
+        
+        // Update saved selection to the new wrapped span
+        savedSelectionRef.current = newRange.cloneRange();
       } catch (e) {
-        // If surroundContents fails (e.g., selection spans multiple nodes),
-        // extract contents and wrap
+        // surroundContents failed - use extractContents (for complex selections)
         try {
           const contents = range.extractContents();
+          
+          // Clear any existing font-size spans in contents
+          const existingSpans = contents.querySelectorAll('span[style*="font-size"]');
+          existingSpans.forEach(existingSpan => {
+            const parent = existingSpan.parentNode;
+            while (existingSpan.firstChild) {
+              parent.insertBefore(existingSpan.firstChild, existingSpan);
+            }
+            parent.removeChild(existingSpan);
+          });
+          
           span.appendChild(contents);
           range.insertNode(span);
-          // Restore selection to the wrapped content
+          
+          // Restore selection to the wrapped span
           const newRange = document.createRange();
           newRange.selectNodeContents(span);
           selection.removeAllRanges();
           selection.addRange(newRange);
+          
+          // Update saved selection
+          savedSelectionRef.current = newRange.cloneRange();
         } catch (e2) {
-          console.error("Error applying font size:", e2);
+          console.error("Error applying font size to selection:", e2);
+          // Fallback: try using execCommand
+          try {
+            // Remove any existing font-size formatting first
+            const tempSpan = document.createElement("span");
+            tempSpan.style.fontSize = `${size}px`;
+            document.execCommand("fontSize", false, "7"); // This creates a font tag
+            // Then wrap in our span
+            const allFonts = editorRef.current.querySelectorAll("font[size='7']");
+            allFonts.forEach(font => {
+              const parent = font.parentNode;
+              const newSpan = document.createElement("span");
+              newSpan.style.fontSize = `${size}px`;
+              newSpan.innerHTML = font.innerHTML;
+              parent.replaceChild(newSpan, font);
+            });
+          } catch (e3) {
+            console.error("All methods failed:", e3);
+          }
           return;
         }
       }
@@ -820,17 +864,31 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           <div className="toolbar-input-group">
             <InputNumber
               value={selectedFontSize}
-              onFocus={() => {
-                // Save selection when input gets focus
+              onMouseDown={(e) => {
+                // Save selection when user clicks on input
+                e.stopPropagation();
                 saveSelection();
+              }}
+              onFocus={() => {
+                // Also save selection when input gets focus (e.g., via Tab)
+                saveSelection();
+              }}
+              onBlur={() => {
+                // Clear saved selection when input loses focus
+                // But only if user clicked elsewhere (not on editor)
+                setTimeout(() => {
+                  const selection = window.getSelection();
+                  if (selection.rangeCount === 0 || 
+                      !editorRef.current?.contains(selection.rangeCount > 0 ? selection.getRangeAt(0).commonAncestorContainer : null)) {
+                    savedSelectionRef.current = null;
+                  }
+                }, 100);
               }}
               onValueChange={(e) => {
                 const size = e.value || 16;
                 setSelectedFontSize(size);
-                // Apply font size to saved selection
-                if (savedSelectionRef.current) {
-                  applyFontSize(size);
-                }
+                // Always apply font size - will use saved selection if available
+                applyFontSize(size);
               }}
               min={8}
               max={200}
@@ -982,8 +1040,16 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           contentEditable
           onInput={handleEditorInput}
           onKeyDown={handleEditorKeyDown}
-          onMouseUp={detectStyles}
+          onMouseUp={(e) => {
+            // Clear saved selection when user clicks in editor
+            savedSelectionRef.current = null;
+            detectStyles();
+          }}
           onKeyUp={detectStyles}
+          onClick={(e) => {
+            // Clear saved selection when user clicks in editor
+            savedSelectionRef.current = null;
+          }}
           className="rich-text-editor"
           style={{
             minHeight: "200px",
