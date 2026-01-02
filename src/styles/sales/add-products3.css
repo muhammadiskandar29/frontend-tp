@@ -1834,12 +1834,7 @@ html:has(.add-products3-container) {
   transition: all 0.3s ease;
   overflow: hidden;
   position: relative;
-  background: linear-gradient(45deg, #f9fafb 25%, transparent 25%), 
-              linear-gradient(-45deg, #f9fafb 25%, transparent 25%), 
-              linear-gradient(45deg, transparent 75%, #f9fafb 75%), 
-              linear-gradient(-45deg, transparent 75%, #f9fafb 75%);
-  background-size: 12px 12px;
-  background-position: 0 0, 0 6px, 6px -6px, -6px 0px;
+  /* Removed checkerboard pattern - solid color only */
 }
 
 .modern-bg-color-preview:hover {
@@ -1958,7 +1953,12 @@ html:has(.add-products3-container) {
   position: relative;
   overflow: hidden;
   padding: 0;
-  background: none;
+  background: linear-gradient(45deg, #f9fafb 25%, transparent 25%), 
+              linear-gradient(-45deg, #f9fafb 25%, transparent 25%), 
+              linear-gradient(45deg, transparent 75%, #f9fafb 75%), 
+              linear-gradient(-45deg, transparent 75%, #f9fafb 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 0 4px, 4px -4px, -4px 0px;
 }
 
 .modern-bg-color-preset-item:hover {
@@ -2701,7 +2701,147 @@ html:has(.add-products3-container) {
   border-top: 1px solid #f3f4f6;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
+}
+
+/* Advance Section Groups */
+.advance-section-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.advance-section-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.advance-section-sublabel {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+/* Background Type Buttons */
+.advance-bg-type-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.advance-bg-type-btn {
+  flex: 1;
+  padding: 10px 16px;
+  background: #ffffff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.advance-bg-type-btn:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.advance-bg-type-btn.active {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: #ffffff;
+}
+
+.advance-color-input {
+  width: 100%;
+  height: 50px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* Device View Buttons */
+.advance-device-view-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.advance-device-btn {
+  flex: 1;
+  padding: 10px 16px;
+  background: #ffffff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.advance-device-btn:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.advance-device-btn.active {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: #ffffff;
+}
+
+/* Padding Grid */
+.advance-padding-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.advance-padding-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.advance-padding-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.advance-padding-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.advance-padding-input {
+  flex: 1;
+}
+
+.advance-padding-input .p-inputnumber {
+  width: 100%;
+}
+
+.advance-padding-input .p-inputtext {
+  width: 100% !important;
+}
+
+.advance-padding-unit {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 500;
+  min-width: 24px;
 }
 
 /* ===== TEXT EDITOR STYLES ===== */
@@ -2810,10 +2950,11 @@ html:has(.add-products3-container) {
 }
 
 /* ===== MS WORD STYLE COLOR PICKER ===== */
-.toolbar-btn-word-color,
-.toolbar-btn-word-bgcolor {
+/* Text Color Button - Like Image */
+.toolbar-btn-text-color,
+.toolbar-btn-bg-color {
   width: auto;
-  min-width: 36px;
+  min-width: 50px;
   height: 36px;
   display: flex;
   align-items: center;
@@ -2828,41 +2969,46 @@ html:has(.add-products3-container) {
   gap: 4px;
 }
 
-.toolbar-btn-word-color:hover,
-.toolbar-btn-word-bgcolor:hover {
-  background: #F1A124;
-  border-color: #F1A124;
-  color: #ffffff;
+.toolbar-btn-text-color:hover,
+.toolbar-btn-bg-color:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
 }
 
-.toolbar-btn-word-color.active,
-.toolbar-btn-word-bgcolor.active {
-  background: #F1A124;
+.toolbar-btn-text-color.active,
+.toolbar-btn-bg-color.active {
+  background: #f3f4f6;
   border-color: #F1A124;
-  color: #ffffff;
 }
 
-.word-color-icon,
-.word-bgcolor-icon {
+.text-color-button-content,
+.bg-color-button-content {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  font-weight: bold;
+  gap: 2px;
+}
+
+.text-color-letter,
+.bg-color-letter {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
   line-height: 1;
 }
 
-.word-color-underline {
-  display: inline-block;
-  padding-bottom: 2px;
-  border-bottom: 3px solid;
-  line-height: 1.2;
+.bg-color-letter {
+  font-size: 12px;
+  font-weight: 400;
 }
 
-.word-bgcolor-highlight {
-  display: inline-block;
+.text-color-bar,
+.bg-color-bar {
+  width: 24px;
+  height: 4px;
   border-radius: 2px;
-  line-height: 1.2;
+  transition: all 0.2s ease;
 }
 
 /* Word Style Color Picker Popup */
@@ -3089,6 +3235,42 @@ html:has(.add-products3-container) {
 
 .text-editor-area.dark .text-editor-textarea:focus {
   outline: none;
+}
+
+/* Rich Text Editor */
+.rich-text-editor {
+  width: 100%;
+  min-height: 200px;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  resize: vertical;
+  color: #1f2937;
+  background: transparent;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.rich-text-editor:empty:before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.rich-text-editor p {
+  margin: 0 0 8px 0;
+}
+
+.rich-text-editor p:last-child {
+  margin-bottom: 0;
+}
+
+.text-editor-area.dark .rich-text-editor {
+  color: #ffffff;
+}
+
+.text-editor-area.dark .rich-text-editor:empty:before {
+  color: #6b7280;
 }
 
 .block-content {

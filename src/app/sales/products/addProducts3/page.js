@@ -121,7 +121,7 @@ export default function AddProducts3Page() {
   // Default data untuk setiap komponen
   const getDefaultData = (componentId) => {
     const defaults = {
-      text: { content: "" },
+      text: { content: "<p></p>" },
       image: { src: "", alt: "", caption: "" },
       video: { items: [] },
       testimoni: { items: [] },
@@ -288,20 +288,39 @@ export default function AddProducts3Page() {
                     textData.paragraphStyle === "h2" ? "h2" :
                     textData.paragraphStyle === "h3" ? "h3" : "div";
 
-        // Jika ada background color, gunakan display inline untuk highlight effect
-        const hasBackground = textData.backgroundColor && textData.backgroundColor !== "transparent";
+        // Background dari advance settings
+        let backgroundStyle = {};
+        if (textData.bgType === "color") {
+          backgroundStyle.backgroundColor = textData.bgColor || "#ffffff";
+        } else if (textData.bgType === "image" && textData.bgImage) {
+          backgroundStyle.backgroundImage = `url(${textData.bgImage})`;
+          backgroundStyle.backgroundSize = "cover";
+          backgroundStyle.backgroundPosition = "center";
+        }
+        
+        // Padding dari advance settings
+        const paddingStyle = {
+          paddingTop: `${textData.paddingTop || 0}px`,
+          paddingRight: `${textData.paddingRight || 0}px`,
+          paddingBottom: `${textData.paddingBottom || 0}px`,
+          paddingLeft: `${textData.paddingLeft || 0}px`,
+        };
+        
+        // Rich text content (HTML)
+        const richContent = textData.content || "<p>Teks...</p>";
         
         return (
           <Tag 
             className="preview-text" 
             style={{
               ...textStyles,
-              display: hasBackground ? "inline-block" : "block",
-              width: hasBackground ? "auto" : "100%"
+              ...backgroundStyle,
+              ...paddingStyle,
+              display: "block",
+              width: "100%"
             }}
-          >
-            {textData.content || "Teks..."}
-          </Tag>
+            dangerouslySetInnerHTML={{ __html: richContent }}
+          />
         );
       case "image":
         return block.data.src ? (

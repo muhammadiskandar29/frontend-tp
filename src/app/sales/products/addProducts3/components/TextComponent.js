@@ -10,12 +10,13 @@ import {
   Subscript, Superscript, Link, List, ListOrdered, 
   AlignLeft, AlignCenter, AlignRight, AlignJustify,
   Image as ImageIcon, Smile,
-  ChevronDown as ChevronDownIcon
+  ChevronDown as ChevronDownIcon, ChevronUp,
+  X, Monitor, Tablet, Smartphone
 } from "lucide-react";
 import ComponentWrapper from "./ComponentWrapper";
 
 export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index }) {
-  const content = data.content || "Text Baru";
+  const content = data.content || "<p>Text Baru</p>";
   const darkEditor = data.darkEditor || false;
   const fontSize = data.fontSize || 16;
   const lineHeight = data.lineHeight || 1.5;
@@ -28,13 +29,28 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   const textDecoration = data.textDecoration || "none";
   const textTransform = data.textTransform || "none";
   const letterSpacing = data.letterSpacing || 0;
+  
+  // Advance settings
+  const paddingTop = data.paddingTop || 0;
+  const paddingRight = data.paddingRight || 0;
+  const paddingBottom = data.paddingBottom || 0;
+  const paddingLeft = data.paddingLeft || 0;
+  const bgType = data.bgType || "none"; // none, color, image
+  const bgColor = data.bgColor || "#ffffff";
+  const bgImage = data.bgImage || "";
+  const deviceView = data.deviceView || "desktop";
+  const componentId = data.componentId || `text-${Date.now()}`;
+  
   const [showAdvance, setShowAdvance] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showBgColorPicker, setShowBgColorPicker] = useState(false);
   const [showMoreColors, setShowMoreColors] = useState(false);
   const [showMoreBgColors, setShowMoreBgColors] = useState(false);
+  const [selectedColor, setSelectedColor] = useState("#000000");
+  const [selectedBgColor, setSelectedBgColor] = useState("#FFFF00");
   const colorPickerRef = useRef(null);
   const bgColorPickerRef = useRef(null);
+  const editorRef = useRef(null);
 
   // Preset colors seperti MS Word
   const presetColors = [
@@ -68,6 +84,51 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   const handleChange = (field, value) => {
     onUpdate?.({ ...data, [field]: value });
   };
+
+  // Rich text editor handlers
+  const handleEditorInput = () => {
+    if (editorRef.current) {
+      const html = editorRef.current.innerHTML;
+      handleChange("content", html);
+    }
+  };
+
+  const handleEditorKeyDown = (e) => {
+    // Allow Enter to create new paragraph
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      document.execCommand("insertParagraph", false, null);
+    }
+  };
+
+  // Format selection handlers
+  const formatSelection = (command, value = null) => {
+    document.execCommand(command, false, value);
+    handleEditorInput();
+  };
+
+  const applyTextColor = (color) => {
+    formatSelection("foreColor", color);
+    setSelectedColor(color);
+    setShowColorPicker(false);
+  };
+
+  const applyBgColor = (color) => {
+    formatSelection("backColor", color);
+    setSelectedBgColor(color);
+    setShowBgColorPicker(false);
+  };
+
+  // Initialize editor content
+  useEffect(() => {
+    if (editorRef.current) {
+      if (!content || content === "Text Baru") {
+        editorRef.current.innerHTML = "<p></p>";
+      } else {
+        editorRef.current.innerHTML = content;
+      }
+    }
+  }, []);
 
   const toggleFormat = (field, value) => {
     const currentValue = data[field];
@@ -139,40 +200,38 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           <button 
             className={`toolbar-btn ${fontWeight === "bold" ? "active" : ""}`}
             title="Bold"
-            onClick={() => toggleFormat("fontWeight", "bold")}
+            onClick={() => {
+              formatSelection("bold");
+              toggleFormat("fontWeight", "bold");
+            }}
           >
             <Bold size={16} />
           </button>
           <button 
             className={`toolbar-btn ${fontStyle === "italic" ? "active" : ""}`}
             title="Italic"
-            onClick={() => toggleFormat("fontStyle", "italic")}
+            onClick={() => {
+              formatSelection("italic");
+              toggleFormat("fontStyle", "italic");
+            }}
           >
             <Italic size={16} />
           </button>
-          {/* Text Color Button - MS Word Style */}
+          {/* Text Color Button - Like Image */}
           <div className="toolbar-color-picker-wrapper word-style-color-picker" ref={colorPickerRef}>
             <button 
-              className={`toolbar-btn-word-color ${showColorPicker ? "active" : ""}`}
+              className={`toolbar-btn-text-color ${showColorPicker ? "active" : ""}`}
               title="Font Color (Warna Font)"
               onClick={() => {
                 setShowColorPicker(!showColorPicker);
                 setShowMoreColors(false);
               }}
             >
-              <div className="word-color-icon">
-                <span 
-                  className="word-color-underline"
-                  style={{ 
-                    borderBottomColor: textColor,
-                    borderBottomWidth: '3px',
-                    borderBottomStyle: 'solid'
-                  }}
-                >
-                  A
-                </span>
+              <div className="text-color-button-content">
+                <span className="text-color-letter">A</span>
+                <div className="text-color-bar" style={{ backgroundColor: textColor }}></div>
               </div>
-              <ChevronDownIcon size={10} style={{ marginLeft: "2px" }} />
+              <ChevronDownIcon size={10} style={{ marginLeft: "4px" }} />
             </button>
             {showColorPicker && (
               <div className="word-color-picker-popup">
@@ -181,12 +240,9 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
                   {presetColors.map((color, idx) => (
                     <button
                       key={idx}
-                      className={`word-color-preset-item ${textColor === color ? "selected" : ""}`}
+                      className={`word-color-preset-item ${selectedColor === color ? "selected" : ""}`}
                       style={{ backgroundColor: color }}
-                      onClick={() => {
-                        handleChange("textColor", color);
-                        setShowColorPicker(false);
-                      }}
+                      onClick={() => applyTextColor(color)}
                       title={color}
                     />
                   ))}
@@ -205,19 +261,17 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
                     <div className="word-color-more-label">Custom Color</div>
                     <input
                       type="color"
-                      value={textColor}
-                      onChange={(e) => {
-                        handleChange("textColor", e.target.value);
-                      }}
+                      value={selectedColor}
+                      onChange={(e) => applyTextColor(e.target.value)}
                       style={{ width: "100%", height: "40px", cursor: "pointer", marginBottom: "8px" }}
                     />
                     <input
                       type="text"
-                      value={textColor}
+                      value={selectedColor}
                       onChange={(e) => {
                         const value = e.target.value;
                         if (/^#[0-9A-Fa-f]{0,6}$/.test(value) || value === "") {
-                          handleChange("textColor", value || "#000000");
+                          applyTextColor(value || "#000000");
                         }
                       }}
                       placeholder="#000000"
@@ -231,14 +285,20 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           <button 
             className={`toolbar-btn ${textDecoration === "line-through" ? "active" : ""}`}
             title="Strikethrough"
-            onClick={() => toggleFormat("textDecoration", "line-through")}
+            onClick={() => {
+              formatSelection("strikeThrough");
+              toggleFormat("textDecoration", "line-through");
+            }}
           >
             <Strikethrough size={16} />
           </button>
           <button 
             className={`toolbar-btn ${textDecoration === "underline" ? "active" : ""}`}
             title="Underline"
-            onClick={() => toggleFormat("textDecoration", "underline")}
+            onClick={() => {
+              formatSelection("underline");
+              toggleFormat("textDecoration", "underline");
+            }}
           >
             <Underline size={16} />
           </button>
@@ -319,28 +379,26 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
               placeholder="1.5"
             />
           </div>
-          {/* Text Background Color Button - MS Word Style */}
+          {/* Text Background Color Button - Like Image */}
           <div className="toolbar-color-picker-wrapper word-style-color-picker" ref={bgColorPickerRef}>
             <button 
-              className={`toolbar-btn-word-bgcolor ${showBgColorPicker ? "active" : ""}`}
+              className={`toolbar-btn-bg-color ${showBgColorPicker ? "active" : ""}`}
               title="Text Highlight Color (Background Warna Font)"
               onClick={() => {
                 setShowBgColorPicker(!showBgColorPicker);
                 setShowMoreBgColors(false);
               }}
             >
-              <div className="word-bgcolor-icon">
-                <span 
-                  className="word-bgcolor-highlight"
+              <div className="bg-color-button-content">
+                <span className="bg-color-letter">ab</span>
+                <div 
+                  className="bg-color-bar" 
                   style={{ 
-                    backgroundColor: backgroundColor === "transparent" ? "#FFFF00" : backgroundColor,
-                    padding: "2px 4px"
+                    backgroundColor: backgroundColor === "transparent" ? "#FFFF00" : backgroundColor
                   }}
-                >
-                  A
-                </span>
+                ></div>
               </div>
-              <ChevronDownIcon size={10} style={{ marginLeft: "2px" }} />
+              <ChevronDownIcon size={10} style={{ marginLeft: "4px" }} />
             </button>
             {showBgColorPicker && (
               <div className="word-color-picker-popup">
@@ -364,12 +422,9 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
                   {presetColors.map((color, idx) => (
                     <button
                       key={idx}
-                      className={`word-color-preset-item ${backgroundColor === color ? "selected" : ""}`}
+                      className={`word-color-preset-item ${selectedBgColor === color ? "selected" : ""}`}
                       style={{ backgroundColor: color }}
-                      onClick={() => {
-                        handleChange("backgroundColor", color);
-                        setShowBgColorPicker(false);
-                      }}
+                      onClick={() => applyBgColor(color)}
                       title={color}
                     />
                   ))}
@@ -388,21 +443,19 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
                     <div className="word-color-more-label">Custom Color</div>
                     <input
                       type="color"
-                      value={backgroundColor === "transparent" ? "#ffffff" : backgroundColor}
-                      onChange={(e) => {
-                        handleChange("backgroundColor", e.target.value);
-                      }}
+                      value={selectedBgColor === "transparent" ? "#ffffff" : selectedBgColor}
+                      onChange={(e) => applyBgColor(e.target.value)}
                       style={{ width: "100%", height: "40px", cursor: "pointer", marginBottom: "8px" }}
                     />
                     <input
                       type="text"
-                      value={backgroundColor === "transparent" ? "" : backgroundColor}
+                      value={selectedBgColor === "transparent" ? "" : selectedBgColor}
                       onChange={(e) => {
                         const value = e.target.value;
                         if (value === "") {
-                          handleChange("backgroundColor", "transparent");
+                          applyBgColor("transparent");
                         } else if (/^#[0-9A-Fa-f]{0,6}$/.test(value)) {
-                          handleChange("backgroundColor", value);
+                          applyBgColor(value);
                         }
                       }}
                       placeholder="Transparent atau #hex"
@@ -411,9 +464,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
                     />
                     <button 
                       className="toolbar-transparent-btn"
-                      onClick={() => {
-                        handleChange("backgroundColor", "transparent");
-                      }}
+                      onClick={() => applyBgColor("transparent")}
                     >
                       No Color
                     </button>
@@ -425,14 +476,24 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         </div>
       </div>
 
-      {/* Text Editor Area */}
+      {/* Rich Text Editor Area */}
       <div className={`text-editor-area ${darkEditor ? 'dark' : ''}`}>
-        <InputTextarea
-          value={content}
-          onChange={(e) => handleChange("content", e.target.value)}
-          placeholder="Masukkan teks..."
-          rows={8}
-          className="w-full text-editor-textarea"
+        <div
+          ref={editorRef}
+          contentEditable
+          onInput={handleEditorInput}
+          onKeyDown={handleEditorKeyDown}
+          className="rich-text-editor"
+          style={{
+            minHeight: "200px",
+            padding: "12px 14px",
+            fontSize: `${fontSize}px`,
+            lineHeight: lineHeight,
+            fontFamily: fontFamily !== "Page Font" ? fontFamily : "inherit",
+            color: textColor,
+            textAlign: textAlign,
+          }}
+          data-placeholder="Masukkan teks... (Enter untuk paragraf baru)"
         />
       </div>
 
@@ -443,68 +504,171 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           onClick={() => setShowAdvance(!showAdvance)}
         >
           <span>Advance</span>
-          <ChevronDownIcon 
-            size={16} 
-            className={showAdvance ? "rotate-180" : ""}
-          />
+          {showAdvance ? <ChevronUp size={16} /> : <ChevronDownIcon size={16} />}
         </button>
         
         {showAdvance && (
           <div className="component-advance-content">
-            <div className="form-field-group">
-              <label className="form-label-small">Letter Spacing</label>
-              <InputNumber
-                value={letterSpacing}
-                onValueChange={(e) => handleChange("letterSpacing", e.value || 0)}
-                min={-2}
-                max={10}
-                step={0.1}
-                suffix="px"
-                className="w-full form-input"
-              />
-            </div>
-            
-            <div className="form-field-group">
-              <label className="form-label-small">Text Transform</label>
-              <Dropdown
-                value={textTransform}
-                options={[
-                  { label: "None", value: "none" },
-                  { label: "Uppercase", value: "uppercase" },
-                  { label: "Lowercase", value: "lowercase" },
-                  { label: "Capitalize", value: "capitalize" },
-                ]}
-                optionLabel="label"
-                optionValue="value"
-                onChange={(e) => handleChange("textTransform", e.value)}
-                className="w-full form-input"
-                placeholder="Text Transform"
-              />
+            {/* Desain - Background */}
+            <div className="advance-section-group">
+              <div className="advance-section-label">Desain</div>
+              <div className="advance-section-sublabel">Latar (Background)</div>
+              <div className="advance-bg-type-buttons">
+                <button
+                  className={`advance-bg-type-btn ${bgType === "none" ? "active" : ""}`}
+                  onClick={() => handleChange("bgType", "none")}
+                  title="No Background"
+                >
+                  <X size={18} />
+                </button>
+                <button
+                  className={`advance-bg-type-btn ${bgType === "color" ? "active" : ""}`}
+                  onClick={() => handleChange("bgType", "color")}
+                  title="Warna"
+                >
+                  Warna
+                </button>
+                <button
+                  className={`advance-bg-type-btn ${bgType === "image" ? "active" : ""}`}
+                  onClick={() => handleChange("bgType", "image")}
+                  title="Gambar"
+                >
+                  Gambar
+                </button>
+              </div>
+              
+              {bgType === "color" && (
+                <div className="form-field-group" style={{ marginTop: "12px" }}>
+                  <input
+                    type="color"
+                    value={bgColor}
+                    onChange={(e) => handleChange("bgColor", e.target.value)}
+                    className="advance-color-input"
+                  />
+                  <InputText
+                    value={bgColor}
+                    onChange={(e) => handleChange("bgColor", e.target.value)}
+                    placeholder="#ffffff"
+                    className="w-full form-input"
+                    style={{ marginTop: "8px" }}
+                  />
+                </div>
+              )}
+              
+              {bgType === "image" && (
+                <div className="form-field-group" style={{ marginTop: "12px" }}>
+                  <InputText
+                    value={bgImage}
+                    onChange={(e) => handleChange("bgImage", e.target.value)}
+                    placeholder="URL gambar"
+                    className="w-full form-input"
+                  />
+                </div>
+              )}
             </div>
 
-            <div className="form-field-group">
-              <label className="form-label-small">Font Weight</label>
-              <Dropdown
-                value={fontWeight}
-                options={[
-                  { label: "Normal", value: "normal" },
-                  { label: "Bold", value: "bold" },
-                  { label: "100", value: "100" },
-                  { label: "200", value: "200" },
-                  { label: "300", value: "300" },
-                  { label: "400", value: "400" },
-                  { label: "500", value: "500" },
-                  { label: "600", value: "600" },
-                  { label: "700", value: "700" },
-                  { label: "800", value: "800" },
-                  { label: "900", value: "900" },
-                ]}
-                optionLabel="label"
-                optionValue="value"
-                onChange={(e) => handleChange("fontWeight", e.value)}
-                className="w-full form-input"
-                placeholder="Font Weight"
-              />
+            {/* Device View */}
+            <div className="advance-section-group">
+              <div className="advance-device-view-buttons">
+                <button
+                  className={`advance-device-btn ${deviceView === "desktop" ? "active" : ""}`}
+                  onClick={() => handleChange("deviceView", "desktop")}
+                  title="Desktop"
+                >
+                  <Monitor size={16} />
+                  <span>Desktop</span>
+                </button>
+                <button
+                  className={`advance-device-btn ${deviceView === "tablet" ? "active" : ""}`}
+                  onClick={() => handleChange("deviceView", "tablet")}
+                  title="Tablet"
+                >
+                  <Tablet size={16} />
+                  <span>Tablet</span>
+                </button>
+                <button
+                  className={`advance-device-btn ${deviceView === "mobile" ? "active" : ""}`}
+                  onClick={() => handleChange("deviceView", "mobile")}
+                  title="Mobile"
+                >
+                  <Smartphone size={16} />
+                  <span>Mobile</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Padding Settings */}
+            <div className="advance-section-group">
+              <div className="advance-padding-grid">
+                <div className="advance-padding-item">
+                  <label className="advance-padding-label">Padding Atas</label>
+                  <div className="advance-padding-input-wrapper">
+                    <InputNumber
+                      value={paddingTop}
+                      onValueChange={(e) => handleChange("paddingTop", e.value || 0)}
+                      min={0}
+                      max={200}
+                      className="advance-padding-input"
+                    />
+                    <span className="advance-padding-unit">px</span>
+                  </div>
+                </div>
+                <div className="advance-padding-item">
+                  <label className="advance-padding-label">Padding Kanan</label>
+                  <div className="advance-padding-input-wrapper">
+                    <InputNumber
+                      value={paddingRight}
+                      onValueChange={(e) => handleChange("paddingRight", e.value || 0)}
+                      min={0}
+                      max={200}
+                      className="advance-padding-input"
+                    />
+                    <span className="advance-padding-unit">px</span>
+                  </div>
+                </div>
+                <div className="advance-padding-item">
+                  <label className="advance-padding-label">Padding Bawah</label>
+                  <div className="advance-padding-input-wrapper">
+                    <InputNumber
+                      value={paddingBottom}
+                      onValueChange={(e) => handleChange("paddingBottom", e.value || 0)}
+                      min={0}
+                      max={200}
+                      className="advance-padding-input"
+                    />
+                    <span className="advance-padding-unit">px</span>
+                  </div>
+                </div>
+                <div className="advance-padding-item">
+                  <label className="advance-padding-label">Padding Kiri</label>
+                  <div className="advance-padding-input-wrapper">
+                    <InputNumber
+                      value={paddingLeft}
+                      onValueChange={(e) => handleChange("paddingLeft", e.value || 0)}
+                      min={0}
+                      max={200}
+                      className="advance-padding-input"
+                    />
+                    <span className="advance-padding-unit">px</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Component ID */}
+            <div className="advance-section-group">
+              <div className="advance-section-label">Pengaturan Lainnya</div>
+              <div className="form-field-group">
+                <label className="form-label-small">
+                  Component ID <span className="required">*</span>
+                </label>
+                <InputText
+                  value={componentId}
+                  onChange={(e) => handleChange("componentId", e.target.value)}
+                  placeholder="text-area-87nnmcFZXQ"
+                  className="w-full form-input"
+                />
+              </div>
             </div>
           </div>
         )}
