@@ -2417,13 +2417,9 @@ html:has(.add-products3-container) {
 
 .component-expand-icon {
   color: #6b7280;
-  transition: transform 0.2s ease;
+  transition: all 0.2s ease;
   flex-shrink: 0;
   margin-right: 4px;
-}
-
-.component-expand-icon.collapsed {
-  transform: rotate(-90deg);
 }
 
 .component-move-btn-up:hover:not(:disabled) {

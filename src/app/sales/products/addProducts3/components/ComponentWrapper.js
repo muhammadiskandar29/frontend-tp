@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { ChevronUp, ChevronDown, MoreVertical } from "lucide-react";
+import { ChevronUp, ChevronDown, ChevronRight, MoreVertical } from "lucide-react";
 
 export default function ComponentWrapper({ 
   title, 
@@ -36,7 +36,14 @@ export default function ComponentWrapper({
   return (
     <div className="sidebar-component-card">
       {/* Header dengan arrow dan menu */}
-      <div className="component-card-header" onClick={onToggleExpand}>
+      <div 
+        className="component-card-header" 
+        onClick={() => {
+          if (onToggleExpand) {
+            onToggleExpand();
+          }
+        }}
+      >
         <div className="component-card-header-left">
           <div className="component-move-buttons">
             <button 
@@ -55,10 +62,11 @@ export default function ComponentWrapper({
               <ChevronDown size={14} />
             </button>
           </div>
-          <ChevronDown 
-            size={16} 
-            className={`component-expand-icon ${!isExpanded ? 'collapsed' : ''}`}
-          />
+          {isExpanded ? (
+            <ChevronDown size={16} className="component-expand-icon" />
+          ) : (
+            <ChevronRight size={16} className="component-expand-icon" />
+          )}
           <span className="component-card-title">{title}</span>
         </div>
         <div className="component-menu-wrapper" ref={menuRef}>
