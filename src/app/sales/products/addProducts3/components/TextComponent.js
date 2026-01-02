@@ -196,50 +196,94 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     const range = selection.getRangeAt(0);
     if (!editorRef.current.contains(range.commonAncestorContainer)) return null;
     
-    // Clone and save the range
-    const clonedRange = range.cloneRange();
-    savedSelectionRef.current = clonedRange;
-    
-    return clonedRange;
+    // Save selection details (not just the range, as nodes might change)
+    try {
+      const clonedRange = range.cloneRange();
+      savedSelectionRef.current = {
+        range: clonedRange,
+        startContainer: range.startContainer,
+        startOffset: range.startOffset,
+        endContainer: range.endContainer,
+        endOffset: range.endOffset,
+        collapsed: range.collapsed,
+        text: range.toString()
+      };
+      
+      return clonedRange;
+    } catch (e) {
+      console.error("Error saving selection:", e);
+      return null;
+    }
   };
 
   const restoreSelection = () => {
     if (!editorRef.current || !savedSelectionRef.current) return false;
     
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    
     try {
-      const selection = window.getSelection();
-      selection.removeAllRanges();
-      selection.addRange(savedSelectionRef.current);
-      return true;
-    } catch (e) {
-      // If restoration fails, try to create a new range from saved positions
-      try {
-        const saved = savedSelectionRef.current;
-        const range = document.createRange();
-        
-        // Try to set start and end
+      const saved = savedSelectionRef.current;
+      
+      // If saved is a Range object (old format), try to use it directly
+      if (saved instanceof Range || (saved.range && saved.range instanceof Range)) {
         try {
+          const rangeToUse = saved instanceof Range ? saved : saved.range;
+          selection.addRange(rangeToUse);
+          return true;
+        } catch (e) {
+          // Range is invalid, continue to try other methods
+        }
+      }
+      
+      // Try to recreate from saved container positions
+      if (saved.startContainer && saved.endContainer) {
+        try {
+          const range = document.createRange();
           range.setStart(saved.startContainer, saved.startOffset);
           range.setEnd(saved.endContainer, saved.endOffset);
-          
+          selection.addRange(range);
+          return true;
+        } catch (e) {
+          // Nodes are no longer valid, try to find by text content
+          if (saved.text && saved.text.trim() !== "") {
+            return restoreSelectionByText(saved.text);
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Error restoring selection:", e);
+    }
+    
+    return false;
+  };
+
+  // Helper to restore selection by finding text content
+  const restoreSelectionByText = (textToFind) => {
+    if (!editorRef.current || !textToFind) return false;
+    
+    const walker = document.createTreeWalker(
+      editorRef.current,
+      NodeFilter.SHOW_TEXT,
+      null
+    );
+    
+    let node;
+    while (node = walker.nextNode()) {
+      const nodeText = node.textContent;
+      const index = nodeText.indexOf(textToFind);
+      if (index !== -1) {
+        try {
+          const range = document.createRange();
+          range.setStart(node, index);
+          range.setEnd(node, index + textToFind.length);
           const selection = window.getSelection();
           selection.removeAllRanges();
           selection.addRange(range);
           return true;
-        } catch (e2) {
-          // If nodes are no longer valid, just collapse to end
-          if (editorRef.current) {
-            const range = document.createRange();
-            range.selectNodeContents(editorRef.current);
-            range.collapse(false);
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(range);
-            return true;
-          }
+        } catch (e) {
+          console.error("Error restoring selection by text:", e);
         }
-      } catch (e3) {
-        console.error("Error restoring selection:", e3);
       }
     }
     
@@ -360,83 +404,43 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   const applyFontSize = (size) => {
     if (!editorRef.current || !size) return;
     
-    // Always use saved selection if available, otherwise get current
-    let rangeToUse = null;
-    
-    // First, try to use saved selection
-    if (savedSelectionRef.current) {
-      rangeToUse = savedSelectionRef.current;
-    } else {
-      // If no saved selection, try current selection
-      const selection = window.getSelection();
-      if (selection.rangeCount > 0) {
-        const currentRange = selection.getRangeAt(0);
-        if (editorRef.current.contains(currentRange.commonAncestorContainer)) {
-          rangeToUse = currentRange;
-        }
-      }
-    }
-    
-    // Focus editor
+    // Focus editor first
     editorRef.current.focus();
     
     const selection = window.getSelection();
+    let rangeToUse = null;
     
-    if (rangeToUse) {
-      // Restore selection
-      selection.removeAllRanges();
-      try {
-        // Try to add the saved range directly
-        selection.addRange(rangeToUse);
-      } catch (e) {
-        // If that fails, try to recreate from saved positions
-        try {
-          const newRange = document.createRange();
-          newRange.setStart(rangeToUse.startContainer, rangeToUse.startOffset);
-          newRange.setEnd(rangeToUse.endContainer, rangeToUse.endOffset);
-          selection.addRange(newRange);
-          rangeToUse = newRange;
-        } catch (e2) {
-          console.error("Cannot restore selection for font size:", e2);
-          return;
-        }
+    // First, try to restore saved selection
+    if (savedSelectionRef.current) {
+      const restored = restoreSelection();
+      if (restored && selection.rangeCount > 0) {
+        rangeToUse = selection.getRangeAt(0);
       }
     }
     
-    // Now apply font size
-    if (selection.rangeCount === 0) {
-      // No selection - create marker for next typing
-      const range = document.createRange();
-      range.selectNodeContents(editorRef.current);
-      range.collapse(false);
-      
-      const span = document.createElement("span");
-      span.style.fontSize = `${size}px`;
-      span.innerHTML = "\u200B";
-      
-      try {
-        range.insertNode(span);
-        const newRange = document.createRange();
-        newRange.setStartAfter(span);
-        newRange.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
-      } catch (e) {
-        console.error("Error inserting font size marker:", e);
+    // If restoration failed, try current selection
+    if (!rangeToUse && selection.rangeCount > 0) {
+      const currentRange = selection.getRangeAt(0);
+      if (editorRef.current.contains(currentRange.commonAncestorContainer) && !currentRange.collapsed) {
+        rangeToUse = currentRange;
       }
-      
-      handleEditorInput();
+    }
+    
+    // If still no range, return (user needs to select text first)
+    if (!rangeToUse) {
+      console.log("No selection available for font size");
       return;
     }
     
-    const range = selection.getRangeAt(0);
+    // Get the range to use
+    const range = rangeToUse;
     
     // Create span with font size
     const span = document.createElement("span");
     span.style.fontSize = `${size}px`;
     
     if (range.collapsed) {
-      // Cursor position - insert marker
+      // Cursor position - insert marker for next typing
       span.innerHTML = "\u200B";
       try {
         range.insertNode(span);
@@ -467,7 +471,16 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         selection.addRange(newRange);
         
         // Update saved selection to the new wrapped span
-        savedSelectionRef.current = newRange.cloneRange();
+        const savedRange = {
+          range: newRange.cloneRange(),
+          startContainer: newRange.startContainer,
+          startOffset: newRange.startOffset,
+          endContainer: newRange.endContainer,
+          endOffset: newRange.endOffset,
+          collapsed: newRange.collapsed,
+          text: newRange.toString()
+        };
+        savedSelectionRef.current = savedRange;
       } catch (e) {
         // surroundContents failed - use extractContents (for complex selections)
         try {
@@ -493,27 +506,18 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           selection.addRange(newRange);
           
           // Update saved selection
-          savedSelectionRef.current = newRange.cloneRange();
+          const savedRange = {
+            range: newRange.cloneRange(),
+            startContainer: newRange.startContainer,
+            startOffset: newRange.startOffset,
+            endContainer: newRange.endContainer,
+            endOffset: newRange.endOffset,
+            collapsed: newRange.collapsed,
+            text: newRange.toString()
+          };
+          savedSelectionRef.current = savedRange;
         } catch (e2) {
           console.error("Error applying font size to selection:", e2);
-          // Fallback: try using execCommand
-          try {
-            // Remove any existing font-size formatting first
-            const tempSpan = document.createElement("span");
-            tempSpan.style.fontSize = `${size}px`;
-            document.execCommand("fontSize", false, "7"); // This creates a font tag
-            // Then wrap in our span
-            const allFonts = editorRef.current.querySelectorAll("font[size='7']");
-            allFonts.forEach(font => {
-              const parent = font.parentNode;
-              const newSpan = document.createElement("span");
-              newSpan.style.fontSize = `${size}px`;
-              newSpan.innerHTML = font.innerHTML;
-              parent.replaceChild(newSpan, font);
-            });
-          } catch (e3) {
-            console.error("All methods failed:", e3);
-          }
           return;
         }
       }
@@ -642,15 +646,44 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     }
   };
 
-  // Update styles display when selection changes
+  // Update styles display when selection changes and save selection automatically
   useEffect(() => {
     const handleSelectionChange = () => {
+      // Auto-save selection when user selects text in editor
+      if (editorRef.current) {
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0);
+          if (editorRef.current.contains(range.commonAncestorContainer) && !range.collapsed) {
+            // User has selected text - save it automatically
+            saveSelection();
+          }
+        }
+      }
       detectStyles();
     };
 
+    const handleMouseUp = (e) => {
+      // Also save selection on mouseup in editor
+      if (editorRef.current && editorRef.current.contains(e.target)) {
+        setTimeout(() => {
+          const selection = window.getSelection();
+          if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            if (!range.collapsed) {
+              saveSelection();
+            }
+          }
+        }, 10);
+      }
+    };
+
     document.addEventListener("selectionchange", handleSelectionChange);
+    document.addEventListener("mouseup", handleMouseUp);
+    
     return () => {
       document.removeEventListener("selectionchange", handleSelectionChange);
+      document.removeEventListener("mouseup", handleMouseUp);
     };
   }, []);
 
@@ -865,37 +898,36 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
             <InputNumber
               value={selectedFontSize}
               onMouseDown={(e) => {
-                // Save selection when user clicks on input
-                e.stopPropagation();
+                // Prevent default to keep selection
+                e.preventDefault();
+                // Save selection before input gets focus
                 saveSelection();
+                // Then allow input to get focus
+                setTimeout(() => {
+                  e.target.focus();
+                }, 0);
               }}
-              onFocus={() => {
-                // Also save selection when input gets focus (e.g., via Tab)
+              onFocus={(e) => {
+                // Save selection when input gets focus (e.g., via Tab)
                 saveSelection();
               }}
               onBlur={() => {
-                // Clear saved selection when input loses focus
-                // But only if user clicked elsewhere (not on editor)
-                setTimeout(() => {
-                  const selection = window.getSelection();
-                  if (selection.rangeCount === 0 || 
-                      !editorRef.current?.contains(selection.rangeCount > 0 ? selection.getRangeAt(0).commonAncestorContainer : null)) {
-                    savedSelectionRef.current = null;
-                  }
-                }, 100);
+                // Don't clear selection on blur - keep it for next time
               }}
               onValueChange={(e) => {
                 const size = e.value || 16;
                 setSelectedFontSize(size);
-                // Always apply font size - will use saved selection if available
-                applyFontSize(size);
+                // Apply font size immediately - will use saved selection
+                setTimeout(() => {
+                  applyFontSize(size);
+                }, 10);
               }}
               min={8}
               max={200}
               suffix="px"
               className="toolbar-input"
               placeholder="16"
-              title="Font Size (Ukuran Font) - Pilih teks terlebih dahulu"
+              title="Font Size (Ukuran Font) - Pilih teks terlebih dahulu, lalu ubah ukuran"
             />
           </div>
           <div className="toolbar-align-group">
@@ -1041,14 +1073,19 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           onInput={handleEditorInput}
           onKeyDown={handleEditorKeyDown}
           onMouseUp={(e) => {
-            // Clear saved selection when user clicks in editor
-            savedSelectionRef.current = null;
+            // Don't clear saved selection immediately - let user finish selecting
             detectStyles();
           }}
           onKeyUp={detectStyles}
           onClick={(e) => {
-            // Clear saved selection when user clicks in editor
-            savedSelectionRef.current = null;
+            // Only clear saved selection if user clicks and there's no current selection
+            setTimeout(() => {
+              const selection = window.getSelection();
+              if (selection.rangeCount === 0 || selection.getRangeAt(0).collapsed) {
+                // User clicked but didn't select anything - clear saved selection
+                savedSelectionRef.current = null;
+              }
+            }, 100);
           }}
           className="rich-text-editor"
           style={{
