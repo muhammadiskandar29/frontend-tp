@@ -49,6 +49,15 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   const [selectedColor, setSelectedColor] = useState("#000000");
   const [selectedBgColor, setSelectedBgColor] = useState("#FFFF00");
   const [selectedFontSize, setSelectedFontSize] = useState(16);
+  
+  // Current style from selection/cursor position
+  const [currentBold, setCurrentBold] = useState(false);
+  const [currentItalic, setCurrentItalic] = useState(false);
+  const [currentUnderline, setCurrentUnderline] = useState(false);
+  const [currentStrikethrough, setCurrentStrikethrough] = useState(false);
+  const [currentTextColor, setCurrentTextColor] = useState("#000000");
+  const [currentBgColor, setCurrentBgColor] = useState("transparent");
+  
   const colorPickerRef = useRef(null);
   const bgColorPickerRef = useRef(null);
   const editorRef = useRef(null);
@@ -92,14 +101,35 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     if (editorRef.current) {
       const html = editorRef.current.innerHTML;
       handleChange("content", html);
+      // Detect styles after input
+      setTimeout(detectStyles, 10);
     }
   };
 
   const handleEditorKeyDown = (e) => {
-    // Allow Enter to create new paragraph
+    // Allow Enter to create new paragraph without inheriting styles
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      document.execCommand("insertParagraph", false, null);
+      // Create a new paragraph without any formatting
+      const selection = window.getSelection();
+      if (selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const p = document.createElement("p");
+        p.innerHTML = "<br>";
+        try {
+          range.deleteContents();
+          range.insertNode(p);
+          // Move cursor to the new paragraph
+          range.setStart(p, 0);
+          range.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        } catch (err) {
+          // Fallback to default behavior
+          document.execCommand("insertParagraph", false, null);
+        }
+      }
+      handleEditorInput();
     }
   };
 
@@ -112,13 +142,48 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   const applyTextColor = (color) => {
     formatSelection("foreColor", color);
     setSelectedColor(color);
+    setCurrentTextColor(color);
     setShowColorPicker(false);
+    setTimeout(detectStyles, 10);
   };
 
   const applyBgColor = (color) => {
-    formatSelection("backColor", color);
+    if (!editorRef.current) return;
+    
+    editorRef.current.focus();
+    const selection = window.getSelection();
+    if (selection.rangeCount === 0) return;
+    
+    const range = selection.getRangeAt(0);
+    if (!editorRef.current.contains(range.commonAncestorContainer)) return;
+    
+    if (color === "transparent") {
+      // Remove background color by removing highlight spans
+      if (range.collapsed) {
+        // For cursor position, we can't remove background
+        return;
+      } else {
+        // For selection, wrap in span and set transparent
+        const span = document.createElement("span");
+        span.style.backgroundColor = "transparent";
+        try {
+          range.surroundContents(span);
+        } catch (e) {
+          const contents = range.extractContents();
+          span.appendChild(contents);
+          range.insertNode(span);
+        }
+      }
+    } else {
+      // Apply background color using backColor command
+      document.execCommand("backColor", false, color);
+    }
+    
     setSelectedBgColor(color);
+    setCurrentBgColor(color);
     setShowBgColorPicker(false);
+    handleEditorInput();
+    setTimeout(detectStyles, 10);
   };
 
   // Apply font size to selection
@@ -175,6 +240,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     }
     
     handleEditorInput();
+    setTimeout(detectStyles, 10);
   };
 
   // Initialize editor content
@@ -185,56 +251,121 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       } else {
         editorRef.current.innerHTML = content;
       }
+      // Detect styles after content is loaded
+      setTimeout(detectStyles, 100);
     }
   }, []);
 
-  // Detect font size from current selection
-  const detectFontSize = () => {
+  // Detect all styles from current selection/cursor
+  const detectStyles = () => {
     if (!editorRef.current) return;
     
     const selection = window.getSelection();
     if (selection.rangeCount === 0) return;
     
     const range = selection.getRangeAt(0);
-    if (range.collapsed) {
-      // If cursor is at a position, find the parent element with fontSize
-      let node = range.startContainer;
-      if (node.nodeType === Node.TEXT_NODE) {
-        node = node.parentElement;
+    
+    // Check if selection is within editor
+    if (!editorRef.current.contains(range.commonAncestorContainer)) {
+      return;
+    }
+    
+    let node = range.startContainer;
+    if (node.nodeType === Node.TEXT_NODE) {
+      node = node.parentElement;
+    }
+    
+    // Detect styles by walking up the DOM tree
+    let detectedBold = false;
+    let detectedItalic = false;
+    let detectedUnderline = false;
+    let detectedStrikethrough = false;
+    let detectedFontSize = 16;
+    let detectedTextColor = "#000000";
+    let detectedBgColor = "transparent";
+    
+    while (node && node !== editorRef.current) {
+      const computedStyle = window.getComputedStyle(node);
+      
+      // Detect bold
+      if (computedStyle.fontWeight === "bold" || 
+          computedStyle.fontWeight === "700" || 
+          computedStyle.fontWeight === "600" ||
+          node.tagName === "B" || node.tagName === "STRONG") {
+        detectedBold = true;
       }
       
-      while (node && node !== editorRef.current) {
-        if (node.style && node.style.fontSize) {
-          const fontSize = parseInt(node.style.fontSize);
-          if (!isNaN(fontSize)) {
-            setSelectedFontSize(fontSize);
-            return;
-          }
-        }
-        node = node.parentElement;
+      // Detect italic
+      if (computedStyle.fontStyle === "italic" || node.tagName === "I" || node.tagName === "EM") {
+        detectedItalic = true;
       }
-    } else {
-      // If there's a selection, check the first element
-      const container = range.commonAncestorContainer;
-      let node = container.nodeType === Node.TEXT_NODE ? container.parentElement : container;
       
-      while (node && node !== editorRef.current) {
-        if (node.style && node.style.fontSize) {
-          const fontSize = parseInt(node.style.fontSize);
-          if (!isNaN(fontSize)) {
-            setSelectedFontSize(fontSize);
-            return;
-          }
-        }
-        node = node.parentElement;
+      // Detect underline
+      if (computedStyle.textDecoration.includes("underline") || node.tagName === "U") {
+        detectedUnderline = true;
       }
+      
+      // Detect strikethrough
+      if (computedStyle.textDecoration.includes("line-through") || node.tagName === "S" || node.tagName === "STRIKE") {
+        detectedStrikethrough = true;
+      }
+      
+      // Detect font size
+      if (node.style && node.style.fontSize) {
+        const fontSize = parseInt(node.style.fontSize);
+        if (!isNaN(fontSize)) {
+          detectedFontSize = fontSize;
+        }
+      }
+      
+      // Detect text color
+      if (node.style && node.style.color) {
+        detectedTextColor = node.style.color;
+      } else if (computedStyle.color && computedStyle.color !== "rgb(0, 0, 0)") {
+        // Convert rgb to hex if needed
+        const rgb = computedStyle.color.match(/\d+/g);
+        if (rgb && rgb.length === 3) {
+          detectedTextColor = "#" + rgb.map(x => {
+            const hex = parseInt(x).toString(16);
+            return hex.length === 1 ? "0" + hex : hex;
+          }).join("");
+        }
+      }
+      
+      // Detect background color
+      if (node.style && node.style.backgroundColor && node.style.backgroundColor !== "transparent" && node.style.backgroundColor !== "rgba(0, 0, 0, 0)") {
+        detectedBgColor = node.style.backgroundColor;
+      } else if (computedStyle.backgroundColor && computedStyle.backgroundColor !== "rgba(0, 0, 0, 0)" && computedStyle.backgroundColor !== "transparent") {
+        const rgb = computedStyle.backgroundColor.match(/\d+/g);
+        if (rgb && rgb.length >= 3) {
+          detectedBgColor = "#" + rgb.slice(0, 3).map(x => {
+            const hex = parseInt(x).toString(16);
+            return hex.length === 1 ? "0" + hex : hex;
+          }).join("");
+        }
+      }
+      
+      node = node.parentElement;
+    }
+    
+    // Update states
+    setCurrentBold(detectedBold);
+    setCurrentItalic(detectedItalic);
+    setCurrentUnderline(detectedUnderline);
+    setCurrentStrikethrough(detectedStrikethrough);
+    setSelectedFontSize(detectedFontSize);
+    setCurrentTextColor(detectedTextColor);
+    setCurrentBgColor(detectedBgColor);
+    setSelectedColor(detectedTextColor);
+    if (detectedBgColor !== "transparent") {
+      setSelectedBgColor(detectedBgColor);
     }
   };
 
-  // Update font size display when selection changes
+  // Update styles display when selection changes
   useEffect(() => {
     const handleSelectionChange = () => {
-      detectFontSize();
+      detectStyles();
     };
 
     document.addEventListener("selectionchange", handleSelectionChange);
@@ -243,21 +374,25 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     };
   }, []);
 
-  const toggleFormat = (field, value) => {
-    const currentValue = data[field];
-    if (field === "fontWeight") {
-      handleChange(field, currentValue === "bold" ? "normal" : "bold");
-    } else if (field === "fontStyle") {
-      handleChange(field, currentValue === "italic" ? "normal" : "italic");
-    } else if (field === "textDecoration") {
-      if (value === "line-through") {
-        handleChange(field, currentValue === "line-through" ? "none" : "line-through");
-      } else if (value === "underline") {
-        handleChange(field, currentValue === "underline" ? "none" : "underline");
-      }
-    } else {
-      handleChange(field, value);
-    }
+  // Formatting functions - only apply to selection, don't change global state
+  const toggleBold = () => {
+    formatSelection("bold");
+    setTimeout(detectStyles, 10); // Re-detect after formatting
+  };
+
+  const toggleItalic = () => {
+    formatSelection("italic");
+    setTimeout(detectStyles, 10);
+  };
+
+  const toggleUnderline = () => {
+    formatSelection("underline");
+    setTimeout(detectStyles, 10);
+  };
+
+  const toggleStrikethrough = () => {
+    formatSelection("strikeThrough");
+    setTimeout(detectStyles, 10);
   };
 
   const paragraphStyles = [
@@ -311,22 +446,16 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         {/* Top Row - Formatting Buttons */}
         <div className="toolbar-row">
           <button 
-            className={`toolbar-btn ${fontWeight === "bold" ? "active" : ""}`}
+            className={`toolbar-btn ${currentBold ? "active" : ""}`}
             title="Bold"
-            onClick={() => {
-              formatSelection("bold");
-              toggleFormat("fontWeight", "bold");
-            }}
+            onClick={toggleBold}
           >
             <Bold size={16} />
           </button>
           <button 
-            className={`toolbar-btn ${fontStyle === "italic" ? "active" : ""}`}
+            className={`toolbar-btn ${currentItalic ? "active" : ""}`}
             title="Italic"
-            onClick={() => {
-              formatSelection("italic");
-              toggleFormat("fontStyle", "italic");
-            }}
+            onClick={toggleItalic}
           >
             <Italic size={16} />
           </button>
@@ -342,7 +471,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
             >
               <div className="text-color-button-content">
                 <span className="text-color-letter">A</span>
-                <div className="text-color-bar" style={{ backgroundColor: textColor }}></div>
+                <div className="text-color-bar" style={{ backgroundColor: currentTextColor }}></div>
               </div>
               <ChevronDownIcon size={10} style={{ marginLeft: "4px" }} />
             </button>
@@ -396,22 +525,16 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
             )}
           </div>
           <button 
-            className={`toolbar-btn ${textDecoration === "line-through" ? "active" : ""}`}
+            className={`toolbar-btn ${currentStrikethrough ? "active" : ""}`}
             title="Strikethrough"
-            onClick={() => {
-              formatSelection("strikeThrough");
-              toggleFormat("textDecoration", "line-through");
-            }}
+            onClick={toggleStrikethrough}
           >
             <Strikethrough size={16} />
           </button>
           <button 
-            className={`toolbar-btn ${textDecoration === "underline" ? "active" : ""}`}
+            className={`toolbar-btn ${currentUnderline ? "active" : ""}`}
             title="Underline"
-            onClick={() => {
-              formatSelection("underline");
-              toggleFormat("textDecoration", "underline");
-            }}
+            onClick={toggleUnderline}
           >
             <Underline size={16} />
           </button>
@@ -512,7 +635,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
                 <div 
                   className="bg-color-bar" 
                   style={{ 
-                    backgroundColor: backgroundColor === "transparent" ? "#FFFF00" : backgroundColor
+                    backgroundColor: currentBgColor === "transparent" ? "#FFFF00" : currentBgColor
                   }}
                 ></div>
               </div>
@@ -523,15 +646,14 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
                 <div className="word-color-picker-header">Text Highlight Color</div>
                 <div className="word-color-preset-grid">
                   <button
-                    className={`word-color-preset-item ${backgroundColor === "transparent" ? "selected" : ""}`}
+                    className={`word-color-preset-item ${currentBgColor === "transparent" ? "selected" : ""}`}
                     style={{ 
                       backgroundColor: "#f0f0f0",
                       border: "1px solid #ccc",
                       position: "relative"
                     }}
                     onClick={() => {
-                      handleChange("backgroundColor", "transparent");
-                      setShowBgColorPicker(false);
+                      applyBgColor("transparent");
                     }}
                     title="No Color"
                   >
@@ -601,8 +723,8 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           contentEditable
           onInput={handleEditorInput}
           onKeyDown={handleEditorKeyDown}
-          onMouseUp={detectFontSize}
-          onKeyUp={detectFontSize}
+          onMouseUp={detectStyles}
+          onKeyUp={detectStyles}
           className="rich-text-editor"
           style={{
             minHeight: "200px",
