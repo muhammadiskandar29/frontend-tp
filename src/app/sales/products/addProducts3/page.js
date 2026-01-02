@@ -221,7 +221,40 @@ export default function AddProducts3Page() {
   const renderPreview = (block) => {
     switch (block.type) {
       case "text":
-        return <div className="preview-text">{block.data.content || "Teks..."}</div>;
+        const textData = block.data || {};
+        const textStyles = {
+          fontSize: textData.fontSize ? `${textData.fontSize}px` : "16px",
+          lineHeight: textData.lineHeight || 1.5,
+          fontFamily: textData.fontFamily && textData.fontFamily !== "Page Font" 
+            ? textData.fontFamily 
+            : "inherit",
+          color: textData.textColor || "#000000",
+          backgroundColor: textData.backgroundColor && textData.backgroundColor !== "transparent"
+            ? textData.backgroundColor
+            : "transparent",
+          textAlign: textData.textAlign || "left",
+          fontWeight: textData.fontWeight || "normal",
+          fontStyle: textData.fontStyle || "normal",
+          textDecoration: textData.textDecoration || "none",
+          textTransform: textData.textTransform || "none",
+          letterSpacing: textData.letterSpacing ? `${textData.letterSpacing}px` : "0px",
+          padding: textData.backgroundColor && textData.backgroundColor !== "transparent" ? "8px 12px" : "0",
+          borderRadius: textData.backgroundColor && textData.backgroundColor !== "transparent" ? "4px" : "0",
+        };
+
+        // Determine tag based on paragraph style
+        const Tag = textData.paragraphStyle === "h1" ? "h1" :
+                    textData.paragraphStyle === "h2" ? "h2" :
+                    textData.paragraphStyle === "h3" ? "h3" : "div";
+
+        return (
+          <Tag 
+            className="preview-text" 
+            style={textStyles}
+          >
+            {textData.content || "Teks..."}
+          </Tag>
+        );
       case "image":
         return block.data.src ? (
           <div className="preview-image-wrapper">
