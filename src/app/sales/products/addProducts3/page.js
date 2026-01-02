@@ -56,7 +56,8 @@ export default function AddProducts3Page() {
   const [showComponentModal, setShowComponentModal] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [blocks, setBlocks] = useState([]);
-  const [expandedBlockId, setExpandedBlockId] = useState(null);
+  // Default expanded untuk semua komponen - gunakan Set untuk track collapsed blocks
+  const [collapsedBlockIds, setCollapsedBlockIds] = useState(new Set());
   const [testimoniIndices, setTestimoniIndices] = useState({});
   const [productKategori, setProductKategori] = useState(null); // Untuk menentukan kategori produk
   const [activeTab, setActiveTab] = useState("konten"); // State untuk tab aktif
@@ -161,7 +162,7 @@ export default function AddProducts3Page() {
     };
     
     setBlocks([...blocks, newBlock]);
-    setExpandedBlockId(newBlock.id); // Expand komponen baru yang ditambahkan
+    // Komponen baru default expanded (tidak perlu ditambahkan ke collapsedBlockIds)
     setShowComponentModal(false);
   };
 
@@ -199,18 +200,24 @@ export default function AddProducts3Page() {
 
   // Handler untuk expand/collapse komponen
   const handleToggleExpand = (blockId) => {
-    setExpandedBlockId((prev) => {
-      // Jika blockId sama dengan yang sedang expanded, collapse
-      // Jika berbeda atau null, expand blockId tersebut
-      const newValue = prev === blockId ? null : blockId;
-      console.log('[TOGGLE] BlockId:', blockId, 'Prev:', prev, 'New:', newValue);
-      return newValue;
+    setCollapsedBlockIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(blockId)) {
+        // Jika sudah collapsed, expand (hapus dari set)
+        newSet.delete(blockId);
+      } else {
+        // Jika sudah expanded, collapse (tambah ke set)
+        newSet.add(blockId);
+      }
+      console.log('[TOGGLE] BlockId:', blockId, 'Collapsed:', newSet.has(blockId));
+      return newSet;
     });
   };
 
   // Render komponen form editing di sidebar
   const renderComponent = (block, index) => {
-    const isExpanded = expandedBlockId === block.id;
+    // Default expanded, kecuali jika ada di collapsedBlockIds
+    const isExpanded = !collapsedBlockIds.has(block.id);
     
     const commonProps = {
       data: block.data,

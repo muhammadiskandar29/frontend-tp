@@ -10,7 +10,7 @@ export default function ComponentWrapper({
   onMoveUp, 
   onMoveDown, 
   onDelete,
-    isExpanded = false,
+    isExpanded = true,
   onToggleExpand,
   isRequired = false
 }) {
