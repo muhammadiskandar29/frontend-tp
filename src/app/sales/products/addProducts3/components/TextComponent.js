@@ -359,48 +359,96 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     // Apply text color
     document.execCommand("foreColor", false, color);
     
-    // Also update underline color to match text color
+    // Also update underline color to match text color - aggressive approach
     setTimeout(() => {
-      // After applying color, update underline color for elements with underline
-      const range = selection.getRangeAt(0);
-      
-      if (!range.collapsed) {
-        // Get all elements within the selection
+      try {
+        // Get the range after foreColor is applied
+        const range = selection.getRangeAt(0);
+        
+        // Method 1: Find all elements with underline in selection
         const container = range.commonAncestorContainer;
         const parent = container.nodeType === Node.ELEMENT_NODE ? container : container.parentElement;
         
-        if (parent) {
-          // Find all elements with underline in the selection
+        if (parent && editorRef.current.contains(parent)) {
+          // Get all elements that intersect with selection
           const allElements = parent.querySelectorAll("*");
+          
           allElements.forEach(element => {
-            if (range.intersectsNode(element)) {
-              const computedStyle = window.getComputedStyle(element);
-              const hasUnderline = computedStyle.textDecoration.includes("underline") || 
-                                   element.tagName === "U" ||
-                                   (element.style && element.style.textDecoration && 
-                                    element.style.textDecoration.includes("underline"));
-              
-              if (hasUnderline && element.style) {
-                element.style.textDecorationColor = color;
-                element.style.webkitTextDecorationColor = color;
+            try {
+              if (range.intersectsNode(element)) {
+                const computedStyle = window.getComputedStyle(element);
+                const hasUnderline = computedStyle.textDecoration.includes("underline") || 
+                                     element.tagName === "U" ||
+                                     (element.style && element.style.textDecoration && 
+                                      element.style.textDecoration.includes("underline"));
+                
+                if (hasUnderline && element.style) {
+                  element.style.setProperty("text-decoration-color", color, "important");
+                  element.style.setProperty("-webkit-text-decoration-color", color, "important");
+                }
               }
+            } catch (e) {
+              // Skip if error
             }
           });
-          
-          // Also check the container itself
-          if (range.intersectsNode(parent)) {
-            const computedStyle = window.getComputedStyle(parent);
-            const hasUnderline = computedStyle.textDecoration.includes("underline") || 
-                                 parent.tagName === "U" ||
-                                 (parent.style && parent.style.textDecoration && 
-                                  parent.style.textDecoration.includes("underline"));
-            
-            if (hasUnderline && parent.style) {
-              parent.style.textDecorationColor = color;
-              parent.style.webkitTextDecorationColor = color;
-            }
-          }
         }
+        
+        // Method 2: Check all U tags in editor
+        const allUTags = editorRef.current.querySelectorAll("u");
+        allUTags.forEach(uTag => {
+          try {
+            if (range.intersectsNode(uTag) && uTag.style) {
+              uTag.style.setProperty("text-decoration-color", color, "important");
+              uTag.style.setProperty("-webkit-text-decoration-color", color, "important");
+            }
+          } catch (e) {
+            // Skip if error
+          }
+        });
+        
+        // Method 3: Walk up the DOM tree from selection start
+        let checkNode = range.startContainer;
+        if (checkNode.nodeType === Node.TEXT_NODE) {
+          checkNode = checkNode.parentElement;
+        }
+        
+        while (checkNode && checkNode !== editorRef.current) {
+          try {
+            if (checkNode.style) {
+              const computedStyle = window.getComputedStyle(checkNode);
+              const hasUnderline = computedStyle.textDecoration.includes("underline") || 
+                                   checkNode.tagName === "U" ||
+                                   (checkNode.style.textDecoration && 
+                                    checkNode.style.textDecoration.includes("underline"));
+              
+              if (hasUnderline) {
+                checkNode.style.setProperty("text-decoration-color", color, "important");
+                checkNode.style.setProperty("-webkit-text-decoration-color", color, "important");
+              }
+            }
+          } catch (e) {
+            // Skip if error
+          }
+          checkNode = checkNode.parentElement;
+        }
+        
+        // Method 4: Find all elements with text-decoration-color and update them
+        const allStyledElements = editorRef.current.querySelectorAll("[style*='text-decoration']");
+        allStyledElements.forEach(element => {
+          try {
+            if (range.intersectsNode(element) && element.style) {
+              const computedStyle = window.getComputedStyle(element);
+              if (computedStyle.textDecoration.includes("underline")) {
+                element.style.setProperty("text-decoration-color", color, "important");
+                element.style.setProperty("-webkit-text-decoration-color", color, "important");
+              }
+            }
+          } catch (e) {
+            // Skip if error
+          }
+        });
+      } catch (e) {
+        console.error("Error updating underline color:", e);
       }
       
       restoreSelection();
@@ -409,7 +457,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       setShowColorPicker(false);
       handleEditorInput();
       setTimeout(detectStyles, 10);
-    }, 10);
+    }, 100);
   };
 
   const applyBgColor = (color) => {
