@@ -3301,12 +3301,32 @@ html:has(.add-products3-container) {
   overflow-wrap: break-word;
 }
 
-/* Underline color should match text color */
+/* Ensure inline styles from HTML content are preserved */
+.rich-text-editor * {
+  /* Don't override inline styles */
+}
+
+.rich-text-editor span[style],
+.rich-text-editor p[style],
+.rich-text-editor u[style],
+.rich-text-editor b[style],
+.rich-text-editor i[style],
+.rich-text-editor strong[style],
+.rich-text-editor em[style] {
+  /* Preserve all inline styles */
+  all: revert;
+}
+
+/* Underline color should match text color - more specific */
 .rich-text-editor u,
+.rich-text-editor u *,
 .rich-text-editor [style*="text-decoration: underline"],
-.rich-text-editor [style*="text-decoration:underline"] {
-  text-decoration-color: currentColor;
+.rich-text-editor [style*="text-decoration:underline"],
+.rich-text-editor span[style*="text-decoration"],
+.rich-text-editor *[style*="text-decoration"] {
+  text-decoration-color: currentColor !important;
   text-decoration-thickness: 1px;
+  -webkit-text-decoration-color: currentColor !important;
 }
 
 .rich-text-editor:empty:before {
@@ -3845,12 +3865,18 @@ html:has(.add-products3-container) {
   color: #1f2937;
 }
 
-/* Underline color should match text color in preview */
+/* Underline color should match text color in preview - more specific */
 .preview-text u,
+.preview-text u *,
 .preview-text [style*="text-decoration: underline"],
-.preview-text [style*="text-decoration:underline"] {
-  text-decoration-color: currentColor;
+.preview-text [style*="text-decoration:underline"],
+.preview-text span[style*="text-decoration"],
+.preview-text *[style*="text-decoration"],
+.preview-text p u,
+.preview-text p [style*="text-decoration"] {
+  text-decoration-color: currentColor !important;
   text-decoration-thickness: 1px;
+  -webkit-text-decoration-color: currentColor !important;
 }
 
 .preview-text p {
