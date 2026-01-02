@@ -61,6 +61,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   const colorPickerRef = useRef(null);
   const bgColorPickerRef = useRef(null);
   const editorRef = useRef(null);
+  const savedSelectionRef = useRef(null);
 
   // Preset colors seperti MS Word - Primary color #FF9900 (rgb(255, 153, 0))
   const presetColors = [
@@ -99,6 +100,23 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   // Rich text editor handlers
   const handleEditorInput = () => {
     if (editorRef.current) {
+      // Clean up zero-width space markers that might be left
+      const zeroWidthSpans = editorRef.current.querySelectorAll('span[data-font-size]');
+      zeroWidthSpans.forEach(span => {
+        if (span.textContent.trim() === '' || span.textContent === '\u200B') {
+          // If span is empty or only has zero-width space, remove it but preserve font size
+          const fontSize = span.getAttribute('data-font-size');
+          if (fontSize && span.parentNode) {
+            // Apply font size to parent or create new span for next character
+            const parent = span.parentNode;
+            if (parent !== editorRef.current) {
+              parent.style.fontSize = `${fontSize}px`;
+            }
+            span.remove();
+          }
+        }
+      });
+      
       const html = editorRef.current.innerHTML;
       handleChange("content", html);
       // Detect styles after input
@@ -110,41 +128,193 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     // Allow Enter to create new paragraph without inheriting styles
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      // Create a new paragraph without any formatting
+      
+      if (!editorRef.current) return;
+      
       const selection = window.getSelection();
-      if (selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        const p = document.createElement("p");
-        p.innerHTML = "<br>";
-        try {
+      if (selection.rangeCount === 0) return;
+      
+      const range = selection.getRangeAt(0);
+      if (!editorRef.current.contains(range.commonAncestorContainer)) return;
+      
+      // Save current cursor position
+      const cursorPosition = {
+        container: range.startContainer,
+        offset: range.startOffset
+      };
+      
+      // Create a new paragraph without any formatting
+      const p = document.createElement("p");
+      p.innerHTML = "<br>";
+      
+      try {
+        // If there's selected text, delete it first
+        if (!range.collapsed) {
           range.deleteContents();
-          range.insertNode(p);
-          // Move cursor to the new paragraph
-          range.setStart(p, 0);
-          range.collapse(true);
-          selection.removeAllRanges();
-          selection.addRange(range);
-        } catch (err) {
-          // Fallback to default behavior
+        }
+        
+        // Insert new paragraph at cursor position
+        range.insertNode(p);
+        
+        // Move cursor to the new paragraph (at the beginning)
+        const newRange = document.createRange();
+        newRange.setStart(p, 0);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+        
+        // Focus editor to maintain cursor
+        editorRef.current.focus();
+      } catch (err) {
+        // Fallback: use default behavior but preserve cursor
+        try {
           document.execCommand("insertParagraph", false, null);
+          // Try to restore cursor position
+          setTimeout(() => {
+            const newSelection = window.getSelection();
+            if (newSelection.rangeCount > 0) {
+              const newRange = newSelection.getRangeAt(0);
+              // Cursor should be in the new paragraph
+            }
+          }, 10);
+        } catch (e2) {
+          console.error("Error inserting paragraph:", e2);
         }
       }
+      
       handleEditorInput();
     }
   };
 
-  // Format selection handlers
+  // Save and restore selection
+  const saveSelection = () => {
+    if (!editorRef.current) return null;
+    
+    const selection = window.getSelection();
+    if (selection.rangeCount === 0) return null;
+    
+    const range = selection.getRangeAt(0);
+    if (!editorRef.current.contains(range.commonAncestorContainer)) return null;
+    
+    // Clone and save the range
+    const clonedRange = range.cloneRange();
+    savedSelectionRef.current = clonedRange;
+    
+    return clonedRange;
+  };
+
+  const restoreSelection = () => {
+    if (!editorRef.current || !savedSelectionRef.current) return false;
+    
+    try {
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(savedSelectionRef.current);
+      return true;
+    } catch (e) {
+      // If restoration fails, try to create a new range from saved positions
+      try {
+        const saved = savedSelectionRef.current;
+        const range = document.createRange();
+        
+        // Try to set start and end
+        try {
+          range.setStart(saved.startContainer, saved.startOffset);
+          range.setEnd(saved.endContainer, saved.endOffset);
+          
+          const selection = window.getSelection();
+          selection.removeAllRanges();
+          selection.addRange(range);
+          return true;
+        } catch (e2) {
+          // If nodes are no longer valid, just collapse to end
+          if (editorRef.current) {
+            const range = document.createRange();
+            range.selectNodeContents(editorRef.current);
+            range.collapse(false);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            return true;
+          }
+        }
+      } catch (e3) {
+        console.error("Error restoring selection:", e3);
+      }
+    }
+    
+    return false;
+  };
+
+  // Format selection handlers with preserved selection
   const formatSelection = (command, value = null) => {
+    if (!editorRef.current) return;
+    
+    // Save selection before formatting
+    const savedRange = saveSelection();
+    
+    // Focus editor first
+    editorRef.current.focus();
+    
+    if (savedRange) {
+      // Restore selection
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      try {
+        selection.addRange(savedRange);
+      } catch (e) {
+        // If range is invalid, try to restore from saved positions
+        try {
+          const range = document.createRange();
+          range.setStart(savedRange.startContainer, savedRange.startOffset);
+          range.setEnd(savedRange.endContainer, savedRange.endOffset);
+          selection.addRange(range);
+        } catch (e2) {
+          // If still fails, just continue without selection
+        }
+      }
+    }
+    
+    // Apply command
     document.execCommand(command, false, value);
-    handleEditorInput();
+    
+    // Restore selection after command (if it was saved)
+    if (savedRange) {
+      setTimeout(() => {
+        restoreSelection();
+        handleEditorInput();
+        setTimeout(detectStyles, 10);
+      }, 10);
+    } else {
+      handleEditorInput();
+      setTimeout(detectStyles, 10);
+    }
   };
 
   const applyTextColor = (color) => {
-    formatSelection("foreColor", color);
-    setSelectedColor(color);
-    setCurrentTextColor(color);
-    setShowColorPicker(false);
-    setTimeout(detectStyles, 10);
+    if (!editorRef.current) return;
+    
+    const savedRange = saveSelection();
+    if (!savedRange) {
+      editorRef.current.focus();
+      return;
+    }
+    
+    editorRef.current.focus();
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(savedRange);
+    
+    document.execCommand("foreColor", false, color);
+    
+    setTimeout(() => {
+      restoreSelection();
+      setSelectedColor(color);
+      setCurrentTextColor(color);
+      setShowColorPicker(false);
+      handleEditorInput();
+      setTimeout(detectStyles, 10);
+    }, 10);
   };
 
   const applyBgColor = (color) => {
@@ -190,33 +360,89 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   const applyFontSize = (size) => {
     if (!editorRef.current) return;
     
-    // Focus editor first
+    // Get current selection or use saved selection
+    let rangeToUse = null;
+    const selection = window.getSelection();
+    
+    if (selection.rangeCount > 0) {
+      const currentRange = selection.getRangeAt(0);
+      if (editorRef.current.contains(currentRange.commonAncestorContainer)) {
+        rangeToUse = currentRange;
+      }
+    }
+    
+    // If no current selection, try to use saved selection
+    if (!rangeToUse && savedSelectionRef.current) {
+      rangeToUse = savedSelectionRef.current;
+    }
+    
+    // Focus editor
     editorRef.current.focus();
     
-    const selection = window.getSelection();
-    if (selection.rangeCount === 0) return;
+    if (rangeToUse) {
+      // Restore selection
+      selection.removeAllRanges();
+      try {
+        selection.addRange(rangeToUse);
+      } catch (e) {
+        // If range is invalid, create new range from saved positions
+        try {
+          const newRange = document.createRange();
+          newRange.setStart(rangeToUse.startContainer, rangeToUse.startOffset);
+          newRange.setEnd(rangeToUse.endContainer, rangeToUse.endOffset);
+          selection.addRange(newRange);
+          rangeToUse = newRange;
+        } catch (e2) {
+          // If still fails, just continue without selection
+          rangeToUse = null;
+        }
+      }
+    }
     
-    const range = selection.getRangeAt(0);
-    
-    // Check if selection is within editor
-    if (!editorRef.current.contains(range.commonAncestorContainer)) {
+    if (!rangeToUse || selection.rangeCount === 0) {
+      // If no selection, create a marker span at cursor for next typing
+      const range = document.createRange();
+      range.selectNodeContents(editorRef.current);
+      range.collapse(false); // Move to end
+      
+      const span = document.createElement("span");
+      span.style.fontSize = `${size}px`;
+      span.innerHTML = "\u200B"; // Zero-width space
+      span.setAttribute("data-font-size", size);
+      
+      try {
+        range.insertNode(span);
+        const newRange = document.createRange();
+        newRange.setStartAfter(span);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+      } catch (e) {
+        console.error("Error inserting font size marker:", e);
+      }
+      
+      handleEditorInput();
       return;
     }
+    
+    const range = selection.getRangeAt(0);
     
     // Create span with font size
     const span = document.createElement("span");
     span.style.fontSize = `${size}px`;
     
     if (range.collapsed) {
-      // If no selection, insert a span at cursor position
-      span.innerHTML = "&nbsp;";
+      // If no selection, insert a marker span at cursor position
+      span.innerHTML = "\u200B"; // Zero-width space
+      span.setAttribute("data-font-size", size);
       try {
         range.insertNode(span);
         // Move cursor after the span
-        range.setStartAfter(span);
-        range.collapse(true);
+        const newRange = document.createRange();
+        newRange.setStartAfter(span);
+        newRange.collapse(true);
         selection.removeAllRanges();
-        selection.addRange(range);
+        selection.addRange(newRange);
       } catch (e) {
         console.error("Error inserting font size:", e);
       }
@@ -225,6 +451,11 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       try {
         // Try to surround contents first (works for simple selections)
         range.surroundContents(span);
+        // Restore selection to the wrapped content
+        const newRange = document.createRange();
+        newRange.selectNodeContents(span);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
       } catch (e) {
         // If surroundContents fails (e.g., selection spans multiple nodes),
         // extract contents and wrap
@@ -232,6 +463,11 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           const contents = range.extractContents();
           span.appendChild(contents);
           range.insertNode(span);
+          // Restore selection to the wrapped content
+          const newRange = document.createRange();
+          newRange.selectNodeContents(span);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
         } catch (e2) {
           console.error("Error applying font size:", e2);
           return;
@@ -375,24 +611,24 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   }, []);
 
   // Formatting functions - only apply to selection, don't change global state
-  const toggleBold = () => {
+  const toggleBold = (e) => {
+    if (e) e.preventDefault();
     formatSelection("bold");
-    setTimeout(detectStyles, 10); // Re-detect after formatting
   };
 
-  const toggleItalic = () => {
+  const toggleItalic = (e) => {
+    if (e) e.preventDefault();
     formatSelection("italic");
-    setTimeout(detectStyles, 10);
   };
 
-  const toggleUnderline = () => {
+  const toggleUnderline = (e) => {
+    if (e) e.preventDefault();
     formatSelection("underline");
-    setTimeout(detectStyles, 10);
   };
 
-  const toggleStrikethrough = () => {
+  const toggleStrikethrough = (e) => {
+    if (e) e.preventDefault();
     formatSelection("strikeThrough");
-    setTimeout(detectStyles, 10);
   };
 
   const paragraphStyles = [
@@ -448,6 +684,10 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           <button 
             className={`toolbar-btn ${currentBold ? "active" : ""}`}
             title="Bold"
+            onMouseDown={(e) => {
+              e.preventDefault(); // Prevent losing focus
+              saveSelection();
+            }}
             onClick={toggleBold}
           >
             <Bold size={16} />
@@ -455,6 +695,10 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           <button 
             className={`toolbar-btn ${currentItalic ? "active" : ""}`}
             title="Italic"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              saveSelection();
+            }}
             onClick={toggleItalic}
           >
             <Italic size={16} />
@@ -527,6 +771,10 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           <button 
             className={`toolbar-btn ${currentStrikethrough ? "active" : ""}`}
             title="Strikethrough"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              saveSelection();
+            }}
             onClick={toggleStrikethrough}
           >
             <Strikethrough size={16} />
@@ -534,6 +782,10 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           <button 
             className={`toolbar-btn ${currentUnderline ? "active" : ""}`}
             title="Underline"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              saveSelection();
+            }}
             onClick={toggleUnderline}
           >
             <Underline size={16} />
@@ -568,10 +820,17 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           <div className="toolbar-input-group">
             <InputNumber
               value={selectedFontSize}
+              onFocus={() => {
+                // Save selection when input gets focus
+                saveSelection();
+              }}
               onValueChange={(e) => {
                 const size = e.value || 16;
                 setSelectedFontSize(size);
-                applyFontSize(size);
+                // Apply font size to saved selection
+                if (savedSelectionRef.current) {
+                  applyFontSize(size);
+                }
               }}
               min={8}
               max={200}
