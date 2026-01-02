@@ -3308,8 +3308,9 @@ html:has(.add-products3-container) {
 }
 
 .rich-text-editor p {
-  margin: 0 0 2px 0; /* Very close spacing between paragraphs */
+  margin: 0 0 0px 0; /* No margin - very tight spacing */
   font-size: inherit; /* Don't inherit font size from parent */
+  line-height: 1.2; /* Tighter line height */
 }
 
 .rich-text-editor p:last-child {
@@ -3832,8 +3833,17 @@ html:has(.add-products3-container) {
 /* ===== PREVIEW STYLES ===== */
 .preview-text {
   font-size: 16px;
-  line-height: 1.6;
+  line-height: 1.2; /* Tighter line height */
   color: #1f2937;
+}
+
+.preview-text p {
+  margin: 0 0 0px 0 !important; /* No margin - very tight spacing in canvas */
+  line-height: 1.2; /* Tighter line height */
+}
+
+.preview-text p:last-child {
+  margin-bottom: 0 !important;
 }
 
 .preview-image-wrapper {
