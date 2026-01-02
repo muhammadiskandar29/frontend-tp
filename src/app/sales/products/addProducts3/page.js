@@ -70,7 +70,8 @@ export default function AddProducts3Page() {
     harga_asli: null,
     harga_promo: null,
     tanggal_event: null,
-    assign: []
+    assign: [],
+    background_color: "#ffffff" // Default putih
   });
   
   // State untuk options dropdown
@@ -921,6 +922,7 @@ export default function AddProducts3Page() {
       harga_promo: String(pengaturanForm.harga_promo),
       tanggal_event: formattedDate,
       assign: pengaturanForm.assign,
+      background_color: pengaturanForm.background_color || "#ffffff",
       landingpage: "1",
       status: "1",
       blocks: blocks.map(block => ({
@@ -1210,6 +1212,45 @@ export default function AddProducts3Page() {
                     <p className="field-hint">Pilih user yang bertanggung jawab menangani produk ini</p>
                   </div>
                 </div>
+
+                {/* Background Color */}
+                <div className="pengaturan-section">
+                  <h3 className="pengaturan-section-title">Tampilan</h3>
+                  <p className="pengaturan-section-description">Pengaturan tampilan halaman landing page</p>
+                  
+                  <div className="pengaturan-form-group">
+                    <label className="pengaturan-label">
+                      Background Color
+                    </label>
+                    <div className="background-color-picker-wrapper">
+                      <div className="background-color-preview" style={{ backgroundColor: pengaturanForm.background_color || "#ffffff" }}>
+                        <input
+                          type="color"
+                          value={pengaturanForm.background_color || "#ffffff"}
+                          onChange={(e) => handlePengaturanChange("background_color", e.target.value)}
+                          className="background-color-input"
+                          title="Pilih warna background"
+                        />
+                      </div>
+                      <InputText
+                        className="pengaturan-input"
+                        value={pengaturanForm.background_color || "#ffffff"}
+                        onChange={(e) => handlePengaturanChange("background_color", e.target.value)}
+                        placeholder="#ffffff"
+                        style={{ flex: 1 }}
+                      />
+                      <button
+                        type="button"
+                        className="background-color-reset-btn"
+                        onClick={() => handlePengaturanChange("background_color", "#ffffff")}
+                        title="Reset ke putih"
+                      >
+                        Putih
+                      </button>
+                    </div>
+                    <small className="pengaturan-hint">Pilih warna background untuk halaman landing page</small>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -1217,7 +1258,21 @@ export default function AddProducts3Page() {
 
         {/* Right Canvas - Preview */}
         <div className="page-builder-canvas">
-          <div className="canvas-wrapper">
+          <div 
+            className="canvas-wrapper"
+            style={{ 
+              backgroundColor: pengaturanForm.background_color || "#ffffff"
+            }}
+          >
+            {/* Logo - Hardcode di bagian atas center */}
+            <div className="canvas-logo-wrapper">
+              <img 
+                src="/assets/logo.png" 
+                alt="Logo" 
+                className="canvas-logo"
+              />
+            </div>
+
             {/* Nama Produk - Selalu muncul di paling atas, tidak bisa dipindahkan */}
             {pengaturanForm.nama && (
               <div className="canvas-preview-block canvas-product-title-block">
