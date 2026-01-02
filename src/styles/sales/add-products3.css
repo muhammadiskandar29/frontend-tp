@@ -3308,7 +3308,8 @@ html:has(.add-products3-container) {
 }
 
 .rich-text-editor p {
-  margin: 0 0 4px 0; /* Reduced from 8px to 4px for closer spacing */
+  margin: 0 0 2px 0; /* Very close spacing between paragraphs */
+  font-size: inherit; /* Don't inherit font size from parent */
 }
 
 .rich-text-editor p:last-child {

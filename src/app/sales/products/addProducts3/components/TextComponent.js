@@ -146,6 +146,13 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       // Create a new paragraph without any formatting
       const p = document.createElement("p");
       p.innerHTML = "<br>";
+      // Explicitly reset styles to prevent inheritance
+      p.style.fontSize = "inherit";
+      p.style.fontWeight = "normal";
+      p.style.fontStyle = "normal";
+      p.style.textDecoration = "none";
+      p.style.color = "inherit";
+      p.style.backgroundColor = "transparent";
       
       try {
         // If there's selected text, delete it first
@@ -469,18 +476,20 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
     }
     
-    // If restoration failed, try current selection
+    // If restoration failed, try current selection (including collapsed cursor)
     if (!rangeToUse && selection.rangeCount > 0) {
       const currentRange = selection.getRangeAt(0);
-      if (editorRef.current.contains(currentRange.commonAncestorContainer) && !currentRange.collapsed) {
+      if (editorRef.current.contains(currentRange.commonAncestorContainer)) {
         rangeToUse = currentRange;
       }
     }
     
-    // If still no range, return (user needs to select text first)
+    // If still no range, try to get cursor position from editor
     if (!rangeToUse) {
-      console.log("No selection available for font size");
-      return;
+      const range = document.createRange();
+      range.selectNodeContents(editorRef.current);
+      range.collapse(false); // Move to end
+      rangeToUse = range;
     }
     
     // Get the range to use
@@ -491,17 +500,57 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     span.style.fontSize = `${size}px`;
     
     if (range.collapsed) {
-      // Cursor position - insert marker for next typing
-      span.innerHTML = "\u200B";
-      try {
-        range.insertNode(span);
-        const newRange = document.createRange();
-        newRange.setStartAfter(span);
-        newRange.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
-      } catch (e) {
-        console.error("Error inserting font size at cursor:", e);
+      // Cursor position - insert marker for next typing or wrap current position
+      // Check if cursor is in a paragraph that might have inherited font size
+      let node = range.startContainer;
+      if (node.nodeType === Node.TEXT_NODE) {
+        node = node.parentElement;
+      }
+      
+      // If we're in a paragraph, check if it has font size from parent spans
+      if (node && node.tagName === "P") {
+        // Check if paragraph has any child with font size
+        const spansWithFontSize = node.querySelectorAll('span[style*="font-size"]');
+        if (spansWithFontSize.length === 0) {
+          // No font size in paragraph yet - insert marker at cursor
+          span.innerHTML = "\u200B";
+          try {
+            range.insertNode(span);
+            const newRange = document.createRange();
+            newRange.setStartAfter(span);
+            newRange.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(newRange);
+          } catch (e) {
+            console.error("Error inserting font size at cursor:", e);
+          }
+        } else {
+          // Paragraph has font size - insert marker to override
+          span.innerHTML = "\u200B";
+          try {
+            range.insertNode(span);
+            const newRange = document.createRange();
+            newRange.setStartAfter(span);
+            newRange.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(newRange);
+          } catch (e) {
+            console.error("Error inserting font size at cursor:", e);
+          }
+        }
+      } else {
+        // Not in paragraph - just insert marker
+        span.innerHTML = "\u200B";
+        try {
+          range.insertNode(span);
+          const newRange = document.createRange();
+          newRange.setStartAfter(span);
+          newRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+        } catch (e) {
+          console.error("Error inserting font size at cursor:", e);
+        }
       }
     } else {
       // Has selection - wrap it
