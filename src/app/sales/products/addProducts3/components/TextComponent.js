@@ -356,9 +356,53 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     selection.removeAllRanges();
     selection.addRange(savedRange);
     
+    // Apply text color
     document.execCommand("foreColor", false, color);
     
+    // Also update underline color to match text color
     setTimeout(() => {
+      // After applying color, update underline color for elements with underline
+      const range = selection.getRangeAt(0);
+      
+      if (!range.collapsed) {
+        // Get all elements within the selection
+        const container = range.commonAncestorContainer;
+        const parent = container.nodeType === Node.ELEMENT_NODE ? container : container.parentElement;
+        
+        if (parent) {
+          // Find all elements with underline in the selection
+          const allElements = parent.querySelectorAll("*");
+          allElements.forEach(element => {
+            if (range.intersectsNode(element)) {
+              const computedStyle = window.getComputedStyle(element);
+              const hasUnderline = computedStyle.textDecoration.includes("underline") || 
+                                   element.tagName === "U" ||
+                                   (element.style && element.style.textDecoration && 
+                                    element.style.textDecoration.includes("underline"));
+              
+              if (hasUnderline && element.style) {
+                element.style.textDecorationColor = color;
+                element.style.webkitTextDecorationColor = color;
+              }
+            }
+          });
+          
+          // Also check the container itself
+          if (range.intersectsNode(parent)) {
+            const computedStyle = window.getComputedStyle(parent);
+            const hasUnderline = computedStyle.textDecoration.includes("underline") || 
+                                 parent.tagName === "U" ||
+                                 (parent.style && parent.style.textDecoration && 
+                                  parent.style.textDecoration.includes("underline"));
+            
+            if (hasUnderline && parent.style) {
+              parent.style.textDecorationColor = color;
+              parent.style.webkitTextDecorationColor = color;
+            }
+          }
+        }
+      }
+      
       restoreSelection();
       setSelectedColor(color);
       setCurrentTextColor(color);
