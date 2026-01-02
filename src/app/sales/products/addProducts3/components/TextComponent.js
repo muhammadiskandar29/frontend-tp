@@ -53,8 +53,9 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   const bgColorPickerRef = useRef(null);
   const editorRef = useRef(null);
 
-  // Preset colors seperti MS Word
+  // Preset colors seperti MS Word - Primary color #FF9900 (rgb(255, 153, 0))
   const presetColors = [
+    "#FF9900", // Primary color - rgb(255, 153, 0)
     "#000000", "#FFFFFF", "#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF",
     "#800000", "#008000", "#000080", "#808000", "#800080", "#008080", "#C0C0C0", "#808080",
     "#FF9999", "#99FF99", "#9999FF", "#FFFF99", "#FF99FF", "#99FFFF", "#FFCC99", "#CC99FF"

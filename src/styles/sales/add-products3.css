@@ -3242,6 +3242,7 @@ html:has(.add-products3-container) {
   overflow: hidden;
   border: 1.5px solid #e5e7eb;
   transition: all 0.2s ease;
+  background: #f3f4f6; /* Abu-abu background */
 }
 
 .text-editor-area:hover {
@@ -3295,7 +3296,7 @@ html:has(.add-products3-container) {
   font-family: inherit;
   resize: vertical;
   color: #1f2937;
-  background: transparent;
+  background: #f3f4f6; /* Abu-abu background */
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
@@ -3316,6 +3317,7 @@ html:has(.add-products3-container) {
 
 .text-editor-area.dark .rich-text-editor {
   color: #ffffff;
+  background: #1f2937; /* Dark mode tetap gelap */
 }
 
 .text-editor-area.dark .rich-text-editor:empty:before {

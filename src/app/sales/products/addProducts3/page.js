@@ -82,8 +82,9 @@ export default function AddProducts3Page() {
   const [showBgColorPicker, setShowBgColorPicker] = useState(false);
   const bgColorPickerRef = useRef(null);
 
-  // Preset background colors
+  // Preset background colors - Primary color #FF9900 (rgb(255, 153, 0))
   const presetBgColors = [
+    { name: "Primary Orange", value: "#FF9900" }, // Primary color - rgb(255, 153, 0)
     { name: "Putih", value: "#ffffff" },
     { name: "Hitam", value: "#000000" },
     { name: "Abu-abu Terang", value: "#f3f4f6" },
