@@ -10,7 +10,7 @@ export default function ComponentWrapper({
   onMoveUp, 
   onMoveDown, 
   onDelete,
-  isExpanded = true,
+    isExpanded = false,
   onToggleExpand,
   isRequired = false
 }) {
@@ -38,19 +38,26 @@ export default function ComponentWrapper({
       {/* Header dengan arrow dan menu */}
       <div className="component-card-header" onClick={onToggleExpand}>
         <div className="component-card-header-left">
-          <button 
-            className={`component-move-btn-up ${index === 0 ? 'disabled' : ''}`}
-            onClick={(e) => { e.stopPropagation(); onMoveUp(); }}
-            disabled={index === 0}
-            title="Pindah ke atas"
-          >
-            <ChevronUp size={16} />
-          </button>
+          <div className="component-move-buttons">
+            <button 
+              className={`component-move-btn-up ${index === 0 ? 'disabled' : ''}`}
+              onClick={(e) => { e.stopPropagation(); onMoveUp(); }}
+              disabled={index === 0}
+              title="Pindah ke atas"
+            >
+              <ChevronUp size={14} />
+            </button>
+            <button 
+              className="component-move-btn-down"
+              onClick={(e) => { e.stopPropagation(); onMoveDown(); }}
+              title="Pindah ke bawah"
+            >
+              <ChevronDown size={14} />
+            </button>
+          </div>
           <ChevronDown 
             size={16} 
-            className="component-move-icon-down"
-            onClick={(e) => { e.stopPropagation(); onMoveDown(); }}
-            title="Pindah ke bawah"
+            className={`component-expand-icon ${!isExpanded ? 'collapsed' : ''}`}
           />
           <span className="component-card-title">{title}</span>
         </div>
