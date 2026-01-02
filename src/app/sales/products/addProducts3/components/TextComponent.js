@@ -259,17 +259,22 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           <div className="toolbar-color-picker-wrapper" ref={bgColorPickerRef}>
             <button 
               className={`toolbar-btn ${showBgColorPicker ? "active" : ""}`}
-              title="Background Color"
+              title="Text Background Color (Highlight)"
               onClick={() => setShowBgColorPicker(!showBgColorPicker)}
             >
               <span style={{ 
                 backgroundColor: backgroundColor === "transparent" ? "#f0f0f0" : backgroundColor,
+                color: backgroundColor === "transparent" ? "#000" : "#fff",
                 padding: "2px 6px",
-                borderRadius: "2px"
+                borderRadius: "2px",
+                fontWeight: "bold"
               }}>Bg</span>
             </button>
             {showBgColorPicker && (
               <div className="toolbar-color-picker-popup">
+                <div style={{ fontSize: "12px", marginBottom: "8px", color: "#6b7280", fontWeight: "500" }}>
+                  Text Background
+                </div>
                 <input
                   type="color"
                   value={backgroundColor === "transparent" ? "#ffffff" : backgroundColor}

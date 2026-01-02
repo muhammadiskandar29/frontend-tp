@@ -71,7 +71,8 @@ export default function AddProducts3Page() {
     harga_promo: null,
     tanggal_event: null,
     assign: [],
-    background_color: "#ffffff" // Default putih
+    background_color: "#ffffff", // Default putih
+    page_title: "" // Custom page title
   });
   
   // State untuk options dropdown
@@ -248,10 +249,17 @@ export default function AddProducts3Page() {
                     textData.paragraphStyle === "h2" ? "h2" :
                     textData.paragraphStyle === "h3" ? "h3" : "div";
 
+        // Jika ada background color, gunakan display inline untuk highlight effect
+        const hasBackground = textData.backgroundColor && textData.backgroundColor !== "transparent";
+        
         return (
           <Tag 
             className="preview-text" 
-            style={textStyles}
+            style={{
+              ...textStyles,
+              display: hasBackground ? "inline-block" : "block",
+              width: hasBackground ? "auto" : "100%"
+            }}
           >
             {textData.content || "Teks..."}
           </Tag>
@@ -923,6 +931,7 @@ export default function AddProducts3Page() {
       tanggal_event: formattedDate,
       assign: pengaturanForm.assign,
       background_color: pengaturanForm.background_color || "#ffffff",
+      page_title: pengaturanForm.page_title || "",
       landingpage: "1",
       status: "1",
       blocks: blocks.map(block => ({
@@ -1213,11 +1222,24 @@ export default function AddProducts3Page() {
                   </div>
                 </div>
 
-                {/* Background Color */}
+                {/* Page Title */}
                 <div className="pengaturan-section">
                   <h3 className="pengaturan-section-title">Tampilan</h3>
                   <p className="pengaturan-section-description">Pengaturan tampilan halaman landing page</p>
                   
+                  <div className="pengaturan-form-group">
+                    <label className="pengaturan-label">
+                      Page Title (Judul Halaman)
+                    </label>
+                    <InputText
+                      className="pengaturan-input"
+                      value={pengaturanForm.page_title || ""}
+                      onChange={(e) => handlePengaturanChange("page_title", e.target.value)}
+                      placeholder="Masukkan judul halaman (opsional)"
+                    />
+                    <small className="pengaturan-hint">Judul yang akan ditampilkan di bagian atas halaman. Kosongkan jika tidak ingin menampilkan judul.</small>
+                  </div>
+
                   <div className="pengaturan-form-group">
                     <label className="pengaturan-label">
                       Background Color
@@ -1273,10 +1295,10 @@ export default function AddProducts3Page() {
               />
             </div>
 
-            {/* Nama Produk - Selalu muncul di paling atas, tidak bisa dipindahkan */}
-            {pengaturanForm.nama && (
+            {/* Custom Page Title - Jika diisi */}
+            {pengaturanForm.page_title && (
               <div className="canvas-preview-block canvas-product-title-block">
-                <h1 className="preview-product-title">{pengaturanForm.nama}</h1>
+                <h1 className="preview-product-title">{pengaturanForm.page_title}</h1>
               </div>
             )}
             
