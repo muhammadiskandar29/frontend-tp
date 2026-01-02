@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { 
   Type, Image as ImageIcon, FileText, List, MessageSquare, 
-  HelpCircle, Youtube, X, ArrowLeft, ChevronDown
+  HelpCircle, Youtube, X, ArrowLeft, ChevronDown, Layout
 } from "lucide-react";
+import SimpleColorPicker from "./components/SimpleColorPicker";
 import { InputText } from "primereact/inputtext";
 import { Dropdown } from "primereact/dropdown";
 import { Calendar } from "primereact/calendar";
@@ -38,6 +39,7 @@ const COMPONENT_CATEGORIES = {
       { id: "image", name: "Gambar", icon: ImageIcon, color: "#6b7280" },
       { id: "price", name: "Harga", icon: FileText, color: "#6b7280" },
       { id: "youtube", name: "Video", icon: Youtube, color: "#6b7280" },
+      { id: "section", name: "Section", icon: Layout, color: "#6b7280" },
     ]
   },
   formPemesanan: {
@@ -79,8 +81,6 @@ export default function AddProducts3Page() {
   // State untuk options dropdown
   const [kategoriOptions, setKategoriOptions] = useState([]);
   const [userOptions, setUserOptions] = useState([]);
-  const [showBgColorPicker, setShowBgColorPicker] = useState(false);
-  const bgColorPickerRef = useRef(null);
 
   // Preset background colors - Primary color #FF9900 (rgb(255, 153, 0))
   const presetBgColors = [
@@ -103,22 +103,6 @@ export default function AddProducts3Page() {
     { name: "Orange", value: "#f97316" },
   ];
 
-  // Close background color picker when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (bgColorPickerRef.current && !bgColorPickerRef.current.contains(event.target)) {
-        setShowBgColorPicker(false);
-      }
-    };
-
-    if (showBgColorPicker) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [showBgColorPicker]);
 
   // Default data untuk setiap komponen
   const getDefaultData = (componentId) => {
@@ -134,7 +118,19 @@ export default function AddProducts3Page() {
       slider: { images: [] },
       button: { text: "Klik Disini", link: "#", style: "primary" },
       embed: { code: "" },
-      section: { background: "#ffffff", padding: "20px" },
+      section: { 
+        children: [], // Array of block IDs that are children of this section
+        marginRight: 0,
+        marginLeft: 0,
+        marginBetween: 16,
+        border: 0,
+        borderColor: "#000000",
+        borderRadius: "none",
+        boxShadow: "none",
+        responsiveType: "vertical",
+        componentId: `section-${Date.now()}`,
+        title: "Section"
+      },
       html: { code: "" },
       divider: { style: "solid", color: "#e5e7eb" },
       "scroll-target": { target: "" },
@@ -174,6 +170,51 @@ export default function AddProducts3Page() {
         ? { ...block, data: { ...block.data, ...newData } }
         : block
     ));
+  };
+
+  // Handler untuk menambah child block ke section
+  const handleAddChildBlock = (newBlock) => {
+    setBlocks([...blocks, newBlock]);
+  };
+
+  // Handler untuk update child block
+  const handleUpdateChildBlock = (childId, newData) => {
+    setBlocks(blocks.map(block => 
+      block.id === childId 
+        ? { ...block, data: { ...block.data, ...newData } }
+        : block
+    ));
+  };
+
+  // Handler untuk delete child block
+  const handleDeleteChildBlock = (childId) => {
+    setBlocks(blocks.filter(block => block.id !== childId));
+  };
+
+  // Handler untuk move child block
+  const handleMoveChildBlock = (childId, direction) => {
+    // Find the block and its parent section
+    const childBlock = blocks.find(b => b.id === childId);
+    if (!childBlock || !childBlock.parentId) return;
+    
+    // Find parent section by componentId
+    const parentSection = blocks.find(b => 
+      b.type === "section" && 
+      (b.data.componentId === childBlock.parentId || b.id === childBlock.parentId)
+    );
+    if (!parentSection || !parentSection.data.children) return;
+    
+    const children = parentSection.data.children;
+    const currentIndex = children.indexOf(childId);
+    if (currentIndex === -1) return;
+    
+    const newIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex < 0 || newIndex >= children.length) return;
+    
+    const newChildren = [...children];
+    [newChildren[currentIndex], newChildren[newIndex]] = [newChildren[newIndex], newChildren[currentIndex]];
+    
+    handleUpdateBlock(parentSection.id, { ...parentSection.data, children: newChildren });
   };
 
   // Handler untuk reorder blocks
@@ -258,7 +299,16 @@ export default function AddProducts3Page() {
       case "embed":
         return <EmbedComponent {...commonProps} />;
       case "section":
-        return <SectionComponent {...commonProps} />;
+        return (
+          <SectionComponent 
+            {...commonProps}
+            allBlocks={blocks}
+            onAddChildBlock={handleAddChildBlock}
+            onUpdateChildBlock={handleUpdateChildBlock}
+            onDeleteChildBlock={handleDeleteChildBlock}
+            onMoveChildBlock={handleMoveChildBlock}
+          />
+        );
       case "html":
         return <HTMLComponent {...commonProps} />;
       case "divider":
@@ -689,6 +739,42 @@ export default function AddProducts3Page() {
         return <div dangerouslySetInnerHTML={{ __html: block.data.code || "" }} />;
       case "embed":
         return <div dangerouslySetInnerHTML={{ __html: block.data.code || "" }} />;
+      case "section":
+        const sectionData = block.data || {};
+        const sectionComponentId = sectionData.componentId || `section-${block.id}`;
+        const sectionChildren = sectionData.children || [];
+        
+        // Find child blocks by both parentId and children array
+        const sectionChildBlocks = blocks.filter(b => 
+          b.parentId === sectionComponentId || sectionChildren.includes(b.id)
+        );
+        
+        // Build section styles from advance settings
+        const sectionStyles = {
+          marginRight: `${sectionData.marginRight || 0}px`,
+          marginLeft: `${sectionData.marginLeft || 0}px`,
+          marginBottom: `${sectionData.marginBetween || 16}px`,
+          border: sectionData.border ? `${sectionData.border}px solid ${sectionData.borderColor || "#000000"}` : "none",
+          borderRadius: sectionData.borderRadius === "none" ? "0" : sectionData.borderRadius || "0",
+          boxShadow: sectionData.boxShadow === "none" ? "none" : sectionData.boxShadow || "none",
+          display: "block",
+          width: "100%",
+          padding: "16px",
+        };
+        
+        return (
+          <div className="preview-section" style={sectionStyles}>
+            {sectionChildBlocks.length === 0 ? (
+              <div className="preview-placeholder">Section kosong - tambahkan komponen</div>
+            ) : (
+              sectionChildBlocks.map((childBlock) => (
+                <div key={childBlock.id} className="preview-section-child">
+                  {renderPreview(childBlock)}
+                </div>
+              ))
+            )}
+          </div>
+        );
       default:
         return <div className="preview-placeholder">{block.type}</div>;
     }
@@ -1323,89 +1409,12 @@ export default function AddProducts3Page() {
                       Background Color
                     </label>
                     
-                    {/* Modern Background Color Picker */}
-                    <div className="modern-bg-color-picker" ref={bgColorPickerRef}>
-                      {/* Current Color Preview */}
-                      <div 
-                        className="modern-bg-color-preview"
-                        style={{ backgroundColor: pengaturanForm.background_color || "#ffffff" }}
-                        onClick={() => setShowBgColorPicker(!showBgColorPicker)}
-                      >
-                        <div className="modern-bg-color-preview-inner">
-                          <span className="modern-bg-color-hex">
-                            {pengaturanForm.background_color || "#ffffff"}
-                          </span>
-                          <ChevronDown size={16} />
-                        </div>
-                      </div>
-
-                      {/* Color Picker Dropdown */}
-                      {showBgColorPicker && (
-                        <div className="modern-bg-color-picker-popup">
-                          <div className="modern-bg-color-header">
-                            <span>Pilih Warna Background</span>
-                            <button
-                              className="modern-bg-color-close"
-                              onClick={() => setShowBgColorPicker(false)}
-                            >
-                              <X size={16} />
-                            </button>
-                          </div>
-
-                          {/* Preset Colors Grid */}
-                          <div className="modern-bg-color-presets">
-                            <div className="modern-bg-color-presets-label">Warna Cepat</div>
-                            <div className="modern-bg-color-presets-grid">
-                              {presetBgColors.map((color, idx) => (
-                                <button
-                                  key={idx}
-                                  className={`modern-bg-color-preset-item ${
-                                    (pengaturanForm.background_color || "#ffffff") === color.value ? "selected" : ""
-                                  }`}
-                                  style={{ backgroundColor: color.value }}
-                                  onClick={() => {
-                                    handlePengaturanChange("background_color", color.value);
-                                    setShowBgColorPicker(false);
-                                  }}
-                                  title={color.name}
-                                >
-                                  {(pengaturanForm.background_color || "#ffffff") === color.value && (
-                                    <div className="modern-bg-color-check">✓</div>
-                                  )}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="modern-bg-color-divider"></div>
-
-                          {/* Custom Color Picker */}
-                          <div className="modern-bg-color-custom">
-                            <div className="modern-bg-color-custom-label">Warna Kustom</div>
-                            <div className="modern-bg-color-custom-picker">
-                              <input
-                                type="color"
-                                value={pengaturanForm.background_color || "#ffffff"}
-                                onChange={(e) => handlePengaturanChange("background_color", e.target.value)}
-                                className="modern-bg-color-input"
-                              />
-                              <InputText
-                                className="pengaturan-input"
-                                value={pengaturanForm.background_color || "#ffffff"}
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  if (/^#[0-9A-Fa-f]{0,6}$/.test(value) || value === "") {
-                                    handlePengaturanChange("background_color", value || "#ffffff");
-                                  }
-                                }}
-                                placeholder="#ffffff"
-                                style={{ flex: 1, fontFamily: "monospace" }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    <SimpleColorPicker
+                      value={pengaturanForm.background_color || "#ffffff"}
+                      onChange={(color) => handlePengaturanChange("background_color", color)}
+                      presetColors={presetBgColors.map(c => c.value)}
+                      label="Pilih Warna Background"
+                    />
                     
                     <small className="pengaturan-hint">Pilih warna background untuk halaman landing page</small>
                   </div>

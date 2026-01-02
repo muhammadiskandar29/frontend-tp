@@ -15,6 +15,7 @@ import {
   X, Monitor, Tablet, Smartphone
 } from "lucide-react";
 import ComponentWrapper from "./ComponentWrapper";
+import SimpleColorPicker from "./SimpleColorPicker";
 
 export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index }) {
   const content = data.content || "<p>Text Baru</p>";
@@ -42,12 +43,6 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   const componentId = data.componentId || `text-${Date.now()}`;
   
   const [showAdvance, setShowAdvance] = useState(false);
-  const [showColorPicker, setShowColorPicker] = useState(false);
-  const [showBgColorPicker, setShowBgColorPicker] = useState(false);
-  const [showMoreColors, setShowMoreColors] = useState(false);
-  const [showMoreBgColors, setShowMoreBgColors] = useState(false);
-  const [selectedColor, setSelectedColor] = useState("#000000");
-  const [selectedBgColor, setSelectedBgColor] = useState("#FFFF00");
   const [selectedFontSize, setSelectedFontSize] = useState(16);
   
   // Current style from selection/cursor position
@@ -57,9 +52,6 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   const [currentStrikethrough, setCurrentStrikethrough] = useState(false);
   const [currentTextColor, setCurrentTextColor] = useState("#000000");
   const [currentBgColor, setCurrentBgColor] = useState("transparent");
-  
-  const colorPickerRef = useRef(null);
-  const bgColorPickerRef = useRef(null);
   const editorRef = useRef(null);
   const savedSelectionRef = useRef(null);
 
@@ -71,27 +63,6 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     "#FF9999", "#99FF99", "#9999FF", "#FFFF99", "#FF99FF", "#99FFFF", "#FFCC99", "#CC99FF"
   ];
 
-  // Close color picker when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (colorPickerRef.current && !colorPickerRef.current.contains(event.target)) {
-        setShowColorPicker(false);
-        setShowMoreColors(false);
-      }
-      if (bgColorPickerRef.current && !bgColorPickerRef.current.contains(event.target)) {
-        setShowBgColorPicker(false);
-        setShowMoreBgColors(false);
-      }
-    };
-
-    if (showColorPicker || showBgColorPicker) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [showColorPicker, showBgColorPicker]);
 
   const handleChange = (field, value) => {
     onUpdate?.({ ...data, [field]: value });
@@ -452,9 +423,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
       
       restoreSelection();
-      setSelectedColor(color);
       setCurrentTextColor(color);
-      setShowColorPicker(false);
       handleEditorInput();
       setTimeout(detectStyles, 10);
     }, 100);
@@ -538,9 +507,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       document.execCommand("backColor", false, color);
     }
     
-    setSelectedBgColor(color);
     setCurrentBgColor(color);
-    setShowBgColorPicker(false);
     handleEditorInput();
     setTimeout(() => {
       detectStyles();
@@ -875,10 +842,6 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     setSelectedFontSize(detectedFontSize);
     setCurrentTextColor(detectedTextColor);
     setCurrentBgColor(detectedBgColor);
-    setSelectedColor(detectedTextColor);
-    if (detectedBgColor !== "transparent") {
-      setSelectedBgColor(detectedBgColor);
-    }
   };
 
   // Update styles display when selection changes and save selection automatically
@@ -1015,70 +978,14 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           >
             <Italic size={16} />
           </button>
-          {/* Text Color Button - Like Image */}
-          <div className="toolbar-color-picker-wrapper word-style-color-picker" ref={colorPickerRef}>
-            <button 
-              className={`toolbar-btn-text-color ${showColorPicker ? "active" : ""}`}
-              title="Font Color (Warna Font)"
-              onClick={() => {
-                setShowColorPicker(!showColorPicker);
-                setShowMoreColors(false);
-              }}
-            >
-              <div className="text-color-button-content">
-                <span className="text-color-letter">A</span>
-                <div className="text-color-bar" style={{ backgroundColor: currentTextColor }}></div>
-              </div>
-              <ChevronDownIcon size={10} style={{ marginLeft: "4px" }} />
-            </button>
-            {showColorPicker && (
-              <div className="word-color-picker-popup">
-                <div className="word-color-picker-header">Font Color</div>
-                <div className="word-color-preset-grid">
-                  {presetColors.map((color, idx) => (
-                    <button
-                      key={idx}
-                      className={`word-color-preset-item ${selectedColor === color ? "selected" : ""}`}
-                      style={{ backgroundColor: color }}
-                      onClick={() => applyTextColor(color)}
-                      title={color}
-                    />
-                  ))}
-                </div>
-                <div className="word-color-picker-divider"></div>
-                <button
-                  className="word-color-more-btn"
-                  onClick={() => {
-                    setShowMoreColors(!showMoreColors);
-                  }}
-                >
-                  More Colors...
-                </button>
-                {showMoreColors && (
-                  <div className="word-color-more-panel">
-                    <div className="word-color-more-label">Custom Color</div>
-                    <input
-                      type="color"
-                      value={selectedColor}
-                      onChange={(e) => applyTextColor(e.target.value)}
-                      style={{ width: "100%", height: "40px", cursor: "pointer", marginBottom: "8px" }}
-                    />
-                    <input
-                      type="text"
-                      value={selectedColor}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (/^#[0-9A-Fa-f]{0,6}$/.test(value) || value === "") {
-                          applyTextColor(value || "#000000");
-                        }
-                      }}
-                      placeholder="#000000"
-                      className="word-color-hex-input"
-                    />
-                  </div>
-                )}
-              </div>
-            )}
+          {/* Text Color Picker */}
+          <div className="toolbar-color-picker-wrapper">
+            <SimpleColorPicker
+              value={currentTextColor}
+              onChange={(color) => applyTextColor(color)}
+              presetColors={presetColors}
+              label="Font Color"
+            />
           </div>
           <button 
             className={`toolbar-btn ${currentStrikethrough ? "active" : ""}`}
@@ -1204,98 +1111,14 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
               placeholder="1.5"
             />
           </div>
-          {/* Text Background Color Button - Like Image */}
-          <div className="toolbar-color-picker-wrapper word-style-color-picker" ref={bgColorPickerRef}>
-            <button 
-              className={`toolbar-btn-bg-color ${showBgColorPicker ? "active" : ""}`}
-              title="Text Highlight Color (Background Warna Font)"
-              onClick={() => {
-                setShowBgColorPicker(!showBgColorPicker);
-                setShowMoreBgColors(false);
-              }}
-            >
-              <div className="bg-color-button-content">
-                <span className="bg-color-letter">ab</span>
-                <div 
-                  className="bg-color-bar" 
-                  style={{ 
-                    backgroundColor: currentBgColor === "transparent" ? "#FFFF00" : currentBgColor
-                  }}
-                ></div>
-              </div>
-              <ChevronDownIcon size={10} style={{ marginLeft: "4px" }} />
-            </button>
-            {showBgColorPicker && (
-              <div className="word-color-picker-popup">
-                <div className="word-color-picker-header">Text Highlight Color</div>
-                <div className="word-color-preset-grid">
-                  <button
-                    className={`word-color-preset-item ${currentBgColor === "transparent" ? "selected" : ""}`}
-                    style={{ 
-                      backgroundColor: "#f0f0f0",
-                      border: "1px solid #ccc",
-                      position: "relative"
-                    }}
-                    onClick={() => {
-                      applyBgColor("transparent");
-                    }}
-                    title="No Color"
-                  >
-                    <span style={{ fontSize: "10px", color: "#999" }}>×</span>
-                  </button>
-                  {presetColors.map((color, idx) => (
-                    <button
-                      key={idx}
-                      className={`word-color-preset-item ${selectedBgColor === color ? "selected" : ""}`}
-                      style={{ backgroundColor: color }}
-                      onClick={() => applyBgColor(color)}
-                      title={color}
-                    />
-                  ))}
-                </div>
-                <div className="word-color-picker-divider"></div>
-                <button
-                  className="word-color-more-btn"
-                  onClick={() => {
-                    setShowMoreBgColors(!showMoreBgColors);
-                  }}
-                >
-                  More Colors...
-                </button>
-                {showMoreBgColors && (
-                  <div className="word-color-more-panel">
-                    <div className="word-color-more-label">Custom Color</div>
-                    <input
-                      type="color"
-                      value={selectedBgColor === "transparent" ? "#ffffff" : selectedBgColor}
-                      onChange={(e) => applyBgColor(e.target.value)}
-                      style={{ width: "100%", height: "40px", cursor: "pointer", marginBottom: "8px" }}
-                    />
-                    <input
-                      type="text"
-                      value={selectedBgColor === "transparent" ? "" : selectedBgColor}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === "") {
-                          applyBgColor("transparent");
-                        } else if (/^#[0-9A-Fa-f]{0,6}$/.test(value)) {
-                          applyBgColor(value);
-                        }
-                      }}
-                      placeholder="Transparent atau #hex"
-                      className="word-color-hex-input"
-                      style={{ marginBottom: "8px" }}
-                    />
-                    <button 
-                      className="toolbar-transparent-btn"
-                      onClick={() => applyBgColor("transparent")}
-                    >
-                      No Color
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
+          {/* Text Background Color Picker */}
+          <div className="toolbar-color-picker-wrapper">
+            <SimpleColorPicker
+              value={currentBgColor === "transparent" ? "#FFFF00" : currentBgColor}
+              onChange={(color) => applyBgColor(color)}
+              presetColors={presetColors}
+              label="Text Highlight Color"
+            />
           </div>
         </div>
       </div>
