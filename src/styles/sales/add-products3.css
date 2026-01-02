@@ -2588,6 +2588,18 @@ html:has(.add-products3-container) {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 200px;
+}
+
+.toolbar-color-picker-popup input[type="text"] {
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.toolbar-color-picker-popup input[type="text"]:focus {
+  outline: none;
+  border-color: #F1A124;
+  box-shadow: 0 0 0 2px rgba(241, 161, 36, 0.1);
 }
 
 .toolbar-transparent-btn {

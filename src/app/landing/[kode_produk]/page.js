@@ -998,8 +998,10 @@ export default function LandingPage() {
     // Add null check for data.header
     const fullImageUrl = data?.header ? resolveHeaderSource(data.header) : "";
 
-    // Update document title
-    const title = `${data.nama} - Beli Sekarang | Ternak Properti`;
+    // Update document title - Gunakan page_title jika ada, jika tidak gunakan nama produk
+    const title = data.page_title 
+      ? data.page_title 
+      : `${data.nama} - Beli Sekarang | Ternak Properti`;
     document.title = title;
 
     // Update meta description
@@ -1037,7 +1039,7 @@ export default function LandingPage() {
     }
     canonical.setAttribute('href', currentUrl);
 
-    // Open Graph Tags
+    // Open Graph Tags - Gunakan title yang sama dengan document title
     updateMetaTag('og:title', title, true);
     updateMetaTag('og:description', description, true);
     updateMetaTag('og:type', 'product', true);

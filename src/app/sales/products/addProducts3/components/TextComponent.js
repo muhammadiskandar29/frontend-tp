@@ -142,25 +142,46 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           <div className="toolbar-color-picker-wrapper" ref={colorPickerRef}>
             <button 
               className={`toolbar-btn ${showColorPicker ? "active" : ""}`}
-              title="Text Color"
+              title="Text Color (Warna Font)"
               onClick={() => setShowColorPicker(!showColorPicker)}
             >
               <span style={{ 
                 textDecoration: 'underline',
-                color: textColor
+                color: textColor,
+                fontWeight: 'bold'
               }}>A</span>
               <ChevronDownIcon size={12} />
             </button>
             {showColorPicker && (
               <div className="toolbar-color-picker-popup">
+                <div style={{ fontSize: "12px", marginBottom: "8px", color: "#6b7280", fontWeight: "500" }}>
+                  Warna Font
+                </div>
                 <input
                   type="color"
                   value={textColor}
                   onChange={(e) => {
                     handleChange("textColor", e.target.value);
-                    setShowColorPicker(false);
                   }}
-                  style={{ width: "100%", height: "40px", cursor: "pointer" }}
+                  style={{ width: "100%", height: "40px", cursor: "pointer", marginBottom: "8px" }}
+                />
+                <input
+                  type="text"
+                  value={textColor}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (/^#[0-9A-Fa-f]{0,6}$/.test(value) || value === "") {
+                      handleChange("textColor", value || "#000000");
+                    }
+                  }}
+                  placeholder="#000000"
+                  style={{ 
+                    width: "100%", 
+                    padding: "6px 8px", 
+                    border: "1px solid #e5e7eb", 
+                    borderRadius: "4px",
+                    fontSize: "12px"
+                  }}
                 />
               </div>
             )}
@@ -259,7 +280,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           <div className="toolbar-color-picker-wrapper" ref={bgColorPickerRef}>
             <button 
               className={`toolbar-btn ${showBgColorPicker ? "active" : ""}`}
-              title="Text Background Color (Highlight)"
+              title="Text Background Color (Background Warna Font)"
               onClick={() => setShowBgColorPicker(!showBgColorPicker)}
             >
               <span style={{ 
@@ -273,22 +294,41 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
             {showBgColorPicker && (
               <div className="toolbar-color-picker-popup">
                 <div style={{ fontSize: "12px", marginBottom: "8px", color: "#6b7280", fontWeight: "500" }}>
-                  Text Background
+                  Background Warna Font
                 </div>
                 <input
                   type="color"
                   value={backgroundColor === "transparent" ? "#ffffff" : backgroundColor}
                   onChange={(e) => {
                     handleChange("backgroundColor", e.target.value);
-                    setShowBgColorPicker(false);
                   }}
                   style={{ width: "100%", height: "40px", cursor: "pointer", marginBottom: "8px" }}
+                />
+                <input
+                  type="text"
+                  value={backgroundColor === "transparent" ? "" : backgroundColor}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === "") {
+                      handleChange("backgroundColor", "transparent");
+                    } else if (/^#[0-9A-Fa-f]{0,6}$/.test(value)) {
+                      handleChange("backgroundColor", value);
+                    }
+                  }}
+                  placeholder="Transparent atau #hex"
+                  style={{ 
+                    width: "100%", 
+                    padding: "6px 8px", 
+                    border: "1px solid #e5e7eb", 
+                    borderRadius: "4px",
+                    fontSize: "12px",
+                    marginBottom: "8px"
+                  }}
                 />
                 <button 
                   className="toolbar-transparent-btn"
                   onClick={() => {
                     handleChange("backgroundColor", "transparent");
-                    setShowBgColorPicker(false);
                   }}
                 >
                   Transparent

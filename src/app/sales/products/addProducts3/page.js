@@ -1222,23 +1222,29 @@ export default function AddProducts3Page() {
                   </div>
                 </div>
 
-                {/* Page Title */}
+                {/* Page Title - SEO Meta Tag */}
                 <div className="pengaturan-section">
-                  <h3 className="pengaturan-section-title">Tampilan</h3>
-                  <p className="pengaturan-section-description">Pengaturan tampilan halaman landing page</p>
+                  <h3 className="pengaturan-section-title">SEO & Meta</h3>
+                  <p className="pengaturan-section-description">Pengaturan untuk SEO dan meta tag halaman</p>
                   
                   <div className="pengaturan-form-group">
                     <label className="pengaturan-label">
-                      Page Title (Judul Halaman)
+                      Page Title (Browser Tab Title)
                     </label>
                     <InputText
                       className="pengaturan-input"
                       value={pengaturanForm.page_title || ""}
                       onChange={(e) => handlePengaturanChange("page_title", e.target.value)}
-                      placeholder="Masukkan judul halaman (opsional)"
+                      placeholder="Contoh: BANDUNG- Seminar Ternak Properti"
                     />
-                    <small className="pengaturan-hint">Judul yang akan ditampilkan di bagian atas halaman. Kosongkan jika tidak ingin menampilkan judul.</small>
+                    <small className="pengaturan-hint">Judul yang akan muncul di browser tab dan hasil pencarian Google. Jika kosong, akan menggunakan nama produk.</small>
                   </div>
+                </div>
+
+                {/* Background Color */}
+                <div className="pengaturan-section">
+                  <h3 className="pengaturan-section-title">Tampilan</h3>
+                  <p className="pengaturan-section-description">Pengaturan tampilan halaman landing page</p>
 
                   <div className="pengaturan-form-group">
                     <label className="pengaturan-label">
@@ -1294,13 +1300,6 @@ export default function AddProducts3Page() {
                 className="canvas-logo"
               />
             </div>
-
-            {/* Custom Page Title - Jika diisi */}
-            {pengaturanForm.page_title && (
-              <div className="canvas-preview-block canvas-product-title-block">
-                <h1 className="preview-product-title">{pengaturanForm.page_title}</h1>
-              </div>
-            )}
             
             {/* Placeholder jika belum ada komponen */}
             {blocks.length === 0 && !pengaturanForm.nama && (
