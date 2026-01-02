@@ -364,29 +364,75 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   const applyBgColor = (color) => {
     if (!editorRef.current) return;
     
+    // Save selection first
+    const savedRange = saveSelection();
+    if (!savedRange && color !== "transparent") {
+      editorRef.current.focus();
+      return;
+    }
+    
     editorRef.current.focus();
     const selection = window.getSelection();
-    if (selection.rangeCount === 0) return;
+    
+    // Restore selection if available
+    if (savedRange) {
+      selection.removeAllRanges();
+      try {
+        selection.addRange(savedRange);
+      } catch (e) {
+        restoreSelection();
+      }
+    }
+    
+    if (selection.rangeCount === 0) {
+      if (color === "transparent") {
+        return; // Can't remove background without selection
+      }
+      // No selection - apply to next typing
+      document.execCommand("backColor", false, color);
+      setSelectedBgColor(color);
+      setCurrentBgColor(color);
+      setShowBgColorPicker(false);
+      handleEditorInput();
+      return;
+    }
     
     const range = selection.getRangeAt(0);
     if (!editorRef.current.contains(range.commonAncestorContainer)) return;
     
     if (color === "transparent") {
-      // Remove background color by removing highlight spans
+      // Remove background color - use a special approach
       if (range.collapsed) {
-        // For cursor position, we can't remove background
+        // For cursor position, can't remove background
         return;
       } else {
-        // For selection, wrap in span and set transparent
+        // For selection, wrap in span with transparent background
+        // This will override any existing background
         const span = document.createElement("span");
         span.style.backgroundColor = "transparent";
+        span.style.background = "transparent";
+        
         try {
+          // Try to surround contents
           range.surroundContents(span);
         } catch (e) {
-          const contents = range.extractContents();
-          span.appendChild(contents);
-          range.insertNode(span);
+          // If surroundContents fails, extract and wrap
+          try {
+            const contents = range.extractContents();
+            span.appendChild(contents);
+            range.insertNode(span);
+          } catch (e2) {
+            console.error("Error applying transparent background:", e2);
+            return;
+          }
         }
+        
+        // Also remove background from any child spans that have background
+        const childSpans = span.querySelectorAll("span[style*='background']");
+        childSpans.forEach(childSpan => {
+          childSpan.style.backgroundColor = "transparent";
+          childSpan.style.background = "transparent";
+        });
       }
     } else {
       // Apply background color using backColor command
@@ -397,7 +443,12 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     setCurrentBgColor(color);
     setShowBgColorPicker(false);
     handleEditorInput();
-    setTimeout(detectStyles, 10);
+    setTimeout(() => {
+      detectStyles();
+      if (savedRange) {
+        restoreSelection();
+      }
+    }, 10);
   };
 
   // Apply font size to selection
