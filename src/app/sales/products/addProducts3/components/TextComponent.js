@@ -633,23 +633,12 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       if (!content || content === "Text Baru") {
         editorRef.current.innerHTML = "<p></p>";
       } else {
-        // Set content and ensure styles are preserved
         editorRef.current.innerHTML = content;
-        
-        // Force re-render to ensure styles are applied
-        // This ensures that inline styles from HTML are visible
-        const temp = editorRef.current.innerHTML;
-        editorRef.current.innerHTML = "";
-        setTimeout(() => {
-          editorRef.current.innerHTML = temp;
-          // Detect styles after content is loaded
-          setTimeout(detectStyles, 50);
-        }, 10);
       }
       // Detect styles after content is loaded
       setTimeout(detectStyles, 100);
     }
-  }, [content]);
+  }, []);
 
   // Detect all styles from current selection/cursor
   const detectStyles = () => {

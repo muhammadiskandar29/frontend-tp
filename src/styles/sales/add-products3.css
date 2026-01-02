@@ -3301,22 +3301,6 @@ html:has(.add-products3-container) {
   overflow-wrap: break-word;
 }
 
-/* Ensure inline styles from HTML content are preserved */
-.rich-text-editor * {
-  /* Don't override inline styles */
-}
-
-.rich-text-editor span[style],
-.rich-text-editor p[style],
-.rich-text-editor u[style],
-.rich-text-editor b[style],
-.rich-text-editor i[style],
-.rich-text-editor strong[style],
-.rich-text-editor em[style] {
-  /* Preserve all inline styles */
-  all: revert;
-}
-
 /* Underline color should match text color - more specific */
 .rich-text-editor u,
 .rich-text-editor u *,
