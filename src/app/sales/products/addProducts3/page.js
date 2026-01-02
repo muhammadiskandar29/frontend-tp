@@ -199,7 +199,13 @@ export default function AddProducts3Page() {
 
   // Handler untuk expand/collapse komponen
   const handleToggleExpand = (blockId) => {
-    setExpandedBlockId(expandedBlockId === blockId ? null : blockId);
+    setExpandedBlockId((prev) => {
+      // Jika blockId sama dengan yang sedang expanded, collapse
+      // Jika berbeda atau null, expand blockId tersebut
+      const newValue = prev === blockId ? null : blockId;
+      console.log('[TOGGLE] BlockId:', blockId, 'Prev:', prev, 'New:', newValue);
+      return newValue;
+    });
   };
 
   // Render komponen form editing di sidebar

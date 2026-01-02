@@ -33,16 +33,36 @@ export default function ComponentWrapper({
     };
   }, [showMenu]);
 
+  const handleHeaderClick = (e) => {
+    // Hanya toggle jika klik bukan di button atau menu
+    const clickedButton = e.target.closest('button');
+    const clickedMenu = e.target.closest('.component-menu-wrapper');
+    const clickedMoveButtons = e.target.closest('.component-move-buttons');
+    
+    // Jangan toggle jika klik di button atau menu
+    if (clickedButton || clickedMenu || clickedMoveButtons) {
+      return;
+    }
+    
+    // Toggle expand/collapse
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log('[HEADER CLICK] Title:', title, 'isExpanded:', isExpanded, 'onToggleExpand exists:', !!onToggleExpand);
+    
+    if (onToggleExpand) {
+      onToggleExpand();
+    } else {
+      console.warn('[HEADER CLICK] onToggleExpand is not defined!');
+    }
+  };
+
   return (
     <div className="sidebar-component-card">
       {/* Header dengan arrow dan menu */}
       <div 
         className="component-card-header" 
-        onClick={() => {
-          if (onToggleExpand) {
-            onToggleExpand();
-          }
-        }}
+        onClick={handleHeaderClick}
       >
         <div className="component-card-header-left">
           <div className="component-move-buttons">
@@ -62,11 +82,13 @@ export default function ComponentWrapper({
               <ChevronDown size={14} />
             </button>
           </div>
-          {isExpanded ? (
-            <ChevronDown size={16} className="component-expand-icon" />
-          ) : (
-            <ChevronRight size={16} className="component-expand-icon" />
-          )}
+          <div className="component-expand-icon-wrapper">
+            {isExpanded ? (
+              <ChevronDown size={16} className="component-expand-icon" />
+            ) : (
+              <ChevronRight size={16} className="component-expand-icon" />
+            )}
+          </div>
           <span className="component-card-title">{title}</span>
         </div>
         <div className="component-menu-wrapper" ref={menuRef}>

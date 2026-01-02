@@ -2415,11 +2415,18 @@ html:has(.add-products3-container) {
   cursor: not-allowed;
 }
 
+.component-expand-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-right: 4px;
+}
+
 .component-expand-icon {
   color: #6b7280;
   transition: all 0.2s ease;
-  flex-shrink: 0;
-  margin-right: 4px;
+  pointer-events: none;
 }
 
 .component-move-btn-up:hover:not(:disabled) {
