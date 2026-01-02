@@ -660,22 +660,57 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     }
     
     // Detect styles by walking up the DOM tree
+    // Start from the closest node to get most specific styles first
     let detectedBold = false;
     let detectedItalic = false;
     let detectedUnderline = false;
     let detectedStrikethrough = false;
-    let detectedFontSize = 16;
-    let detectedTextColor = "#000000";
+    let detectedFontSize = null; // Start with null to detect actual font size
+    let detectedTextColor = null;
     let detectedBgColor = "transparent";
     
+    // First, check the closest node (most specific)
+    const closestNode = node;
+    const closestComputedStyle = window.getComputedStyle(closestNode);
+    
+    // Detect font size from closest node first (most accurate)
+    if (closestNode.style && closestNode.style.fontSize) {
+      const fontSize = parseInt(closestNode.style.fontSize);
+      if (!isNaN(fontSize) && fontSize > 0) {
+        detectedFontSize = fontSize;
+      }
+    }
+    
+    // If no inline font size, check computed style
+    if (detectedFontSize === null) {
+      const computedFontSize = closestComputedStyle.fontSize;
+      if (computedFontSize) {
+        const fontSize = parseFloat(computedFontSize);
+        if (!isNaN(fontSize) && fontSize > 0) {
+          detectedFontSize = Math.round(fontSize);
+        }
+      }
+    }
+    
+    // Default to 16 if still null
+    if (detectedFontSize === null) {
+      detectedFontSize = 16;
+    }
+    
+    // Walk up the DOM tree to detect other styles
     while (node && node !== editorRef.current) {
       const computedStyle = window.getComputedStyle(node);
       
-      // Detect bold
-      if (computedStyle.fontWeight === "bold" || 
-          computedStyle.fontWeight === "700" || 
-          computedStyle.fontWeight === "600" ||
-          node.tagName === "B" || node.tagName === "STRONG") {
+      // Detect bold - check both computed style and tag
+      const fontWeight = computedStyle.fontWeight;
+      if (fontWeight === "bold" || 
+          fontWeight === "700" || 
+          fontWeight === "600" ||
+          (parseInt(fontWeight) >= 600 && parseInt(fontWeight) <= 900) ||
+          node.tagName === "B" || 
+          node.tagName === "STRONG" ||
+          (node.style && node.style.fontWeight && 
+           (node.style.fontWeight === "bold" || parseInt(node.style.fontWeight) >= 600))) {
         detectedBold = true;
       }
       
@@ -684,8 +719,11 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         detectedItalic = true;
       }
       
-      // Detect underline
-      if (computedStyle.textDecoration.includes("underline") || node.tagName === "U") {
+      // Detect underline - check both computed style and tag
+      if (computedStyle.textDecoration.includes("underline") || 
+          (computedStyle.textDecorationLine && computedStyle.textDecorationLine.includes("underline")) ||
+          node.tagName === "U" || 
+          (node.style && node.style.textDecoration && node.style.textDecoration.includes("underline"))) {
         detectedUnderline = true;
       }
       
@@ -694,10 +732,10 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         detectedStrikethrough = true;
       }
       
-      // Detect font size
-      if (node.style && node.style.fontSize) {
+      // Detect font size - prioritize inline style over computed
+      if (node.style && node.style.fontSize && !detectedFontSize) {
         const fontSize = parseInt(node.style.fontSize);
-        if (!isNaN(fontSize)) {
+        if (!isNaN(fontSize) && fontSize > 0) {
           detectedFontSize = fontSize;
         }
       }
@@ -705,7 +743,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       // Detect text color
       if (node.style && node.style.color) {
         detectedTextColor = node.style.color;
-      } else if (computedStyle.color && computedStyle.color !== "rgb(0, 0, 0)") {
+      } else if (!detectedTextColor && computedStyle.color && computedStyle.color !== "rgb(0, 0, 0)") {
         // Convert rgb to hex if needed
         const rgb = computedStyle.color.match(/\d+/g);
         if (rgb && rgb.length === 3) {
@@ -730,6 +768,11 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
       
       node = node.parentElement;
+    }
+    
+    // Set default text color if not detected
+    if (!detectedTextColor) {
+      detectedTextColor = "#000000";
     }
     
     // Update states

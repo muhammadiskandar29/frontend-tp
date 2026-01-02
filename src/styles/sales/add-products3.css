@@ -3301,6 +3301,14 @@ html:has(.add-products3-container) {
   overflow-wrap: break-word;
 }
 
+/* Underline color should match text color */
+.rich-text-editor u,
+.rich-text-editor [style*="text-decoration: underline"],
+.rich-text-editor [style*="text-decoration:underline"] {
+  text-decoration-color: currentColor;
+  text-decoration-thickness: 1px;
+}
+
 .rich-text-editor:empty:before {
   content: attr(data-placeholder);
   color: #9ca3af;
@@ -3835,6 +3843,14 @@ html:has(.add-products3-container) {
   font-size: 16px;
   line-height: 1.2; /* Tighter line height */
   color: #1f2937;
+}
+
+/* Underline color should match text color in preview */
+.preview-text u,
+.preview-text [style*="text-decoration: underline"],
+.preview-text [style*="text-decoration:underline"] {
+  text-decoration-color: currentColor;
+  text-decoration-thickness: 1px;
 }
 
 .preview-text p {
