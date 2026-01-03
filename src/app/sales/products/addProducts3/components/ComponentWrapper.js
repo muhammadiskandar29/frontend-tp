@@ -38,22 +38,19 @@ export default function ComponentWrapper({
     const clickedButton = e.target.closest('button');
     const clickedMenu = e.target.closest('.component-menu-wrapper');
     const clickedMoveButtons = e.target.closest('.component-move-buttons');
+    const clickedExpandIcon = e.target.closest('.component-expand-icon-wrapper');
     
     // Jangan toggle jika klik di button atau menu
     if (clickedButton || clickedMenu || clickedMoveButtons) {
       return;
     }
     
-    // Toggle expand/collapse
+    // Toggle expand/collapse - allow clicking on expand icon area
     e.preventDefault();
     e.stopPropagation();
     
-    console.log('[HEADER CLICK] Title:', title, 'isExpanded:', isExpanded, 'onToggleExpand exists:', !!onToggleExpand);
-    
     if (onToggleExpand) {
       onToggleExpand();
-    } else {
-      console.warn('[HEADER CLICK] onToggleExpand is not defined!');
     }
   };
 
@@ -82,7 +79,16 @@ export default function ComponentWrapper({
               <ChevronDown size={14} />
             </button>
           </div>
-          <div className="component-expand-icon-wrapper">
+          <div 
+            className="component-expand-icon-wrapper"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onToggleExpand) {
+                onToggleExpand();
+              }
+            }}
+            style={{ cursor: 'pointer' }}
+          >
             <ChevronDown 
               size={16} 
               className={`component-expand-icon ${isExpanded ? "expanded" : ""}`}
