@@ -62,6 +62,16 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   const bgColorPickerRef = useRef(null);
   const editorRef = useRef(null);
   const savedSelectionRef = useRef(null);
+  
+  // Last used styles - untuk digunakan saat Enter atau mengetik baru
+  const lastUsedStylesRef = useRef({
+    fontSize: 16,
+    fontWeight: "normal",
+    fontStyle: "normal",
+    textDecoration: "none",
+    color: "#000000",
+    backgroundColor: "transparent"
+  });
 
   // Preset colors seperti MS Word - Primary color #FF9900 (rgb(255, 153, 0))
   const presetColors = [
@@ -124,7 +134,152 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     }
   };
 
+  // Apply last used styles to current cursor position if no style exists
+  const applyLastUsedStylesToCursor = () => {
+    if (!editorRef.current) return;
+    
+    const selection = window.getSelection();
+    if (selection.rangeCount === 0) return;
+    
+    const range = selection.getRangeAt(0);
+    if (!editorRef.current.contains(range.commonAncestorContainer)) return;
+    
+    // Check if cursor position has any style
+    let node = range.startContainer;
+    if (node.nodeType === Node.TEXT_NODE) {
+      node = node.parentElement;
+    }
+    
+    // Check if current position has font size, color, or other styles
+    const computedStyle = window.getComputedStyle(node);
+    const hasFontSize = node.style && node.style.fontSize;
+    const hasColor = node.style && node.style.color;
+    const hasFontWeight = node.style && (node.style.fontWeight === "bold" || parseInt(node.style.fontWeight) >= 600);
+    
+    // If no style exists, apply last used styles
+    if (!hasFontSize || !hasColor) {
+      const lastStyles = lastUsedStylesRef.current;
+      
+      // Create span with last used styles
+      const span = document.createElement("span");
+      span.style.fontSize = `${lastStyles.fontSize}px`;
+      span.style.color = lastStyles.color;
+      span.style.fontWeight = lastStyles.fontWeight;
+      span.style.fontStyle = lastStyles.fontStyle;
+      span.style.textDecoration = lastStyles.textDecoration;
+      if (lastStyles.backgroundColor !== "transparent") {
+        span.style.backgroundColor = lastStyles.backgroundColor;
+      }
+      
+      // If cursor is collapsed, insert span at cursor
+      if (range.collapsed) {
+        span.innerHTML = "\u200B"; // Zero-width space
+        try {
+          range.insertNode(span);
+          const newRange = document.createRange();
+          newRange.setStartAfter(span);
+          newRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+        } catch (e) {
+          console.error("Error applying last used styles:", e);
+        }
+      }
+    }
+  };
+
   const handleEditorKeyDown = (e) => {
+    // Apply last used styles when typing if cursor doesn't have the correct style
+    if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      // Regular character key - check if cursor has correct style
+      if (editorRef.current) {
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0);
+          if (editorRef.current.contains(range.commonAncestorContainer) && range.collapsed) {
+            // Cursor is in editor and collapsed - check for style
+            let node = range.startContainer;
+            if (node.nodeType === Node.TEXT_NODE) {
+              node = node.parentElement;
+            }
+            
+            const lastStyles = lastUsedStylesRef.current;
+            
+            // Check current styles
+            const currentFontSize = node.style && node.style.fontSize 
+              ? parseInt(node.style.fontSize) 
+              : (window.getComputedStyle(node).fontSize ? parseInt(window.getComputedStyle(node).fontSize) : 16);
+            const currentColor = node.style && node.style.color 
+              ? node.style.color 
+              : window.getComputedStyle(node).color;
+            const currentFontWeight = node.style && node.style.fontWeight 
+              ? node.style.fontWeight 
+              : window.getComputedStyle(node).fontWeight;
+            const currentFontStyle = node.style && node.style.fontStyle 
+              ? node.style.fontStyle 
+              : window.getComputedStyle(node).fontStyle;
+            const currentTextDecoration = node.style && node.style.textDecoration 
+              ? node.style.textDecoration 
+              : window.getComputedStyle(node).textDecoration;
+            
+            // Convert color to hex for comparison
+            const colorToHex = (color) => {
+              if (color.startsWith('#')) return color;
+              const rgb = color.match(/\d+/g);
+              if (rgb && rgb.length >= 3) {
+                return "#" + rgb.slice(0, 3).map(x => {
+                  const hex = parseInt(x).toString(16);
+                  return hex.length === 1 ? "0" + hex : hex;
+                }).join("");
+              }
+              return color;
+            };
+            
+            const currentColorHex = colorToHex(currentColor);
+            const lastColorHex = colorToHex(lastStyles.color);
+            
+            // Check if styles match last used styles
+            const needsUpdate = 
+              currentFontSize !== lastStyles.fontSize ||
+              currentColorHex !== lastColorHex ||
+              (currentFontWeight !== lastStyles.fontWeight && 
+               !(currentFontWeight === "bold" && lastStyles.fontWeight === "bold") &&
+               !(parseInt(currentFontWeight) >= 600 && lastStyles.fontWeight === "bold")) ||
+              currentFontStyle !== lastStyles.fontStyle ||
+              (currentTextDecoration !== lastStyles.textDecoration && 
+               !(currentTextDecoration.includes("underline") && lastStyles.textDecoration === "underline"));
+            
+            // If styles don't match, apply last used styles
+            if (needsUpdate) {
+              // Create span with last used styles
+              const span = document.createElement("span");
+              span.style.fontSize = `${lastStyles.fontSize}px`;
+              span.style.color = lastStyles.color;
+              span.style.fontWeight = lastStyles.fontWeight;
+              span.style.fontStyle = lastStyles.fontStyle;
+              span.style.textDecoration = lastStyles.textDecoration;
+              if (lastStyles.backgroundColor !== "transparent") {
+                span.style.backgroundColor = lastStyles.backgroundColor;
+              }
+              
+              // Insert span at cursor
+              try {
+                span.innerHTML = "\u200B"; // Zero-width space
+                range.insertNode(span);
+                const newRange = document.createRange();
+                newRange.setStartAfter(span);
+                newRange.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(newRange);
+              } catch (err) {
+                // Ignore error
+              }
+            }
+          }
+        }
+      }
+    }
+    
     // Allow Enter to create new paragraph without inheriting styles
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -143,16 +298,17 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         offset: range.startOffset
       };
       
-      // Create a new paragraph with default styles (16px, not bold)
+      // Create a new paragraph with last used styles
       const p = document.createElement("p");
       p.innerHTML = "<br>";
-      // Set default styles: 16px font size, normal weight (not bold)
-      p.style.fontSize = "16px";
-      p.style.fontWeight = "normal";
-      p.style.fontStyle = "normal";
-      p.style.textDecoration = "none";
-      p.style.color = "inherit";
-      p.style.backgroundColor = "transparent";
+      // Use last used styles instead of default
+      const lastStyles = lastUsedStylesRef.current;
+      p.style.fontSize = `${lastStyles.fontSize}px`;
+      p.style.fontWeight = lastStyles.fontWeight;
+      p.style.fontStyle = lastStyles.fontStyle;
+      p.style.textDecoration = lastStyles.textDecoration;
+      p.style.color = lastStyles.color;
+      p.style.backgroundColor = lastStyles.backgroundColor;
       
       try {
         // If there's selected text, delete it first
@@ -301,44 +457,82 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   const formatSelection = (command, value = null) => {
     if (!editorRef.current) return;
     
-    // Save selection before formatting
-    const savedRange = saveSelection();
-    
     // Focus editor first
     editorRef.current.focus();
     
-    if (savedRange) {
-      // Restore selection
-      const selection = window.getSelection();
-      selection.removeAllRanges();
-      try {
-        selection.addRange(savedRange);
-      } catch (e) {
-        // If range is invalid, try to restore from saved positions
+    // Get current selection
+    const selection = window.getSelection();
+    
+    // Check if selection is in editor
+    if (selection.rangeCount === 0) {
+      // No selection - try to use saved selection
+      const savedRange = savedSelectionRef.current;
+      if (savedRange) {
         try {
           const range = document.createRange();
           range.setStart(savedRange.startContainer, savedRange.startOffset);
           range.setEnd(savedRange.endContainer, savedRange.endOffset);
+          selection.removeAllRanges();
           selection.addRange(range);
-        } catch (e2) {
-          // If still fails, just continue without selection
+        } catch (e) {
+          // If saved selection is invalid, just return
+          return;
         }
+      } else {
+        // No selection and no saved selection - return
+        return;
       }
     }
     
-    // Apply command
-    document.execCommand(command, false, value);
+    // Check if selection is within editor
+    const range = selection.getRangeAt(0);
+    if (!editorRef.current.contains(range.commonAncestorContainer)) {
+      return;
+    }
     
-    // Restore selection after command (if it was saved)
-    if (savedRange) {
+    // Save selection before formatting
+    const savedRange = saveSelection();
+    
+    // Apply command only if we have a valid selection
+    if (savedRange || (!range.collapsed)) {
+      document.execCommand(command, false, value);
+      
+      // Restore selection after command
       requestAnimationFrame(() => {
-        restoreSelection();
+        if (savedRange) {
+          restoreSelection();
+        }
         handleEditorInput();
         requestAnimationFrame(() => detectStyles());
       });
     } else {
-      handleEditorInput();
-      requestAnimationFrame(() => detectStyles());
+      // Collapsed cursor - apply style for next typing
+      if (command === "bold") {
+        // For bold, we need to wrap in a span or use font-weight
+        const span = document.createElement("span");
+        span.style.fontWeight = "bold";
+        span.innerHTML = "\u200B";
+        try {
+          range.insertNode(span);
+          const newRange = document.createRange();
+          newRange.setStartAfter(span);
+          newRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+          handleEditorInput();
+          requestAnimationFrame(() => detectStyles());
+        } catch (e) {
+          // Fallback to execCommand
+          document.execCommand(command, false, value);
+          handleEditorInput();
+          requestAnimationFrame(() => detectStyles());
+        }
+      } else {
+        // For other commands, use execCommand
+        document.execCommand(command, false, value);
+        handleEditorInput();
+        requestAnimationFrame(() => detectStyles());
+      }
     }
   };
 
@@ -358,6 +552,9 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     
     // Apply text color
     document.execCommand("foreColor", false, color);
+    
+    // Update last used color
+    lastUsedStylesRef.current.color = color;
     
     // Also update underline color to match text color - aggressive approach
     requestAnimationFrame(() => {
@@ -541,6 +738,8 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     setSelectedBgColor(color);
     setCurrentBgColor(color);
     setShowBgColorPicker(false);
+    // Update last used background color
+    lastUsedStylesRef.current.backgroundColor = color;
     handleEditorInput();
     requestAnimationFrame(() => {
       detectStyles();
@@ -553,6 +752,9 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   // Apply font size to selection
   const applyFontSize = (size) => {
     if (!editorRef.current || !size) return;
+    
+    // Update last used font size
+    lastUsedStylesRef.current.fontSize = size;
     
     // Focus editor first
     editorRef.current.focus();
@@ -875,6 +1077,14 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     setSelectedFontSize(detectedFontSize);
     setCurrentTextColor(detectedTextColor);
     setCurrentBgColor(detectedBgColor);
+    
+    // Update last used styles based on detected styles
+    lastUsedStylesRef.current.fontSize = detectedFontSize;
+    lastUsedStylesRef.current.fontWeight = detectedBold ? "bold" : "normal";
+    lastUsedStylesRef.current.fontStyle = detectedItalic ? "italic" : "normal";
+    lastUsedStylesRef.current.textDecoration = detectedUnderline ? "underline" : "none";
+    lastUsedStylesRef.current.color = detectedTextColor;
+    lastUsedStylesRef.current.backgroundColor = detectedBgColor;
   };
 
   // Update styles display when selection changes and save selection automatically
@@ -921,22 +1131,46 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   // Formatting functions - only apply to selection, don't change global state
   const toggleBold = (e) => {
     if (e) e.preventDefault();
+    // Save selection before toggling
+    saveSelection();
     formatSelection("bold");
+    // Update last used style and detect styles after applying
+    requestAnimationFrame(() => {
+      detectStyles();
+    });
   };
 
   const toggleItalic = (e) => {
     if (e) e.preventDefault();
+    // Save selection before toggling
+    saveSelection();
     formatSelection("italic");
+    // Update last used style and detect styles after applying
+    requestAnimationFrame(() => {
+      detectStyles();
+    });
   };
 
   const toggleUnderline = (e) => {
     if (e) e.preventDefault();
+    // Save selection before toggling
+    saveSelection();
     formatSelection("underline");
+    // Update last used style and detect styles after applying
+    requestAnimationFrame(() => {
+      detectStyles();
+    });
   };
 
   const toggleStrikethrough = (e) => {
     if (e) e.preventDefault();
+    // Save selection before toggling
+    saveSelection();
     formatSelection("strikeThrough");
+    // Update last used style and detect styles after applying
+    requestAnimationFrame(() => {
+      detectStyles();
+    });
   };
 
   const paragraphStyles = [
@@ -1148,9 +1382,15 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
               onValueChange={(e) => {
                 const size = e.value || 16;
                 setSelectedFontSize(size);
+                // Update last used font size immediately
+                lastUsedStylesRef.current.fontSize = size;
                 // Apply font size immediately - will use saved selection
                 requestAnimationFrame(() => {
                   applyFontSize(size);
+                  // Detect styles after applying
+                  requestAnimationFrame(() => {
+                    detectStyles();
+                  });
                 });
               }}
               min={8}
@@ -1309,12 +1549,16 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           }}
           onKeyUp={detectStyles}
           onClick={(e) => {
-            // Only clear saved selection if user clicks and there's no current selection
+            // Auto-detect styles when clicking
             requestAnimationFrame(() => {
+              detectStyles();
               const selection = window.getSelection();
               if (selection.rangeCount === 0 || selection.getRangeAt(0).collapsed) {
                 // User clicked but didn't select anything - clear saved selection
                 savedSelectionRef.current = null;
+              } else {
+                // User has selection - save it
+                saveSelection();
               }
             });
           }}
