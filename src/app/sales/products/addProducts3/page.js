@@ -691,7 +691,7 @@ export default function AddProducts3Page() {
         const isFormWorkshop = productKategori === 15;
         
         return (
-          <>
+          <div style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
             {/* Form Pemesanan */}
             <section className="preview-form-section compact-form-section" aria-label="Order form">
               <h2 className="compact-form-title">Lengkapi Data:</h2>
@@ -816,7 +816,7 @@ export default function AddProducts3Page() {
                 Pesan Sekarang
               </button>
             </div>
-          </>
+          </div>
         );
       case "price":
         // Format harga untuk ditampilkan

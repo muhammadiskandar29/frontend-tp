@@ -4123,14 +4123,23 @@ html:has(.add-products3-container) {
 /* ===== PREVIEW FORM SECTION ===== */
 .preview-form-section {
   margin-bottom: 32px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .preview-form-section.compact-form-section {
   margin: 32px 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .compact-form-section {
   margin: 32px 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .compact-form-title {
@@ -4184,6 +4193,8 @@ html:has(.add-products3-container) {
   box-sizing: border-box;
   width: 100%;
   max-width: 100%;
+  /* Pastikan tidak ada layout horizontal */
+  flex-wrap: nowrap;
 }
 
 .compact-field {
@@ -4281,11 +4292,17 @@ html:has(.add-products3-container) {
 .preview-payment-section.payment-section {
   margin-top: 32px;
   margin-bottom: 32px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .payment-section {
   margin-top: 32px;
   margin-bottom: 32px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .payment-title {
@@ -4594,6 +4611,9 @@ html:has(.add-products3-container) {
 /* ===== RINCIAN PESANAN SECTION ===== */
 .rincian-pesanan-section {
   margin-bottom: 32px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .rincian-pesanan-card {
