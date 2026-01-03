@@ -14,6 +14,15 @@ export default function ComponentWrapper({
   onToggleExpand,
   isRequired = false
 }) {
+  // Debug log untuk props
+  console.log('[ComponentWrapper] Rendered', {
+    title,
+    index,
+    isExpanded,
+    hasOnToggleExpand: !!onToggleExpand,
+    onToggleExpandType: typeof onToggleExpand
+  });
+  
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef(null);
 
@@ -34,14 +43,29 @@ export default function ComponentWrapper({
   }, [showMenu]);
 
   const handleHeaderClick = (e) => {
+    console.log('[ComponentWrapper] handleHeaderClick called', {
+      target: e.target,
+      currentTarget: e.currentTarget,
+      hasOnToggleExpand: !!onToggleExpand,
+      isExpanded
+    });
+    
     // Hanya toggle jika klik bukan di button atau menu
     const clickedButton = e.target.closest('button');
     const clickedMenu = e.target.closest('.component-menu-wrapper');
     const clickedMoveButtons = e.target.closest('.component-move-buttons');
     const clickedExpandIcon = e.target.closest('.component-expand-icon-wrapper');
     
+    console.log('[ComponentWrapper] Click detection', {
+      clickedButton: !!clickedButton,
+      clickedMenu: !!clickedMenu,
+      clickedMoveButtons: !!clickedMoveButtons,
+      clickedExpandIcon: !!clickedExpandIcon
+    });
+    
     // Jangan toggle jika klik di button atau menu
     if (clickedButton || clickedMenu || clickedMoveButtons) {
+      console.log('[ComponentWrapper] Click ignored - button/menu clicked');
       return;
     }
     
@@ -49,8 +73,11 @@ export default function ComponentWrapper({
     e.preventDefault();
     e.stopPropagation();
     
+    console.log('[ComponentWrapper] Calling onToggleExpand');
     if (onToggleExpand) {
       onToggleExpand();
+    } else {
+      console.warn('[ComponentWrapper] onToggleExpand is not defined!');
     }
   };
 
@@ -82,9 +109,16 @@ export default function ComponentWrapper({
           <div 
             className="component-expand-icon-wrapper"
             onClick={(e) => {
+              console.log('[ComponentWrapper] Expand icon clicked', {
+                hasOnToggleExpand: !!onToggleExpand,
+                isExpanded
+              });
               e.stopPropagation();
               if (onToggleExpand) {
+                console.log('[ComponentWrapper] Calling onToggleExpand from icon');
                 onToggleExpand();
+              } else {
+                console.warn('[ComponentWrapper] onToggleExpand is not defined (from icon)!');
               }
             }}
             style={{ cursor: 'pointer' }}

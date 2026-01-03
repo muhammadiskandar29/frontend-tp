@@ -278,16 +278,27 @@ export default function AddProducts3Page() {
 
   // Handler untuk expand/collapse komponen
   const handleToggleExpand = (blockId) => {
+    console.log('[handleToggleExpand] Called with blockId:', blockId);
+    console.log('[handleToggleExpand] Current collapsedBlockIds:', Array.from(collapsedBlockIds));
+    console.log('[handleToggleExpand] Block exists?', blocks.find(b => b.id === blockId));
+    
     setCollapsedBlockIds((prev) => {
       const newSet = new Set(prev);
-      if (newSet.has(blockId)) {
+      const wasCollapsed = newSet.has(blockId);
+      console.log('[handleToggleExpand] Before toggle - wasCollapsed:', wasCollapsed);
+      
+      if (wasCollapsed) {
         // Jika sudah collapsed, expand (hapus dari set)
         newSet.delete(blockId);
+        console.log('[handleToggleExpand] Expanding block - removed from set');
       } else {
         // Jika sudah expanded, collapse (tambah ke set)
         newSet.add(blockId);
+        console.log('[handleToggleExpand] Collapsing block - added to set');
       }
-      console.log('[TOGGLE] BlockId:', blockId, 'Collapsed:', newSet.has(blockId));
+      
+      console.log('[handleToggleExpand] After toggle - newSet:', Array.from(newSet));
+      console.log('[handleToggleExpand] BlockId:', blockId, 'Now Collapsed:', newSet.has(blockId));
       return newSet;
     });
   };
@@ -296,6 +307,8 @@ export default function AddProducts3Page() {
   const renderComponent = (block, index) => {
     // Default expanded, kecuali jika ada di collapsedBlockIds
     const isExpanded = !collapsedBlockIds.has(block.id);
+    
+    console.log('[renderComponent] Block:', block.id, 'Type:', block.type, 'isExpanded:', isExpanded, 'inCollapsedSet:', collapsedBlockIds.has(block.id));
     
     const commonProps = {
       data: block.data,
@@ -306,7 +319,10 @@ export default function AddProducts3Page() {
       onMoveDown: () => moveBlock(block.id, 'down'),
       onDelete: () => deleteBlock(block.id),
       isExpanded: isExpanded,
-      onToggleExpand: () => handleToggleExpand(block.id),
+      onToggleExpand: () => {
+        console.log('[renderComponent] onToggleExpand callback called for block:', block.id);
+        handleToggleExpand(block.id);
+      },
       isRequired: block.type === "form", // Form tidak bisa dihapus
     };
 
