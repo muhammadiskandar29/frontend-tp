@@ -83,11 +83,10 @@ export default function ComponentWrapper({
             </button>
           </div>
           <div className="component-expand-icon-wrapper">
-            {isExpanded ? (
-              <ChevronDown size={16} className="component-expand-icon" />
-            ) : (
-              <ChevronRight size={16} className="component-expand-icon" />
-            )}
+            <ChevronDown 
+              size={16} 
+              className={`component-expand-icon ${isExpanded ? "expanded" : ""}`}
+            />
           </div>
           <span className="component-card-title">{title}</span>
         </div>
