@@ -317,6 +317,7 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
                         onInput={() => handleEditorInput(i)}
                         className="rich-text-editor"
                         dir="ltr"
+                        spellCheck={false}
                         style={{
                           minHeight: "100px",
                           padding: "12px 14px",
