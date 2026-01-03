@@ -589,15 +589,12 @@ export default function AddProducts3Page() {
                   const content = item.content || item.nama || `Point ${i + 1}`;
                   const IconComponent = iconMap[iconName] || CheckCircle2;
                   
-                  // Extract text from HTML content
-                  const textContent = content.replace(/<[^>]*>/g, '').trim() || `Point ${i + 1}`;
-                  
                   return (
                     <li key={i} className="preview-list-item">
                       <span className="preview-list-icon" style={{ color: iconColor }}>
                         <IconComponent size={20} strokeWidth={2} />
                       </span>
-                      <span className="preview-list-text">{textContent}</span>
+                      <div className="preview-list-content" dangerouslySetInnerHTML={{ __html: content || `<p>Point ${i + 1}</p>` }} />
                     </li>
                   );
                 })}

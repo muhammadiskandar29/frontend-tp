@@ -2227,7 +2227,7 @@ html:has(.add-products3-container) {
 
 .canvas-content-area {
   flex: 1;
-  padding: 0 120px;
+  padding: 0 250px;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -3341,6 +3341,11 @@ html:has(.add-products3-container) {
   background: #e5e7eb; /* Abu-abu lebih gelap */
   word-wrap: break-word;
   overflow-wrap: break-word;
+  transition: none !important; /* No transition for immediate updates */
+}
+
+.rich-text-editor * {
+  transition: none !important; /* No transition for immediate updates */
 }
 
 /* Underline color should match text color - more specific */
@@ -3890,6 +3895,7 @@ html:has(.add-products3-container) {
   font-size: 16px;
   line-height: 1.2; /* Tighter line height */
   color: #1f2937;
+  transition: none !important; /* No transition for immediate updates */
 }
 
 /* Underline color should match text color in preview - more specific */
@@ -3911,6 +3917,11 @@ html:has(.add-products3-container) {
   font-size: 16px !important; /* Default font size 16px in canvas */
   font-weight: normal !important; /* Default not bold in canvas */
   line-height: 1.2; /* Tighter line height */
+  transition: none !important; /* No transition for immediate updates */
+}
+
+.preview-text * {
+  transition: none !important; /* No transition for immediate updates */
 }
 
 .preview-text p:last-child {
@@ -4704,6 +4715,24 @@ html:has(.add-products3-container) {
   line-height: 1.5;
   color: #374151;
   font-size: 14px;
+}
+
+.preview-list-content {
+  flex: 1;
+  line-height: 1.5;
+  color: #374151;
+  font-size: 14px;
+  transition: none !important; /* No transition for immediate updates */
+}
+
+.preview-list-content * {
+  transition: none !important; /* No transition for immediate updates */
+}
+
+.preview-list-content p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .preview-list-add-indicator {

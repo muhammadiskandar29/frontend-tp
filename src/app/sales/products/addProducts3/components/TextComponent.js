@@ -119,8 +119,8 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       
       const html = editorRef.current.innerHTML;
       handleChange("content", html);
-      // Detect styles after input
-      setTimeout(detectStyles, 10);
+      // Detect styles after input - immediate
+      requestAnimationFrame(() => detectStyles());
     }
   };
 
@@ -177,13 +177,13 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         try {
           document.execCommand("insertParagraph", false, null);
           // Try to restore cursor position
-          setTimeout(() => {
+          requestAnimationFrame(() => {
             const newSelection = window.getSelection();
             if (newSelection.rangeCount > 0) {
               const newRange = newSelection.getRangeAt(0);
               // Cursor should be in the new paragraph
             }
-          }, 10);
+          });
         } catch (e2) {
           console.error("Error inserting paragraph:", e2);
         }
@@ -331,14 +331,14 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     
     // Restore selection after command (if it was saved)
     if (savedRange) {
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         restoreSelection();
         handleEditorInput();
-        setTimeout(detectStyles, 10);
-      }, 10);
+        requestAnimationFrame(() => detectStyles());
+      });
     } else {
       handleEditorInput();
-      setTimeout(detectStyles, 10);
+      requestAnimationFrame(() => detectStyles());
     }
   };
 
@@ -360,7 +360,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     document.execCommand("foreColor", false, color);
     
     // Also update underline color to match text color - aggressive approach
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       try {
         // Get the range after foreColor is applied
         const range = selection.getRangeAt(0);
@@ -456,8 +456,8 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       setCurrentTextColor(color);
       setShowColorPicker(false);
       handleEditorInput();
-      setTimeout(detectStyles, 10);
-    }, 100);
+      requestAnimationFrame(() => detectStyles());
+    });
   };
 
   const applyBgColor = (color) => {
@@ -542,12 +542,12 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     setCurrentBgColor(color);
     setShowBgColorPicker(false);
     handleEditorInput();
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       detectStyles();
       if (savedRange) {
         restoreSelection();
       }
-    }, 10);
+    });
   };
 
   // Apply font size to selection
@@ -716,7 +716,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     }
     
     handleEditorInput();
-    setTimeout(detectStyles, 10);
+    requestAnimationFrame(() => detectStyles());
   };
 
   // Initialize editor content
@@ -728,7 +728,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         editorRef.current.innerHTML = content;
       }
       // Detect styles after content is loaded
-      setTimeout(detectStyles, 100);
+      requestAnimationFrame(() => detectStyles());
     }
   }, []);
 
@@ -897,7 +897,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     const handleMouseUp = (e) => {
       // Also save selection on mouseup in editor
       if (editorRef.current && editorRef.current.contains(e.target)) {
-        setTimeout(() => {
+        requestAnimationFrame(() => {
           const selection = window.getSelection();
           if (selection.rangeCount > 0) {
             const range = selection.getRangeAt(0);
@@ -905,7 +905,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
               saveSelection();
             }
           }
-        }, 10);
+        });
       }
     };
 
@@ -1134,9 +1134,9 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
                 // Save selection before input gets focus
                 saveSelection();
                 // Then allow input to get focus
-                setTimeout(() => {
+                requestAnimationFrame(() => {
                   e.target.focus();
-                }, 0);
+                });
               }}
               onFocus={(e) => {
                 // Save selection when input gets focus (e.g., via Tab)
@@ -1149,9 +1149,9 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
                 const size = e.value || 16;
                 setSelectedFontSize(size);
                 // Apply font size immediately - will use saved selection
-                setTimeout(() => {
+                requestAnimationFrame(() => {
                   applyFontSize(size);
-                }, 10);
+                });
               }}
               min={8}
               max={200}
@@ -1310,13 +1310,13 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           onKeyUp={detectStyles}
           onClick={(e) => {
             // Only clear saved selection if user clicks and there's no current selection
-            setTimeout(() => {
+            requestAnimationFrame(() => {
               const selection = window.getSelection();
               if (selection.rangeCount === 0 || selection.getRangeAt(0).collapsed) {
                 // User clicked but didn't select anything - clear saved selection
                 savedSelectionRef.current = null;
               }
-            }, 100);
+            });
           }}
           className="rich-text-editor"
           style={{
