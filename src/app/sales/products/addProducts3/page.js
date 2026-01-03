@@ -5,7 +5,14 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { 
   Type, Image as ImageIcon, FileText, List, MessageSquare, 
-  HelpCircle, Youtube, X, ArrowLeft, ChevronDown, Layout
+  HelpCircle, Youtube, X, ArrowLeft, ChevronDown, Layout,
+  CheckCircle2, Circle, Minus, ArrowRight, ArrowRightCircle,
+  ArrowLeft as ArrowLeftIcon, ArrowLeftRight, ChevronRight, CheckSquare, ShieldCheck,
+  Lock, Dot, Target, Link as LinkIcon, PlusCircle, MinusCircle,
+  Check, Star, Heart, ThumbsUp, Award, Zap, Flame, Sparkles,
+  ArrowUp, ArrowDown, ArrowUpCircle, ArrowDownCircle, PlayCircle,
+  PauseCircle, StopCircle, Radio, Square, Hexagon, Triangle,
+  AlertCircle, Info, HelpCircle as HelpCircleIcon, Ban, Shield, Key, Unlock
 } from "lucide-react";
 import { InputText } from "primereact/inputtext";
 import { Dropdown } from "primereact/dropdown";
@@ -524,15 +531,53 @@ export default function AddProducts3Page() {
           </section>
         );
       case "list":
+        const listItems = block.data.items || [];
+        
+        // Icon mapping
+        const iconMap = {
+          CheckCircle2, Circle, Minus, ArrowRight, ArrowRightCircle,
+          ArrowLeft: ArrowLeftIcon, ArrowLeftRight, ChevronRight, CheckSquare, ShieldCheck,
+          Lock, Dot, Target, Link: LinkIcon, PlusCircle, MinusCircle,
+          Check, Star, Heart, ThumbsUp, Award, Zap, Flame, Sparkles,
+          ArrowUp, ArrowDown, ArrowUpCircle, ArrowDownCircle, PlayCircle,
+          PauseCircle, StopCircle, Radio, Square, Hexagon, Triangle,
+          AlertCircle, Info, HelpCircle: HelpCircleIcon, Ban, Shield, Key, Unlock
+        };
+        
         return (
-          <ul className="preview-list">
-            {block.data.items?.map((item, i) => (
-              <li key={i}>{item.nama || `Point ${i + 1}`}</li>
-            ))}
-            {(!block.data.items || block.data.items.length === 0) && (
+          <div className="preview-list-wrapper">
+            <div className="preview-list-header">
+              <h3 className="preview-list-title">List</h3>
+              <div className="preview-list-header-line"></div>
+            </div>
+            {listItems.length === 0 ? (
               <div className="preview-placeholder">Belum ada list point</div>
+            ) : (
+              <ul className="preview-list">
+                {listItems.map((item, i) => {
+                  const iconName = item.icon || "CheckCircle2";
+                  const iconColor = item.iconColor || "#000000";
+                  const content = item.content || item.nama || `Point ${i + 1}`;
+                  const IconComponent = iconMap[iconName] || CheckCircle2;
+                  
+                  // Extract text from HTML content
+                  const textContent = content.replace(/<[^>]*>/g, '').trim() || `Point ${i + 1}`;
+                  
+                  return (
+                    <li key={i} className="preview-list-item">
+                      <span className="preview-list-icon" style={{ color: iconColor }}>
+                        <IconComponent size={20} strokeWidth={2} />
+                      </span>
+                      <span className="preview-list-text">{textContent}</span>
+                    </li>
+                  );
+                })}
+                <li className="preview-list-add-indicator">
+                  <span>»</span>
+                </li>
+              </ul>
             )}
-          </ul>
+          </div>
         );
       case "faq":
         // Generate FAQ berdasarkan kategori produk
@@ -1549,6 +1594,14 @@ export default function AddProducts3Page() {
                 {renderPreview(block)}
               </div>
             ))}
+
+            {/* Footer */}
+            <footer className="canvas-footer">
+              <div className="canvas-footer-content">
+                <p className="canvas-footer-brand">Ternak Properti</p>
+                <p className="canvas-footer-copyright">Copyright 2018-2025, All Rights Reserved</p>
+              </div>
+            </footer>
           </div>
         </div>
       </div>
