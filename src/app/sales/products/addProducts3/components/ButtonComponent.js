@@ -20,7 +20,6 @@ export default function ButtonComponent({ data = {}, onUpdate, onMoveUp, onMoveD
       onMoveUp={onMoveUp}
       onMoveDown={onMoveDown}
       onDelete={onDelete}
-    >
       isExpanded={isExpanded}
       onToggleExpand={onToggleExpand}
     >
