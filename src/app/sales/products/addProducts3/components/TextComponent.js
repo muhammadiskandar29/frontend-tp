@@ -477,7 +477,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     editorRef.current.focus();
     
     // Get current selection
-    const selection = window.getSelection();
+      const selection = window.getSelection();
     let range = null;
     
     // Try to get current selection
@@ -529,8 +529,8 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     // 2. If collapsed cursor -> apply for next typing (set format state)
     if (!range.collapsed) {
       // Has selection - apply to selection
-      document.execCommand(command, false, value);
-      
+    document.execCommand(command, false, value);
+    
       // Update last used styles based on command
       if (command === "bold") {
         lastUsedStylesRef.current.fontWeight = "bold";
@@ -563,7 +563,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       // Detect styles to update button states
       requestAnimationFrame(() => {
         detectStyles();
-        handleEditorInput();
+      handleEditorInput();
       });
     }
   };
@@ -602,19 +602,19 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         const updateUnderlineColor = (element) => {
           if (!element || !element.style) return;
           try {
-            const computedStyle = window.getComputedStyle(element);
-            const hasUnderline = computedStyle.textDecoration.includes("underline") || 
-                                 element.tagName === "U" ||
+                const computedStyle = window.getComputedStyle(element);
+                const hasUnderline = computedStyle.textDecoration.includes("underline") || 
+                                     element.tagName === "U" ||
                                  (element.style.textDecoration && 
-                                  element.style.textDecoration.includes("underline"));
-            
+                                      element.style.textDecoration.includes("underline"));
+                
             if (hasUnderline) {
-              element.style.setProperty("text-decoration-color", color, "important");
-              element.style.setProperty("-webkit-text-decoration-color", color, "important");
+                  element.style.setProperty("text-decoration-color", color, "important");
+                  element.style.setProperty("-webkit-text-decoration-color", color, "important");
+              }
+            } catch (e) {
+              // Skip if error
             }
-          } catch (e) {
-            // Skip if error
-          }
         };
         
         // Method 1: Update all U tags in the entire editor that have the same color
@@ -675,10 +675,10 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           try {
             if (!element.style) return;
             const computedStyle = window.getComputedStyle(element);
-            const hasUnderline = computedStyle.textDecoration.includes("underline") || 
+              const hasUnderline = computedStyle.textDecoration.includes("underline") || 
                                element.tagName === "U";
-            
-            if (hasUnderline) {
+              
+              if (hasUnderline) {
               // Check if text color matches the applied color
               const textColor = computedStyle.color;
               const colorMatches = textColor === color || 
@@ -773,7 +773,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       selection.addRange(range);
     }
     
-    if (color === "transparent") {
+      if (color === "transparent") {
       // Remove background color - aggressive approach
       if (!range.collapsed) {
         // Has selection - remove background from selection
@@ -807,20 +807,20 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         
         // Then wrap selection in span with transparent to ensure it's removed
         try {
-          const span = document.createElement("span");
-          span.style.backgroundColor = "transparent";
-          span.style.background = "transparent";
-          
+        const span = document.createElement("span");
+        span.style.backgroundColor = "transparent";
+        span.style.background = "transparent";
+        
           if (range.collapsed) {
             span.innerHTML = "\u200B";
             range.insertNode(span);
           } else {
-            try {
-              range.surroundContents(span);
-            } catch (e) {
-              const contents = range.extractContents();
-              span.appendChild(contents);
-              range.insertNode(span);
+        try {
+          range.surroundContents(span);
+        } catch (e) {
+            const contents = range.extractContents();
+            span.appendChild(contents);
+            range.insertNode(span);
             }
           }
         } catch (e) {
@@ -852,7 +852,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         document.execCommand("backColor", false, color);
       } else {
         // Collapsed cursor - apply for next typing
-        document.execCommand("backColor", false, color);
+      document.execCommand("backColor", false, color);
       }
     }
     
@@ -868,10 +868,10 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       detectStyles();
       // Double check to ensure button states are synced
       requestAnimationFrame(() => {
-        detectStyles();
-        if (savedRange) {
-          restoreSelection();
-        }
+      detectStyles();
+      if (savedRange) {
+        restoreSelection();
+      }
       });
     });
   };
@@ -1071,7 +1071,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     let range = null;
     if (selection.rangeCount > 0) {
       range = selection.getRangeAt(0);
-      if (!editorRef.current.contains(range.commonAncestorContainer)) {
+    if (!editorRef.current.contains(range.commonAncestorContainer)) {
         range = null;
       }
     }
@@ -1136,55 +1136,55 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       let checkNode = node;
       while (checkNode && checkNode !== editorRef.current) {
         const computedStyle = window.getComputedStyle(checkNode);
-        
-        // Detect bold - check both computed style and tag
+      
+      // Detect bold - check both computed style and tag
         if (!detectedBold) {
-          const fontWeight = computedStyle.fontWeight;
-          if (fontWeight === "bold" || 
-              fontWeight === "700" || 
-              fontWeight === "600" ||
-              (parseInt(fontWeight) >= 600 && parseInt(fontWeight) <= 900) ||
+      const fontWeight = computedStyle.fontWeight;
+      if (fontWeight === "bold" || 
+          fontWeight === "700" || 
+          fontWeight === "600" ||
+          (parseInt(fontWeight) >= 600 && parseInt(fontWeight) <= 900) ||
               checkNode.tagName === "B" || 
               checkNode.tagName === "STRONG" ||
               (checkNode.style && checkNode.style.fontWeight && 
                (checkNode.style.fontWeight === "bold" || parseInt(checkNode.style.fontWeight) >= 600))) {
-            detectedBold = true;
+        detectedBold = true;
           }
-        }
-        
-        // Detect italic
+      }
+      
+      // Detect italic
         if (!detectedItalic) {
           if (computedStyle.fontStyle === "italic" || checkNode.tagName === "I" || checkNode.tagName === "EM") {
-            detectedItalic = true;
+        detectedItalic = true;
           }
-        }
-        
-        // Detect underline - check both computed style and tag
+      }
+      
+      // Detect underline - check both computed style and tag
         if (!detectedUnderline) {
-          if (computedStyle.textDecoration.includes("underline") || 
-              (computedStyle.textDecorationLine && computedStyle.textDecorationLine.includes("underline")) ||
+      if (computedStyle.textDecoration.includes("underline") || 
+          (computedStyle.textDecorationLine && computedStyle.textDecorationLine.includes("underline")) ||
               checkNode.tagName === "U" || 
               (checkNode.style && checkNode.style.textDecoration && checkNode.style.textDecoration.includes("underline"))) {
-            detectedUnderline = true;
+        detectedUnderline = true;
           }
-        }
-        
-        // Detect strikethrough
+      }
+      
+      // Detect strikethrough
         if (!detectedStrikethrough) {
           if (computedStyle.textDecoration.includes("line-through") || checkNode.tagName === "S" || checkNode.tagName === "STRIKE") {
-            detectedStrikethrough = true;
+        detectedStrikethrough = true;
           }
-        }
-        
-        // Detect font size - prioritize inline style over computed
+      }
+      
+      // Detect font size - prioritize inline style over computed
         if (detectedFontSize === null && checkNode.style && checkNode.style.fontSize) {
           const fontSize = parseInt(checkNode.style.fontSize);
-          if (!isNaN(fontSize) && fontSize > 0) {
-            detectedFontSize = fontSize;
-          }
+        if (!isNaN(fontSize) && fontSize > 0) {
+          detectedFontSize = fontSize;
         }
-        
-        // Detect text color
+      }
+      
+      // Detect text color
         if (!detectedTextColor) {
           if (checkNode.style && checkNode.style.color && 
               checkNode.style.color !== "rgb(0, 0, 0)" && 
@@ -1194,24 +1194,24 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
                      computedStyle.color !== "rgb(0, 0, 0)" && 
                      computedStyle.color !== "rgb(29, 41, 57)" &&
                      computedStyle.color !== "rgba(0, 0, 0, 0)") {
-            // Convert rgb to hex if needed
-            const rgb = computedStyle.color.match(/\d+/g);
-            if (rgb && rgb.length === 3) {
+        // Convert rgb to hex if needed
+        const rgb = computedStyle.color.match(/\d+/g);
+        if (rgb && rgb.length === 3) {
               const r = parseInt(rgb[0]);
               const g = parseInt(rgb[1]);
               const b = parseInt(rgb[2]);
               // Only set if it's not black
               if (r !== 0 || g !== 0 || b !== 0) {
-                detectedTextColor = "#" + rgb.map(x => {
-                  const hex = parseInt(x).toString(16);
-                  return hex.length === 1 ? "0" + hex : hex;
-                }).join("");
+          detectedTextColor = "#" + rgb.map(x => {
+            const hex = parseInt(x).toString(16);
+            return hex.length === 1 ? "0" + hex : hex;
+          }).join("");
               }
             }
-          }
         }
-        
-        // Detect background color
+      }
+      
+      // Detect background color
         if (detectedBgColor === "transparent") {
           // Check inline style first
           if (checkNode.style && checkNode.style.backgroundColor) {
@@ -1227,7 +1227,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
             if (bgColor !== "rgba(0, 0, 0, 0)" && bgColor !== "transparent" && bgColor !== "rgb(0, 0, 0)") {
               // Convert rgb/rgba to hex if needed
               const rgb = bgColor.match(/\d+/g);
-              if (rgb && rgb.length >= 3) {
+        if (rgb && rgb.length >= 3) {
                 const r = parseInt(rgb[0]);
                 const g = parseInt(rgb[1]);
                 const b = parseInt(rgb[2]);
@@ -1235,8 +1235,8 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
                 if (r !== 0 || g !== 0 || b !== 0) {
                   detectedBgColor = "#" + [r, g, b].map(x => {
                     const hex = x.toString(16);
-                    return hex.length === 1 ? "0" + hex : hex;
-                  }).join("");
+            return hex.length === 1 ? "0" + hex : hex;
+          }).join("");
                 }
               }
             }
@@ -1545,19 +1545,22 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
     }
     
-    // Check if already underlined
+    // Check if already underlined - more aggressive detection
     let hasUnderline = false;
     try {
       hasUnderline = document.queryCommandState("underline");
     } catch (e) {
-      // Check manually
+      // Check manually - more thorough
       let node = range.startContainer;
       if (node.nodeType === Node.TEXT_NODE) {
         node = node.parentElement;
       }
       while (node && node !== editorRef.current) {
         const computedStyle = window.getComputedStyle(node);
-        if (computedStyle.textDecoration.includes("underline") || node.tagName === "U") {
+        if (computedStyle.textDecoration.includes("underline") || 
+            computedStyle.textDecorationLine?.includes("underline") ||
+            node.tagName === "U" ||
+            (node.style && node.style.textDecoration && node.style.textDecoration.includes("underline"))) {
           hasUnderline = true;
           break;
         }
@@ -1565,51 +1568,101 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
     }
     
-    // Toggle underline - MS Word style: works for selection or sets format for next typing
-    document.execCommand("underline", false, null);
-    
-    // Update last used style
+    // If has underline, remove it aggressively
     if (hasUnderline) {
-      lastUsedStylesRef.current.textDecoration = "none";
-    } else {
-      lastUsedStylesRef.current.textDecoration = "underline";
-    }
-    
-    // Update underline color to match current text color
-    requestAnimationFrame(() => {
-      try {
-        // Get current text color
-        let currentColor = lastUsedStylesRef.current.color;
-        if (!currentColor || currentColor === "rgb(0, 0, 0)") {
-          // Try to get color from current selection
-          const currentRange = selection.getRangeAt(0);
-          let colorNode = currentRange.startContainer;
-          if (colorNode.nodeType === Node.TEXT_NODE) {
-            colorNode = colorNode.parentElement;
-          }
-          const computedColor = window.getComputedStyle(colorNode).color;
-          if (computedColor && computedColor !== "rgb(0, 0, 0)") {
-            currentColor = computedColor;
+      // Remove underline - aggressive approach
+      if (!range.collapsed) {
+        // Has selection - remove underline from selection
+        const walker = document.createTreeWalker(
+          editorRef.current,
+          NodeFilter.SHOW_ELEMENT,
+          null
+        );
+        
+        const elementsToFix = [];
+        let node;
+        while (node = walker.nextNode()) {
+          if (range.intersectsNode(node)) {
+            const computedStyle = window.getComputedStyle(node);
+            if (computedStyle.textDecoration.includes("underline") || node.tagName === "U") {
+              elementsToFix.push(node);
+            }
           }
         }
         
-        // Convert RGB to hex if needed
-        const colorToHex = (color) => {
-          if (color.startsWith('#')) return color;
-          const rgb = color.match(/\d+/g);
-          if (rgb && rgb.length >= 3) {
-            return "#" + rgb.slice(0, 3).map(x => {
-              const hex = parseInt(x).toString(16);
-              return hex.length === 1 ? "0" + hex : hex;
-            }).join("");
+        // Remove underline from all found elements
+        elementsToFix.forEach(element => {
+          if (element.tagName === "U") {
+            // Unwrap U tag
+            const parent = element.parentNode;
+            while (element.firstChild) {
+              parent.insertBefore(element.firstChild, element);
+            }
+            parent.removeChild(element);
+          } else if (element.style) {
+            // Remove underline from style
+            const textDecoration = element.style.textDecoration || "";
+            const newDecoration = textDecoration
+              .split(" ")
+              .filter(d => d !== "underline")
+              .join(" ");
+            if (newDecoration) {
+              element.style.textDecoration = newDecoration;
+            } else {
+              element.style.textDecoration = "none";
+            }
           }
-          return color;
-        };
+        });
         
-        const hexColor = colorToHex(currentColor);
-        
-        // Update underline color for all underlined elements in selection
-        if (!hasUnderline) { // Only if we're adding underline
+        // Also use execCommand to remove underline
+        document.execCommand("underline", false, null);
+      } else {
+        // Collapsed cursor - just use execCommand
+        document.execCommand("underline", false, null);
+      }
+      
+      lastUsedStylesRef.current.textDecoration = "none";
+    } else {
+      // Add underline
+      document.execCommand("underline", false, null);
+      lastUsedStylesRef.current.textDecoration = "underline";
+    }
+    
+    // Update underline color to match current text color (only if adding underline)
+    if (!hasUnderline) {
+      requestAnimationFrame(() => {
+        try {
+          // Get current text color
+          let currentColor = lastUsedStylesRef.current.color;
+          if (!currentColor || currentColor === "rgb(0, 0, 0)") {
+            // Try to get color from current selection
+            const currentRange = selection.getRangeAt(0);
+            let colorNode = currentRange.startContainer;
+            if (colorNode.nodeType === Node.TEXT_NODE) {
+              colorNode = colorNode.parentElement;
+            }
+            const computedColor = window.getComputedStyle(colorNode).color;
+            if (computedColor && computedColor !== "rgb(0, 0, 0)") {
+              currentColor = computedColor;
+            }
+          }
+          
+          // Convert RGB to hex if needed
+          const colorToHex = (color) => {
+            if (color.startsWith('#')) return color;
+            const rgb = color.match(/\d+/g);
+            if (rgb && rgb.length >= 3) {
+              return "#" + rgb.slice(0, 3).map(x => {
+                const hex = parseInt(x).toString(16);
+                return hex.length === 1 ? "0" + hex : hex;
+              }).join("");
+            }
+            return color;
+          };
+          
+          const hexColor = colorToHex(currentColor);
+          
+          // Update underline color for all underlined elements in selection
           const allUTags = editorRef.current.querySelectorAll("u");
           allUTags.forEach(uTag => {
             try {
@@ -1637,13 +1690,20 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
               // Skip if error
             }
           });
+        } catch (e) {
+          console.error("Error updating underline color in toggleUnderline:", e);
         }
-      } catch (e) {
-        console.error("Error updating underline color in toggleUnderline:", e);
-      }
-      
+      });
+    }
+    
+    // Update styles immediately
+    requestAnimationFrame(() => {
       detectStyles();
       handleEditorInput();
+      // Double check to ensure underline is properly removed/added
+      requestAnimationFrame(() => {
+        detectStyles();
+      });
     });
   };
 
@@ -2060,7 +2120,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           onMouseUp={(e) => {
             // Don't clear saved selection immediately - let user finish selecting
             requestAnimationFrame(() => {
-              detectStyles();
+            detectStyles();
               // Force another detect to ensure sync
               requestAnimationFrame(() => detectStyles());
             });
@@ -2079,14 +2139,14 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
               // Force another detect to ensure sync
               requestAnimationFrame(() => {
                 detectStyles();
-                const selection = window.getSelection();
-                if (selection.rangeCount === 0 || selection.getRangeAt(0).collapsed) {
-                  // User clicked but didn't select anything - clear saved selection
-                  savedSelectionRef.current = null;
+              const selection = window.getSelection();
+              if (selection.rangeCount === 0 || selection.getRangeAt(0).collapsed) {
+                // User clicked but didn't select anything - clear saved selection
+                savedSelectionRef.current = null;
                 } else {
                   // User has selection - save it
                   saveSelection();
-                }
+              }
               });
             });
           }}
