@@ -459,7 +459,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     return false;
   };
 
-  // Format selection handlers with preserved selection
+  // Format selection handlers with preserved selection - MS Word style
   const formatSelection = (command, value = null) => {
     if (!editorRef.current) return;
     
@@ -468,30 +468,45 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     
     // Get current selection
     const selection = window.getSelection();
+    let range = null;
     
-    // Check if selection is in editor
-    if (selection.rangeCount === 0) {
-      // No selection - try to use saved selection
+    // Try to get current selection
+    if (selection.rangeCount > 0) {
+      range = selection.getRangeAt(0);
+      if (!editorRef.current.contains(range.commonAncestorContainer)) {
+        range = null;
+      }
+    }
+    
+    // If no current selection, try saved selection
+    if (!range) {
       const savedRange = savedSelectionRef.current;
       if (savedRange) {
         try {
-          const range = document.createRange();
+          range = document.createRange();
           range.setStart(savedRange.startContainer, savedRange.startOffset);
           range.setEnd(savedRange.endContainer, savedRange.endOffset);
           selection.removeAllRanges();
           selection.addRange(range);
         } catch (e) {
-          // If saved selection is invalid, just return
-          return;
+          // Saved selection invalid, create new range at cursor
+          range = document.createRange();
+          range.selectNodeContents(editorRef.current);
+          range.collapse(false); // Move to end
+          selection.removeAllRanges();
+          selection.addRange(range);
         }
       } else {
-        // No selection and no saved selection - return
-        return;
+        // No saved selection, create range at end of editor
+        range = document.createRange();
+        range.selectNodeContents(editorRef.current);
+        range.collapse(false); // Move to end
+        selection.removeAllRanges();
+        selection.addRange(range);
       }
     }
     
     // Check if selection is within editor
-    const range = selection.getRangeAt(0);
     if (!editorRef.current.contains(range.commonAncestorContainer)) {
       return;
     }
@@ -499,46 +514,47 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     // Save selection before formatting
     const savedRange = saveSelection();
     
-    // Apply command only if we have a valid selection
-    if (savedRange || (!range.collapsed)) {
+    // MS Word behavior:
+    // 1. If has selection -> apply to selection
+    // 2. If collapsed cursor -> apply for next typing (set format state)
+    if (!range.collapsed) {
+      // Has selection - apply to selection
       document.execCommand(command, false, value);
+      
+      // Update last used styles based on command
+      if (command === "bold") {
+        lastUsedStylesRef.current.fontWeight = "bold";
+      } else if (command === "italic") {
+        lastUsedStylesRef.current.fontStyle = "italic";
+      } else if (command === "underline") {
+        lastUsedStylesRef.current.textDecoration = "underline";
+      }
       
       // Restore selection after command
       requestAnimationFrame(() => {
-        if (savedRange) {
-          restoreSelection();
-        }
+        restoreSelection();
         handleEditorInput();
         requestAnimationFrame(() => detectStyles());
       });
     } else {
-      // Collapsed cursor - apply style for next typing
+      // Collapsed cursor - set format for next typing (MS Word style)
+      // Use execCommand which sets the format state for next typing
+      document.execCommand(command, false, value);
+      
+      // Update last used styles
       if (command === "bold") {
-        // For bold, we need to wrap in a span or use font-weight
-        const span = document.createElement("span");
-        span.style.fontWeight = "bold";
-        span.innerHTML = "\u200B";
-        try {
-          range.insertNode(span);
-          const newRange = document.createRange();
-          newRange.setStartAfter(span);
-          newRange.collapse(true);
-          selection.removeAllRanges();
-          selection.addRange(newRange);
-          handleEditorInput();
-          requestAnimationFrame(() => detectStyles());
-        } catch (e) {
-          // Fallback to execCommand
-          document.execCommand(command, false, value);
-          handleEditorInput();
-          requestAnimationFrame(() => detectStyles());
-        }
-      } else {
-        // For other commands, use execCommand
-        document.execCommand(command, false, value);
-        handleEditorInput();
-        requestAnimationFrame(() => detectStyles());
+        lastUsedStylesRef.current.fontWeight = "bold";
+      } else if (command === "italic") {
+        lastUsedStylesRef.current.fontStyle = "italic";
+      } else if (command === "underline") {
+        lastUsedStylesRef.current.textDecoration = "underline";
       }
+      
+      // Detect styles to update button states
+      requestAnimationFrame(() => {
+        detectStyles();
+        handleEditorInput();
+      });
     }
   };
 
@@ -1170,23 +1186,160 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   // Formatting functions - only apply to selection, don't change global state
   const toggleBold = (e) => {
     if (e) e.preventDefault();
+    
+    if (!editorRef.current) return;
+    
+    // Focus editor
+    editorRef.current.focus();
+    
     // Save selection before toggling
     saveSelection();
-    formatSelection("bold");
-    // Update last used style and detect styles after applying
+    
+    // Get current selection
+    const selection = window.getSelection();
+    let range = null;
+    
+    if (selection.rangeCount > 0) {
+      range = selection.getRangeAt(0);
+      if (!editorRef.current.contains(range.commonAncestorContainer)) {
+        range = null;
+      }
+    }
+    
+    // If no selection, try saved selection or create at end
+    if (!range) {
+      const savedRange = savedSelectionRef.current;
+      if (savedRange) {
+        try {
+          range = document.createRange();
+          range.setStart(savedRange.startContainer, savedRange.startOffset);
+          range.setEnd(savedRange.endContainer, savedRange.endOffset);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        } catch (e) {
+          range = document.createRange();
+          range.selectNodeContents(editorRef.current);
+          range.collapse(false);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      } else {
+        range = document.createRange();
+        range.selectNodeContents(editorRef.current);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    }
+    
+    // Check if already bold
+    let isBold = false;
+    try {
+      isBold = document.queryCommandState("bold");
+    } catch (e) {
+      // Check manually
+      let node = range.startContainer;
+      if (node.nodeType === Node.TEXT_NODE) {
+        node = node.parentElement;
+      }
+      const computedStyle = window.getComputedStyle(node);
+      const fontWeight = computedStyle.fontWeight;
+      isBold = fontWeight === "bold" || fontWeight === "700" || (parseInt(fontWeight) >= 600);
+    }
+    
+    // Toggle bold - MS Word style: works for selection or sets format for next typing
+    document.execCommand("bold", false, null);
+    
+    // Update last used style
+    if (isBold) {
+      lastUsedStylesRef.current.fontWeight = "normal";
+    } else {
+      lastUsedStylesRef.current.fontWeight = "bold";
+    }
+    
+    // Update styles
     requestAnimationFrame(() => {
       detectStyles();
+      handleEditorInput();
     });
   };
 
   const toggleItalic = (e) => {
     if (e) e.preventDefault();
+    
+    if (!editorRef.current) return;
+    
+    // Focus editor
+    editorRef.current.focus();
+    
     // Save selection before toggling
     saveSelection();
-    formatSelection("italic");
-    // Update last used style and detect styles after applying
+    
+    // Get current selection
+    const selection = window.getSelection();
+    let range = null;
+    
+    if (selection.rangeCount > 0) {
+      range = selection.getRangeAt(0);
+      if (!editorRef.current.contains(range.commonAncestorContainer)) {
+        range = null;
+      }
+    }
+    
+    // If no selection, try saved selection or create at end
+    if (!range) {
+      const savedRange = savedSelectionRef.current;
+      if (savedRange) {
+        try {
+          range = document.createRange();
+          range.setStart(savedRange.startContainer, savedRange.startOffset);
+          range.setEnd(savedRange.endContainer, savedRange.endOffset);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        } catch (e) {
+          range = document.createRange();
+          range.selectNodeContents(editorRef.current);
+          range.collapse(false);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      } else {
+        range = document.createRange();
+        range.selectNodeContents(editorRef.current);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    }
+    
+    // Check if already italic
+    let isItalic = false;
+    try {
+      isItalic = document.queryCommandState("italic");
+    } catch (e) {
+      // Check manually
+      let node = range.startContainer;
+      if (node.nodeType === Node.TEXT_NODE) {
+        node = node.parentElement;
+      }
+      const computedStyle = window.getComputedStyle(node);
+      isItalic = computedStyle.fontStyle === "italic";
+    }
+    
+    // Toggle italic - MS Word style: works for selection or sets format for next typing
+    document.execCommand("italic", false, null);
+    
+    // Update last used style
+    if (isItalic) {
+      lastUsedStylesRef.current.fontStyle = "normal";
+    } else {
+      lastUsedStylesRef.current.fontStyle = "italic";
+    }
+    
+    // Update styles
     requestAnimationFrame(() => {
       detectStyles();
+      handleEditorInput();
     });
   };
 
@@ -1203,28 +1356,47 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     
     // Get current selection
     const selection = window.getSelection();
+    let range = null;
     
-    // Restore selection if needed
-    if (selection.rangeCount === 0) {
-      restoreSelection();
+    if (selection.rangeCount > 0) {
+      range = selection.getRangeAt(0);
+      if (!editorRef.current.contains(range.commonAncestorContainer)) {
+        range = null;
+      }
     }
     
-    // Check if we have a valid selection now
-    if (selection.rangeCount === 0) {
-      return;
+    // If no selection, try saved selection or create at end
+    if (!range) {
+      const savedRange = savedSelectionRef.current;
+      if (savedRange) {
+        try {
+          range = document.createRange();
+          range.setStart(savedRange.startContainer, savedRange.startOffset);
+          range.setEnd(savedRange.endContainer, savedRange.endOffset);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        } catch (e) {
+          range = document.createRange();
+          range.selectNodeContents(editorRef.current);
+          range.collapse(false);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      } else {
+        range = document.createRange();
+        range.selectNodeContents(editorRef.current);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
     }
     
-    const range = selection.getRangeAt(0);
-    if (!editorRef.current.contains(range.commonAncestorContainer)) {
-      return;
-    }
-    
-    // Check current underline state using queryCommandState (most reliable)
+    // Check if already underlined
     let hasUnderline = false;
     try {
       hasUnderline = document.queryCommandState("underline");
     } catch (e) {
-      // If queryCommandState fails, check manually
+      // Check manually
       let node = range.startContainer;
       if (node.nodeType === Node.TEXT_NODE) {
         node = node.parentElement;
@@ -1239,36 +1411,20 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
     }
     
-    // Toggle underline: execCommand should toggle, but we need to be explicit
-    // If already underlined, we need to remove it properly
+    // Toggle underline - MS Word style: works for selection or sets format for next typing
+    document.execCommand("underline", false, null);
+    
+    // Update last used style
     if (hasUnderline) {
-      // Remove underline - use removeFormat first, then reapply other formats if needed
-      document.execCommand("removeFormat", false, null);
-      // Remove <u> tags specifically
-      if (!range.collapsed) {
-        const uTags = editorRef.current.querySelectorAll("u");
-        uTags.forEach(u => {
-          if (range.intersectsNode(u)) {
-            const parent = u.parentNode;
-            while (u.firstChild) {
-              parent.insertBefore(u.firstChild, u);
-            }
-            parent.removeChild(u);
-          }
-        });
-      }
+      lastUsedStylesRef.current.textDecoration = "none";
     } else {
-      // Add underline
-      document.execCommand("underline", false, null);
+      lastUsedStylesRef.current.textDecoration = "underline";
     }
     
-    // Restore selection and update styles
+    // Update styles
     requestAnimationFrame(() => {
-      restoreSelection();
+      detectStyles();
       handleEditorInput();
-      requestAnimationFrame(() => {
-        detectStyles();
-      });
     });
   };
 
