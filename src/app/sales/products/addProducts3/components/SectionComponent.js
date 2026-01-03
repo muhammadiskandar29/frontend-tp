@@ -312,6 +312,8 @@ export default function SectionComponent({
       onMoveUp={onMoveUp}
       onMoveDown={onMoveDown}
       onDelete={onDelete}
+      isExpanded={isExpanded}
+      onToggleExpand={onToggleExpand}
     >
       {/* Section Content Area */}
       <div className="section-content-area">

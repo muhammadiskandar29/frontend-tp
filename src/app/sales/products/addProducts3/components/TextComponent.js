@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import ComponentWrapper from "./ComponentWrapper";
 
-export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index }) {
+export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index, isExpanded, onToggleExpand }) {
   const content = data.content || "<p>Text Baru</p>";
   const darkEditor = data.darkEditor || false;
   const lineHeight = data.lineHeight || 1.5;
@@ -1545,6 +1545,8 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       onMoveUp={onMoveUp}
       onMoveDown={onMoveDown}
       onDelete={onDelete}
+      isExpanded={isExpanded}
+      onToggleExpand={onToggleExpand}
     >
       {/* Toggle Dark Editor */}
       <div className="text-editor-toggle">

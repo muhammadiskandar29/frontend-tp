@@ -4,7 +4,7 @@ import { InputText } from "primereact/inputtext";
 import { Dropdown } from "primereact/dropdown";
 import ComponentWrapper from "./ComponentWrapper";
 
-export default function ButtonComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index }) {
+export default function ButtonComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index, isExpanded, onToggleExpand }) {
   const text = data.text || "Klik Disini";
   const link = data.link || "#";
   const style = data.style || "primary";
@@ -20,6 +20,9 @@ export default function ButtonComponent({ data = {}, onUpdate, onMoveUp, onMoveD
       onMoveUp={onMoveUp}
       onMoveDown={onMoveDown}
       onDelete={onDelete}
+    >
+      isExpanded={isExpanded}
+      onToggleExpand={onToggleExpand}
     >
       <div className="button-component-content">
         <div className="form-field-group">

@@ -5,7 +5,7 @@ import { Button } from "primereact/button";
 import { Trash2, Info } from "lucide-react";
 import ComponentWrapper from "./ComponentWrapper";
 
-export default function VideoComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index }) {
+export default function VideoComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index, isExpanded, onToggleExpand }) {
   const items = data.items || [];
 
   const addVideo = () => {
@@ -39,6 +39,8 @@ export default function VideoComponent({ data = {}, onUpdate, onMoveUp, onMoveDo
       onMoveUp={onMoveUp}
       onMoveDown={onMoveDown}
       onDelete={onDelete}
+      isExpanded={isExpanded}
+      onToggleExpand={onToggleExpand}
     >
       {/* Info Box */}
       <div className="component-info-box" style={{ 

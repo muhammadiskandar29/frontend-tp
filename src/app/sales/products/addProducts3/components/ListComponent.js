@@ -78,7 +78,7 @@ const PRESET_ICON_COLORS = [
   "#3b82f6", // Blue
 ];
 
-export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index }) {
+export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index, isExpanded, onToggleExpand }) {
   const items = data.items || [];
   const componentTitle = data.componentTitle || "";
   const [expandedItems, setExpandedItems] = useState(new Set());
@@ -180,6 +180,8 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       onMoveUp={onMoveUp}
       onMoveDown={onMoveDown}
       onDelete={onDelete}
+      isExpanded={isExpanded}
+      onToggleExpand={onToggleExpand}
     >
       <div className="list-component-content">
         {/* Judul Komponen */}

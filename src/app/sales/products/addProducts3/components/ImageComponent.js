@@ -5,7 +5,7 @@ import { InputText } from "primereact/inputtext";
 import { Image as ImageIcon, Info, ChevronDown as ChevronDownIcon, Pencil, Trash2, Eye, Settings } from "lucide-react";
 import ComponentWrapper from "./ComponentWrapper";
 
-export default function ImageComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index }) {
+export default function ImageComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index, isExpanded, onToggleExpand }) {
   const src = data.src || "";
   const alt = data.alt || "";
   const caption = data.caption || "";
@@ -34,6 +34,8 @@ export default function ImageComponent({ data = {}, onUpdate, onMoveUp, onMoveDo
       onMoveUp={onMoveUp}
       onMoveDown={onMoveDown}
       onDelete={onDelete}
+      isExpanded={isExpanded}
+      onToggleExpand={onToggleExpand}
     >
       {/* Info Box */}
       <div className="component-info-box">

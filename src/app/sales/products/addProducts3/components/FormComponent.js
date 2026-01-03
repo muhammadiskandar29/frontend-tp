@@ -2,7 +2,7 @@
 
 import ComponentWrapper from "./ComponentWrapper";
 
-export default function FormComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index, productKategori }) {
+export default function FormComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index, productKategori, isExpanded, onToggleExpand }) {
   return (
     <ComponentWrapper
       title="Form Pemesanan"
@@ -11,6 +11,8 @@ export default function FormComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       onMoveDown={onMoveDown}
       onDelete={onDelete}
       isRequired={true}
+      isExpanded={isExpanded}
+      onToggleExpand={onToggleExpand}
     >
       <div className="form-component-content">
         {/* Informasi Dasar Form - Selalu ada */}

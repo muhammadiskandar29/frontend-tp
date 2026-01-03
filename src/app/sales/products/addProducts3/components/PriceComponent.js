@@ -2,7 +2,7 @@
 
 import ComponentWrapper from "./ComponentWrapper";
 
-export default function PriceComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index }) {
+export default function PriceComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index, isExpanded, onToggleExpand }) {
   return (
     <ComponentWrapper
       title="Harga"
@@ -10,6 +10,8 @@ export default function PriceComponent({ data = {}, onUpdate, onMoveUp, onMoveDo
       onMoveUp={onMoveUp}
       onMoveDown={onMoveDown}
       onDelete={onDelete}
+      isExpanded={isExpanded}
+      onToggleExpand={onToggleExpand}
     >
       <div className="price-component-content">
         <div className="price-notification-box">

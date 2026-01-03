@@ -4,7 +4,7 @@ import { Button } from "primereact/button";
 import { Trash2 } from "lucide-react";
 import ComponentWrapper from "./ComponentWrapper";
 
-export default function SliderComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index }) {
+export default function SliderComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index, isExpanded, onToggleExpand }) {
   const images = data.images || [];
 
   const addImage = () => {
@@ -43,6 +43,8 @@ export default function SliderComponent({ data = {}, onUpdate, onMoveUp, onMoveD
       onMoveUp={onMoveUp}
       onMoveDown={onMoveDown}
       onDelete={onDelete}
+      isExpanded={isExpanded}
+      onToggleExpand={onToggleExpand}
     >
       <div className="slider-component-content">
         {images.map((img, i) => (

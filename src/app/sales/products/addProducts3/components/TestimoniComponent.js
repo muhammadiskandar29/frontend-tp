@@ -5,7 +5,7 @@ import { InputTextarea } from "primereact/inputtextarea";
 import { Button } from "primereact/button";
 import ComponentWrapper from "./ComponentWrapper";
 
-export default function TestimoniComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index }) {
+export default function TestimoniComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index, isExpanded, onToggleExpand }) {
   const items = data.items || [];
 
   const addTestimoni = () => {
@@ -31,6 +31,8 @@ export default function TestimoniComponent({ data = {}, onUpdate, onMoveUp, onMo
       onMoveUp={onMoveUp}
       onMoveDown={onMoveDown}
       onDelete={onDelete}
+      isExpanded={isExpanded}
+      onToggleExpand={onToggleExpand}
     >
       <div className="testimoni-component-content">
         {items.map((item, i) => (
