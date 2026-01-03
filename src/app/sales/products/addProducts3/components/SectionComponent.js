@@ -63,6 +63,8 @@ export default function SectionComponent({
   onUpdateChildBlock = null, // Function to update child block
   onDeleteChildBlock = null, // Function to delete child block
   onMoveChildBlock = null, // Function to move child block
+  isExpanded,
+  onToggleExpand,
 }) {
   const [showAdvance, setShowAdvance] = useState(false);
   const [showComponentModal, setShowComponentModal] = useState(false);
