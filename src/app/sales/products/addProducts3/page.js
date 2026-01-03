@@ -572,9 +572,6 @@ export default function AddProducts3Page() {
                     </li>
                   );
                 })}
-                <li className="preview-list-add-indicator">
-                  <span>»</span>
-                </li>
               </ul>
             )}
           </div>
@@ -1581,19 +1578,22 @@ export default function AddProducts3Page() {
               />
             </div>
             
-            {/* Placeholder jika belum ada komponen */}
-            {blocks.length === 0 && !pengaturanForm.nama && (
-              <div className="canvas-empty">
-                <p>Klik "Tambah Komponen Baru" untuk memulai</p>
-              </div>
-            )}
-            
-            {/* Preview komponen */}
-            {blocks.map((block) => (
-              <div key={block.id} className="canvas-preview-block">
-                {renderPreview(block)}
-              </div>
-            ))}
+            {/* Content Area */}
+            <div className="canvas-content-area">
+              {/* Placeholder jika belum ada komponen */}
+              {blocks.length === 0 && !pengaturanForm.nama && (
+                <div className="canvas-empty">
+                  <p>Klik "Tambah Komponen Baru" untuk memulai</p>
+                </div>
+              )}
+              
+              {/* Preview komponen */}
+              {blocks.map((block) => (
+                <div key={block.id} className="canvas-preview-block">
+                  {renderPreview(block)}
+                </div>
+              ))}
+            </div>
 
             {/* Footer */}
             <footer className="canvas-footer">

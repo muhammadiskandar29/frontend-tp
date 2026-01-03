@@ -2203,28 +2203,34 @@ html:has(.add-products3-container) {
 .canvas-wrapper {
   width: 100%;
   max-width: 100%;
-  min-height: 600px;
+  min-height: 2000px;
   background: #ffffff;
   border: none;
   border-radius: 0;
-  padding: 40px;
-  padding-top: 80px; /* Space untuk logo */
+  padding: 0;
   position: relative;
-  overflow: visible; /* Tidak perlu scroll di wrapper, scroll di parent */
+  overflow: visible;
   transition: background-color 0.3s ease;
+  display: flex;
+  flex-direction: column;
 }
 
 .canvas-logo-wrapper {
-  position: absolute;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
+  padding: 40px 20px 20px 20px;
   pointer-events: none;
+  flex-shrink: 0;
+}
+
+.canvas-content-area {
+  flex: 1;
+  padding: 0 40px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .canvas-logo {
@@ -2242,11 +2248,12 @@ html:has(.add-products3-container) {
 }
 
 .canvas-footer {
-  margin-top: 60px;
+  margin-top: auto;
   padding-top: 40px;
   padding-bottom: 40px;
   border-top: 1px solid #e5e7eb;
   width: 100%;
+  flex-shrink: 0;
 }
 
 .canvas-footer-content {
@@ -2360,15 +2367,15 @@ html:has(.add-products3-container) {
 }
 
 .canvas-empty {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
   text-align: center;
   color: #9ca3af;
-  font-size: 14px;
-  pointer-events: none;
-  z-index: 1;
+  font-size: 16px;
+  width: 100%;
+  flex: 1;
 }
 
 .canvas-block {
