@@ -219,7 +219,7 @@ export default function SectionComponent({
       case "embed":
         return <EmbedComponent {...commonProps} />;
       case "section":
-        return <SectionComponent {...commonProps} allBlocks={allBlocks} onAddChildBlock={onAddChildBlock} onUpdateChildBlock={onUpdateChildBlock} onDeleteChildBlock={onDeleteChildBlock} onMoveChildBlock={onMoveChildBlock} />;
+        return <SectionComponent {...commonProps} allBlocks={allBlocks} onAddChildBlock={onAddChildBlock} onUpdateChildBlock={onUpdateChildBlock} onDeleteChildBlock={onDeleteChildBlock} onMoveChildBlock={onMoveChildBlock} isExpanded={isExpanded} onToggleExpand={onToggleExpand} />;
       case "html":
         return <HTMLComponent {...commonProps} />;
       case "divider":

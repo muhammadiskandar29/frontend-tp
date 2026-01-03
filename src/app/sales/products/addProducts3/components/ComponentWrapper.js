@@ -14,14 +14,18 @@ export default function ComponentWrapper({
   onToggleExpand,
   isRequired = false
 }) {
-  // Debug log untuk props
-  console.log('[ComponentWrapper] Rendered', {
-    title,
-    index,
-    isExpanded,
-    hasOnToggleExpand: !!onToggleExpand,
-    onToggleExpandType: typeof onToggleExpand
-  });
+  // Debug log untuk props - hanya log jika onToggleExpand tidak ada
+  if (!onToggleExpand) {
+    console.error('[ComponentWrapper] onToggleExpand is missing!', {
+      title,
+      index,
+      isExpanded,
+      hasOnToggleExpand: !!onToggleExpand,
+      onToggleExpandType: typeof onToggleExpand,
+      allProps: { title, index, isExpanded, onToggleExpand, onMoveUp, onMoveDown, onDelete },
+      stackTrace: new Error().stack
+    });
+  }
   
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef(null);
@@ -73,11 +77,21 @@ export default function ComponentWrapper({
     e.preventDefault();
     e.stopPropagation();
     
-    console.log('[ComponentWrapper] Calling onToggleExpand');
+    console.log('[ComponentWrapper] Calling onToggleExpand', {
+      hasOnToggleExpand: !!onToggleExpand,
+      title,
+      index
+    });
     if (onToggleExpand) {
       onToggleExpand();
     } else {
-      console.warn('[ComponentWrapper] onToggleExpand is not defined!');
+      console.error('[ComponentWrapper] onToggleExpand is not defined!', {
+        title,
+        index,
+        isExpanded,
+        propsReceived: { title, index, isExpanded, onToggleExpand, onMoveUp, onMoveDown, onDelete },
+        stackTrace: new Error().stack
+      });
     }
   };
 
