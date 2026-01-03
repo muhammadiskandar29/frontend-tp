@@ -97,6 +97,9 @@ export default function AddProducts3Page() {
   const [userOptions, setUserOptions] = useState([]);
   const [showBgColorPicker, setShowBgColorPicker] = useState(false);
   const bgColorPickerRef = useRef(null);
+  
+  // Refs untuk scroll ke komponen di sidebar
+  const componentRefs = useRef({});
 
   // Close background color picker when clicking outside
   useEffect(() => {
@@ -1316,7 +1319,15 @@ export default function AddProducts3Page() {
               <>
             {/* Komponen yang sudah ditambahkan */}
             {blocks.map((block, index) => (
-              <div key={block.id} className="sidebar-component-item">
+              <div 
+                key={block.id} 
+                className="sidebar-component-item"
+                ref={(el) => {
+                  if (el) {
+                    componentRefs.current[block.id] = el;
+                  }
+                }}
+              >
                 {renderComponent(block, index)}
               </div>
             ))}
@@ -1626,7 +1637,23 @@ export default function AddProducts3Page() {
               
               {/* Preview komponen */}
               {blocks.map((block) => (
-                <div key={block.id} className="canvas-preview-block">
+                <div 
+                  key={block.id} 
+                  className="canvas-preview-block"
+                  onClick={() => {
+                    // Scroll ke komponen di sidebar
+                    const componentElement = componentRefs.current[block.id];
+                    if (componentElement) {
+                      componentElement.scrollIntoView({ behavior: "smooth", block: "center" });
+                      // Expand komponen jika collapsed
+                      if (collapsedBlockIds.has(block.id)) {
+                        handleToggleExpand(block.id);
+                      }
+                    }
+                  }}
+                  style={{ cursor: "pointer" }}
+                  title="Klik untuk scroll ke komponen di sidebar"
+                >
                   {renderPreview(block)}
                 </div>
               ))}

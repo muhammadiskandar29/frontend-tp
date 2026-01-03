@@ -304,17 +304,17 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         offset: range.startOffset
       };
       
-      // Create a new paragraph with last used styles
+      // Create a new paragraph with last used styles (but NO background color - always transparent for new paragraph)
       const p = document.createElement("p");
       p.innerHTML = "<br>";
-      // Use last used styles instead of default
+      // Use last used styles instead of default, but background is always transparent for new paragraph
       const lastStyles = lastUsedStylesRef.current;
       p.style.fontSize = `${lastStyles.fontSize}px`;
       p.style.fontWeight = lastStyles.fontWeight;
       p.style.fontStyle = lastStyles.fontStyle;
       p.style.textDecoration = lastStyles.textDecoration;
       p.style.color = lastStyles.color;
-      p.style.backgroundColor = lastStyles.backgroundColor;
+      p.style.backgroundColor = "transparent"; // Always transparent for new paragraph (MS Word behavior)
       
       try {
         // If there's selected text, delete it first
@@ -682,79 +682,132 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   const applyBgColor = (color) => {
     if (!editorRef.current) return;
     
+    // Focus editor first
+    editorRef.current.focus();
+    
     // Save selection first
     const savedRange = saveSelection();
-    if (!savedRange && color !== "transparent") {
-      editorRef.current.focus();
-      return;
-    }
     
-    editorRef.current.focus();
+    // Get current selection
     const selection = window.getSelection();
+    let range = null;
     
-    // Restore selection if available
-    if (savedRange) {
-      selection.removeAllRanges();
+    // Try to get current selection
+    if (selection.rangeCount > 0) {
+      range = selection.getRangeAt(0);
+      if (!editorRef.current.contains(range.commonAncestorContainer)) {
+        range = null;
+      }
+    }
+    
+    // If no current selection, try saved selection
+    if (!range && savedRange) {
       try {
-        selection.addRange(savedRange);
+        range = document.createRange();
+        range.setStart(savedRange.startContainer, savedRange.startOffset);
+        range.setEnd(savedRange.endContainer, savedRange.endOffset);
+        selection.removeAllRanges();
+        selection.addRange(range);
       } catch (e) {
-        restoreSelection();
+        // Saved selection invalid, create range at end
+        range = document.createRange();
+        range.selectNodeContents(editorRef.current);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
       }
     }
     
-    if (selection.rangeCount === 0) {
-      if (color === "transparent") {
-        return; // Can't remove background without selection
-      }
-      // No selection - apply to next typing
-      document.execCommand("backColor", false, color);
-      setSelectedBgColor(color);
-      setCurrentBgColor(color);
-      setShowBgColorPicker(false);
-      handleEditorInput();
-      return;
+    // If still no range, create at end
+    if (!range) {
+      range = document.createRange();
+      range.selectNodeContents(editorRef.current);
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
     }
-    
-    const range = selection.getRangeAt(0);
-    if (!editorRef.current.contains(range.commonAncestorContainer)) return;
     
     if (color === "transparent") {
-      // Remove background color - use a special approach
-      if (range.collapsed) {
-        // For cursor position, can't remove background
-        return;
-      } else {
-        // For selection, wrap in span with transparent background
-        // This will override any existing background
-        const span = document.createElement("span");
-        span.style.backgroundColor = "transparent";
-        span.style.background = "transparent";
+      // Remove background color - aggressive approach
+      if (!range.collapsed) {
+        // Has selection - remove background from selection
+        // Find all elements with background in selection and remove it
+        const walker = document.createTreeWalker(
+          editorRef.current,
+          NodeFilter.SHOW_ELEMENT,
+          null
+        );
         
-        try {
-          // Try to surround contents
-          range.surroundContents(span);
-        } catch (e) {
-          // If surroundContents fails, extract and wrap
-          try {
-            const contents = range.extractContents();
-            span.appendChild(contents);
-            range.insertNode(span);
-          } catch (e2) {
-            console.error("Error applying transparent background:", e2);
-            return;
+        const elementsToFix = [];
+        let node;
+        while (node = walker.nextNode()) {
+          if (range.intersectsNode(node)) {
+            const computedStyle = window.getComputedStyle(node);
+            if (computedStyle.backgroundColor !== "transparent" && 
+                computedStyle.backgroundColor !== "rgba(0, 0, 0, 0)") {
+              elementsToFix.push(node);
+            }
           }
         }
         
-        // Also remove background from any child spans that have background
-        const childSpans = span.querySelectorAll("span[style*='background']");
-        childSpans.forEach(childSpan => {
-          childSpan.style.backgroundColor = "transparent";
-          childSpan.style.background = "transparent";
+        // Remove background from all found elements
+        elementsToFix.forEach(element => {
+          element.style.backgroundColor = "transparent";
+          element.style.background = "transparent";
         });
+        
+        // Also use removeFormat to remove any mark tags with background
+        document.execCommand("removeFormat", false, null);
+        
+        // Then wrap selection in span with transparent to ensure it's removed
+        try {
+          const span = document.createElement("span");
+          span.style.backgroundColor = "transparent";
+          span.style.background = "transparent";
+          
+          if (range.collapsed) {
+            span.innerHTML = "\u200B";
+            range.insertNode(span);
+          } else {
+            try {
+              range.surroundContents(span);
+            } catch (e) {
+              const contents = range.extractContents();
+              span.appendChild(contents);
+              range.insertNode(span);
+            }
+          }
+        } catch (e) {
+          // Ignore error
+        }
+      } else {
+        // Collapsed cursor - set transparent for next typing
+        // Create span with transparent background
+        const span = document.createElement("span");
+        span.style.backgroundColor = "transparent";
+        span.style.background = "transparent";
+        span.innerHTML = "\u200B";
+        
+        try {
+          range.insertNode(span);
+          const newRange = document.createRange();
+          newRange.setStartAfter(span);
+          newRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+        } catch (e) {
+          // Ignore error
+        }
       }
     } else {
-      // Apply background color using backColor command
-      document.execCommand("backColor", false, color);
+      // Apply background color
+      if (!range.collapsed) {
+        // Has selection - apply to selection
+        document.execCommand("backColor", false, color);
+      } else {
+        // Collapsed cursor - apply for next typing
+        document.execCommand("backColor", false, color);
+      }
     }
     
     setSelectedBgColor(color);
@@ -1097,15 +1150,32 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         
         // Detect background color
         if (detectedBgColor === "transparent") {
-          if (checkNode.style && checkNode.style.backgroundColor && checkNode.style.backgroundColor !== "transparent" && checkNode.style.backgroundColor !== "rgba(0, 0, 0, 0)") {
-            detectedBgColor = checkNode.style.backgroundColor;
-          } else if (computedStyle.backgroundColor && computedStyle.backgroundColor !== "rgba(0, 0, 0, 0)" && computedStyle.backgroundColor !== "transparent") {
-            const rgb = computedStyle.backgroundColor.match(/\d+/g);
-            if (rgb && rgb.length >= 3) {
-              detectedBgColor = "#" + rgb.slice(0, 3).map(x => {
-                const hex = parseInt(x).toString(16);
-                return hex.length === 1 ? "0" + hex : hex;
-              }).join("");
+          // Check inline style first
+          if (checkNode.style && checkNode.style.backgroundColor) {
+            const bgColor = checkNode.style.backgroundColor;
+            if (bgColor !== "transparent" && bgColor !== "rgba(0, 0, 0, 0)" && bgColor !== "") {
+              detectedBgColor = bgColor;
+            }
+          } 
+          // Then check computed style
+          else if (computedStyle.backgroundColor) {
+            const bgColor = computedStyle.backgroundColor;
+            // Check if it's actually a color (not transparent)
+            if (bgColor !== "rgba(0, 0, 0, 0)" && bgColor !== "transparent" && bgColor !== "rgb(0, 0, 0)") {
+              // Convert rgb/rgba to hex if needed
+              const rgb = bgColor.match(/\d+/g);
+              if (rgb && rgb.length >= 3) {
+                const r = parseInt(rgb[0]);
+                const g = parseInt(rgb[1]);
+                const b = parseInt(rgb[2]);
+                // Only set if it's not black/transparent
+                if (r !== 0 || g !== 0 || b !== 0) {
+                  detectedBgColor = "#" + [r, g, b].map(x => {
+                    const hex = x.toString(16);
+                    return hex.length === 1 ? "0" + hex : hex;
+                  }).join("");
+                }
+              }
             }
           }
         }
@@ -1485,15 +1555,15 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         />
       </div>
 
-      {/* Formatting Toolbar */}
+      {/* Formatting Toolbar - Simple Layout */}
       <div className="text-editor-toolbar">
-        {/* Top Row - Formatting Buttons */}
+        {/* Row 1: Bold, Italic, Text Color, Background Color, Underline, Strikethrough, Link, Lists, Align */}
         <div className="toolbar-row">
           <button 
             className={`toolbar-btn ${currentBold ? "active" : ""}`}
             title="Bold"
             onMouseDown={(e) => {
-              e.preventDefault(); // Prevent losing focus
+              e.preventDefault();
               saveSelection();
             }}
             onClick={toggleBold}
@@ -1511,11 +1581,11 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           >
             <Italic size={16} />
           </button>
-          {/* Text Color Button - Like Image */}
+          {/* Text Color Button */}
           <div className="toolbar-color-picker-wrapper word-style-color-picker" ref={colorPickerRef}>
             <button 
               className={`toolbar-btn-text-color ${showColorPicker ? "active" : ""}`}
-              title="Font Color (Warna Font)"
+              title="Font Color"
               onClick={() => {
                 setShowColorPicker(!showColorPicker);
                 setShowMoreColors(false);
@@ -1576,141 +1646,11 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
               </div>
             )}
           </div>
-          <button 
-            className={`toolbar-btn ${currentStrikethrough ? "active" : ""}`}
-            title="Strikethrough"
-            onMouseDown={(e) => {
-              e.preventDefault();
-              saveSelection();
-            }}
-            onClick={toggleStrikethrough}
-          >
-            <Strikethrough size={16} />
-          </button>
-          <button 
-            className={`toolbar-btn ${currentUnderline ? "active" : ""}`}
-            title="Underline"
-            onMouseDown={(e) => {
-              e.preventDefault();
-              saveSelection();
-            }}
-            onClick={toggleUnderline}
-          >
-            <Underline size={16} />
-          </button>
-          <button 
-            className="toolbar-btn"
-            title="Superscript"
-            onClick={() => handleChange("textTransform", data.textTransform === "uppercase" ? "none" : "uppercase")}
-          >
-            <Superscript size={16} />
-          </button>
-          <button 
-            className="toolbar-btn"
-            title="Subscript"
-            onClick={() => handleChange("textTransform", data.textTransform === "lowercase" ? "none" : "lowercase")}
-          >
-            <Subscript size={16} />
-          </button>
-        </div>
-
-        {/* Middle Row - Paragraph Style, Font Size, Text Align */}
-        <div className="toolbar-row">
-          <Dropdown
-            value={data.paragraphStyle || "normal"}
-            options={paragraphStyles}
-            optionLabel="label"
-            optionValue="value"
-            onChange={(e) => handleChange("paragraphStyle", e.value)}
-            className="toolbar-dropdown"
-            placeholder="Normal"
-          />
-          <div className="toolbar-input-group">
-            <InputNumber
-              value={selectedFontSize}
-              onMouseDown={(e) => {
-                // Prevent default to keep selection
-                e.preventDefault();
-                // Save selection before input gets focus
-                saveSelection();
-                // Then allow input to get focus
-                requestAnimationFrame(() => {
-                  e.target.focus();
-                });
-              }}
-              onFocus={(e) => {
-                // Save selection when input gets focus (e.g., via Tab)
-                saveSelection();
-              }}
-              onBlur={() => {
-                // Don't clear selection on blur - keep it for next time
-              }}
-              onValueChange={(e) => {
-                const size = e.value || 16;
-                setSelectedFontSize(size);
-                // Update last used font size immediately
-                lastUsedStylesRef.current.fontSize = size;
-                // Apply font size immediately - will use saved selection
-                requestAnimationFrame(() => {
-                  applyFontSize(size);
-                  // Detect styles after applying
-                  requestAnimationFrame(() => {
-                    detectStyles();
-                  });
-                });
-              }}
-              min={8}
-              max={200}
-              suffix="px"
-              className="toolbar-input"
-              placeholder="16"
-              title="Font Size (Ukuran Font) - Pilih teks terlebih dahulu, lalu ubah ukuran"
-            />
-          </div>
-          <div className="toolbar-align-group">
-            {textAlignOptions.map((option) => {
-              const IconComponent = option.icon;
-              return (
-                <button
-                  key={option.value}
-                  className={`toolbar-btn ${textAlign === option.value ? "active" : ""}`}
-                  title={option.label}
-                  onClick={() => handleChange("textAlign", option.value)}
-                >
-                  <IconComponent size={16} />
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Bottom Row - Font Family, Line Height, Background Color */}
-        <div className="toolbar-row">
-          <Dropdown
-            value={fontFamily}
-            options={fontFamilyOptions}
-            optionLabel="label"
-            optionValue="value"
-            onChange={(e) => handleChange("fontFamily", e.value)}
-            className="toolbar-dropdown"
-            placeholder="Font Family"
-          />
-          <div className="toolbar-input-group">
-            <InputNumber
-              value={lineHeight}
-              onValueChange={(e) => handleChange("lineHeight", e.value || 1.5)}
-              min={0.5}
-              max={3}
-              step={0.1}
-              className="toolbar-input"
-              placeholder="1.5"
-            />
-          </div>
-          {/* Text Background Color Button - Like Image */}
+          {/* Background Color Button */}
           <div className="toolbar-color-picker-wrapper word-style-color-picker" ref={bgColorPickerRef}>
             <button 
               className={`toolbar-btn-bg-color ${showBgColorPicker ? "active" : ""}`}
-              title="Text Highlight Color (Background Warna Font)"
+              title="Text Highlight Color"
               onClick={() => {
                 setShowBgColorPicker(!showBgColorPicker);
                 setShowMoreBgColors(false);
@@ -1799,6 +1739,163 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
               </div>
             )}
           </div>
+          <button 
+            className={`toolbar-btn ${currentUnderline ? "active" : ""}`}
+            title="Underline"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              saveSelection();
+            }}
+            onClick={toggleUnderline}
+          >
+            <Underline size={16} />
+          </button>
+          <button 
+            className={`toolbar-btn ${currentStrikethrough ? "active" : ""}`}
+            title="Strikethrough"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              saveSelection();
+            }}
+            onClick={toggleStrikethrough}
+          >
+            <Strikethrough size={16} />
+          </button>
+          <button 
+            className="toolbar-btn"
+            title="Link"
+            onClick={() => formatSelection("createLink", prompt("Enter URL:"))}
+          >
+            <Link size={16} />
+          </button>
+          <button 
+            className="toolbar-btn"
+            title="Numbered List"
+            onClick={() => formatSelection("insertOrderedList")}
+          >
+            <ListOrdered size={16} />
+          </button>
+          <button 
+            className="toolbar-btn"
+            title="Bullet List"
+            onClick={() => formatSelection("insertUnorderedList")}
+          >
+            <List size={16} />
+          </button>
+          <div className="toolbar-align-group">
+            {textAlignOptions.map((option) => {
+              const IconComponent = option.icon;
+              return (
+                <button
+                  key={option.value}
+                  className={`toolbar-btn ${textAlign === option.value ? "active" : ""}`}
+                  title={option.label}
+                  onClick={() => handleChange("textAlign", option.value)}
+                >
+                  <IconComponent size={16} />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Row 2: Paragraph Style, Font Size */}
+        <div className="toolbar-row">
+          <Dropdown
+            value={data.paragraphStyle || "normal"}
+            options={paragraphStyles}
+            optionLabel="label"
+            optionValue="value"
+            onChange={(e) => handleChange("paragraphStyle", e.value)}
+            className="toolbar-dropdown"
+            placeholder="Normal"
+          />
+          <div className="toolbar-input-group">
+            <InputNumber
+              value={selectedFontSize}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                saveSelection();
+                requestAnimationFrame(() => {
+                  e.target.focus();
+                });
+              }}
+              onFocus={(e) => {
+                saveSelection();
+              }}
+              onValueChange={(e) => {
+                const size = e.value || 16;
+                setSelectedFontSize(size);
+                lastUsedStylesRef.current.fontSize = size;
+                requestAnimationFrame(() => {
+                  applyFontSize(size);
+                  requestAnimationFrame(() => {
+                    detectStyles();
+                  });
+                });
+              }}
+              min={8}
+              max={200}
+              suffix="px"
+              className="toolbar-input"
+              placeholder="16"
+              title="Font Size"
+            />
+          </div>
+        </div>
+
+        {/* Row 3: Font Family, Line Height, Image, Emoji */}
+        <div className="toolbar-row">
+          <Dropdown
+            value={fontFamily}
+            options={fontFamilyOptions}
+            optionLabel="label"
+            optionValue="value"
+            onChange={(e) => handleChange("fontFamily", e.value)}
+            className="toolbar-dropdown"
+            placeholder="Page Font"
+          />
+          <div className="toolbar-input-group">
+            <InputNumber
+              value={lineHeight}
+              onValueChange={(e) => handleChange("lineHeight", e.value || 1.5)}
+              min={0.5}
+              max={3}
+              step={0.1}
+              className="toolbar-input"
+              placeholder="1.5"
+            />
+          </div>
+          <button 
+            className="toolbar-btn"
+            title="Insert Image"
+            onClick={() => {
+              const url = prompt("Enter image URL:");
+              if (url) {
+                formatSelection("insertImage", url);
+              }
+            }}
+          >
+            <ImageIcon size={16} />
+          </button>
+          <button 
+            className="toolbar-btn"
+            title="Insert Emoji"
+            onClick={() => {
+              const emoji = prompt("Enter emoji:");
+              if (emoji) {
+                const selection = window.getSelection();
+                if (selection.rangeCount > 0) {
+                  const range = selection.getRangeAt(0);
+                  range.deleteContents();
+                  range.insertNode(document.createTextNode(emoji));
+                  handleEditorInput();
+                }
+              }
+            }}
+          >
+            <Smile size={16} />
+          </button>
         </div>
       </div>
 
@@ -2034,4 +2131,5 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     </ComponentWrapper>
   );
 }
+
 
