@@ -129,8 +129,14 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       
       const html = editorRef.current.innerHTML;
       handleChange("content", html);
-      // Detect styles after input - immediate
-      requestAnimationFrame(() => detectStyles());
+      // Detect styles after input - immediate and force update for sync
+      requestAnimationFrame(() => {
+        detectStyles();
+        // Force another detect to ensure button states are synced
+        requestAnimationFrame(() => {
+          detectStyles();
+        });
+      });
     }
   };
 
@@ -939,13 +945,21 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     if (!editorRef.current) return;
     
     const selection = window.getSelection();
-    if (selection.rangeCount === 0) return;
     
-    const range = selection.getRangeAt(0);
+    // If no selection, try to get cursor position
+    let range = null;
+    if (selection.rangeCount > 0) {
+      range = selection.getRangeAt(0);
+      if (!editorRef.current.contains(range.commonAncestorContainer)) {
+        range = null;
+      }
+    }
     
-    // Check if selection is within editor
-    if (!editorRef.current.contains(range.commonAncestorContainer)) {
-      return;
+    // If no valid range, create one at the end of editor
+    if (!range) {
+      range = document.createRange();
+      range.selectNodeContents(editorRef.current);
+      range.collapse(false); // Move to end
     }
     
     let node = range.startContainer;
@@ -959,9 +973,19 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     let detectedItalic = false;
     let detectedUnderline = false;
     let detectedStrikethrough = false;
-    let detectedFontSize = null; // Start with null to detect actual font size
+    let detectedFontSize = null;
     let detectedTextColor = null;
     let detectedBgColor = "transparent";
+    
+    // Use queryCommandState for more accurate detection (if available)
+    try {
+      detectedBold = document.queryCommandState("bold");
+      detectedItalic = document.queryCommandState("italic");
+      detectedUnderline = document.queryCommandState("underline");
+      detectedStrikethrough = document.queryCommandState("strikeThrough");
+    } catch (e) {
+      // queryCommandState not available, use manual detection
+    }
     
     // First, check the closest node (most specific)
     const closestNode = node;
@@ -986,82 +1010,97 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
     }
     
+    // Walk up the DOM tree to detect other styles (only if queryCommandState didn't work)
+    if (!detectedBold || !detectedItalic || !detectedUnderline) {
+      let checkNode = node;
+      while (checkNode && checkNode !== editorRef.current) {
+        const computedStyle = window.getComputedStyle(checkNode);
+        
+        // Detect bold - check both computed style and tag
+        if (!detectedBold) {
+          const fontWeight = computedStyle.fontWeight;
+          if (fontWeight === "bold" || 
+              fontWeight === "700" || 
+              fontWeight === "600" ||
+              (parseInt(fontWeight) >= 600 && parseInt(fontWeight) <= 900) ||
+              checkNode.tagName === "B" || 
+              checkNode.tagName === "STRONG" ||
+              (checkNode.style && checkNode.style.fontWeight && 
+               (checkNode.style.fontWeight === "bold" || parseInt(checkNode.style.fontWeight) >= 600))) {
+            detectedBold = true;
+          }
+        }
+        
+        // Detect italic
+        if (!detectedItalic) {
+          if (computedStyle.fontStyle === "italic" || checkNode.tagName === "I" || checkNode.tagName === "EM") {
+            detectedItalic = true;
+          }
+        }
+        
+        // Detect underline - check both computed style and tag
+        if (!detectedUnderline) {
+          if (computedStyle.textDecoration.includes("underline") || 
+              (computedStyle.textDecorationLine && computedStyle.textDecorationLine.includes("underline")) ||
+              checkNode.tagName === "U" || 
+              (checkNode.style && checkNode.style.textDecoration && checkNode.style.textDecoration.includes("underline"))) {
+            detectedUnderline = true;
+          }
+        }
+        
+        // Detect strikethrough
+        if (!detectedStrikethrough) {
+          if (computedStyle.textDecoration.includes("line-through") || checkNode.tagName === "S" || checkNode.tagName === "STRIKE") {
+            detectedStrikethrough = true;
+          }
+        }
+        
+        // Detect font size - prioritize inline style over computed
+        if (detectedFontSize === null && checkNode.style && checkNode.style.fontSize) {
+          const fontSize = parseInt(checkNode.style.fontSize);
+          if (!isNaN(fontSize) && fontSize > 0) {
+            detectedFontSize = fontSize;
+          }
+        }
+        
+        // Detect text color
+        if (!detectedTextColor) {
+          if (checkNode.style && checkNode.style.color) {
+            detectedTextColor = checkNode.style.color;
+          } else if (computedStyle.color && computedStyle.color !== "rgb(0, 0, 0)" && computedStyle.color !== "rgb(29, 41, 57)") {
+            // Convert rgb to hex if needed
+            const rgb = computedStyle.color.match(/\d+/g);
+            if (rgb && rgb.length === 3) {
+              detectedTextColor = "#" + rgb.map(x => {
+                const hex = parseInt(x).toString(16);
+                return hex.length === 1 ? "0" + hex : hex;
+              }).join("");
+            }
+          }
+        }
+        
+        // Detect background color
+        if (detectedBgColor === "transparent") {
+          if (checkNode.style && checkNode.style.backgroundColor && checkNode.style.backgroundColor !== "transparent" && checkNode.style.backgroundColor !== "rgba(0, 0, 0, 0)") {
+            detectedBgColor = checkNode.style.backgroundColor;
+          } else if (computedStyle.backgroundColor && computedStyle.backgroundColor !== "rgba(0, 0, 0, 0)" && computedStyle.backgroundColor !== "transparent") {
+            const rgb = computedStyle.backgroundColor.match(/\d+/g);
+            if (rgb && rgb.length >= 3) {
+              detectedBgColor = "#" + rgb.slice(0, 3).map(x => {
+                const hex = parseInt(x).toString(16);
+                return hex.length === 1 ? "0" + hex : hex;
+              }).join("");
+            }
+          }
+        }
+        
+        checkNode = checkNode.parentElement;
+      }
+    }
+    
     // Default to 16 if still null
     if (detectedFontSize === null) {
       detectedFontSize = 16;
-    }
-    
-    // Walk up the DOM tree to detect other styles
-    while (node && node !== editorRef.current) {
-      const computedStyle = window.getComputedStyle(node);
-      
-      // Detect bold - check both computed style and tag
-      const fontWeight = computedStyle.fontWeight;
-      if (fontWeight === "bold" || 
-          fontWeight === "700" || 
-          fontWeight === "600" ||
-          (parseInt(fontWeight) >= 600 && parseInt(fontWeight) <= 900) ||
-          node.tagName === "B" || 
-          node.tagName === "STRONG" ||
-          (node.style && node.style.fontWeight && 
-           (node.style.fontWeight === "bold" || parseInt(node.style.fontWeight) >= 600))) {
-        detectedBold = true;
-      }
-      
-      // Detect italic
-      if (computedStyle.fontStyle === "italic" || node.tagName === "I" || node.tagName === "EM") {
-        detectedItalic = true;
-      }
-      
-      // Detect underline - check both computed style and tag
-      if (computedStyle.textDecoration.includes("underline") || 
-          (computedStyle.textDecorationLine && computedStyle.textDecorationLine.includes("underline")) ||
-          node.tagName === "U" || 
-          (node.style && node.style.textDecoration && node.style.textDecoration.includes("underline"))) {
-        detectedUnderline = true;
-      }
-      
-      // Detect strikethrough
-      if (computedStyle.textDecoration.includes("line-through") || node.tagName === "S" || node.tagName === "STRIKE") {
-        detectedStrikethrough = true;
-      }
-      
-      // Detect font size - prioritize inline style over computed
-      if (node.style && node.style.fontSize && !detectedFontSize) {
-        const fontSize = parseInt(node.style.fontSize);
-        if (!isNaN(fontSize) && fontSize > 0) {
-          detectedFontSize = fontSize;
-        }
-      }
-      
-      // Detect text color
-      if (node.style && node.style.color) {
-        detectedTextColor = node.style.color;
-      } else if (!detectedTextColor && computedStyle.color && computedStyle.color !== "rgb(0, 0, 0)") {
-        // Convert rgb to hex if needed
-        const rgb = computedStyle.color.match(/\d+/g);
-        if (rgb && rgb.length === 3) {
-          detectedTextColor = "#" + rgb.map(x => {
-            const hex = parseInt(x).toString(16);
-            return hex.length === 1 ? "0" + hex : hex;
-          }).join("");
-        }
-      }
-      
-      // Detect background color
-      if (node.style && node.style.backgroundColor && node.style.backgroundColor !== "transparent" && node.style.backgroundColor !== "rgba(0, 0, 0, 0)") {
-        detectedBgColor = node.style.backgroundColor;
-      } else if (computedStyle.backgroundColor && computedStyle.backgroundColor !== "rgba(0, 0, 0, 0)" && computedStyle.backgroundColor !== "transparent") {
-        const rgb = computedStyle.backgroundColor.match(/\d+/g);
-        if (rgb && rgb.length >= 3) {
-          detectedBgColor = "#" + rgb.slice(0, 3).map(x => {
-            const hex = parseInt(x).toString(16);
-            return hex.length === 1 ? "0" + hex : hex;
-          }).join("");
-        }
-      }
-      
-      node = node.parentElement;
     }
     
     // Set default text color if not detected
@@ -1069,7 +1108,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       detectedTextColor = "#000000";
     }
     
-    // Update states
+    // Update states - force update to ensure sync
     setCurrentBold(detectedBold);
     setCurrentItalic(detectedItalic);
     setCurrentUnderline(detectedUnderline);
@@ -1153,12 +1192,83 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
 
   const toggleUnderline = (e) => {
     if (e) e.preventDefault();
-    // Save selection before toggling
+    
+    if (!editorRef.current) return;
+    
+    // Focus editor first
+    editorRef.current.focus();
+    
+    // Save selection before formatting
     saveSelection();
-    formatSelection("underline");
-    // Update last used style and detect styles after applying
+    
+    // Get current selection
+    const selection = window.getSelection();
+    
+    // Restore selection if needed
+    if (selection.rangeCount === 0) {
+      restoreSelection();
+    }
+    
+    // Check if we have a valid selection now
+    if (selection.rangeCount === 0) {
+      return;
+    }
+    
+    const range = selection.getRangeAt(0);
+    if (!editorRef.current.contains(range.commonAncestorContainer)) {
+      return;
+    }
+    
+    // Check current underline state using queryCommandState (most reliable)
+    let hasUnderline = false;
+    try {
+      hasUnderline = document.queryCommandState("underline");
+    } catch (e) {
+      // If queryCommandState fails, check manually
+      let node = range.startContainer;
+      if (node.nodeType === Node.TEXT_NODE) {
+        node = node.parentElement;
+      }
+      while (node && node !== editorRef.current) {
+        const computedStyle = window.getComputedStyle(node);
+        if (computedStyle.textDecoration.includes("underline") || node.tagName === "U") {
+          hasUnderline = true;
+          break;
+        }
+        node = node.parentElement;
+      }
+    }
+    
+    // Toggle underline: execCommand should toggle, but we need to be explicit
+    // If already underlined, we need to remove it properly
+    if (hasUnderline) {
+      // Remove underline - use removeFormat first, then reapply other formats if needed
+      document.execCommand("removeFormat", false, null);
+      // Remove <u> tags specifically
+      if (!range.collapsed) {
+        const uTags = editorRef.current.querySelectorAll("u");
+        uTags.forEach(u => {
+          if (range.intersectsNode(u)) {
+            const parent = u.parentNode;
+            while (u.firstChild) {
+              parent.insertBefore(u.firstChild, u);
+            }
+            parent.removeChild(u);
+          }
+        });
+      }
+    } else {
+      // Add underline
+      document.execCommand("underline", false, null);
+    }
+    
+    // Restore selection and update styles
     requestAnimationFrame(() => {
-      detectStyles();
+      restoreSelection();
+      handleEditorInput();
+      requestAnimationFrame(() => {
+        detectStyles();
+      });
     });
   };
 
@@ -1545,21 +1655,35 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           onKeyDown={handleEditorKeyDown}
           onMouseUp={(e) => {
             // Don't clear saved selection immediately - let user finish selecting
-            detectStyles();
+            requestAnimationFrame(() => {
+              detectStyles();
+              // Force another detect to ensure sync
+              requestAnimationFrame(() => detectStyles());
+            });
           }}
-          onKeyUp={detectStyles}
+          onKeyUp={() => {
+            requestAnimationFrame(() => {
+              detectStyles();
+              // Force another detect to ensure sync
+              requestAnimationFrame(() => detectStyles());
+            });
+          }}
           onClick={(e) => {
             // Auto-detect styles when clicking
             requestAnimationFrame(() => {
               detectStyles();
-              const selection = window.getSelection();
-              if (selection.rangeCount === 0 || selection.getRangeAt(0).collapsed) {
-                // User clicked but didn't select anything - clear saved selection
-                savedSelectionRef.current = null;
-              } else {
-                // User has selection - save it
-                saveSelection();
-              }
+              // Force another detect to ensure sync
+              requestAnimationFrame(() => {
+                detectStyles();
+                const selection = window.getSelection();
+                if (selection.rangeCount === 0 || selection.getRangeAt(0).collapsed) {
+                  // User clicked but didn't select anything - clear saved selection
+                  savedSelectionRef.current = null;
+                } else {
+                  // User has selection - save it
+                  saveSelection();
+                }
+              });
             });
           }}
           className="rich-text-editor"

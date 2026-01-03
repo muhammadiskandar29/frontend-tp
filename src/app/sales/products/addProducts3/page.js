@@ -29,6 +29,14 @@ import {
   FormComponent,
   FAQComponent,
   PriceComponent,
+  SectionComponent,
+  SliderComponent,
+  ButtonComponent,
+  EmbedComponent,
+  HTMLComponent,
+  DividerComponent,
+  ScrollTargetComponent,
+  AnimationComponent,
 } from './components';
 // PrimeReact Theme & Core
 import "primereact/resources/themes/lara-light-amber/theme.css";
