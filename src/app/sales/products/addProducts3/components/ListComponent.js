@@ -80,6 +80,7 @@ const PRESET_ICON_COLORS = [
 
 export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index }) {
   const items = data.items || [];
+  const componentTitle = data.componentTitle || "List";
   const [expandedItems, setExpandedItems] = useState(new Set());
   const [showIconPicker, setShowIconPicker] = useState({});
   const [showAdvance, setShowAdvance] = useState(false);
@@ -181,6 +182,17 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       onDelete={onDelete}
     >
       <div className="list-component-content">
+        {/* Judul Komponen */}
+        <div className="form-field-group">
+          <label className="form-label-small">Judul Komponen</label>
+          <InputText
+            value={componentTitle}
+            onChange={(e) => handleChange("componentTitle", e.target.value)}
+            placeholder="List"
+            className="w-full form-input"
+          />
+        </div>
+
         {items.map((item, i) => {
           const isExpanded = expandedItems.has(i);
           const showPicker = showIconPicker[i] || false;

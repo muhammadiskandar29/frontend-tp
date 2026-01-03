@@ -136,7 +136,7 @@ export default function AddProducts3Page() {
       image: { src: "", alt: "", caption: "" },
       video: { items: [] },
       testimoni: { items: [] },
-      list: { items: [] },
+      list: { items: [], componentTitle: "List" },
       form: { kategori: null }, // Kategori untuk form pemesanan
       price: {},
       faq: { items: [] },
@@ -544,10 +544,12 @@ export default function AddProducts3Page() {
           AlertCircle, Info, HelpCircle: HelpCircleIcon, Ban, Shield, Key, Unlock
         };
         
+        const listTitle = block.data.componentTitle || "List";
+        
         return (
           <div className="preview-list-wrapper">
             <div className="preview-list-header">
-              <h3 className="preview-list-title">List</h3>
+              <h3 className="preview-list-title">{listTitle}</h3>
               <div className="preview-list-header-line"></div>
             </div>
             {listItems.length === 0 ? (
