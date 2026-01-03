@@ -2231,6 +2231,7 @@ html:has(.add-products3-container) {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  align-items: center;
 }
 
 .canvas-logo {
@@ -2245,6 +2246,14 @@ html:has(.add-products3-container) {
 
 .canvas-preview-block {
   margin-bottom: 24px;
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  justify-content: center;
+}
+
+.canvas-preview-block > * {
+  width: 100%;
 }
 
 .canvas-footer {

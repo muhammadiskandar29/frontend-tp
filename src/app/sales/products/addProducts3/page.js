@@ -136,7 +136,7 @@ export default function AddProducts3Page() {
       image: { src: "", alt: "", caption: "" },
       video: { items: [] },
       testimoni: { items: [] },
-      list: { items: [], componentTitle: "List" },
+      list: { items: [], componentTitle: "" },
       form: { kategori: null }, // Kategori untuk form pemesanan
       price: {},
       faq: { items: [] },
@@ -544,14 +544,41 @@ export default function AddProducts3Page() {
           AlertCircle, Info, HelpCircle: HelpCircleIcon, Ban, Shield, Key, Unlock
         };
         
-        const listTitle = block.data.componentTitle || "List";
+        const listTitle = block.data.componentTitle || "";
+        const listData = block.data || {};
+        
+        // Build styles from advance settings
+        const listStyles = {
+          paddingTop: `${listData.paddingTop || 0}px`,
+          paddingRight: `${listData.paddingRight || 0}px`,
+          paddingBottom: `${listData.paddingBottom || 0}px`,
+          paddingLeft: `${listData.paddingLeft || 0}px`,
+        };
+        
+        // Background dari advance settings
+        let listBackgroundStyle = {};
+        if (listData.bgType === "color") {
+          listBackgroundStyle.backgroundColor = listData.bgColor || "#ffffff";
+        } else if (listData.bgType === "image" && listData.bgImage) {
+          listBackgroundStyle.backgroundImage = `url(${listData.bgImage})`;
+          listBackgroundStyle.backgroundSize = "cover";
+          listBackgroundStyle.backgroundPosition = "center";
+        }
         
         return (
-          <div className="preview-list-wrapper">
-            <div className="preview-list-header">
-              <h3 className="preview-list-title">{listTitle}</h3>
-              <div className="preview-list-header-line"></div>
-            </div>
+          <div 
+            className="preview-list-wrapper"
+            style={{
+              ...listStyles,
+              ...listBackgroundStyle,
+            }}
+          >
+            {listTitle && (
+              <div className="preview-list-header">
+                <h3 className="preview-list-title">{listTitle}</h3>
+                <div className="preview-list-header-line"></div>
+              </div>
+            )}
             {listItems.length === 0 ? (
               <div className="preview-placeholder">Belum ada list point</div>
             ) : (
@@ -574,6 +601,9 @@ export default function AddProducts3Page() {
                     </li>
                   );
                 })}
+                <li className="preview-list-add-indicator">
+                  <span>»</span>
+                </li>
               </ul>
             )}
           </div>

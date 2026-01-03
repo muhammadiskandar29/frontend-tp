@@ -80,7 +80,7 @@ const PRESET_ICON_COLORS = [
 
 export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index }) {
   const items = data.items || [];
-  const componentTitle = data.componentTitle || "List";
+  const componentTitle = data.componentTitle || "";
   const [expandedItems, setExpandedItems] = useState(new Set());
   const [showIconPicker, setShowIconPicker] = useState({});
   const [showAdvance, setShowAdvance] = useState(false);
@@ -186,7 +186,7 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         <div className="form-field-group">
           <label className="form-label-small">Judul Komponen</label>
           <InputText
-            value={componentTitle}
+            value={componentTitle || ""}
             onChange={(e) => handleChange("componentTitle", e.target.value)}
             placeholder="List"
             className="w-full form-input"
@@ -316,9 +316,12 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
                         contentEditable
                         onInput={() => handleEditorInput(i)}
                         className="rich-text-editor"
+                        dir="ltr"
                         style={{
                           minHeight: "100px",
                           padding: "12px 14px",
+                          direction: "ltr",
+                          textAlign: "left",
                         }}
                         data-placeholder="Insert text here ..."
                         dangerouslySetInnerHTML={{ __html: item.content || "<p></p>" }}
