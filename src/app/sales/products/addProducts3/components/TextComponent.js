@@ -173,6 +173,11 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       span.style.fontWeight = lastStyles.fontWeight;
       span.style.fontStyle = lastStyles.fontStyle;
       span.style.textDecoration = lastStyles.textDecoration;
+      // Set underline color to match text color if underline is active
+      if (lastStyles.textDecoration === "underline" || lastStyles.textDecoration.includes("underline")) {
+        span.style.setProperty("text-decoration-color", lastStyles.color, "important");
+        span.style.setProperty("-webkit-text-decoration-color", lastStyles.color, "important");
+      }
       if (lastStyles.backgroundColor !== "transparent") {
         span.style.backgroundColor = lastStyles.backgroundColor;
       }
@@ -264,6 +269,11 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
               span.style.fontWeight = lastStyles.fontWeight;
               span.style.fontStyle = lastStyles.fontStyle;
               span.style.textDecoration = lastStyles.textDecoration;
+              // Set underline color to match text color if underline is active
+              if (lastStyles.textDecoration === "underline" || lastStyles.textDecoration.includes("underline")) {
+                span.style.setProperty("text-decoration-color", lastStyles.color, "important");
+                span.style.setProperty("-webkit-text-decoration-color", lastStyles.color, "important");
+              }
               if (lastStyles.backgroundColor !== "transparent") {
                 span.style.backgroundColor = lastStyles.backgroundColor;
               }
@@ -578,13 +588,58 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     // Update last used color
     lastUsedStylesRef.current.color = color;
     
-    // Also update underline color to match text color - aggressive approach
+    // IMMEDIATELY update state for button responsiveness
+    setSelectedColor(color);
+    setCurrentTextColor(color);
+    
+    // Also update underline color to match text color - VERY aggressive approach
     requestAnimationFrame(() => {
       try {
         // Get the range after foreColor is applied
         const range = selection.getRangeAt(0);
         
-        // Method 1: Find all elements with underline in selection
+        // Helper function to update underline color on an element
+        const updateUnderlineColor = (element) => {
+          if (!element || !element.style) return;
+          try {
+            const computedStyle = window.getComputedStyle(element);
+            const hasUnderline = computedStyle.textDecoration.includes("underline") || 
+                                 element.tagName === "U" ||
+                                 (element.style.textDecoration && 
+                                  element.style.textDecoration.includes("underline"));
+            
+            if (hasUnderline) {
+              element.style.setProperty("text-decoration-color", color, "important");
+              element.style.setProperty("-webkit-text-decoration-color", color, "important");
+            }
+          } catch (e) {
+            // Skip if error
+          }
+        };
+        
+        // Method 1: Update all U tags in the entire editor that have the same color
+        const allUTags = editorRef.current.querySelectorAll("u");
+        allUTags.forEach(uTag => {
+          try {
+            // Check if this U tag has the same text color as the applied color
+            const computedStyle = window.getComputedStyle(uTag);
+            const textColor = computedStyle.color;
+            const colorMatches = textColor === color || 
+                               (textColor.includes("rgb") && color.includes("rgb") && 
+                                textColor.replace(/\s/g, "") === color.replace(/\s/g, ""));
+            
+            // Also check if it's in the selection
+            const inSelection = range.intersectsNode(uTag);
+            
+            if (inSelection || colorMatches) {
+              updateUnderlineColor(uTag);
+            }
+          } catch (e) {
+            // Skip if error
+          }
+        });
+        
+        // Method 2: Find all elements with underline in selection and update them
         const container = range.commonAncestorContainer;
         const parent = container.nodeType === Node.ELEMENT_NODE ? container : container.parentElement;
         
@@ -595,16 +650,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           allElements.forEach(element => {
             try {
               if (range.intersectsNode(element)) {
-                const computedStyle = window.getComputedStyle(element);
-                const hasUnderline = computedStyle.textDecoration.includes("underline") || 
-                                     element.tagName === "U" ||
-                                     (element.style && element.style.textDecoration && 
-                                      element.style.textDecoration.includes("underline"));
-                
-                if (hasUnderline && element.style) {
-                  element.style.setProperty("text-decoration-color", color, "important");
-                  element.style.setProperty("-webkit-text-decoration-color", color, "important");
-                }
+                updateUnderlineColor(element);
               }
             } catch (e) {
               // Skip if error
@@ -612,55 +658,51 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           });
         }
         
-        // Method 2: Check all U tags in editor
-        const allUTags = editorRef.current.querySelectorAll("u");
-        allUTags.forEach(uTag => {
-          try {
-            if (range.intersectsNode(uTag) && uTag.style) {
-              uTag.style.setProperty("text-decoration-color", color, "important");
-              uTag.style.setProperty("-webkit-text-decoration-color", color, "important");
-            }
-          } catch (e) {
-            // Skip if error
-          }
-        });
-        
-        // Method 3: Walk up the DOM tree from selection start
+        // Method 3: Walk up the DOM tree from selection start and update all parents
         let checkNode = range.startContainer;
         if (checkNode.nodeType === Node.TEXT_NODE) {
           checkNode = checkNode.parentElement;
         }
         
         while (checkNode && checkNode !== editorRef.current) {
+          updateUnderlineColor(checkNode);
+          checkNode = checkNode.parentElement;
+        }
+        
+        // Method 4: Find ALL elements with underline in the entire editor and update if they have matching color
+        const allElementsWithUnderline = editorRef.current.querySelectorAll("*");
+        allElementsWithUnderline.forEach(element => {
           try {
-            if (checkNode.style) {
-              const computedStyle = window.getComputedStyle(checkNode);
-              const hasUnderline = computedStyle.textDecoration.includes("underline") || 
-                                   checkNode.tagName === "U" ||
-                                   (checkNode.style.textDecoration && 
-                                    checkNode.style.textDecoration.includes("underline"));
+            if (!element.style) return;
+            const computedStyle = window.getComputedStyle(element);
+            const hasUnderline = computedStyle.textDecoration.includes("underline") || 
+                               element.tagName === "U";
+            
+            if (hasUnderline) {
+              // Check if text color matches the applied color
+              const textColor = computedStyle.color;
+              const colorMatches = textColor === color || 
+                                 (textColor.includes("rgb") && color.includes("rgb") && 
+                                  textColor.replace(/\s/g, "") === color.replace(/\s/g, ""));
               
-              if (hasUnderline) {
-                checkNode.style.setProperty("text-decoration-color", color, "important");
-                checkNode.style.setProperty("-webkit-text-decoration-color", color, "important");
+              // Also check if it's in the selection
+              const inSelection = range.intersectsNode(element);
+              
+              if (inSelection || colorMatches) {
+                updateUnderlineColor(element);
               }
             }
           } catch (e) {
             // Skip if error
           }
-          checkNode = checkNode.parentElement;
-        }
+        });
         
-        // Method 4: Find all elements with text-decoration-color and update them
+        // Method 5: Update all elements with inline style that have underline
         const allStyledElements = editorRef.current.querySelectorAll("[style*='text-decoration']");
         allStyledElements.forEach(element => {
           try {
-            if (range.intersectsNode(element) && element.style) {
-              const computedStyle = window.getComputedStyle(element);
-              if (computedStyle.textDecoration.includes("underline")) {
-                element.style.setProperty("text-decoration-color", color, "important");
-                element.style.setProperty("-webkit-text-decoration-color", color, "important");
-              }
+            if (range.intersectsNode(element)) {
+              updateUnderlineColor(element);
             }
           } catch (e) {
             // Skip if error
@@ -671,11 +713,15 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
       
       restoreSelection();
-      setSelectedColor(color);
-      setCurrentTextColor(color);
+      // State already updated above for immediate responsiveness
       setShowColorPicker(false);
       handleEditorInput();
-      requestAnimationFrame(() => detectStyles());
+      // Force immediate style detection for button states
+      requestAnimationFrame(() => {
+        detectStyles();
+        // Double check to ensure button states are synced
+        requestAnimationFrame(() => detectStyles());
+      });
     });
   };
 
@@ -810,17 +856,23 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
     }
     
-    setSelectedBgColor(color);
+    // IMMEDIATELY update state for button responsiveness
+    setSelectedBgColor(color === "transparent" ? "#FFFF00" : color);
     setCurrentBgColor(color);
     setShowBgColorPicker(false);
     // Update last used background color
     lastUsedStylesRef.current.backgroundColor = color;
     handleEditorInput();
+    // Force immediate style detection for button states
     requestAnimationFrame(() => {
       detectStyles();
-      if (savedRange) {
-        restoreSelection();
-      }
+      // Double check to ensure button states are synced
+      requestAnimationFrame(() => {
+        detectStyles();
+        if (savedRange) {
+          restoreSelection();
+        }
+      });
     });
   };
 
@@ -1134,16 +1186,27 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         
         // Detect text color
         if (!detectedTextColor) {
-          if (checkNode.style && checkNode.style.color) {
+          if (checkNode.style && checkNode.style.color && 
+              checkNode.style.color !== "rgb(0, 0, 0)" && 
+              checkNode.style.color !== "#000000") {
             detectedTextColor = checkNode.style.color;
-          } else if (computedStyle.color && computedStyle.color !== "rgb(0, 0, 0)" && computedStyle.color !== "rgb(29, 41, 57)") {
+          } else if (computedStyle.color && 
+                     computedStyle.color !== "rgb(0, 0, 0)" && 
+                     computedStyle.color !== "rgb(29, 41, 57)" &&
+                     computedStyle.color !== "rgba(0, 0, 0, 0)") {
             // Convert rgb to hex if needed
             const rgb = computedStyle.color.match(/\d+/g);
             if (rgb && rgb.length === 3) {
-              detectedTextColor = "#" + rgb.map(x => {
-                const hex = parseInt(x).toString(16);
-                return hex.length === 1 ? "0" + hex : hex;
-              }).join("");
+              const r = parseInt(rgb[0]);
+              const g = parseInt(rgb[1]);
+              const b = parseInt(rgb[2]);
+              // Only set if it's not black
+              if (r !== 0 || g !== 0 || b !== 0) {
+                detectedTextColor = "#" + rgb.map(x => {
+                  const hex = parseInt(x).toString(16);
+                  return hex.length === 1 ? "0" + hex : hex;
+                }).join("");
+              }
             }
           }
         }
@@ -1194,22 +1257,43 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       detectedTextColor = "#000000";
     }
     
+    // Convert detected colors to hex format for consistency
+    const colorToHex = (color) => {
+      if (!color) return "#000000";
+      if (color.startsWith('#')) return color;
+      if (color === "transparent" || color === "rgba(0, 0, 0, 0)") return "transparent";
+      const rgb = color.match(/\d+/g);
+      if (rgb && rgb.length >= 3) {
+        return "#" + rgb.slice(0, 3).map(x => {
+          const hex = parseInt(x).toString(16);
+          return hex.length === 1 ? "0" + hex : hex;
+        }).join("");
+      }
+      return color;
+    };
+    
+    const hexTextColor = colorToHex(detectedTextColor);
+    const hexBgColor = colorToHex(detectedBgColor);
+    
     // Update states - force update to ensure sync
     setCurrentBold(detectedBold);
     setCurrentItalic(detectedItalic);
     setCurrentUnderline(detectedUnderline);
     setCurrentStrikethrough(detectedStrikethrough);
     setSelectedFontSize(detectedFontSize);
-    setCurrentTextColor(detectedTextColor);
-    setCurrentBgColor(detectedBgColor);
+    setCurrentTextColor(hexTextColor);
+    setCurrentBgColor(hexBgColor);
+    // Also update selected colors to match current - CRITICAL for button responsiveness
+    setSelectedColor(hexTextColor);
+    setSelectedBgColor(hexBgColor === "transparent" ? "#FFFF00" : hexBgColor);
     
     // Update last used styles based on detected styles
     lastUsedStylesRef.current.fontSize = detectedFontSize;
     lastUsedStylesRef.current.fontWeight = detectedBold ? "bold" : "normal";
     lastUsedStylesRef.current.fontStyle = detectedItalic ? "italic" : "normal";
     lastUsedStylesRef.current.textDecoration = detectedUnderline ? "underline" : "none";
-    lastUsedStylesRef.current.color = detectedTextColor;
-    lastUsedStylesRef.current.backgroundColor = detectedBgColor;
+    lastUsedStylesRef.current.color = hexTextColor;
+    lastUsedStylesRef.current.backgroundColor = hexBgColor;
   };
 
   // Update styles display when selection changes and save selection automatically
@@ -1491,8 +1575,73 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       lastUsedStylesRef.current.textDecoration = "underline";
     }
     
-    // Update styles
+    // Update underline color to match current text color
     requestAnimationFrame(() => {
+      try {
+        // Get current text color
+        let currentColor = lastUsedStylesRef.current.color;
+        if (!currentColor || currentColor === "rgb(0, 0, 0)") {
+          // Try to get color from current selection
+          const currentRange = selection.getRangeAt(0);
+          let colorNode = currentRange.startContainer;
+          if (colorNode.nodeType === Node.TEXT_NODE) {
+            colorNode = colorNode.parentElement;
+          }
+          const computedColor = window.getComputedStyle(colorNode).color;
+          if (computedColor && computedColor !== "rgb(0, 0, 0)") {
+            currentColor = computedColor;
+          }
+        }
+        
+        // Convert RGB to hex if needed
+        const colorToHex = (color) => {
+          if (color.startsWith('#')) return color;
+          const rgb = color.match(/\d+/g);
+          if (rgb && rgb.length >= 3) {
+            return "#" + rgb.slice(0, 3).map(x => {
+              const hex = parseInt(x).toString(16);
+              return hex.length === 1 ? "0" + hex : hex;
+            }).join("");
+          }
+          return color;
+        };
+        
+        const hexColor = colorToHex(currentColor);
+        
+        // Update underline color for all underlined elements in selection
+        if (!hasUnderline) { // Only if we're adding underline
+          const allUTags = editorRef.current.querySelectorAll("u");
+          allUTags.forEach(uTag => {
+            try {
+              if (range.intersectsNode(uTag) && uTag.style) {
+                uTag.style.setProperty("text-decoration-color", hexColor, "important");
+                uTag.style.setProperty("-webkit-text-decoration-color", hexColor, "important");
+              }
+            } catch (e) {
+              // Skip if error
+            }
+          });
+          
+          // Also update any elements with underline style
+          const allElements = editorRef.current.querySelectorAll("*");
+          allElements.forEach(element => {
+            try {
+              if (range.intersectsNode(element) && element.style) {
+                const computedStyle = window.getComputedStyle(element);
+                if (computedStyle.textDecoration.includes("underline")) {
+                  element.style.setProperty("text-decoration-color", hexColor, "important");
+                  element.style.setProperty("-webkit-text-decoration-color", hexColor, "important");
+                }
+              }
+            } catch (e) {
+              // Skip if error
+            }
+          });
+        }
+      } catch (e) {
+        console.error("Error updating underline color in toggleUnderline:", e);
+      }
+      
       detectStyles();
       handleEditorInput();
     });
