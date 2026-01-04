@@ -73,6 +73,14 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   const [selectedBgColor, setSelectedBgColor] = useState("#FFFF00");
   const [selectedFontSize, setSelectedFontSize] = useState(16);
   
+  // Legacy current state untuk UI buttons (backward compatibility)
+  const [currentBold, setCurrentBold] = useState(false);
+  const [currentItalic, setCurrentItalic] = useState(false);
+  const [currentUnderline, setCurrentUnderline] = useState(false);
+  const [currentStrikethrough, setCurrentStrikethrough] = useState(false);
+  const [currentTextColor, setCurrentTextColor] = useState("#000000");
+  const [currentBgColor, setCurrentBgColor] = useState("transparent");
+  
   const colorPickerRef = useRef(null);
   const bgColorPickerRef = useRef(null);
   const editorRef = useRef(null);
