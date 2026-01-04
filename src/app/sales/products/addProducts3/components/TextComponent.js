@@ -1756,8 +1756,24 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     let currentBoldState = false;
     
     if (range.collapsed) {
-      // CASE 1: Collapsed cursor - use ACTIVE STATE
-      currentBoldState = activeBold;
+      // CASE 1: Collapsed cursor - check if we're in a style marker
+      let node = range.startContainer;
+      if (node.nodeType === Node.TEXT_NODE) {
+        node = node.parentElement;
+      }
+      
+      // Check if we're inside a style marker (span with zero-width space)
+      const isInStyleMarker = node.tagName === "SPAN" && 
+        (node.textContent === "\u200B" || node.innerHTML === "\u200B");
+      
+      if (isInStyleMarker) {
+        // We're in a style marker - check its fontWeight
+        const fontWeight = node.style.fontWeight || window.getComputedStyle(node).fontWeight;
+        currentBoldState = fontWeight === "bold" || fontWeight === "700" || (parseInt(fontWeight) >= 600);
+      } else {
+        // Not in style marker - use ACTIVE STATE
+        currentBoldState = activeBold;
+      }
     } else {
       // CASE 2: Has selection - check from DOM
       try {
@@ -1777,39 +1793,48 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     // Toggle: if currently bold -> make not bold, if not bold -> make bold
     const newBoldState = !currentBoldState;
     
-    // ===== STEP 2: Update Active State IMMEDIATELY (for button responsiveness) =====
+    // ===== STEP 2: Update Active State IMMEDIATELY (FIRST - for instant button response) =====
     setActiveBold(newBoldState);
     setDisplayedBold(newBoldState);
-    setCurrentBold(newBoldState); // Update UI button state immediately
+    setCurrentBold(newBoldState); // Button state updates INSTANTLY
     
     // ===== STEP 3: Apply to Selection or Cursor =====
     if (range.collapsed) {
       // CASE 1: Collapsed cursor (untuk next typing)
-      // Insert style marker dengan bold state yang baru
-      const span = document.createElement("span");
-      span.style.fontSize = `${activeFontSize}px`;
-      span.style.color = activeColor;
-      span.style.fontWeight = newBoldState ? "bold" : "normal";
-      span.style.fontStyle = activeItalic ? "italic" : "normal";
-      span.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
-      if (activeUnderline) {
-        span.style.setProperty("text-decoration-color", activeColor, "important");
-        span.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
+      let node = range.startContainer;
+      if (node.nodeType === Node.TEXT_NODE) {
+        node = node.parentElement;
       }
-      if (activeBgColor !== "transparent") {
-        span.style.backgroundColor = activeBgColor;
-      }
-      span.innerHTML = "\u200B"; // Zero-width space
       
-      try {
-        range.insertNode(span);
+      // Check if we're in a style marker
+      const isInStyleMarker = node.tagName === "SPAN" && 
+        (node.textContent === "\u200B" || node.innerHTML === "\u200B");
+      
+      if (isInStyleMarker) {
+        // REPLACE existing style marker with new bold state
+        node.style.fontWeight = newBoldState ? "bold" : "normal";
+        // Keep other styles
+        node.style.fontSize = `${activeFontSize}px`;
+        node.style.color = activeColor;
+        node.style.fontStyle = activeItalic ? "italic" : "normal";
+        node.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
+        if (activeUnderline) {
+          node.style.setProperty("text-decoration-color", activeColor, "important");
+          node.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
+        }
+        if (activeBgColor !== "transparent") {
+          node.style.backgroundColor = activeBgColor;
+        } else {
+          node.style.backgroundColor = "";
+        }
+        
+        // Cursor stays in the same place
         const newRange = document.createRange();
-        newRange.setStartAfter(span);
+        newRange.setStartAfter(node);
         newRange.collapse(true);
         selection.removeAllRanges();
         selection.addRange(newRange);
         
-        // Update saved selection
         savedSelectionRef.current = {
           range: newRange.cloneRange(),
           startContainer: newRange.startContainer,
@@ -1819,29 +1844,63 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           collapsed: newRange.collapsed,
           text: newRange.toString()
         };
-      } catch (e) {
-        console.error("Error inserting bold style marker:", e);
+      } else {
+        // No style marker - insert new one
+        const span = document.createElement("span");
+        span.style.fontSize = `${activeFontSize}px`;
+        span.style.color = activeColor;
+        span.style.fontWeight = newBoldState ? "bold" : "normal";
+        span.style.fontStyle = activeItalic ? "italic" : "normal";
+        span.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
+        if (activeUnderline) {
+          span.style.setProperty("text-decoration-color", activeColor, "important");
+          span.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
+        }
+        if (activeBgColor !== "transparent") {
+          span.style.backgroundColor = activeBgColor;
+        }
+        span.innerHTML = "\u200B"; // Zero-width space
+        
+        try {
+          range.insertNode(span);
+          const newRange = document.createRange();
+          newRange.setStartAfter(span);
+          newRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+          
+          savedSelectionRef.current = {
+            range: newRange.cloneRange(),
+            startContainer: newRange.startContainer,
+            startOffset: newRange.startOffset,
+            endContainer: newRange.endContainer,
+            endOffset: newRange.endOffset,
+            collapsed: newRange.collapsed,
+            text: newRange.toString()
+          };
+        } catch (e) {
+          console.error("Error inserting bold style marker:", e);
+        }
       }
     } else {
       // CASE 2: Has selection (apply to selected text)
-      // Use execCommand untuk toggle bold pada selection
       document.execCommand("bold", false, null);
       
-      // After execCommand, verify the result and update active state
+      // Verify result and sync active state
       try {
         const isNowBold = document.queryCommandState("bold");
         setActiveBold(isNowBold);
         setDisplayedBold(isNowBold);
         setCurrentBold(isNowBold);
       } catch (e) {
-        // If can't check, keep the new state we set
+        // Keep the state we set
       }
     }
     
     // Update last used style (legacy)
     lastUsedStylesRef.current.fontWeight = newBoldState ? "bold" : "normal";
     
-    // Save changes
+    // Save changes (no delay)
     handleEditorInput();
   };
 
