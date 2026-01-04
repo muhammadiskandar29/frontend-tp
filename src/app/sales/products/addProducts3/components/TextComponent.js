@@ -110,22 +110,9 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   // Rich text editor handlers
   const handleEditorInput = () => {
     if (editorRef.current) {
-      // Clean up zero-width space markers that might be left
-      const zeroWidthSpans = editorRef.current.querySelectorAll('span[data-font-size]');
-      zeroWidthSpans.forEach(span => {
-        if (span.textContent.trim() === '' || span.textContent === '\u200B') {
-          // If span is empty or only has zero-width space, remove it but preserve font size
-          const fontSize = span.getAttribute('data-font-size');
-          if (fontSize && span.parentNode) {
-            // Apply font size to parent or create new span for next character
-            const parent = span.parentNode;
-            if (parent !== editorRef.current) {
-              parent.style.fontSize = `${fontSize}px`;
-            }
-            span.remove();
-          }
-        }
-      });
+      // Don't clean up zero-width space markers - they are style markers for next typing
+      // When user types, the zero-width space gets replaced with actual text automatically
+      // The style marker will be used when user types next character
       
       const html = editorRef.current.innerHTML;
       handleChange("content", html);
@@ -200,114 +187,129 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   };
 
   const handleEditorKeyDown = (e) => {
-    // Apply last used styles when typing if cursor doesn't have the correct style
+    // MS Word style: Apply last used styles when typing
     if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-      // Regular character key - check if cursor has correct style
+      // Regular character key - ensure cursor has correct style
       if (editorRef.current) {
         const selection = window.getSelection();
         if (selection.rangeCount > 0) {
           const range = selection.getRangeAt(0);
           if (editorRef.current.contains(range.commonAncestorContainer) && range.collapsed) {
-            // Cursor is in editor and collapsed - check for style
+            // Cursor is in editor and collapsed - check if we're inside a styled span
             let node = range.startContainer;
             if (node.nodeType === Node.TEXT_NODE) {
               node = node.parentElement;
             }
             
-            const lastStyles = lastUsedStylesRef.current;
+            // Check if we're inside a span with zero-width space (style marker)
+            const isInStyleMarker = node.tagName === "SPAN" && 
+              (node.textContent === "\u200B" || node.innerHTML === "\u200B");
             
-            // Check current styles - check inline style first (more specific), then computed style
-            let currentFontSize = 16;
-            // Check inline style first (most specific)
-            if (node.style && node.style.fontSize) {
-              const inlineSize = parseInt(node.style.fontSize);
-              if (!isNaN(inlineSize) && inlineSize > 0) {
-                currentFontSize = inlineSize;
-              }
-            } else {
-              // If no inline style, check computed style
-              const computedStyle = window.getComputedStyle(node);
-              if (computedStyle.fontSize) {
-                const computedSize = parseInt(computedStyle.fontSize);
-                if (!isNaN(computedSize) && computedSize > 0) {
-                  currentFontSize = computedSize;
+            // If we're in a style marker, typing will automatically use that style
+            // Otherwise, check if we need to create one
+            if (!isInStyleMarker) {
+              const lastStyles = lastUsedStylesRef.current;
+              
+              // Check current styles
+              let currentFontSize = 16;
+              if (node.style && node.style.fontSize) {
+                const inlineSize = parseInt(node.style.fontSize);
+                if (!isNaN(inlineSize) && inlineSize > 0) {
+                  currentFontSize = inlineSize;
+                }
+              } else {
+                const computedStyle = window.getComputedStyle(node);
+                if (computedStyle.fontSize) {
+                  const computedSize = parseInt(computedStyle.fontSize);
+                  if (!isNaN(computedSize) && computedSize > 0) {
+                    currentFontSize = computedSize;
+                  }
                 }
               }
-            }
-            const currentColor = node.style && node.style.color 
-              ? node.style.color 
-              : window.getComputedStyle(node).color;
-            const currentFontWeight = node.style && node.style.fontWeight 
-              ? node.style.fontWeight 
-              : window.getComputedStyle(node).fontWeight;
-            const currentFontStyle = node.style && node.style.fontStyle 
-              ? node.style.fontStyle 
-              : window.getComputedStyle(node).fontStyle;
-            const currentTextDecoration = node.style && node.style.textDecoration 
-              ? node.style.textDecoration 
-              : window.getComputedStyle(node).textDecoration;
-            
-            // Convert color to hex for comparison
-            const colorToHex = (color) => {
-              if (color.startsWith('#')) return color;
-              const rgb = color.match(/\d+/g);
-              if (rgb && rgb.length >= 3) {
-                return "#" + rgb.slice(0, 3).map(x => {
-                  const hex = parseInt(x).toString(16);
-                  return hex.length === 1 ? "0" + hex : hex;
-                }).join("");
-              }
-              return color;
-            };
-            
-            const currentColorHex = colorToHex(currentColor);
-            const lastColorHex = colorToHex(lastStyles.color);
-            
-            // Check if styles match last used styles
-            // Font size comparison - if last used is not 16 and current is 16, we need to update
-            const fontSizeDiff = Math.abs(currentFontSize - lastStyles.fontSize);
-            const fontSizeNeedsUpdate = fontSizeDiff > 1 || 
-              (lastStyles.fontSize !== 16 && currentFontSize === 16); // If user set custom size, apply it
-            
-            const needsUpdate = 
-              fontSizeNeedsUpdate ||
-              currentColorHex !== lastColorHex ||
-              (currentFontWeight !== lastStyles.fontWeight && 
-               !(currentFontWeight === "bold" && lastStyles.fontWeight === "bold") &&
-               !(parseInt(currentFontWeight) >= 600 && lastStyles.fontWeight === "bold")) ||
-              currentFontStyle !== lastStyles.fontStyle ||
-              (currentTextDecoration !== lastStyles.textDecoration && 
-               !(currentTextDecoration.includes("underline") && lastStyles.textDecoration === "underline"));
-            
-            // If styles don't match, apply last used styles
-            if (needsUpdate) {
-              // Create span with last used styles
-              const span = document.createElement("span");
-              span.style.fontSize = `${lastStyles.fontSize}px`;
-              span.style.color = lastStyles.color;
-              span.style.fontWeight = lastStyles.fontWeight;
-              span.style.fontStyle = lastStyles.fontStyle;
-              span.style.textDecoration = lastStyles.textDecoration;
-              // Set underline color to match text color if underline is active
-              if (lastStyles.textDecoration === "underline" || lastStyles.textDecoration.includes("underline")) {
-                span.style.setProperty("text-decoration-color", lastStyles.color, "important");
-                span.style.setProperty("-webkit-text-decoration-color", lastStyles.color, "important");
-              }
-              if (lastStyles.backgroundColor !== "transparent") {
-                span.style.backgroundColor = lastStyles.backgroundColor;
-              }
               
-              // Insert span at cursor
-              try {
-                span.innerHTML = "\u200B"; // Zero-width space
-                range.insertNode(span);
-                const newRange = document.createRange();
-                newRange.setStartAfter(span);
-                newRange.collapse(true);
-                selection.removeAllRanges();
-                selection.addRange(newRange);
-              } catch (err) {
-                // Ignore error
+              const currentColor = node.style && node.style.color 
+                ? node.style.color 
+                : window.getComputedStyle(node).color;
+              const currentFontWeight = node.style && node.style.fontWeight 
+                ? node.style.fontWeight 
+                : window.getComputedStyle(node).fontWeight;
+              const currentFontStyle = node.style && node.style.fontStyle 
+                ? node.style.fontStyle 
+                : window.getComputedStyle(node).fontStyle;
+              const currentTextDecoration = node.style && node.style.textDecoration 
+                ? node.style.textDecoration 
+                : window.getComputedStyle(node).textDecoration;
+              
+              // Convert color to hex for comparison
+              const colorToHex = (color) => {
+                if (color.startsWith('#')) return color;
+                const rgb = color.match(/\d+/g);
+                if (rgb && rgb.length >= 3) {
+                  return "#" + rgb.slice(0, 3).map(x => {
+                    const hex = parseInt(x).toString(16);
+                    return hex.length === 1 ? "0" + hex : hex;
+                  }).join("");
+                }
+                return color;
+              };
+              
+              const currentColorHex = colorToHex(currentColor);
+              const lastColorHex = colorToHex(lastStyles.color);
+              
+              // Check if styles match last used styles
+              const fontSizeDiff = Math.abs(currentFontSize - lastStyles.fontSize);
+              const fontSizeNeedsUpdate = fontSizeDiff > 1 || 
+                (lastStyles.fontSize !== 16 && currentFontSize === 16);
+              
+              const needsUpdate = 
+                fontSizeNeedsUpdate ||
+                currentColorHex !== lastColorHex ||
+                (currentFontWeight !== lastStyles.fontWeight && 
+                 !(currentFontWeight === "bold" && lastStyles.fontWeight === "bold") &&
+                 !(parseInt(currentFontWeight) >= 600 && lastStyles.fontWeight === "bold")) ||
+                currentFontStyle !== lastStyles.fontStyle ||
+                (currentTextDecoration !== lastStyles.textDecoration && 
+                 !(currentTextDecoration.includes("underline") && lastStyles.textDecoration === "underline"));
+              
+              // If styles don't match, create style marker for next typing
+              if (needsUpdate) {
+                const span = document.createElement("span");
+                span.style.fontSize = `${lastStyles.fontSize}px`;
+                span.style.color = lastStyles.color;
+                span.style.fontWeight = lastStyles.fontWeight;
+                span.style.fontStyle = lastStyles.fontStyle;
+                span.style.textDecoration = lastStyles.textDecoration;
+                if (lastStyles.textDecoration === "underline" || lastStyles.textDecoration.includes("underline")) {
+                  span.style.setProperty("text-decoration-color", lastStyles.color, "important");
+                  span.style.setProperty("-webkit-text-decoration-color", lastStyles.color, "important");
+                }
+                if (lastStyles.backgroundColor !== "transparent") {
+                  span.style.backgroundColor = lastStyles.backgroundColor;
+                }
+                
+                // Insert style marker at cursor
+                try {
+                  span.innerHTML = "\u200B";
+                  range.insertNode(span);
+                  const newRange = document.createRange();
+                  newRange.setStartAfter(span);
+                  newRange.collapse(true);
+                  selection.removeAllRanges();
+                  selection.addRange(newRange);
+                  
+                  // Update saved selection
+                  savedSelectionRef.current = {
+                    range: newRange.cloneRange(),
+                    startContainer: newRange.startContainer,
+                    startOffset: newRange.startOffset,
+                    endContainer: newRange.endContainer,
+                    endOffset: newRange.endOffset,
+                    collapsed: newRange.collapsed,
+                    text: newRange.toString()
+                  };
+                } catch (err) {
+                  // Ignore error
+                }
               }
             }
           }
@@ -688,6 +690,17 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         const selection = window.getSelection();
         selection.removeAllRanges();
         selection.addRange(newRange);
+        
+        // Update saved selection to the new position (MS Word style - cursor shows style)
+        savedSelectionRef.current = {
+          range: newRange.cloneRange(),
+          startContainer: newRange.startContainer,
+          startOffset: newRange.startOffset,
+          endContainer: newRange.endContainer,
+          endOffset: newRange.endOffset,
+          collapsed: newRange.collapsed,
+          text: newRange.toString()
+        };
       } catch (e) {
         console.error("Error inserting styled span:", e);
       }
@@ -1133,21 +1146,20 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     });
   };
 
-  // Apply font size to selection
+  // Apply font size to selection - MS Word style: apply to selection or prepare for next typing
   const applyFontSize = (size) => {
     if (!editorRef.current || !size) return;
     
     // Update last used font size
     lastUsedStylesRef.current.fontSize = size;
     
-    // Focus editor to ensure selection is available
     editorRef.current.focus();
     
-    // Get current selection first
+    // Get current selection
     const selection = window.getSelection();
     let range = null;
     
-    // Try to restore saved selection first (most reliable)
+    // Try to restore saved selection first
     if (savedSelectionRef.current) {
       try {
         const saved = savedSelectionRef.current;
@@ -1161,7 +1173,6 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           range = null;
         }
       } catch (e) {
-        // Saved selection invalid
         range = null;
       }
     }
@@ -1174,7 +1185,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
     }
     
-    // If still no range, try to save and restore
+    // If still no range, save and create one
     if (!range) {
       const savedRange = saveSelection();
       if (savedRange) {
@@ -1185,7 +1196,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           selection.removeAllRanges();
           selection.addRange(range);
         } catch (e) {
-          // Saved selection invalid, create range at cursor
+          // Create range at cursor
           range = document.createRange();
           range.selectNodeContents(editorRef.current);
           range.collapse(false);
@@ -1193,7 +1204,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           selection.addRange(range);
         }
       } else {
-        // No saved selection, create range at end
+        // Create range at end
         range = document.createRange();
         range.selectNodeContents(editorRef.current);
         range.collapse(false);
