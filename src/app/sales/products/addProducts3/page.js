@@ -457,11 +457,13 @@ export default function AddProducts3Page() {
         const paddingBottom = imageData.paddingBottom || 0;
         const paddingLeft = imageData.paddingLeft || 0;
 
-        // Calculate aspect ratio
+        // Calculate aspect ratio - ketika dipilih, gambar akan di-crop sesuai ratio
         let aspectRatioStyle = {};
         if (aspectRatio !== "OFF") {
           const [width, height] = aspectRatio.split(":").map(Number);
           if (width && height) {
+            // Set aspect ratio pada wrapper untuk membuat frame crop
+            // Ini akan membuat wrapper memiliki ukuran sesuai aspect ratio
             aspectRatioStyle.aspectRatio = `${width} / ${height}`;
           }
         }
@@ -476,8 +478,17 @@ export default function AddProducts3Page() {
           imageBackgroundStyle.backgroundPosition = "center";
         }
 
-        // Image fit style
-        const objectFit = imageFit === "fill" ? "fill" : imageFit === "fit" ? "contain" : "fill";
+        // Image fit style - jika aspect ratio dipilih, gunakan cover untuk crop
+        // Jika aspect ratio OFF, gunakan fill atau contain sesuai pilihan
+        let objectFitValue;
+        if (aspectRatio !== "OFF") {
+          // Ketika aspect ratio dipilih, gunakan cover untuk crop gambar
+          // Cover akan memotong gambar agar mengisi frame sesuai aspect ratio
+          objectFitValue = "cover";
+        } else {
+          // Ketika aspect ratio OFF, gunakan fill atau contain sesuai pilihan
+          objectFitValue = imageFit === "fill" ? "fill" : imageFit === "fit" ? "contain" : "fill";
+        }
 
         // Padding style
         const imagePaddingStyle = {
@@ -495,14 +506,18 @@ export default function AddProducts3Page() {
           ...imagePaddingStyle,
         };
 
-        // Image wrapper style
+        // Image wrapper style - ukuran akan berubah sesuai aspect ratio yang dipilih
         const imageWrapperStyle = {
           width: `${imageWidth}%`,
           ...aspectRatioStyle,
           ...imageBackgroundStyle,
           overflow: "hidden",
           borderRadius: "4px",
+          position: "relative",
         };
+
+        // Ketika aspect ratio dipilih, wrapper akan otomatis memiliki tinggi sesuai ratio
+        // CSS aspect-ratio akan menghitung tinggi berdasarkan lebar dan ratio
 
         return (
           <div style={containerStyle}>
@@ -512,8 +527,9 @@ export default function AddProducts3Page() {
                 alt={imageData.alt || ""} 
                 style={{
                   width: "100%",
-                  height: aspectRatio !== "OFF" ? "100%" : "auto",
-                  objectFit: objectFit,
+                  height: "100%",
+                  objectFit: objectFitValue,
+                  objectPosition: "center",
                   display: "block",
                 }}
               />
