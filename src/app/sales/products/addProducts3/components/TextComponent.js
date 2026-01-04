@@ -1707,19 +1707,15 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   }, []);
 
   // Formatting functions - only apply to selection, don't change global state
+  // ===== ULTRA SIMPLE & DIRECT: Toggle Bold Function =====
   const toggleBold = (e) => {
     if (e) e.preventDefault();
-    
     if (!editorRef.current) return;
     
-    // Focus editor
-    editorRef.current.focus();
-    
-    // Get current selection
+    // ===== STEP 1: Get current state FIRST =====
     const selection = window.getSelection();
     let range = null;
     
-    // Try to get current selection
     if (selection.rangeCount > 0) {
       range = selection.getRangeAt(0);
       if (!editorRef.current.contains(range.commonAncestorContainer)) {
@@ -1727,7 +1723,6 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
     }
     
-    // If no selection, try saved selection
     if (!range && savedSelectionRef.current) {
       try {
         const saved = savedSelectionRef.current;
@@ -1745,7 +1740,6 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
     }
     
-    // If still no range, create at end
     if (!range) {
       range = document.createRange();
       range.selectNodeContents(editorRef.current);
@@ -1754,87 +1748,75 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       selection.addRange(range);
     }
     
-    // ===== STEP 1: Determine current bold state =====
-    let currentBoldState = false;
+    // Check current bold state
+    let isCurrentlyBold = activeBold;
     
     if (range.collapsed) {
-      // CASE 1: Collapsed cursor - check if we're in a style marker
       let node = range.startContainer;
       if (node.nodeType === Node.TEXT_NODE) {
         node = node.parentElement;
       }
-      
-      // Check if we're inside a style marker (span with zero-width space)
-      const isInStyleMarker = node.tagName === "SPAN" && 
-        (node.textContent === "\u200B" || node.innerHTML === "\u200B");
-      
-      if (isInStyleMarker) {
-        // We're in a style marker - check its fontWeight
+      if (node.tagName === "SPAN" && (node.textContent === "\u200B" || node.innerHTML === "\u200B")) {
         const fontWeight = node.style.fontWeight || window.getComputedStyle(node).fontWeight;
-        currentBoldState = fontWeight === "bold" || fontWeight === "700" || (parseInt(fontWeight) >= 600);
-      } else {
-        // Not in style marker - use ACTIVE STATE
-        currentBoldState = activeBold;
+        isCurrentlyBold = fontWeight === "bold" || fontWeight === "700" || (parseInt(fontWeight) >= 600);
       }
     } else {
-      // CASE 2: Has selection - check from DOM
       try {
-        currentBoldState = document.queryCommandState("bold");
+        isCurrentlyBold = document.queryCommandState("bold");
       } catch (e) {
-        // Check manually from selection
         let node = range.startContainer;
         if (node.nodeType === Node.TEXT_NODE) {
           node = node.parentElement;
         }
-        const computedStyle = window.getComputedStyle(node);
-        const fontWeight = computedStyle.fontWeight;
-        currentBoldState = fontWeight === "bold" || fontWeight === "700" || (parseInt(fontWeight) >= 600);
+        const fontWeight = window.getComputedStyle(node).fontWeight;
+        isCurrentlyBold = fontWeight === "bold" || fontWeight === "700" || (parseInt(fontWeight) >= 600);
       }
     }
     
-    // Toggle: if currently bold -> make not bold, if not bold -> make bold
-    const newBoldState = !currentBoldState;
+    const newBoldState = !isCurrentlyBold;
     
-    // ===== STEP 2: Update Active State IMMEDIATELY with flushSync =====
-    // Force immediate React update for instant button response
-    flushSync(() => {
-      setActiveBold(newBoldState);
-      setDisplayedBold(newBoldState);
-      setCurrentBold(newBoldState); // Button state updates INSTANTLY
-    });
-    
-    // Also update button class directly for instant visual feedback (SYNCHRONOUS - no delay)
-    // Use ref if available, otherwise find by selector
-    const boldButton = boldButtonRef.current || 
-                      (editorRef.current?.closest('.component-wrapper')?.querySelector('button.toolbar-btn[title="Bold"]')) ||
-                      document.querySelector('button.toolbar-btn[title="Bold"]');
-    
-    if (boldButton) {
+    // ===== STEP 2: Update Button FIRST (INSTANT - no delay) =====
+    // Update button DIRECTLY via DOM - no React, no delay, instant visual feedback
+    if (boldButtonRef.current) {
       if (newBoldState) {
-        boldButton.classList.add('active');
+        boldButtonRef.current.classList.add('active');
+        // Also set inline style for instant visual feedback
+        boldButtonRef.current.style.backgroundColor = '#F1A124';
+        boldButtonRef.current.style.borderColor = '#F1A124';
+        boldButtonRef.current.style.color = '#ffffff';
       } else {
-        boldButton.classList.remove('active');
+        boldButtonRef.current.classList.remove('active');
+        // Reset to default
+        boldButtonRef.current.style.backgroundColor = '';
+        boldButtonRef.current.style.borderColor = '';
+        boldButtonRef.current.style.color = '';
       }
-      // Force reflow to ensure visual update
-      void boldButton.offsetHeight;
+      // Force immediate visual update
+      void boldButtonRef.current.offsetHeight;
     }
     
-    // ===== STEP 3: Apply to Selection or Cursor =====
+    // Update React state (for consistency)
+    setActiveBold(newBoldState);
+    setDisplayedBold(newBoldState);
+    setCurrentBold(newBoldState);
+    
+    // Focus editor
+    editorRef.current.focus();
+    
+    // ===== STEP 3: Apply to Editor =====
     if (range.collapsed) {
-      // CASE 1: Collapsed cursor (untuk next typing)
+      // Collapsed cursor
       let node = range.startContainer;
       if (node.nodeType === Node.TEXT_NODE) {
         node = node.parentElement;
       }
       
-      // Check if we're in a style marker
       const isInStyleMarker = node.tagName === "SPAN" && 
         (node.textContent === "\u200B" || node.innerHTML === "\u200B");
       
       if (isInStyleMarker) {
-        // REPLACE existing style marker with new bold state - INSTANT UPDATE
+        // Update existing marker
         node.style.fontWeight = newBoldState ? "bold" : "normal";
-        // Keep other styles
         node.style.fontSize = `${activeFontSize}px`;
         node.style.color = activeColor;
         node.style.fontStyle = activeItalic ? "italic" : "normal";
@@ -1849,10 +1831,6 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           node.style.backgroundColor = "";
         }
         
-        // Force immediate visual update by triggering a reflow
-        void node.offsetHeight;
-        
-        // Cursor stays in the same place
         const newRange = document.createRange();
         newRange.setStartAfter(node);
         newRange.collapse(true);
@@ -1865,14 +1843,14 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           startOffset: newRange.startOffset,
           endContainer: newRange.endContainer,
           endOffset: newRange.endOffset,
-          collapsed: newRange.collapsed,
-          text: newRange.toString()
+          collapsed: true,
+          text: ""
         };
       } else {
-        // No style marker - insert new one IMMEDIATELY
+        // Create new style marker with VISIBLE placeholder for visual feedback
         const span = document.createElement("span");
         span.style.fontSize = `${activeFontSize}px`;
-        span.style.color = activeColor;
+        span.style.color = newBoldState ? activeColor : activeColor; // Keep color
         span.style.fontWeight = newBoldState ? "bold" : "normal";
         span.style.fontStyle = activeItalic ? "italic" : "normal";
         span.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
@@ -1883,55 +1861,61 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         if (activeBgColor !== "transparent") {
           span.style.backgroundColor = activeBgColor;
         }
-        span.innerHTML = "\u200B"; // Zero-width space
         
-        try {
-          range.insertNode(span);
-          
-          // Force immediate visual update by accessing offsetHeight
-          void span.offsetHeight;
-          
-          const newRange = document.createRange();
-          newRange.setStartAfter(span);
-          newRange.collapse(true);
-          selection.removeAllRanges();
-          selection.addRange(newRange);
-          
-          savedSelectionRef.current = {
-            range: newRange.cloneRange(),
-            startContainer: newRange.startContainer,
-            startOffset: newRange.startOffset,
-            endContainer: newRange.endContainer,
-            endOffset: newRange.endOffset,
-            collapsed: newRange.collapsed,
-            text: newRange.toString()
-          };
-        } catch (e) {
-          console.error("Error inserting bold style marker:", e);
-        }
+        // Insert visible placeholder character that will be replaced when typing
+        // Use a very thin space that's barely visible but shows the style
+        span.innerHTML = "\u2009"; // Thin space (more visible than zero-width)
+        
+        range.insertNode(span);
+        
+        // Force immediate visual update
+        void span.offsetHeight;
+        
+        const newRange = document.createRange();
+        newRange.setStart(span, 0);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+        
+        savedSelectionRef.current = {
+          range: newRange.cloneRange(),
+          startContainer: newRange.startContainer,
+          startOffset: newRange.startOffset,
+          endContainer: newRange.endContainer,
+          endOffset: newRange.endOffset,
+          collapsed: true,
+          text: ""
+        };
+        
+        // Replace thin space with zero-width space after a brief moment (for next typing)
+        setTimeout(() => {
+          if (span && span.textContent === "\u2009") {
+            span.innerHTML = "\u200B";
+          }
+        }, 100);
       }
-      
-      // Save changes immediately (no delay)
-      handleEditorInput();
     } else {
-      // CASE 2: Has selection (apply to selected text)
+      // Has selection
       document.execCommand("bold", false, null);
       
-      // Verify result and sync active state
       try {
         const isNowBold = document.queryCommandState("bold");
         setActiveBold(isNowBold);
         setDisplayedBold(isNowBold);
         setCurrentBold(isNowBold);
+        if (boldButtonRef.current) {
+          if (isNowBold) {
+            boldButtonRef.current.classList.add('active');
+          } else {
+            boldButtonRef.current.classList.remove('active');
+          }
+        }
       } catch (e) {
-        // Keep the state we set
+        // Keep state
       }
     }
     
-    // Update last used style (legacy)
     lastUsedStylesRef.current.fontWeight = newBoldState ? "bold" : "normal";
-    
-    // Save changes (no delay)
     handleEditorInput();
   };
 
