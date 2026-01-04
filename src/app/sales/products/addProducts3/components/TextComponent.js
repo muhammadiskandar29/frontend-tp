@@ -1771,12 +1771,13 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     // Toggle bold - MS Word style: works for selection or sets format for next typing
     const newBoldState = !isBold;
     
-    // ===== CRITICAL: Update Active State =====
+    // ===== CRITICAL: Update Active State IMMEDIATELY =====
     setActiveBold(newBoldState);
+    setDisplayedBold(newBoldState); // Update UI immediately
     
     // Apply to selection or cursor
     if (range.collapsed) {
-      // Collapsed cursor - insert style marker with active styles
+      // Collapsed cursor - insert visible style marker immediately
       const currentStyles = getAllCurrentStyles(range);
       currentStyles.bold = newBoldState;
       currentStyles.fontSize = activeFontSize;
@@ -1786,7 +1787,43 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       currentStyles.underline = activeUnderline;
       currentStyles.strikethrough = activeStrikethrough;
       
-      applyStyleWithPreservation(range, currentStyles);
+      // Insert visible character (space) with style so user can see it immediately
+      const span = document.createElement("span");
+      span.style.fontSize = `${activeFontSize}px`;
+      span.style.color = activeColor;
+      span.style.fontWeight = newBoldState ? "bold" : "normal";
+      span.style.fontStyle = activeItalic ? "italic" : "normal";
+      span.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
+      if (activeUnderline) {
+        span.style.setProperty("text-decoration-color", activeColor, "important");
+        span.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
+      }
+      if (activeBgColor !== "transparent") {
+        span.style.backgroundColor = activeBgColor;
+      }
+      span.innerHTML = "\u200B"; // Zero-width space (will be replaced when typing)
+      
+      try {
+        range.insertNode(span);
+        const newRange = document.createRange();
+        newRange.setStartAfter(span);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+        
+        // Update saved selection
+        savedSelectionRef.current = {
+          range: newRange.cloneRange(),
+          startContainer: newRange.startContainer,
+          startOffset: newRange.startOffset,
+          endContainer: newRange.endContainer,
+          endOffset: newRange.endOffset,
+          collapsed: newRange.collapsed,
+          text: newRange.toString()
+        };
+      } catch (e) {
+        console.error("Error inserting bold style marker:", e);
+      }
     } else {
       // Has selection - apply to selection
       document.execCommand("bold", false, null);
@@ -1795,11 +1832,9 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     // Update last used style (legacy)
     lastUsedStylesRef.current.fontWeight = newBoldState ? "bold" : "normal";
     
-    // Update styles
-    requestAnimationFrame(() => {
-      detectStyles();
-      handleEditorInput();
-    });
+    // Update styles IMMEDIATELY (no delay)
+    detectStyles();
+    handleEditorInput();
   };
 
   const toggleItalic = (e) => {
@@ -1867,22 +1902,49 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     // Toggle italic - MS Word style: works for selection or sets format for next typing
     const newItalicState = !isItalic;
     
-    // ===== CRITICAL: Update Active State =====
+    // ===== CRITICAL: Update Active State IMMEDIATELY =====
     setActiveItalic(newItalicState);
+    setDisplayedItalic(newItalicState); // Update UI immediately
     
     // Apply to selection or cursor
     if (range.collapsed) {
-      // Collapsed cursor - insert style marker with active styles
-      const currentStyles = getAllCurrentStyles(range);
-      currentStyles.italic = newItalicState;
-      currentStyles.fontSize = activeFontSize;
-      currentStyles.textColor = activeColor;
-      currentStyles.bgColor = activeBgColor;
-      currentStyles.bold = activeBold;
-      currentStyles.underline = activeUnderline;
-      currentStyles.strikethrough = activeStrikethrough;
+      // Collapsed cursor - insert visible style marker immediately
+      const span = document.createElement("span");
+      span.style.fontSize = `${activeFontSize}px`;
+      span.style.color = activeColor;
+      span.style.fontWeight = activeBold ? "bold" : "normal";
+      span.style.fontStyle = newItalicState ? "italic" : "normal";
+      span.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
+      if (activeUnderline) {
+        span.style.setProperty("text-decoration-color", activeColor, "important");
+        span.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
+      }
+      if (activeBgColor !== "transparent") {
+        span.style.backgroundColor = activeBgColor;
+      }
+      span.innerHTML = "\u200B"; // Zero-width space
       
-      applyStyleWithPreservation(range, currentStyles);
+      try {
+        range.insertNode(span);
+        const newRange = document.createRange();
+        newRange.setStartAfter(span);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+        
+        // Update saved selection
+        savedSelectionRef.current = {
+          range: newRange.cloneRange(),
+          startContainer: newRange.startContainer,
+          startOffset: newRange.startOffset,
+          endContainer: newRange.endContainer,
+          endOffset: newRange.endOffset,
+          collapsed: newRange.collapsed,
+          text: newRange.toString()
+        };
+      } catch (e) {
+        console.error("Error inserting italic style marker:", e);
+      }
     } else {
       // Has selection - apply to selection
       document.execCommand("italic", false, null);
@@ -1891,11 +1953,9 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     // Update last used style (legacy)
     lastUsedStylesRef.current.fontStyle = newItalicState ? "italic" : "normal";
     
-    // Update styles
-    requestAnimationFrame(() => {
-      detectStyles();
-      handleEditorInput();
-    });
+    // Update styles IMMEDIATELY (no delay)
+    detectStyles();
+    handleEditorInput();
   };
 
   const toggleUnderline = (e) => {
@@ -2076,47 +2136,95 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         }
       }
       
-      // ===== CRITICAL: Update Active State =====
+      // ===== CRITICAL: Update Active State IMMEDIATELY =====
       setActiveUnderline(false);
+      setDisplayedUnderline(false); // Update UI immediately
       
       // Then use execCommand to ensure underline is removed
       if (!range.collapsed) {
         document.execCommand("underline", false, null);
       } else {
-        // Collapsed cursor - insert style marker without underline
-        const currentStyles = getAllCurrentStyles(range);
-        currentStyles.underline = false;
-        currentStyles.fontSize = activeFontSize;
-        currentStyles.textColor = activeColor;
-        currentStyles.bgColor = activeBgColor;
-        currentStyles.bold = activeBold;
-        currentStyles.italic = activeItalic;
-        currentStyles.strikethrough = activeStrikethrough;
+        // Collapsed cursor - insert style marker without underline immediately
+        const span = document.createElement("span");
+        span.style.fontSize = `${activeFontSize}px`;
+        span.style.color = activeColor;
+        span.style.fontWeight = activeBold ? "bold" : "normal";
+        span.style.fontStyle = activeItalic ? "italic" : "normal";
+        span.style.textDecoration = activeStrikethrough ? "line-through" : "none";
+        if (activeBgColor !== "transparent") {
+          span.style.backgroundColor = activeBgColor;
+        }
+        span.innerHTML = "\u200B"; // Zero-width space
         
-        applyStyleWithPreservation(range, currentStyles);
+        try {
+          range.insertNode(span);
+          const newRange = document.createRange();
+          newRange.setStartAfter(span);
+          newRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+          
+          // Update saved selection
+          savedSelectionRef.current = {
+            range: newRange.cloneRange(),
+            startContainer: newRange.startContainer,
+            startOffset: newRange.startOffset,
+            endContainer: newRange.endContainer,
+            endOffset: newRange.endOffset,
+            collapsed: newRange.collapsed,
+            text: newRange.toString()
+          };
+        } catch (e) {
+          console.error("Error inserting style marker:", e);
+        }
       }
       
       // CRITICAL: Update lastUsedStylesRef IMMEDIATELY so next typing won't have underline
       lastUsedStylesRef.current.textDecoration = "none";
     } else {
-      // ===== CRITICAL: Update Active State =====
+      // ===== CRITICAL: Update Active State IMMEDIATELY =====
       setActiveUnderline(true);
+      setDisplayedUnderline(true); // Update UI immediately
       
       // Add underline
       if (!range.collapsed) {
         document.execCommand("underline", false, null);
       } else {
-        // Collapsed cursor - insert style marker with underline
-        const currentStyles = getAllCurrentStyles(range);
-        currentStyles.underline = true;
-        currentStyles.fontSize = activeFontSize;
-        currentStyles.textColor = activeColor;
-        currentStyles.bgColor = activeBgColor;
-        currentStyles.bold = activeBold;
-        currentStyles.italic = activeItalic;
-        currentStyles.strikethrough = activeStrikethrough;
+        // Collapsed cursor - insert style marker with underline immediately
+        const span = document.createElement("span");
+        span.style.fontSize = `${activeFontSize}px`;
+        span.style.color = activeColor;
+        span.style.fontWeight = activeBold ? "bold" : "normal";
+        span.style.fontStyle = activeItalic ? "italic" : "normal";
+        span.style.textDecoration = activeStrikethrough ? "underline line-through" : "underline";
+        span.style.setProperty("text-decoration-color", activeColor, "important");
+        span.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
+        if (activeBgColor !== "transparent") {
+          span.style.backgroundColor = activeBgColor;
+        }
+        span.innerHTML = "\u200B"; // Zero-width space
         
-        applyStyleWithPreservation(range, currentStyles);
+        try {
+          range.insertNode(span);
+          const newRange = document.createRange();
+          newRange.setStartAfter(span);
+          newRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+          
+          // Update saved selection
+          savedSelectionRef.current = {
+            range: newRange.cloneRange(),
+            startContainer: newRange.startContainer,
+            startOffset: newRange.startOffset,
+            endContainer: newRange.endContainer,
+            endOffset: newRange.endOffset,
+            collapsed: newRange.collapsed,
+            text: newRange.toString()
+          };
+        } catch (e) {
+          console.error("Error inserting underline style marker:", e);
+        }
       }
       
       lastUsedStylesRef.current.textDecoration = "underline";
@@ -2190,15 +2298,9 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       });
     }
     
-    // Update styles immediately
-    requestAnimationFrame(() => {
-      detectStyles();
-      handleEditorInput();
-      // Double check to ensure underline is properly removed/added
-      requestAnimationFrame(() => {
-        detectStyles();
-      });
-    });
+    // Update styles IMMEDIATELY (no delay)
+    detectStyles();
+    handleEditorInput();
   };
 
   const toggleStrikethrough = (e) => {
