@@ -194,7 +194,6 @@ export default function TestimoniComponent({ data = {}, onUpdate, onMoveUp, onMo
               </div>
 
               <div className="testimoni-item-content">
-                <div className="testimoni-item-content">
                   {/* Upload Foto */}
                   <div className="form-field-group">
                     <label className="form-label-small">Upload Foto</label>
@@ -429,7 +428,7 @@ export default function TestimoniComponent({ data = {}, onUpdate, onMoveUp, onMo
                       )}
                     </div>
                   </div>
-                </div>
+              </div>
             </div>
           );
         })}
