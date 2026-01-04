@@ -216,10 +216,24 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
             
             const lastStyles = lastUsedStylesRef.current;
             
-            // Check current styles
-            const currentFontSize = node.style && node.style.fontSize 
-              ? parseInt(node.style.fontSize) 
-              : (window.getComputedStyle(node).fontSize ? parseInt(window.getComputedStyle(node).fontSize) : 16);
+            // Check current styles - check inline style first (more specific), then computed style
+            let currentFontSize = 16;
+            // Check inline style first (most specific)
+            if (node.style && node.style.fontSize) {
+              const inlineSize = parseInt(node.style.fontSize);
+              if (!isNaN(inlineSize) && inlineSize > 0) {
+                currentFontSize = inlineSize;
+              }
+            } else {
+              // If no inline style, check computed style
+              const computedStyle = window.getComputedStyle(node);
+              if (computedStyle.fontSize) {
+                const computedSize = parseInt(computedStyle.fontSize);
+                if (!isNaN(computedSize) && computedSize > 0) {
+                  currentFontSize = computedSize;
+                }
+              }
+            }
             const currentColor = node.style && node.style.color 
               ? node.style.color 
               : window.getComputedStyle(node).color;
@@ -250,8 +264,13 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
             const lastColorHex = colorToHex(lastStyles.color);
             
             // Check if styles match last used styles
+            // Font size comparison - if last used is not 16 and current is 16, we need to update
+            const fontSizeDiff = Math.abs(currentFontSize - lastStyles.fontSize);
+            const fontSizeNeedsUpdate = fontSizeDiff > 1 || 
+              (lastStyles.fontSize !== 16 && currentFontSize === 16); // If user set custom size, apply it
+            
             const needsUpdate = 
-              currentFontSize !== lastStyles.fontSize ||
+              fontSizeNeedsUpdate ||
               currentColorHex !== lastColorHex ||
               (currentFontWeight !== lastStyles.fontWeight && 
                !(currentFontWeight === "bold" && lastStyles.fontWeight === "bold") &&
@@ -600,9 +619,15 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         // Get font size
         if (!styles.fontSize) {
           if (currentNode.style && currentNode.style.fontSize) {
-            styles.fontSize = parseInt(currentNode.style.fontSize);
-          } else if (computedStyle.fontSize && computedStyle.fontSize !== "16px") {
-            styles.fontSize = parseInt(computedStyle.fontSize);
+            const fontSize = parseInt(currentNode.style.fontSize);
+            if (!isNaN(fontSize) && fontSize > 0) {
+              styles.fontSize = fontSize;
+            }
+          } else if (computedStyle.fontSize) {
+            const fontSize = parseInt(computedStyle.fontSize);
+            if (!isNaN(fontSize) && fontSize > 0 && fontSize !== 16) {
+              styles.fontSize = fontSize;
+            }
           }
         }
         
@@ -668,33 +693,44 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
     } else {
       // Has selection - wrap with span that has all styles
-      const selectedContent = range.extractContents();
-      const span = document.createElement("span");
-      
-      // Apply all styles to span
-      if (newStyles.textColor) span.style.color = newStyles.textColor;
-      if (newStyles.bgColor) span.style.backgroundColor = newStyles.bgColor;
-      if (newStyles.fontSize) span.style.fontSize = `${newStyles.fontSize}px`;
-      if (newStyles.bold) span.style.fontWeight = "bold";
-      if (newStyles.italic) span.style.fontStyle = "italic";
-      if (newStyles.underline) span.style.textDecoration = "underline";
-      if (newStyles.strikethrough) {
-        if (span.style.textDecoration) {
-          span.style.textDecoration += " line-through";
-        } else {
-          span.style.textDecoration = "line-through";
+      try {
+        // Try surroundContents first (works for simple selections)
+        const span = document.createElement("span");
+        
+        // Apply all styles to span
+        if (newStyles.textColor) span.style.color = newStyles.textColor;
+        if (newStyles.bgColor) span.style.backgroundColor = newStyles.bgColor;
+        if (newStyles.fontSize) span.style.fontSize = `${newStyles.fontSize}px`;
+        if (newStyles.bold) span.style.fontWeight = "bold";
+        if (newStyles.italic) span.style.fontStyle = "italic";
+        if (newStyles.underline) span.style.textDecoration = "underline";
+        if (newStyles.strikethrough) {
+          if (span.style.textDecoration) {
+            span.style.textDecoration += " line-through";
+          } else {
+            span.style.textDecoration = "line-through";
+          }
         }
+        
+        // Try surroundContents first
+        try {
+          range.surroundContents(span);
+        } catch (e) {
+          // surroundContents failed - use extractContents
+          const selectedContent = range.extractContents();
+          span.appendChild(selectedContent);
+          range.insertNode(span);
+        }
+        
+        // Select the new span
+        const newRange = document.createRange();
+        newRange.selectNodeContents(span);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+      } catch (e) {
+        console.error("Error applying styles to selection:", e);
       }
-      
-      span.appendChild(selectedContent);
-      range.insertNode(span);
-      
-      // Select the new span
-      const newRange = document.createRange();
-      newRange.selectNodeContents(span);
-      const selection = window.getSelection();
-      selection.removeAllRanges();
-      selection.addRange(newRange);
     }
   };
 
@@ -1104,26 +1140,76 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     // Update last used font size
     lastUsedStylesRef.current.fontSize = size;
     
+    // Focus editor to ensure selection is available
     editorRef.current.focus();
     
-    const savedRange = saveSelection();
-    if (!savedRange) {
-      editorRef.current.focus();
-      return;
+    // Get current selection first
+    const selection = window.getSelection();
+    let range = null;
+    
+    // Try to restore saved selection first (most reliable)
+    if (savedSelectionRef.current) {
+      try {
+        const saved = savedSelectionRef.current;
+        range = document.createRange();
+        range.setStart(saved.startContainer, saved.startOffset);
+        range.setEnd(saved.endContainer, saved.endOffset);
+        if (editorRef.current.contains(range.commonAncestorContainer)) {
+          selection.removeAllRanges();
+          selection.addRange(range);
+        } else {
+          range = null;
+        }
+      } catch (e) {
+        // Saved selection invalid
+        range = null;
+      }
     }
     
-    const selection = window.getSelection();
-    selection.removeAllRanges();
-    selection.addRange(savedRange);
+    // If no saved selection, try current selection
+    if (!range && selection.rangeCount > 0) {
+      range = selection.getRangeAt(0);
+      if (!editorRef.current.contains(range.commonAncestorContainer)) {
+        range = null;
+      }
+    }
+    
+    // If still no range, try to save and restore
+    if (!range) {
+      const savedRange = saveSelection();
+      if (savedRange) {
+        try {
+          range = document.createRange();
+          range.setStart(savedRange.startContainer, savedRange.startOffset);
+          range.setEnd(savedRange.endContainer, savedRange.endOffset);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        } catch (e) {
+          // Saved selection invalid, create range at cursor
+          range = document.createRange();
+          range.selectNodeContents(editorRef.current);
+          range.collapse(false);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      } else {
+        // No saved selection, create range at end
+        range = document.createRange();
+        range.selectNodeContents(editorRef.current);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    }
     
     // Get all current styles
-    const currentStyles = getAllCurrentStyles(savedRange);
+    const currentStyles = getAllCurrentStyles(range);
     
     // Update font size in styles
     currentStyles.fontSize = size;
     
     // Apply all styles (including new font size) while preserving others
-    applyStyleWithPreservation(savedRange, currentStyles);
+    applyStyleWithPreservation(range, currentStyles);
     
     // Trigger input to save
     handleEditorInput();
@@ -1132,133 +1218,6 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     requestAnimationFrame(() => {
       detectStyles();
     });
-    
-    if (range.collapsed) {
-      // Cursor position - insert marker for next typing or wrap current position
-      // Check if cursor is in a paragraph that might have inherited font size
-      let node = range.startContainer;
-      if (node.nodeType === Node.TEXT_NODE) {
-        node = node.parentElement;
-      }
-      
-      // If we're in a paragraph, check if it has font size from parent spans
-      if (node && node.tagName === "P") {
-        // Check if paragraph has any child with font size
-        const spansWithFontSize = node.querySelectorAll('span[style*="font-size"]');
-        if (spansWithFontSize.length === 0) {
-          // No font size in paragraph yet - insert marker at cursor
-          span.innerHTML = "\u200B";
-          try {
-            range.insertNode(span);
-            const newRange = document.createRange();
-            newRange.setStartAfter(span);
-            newRange.collapse(true);
-            selection.removeAllRanges();
-            selection.addRange(newRange);
-          } catch (e) {
-            console.error("Error inserting font size at cursor:", e);
-          }
-        } else {
-          // Paragraph has font size - insert marker to override
-          span.innerHTML = "\u200B";
-          try {
-            range.insertNode(span);
-            const newRange = document.createRange();
-            newRange.setStartAfter(span);
-            newRange.collapse(true);
-            selection.removeAllRanges();
-            selection.addRange(newRange);
-          } catch (e) {
-            console.error("Error inserting font size at cursor:", e);
-          }
-        }
-      } else {
-        // Not in paragraph - just insert marker
-        span.innerHTML = "\u200B";
-        try {
-          range.insertNode(span);
-          const newRange = document.createRange();
-          newRange.setStartAfter(span);
-          newRange.collapse(true);
-          selection.removeAllRanges();
-          selection.addRange(newRange);
-        } catch (e) {
-          console.error("Error inserting font size at cursor:", e);
-        }
-      }
-    } else {
-      // Has selection - wrap it
-      const selectedText = range.toString();
-      if (!selectedText || selectedText.trim() === "") {
-        // Empty selection, just return
-        return;
-      }
-      
-      try {
-        // Try surroundContents first (works for simple selections)
-        range.surroundContents(span);
-        
-        // Restore selection to the wrapped span
-        const newRange = document.createRange();
-        newRange.selectNodeContents(span);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
-        
-        // Update saved selection to the new wrapped span
-        const savedRange = {
-          range: newRange.cloneRange(),
-          startContainer: newRange.startContainer,
-          startOffset: newRange.startOffset,
-          endContainer: newRange.endContainer,
-          endOffset: newRange.endOffset,
-          collapsed: newRange.collapsed,
-          text: newRange.toString()
-        };
-        savedSelectionRef.current = savedRange;
-      } catch (e) {
-        // surroundContents failed - use extractContents (for complex selections)
-        try {
-          const contents = range.extractContents();
-          
-          // Clear any existing font-size spans in contents
-          const existingSpans = contents.querySelectorAll('span[style*="font-size"]');
-          existingSpans.forEach(existingSpan => {
-            const parent = existingSpan.parentNode;
-            while (existingSpan.firstChild) {
-              parent.insertBefore(existingSpan.firstChild, existingSpan);
-            }
-            parent.removeChild(existingSpan);
-          });
-          
-          span.appendChild(contents);
-          range.insertNode(span);
-          
-          // Restore selection to the wrapped span
-          const newRange = document.createRange();
-          newRange.selectNodeContents(span);
-          selection.removeAllRanges();
-          selection.addRange(newRange);
-          
-          // Update saved selection
-          const savedRange = {
-            range: newRange.cloneRange(),
-            startContainer: newRange.startContainer,
-            startOffset: newRange.startOffset,
-            endContainer: newRange.endContainer,
-            endOffset: newRange.endOffset,
-            collapsed: newRange.collapsed,
-            text: newRange.toString()
-          };
-          savedSelectionRef.current = savedRange;
-        } catch (e2) {
-          console.error("Error applying font size to selection:", e2);
-          return;
-        }
-      }
-    }
-    
-    handleEditorInput();
-    requestAnimationFrame(() => detectStyles());
   };
 
   // Initialize editor content
@@ -2305,20 +2264,49 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
               onFocus={(e) => {
                 saveSelection();
               }}
+              onInput={(e) => {
+                // Allow typing directly - get value from input element
+                const inputValue = e.target.value;
+                const value = parseFloat(inputValue);
+                if (!isNaN(value) && value >= 8 && value <= 200) {
+                  const size = Math.round(value);
+                  setSelectedFontSize(size);
+                  lastUsedStylesRef.current.fontSize = size;
+                  // Apply immediately when typing
+                  requestAnimationFrame(() => {
+                    applyFontSize(size);
+                  });
+                } else if (inputValue === "" || inputValue === null) {
+                  // Allow empty input while typing
+                  setSelectedFontSize(16);
+                }
+              }}
               onValueChange={(e) => {
                 const size = e.value || 16;
-                setSelectedFontSize(size);
-                lastUsedStylesRef.current.fontSize = size;
-                requestAnimationFrame(() => {
-                  applyFontSize(size);
+                if (size >= 8 && size <= 200) {
+                  setSelectedFontSize(size);
+                  lastUsedStylesRef.current.fontSize = size;
+                  // Apply immediately when value changes (from buttons or typing)
                   requestAnimationFrame(() => {
-                    detectStyles();
+                    applyFontSize(size);
+                    requestAnimationFrame(() => {
+                      detectStyles();
+                    });
                   });
-                });
+                }
+              }}
+              onBlur={(e) => {
+                // Ensure font size is applied when leaving input
+                const size = selectedFontSize || 16;
+                if (size >= 8 && size <= 200) {
+                  applyFontSize(size);
+                  detectStyles();
+                }
               }}
               min={8}
               max={200}
-              suffix="px"
+              showButtons={true}
+              suffix=" px"
               className="toolbar-input"
               placeholder="16"
               title="Font Size"
