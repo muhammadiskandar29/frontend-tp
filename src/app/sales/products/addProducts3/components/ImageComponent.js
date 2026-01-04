@@ -251,11 +251,18 @@ export default function ImageComponent({ data = {}, onUpdate, onMoveUp, onMoveDo
                   />
                   <InputNumber
                     value={imageWidth}
-                    onValueChange={(e) => setImageWidth(e.value)}
+                    onValueChange={(e) => setImageWidth(e.value || 0)}
+                    onInput={(e) => {
+                      const value = parseFloat(e.target.value);
+                      if (!isNaN(value) && value >= 0 && value <= 100) {
+                        setImageWidth(value);
+                      }
+                    }}
                     min={0}
                     max={100}
                     suffix=" %"
                     className="image-width-input"
+                    showButtons={false}
                   />
                 </div>
               </div>

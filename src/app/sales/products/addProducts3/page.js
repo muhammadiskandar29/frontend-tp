@@ -405,17 +405,17 @@ export default function AddProducts3Page() {
                     textData.paragraphStyle === "h3" ? "h3" : "div";
 
         // Background dari advance settings
-        let backgroundStyle = {};
+        let textBackgroundStyle = {};
         if (textData.bgType === "color") {
-          backgroundStyle.backgroundColor = textData.bgColor || "#ffffff";
+          textBackgroundStyle.backgroundColor = textData.bgColor || "#ffffff";
         } else if (textData.bgType === "image" && textData.bgImage) {
-          backgroundStyle.backgroundImage = `url(${textData.bgImage})`;
-          backgroundStyle.backgroundSize = "cover";
-          backgroundStyle.backgroundPosition = "center";
+          textBackgroundStyle.backgroundImage = `url(${textData.bgImage})`;
+          textBackgroundStyle.backgroundSize = "cover";
+          textBackgroundStyle.backgroundPosition = "center";
         }
         
         // Padding dari advance settings
-        const paddingStyle = {
+        const textPaddingStyle = {
           paddingTop: `${textData.paddingTop || 0}px`,
           paddingRight: `${textData.paddingRight || 0}px`,
           paddingBottom: `${textData.paddingBottom || 0}px`,
@@ -430,8 +430,8 @@ export default function AddProducts3Page() {
             className="preview-text" 
             style={{
               ...textStyles,
-              ...backgroundStyle,
-              ...paddingStyle,
+              ...textBackgroundStyle,
+              ...textPaddingStyle,
               display: "block",
               width: "100%"
             }}
@@ -439,13 +439,87 @@ export default function AddProducts3Page() {
           />
         );
       case "image":
-        return block.data.src ? (
-          <div className="preview-image-wrapper">
-            <img src={block.data.src} alt={block.data.alt || ""} className="preview-image-full" />
-            {block.data.caption && <p className="preview-caption">{block.data.caption}</p>}
+        const imageData = block.data;
+        if (!imageData.src) {
+          return <div className="preview-placeholder">Gambar belum diupload</div>;
+        }
+
+        // Advanced settings
+        const alignment = imageData.alignment || "center";
+        const imageWidth = imageData.imageWidth || 100;
+        const imageFit = imageData.imageFit || "fill";
+        const aspectRatio = imageData.aspectRatio || "OFF";
+        const backgroundType = imageData.backgroundType || "none";
+        const backgroundColor = imageData.backgroundColor || "#ffffff";
+        const backgroundImage = imageData.backgroundImage || "";
+        const paddingTop = imageData.paddingTop || 0;
+        const paddingRight = imageData.paddingRight || 0;
+        const paddingBottom = imageData.paddingBottom || 0;
+        const paddingLeft = imageData.paddingLeft || 0;
+
+        // Calculate aspect ratio
+        let aspectRatioStyle = {};
+        if (aspectRatio !== "OFF") {
+          const [width, height] = aspectRatio.split(":").map(Number);
+          if (width && height) {
+            aspectRatioStyle.aspectRatio = `${width} / ${height}`;
+          }
+        }
+
+        // Background style
+        let imageBackgroundStyle = {};
+        if (backgroundType === "color") {
+          imageBackgroundStyle.backgroundColor = backgroundColor;
+        } else if (backgroundType === "image" && backgroundImage) {
+          imageBackgroundStyle.backgroundImage = `url(${backgroundImage})`;
+          imageBackgroundStyle.backgroundSize = "cover";
+          imageBackgroundStyle.backgroundPosition = "center";
+        }
+
+        // Image fit style
+        const objectFit = imageFit === "fill" ? "fill" : imageFit === "fit" ? "contain" : "fill";
+
+        // Padding style
+        const imagePaddingStyle = {
+          paddingTop: `${paddingTop}px`,
+          paddingRight: `${paddingRight}px`,
+          paddingBottom: `${paddingBottom}px`,
+          paddingLeft: `${paddingLeft}px`,
+        };
+
+        // Container style with alignment
+        const containerStyle = {
+          display: "flex",
+          justifyContent: alignment === "left" ? "flex-start" : alignment === "right" ? "flex-end" : "center",
+          width: "100%",
+          ...imagePaddingStyle,
+        };
+
+        // Image wrapper style
+        const imageWrapperStyle = {
+          width: `${imageWidth}%`,
+          ...aspectRatioStyle,
+          ...imageBackgroundStyle,
+          overflow: "hidden",
+          borderRadius: "4px",
+        };
+
+        return (
+          <div style={containerStyle}>
+            <div style={imageWrapperStyle}>
+              <img 
+                src={imageData.src} 
+                alt={imageData.alt || ""} 
+                style={{
+                  width: "100%",
+                  height: aspectRatio !== "OFF" ? "100%" : "auto",
+                  objectFit: objectFit,
+                  display: "block",
+                }}
+              />
+            </div>
+            {imageData.caption && <p className="preview-caption">{imageData.caption}</p>}
           </div>
-        ) : (
-          <div className="preview-placeholder">Gambar belum diupload</div>
         );
       case "youtube":
       case "video":

@@ -16,8 +16,27 @@ import ComponentWrapper from "./ComponentWrapper";
 export default function TestimoniComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index, isExpanded, onToggleExpand }) {
   const componentTitle = data.componentTitle || "";
   const items = data.items || [];
-  const [expandedItems, setExpandedItems] = useState(new Set());
   const [showImageActions, setShowImageActions] = useState({});
+  
+  // Auto-expand all items by default
+  const [expandedItems, setExpandedItems] = useState(() => {
+    const expanded = new Set();
+    items.forEach((_, i) => expanded.add(i));
+    return expanded;
+  });
+  
+  // Auto-expand new items when added
+  useEffect(() => {
+    const newExpanded = new Set(expandedItems);
+    items.forEach((_, i) => {
+      if (!newExpanded.has(i)) {
+        newExpanded.add(i);
+      }
+    });
+    if (newExpanded.size !== expandedItems.size) {
+      setExpandedItems(newExpanded);
+    }
+  }, [items.length]);
 
   const handleChange = (field, value) => {
     onUpdate?.({ ...data, [field]: value });
@@ -46,15 +65,6 @@ export default function TestimoniComponent({ data = {}, onUpdate, onMoveUp, onMo
     onUpdate?.({ ...data, items: newItems });
   };
 
-  const toggleItemExpand = (index) => {
-    const newExpanded = new Set(expandedItems);
-    if (newExpanded.has(index)) {
-      newExpanded.delete(index);
-    } else {
-      newExpanded.add(index);
-    }
-    setExpandedItems(newExpanded);
-  };
 
   const handleFileChange = (index, e) => {
     const file = e.target.files[0];
@@ -173,13 +183,6 @@ export default function TestimoniComponent({ data = {}, onUpdate, onMoveUp, onMo
                   >
                     ↓
                   </button>
-                  <button
-                    className="testimoni-expand-btn"
-                    onClick={() => toggleItemExpand(i)}
-                    title={isExpanded ? "Tutup" : "Buka"}
-                  >
-                    {isExpanded ? "▲" : "▼"}
-                  </button>
                   <Button
                     icon="pi pi-trash"
                     severity="danger"
@@ -190,7 +193,7 @@ export default function TestimoniComponent({ data = {}, onUpdate, onMoveUp, onMo
                 </div>
               </div>
 
-              {isExpanded && (
+              <div className="testimoni-item-content">
                 <div className="testimoni-item-content">
                   {/* Upload Foto */}
                   <div className="form-field-group">
@@ -427,7 +430,6 @@ export default function TestimoniComponent({ data = {}, onUpdate, onMoveUp, onMo
                     </div>
                   </div>
                 </div>
-              )}
             </div>
           );
         })}
