@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { flushSync } from "react-dom";
 import { InputTextarea } from "primereact/inputtextarea";
 import { InputText } from "primereact/inputtext";
 import { InputSwitch } from "primereact/inputswitch";
@@ -85,6 +86,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   const bgColorPickerRef = useRef(null);
   const editorRef = useRef(null);
   const savedSelectionRef = useRef(null);
+  const boldButtonRef = useRef(null);
   
   // Ref untuk tracking apakah state aktif sudah di-initialize dari DOM
   const isActiveStateInitializedRef = useRef(false);
@@ -1793,25 +1795,28 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     // Toggle: if currently bold -> make not bold, if not bold -> make bold
     const newBoldState = !currentBoldState;
     
-    // ===== STEP 2: Update Active State IMMEDIATELY (FIRST - for instant button response) =====
-    // Update semua state sekaligus untuk instant response
-    setActiveBold(newBoldState);
-    setDisplayedBold(newBoldState);
-    setCurrentBold(newBoldState); // Button state updates INSTANTLY
+    // ===== STEP 2: Update Active State IMMEDIATELY with flushSync =====
+    // Force immediate React update for instant button response
+    flushSync(() => {
+      setActiveBold(newBoldState);
+      setDisplayedBold(newBoldState);
+      setCurrentBold(newBoldState); // Button state updates INSTANTLY
+    });
     
     // Also update button class directly for instant visual feedback (SYNCHRONOUS - no delay)
-    // This ensures button looks active immediately even before React re-renders
-    // Find button in the same component
-    const componentWrapper = editorRef.current?.closest('.component-wrapper');
-    if (componentWrapper) {
-      const boldButton = componentWrapper.querySelector('button.toolbar-btn[title="Bold"]');
-      if (boldButton) {
-        if (newBoldState) {
-          boldButton.classList.add('active');
-        } else {
-          boldButton.classList.remove('active');
-        }
+    // Use ref if available, otherwise find by selector
+    const boldButton = boldButtonRef.current || 
+                      (editorRef.current?.closest('.component-wrapper')?.querySelector('button.toolbar-btn[title="Bold"]')) ||
+                      document.querySelector('button.toolbar-btn[title="Bold"]');
+    
+    if (boldButton) {
+      if (newBoldState) {
+        boldButton.classList.add('active');
+      } else {
+        boldButton.classList.remove('active');
       }
+      // Force reflow to ensure visual update
+      void boldButton.offsetHeight;
     }
     
     // ===== STEP 3: Apply to Selection or Cursor =====
@@ -2460,6 +2465,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         {/* Row 1: Bold, Italic, Text Color, Background Color, Underline, Strikethrough, Link, Lists, Align */}
         <div className="toolbar-row">
           <button 
+            ref={boldButtonRef}
             className={`toolbar-btn ${currentBold ? "active" : ""}`}
             title="Bold"
             onMouseDown={(e) => {
