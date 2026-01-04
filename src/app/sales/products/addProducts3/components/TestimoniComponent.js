@@ -84,6 +84,17 @@ export default function TestimoniComponent({ data = {}, onUpdate, onMoveUp, onMo
       // Force LTR direction
       editor.style.direction = "ltr";
       editor.setAttribute("dir", "ltr");
+      
+      // Force LTR pada semua child elements
+      const allElements = editor.querySelectorAll("*");
+      allElements.forEach((el) => {
+        if (el instanceof HTMLElement) {
+          el.style.direction = "ltr";
+          el.setAttribute("dir", "ltr");
+          el.style.unicodeBidi = "embed";
+        }
+      });
+      
       const html = editor.innerHTML;
       updateTestimoni(index, "isiTestimony", html);
     }
@@ -92,8 +103,20 @@ export default function TestimoniComponent({ data = {}, onUpdate, onMoveUp, onMo
   const handleEditorKeyDown = (index, e) => {
     const editor = document.getElementById(`testimoni-editor-${index}`);
     if (editor) {
+      // Force LTR direction on every keystroke
       editor.style.direction = "ltr";
       editor.setAttribute("dir", "ltr");
+      editor.style.unicodeBidi = "embed";
+      
+      // Force LTR pada semua child elements
+      const allElements = editor.querySelectorAll("*");
+      allElements.forEach((el) => {
+        if (el instanceof HTMLElement) {
+          el.style.direction = "ltr";
+          el.setAttribute("dir", "ltr");
+          el.style.unicodeBidi = "embed";
+        }
+      });
     }
   };
 
@@ -113,11 +136,13 @@ export default function TestimoniComponent({ data = {}, onUpdate, onMoveUp, onMo
       if (editor) {
         editor.style.direction = "ltr";
         editor.setAttribute("dir", "ltr");
+        editor.style.unicodeBidi = "embed";
         const allElements = editor.querySelectorAll("*");
         allElements.forEach((el) => {
           if (el instanceof HTMLElement) {
             el.style.direction = "ltr";
             el.setAttribute("dir", "ltr");
+            el.style.unicodeBidi = "embed";
           }
         });
       }

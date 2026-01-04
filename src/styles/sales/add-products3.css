@@ -3632,6 +3632,52 @@ html:has(.add-products3-container) {
   unicode-bidi: embed !important;
 }
 
+/* Force LTR for all content in editor */
+.list-item-editor p,
+.list-item-editor div,
+.list-item-editor span,
+.list-item-editor strong,
+.list-item-editor em,
+.list-item-editor u,
+.list-item-editor s {
+  direction: ltr !important;
+  unicode-bidi: embed !important;
+}
+
+/* Testimoni Editor - Ensure LTR direction */
+#testimoni-editor-0,
+[id^="testimoni-editor-"] {
+  direction: ltr !important;
+  text-align: left !important;
+  unicode-bidi: embed !important;
+}
+
+#testimoni-editor-0 *,
+[id^="testimoni-editor-"] * {
+  direction: ltr !important;
+  text-align: inherit !important;
+  unicode-bidi: embed !important;
+}
+
+/* Force LTR for all content in testimoni editor */
+#testimoni-editor-0 p,
+[id^="testimoni-editor-"] p,
+#testimoni-editor-0 div,
+[id^="testimoni-editor-"] div,
+#testimoni-editor-0 span,
+[id^="testimoni-editor-"] span,
+#testimoni-editor-0 strong,
+[id^="testimoni-editor-"] strong,
+#testimoni-editor-0 em,
+[id^="testimoni-editor-"] em,
+#testimoni-editor-0 u,
+[id^="testimoni-editor-"] u,
+#testimoni-editor-0 s,
+[id^="testimoni-editor-"] s {
+  direction: ltr !important;
+  unicode-bidi: embed !important;
+}
+
 .rich-text-editor p:last-child {
   margin-bottom: 0;
 }
@@ -4338,9 +4384,9 @@ html:has(.add-products3-container) {
   width: 100%;
   max-width: 100%;
   overflow: hidden;
-  padding: 0 35px;
+  padding: 0;
   box-sizing: border-box;
-  margin: 0 auto;
+  margin: 0;
 }
 
 .testimonials-carousel-new {
@@ -4351,14 +4397,15 @@ html:has(.add-products3-container) {
 .testimonials-track-new {
   display: flex;
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  gap: 12px;
+  gap: 16px;
+  padding: 0;
 }
 
 .testi-card-new {
-  flex: 0 0 calc(28% - 8px);
-  min-width: calc(28% - 8px);
-  max-width: calc(28% - 8px);
-  padding: 16px;
+  flex: 0 0 calc(32% - 8px);
+  min-width: calc(32% - 8px);
+  max-width: calc(32% - 8px);
+  padding: 20px;
   border-radius: 12px;
   background: white;
   border: 1px solid #e5e7eb;

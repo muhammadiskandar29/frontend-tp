@@ -162,12 +162,14 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       if (editor) {
         editor.style.direction = "ltr";
         editor.setAttribute("dir", "ltr");
+        editor.style.unicodeBidi = "embed";
         // Also ensure all child elements are LTR
         const allElements = editor.querySelectorAll("*");
         allElements.forEach((el) => {
           if (el instanceof HTMLElement) {
             el.style.direction = "ltr";
             el.setAttribute("dir", "ltr");
+            el.style.unicodeBidi = "embed";
           }
         });
       }
@@ -181,6 +183,18 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       // Force LTR direction
       editor.style.direction = "ltr";
       editor.setAttribute("dir", "ltr");
+      editor.style.unicodeBidi = "embed";
+      
+      // Force LTR pada semua child elements
+      const allElements = editor.querySelectorAll("*");
+      allElements.forEach((el) => {
+        if (el instanceof HTMLElement) {
+          el.style.direction = "ltr";
+          el.setAttribute("dir", "ltr");
+          el.style.unicodeBidi = "embed";
+        }
+      });
+      
       const html = editor.innerHTML;
       updateItem(index, "content", html);
     }
@@ -193,6 +207,17 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       // Force LTR direction on every keystroke
       editor.style.direction = "ltr";
       editor.setAttribute("dir", "ltr");
+      editor.style.unicodeBidi = "embed";
+      
+      // Force LTR pada semua child elements
+      const allElements = editor.querySelectorAll("*");
+      allElements.forEach((el) => {
+        if (el instanceof HTMLElement) {
+          el.style.direction = "ltr";
+          el.setAttribute("dir", "ltr");
+          el.style.unicodeBidi = "embed";
+        }
+      });
     }
   };
 

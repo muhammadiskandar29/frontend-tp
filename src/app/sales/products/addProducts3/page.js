@@ -577,9 +577,11 @@ export default function AddProducts3Page() {
           }));
         };
         
+        const testimoniTitle = block.data.componentTitle || "Testimoni Pembeli";
+        
         return (
           <section className="preview-testimonials" aria-label="Customer testimonials">
-            <h2>Testimoni Pembeli</h2>
+            <h2>{testimoniTitle}</h2>
             <div className="testimonials-carousel-wrapper-new">
               {currentIndex > 0 && (
                 <button 
@@ -593,7 +595,7 @@ export default function AddProducts3Page() {
               <div className="testimonials-carousel-new" itemScope itemType="https://schema.org/Review">
                 <div 
                   className="testimonials-track-new"
-                  style={{ transform: `translateX(-${currentIndex * 28}%)` }}
+                  style={{ transform: `translateX(-${currentIndex * 32}%)` }}
                 >
                   {testimoniItems.map((item, i) => {
                     return (
