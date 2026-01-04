@@ -333,7 +333,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
     }
     
-    // Allow Enter to create new paragraph without inheriting styles
+    // Allow Enter to create new paragraph (MS Word style)
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       
@@ -345,60 +345,128 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       const range = selection.getRangeAt(0);
       if (!editorRef.current.contains(range.commonAncestorContainer)) return;
       
-      // Save current cursor position
-      const cursorPosition = {
-        container: range.startContainer,
-        offset: range.startOffset
-      };
-      
-      // Create a new paragraph with last used styles (but NO background color - always transparent for new paragraph)
-      const p = document.createElement("p");
-      p.innerHTML = "<br>";
-      // Use last used styles instead of default, but background is always transparent for new paragraph
-      const lastStyles = lastUsedStylesRef.current;
-      p.style.fontSize = `${lastStyles.fontSize}px`;
-      p.style.fontWeight = lastStyles.fontWeight;
-      p.style.fontStyle = lastStyles.fontStyle;
-      p.style.textDecoration = lastStyles.textDecoration;
-      p.style.color = lastStyles.color;
-      p.style.backgroundColor = "transparent"; // Always transparent for new paragraph (MS Word behavior)
-      
       try {
         // If there's selected text, delete it first
         if (!range.collapsed) {
           range.deleteContents();
         }
         
-        // Insert new paragraph at cursor position
-        range.insertNode(p);
+        // Use execCommand first (most reliable)
+        const success = document.execCommand("insertParagraph", false, null);
         
-        // Move cursor to the new paragraph (at the beginning)
-        const newRange = document.createRange();
-        newRange.setStart(p, 0);
-        newRange.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
-        
-        // Focus editor to maintain cursor
-        editorRef.current.focus();
-      } catch (err) {
-        // Fallback: use default behavior but preserve cursor
-        try {
-          document.execCommand("insertParagraph", false, null);
-          // Try to restore cursor position
+        if (success) {
+          // After inserting paragraph, apply active styles to the new paragraph
           requestAnimationFrame(() => {
             const newSelection = window.getSelection();
             if (newSelection.rangeCount > 0) {
               const newRange = newSelection.getRangeAt(0);
-              // Cursor should be in the new paragraph
+              let newP = newRange.startContainer;
+              
+              // Find the paragraph element
+              if (newP.nodeType === Node.TEXT_NODE) {
+                newP = newP.parentElement;
+              }
+              while (newP && newP !== editorRef.current && newP.tagName !== "P") {
+                newP = newP.parentElement;
+              }
+              
+              // Apply active styles to new paragraph
+              if (newP && newP.tagName === "P") {
+                newP.style.fontSize = `${activeFontSize}px`;
+                newP.style.color = activeColor;
+                newP.style.fontWeight = activeBold ? "bold" : "normal";
+                newP.style.fontStyle = activeItalic ? "italic" : "normal";
+                newP.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
+                if (activeUnderline) {
+                  newP.style.setProperty("text-decoration-color", activeColor, "important");
+                  newP.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
+                }
+                if (activeStrikethrough && activeUnderline) {
+                  newP.style.textDecoration = "underline line-through";
+                }
+                // Background is always transparent for new paragraph (MS Word behavior)
+                newP.style.backgroundColor = "transparent";
+                
+                // Insert style marker at cursor for next typing
+                const cursorRange = document.createRange();
+                cursorRange.selectNodeContents(newP);
+                cursorRange.collapse(true);
+                
+                const span = document.createElement("span");
+                span.style.fontSize = `${activeFontSize}px`;
+                span.style.color = activeColor;
+                span.style.fontWeight = activeBold ? "bold" : "normal";
+                span.style.fontStyle = activeItalic ? "italic" : "normal";
+                span.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
+                if (activeUnderline) {
+                  span.style.setProperty("text-decoration-color", activeColor, "important");
+                  span.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
+                }
+                if (activeStrikethrough && activeUnderline) {
+                  span.style.textDecoration = "underline line-through";
+                }
+                if (activeBgColor !== "transparent") {
+                  span.style.backgroundColor = activeBgColor;
+                }
+                span.innerHTML = "\u200B";
+                
+                cursorRange.insertNode(span);
+                const finalRange = document.createRange();
+                finalRange.setStartAfter(span);
+                finalRange.collapse(true);
+                newSelection.removeAllRanges();
+                newSelection.addRange(finalRange);
+                
+                // Update saved selection
+                savedSelectionRef.current = {
+                  range: finalRange.cloneRange(),
+                  startContainer: finalRange.startContainer,
+                  startOffset: finalRange.startOffset,
+                  endContainer: finalRange.endContainer,
+                  endOffset: finalRange.endOffset,
+                  collapsed: finalRange.collapsed,
+                  text: finalRange.toString()
+                };
+              }
             }
+            
+            handleEditorInput();
           });
+        } else {
+          // Fallback: manual paragraph creation
+          const newP = document.createElement("p");
+          newP.innerHTML = "<br>";
+          
+          // Apply active styles
+          newP.style.fontSize = `${activeFontSize}px`;
+          newP.style.color = activeColor;
+          newP.style.fontWeight = activeBold ? "bold" : "normal";
+          newP.style.fontStyle = activeItalic ? "italic" : "normal";
+          newP.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
+          newP.style.backgroundColor = "transparent";
+          
+          range.insertNode(newP);
+          
+          const newRange = document.createRange();
+          newRange.selectNodeContents(newP);
+          newRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+          
+          handleEditorInput();
+        }
+      } catch (err) {
+        console.error("Error inserting paragraph:", err);
+        // Last resort: just insert line break
+        try {
+          document.execCommand("insertLineBreak", false, null);
+          handleEditorInput();
         } catch (e2) {
-          console.error("Error inserting paragraph:", e2);
+          console.error("Error inserting line break:", e2);
         }
       }
       
-      handleEditorInput();
+      return; // Prevent default behavior
     }
   };
 
