@@ -155,12 +155,44 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     };
   }, [showIconPicker]);
 
+  // Ensure all editors maintain LTR direction
+  useEffect(() => {
+    items.forEach((_, i) => {
+      const editor = document.getElementById(`list-editor-${i}`);
+      if (editor) {
+        editor.style.direction = "ltr";
+        editor.setAttribute("dir", "ltr");
+        // Also ensure all child elements are LTR
+        const allElements = editor.querySelectorAll("*");
+        allElements.forEach((el) => {
+          if (el instanceof HTMLElement) {
+            el.style.direction = "ltr";
+            el.setAttribute("dir", "ltr");
+          }
+        });
+      }
+    });
+  }, [items]);
+
   // Rich text editor handlers untuk setiap item
   const handleEditorInput = (index) => {
     const editor = document.getElementById(`list-editor-${index}`);
     if (editor) {
+      // Force LTR direction
+      editor.style.direction = "ltr";
+      editor.setAttribute("dir", "ltr");
       const html = editor.innerHTML;
       updateItem(index, "content", html);
+    }
+  };
+
+  // Handle keydown to ensure direction stays LTR
+  const handleEditorKeyDown = (index, e) => {
+    const editor = document.getElementById(`list-editor-${index}`);
+    if (editor) {
+      // Force LTR direction on every keystroke
+      editor.style.direction = "ltr";
+      editor.setAttribute("dir", "ltr");
     }
   };
 
@@ -317,7 +349,9 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
                         id={`list-editor-${i}`}
                         contentEditable
                         onInput={() => handleEditorInput(i)}
-                        className="rich-text-editor"
+                        onKeyDown={(e) => handleEditorKeyDown(i, e)}
+                        onKeyUp={() => handleEditorInput(i)}
+                        className="rich-text-editor list-item-editor"
                         dir="ltr"
                         spellCheck={false}
                         style={{
@@ -325,6 +359,7 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
                           padding: "12px 14px",
                           direction: "ltr",
                           textAlign: "left",
+                          unicodeBidi: "embed",
                         }}
                         data-placeholder="Insert text here ..."
                         dangerouslySetInnerHTML={{ __html: item.content || "<p></p>" }}

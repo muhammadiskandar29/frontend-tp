@@ -582,8 +582,133 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     selection.removeAllRanges();
     selection.addRange(savedRange);
     
+    // PRESERVE existing styles (bold, italic, underline, etc.) before applying color
+    // Get current styles from selection
+    let preserveBold = false;
+    let preserveItalic = false;
+    let preserveUnderline = false;
+    let preserveStrikethrough = false;
+    let preserveFontSize = null;
+    let preserveBgColor = null;
+    
+    try {
+      preserveBold = document.queryCommandState("bold");
+      preserveItalic = document.queryCommandState("italic");
+      preserveUnderline = document.queryCommandState("underline");
+      preserveStrikethrough = document.queryCommandState("strikeThrough");
+      
+      // Get font size and bg color from current node
+      let node = savedRange.startContainer;
+      if (node.nodeType === Node.TEXT_NODE) {
+        node = node.parentElement;
+      }
+      const computedStyle = window.getComputedStyle(node);
+      if (node.style && node.style.fontSize) {
+        preserveFontSize = parseInt(node.style.fontSize);
+      } else if (computedStyle.fontSize) {
+        preserveFontSize = parseInt(computedStyle.fontSize);
+      }
+      if (node.style && node.style.backgroundColor && node.style.backgroundColor !== "transparent") {
+        preserveBgColor = node.style.backgroundColor;
+      } else if (computedStyle.backgroundColor && computedStyle.backgroundColor !== "transparent" && computedStyle.backgroundColor !== "rgba(0, 0, 0, 0)") {
+        preserveBgColor = computedStyle.backgroundColor;
+      }
+    } catch (e) {
+      // Ignore errors
+    }
+    
     // Apply text color
     document.execCommand("foreColor", false, color);
+    
+    // RESTORE preserved styles after applying color
+    requestAnimationFrame(() => {
+      try {
+        // Restore bold
+        if (preserveBold && !document.queryCommandState("bold")) {
+          document.execCommand("bold", false, null);
+        }
+        // Restore italic
+        if (preserveItalic && !document.queryCommandState("italic")) {
+          document.execCommand("italic", false, null);
+        }
+        // Restore underline - AGGRESSIVE restoration to prevent loss
+        if (preserveUnderline) {
+          // Check if underline is still there
+          const currentRange = selection.getRangeAt(0);
+          let underlineNode = currentRange.startContainer;
+          if (underlineNode.nodeType === Node.TEXT_NODE) {
+            underlineNode = underlineNode.parentElement;
+          }
+          const computedStyle = window.getComputedStyle(underlineNode);
+          const stillHasUnderline = computedStyle.textDecoration.includes("underline") || 
+                                   underlineNode.tagName === "U" ||
+                                   document.queryCommandState("underline");
+          
+          if (!stillHasUnderline) {
+            // Underline was lost - restore it IMMEDIATELY
+            document.execCommand("underline", false, null);
+            // Also ensure underline color matches text color
+            requestAnimationFrame(() => {
+              const allUTags = editorRef.current.querySelectorAll("u");
+              allUTags.forEach(uTag => {
+                try {
+                  if (currentRange.intersectsNode(uTag) && uTag.style) {
+                    uTag.style.setProperty("text-decoration-color", color, "important");
+                    uTag.style.setProperty("-webkit-text-decoration-color", color, "important");
+                  }
+                } catch (e) {
+                  // Skip if error
+                }
+              });
+              
+              // Also check elements with underline style
+              const allElements = editorRef.current.querySelectorAll("*");
+              allElements.forEach(element => {
+                try {
+                  if (currentRange.intersectsNode(element) && element.style) {
+                    const elemStyle = window.getComputedStyle(element);
+                    if (elemStyle.textDecoration.includes("underline")) {
+                      element.style.setProperty("text-decoration-color", color, "important");
+                      element.style.setProperty("-webkit-text-decoration-color", color, "important");
+                    }
+                  }
+                } catch (e) {
+                  // Skip if error
+                }
+              });
+            });
+          }
+        }
+        // Restore strikethrough
+        if (preserveStrikethrough && !document.queryCommandState("strikeThrough")) {
+          document.execCommand("strikeThrough", false, null);
+        }
+        // Restore font size
+        if (preserveFontSize) {
+          const currentRange = selection.getRangeAt(0);
+          let sizeNode = currentRange.startContainer;
+          if (sizeNode.nodeType === Node.TEXT_NODE) {
+            sizeNode = sizeNode.parentElement;
+          }
+          if (sizeNode.style) {
+            sizeNode.style.fontSize = `${preserveFontSize}px`;
+          }
+        }
+        // Restore background color
+        if (preserveBgColor) {
+          const currentRange = selection.getRangeAt(0);
+          let bgNode = currentRange.startContainer;
+          if (bgNode.nodeType === Node.TEXT_NODE) {
+            bgNode = bgNode.parentElement;
+          }
+          if (bgNode.style) {
+            bgNode.style.backgroundColor = preserveBgColor;
+          }
+        }
+      } catch (e) {
+        // Ignore errors
+      }
+    });
     
     // Update last used color
     lastUsedStylesRef.current.color = color;
@@ -773,7 +898,41 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       selection.addRange(range);
     }
     
-      if (color === "transparent") {
+    // PRESERVE existing styles (bold, italic, underline, etc.) before applying background color
+    let preserveBold = false;
+    let preserveItalic = false;
+    let preserveUnderline = false;
+    let preserveStrikethrough = false;
+    let preserveFontSize = null;
+    let preserveTextColor = null;
+    
+    try {
+      preserveBold = document.queryCommandState("bold");
+      preserveItalic = document.queryCommandState("italic");
+      preserveUnderline = document.queryCommandState("underline");
+      preserveStrikethrough = document.queryCommandState("strikeThrough");
+      
+      // Get font size and text color from current node
+      let node = range.startContainer;
+      if (node.nodeType === Node.TEXT_NODE) {
+        node = node.parentElement;
+      }
+      const computedStyle = window.getComputedStyle(node);
+      if (node.style && node.style.fontSize) {
+        preserveFontSize = parseInt(node.style.fontSize);
+      } else if (computedStyle.fontSize) {
+        preserveFontSize = parseInt(computedStyle.fontSize);
+      }
+      if (node.style && node.style.color) {
+        preserveTextColor = node.style.color;
+      } else if (computedStyle.color && computedStyle.color !== "rgb(0, 0, 0)") {
+        preserveTextColor = computedStyle.color;
+      }
+    } catch (e) {
+      // Ignore errors
+    }
+    
+    if (color === "transparent") {
       // Remove background color - aggressive approach
       if (!range.collapsed) {
         // Has selection - remove background from selection
@@ -856,6 +1015,97 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
     }
     
+    // RESTORE preserved styles after applying background color
+    requestAnimationFrame(() => {
+      try {
+        // Restore bold
+        if (preserveBold && !document.queryCommandState("bold")) {
+          document.execCommand("bold", false, null);
+        }
+        // Restore italic
+        if (preserveItalic && !document.queryCommandState("italic")) {
+          document.execCommand("italic", false, null);
+        }
+        // Restore underline - AGGRESSIVE restoration to prevent loss
+        if (preserveUnderline) {
+          const currentRange = selection.getRangeAt(0);
+          let underlineNode = currentRange.startContainer;
+          if (underlineNode.nodeType === Node.TEXT_NODE) {
+            underlineNode = underlineNode.parentElement;
+          }
+          const computedStyle = window.getComputedStyle(underlineNode);
+          const stillHasUnderline = computedStyle.textDecoration.includes("underline") || 
+                                   underlineNode.tagName === "U" ||
+                                   document.queryCommandState("underline");
+          
+          if (!stillHasUnderline) {
+            // Underline was lost - restore it IMMEDIATELY
+            document.execCommand("underline", false, null);
+            // Also ensure underline color matches text color
+            if (preserveTextColor) {
+              requestAnimationFrame(() => {
+                const allUTags = editorRef.current.querySelectorAll("u");
+                allUTags.forEach(uTag => {
+                  try {
+                    if (currentRange.intersectsNode(uTag) && uTag.style) {
+                      uTag.style.setProperty("text-decoration-color", preserveTextColor, "important");
+                      uTag.style.setProperty("-webkit-text-decoration-color", preserveTextColor, "important");
+                    }
+                  } catch (e) {
+                    // Skip if error
+                  }
+                });
+                
+                // Also check elements with underline style
+                const allElements = editorRef.current.querySelectorAll("*");
+                allElements.forEach(element => {
+                  try {
+                    if (currentRange.intersectsNode(element) && element.style) {
+                      const elemStyle = window.getComputedStyle(element);
+                      if (elemStyle.textDecoration.includes("underline")) {
+                        element.style.setProperty("text-decoration-color", preserveTextColor, "important");
+                        element.style.setProperty("-webkit-text-decoration-color", preserveTextColor, "important");
+                      }
+                    }
+                  } catch (e) {
+                    // Skip if error
+                  }
+                });
+              });
+            }
+          }
+        }
+        // Restore strikethrough
+        if (preserveStrikethrough && !document.queryCommandState("strikeThrough")) {
+          document.execCommand("strikeThrough", false, null);
+        }
+        // Restore font size
+        if (preserveFontSize) {
+          const currentRange = selection.getRangeAt(0);
+          let sizeNode = currentRange.startContainer;
+          if (sizeNode.nodeType === Node.TEXT_NODE) {
+            sizeNode = sizeNode.parentElement;
+          }
+          if (sizeNode.style) {
+            sizeNode.style.fontSize = `${preserveFontSize}px`;
+          }
+        }
+        // Restore text color
+        if (preserveTextColor) {
+          const currentRange = selection.getRangeAt(0);
+          let colorNode = currentRange.startContainer;
+          if (colorNode.nodeType === Node.TEXT_NODE) {
+            colorNode = colorNode.parentElement;
+          }
+          if (colorNode.style) {
+            colorNode.style.color = preserveTextColor;
+          }
+        }
+      } catch (e) {
+        // Ignore errors
+      }
+    });
+    
     // IMMEDIATELY update state for button responsiveness
     setSelectedBgColor(color === "transparent" ? "#FFFF00" : color);
     setCurrentBgColor(color);
@@ -868,10 +1118,10 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       detectStyles();
       // Double check to ensure button states are synced
       requestAnimationFrame(() => {
-      detectStyles();
-      if (savedRange) {
-        restoreSelection();
-      }
+        detectStyles();
+        if (savedRange) {
+          restoreSelection();
+        }
       });
     });
   };
@@ -1545,82 +1795,140 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
     }
     
-    // Check if already underlined - more aggressive detection
+    // Check if already underlined - check ONLY in selection, not parent
     let hasUnderline = false;
     try {
       hasUnderline = document.queryCommandState("underline");
     } catch (e) {
-      // Check manually - more thorough
-      let node = range.startContainer;
-      if (node.nodeType === Node.TEXT_NODE) {
-        node = node.parentElement;
-      }
-      while (node && node !== editorRef.current) {
-        const computedStyle = window.getComputedStyle(node);
-        if (computedStyle.textDecoration.includes("underline") || 
-            computedStyle.textDecorationLine?.includes("underline") ||
-            node.tagName === "U" ||
-            (node.style && node.style.textDecoration && node.style.textDecoration.includes("underline"))) {
-          hasUnderline = true;
-          break;
-        }
-        node = node.parentElement;
-      }
-    }
-    
-    // If has underline, remove it aggressively
-    if (hasUnderline) {
-      // Remove underline - aggressive approach
+      // Check manually - ONLY check nodes in selection
       if (!range.collapsed) {
-        // Has selection - remove underline from selection
+        // Has selection - check only selected nodes
         const walker = document.createTreeWalker(
-          editorRef.current,
-          NodeFilter.SHOW_ELEMENT,
-          null
+          range.commonAncestorContainer,
+          NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
+          {
+            acceptNode: (node) => {
+              if (node.nodeType === Node.TEXT_NODE) {
+                return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+              }
+              return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+            }
+          }
         );
         
-        const elementsToFix = [];
         let node;
         while (node = walker.nextNode()) {
-          if (range.intersectsNode(node)) {
+          if (node.nodeType === Node.ELEMENT_NODE) {
             const computedStyle = window.getComputedStyle(node);
-            if (computedStyle.textDecoration.includes("underline") || node.tagName === "U") {
-              elementsToFix.push(node);
+            if (computedStyle.textDecoration.includes("underline") || 
+                node.tagName === "U" ||
+                (node.style && node.style.textDecoration && node.style.textDecoration.includes("underline"))) {
+              hasUnderline = true;
+              break;
             }
           }
         }
-        
-        // Remove underline from all found elements
-        elementsToFix.forEach(element => {
-          if (element.tagName === "U") {
-            // Unwrap U tag
-            const parent = element.parentNode;
-            while (element.firstChild) {
-              parent.insertBefore(element.firstChild, element);
+      } else {
+        // Collapsed cursor - check current node
+        let node = range.startContainer;
+        if (node.nodeType === Node.TEXT_NODE) {
+          node = node.parentElement;
+        }
+        const computedStyle = window.getComputedStyle(node);
+        if (computedStyle.textDecoration.includes("underline") || 
+            node.tagName === "U" ||
+            (node.style && node.style.textDecoration && node.style.textDecoration.includes("underline"))) {
+          hasUnderline = true;
+        }
+      }
+    }
+    
+    // Toggle underline - SIMPLE and EFFECTIVE toggle
+    if (hasUnderline) {
+      // Remove underline - AGGRESSIVE removal to ensure it's completely removed
+      // First, manually remove all U tags and underline styles in selection
+      if (!range.collapsed) {
+        // Has selection - remove underline from all elements in selection
+        const allUTags = editorRef.current.querySelectorAll("u");
+        const uTagsToRemove = [];
+        allUTags.forEach(uTag => {
+          try {
+            if (range.intersectsNode(uTag)) {
+              uTagsToRemove.push(uTag);
             }
-            parent.removeChild(element);
-          } else if (element.style) {
-            // Remove underline from style
-            const textDecoration = element.style.textDecoration || "";
+          } catch (e) {
+            // Skip if error
+          }
+        });
+        
+        // Unwrap all U tags
+        uTagsToRemove.forEach(uTag => {
+          try {
+            const parent = uTag.parentNode;
+            while (uTag.firstChild) {
+              parent.insertBefore(uTag.firstChild, uTag);
+            }
+            parent.removeChild(uTag);
+          } catch (e) {
+            // Skip if error
+          }
+        });
+        
+        // Remove underline from style
+        const allElements = editorRef.current.querySelectorAll("*");
+        allElements.forEach(element => {
+          try {
+            if (range.intersectsNode(element) && element.style) {
+              const textDecoration = element.style.textDecoration || "";
+              if (textDecoration.includes("underline")) {
+                const newDecoration = textDecoration
+                  .split(" ")
+                  .filter(d => d !== "underline")
+                  .join(" ");
+                if (newDecoration.trim()) {
+                  element.style.textDecoration = newDecoration;
+                } else {
+                  element.style.textDecoration = "none";
+                }
+              }
+            }
+          } catch (e) {
+            // Skip if error
+          }
+        });
+      } else {
+        // Collapsed cursor - remove underline from current node
+        let checkNode = range.startContainer;
+        if (checkNode.nodeType === Node.TEXT_NODE) {
+          checkNode = checkNode.parentElement;
+        }
+        if (checkNode.tagName === "U") {
+          // Unwrap U tag
+          const parent = checkNode.parentNode;
+          while (checkNode.firstChild) {
+            parent.insertBefore(checkNode.firstChild, checkNode);
+          }
+          parent.removeChild(checkNode);
+        } else if (checkNode.style) {
+          const textDecoration = checkNode.style.textDecoration || "";
+          if (textDecoration.includes("underline")) {
             const newDecoration = textDecoration
               .split(" ")
               .filter(d => d !== "underline")
               .join(" ");
-            if (newDecoration) {
-              element.style.textDecoration = newDecoration;
+            if (newDecoration.trim()) {
+              checkNode.style.textDecoration = newDecoration;
             } else {
-              element.style.textDecoration = "none";
+              checkNode.style.textDecoration = "none";
             }
           }
-        });
-        
-        // Also use execCommand to remove underline
-        document.execCommand("underline", false, null);
-      } else {
-        // Collapsed cursor - just use execCommand
-        document.execCommand("underline", false, null);
+        }
       }
       
+      // Then use execCommand to ensure underline is removed
+      document.execCommand("underline", false, null);
+      
+      // CRITICAL: Update lastUsedStylesRef IMMEDIATELY so next typing won't have underline
       lastUsedStylesRef.current.textDecoration = "none";
     } else {
       // Add underline

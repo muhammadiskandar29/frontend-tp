@@ -529,17 +529,36 @@ export default function AddProducts3Page() {
                           <div className="testi-info-new">
                             <div className="testi-name-new" itemProp="author" itemScope itemType="https://schema.org/Person">
                               <span itemProp="name">{item.nama || "Nama"}</span>
+                              {item.jabatan && (
+                                <div className="testi-job-new" style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
+                                  {item.jabatan}
+                                </div>
+                              )}
                             </div>
-                            <div className="testi-stars-new">
-                              <span className="star-new">★</span>
-                              <span className="star-new">★</span>
-                              <span className="star-new">★</span>
-                              <span className="star-new">★</span>
-                              <span className="star-new">★</span>
-                            </div>
+                            {item.showRating !== false && (
+                              <div className="testi-stars-new">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <span 
+                                    key={star} 
+                                    className="star-new"
+                                    style={{ 
+                                      color: star <= (item.rating || 5) ? "#fbbf24" : "#d1d5db" 
+                                    }}
+                                  >
+                                    ★
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
-                        <div className="testi-desc-new" itemProp="reviewBody">{item.deskripsi || "Deskripsi testimoni"}</div>
+                        <div 
+                          className="testi-desc-new" 
+                          itemProp="reviewBody"
+                          dangerouslySetInnerHTML={{ 
+                            __html: item.isiTestimony || item.deskripsi || "<p>Deskripsi testimoni</p>" 
+                          }}
+                        />
                       </article>
                     );
                   })}
