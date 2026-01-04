@@ -1794,9 +1794,25 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     const newBoldState = !currentBoldState;
     
     // ===== STEP 2: Update Active State IMMEDIATELY (FIRST - for instant button response) =====
+    // Update semua state sekaligus untuk instant response
     setActiveBold(newBoldState);
     setDisplayedBold(newBoldState);
     setCurrentBold(newBoldState); // Button state updates INSTANTLY
+    
+    // Also update button class directly for instant visual feedback (SYNCHRONOUS - no delay)
+    // This ensures button looks active immediately even before React re-renders
+    // Find button in the same component
+    const componentWrapper = editorRef.current?.closest('.component-wrapper');
+    if (componentWrapper) {
+      const boldButton = componentWrapper.querySelector('button.toolbar-btn[title="Bold"]');
+      if (boldButton) {
+        if (newBoldState) {
+          boldButton.classList.add('active');
+        } else {
+          boldButton.classList.remove('active');
+        }
+      }
+    }
     
     // ===== STEP 3: Apply to Selection or Cursor =====
     if (range.collapsed) {
@@ -1811,7 +1827,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         (node.textContent === "\u200B" || node.innerHTML === "\u200B");
       
       if (isInStyleMarker) {
-        // REPLACE existing style marker with new bold state
+        // REPLACE existing style marker with new bold state - INSTANT UPDATE
         node.style.fontWeight = newBoldState ? "bold" : "normal";
         // Keep other styles
         node.style.fontSize = `${activeFontSize}px`;
@@ -1827,6 +1843,9 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         } else {
           node.style.backgroundColor = "";
         }
+        
+        // Force immediate visual update by triggering a reflow
+        void node.offsetHeight;
         
         // Cursor stays in the same place
         const newRange = document.createRange();
@@ -1845,7 +1864,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           text: newRange.toString()
         };
       } else {
-        // No style marker - insert new one
+        // No style marker - insert new one IMMEDIATELY
         const span = document.createElement("span");
         span.style.fontSize = `${activeFontSize}px`;
         span.style.color = activeColor;
@@ -1863,6 +1882,10 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         
         try {
           range.insertNode(span);
+          
+          // Force immediate visual update by accessing offsetHeight
+          void span.offsetHeight;
+          
           const newRange = document.createRange();
           newRange.setStartAfter(span);
           newRange.collapse(true);
@@ -1882,6 +1905,9 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           console.error("Error inserting bold style marker:", e);
         }
       }
+      
+      // Save changes immediately (no delay)
+      handleEditorInput();
     } else {
       // CASE 2: Has selection (apply to selected text)
       document.execCommand("bold", false, null);
