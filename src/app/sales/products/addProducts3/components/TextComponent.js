@@ -568,6 +568,136 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     }
   };
 
+  // Helper function to get all current styles from selection
+  const getAllCurrentStyles = (range) => {
+    const styles = {
+      bold: false,
+      italic: false,
+      underline: false,
+      strikethrough: false,
+      fontSize: null,
+      textColor: null,
+      bgColor: null,
+    };
+    
+    try {
+      styles.bold = document.queryCommandState("bold");
+      styles.italic = document.queryCommandState("italic");
+      styles.underline = document.queryCommandState("underline");
+      styles.strikethrough = document.queryCommandState("strikeThrough");
+      
+      // Get styles from node
+      let node = range.startContainer;
+      if (node.nodeType === Node.TEXT_NODE) {
+        node = node.parentElement;
+      }
+      
+      // Walk up the tree to find styles
+      let currentNode = node;
+      while (currentNode && currentNode !== editorRef.current) {
+        const computedStyle = window.getComputedStyle(currentNode);
+        
+        // Get font size
+        if (!styles.fontSize) {
+          if (currentNode.style && currentNode.style.fontSize) {
+            styles.fontSize = parseInt(currentNode.style.fontSize);
+          } else if (computedStyle.fontSize && computedStyle.fontSize !== "16px") {
+            styles.fontSize = parseInt(computedStyle.fontSize);
+          }
+        }
+        
+        // Get text color
+        if (!styles.textColor) {
+          if (currentNode.style && currentNode.style.color) {
+            styles.textColor = currentNode.style.color;
+          } else if (computedStyle.color && computedStyle.color !== "rgb(0, 0, 0)" && computedStyle.color !== "rgb(33, 37, 41)") {
+            styles.textColor = computedStyle.color;
+          }
+        }
+        
+        // Get background color
+        if (!styles.bgColor) {
+          if (currentNode.style && currentNode.style.backgroundColor && currentNode.style.backgroundColor !== "transparent") {
+            styles.bgColor = currentNode.style.backgroundColor;
+          } else if (computedStyle.backgroundColor && computedStyle.backgroundColor !== "transparent" && computedStyle.backgroundColor !== "rgba(0, 0, 0, 0)") {
+            styles.bgColor = computedStyle.backgroundColor;
+          }
+        }
+        
+        currentNode = currentNode.parentElement;
+      }
+    } catch (e) {
+      // Ignore errors
+    }
+    
+    return styles;
+  };
+
+  // Helper function to apply styles to selection while preserving existing styles
+  const applyStyleWithPreservation = (range, newStyles) => {
+    if (range.collapsed) {
+      // Cursor position - create span with all styles
+      const span = document.createElement("span");
+      
+      // Apply all styles to span
+      if (newStyles.textColor) span.style.color = newStyles.textColor;
+      if (newStyles.bgColor) span.style.backgroundColor = newStyles.bgColor;
+      if (newStyles.fontSize) span.style.fontSize = `${newStyles.fontSize}px`;
+      if (newStyles.bold) span.style.fontWeight = "bold";
+      if (newStyles.italic) span.style.fontStyle = "italic";
+      if (newStyles.underline) span.style.textDecoration = "underline";
+      if (newStyles.strikethrough) {
+        if (span.style.textDecoration) {
+          span.style.textDecoration += " line-through";
+        } else {
+          span.style.textDecoration = "line-through";
+        }
+      }
+      
+      span.innerHTML = "\u200B";
+      try {
+        range.insertNode(span);
+        const newRange = document.createRange();
+        newRange.setStartAfter(span);
+        newRange.collapse(true);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+      } catch (e) {
+        console.error("Error inserting styled span:", e);
+      }
+    } else {
+      // Has selection - wrap with span that has all styles
+      const selectedContent = range.extractContents();
+      const span = document.createElement("span");
+      
+      // Apply all styles to span
+      if (newStyles.textColor) span.style.color = newStyles.textColor;
+      if (newStyles.bgColor) span.style.backgroundColor = newStyles.bgColor;
+      if (newStyles.fontSize) span.style.fontSize = `${newStyles.fontSize}px`;
+      if (newStyles.bold) span.style.fontWeight = "bold";
+      if (newStyles.italic) span.style.fontStyle = "italic";
+      if (newStyles.underline) span.style.textDecoration = "underline";
+      if (newStyles.strikethrough) {
+        if (span.style.textDecoration) {
+          span.style.textDecoration += " line-through";
+        } else {
+          span.style.textDecoration = "line-through";
+        }
+      }
+      
+      span.appendChild(selectedContent);
+      range.insertNode(span);
+      
+      // Select the new span
+      const newRange = document.createRange();
+      newRange.selectNodeContents(span);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(newRange);
+    }
+  };
+
   const applyTextColor = (color) => {
     if (!editorRef.current) return;
     
@@ -582,133 +712,14 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     selection.removeAllRanges();
     selection.addRange(savedRange);
     
-    // PRESERVE existing styles (bold, italic, underline, etc.) before applying color
-    // Get current styles from selection
-    let preserveBold = false;
-    let preserveItalic = false;
-    let preserveUnderline = false;
-    let preserveStrikethrough = false;
-    let preserveFontSize = null;
-    let preserveBgColor = null;
+    // Get all current styles
+    const currentStyles = getAllCurrentStyles(savedRange);
     
-    try {
-      preserveBold = document.queryCommandState("bold");
-      preserveItalic = document.queryCommandState("italic");
-      preserveUnderline = document.queryCommandState("underline");
-      preserveStrikethrough = document.queryCommandState("strikeThrough");
-      
-      // Get font size and bg color from current node
-      let node = savedRange.startContainer;
-      if (node.nodeType === Node.TEXT_NODE) {
-        node = node.parentElement;
-      }
-      const computedStyle = window.getComputedStyle(node);
-      if (node.style && node.style.fontSize) {
-        preserveFontSize = parseInt(node.style.fontSize);
-      } else if (computedStyle.fontSize) {
-        preserveFontSize = parseInt(computedStyle.fontSize);
-      }
-      if (node.style && node.style.backgroundColor && node.style.backgroundColor !== "transparent") {
-        preserveBgColor = node.style.backgroundColor;
-      } else if (computedStyle.backgroundColor && computedStyle.backgroundColor !== "transparent" && computedStyle.backgroundColor !== "rgba(0, 0, 0, 0)") {
-        preserveBgColor = computedStyle.backgroundColor;
-      }
-    } catch (e) {
-      // Ignore errors
-    }
+    // Update text color in styles
+    currentStyles.textColor = color;
     
-    // Apply text color
-    document.execCommand("foreColor", false, color);
-    
-    // RESTORE preserved styles after applying color
-    requestAnimationFrame(() => {
-      try {
-        // Restore bold
-        if (preserveBold && !document.queryCommandState("bold")) {
-          document.execCommand("bold", false, null);
-        }
-        // Restore italic
-        if (preserveItalic && !document.queryCommandState("italic")) {
-          document.execCommand("italic", false, null);
-        }
-        // Restore underline - AGGRESSIVE restoration to prevent loss
-        if (preserveUnderline) {
-          // Check if underline is still there
-          const currentRange = selection.getRangeAt(0);
-          let underlineNode = currentRange.startContainer;
-          if (underlineNode.nodeType === Node.TEXT_NODE) {
-            underlineNode = underlineNode.parentElement;
-          }
-          const computedStyle = window.getComputedStyle(underlineNode);
-          const stillHasUnderline = computedStyle.textDecoration.includes("underline") || 
-                                   underlineNode.tagName === "U" ||
-                                   document.queryCommandState("underline");
-          
-          if (!stillHasUnderline) {
-            // Underline was lost - restore it IMMEDIATELY
-            document.execCommand("underline", false, null);
-            // Also ensure underline color matches text color
-            requestAnimationFrame(() => {
-              const allUTags = editorRef.current.querySelectorAll("u");
-              allUTags.forEach(uTag => {
-                try {
-                  if (currentRange.intersectsNode(uTag) && uTag.style) {
-                    uTag.style.setProperty("text-decoration-color", color, "important");
-                    uTag.style.setProperty("-webkit-text-decoration-color", color, "important");
-                  }
-                } catch (e) {
-                  // Skip if error
-                }
-              });
-              
-              // Also check elements with underline style
-              const allElements = editorRef.current.querySelectorAll("*");
-              allElements.forEach(element => {
-                try {
-                  if (currentRange.intersectsNode(element) && element.style) {
-                    const elemStyle = window.getComputedStyle(element);
-                    if (elemStyle.textDecoration.includes("underline")) {
-                      element.style.setProperty("text-decoration-color", color, "important");
-                      element.style.setProperty("-webkit-text-decoration-color", color, "important");
-                    }
-                  }
-                } catch (e) {
-                  // Skip if error
-                }
-              });
-            });
-          }
-        }
-        // Restore strikethrough
-        if (preserveStrikethrough && !document.queryCommandState("strikeThrough")) {
-          document.execCommand("strikeThrough", false, null);
-        }
-        // Restore font size
-        if (preserveFontSize) {
-          const currentRange = selection.getRangeAt(0);
-          let sizeNode = currentRange.startContainer;
-          if (sizeNode.nodeType === Node.TEXT_NODE) {
-            sizeNode = sizeNode.parentElement;
-          }
-          if (sizeNode.style) {
-            sizeNode.style.fontSize = `${preserveFontSize}px`;
-          }
-        }
-        // Restore background color
-        if (preserveBgColor) {
-          const currentRange = selection.getRangeAt(0);
-          let bgNode = currentRange.startContainer;
-          if (bgNode.nodeType === Node.TEXT_NODE) {
-            bgNode = bgNode.parentElement;
-          }
-          if (bgNode.style) {
-            bgNode.style.backgroundColor = preserveBgColor;
-          }
-        }
-      } catch (e) {
-        // Ignore errors
-      }
-    });
+    // Apply all styles (including new color) while preserving others
+    applyStyleWithPreservation(savedRange, currentStyles);
     
     // Update last used color
     lastUsedStylesRef.current.color = color;
@@ -716,6 +727,9 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     // IMMEDIATELY update state for button responsiveness
     setSelectedColor(color);
     setCurrentTextColor(color);
+    
+    // Trigger input to save
+    handleEditorInput();
     
     // Also update underline color to match text color - VERY aggressive approach
     requestAnimationFrame(() => {
@@ -853,84 +867,41 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   const applyBgColor = (color) => {
     if (!editorRef.current) return;
     
-    // Focus editor first
     editorRef.current.focus();
     
-    // Save selection first
     const savedRange = saveSelection();
+    if (!savedRange) {
+      editorRef.current.focus();
+      return;
+    }
     
-    // Get current selection
     const selection = window.getSelection();
-    let range = null;
+    selection.removeAllRanges();
+    selection.addRange(savedRange);
     
-    // Try to get current selection
-    if (selection.rangeCount > 0) {
-      range = selection.getRangeAt(0);
-      if (!editorRef.current.contains(range.commonAncestorContainer)) {
-        range = null;
-      }
-    }
+    // Get all current styles
+    const currentStyles = getAllCurrentStyles(savedRange);
     
-    // If no current selection, try saved selection
-    if (!range && savedRange) {
-      try {
-        range = document.createRange();
-        range.setStart(savedRange.startContainer, savedRange.startOffset);
-        range.setEnd(savedRange.endContainer, savedRange.endOffset);
-        selection.removeAllRanges();
-        selection.addRange(range);
-      } catch (e) {
-        // Saved selection invalid, create range at end
-        range = document.createRange();
-        range.selectNodeContents(editorRef.current);
-        range.collapse(false);
-        selection.removeAllRanges();
-        selection.addRange(range);
-      }
-    }
+    // Update background color in styles
+    currentStyles.bgColor = color === "transparent" ? null : color;
     
-    // If still no range, create at end
-    if (!range) {
-      range = document.createRange();
-      range.selectNodeContents(editorRef.current);
-      range.collapse(false);
-      selection.removeAllRanges();
-      selection.addRange(range);
-    }
+    // Apply all styles (including new bg color) while preserving others
+    applyStyleWithPreservation(savedRange, currentStyles);
     
-    // PRESERVE existing styles (bold, italic, underline, etc.) before applying background color
-    let preserveBold = false;
-    let preserveItalic = false;
-    let preserveUnderline = false;
-    let preserveStrikethrough = false;
-    let preserveFontSize = null;
-    let preserveTextColor = null;
+    // Update last used bg color
+    lastUsedStylesRef.current.backgroundColor = color === "transparent" ? "transparent" : color;
     
-    try {
-      preserveBold = document.queryCommandState("bold");
-      preserveItalic = document.queryCommandState("italic");
-      preserveUnderline = document.queryCommandState("underline");
-      preserveStrikethrough = document.queryCommandState("strikeThrough");
-      
-      // Get font size and text color from current node
-      let node = range.startContainer;
-      if (node.nodeType === Node.TEXT_NODE) {
-        node = node.parentElement;
-      }
-      const computedStyle = window.getComputedStyle(node);
-      if (node.style && node.style.fontSize) {
-        preserveFontSize = parseInt(node.style.fontSize);
-      } else if (computedStyle.fontSize) {
-        preserveFontSize = parseInt(computedStyle.fontSize);
-      }
-      if (node.style && node.style.color) {
-        preserveTextColor = node.style.color;
-      } else if (computedStyle.color && computedStyle.color !== "rgb(0, 0, 0)") {
-        preserveTextColor = computedStyle.color;
-      }
-    } catch (e) {
-      // Ignore errors
-    }
+    // IMMEDIATELY update state
+    setSelectedBgColor(color);
+    setCurrentBgColor(color === "transparent" ? "transparent" : color);
+    
+    // Trigger input to save
+    handleEditorInput();
+    
+    // Detect styles after applying
+    requestAnimationFrame(() => {
+      detectStyles();
+    });
     
     if (color === "transparent") {
       // Remove background color - aggressive approach
@@ -1133,42 +1104,34 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     // Update last used font size
     lastUsedStylesRef.current.fontSize = size;
     
-    // Focus editor first
     editorRef.current.focus();
     
+    const savedRange = saveSelection();
+    if (!savedRange) {
+      editorRef.current.focus();
+      return;
+    }
+    
     const selection = window.getSelection();
-    let rangeToUse = null;
+    selection.removeAllRanges();
+    selection.addRange(savedRange);
     
-    // First, try to restore saved selection
-    if (savedSelectionRef.current) {
-      const restored = restoreSelection();
-      if (restored && selection.rangeCount > 0) {
-        rangeToUse = selection.getRangeAt(0);
-      }
-    }
+    // Get all current styles
+    const currentStyles = getAllCurrentStyles(savedRange);
     
-    // If restoration failed, try current selection (including collapsed cursor)
-    if (!rangeToUse && selection.rangeCount > 0) {
-      const currentRange = selection.getRangeAt(0);
-      if (editorRef.current.contains(currentRange.commonAncestorContainer)) {
-        rangeToUse = currentRange;
-      }
-    }
+    // Update font size in styles
+    currentStyles.fontSize = size;
     
-    // If still no range, try to get cursor position from editor
-    if (!rangeToUse) {
-      const range = document.createRange();
-      range.selectNodeContents(editorRef.current);
-      range.collapse(false); // Move to end
-      rangeToUse = range;
-    }
+    // Apply all styles (including new font size) while preserving others
+    applyStyleWithPreservation(savedRange, currentStyles);
     
-    // Get the range to use
-    const range = rangeToUse;
+    // Trigger input to save
+    handleEditorInput();
     
-    // Create span with font size
-    const span = document.createElement("span");
-    span.style.fontSize = `${size}px`;
+    // Detect styles after applying
+    requestAnimationFrame(() => {
+      detectStyles();
+    });
     
     if (range.collapsed) {
       // Cursor position - insert marker for next typing or wrap current position
