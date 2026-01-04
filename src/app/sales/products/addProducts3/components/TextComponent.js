@@ -46,32 +46,40 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   const [showBgColorPicker, setShowBgColorPicker] = useState(false);
   const [showMoreColors, setShowMoreColors] = useState(false);
   const [showMoreBgColors, setShowMoreBgColors] = useState(false);
+  
+  // ===== SINGLE SOURCE OF TRUTH: Active Style State (MS Word Style) =====
+  // State ini TIDAK boleh fallback ke default kecuali user memang reset
+  // State ini adalah "cursor style" - style yang akan digunakan untuk next typing
+  const [activeFontSize, setActiveFontSize] = useState(16);
+  const [activeFontFamily, setActiveFontFamily] = useState("Page Font");
+  const [activeColor, setActiveColor] = useState("#000000");
+  const [activeBgColor, setActiveBgColor] = useState("transparent");
+  const [activeBold, setActiveBold] = useState(false);
+  const [activeItalic, setActiveItalic] = useState(false);
+  const [activeUnderline, setActiveUnderline] = useState(false);
+  const [activeStrikethrough, setActiveStrikethrough] = useState(false);
+  
+  // UI State - untuk menampilkan style dari selection/cursor (read-only untuk UI)
+  const [displayedFontSize, setDisplayedFontSize] = useState(16); // Hanya untuk display di input
+  const [displayedColor, setDisplayedColor] = useState("#000000"); // Hanya untuk display di color picker
+  const [displayedBgColor, setDisplayedBgColor] = useState("transparent");
+  const [displayedBold, setDisplayedBold] = useState(false);
+  const [displayedItalic, setDisplayedItalic] = useState(false);
+  const [displayedUnderline, setDisplayedUnderline] = useState(false);
+  const [displayedStrikethrough, setDisplayedStrikethrough] = useState(false);
+  
+  // Legacy state untuk backward compatibility (akan dihapus bertahap)
   const [selectedColor, setSelectedColor] = useState("#000000");
   const [selectedBgColor, setSelectedBgColor] = useState("#FFFF00");
   const [selectedFontSize, setSelectedFontSize] = useState(16);
-  
-  // Current style from selection/cursor position
-  const [currentBold, setCurrentBold] = useState(false);
-  const [currentItalic, setCurrentItalic] = useState(false);
-  const [currentUnderline, setCurrentUnderline] = useState(false);
-  const [currentStrikethrough, setCurrentStrikethrough] = useState(false);
-  const [currentTextColor, setCurrentTextColor] = useState("#000000");
-  const [currentBgColor, setCurrentBgColor] = useState("transparent");
   
   const colorPickerRef = useRef(null);
   const bgColorPickerRef = useRef(null);
   const editorRef = useRef(null);
   const savedSelectionRef = useRef(null);
   
-  // Last used styles - untuk digunakan saat Enter atau mengetik baru
-  const lastUsedStylesRef = useRef({
-    fontSize: 16,
-    fontWeight: "normal",
-    fontStyle: "normal",
-    textDecoration: "none",
-    color: "#000000",
-    backgroundColor: "transparent"
-  });
+  // Ref untuk tracking apakah state aktif sudah di-initialize dari DOM
+  const isActiveStateInitializedRef = useRef(false);
 
   // Preset colors seperti MS Word - Primary color #FF9900 (rgb(255, 153, 0))
   const presetColors = [
@@ -206,11 +214,9 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
               (node.textContent === "\u200B" || node.innerHTML === "\u200B");
             
             // If we're in a style marker, typing will automatically use that style
-            // Otherwise, check if we need to create one
+            // Otherwise, check if we need to create one with ACTIVE STATE
             if (!isInStyleMarker) {
-              const lastStyles = lastUsedStylesRef.current;
-              
-              // Check current styles
+              // Check current styles from DOM
               let currentFontSize = 16;
               if (node.style && node.style.fontSize) {
                 const inlineSize = parseInt(node.style.fontSize);
@@ -254,37 +260,39 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
               };
               
               const currentColorHex = colorToHex(currentColor);
-              const lastColorHex = colorToHex(lastStyles.color);
+              const activeColorHex = colorToHex(activeColor);
               
-              // Check if styles match last used styles
-              const fontSizeDiff = Math.abs(currentFontSize - lastStyles.fontSize);
-              const fontSizeNeedsUpdate = fontSizeDiff > 1 || 
-                (lastStyles.fontSize !== 16 && currentFontSize === 16);
+              // Check if DOM styles match ACTIVE STATE (not lastUsedStylesRef)
+              const fontSizeDiff = Math.abs(currentFontSize - activeFontSize);
+              const fontSizeNeedsUpdate = fontSizeDiff > 1;
               
               const needsUpdate = 
                 fontSizeNeedsUpdate ||
-                currentColorHex !== lastColorHex ||
-                (currentFontWeight !== lastStyles.fontWeight && 
-                 !(currentFontWeight === "bold" && lastStyles.fontWeight === "bold") &&
-                 !(parseInt(currentFontWeight) >= 600 && lastStyles.fontWeight === "bold")) ||
-                currentFontStyle !== lastStyles.fontStyle ||
-                (currentTextDecoration !== lastStyles.textDecoration && 
-                 !(currentTextDecoration.includes("underline") && lastStyles.textDecoration === "underline"));
+                currentColorHex !== activeColorHex ||
+                (currentFontWeight !== (activeBold ? "bold" : "normal") && 
+                 !(currentFontWeight === "bold" && activeBold) &&
+                 !(parseInt(currentFontWeight) >= 600 && activeBold)) ||
+                currentFontStyle !== (activeItalic ? "italic" : "normal") ||
+                (currentTextDecoration !== (activeUnderline ? "underline" : "none") && 
+                 !(currentTextDecoration.includes("underline") && activeUnderline));
               
-              // If styles don't match, create style marker for next typing
+              // If styles don't match ACTIVE STATE, create style marker with ACTIVE STATE
               if (needsUpdate) {
                 const span = document.createElement("span");
-                span.style.fontSize = `${lastStyles.fontSize}px`;
-                span.style.color = lastStyles.color;
-                span.style.fontWeight = lastStyles.fontWeight;
-                span.style.fontStyle = lastStyles.fontStyle;
-                span.style.textDecoration = lastStyles.textDecoration;
-                if (lastStyles.textDecoration === "underline" || lastStyles.textDecoration.includes("underline")) {
-                  span.style.setProperty("text-decoration-color", lastStyles.color, "important");
-                  span.style.setProperty("-webkit-text-decoration-color", lastStyles.color, "important");
+                span.style.fontSize = `${activeFontSize}px`;
+                span.style.color = activeColor;
+                span.style.fontWeight = activeBold ? "bold" : "normal";
+                span.style.fontStyle = activeItalic ? "italic" : "normal";
+                span.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
+                if (activeUnderline) {
+                  span.style.setProperty("text-decoration-color", activeColor, "important");
+                  span.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
                 }
-                if (lastStyles.backgroundColor !== "transparent") {
-                  span.style.backgroundColor = lastStyles.backgroundColor;
+                if (activeStrikethrough && activeUnderline) {
+                  span.style.textDecoration = "underline line-through";
+                }
+                if (activeBgColor !== "transparent") {
+                  span.style.backgroundColor = activeBgColor;
                 }
                 
                 // Insert style marker at cursor
@@ -750,30 +758,96 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   const applyTextColor = (color) => {
     if (!editorRef.current) return;
     
-    const savedRange = saveSelection();
-    if (!savedRange) {
-      editorRef.current.focus();
-      return;
-    }
+    // ===== STEP 1: Update Active State (Single Source of Truth) =====
+    setActiveColor(color);
+    setDisplayedColor(color); // Update UI display
     
     editorRef.current.focus();
+    
+    // Get current selection
     const selection = window.getSelection();
-    selection.removeAllRanges();
-    selection.addRange(savedRange);
+    let range = null;
     
-    // Get all current styles
-    const currentStyles = getAllCurrentStyles(savedRange);
+    // Try to restore saved selection first
+    if (savedSelectionRef.current) {
+      try {
+        const saved = savedSelectionRef.current;
+        range = document.createRange();
+        range.setStart(saved.startContainer, saved.startOffset);
+        range.setEnd(saved.endContainer, saved.endOffset);
+        if (editorRef.current.contains(range.commonAncestorContainer)) {
+          selection.removeAllRanges();
+          selection.addRange(range);
+        } else {
+          range = null;
+        }
+      } catch (e) {
+        range = null;
+      }
+    }
     
-    // Update text color in styles
-    currentStyles.textColor = color;
+    // If no saved selection, try current selection
+    if (!range && selection.rangeCount > 0) {
+      range = selection.getRangeAt(0);
+      if (!editorRef.current.contains(range.commonAncestorContainer)) {
+        range = null;
+      }
+    }
     
-    // Apply all styles (including new color) while preserving others
-    applyStyleWithPreservation(savedRange, currentStyles);
+    // If still no range, save and create one
+    if (!range) {
+      const savedRange = saveSelection();
+      if (savedRange) {
+        try {
+          range = document.createRange();
+          range.setStart(savedRange.startContainer, savedRange.startOffset);
+          range.setEnd(savedRange.endContainer, savedRange.endOffset);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        } catch (e) {
+          // Create range at cursor
+          range = document.createRange();
+          range.selectNodeContents(editorRef.current);
+          range.collapse(false);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      } else {
+        // Create range at end
+        range = document.createRange();
+        range.selectNodeContents(editorRef.current);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    }
     
-    // Update last used color
-    lastUsedStylesRef.current.color = color;
+    // ===== STEP 2: Apply to Selection or Cursor =====
+    // MS Word behavior:
+    // - If has selection: apply to selection
+    // - If collapsed cursor: insert style marker for next typing
     
-    // IMMEDIATELY update state for button responsiveness
+    if (range.collapsed) {
+      // Collapsed cursor - insert style marker with active styles
+      const currentStyles = getAllCurrentStyles(range);
+      currentStyles.textColor = color;
+      currentStyles.fontSize = activeFontSize;
+      currentStyles.bgColor = activeBgColor;
+      currentStyles.bold = activeBold;
+      currentStyles.italic = activeItalic;
+      currentStyles.underline = activeUnderline;
+      currentStyles.strikethrough = activeStrikethrough;
+      
+      applyStyleWithPreservation(range, currentStyles);
+    } else {
+      // Has selection - apply to selection
+      const currentStyles = getAllCurrentStyles(range);
+      currentStyles.textColor = color;
+      // Preserve other styles from selection
+      applyStyleWithPreservation(range, currentStyles);
+    }
+    
+    // Legacy state updates (untuk backward compatibility)
     setSelectedColor(color);
     setCurrentTextColor(color);
     
@@ -1146,12 +1220,13 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     });
   };
 
-  // Apply font size to selection - MS Word style: apply to selection or prepare for next typing
+  // Apply font size - MS Word style: update active state + apply to selection or prepare for next typing
   const applyFontSize = (size) => {
     if (!editorRef.current || !size) return;
     
-    // Update last used font size
-    lastUsedStylesRef.current.fontSize = size;
+    // ===== STEP 1: Update Active State (Single Source of Truth) =====
+    setActiveFontSize(size);
+    setDisplayedFontSize(size); // Update UI display
     
     editorRef.current.focus();
     
@@ -1213,19 +1288,35 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
     }
     
-    // Get all current styles
-    const currentStyles = getAllCurrentStyles(range);
+    // ===== STEP 2: Apply to Selection or Cursor =====
+    // MS Word behavior:
+    // - If has selection: apply to selection
+    // - If collapsed cursor: insert style marker for next typing
     
-    // Update font size in styles
-    currentStyles.fontSize = size;
-    
-    // Apply all styles (including new font size) while preserving others
-    applyStyleWithPreservation(range, currentStyles);
+    if (range.collapsed) {
+      // Collapsed cursor - insert style marker with active styles
+      const currentStyles = getAllCurrentStyles(range);
+      currentStyles.fontSize = size;
+      currentStyles.textColor = activeColor;
+      currentStyles.bgColor = activeBgColor;
+      currentStyles.bold = activeBold;
+      currentStyles.italic = activeItalic;
+      currentStyles.underline = activeUnderline;
+      currentStyles.strikethrough = activeStrikethrough;
+      
+      applyStyleWithPreservation(range, currentStyles);
+    } else {
+      // Has selection - apply to selection
+      const currentStyles = getAllCurrentStyles(range);
+      currentStyles.fontSize = size;
+      // Preserve other styles from selection
+      applyStyleWithPreservation(range, currentStyles);
+    }
     
     // Trigger input to save
     handleEditorInput();
     
-    // Detect styles after applying
+    // Update UI display (detectStyles hanya untuk update button states)
     requestAnimationFrame(() => {
       detectStyles();
     });
@@ -1430,16 +1521,6 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
     }
     
-    // Default to 16 if still null
-    if (detectedFontSize === null) {
-      detectedFontSize = 16;
-    }
-    
-    // Set default text color if not detected
-    if (!detectedTextColor) {
-      detectedTextColor = "#000000";
-    }
-    
     // Convert detected colors to hex format for consistency
     const colorToHex = (color) => {
       if (!color) return "#000000";
@@ -1455,28 +1536,63 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       return color;
     };
     
-    const hexTextColor = colorToHex(detectedTextColor);
-    const hexBgColor = colorToHex(detectedBgColor);
+    const hexTextColor = detectedTextColor ? colorToHex(detectedTextColor) : null;
+    const hexBgColor = detectedBgColor ? colorToHex(detectedBgColor) : null;
     
-    // Update states - force update to ensure sync
+    // ===== CRITICAL: detectStyles() HANYA untuk update UI, TIDAK mengubah active state =====
+    // Update displayed states (untuk UI button/input display)
+    setDisplayedBold(detectedBold);
+    setDisplayedItalic(detectedItalic);
+    setDisplayedUnderline(detectedUnderline);
+    setDisplayedStrikethrough(detectedStrikethrough);
+    
+    // Update displayed font size - gunakan detected jika ada, jika tidak gunakan active state
+    if (detectedFontSize !== null) {
+      setDisplayedFontSize(detectedFontSize);
+    }
+    
+    // Update displayed colors - gunakan detected jika ada, jika tidak gunakan active state
+    if (hexTextColor) {
+      setDisplayedColor(hexTextColor);
+    }
+    if (hexBgColor) {
+      setDisplayedBgColor(hexBgColor);
+    }
+    
+    // Legacy state updates (untuk backward compatibility)
     setCurrentBold(detectedBold);
     setCurrentItalic(detectedItalic);
     setCurrentUnderline(detectedUnderline);
     setCurrentStrikethrough(detectedStrikethrough);
-    setSelectedFontSize(detectedFontSize);
-    setCurrentTextColor(hexTextColor);
-    setCurrentBgColor(hexBgColor);
-    // Also update selected colors to match current - CRITICAL for button responsiveness
-    setSelectedColor(hexTextColor);
-    setSelectedBgColor(hexBgColor === "transparent" ? "#FFFF00" : hexBgColor);
+    if (detectedFontSize !== null) {
+      setSelectedFontSize(detectedFontSize);
+    }
+    if (hexTextColor) {
+      setCurrentTextColor(hexTextColor);
+      setSelectedColor(hexTextColor);
+    }
+    if (hexBgColor) {
+      setCurrentBgColor(hexBgColor);
+      setSelectedBgColor(hexBgColor === "transparent" ? "#FFFF00" : hexBgColor);
+    }
     
-    // Update last used styles based on detected styles
-    lastUsedStylesRef.current.fontSize = detectedFontSize;
-    lastUsedStylesRef.current.fontWeight = detectedBold ? "bold" : "normal";
-    lastUsedStylesRef.current.fontStyle = detectedItalic ? "italic" : "normal";
-    lastUsedStylesRef.current.textDecoration = detectedUnderline ? "underline" : "none";
-    lastUsedStylesRef.current.color = hexTextColor;
-    lastUsedStylesRef.current.backgroundColor = hexBgColor;
+    // Initialize active state from DOM on first detection (hanya sekali)
+    if (!isActiveStateInitializedRef.current) {
+      if (detectedFontSize !== null) {
+        setActiveFontSize(detectedFontSize);
+      }
+      if (hexTextColor) {
+        setActiveColor(hexTextColor);
+      }
+      if (hexBgColor) {
+        setActiveBgColor(hexBgColor);
+      }
+      setActiveBold(detectedBold);
+      setActiveItalic(detectedItalic);
+      setActiveUnderline(detectedUnderline);
+      setActiveStrikethrough(detectedStrikethrough);
+      isActiveStateInitializedRef.current = true;
+    }
   };
 
   // Update styles display when selection changes and save selection automatically
@@ -2264,7 +2380,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           />
           <div className="toolbar-input-group">
             <InputNumber
-              value={selectedFontSize}
+              value={displayedFontSize}
               onMouseDown={(e) => {
                 e.preventDefault();
                 saveSelection();
@@ -2281,37 +2397,22 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
                 const value = parseFloat(inputValue);
                 if (!isNaN(value) && value >= 8 && value <= 200) {
                   const size = Math.round(value);
-                  setSelectedFontSize(size);
-                  lastUsedStylesRef.current.fontSize = size;
-                  // Apply immediately when typing
-                  requestAnimationFrame(() => {
-                    applyFontSize(size);
-                  });
-                } else if (inputValue === "" || inputValue === null) {
-                  // Allow empty input while typing
-                  setSelectedFontSize(16);
+                  // Apply immediately when typing - this updates activeFontSize
+                  applyFontSize(size);
                 }
               }}
               onValueChange={(e) => {
-                const size = e.value || 16;
+                const size = e.value || displayedFontSize;
                 if (size >= 8 && size <= 200) {
-                  setSelectedFontSize(size);
-                  lastUsedStylesRef.current.fontSize = size;
-                  // Apply immediately when value changes (from buttons or typing)
-                  requestAnimationFrame(() => {
-                    applyFontSize(size);
-                    requestAnimationFrame(() => {
-                      detectStyles();
-                    });
-                  });
+                  // Apply font size - this updates activeFontSize
+                  applyFontSize(size);
                 }
               }}
               onBlur={(e) => {
                 // Ensure font size is applied when leaving input
-                const size = selectedFontSize || 16;
+                const size = displayedFontSize;
                 if (size >= 8 && size <= 200) {
                   applyFontSize(size);
-                  detectStyles();
                 }
               }}
               min={8}
