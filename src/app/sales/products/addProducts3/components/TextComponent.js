@@ -1713,13 +1713,11 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     // Focus editor
     editorRef.current.focus();
     
-    // Save selection before toggling
-    saveSelection();
-    
     // Get current selection
     const selection = window.getSelection();
     let range = null;
     
+    // Try to get current selection
     if (selection.rangeCount > 0) {
       range = selection.getRangeAt(0);
       if (!editorRef.current.contains(range.commonAncestorContainer)) {
@@ -1727,67 +1725,67 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
     }
     
-    // If no selection, try saved selection or create at end
-    if (!range) {
-      const savedRange = savedSelectionRef.current;
-      if (savedRange) {
-        try {
-          range = document.createRange();
-          range.setStart(savedRange.startContainer, savedRange.startOffset);
-          range.setEnd(savedRange.endContainer, savedRange.endOffset);
-          selection.removeAllRanges();
-          selection.addRange(range);
-        } catch (e) {
-          range = document.createRange();
-          range.selectNodeContents(editorRef.current);
-          range.collapse(false);
-          selection.removeAllRanges();
-          selection.addRange(range);
-        }
-      } else {
+    // If no selection, try saved selection
+    if (!range && savedSelectionRef.current) {
+      try {
+        const saved = savedSelectionRef.current;
         range = document.createRange();
-        range.selectNodeContents(editorRef.current);
-        range.collapse(false);
-        selection.removeAllRanges();
-        selection.addRange(range);
+        range.setStart(saved.startContainer, saved.startOffset);
+        range.setEnd(saved.endContainer, saved.endOffset);
+        if (editorRef.current.contains(range.commonAncestorContainer)) {
+          selection.removeAllRanges();
+          selection.addRange(range);
+        } else {
+          range = null;
+        }
+      } catch (e) {
+        range = null;
       }
     }
     
-    // Check if already bold
-    let isBold = false;
-    try {
-      isBold = document.queryCommandState("bold");
-    } catch (e) {
-      // Check manually
-      let node = range.startContainer;
-      if (node.nodeType === Node.TEXT_NODE) {
-        node = node.parentElement;
-      }
-      const computedStyle = window.getComputedStyle(node);
-      const fontWeight = computedStyle.fontWeight;
-      isBold = fontWeight === "bold" || fontWeight === "700" || (parseInt(fontWeight) >= 600);
+    // If still no range, create at end
+    if (!range) {
+      range = document.createRange();
+      range.selectNodeContents(editorRef.current);
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
     }
     
-    // Toggle bold - MS Word style: works for selection or sets format for next typing
-    const newBoldState = !isBold;
+    // ===== STEP 1: Determine current bold state =====
+    let currentBoldState = false;
     
-    // ===== CRITICAL: Update Active State IMMEDIATELY =====
-    setActiveBold(newBoldState);
-    setDisplayedBold(newBoldState); // Update UI immediately
-    
-    // Apply to selection or cursor
     if (range.collapsed) {
-      // Collapsed cursor - insert visible style marker immediately
-      const currentStyles = getAllCurrentStyles(range);
-      currentStyles.bold = newBoldState;
-      currentStyles.fontSize = activeFontSize;
-      currentStyles.textColor = activeColor;
-      currentStyles.bgColor = activeBgColor;
-      currentStyles.italic = activeItalic;
-      currentStyles.underline = activeUnderline;
-      currentStyles.strikethrough = activeStrikethrough;
-      
-      // Insert visible character (space) with style so user can see it immediately
+      // CASE 1: Collapsed cursor - use ACTIVE STATE
+      currentBoldState = activeBold;
+    } else {
+      // CASE 2: Has selection - check from DOM
+      try {
+        currentBoldState = document.queryCommandState("bold");
+      } catch (e) {
+        // Check manually from selection
+        let node = range.startContainer;
+        if (node.nodeType === Node.TEXT_NODE) {
+          node = node.parentElement;
+        }
+        const computedStyle = window.getComputedStyle(node);
+        const fontWeight = computedStyle.fontWeight;
+        currentBoldState = fontWeight === "bold" || fontWeight === "700" || (parseInt(fontWeight) >= 600);
+      }
+    }
+    
+    // Toggle: if currently bold -> make not bold, if not bold -> make bold
+    const newBoldState = !currentBoldState;
+    
+    // ===== STEP 2: Update Active State IMMEDIATELY (for button responsiveness) =====
+    setActiveBold(newBoldState);
+    setDisplayedBold(newBoldState);
+    setCurrentBold(newBoldState); // Update UI button state immediately
+    
+    // ===== STEP 3: Apply to Selection or Cursor =====
+    if (range.collapsed) {
+      // CASE 1: Collapsed cursor (untuk next typing)
+      // Insert style marker dengan bold state yang baru
       const span = document.createElement("span");
       span.style.fontSize = `${activeFontSize}px`;
       span.style.color = activeColor;
@@ -1801,7 +1799,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       if (activeBgColor !== "transparent") {
         span.style.backgroundColor = activeBgColor;
       }
-      span.innerHTML = "\u200B"; // Zero-width space (will be replaced when typing)
+      span.innerHTML = "\u200B"; // Zero-width space
       
       try {
         range.insertNode(span);
@@ -1825,15 +1823,25 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         console.error("Error inserting bold style marker:", e);
       }
     } else {
-      // Has selection - apply to selection
+      // CASE 2: Has selection (apply to selected text)
+      // Use execCommand untuk toggle bold pada selection
       document.execCommand("bold", false, null);
+      
+      // After execCommand, verify the result and update active state
+      try {
+        const isNowBold = document.queryCommandState("bold");
+        setActiveBold(isNowBold);
+        setDisplayedBold(isNowBold);
+        setCurrentBold(isNowBold);
+      } catch (e) {
+        // If can't check, keep the new state we set
+      }
     }
     
     // Update last used style (legacy)
     lastUsedStylesRef.current.fontWeight = newBoldState ? "bold" : "normal";
     
-    // Update styles IMMEDIATELY (no delay)
-    detectStyles();
+    // Save changes
     handleEditorInput();
   };
 
