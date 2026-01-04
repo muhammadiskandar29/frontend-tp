@@ -87,6 +87,9 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   const editorRef = useRef(null);
   const savedSelectionRef = useRef(null);
   const boldButtonRef = useRef(null);
+  const italicButtonRef = useRef(null);
+  const underlineButtonRef = useRef(null);
+  const strikethroughButtonRef = useRef(null);
   
   // Ref untuk tracking apakah state aktif sudah di-initialize dari DOM
   const isActiveStateInitializedRef = useRef(false);
@@ -1938,18 +1941,12 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     handleEditorInput();
   };
 
+  // ===== ULTRA SIMPLE & DIRECT: Toggle Italic Function =====
   const toggleItalic = (e) => {
     if (e) e.preventDefault();
-    
     if (!editorRef.current) return;
     
-    // Focus editor
-    editorRef.current.focus();
-    
-    // Save selection before toggling
-    saveSelection();
-    
-    // Get current selection
+    // ===== STEP 1: Get current state FIRST =====
     const selection = window.getSelection();
     let range = null;
     
@@ -1960,117 +1957,227 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
     }
     
-    // If no selection, try saved selection or create at end
-    if (!range) {
-      const savedRange = savedSelectionRef.current;
-      if (savedRange) {
-        try {
-          range = document.createRange();
-          range.setStart(savedRange.startContainer, savedRange.startOffset);
-          range.setEnd(savedRange.endContainer, savedRange.endOffset);
-          selection.removeAllRanges();
-          selection.addRange(range);
-        } catch (e) {
-          range = document.createRange();
-          range.selectNodeContents(editorRef.current);
-          range.collapse(false);
-          selection.removeAllRanges();
-          selection.addRange(range);
-        }
-      } else {
+    if (!range && savedSelectionRef.current) {
+      try {
+        const saved = savedSelectionRef.current;
         range = document.createRange();
-        range.selectNodeContents(editorRef.current);
-        range.collapse(false);
-        selection.removeAllRanges();
-        selection.addRange(range);
+        range.setStart(saved.startContainer, saved.startOffset);
+        range.setEnd(saved.endContainer, saved.endOffset);
+        if (editorRef.current.contains(range.commonAncestorContainer)) {
+          selection.removeAllRanges();
+          selection.addRange(range);
+        } else {
+          range = null;
+        }
+      } catch (e) {
+        range = null;
       }
     }
     
-    // Check if already italic
-    let isItalic = false;
-    try {
-      isItalic = document.queryCommandState("italic");
-    } catch (e) {
-      // Check manually
+    if (!range) {
+      range = document.createRange();
+      range.selectNodeContents(editorRef.current);
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+    
+    // Check current italic state
+    let isCurrentlyItalic = activeItalic;
+    
+    if (range.collapsed) {
       let node = range.startContainer;
       if (node.nodeType === Node.TEXT_NODE) {
         node = node.parentElement;
       }
-      const computedStyle = window.getComputedStyle(node);
-      isItalic = computedStyle.fontStyle === "italic";
+      if (node.tagName === "SPAN" && (node.textContent === "\u200B" || node.innerHTML === "\u200B")) {
+        const fontStyle = node.style.fontStyle || window.getComputedStyle(node).fontStyle;
+        isCurrentlyItalic = fontStyle === "italic";
+      }
+    } else {
+      try {
+        isCurrentlyItalic = document.queryCommandState("italic");
+      } catch (e) {
+        let node = range.startContainer;
+        if (node.nodeType === Node.TEXT_NODE) {
+          node = node.parentElement;
+        }
+        const fontStyle = window.getComputedStyle(node).fontStyle;
+        isCurrentlyItalic = fontStyle === "italic";
+      }
     }
     
-    // Toggle italic - MS Word style: works for selection or sets format for next typing
-    const newItalicState = !isItalic;
+    const newItalicState = !isCurrentlyItalic;
     
-    // ===== CRITICAL: Update Active State IMMEDIATELY =====
-    setActiveItalic(newItalicState);
-    setDisplayedItalic(newItalicState); // Update UI immediately
+    // ===== STEP 2: Update React State FIRST with flushSync =====
+    // Update React state FIRST to sync className, then update DOM
+    flushSync(() => {
+      setActiveItalic(newItalicState);
+      setDisplayedItalic(newItalicState);
+      setCurrentItalic(newItalicState);
+    });
     
-    // Apply to selection or cursor
-    if (range.collapsed) {
-      // Collapsed cursor - insert visible style marker immediately
-      const span = document.createElement("span");
-      span.style.fontSize = `${activeFontSize}px`;
-      span.style.color = activeColor;
-      span.style.fontWeight = activeBold ? "bold" : "normal";
-      span.style.fontStyle = newItalicState ? "italic" : "normal";
-      span.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
-      if (activeUnderline) {
-        span.style.setProperty("text-decoration-color", activeColor, "important");
-        span.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
-      }
-      if (activeBgColor !== "transparent") {
-        span.style.backgroundColor = activeBgColor;
-      }
-      span.innerHTML = "\u200B"; // Zero-width space
+    // ===== STEP 3: Update Button Visual DIRECTLY (INSTANT - no delay) =====
+    // Update button DIRECTLY via DOM - after React state update
+    if (italicButtonRef.current) {
+      const btn = italicButtonRef.current;
       
-      try {
-        range.insertNode(span);
+      if (newItalicState) {
+        // Activate button
+        btn.classList.add('active');
+        btn.style.setProperty('background-color', '#F1A124', 'important');
+        btn.style.setProperty('border-color', '#F1A124', 'important');
+        btn.style.setProperty('color', '#ffffff', 'important');
+      } else {
+        // Deactivate button - FORCE REMOVE all active styles
+        // Remove class first
+        btn.classList.remove('active');
+        // Also update className directly - remove 'active' completely and keep only base class
+        const baseClass = 'toolbar-btn';
+        btn.className = baseClass;
+        // Remove all inline styles - multiple methods to ensure it works
+        btn.style.removeProperty('background-color');
+        btn.style.removeProperty('border-color');
+        btn.style.removeProperty('color');
+        // Clear style properties
+        btn.style.backgroundColor = '';
+        btn.style.borderColor = '';
+        btn.style.color = '';
+        // Force override with empty using important to override any CSS
+        btn.style.setProperty('background-color', '', 'important');
+        btn.style.setProperty('border-color', '', 'important');
+        btn.style.setProperty('color', '', 'important');
+      }
+      
+      // Force immediate visual update
+      void btn.offsetHeight;
+    }
+    
+    // Focus editor
+    editorRef.current.focus();
+    
+    // ===== STEP 3: Apply to Editor =====
+    if (range.collapsed) {
+      // Collapsed cursor
+      let node = range.startContainer;
+      if (node.nodeType === Node.TEXT_NODE) {
+        node = node.parentElement;
+      }
+      
+      const isInStyleMarker = node.tagName === "SPAN" && 
+        (node.textContent === "\u200B" || node.innerHTML === "\u200B");
+      
+      if (isInStyleMarker) {
+        // Update existing marker
+        node.style.fontStyle = newItalicState ? "italic" : "normal";
+        node.style.fontSize = `${activeFontSize}px`;
+        node.style.color = activeColor;
+        node.style.fontWeight = activeBold ? "bold" : "normal";
+        node.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
+        if (activeUnderline) {
+          node.style.setProperty("text-decoration-color", activeColor, "important");
+          node.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
+        }
+        if (activeBgColor !== "transparent") {
+          node.style.backgroundColor = activeBgColor;
+        } else {
+          node.style.backgroundColor = "";
+        }
+        
         const newRange = document.createRange();
-        newRange.setStartAfter(span);
+        newRange.setStartAfter(node);
         newRange.collapse(true);
         selection.removeAllRanges();
         selection.addRange(newRange);
         
-        // Update saved selection
         savedSelectionRef.current = {
           range: newRange.cloneRange(),
           startContainer: newRange.startContainer,
           startOffset: newRange.startOffset,
           endContainer: newRange.endContainer,
           endOffset: newRange.endOffset,
-          collapsed: newRange.collapsed,
-          text: newRange.toString()
+          collapsed: true,
+          text: ""
         };
-      } catch (e) {
-        console.error("Error inserting italic style marker:", e);
+      } else {
+        // Create new style marker with VISIBLE placeholder for visual feedback
+        const span = document.createElement("span");
+        span.style.fontSize = `${activeFontSize}px`;
+        span.style.color = activeColor;
+        span.style.fontStyle = newItalicState ? "italic" : "normal";
+        span.style.fontWeight = activeBold ? "bold" : "normal";
+        span.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
+        if (activeUnderline) {
+          span.style.setProperty("text-decoration-color", activeColor, "important");
+          span.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
+        }
+        if (activeBgColor !== "transparent") {
+          span.style.backgroundColor = activeBgColor;
+        }
+        
+        // Insert visible placeholder character that will be replaced when typing
+        // Use a very thin space that's barely visible but shows the style
+        span.innerHTML = "\u2009"; // Thin space (more visible than zero-width)
+        
+        range.insertNode(span);
+        
+        // Force immediate visual update
+        void span.offsetHeight;
+        
+        const newRange = document.createRange();
+        newRange.setStart(span, 0);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+        
+        savedSelectionRef.current = {
+          range: newRange.cloneRange(),
+          startContainer: newRange.startContainer,
+          startOffset: newRange.startOffset,
+          endContainer: newRange.endContainer,
+          endOffset: newRange.endOffset,
+          collapsed: true,
+          text: ""
+        };
+        
+        // Replace thin space with zero-width space after a brief moment (for next typing)
+        setTimeout(() => {
+          if (span && span.textContent === "\u2009") {
+            span.innerHTML = "\u200B";
+          }
+        }, 100);
       }
     } else {
-      // Has selection - apply to selection
+      // Has selection
       document.execCommand("italic", false, null);
+      
+      try {
+        const isNowItalic = document.queryCommandState("italic");
+        setActiveItalic(isNowItalic);
+        setDisplayedItalic(isNowItalic);
+        setCurrentItalic(isNowItalic);
+        if (italicButtonRef.current) {
+          if (isNowItalic) {
+            italicButtonRef.current.classList.add('active');
+          } else {
+            italicButtonRef.current.classList.remove('active');
+          }
+        }
+      } catch (e) {
+        // Keep state
+      }
     }
     
-    // Update last used style (legacy)
     lastUsedStylesRef.current.fontStyle = newItalicState ? "italic" : "normal";
-    
-    // Update styles IMMEDIATELY (no delay)
-    detectStyles();
     handleEditorInput();
   };
 
+  // ===== ULTRA SIMPLE & DIRECT: Toggle Underline Function =====
   const toggleUnderline = (e) => {
     if (e) e.preventDefault();
-    
     if (!editorRef.current) return;
     
-    // Focus editor first
-    editorRef.current.focus();
-    
-    // Save selection before formatting
-    saveSelection();
-    
-    // Get current selection
+    // ===== STEP 1: Get current state FIRST =====
     const selection = window.getSelection();
     let range = null;
     
@@ -2081,338 +2188,466 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
     }
     
-    // If no selection, try saved selection or create at end
-    if (!range) {
-      const savedRange = savedSelectionRef.current;
-      if (savedRange) {
-        try {
-          range = document.createRange();
-          range.setStart(savedRange.startContainer, savedRange.startOffset);
-          range.setEnd(savedRange.endContainer, savedRange.endOffset);
-          selection.removeAllRanges();
-          selection.addRange(range);
-        } catch (e) {
-          range = document.createRange();
-          range.selectNodeContents(editorRef.current);
-          range.collapse(false);
-          selection.removeAllRanges();
-          selection.addRange(range);
-        }
-      } else {
+    if (!range && savedSelectionRef.current) {
+      try {
+        const saved = savedSelectionRef.current;
         range = document.createRange();
-        range.selectNodeContents(editorRef.current);
-        range.collapse(false);
-        selection.removeAllRanges();
-        selection.addRange(range);
+        range.setStart(saved.startContainer, saved.startOffset);
+        range.setEnd(saved.endContainer, saved.endOffset);
+        if (editorRef.current.contains(range.commonAncestorContainer)) {
+          selection.removeAllRanges();
+          selection.addRange(range);
+        } else {
+          range = null;
+        }
+      } catch (e) {
+        range = null;
       }
     }
     
-    // Check if already underlined - check ONLY in selection, not parent
-    let hasUnderline = false;
-    try {
-      hasUnderline = document.queryCommandState("underline");
-    } catch (e) {
-      // Check manually - ONLY check nodes in selection
-      if (!range.collapsed) {
-        // Has selection - check only selected nodes
-        const walker = document.createTreeWalker(
-          range.commonAncestorContainer,
-          NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
-          {
-            acceptNode: (node) => {
-              if (node.nodeType === Node.TEXT_NODE) {
-                return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
-              }
-              return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
-            }
-          }
-        );
-        
-        let node;
-        while (node = walker.nextNode()) {
-          if (node.nodeType === Node.ELEMENT_NODE) {
-            const computedStyle = window.getComputedStyle(node);
-            if (computedStyle.textDecoration.includes("underline") || 
-                node.tagName === "U" ||
-                (node.style && node.style.textDecoration && node.style.textDecoration.includes("underline"))) {
-              hasUnderline = true;
-              break;
-            }
-          }
-        }
-      } else {
-        // Collapsed cursor - check current node
+    if (!range) {
+      range = document.createRange();
+      range.selectNodeContents(editorRef.current);
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+    
+    // Check current underline state
+    let isCurrentlyUnderlined = activeUnderline;
+    
+    if (range.collapsed) {
+      let node = range.startContainer;
+      if (node.nodeType === Node.TEXT_NODE) {
+        node = node.parentElement;
+      }
+      if (node.tagName === "SPAN" && (node.textContent === "\u200B" || node.innerHTML === "\u200B")) {
+        const textDecoration = node.style.textDecoration || window.getComputedStyle(node).textDecoration;
+        isCurrentlyUnderlined = textDecoration.includes("underline");
+      }
+    } else {
+      try {
+        isCurrentlyUnderlined = document.queryCommandState("underline");
+      } catch (e) {
         let node = range.startContainer;
         if (node.nodeType === Node.TEXT_NODE) {
           node = node.parentElement;
         }
-        const computedStyle = window.getComputedStyle(node);
-        if (computedStyle.textDecoration.includes("underline") || 
-            node.tagName === "U" ||
-            (node.style && node.style.textDecoration && node.style.textDecoration.includes("underline"))) {
-          hasUnderline = true;
-        }
+        const textDecoration = window.getComputedStyle(node).textDecoration;
+        isCurrentlyUnderlined = textDecoration.includes("underline");
       }
     }
     
-    // Toggle underline - SIMPLE and EFFECTIVE toggle
-    if (hasUnderline) {
-      // Remove underline - AGGRESSIVE removal to ensure it's completely removed
-      // First, manually remove all U tags and underline styles in selection
-      if (!range.collapsed) {
-        // Has selection - remove underline from all elements in selection
-        const allUTags = editorRef.current.querySelectorAll("u");
-        const uTagsToRemove = [];
-        allUTags.forEach(uTag => {
-          try {
-            if (range.intersectsNode(uTag)) {
-              uTagsToRemove.push(uTag);
-            }
-          } catch (e) {
-            // Skip if error
-          }
-        });
-        
-        // Unwrap all U tags
-        uTagsToRemove.forEach(uTag => {
-          try {
-            const parent = uTag.parentNode;
-            while (uTag.firstChild) {
-              parent.insertBefore(uTag.firstChild, uTag);
-            }
-            parent.removeChild(uTag);
-          } catch (e) {
-            // Skip if error
-          }
-        });
-        
-        // Remove underline from style
-        const allElements = editorRef.current.querySelectorAll("*");
-        allElements.forEach(element => {
-          try {
-            if (range.intersectsNode(element) && element.style) {
-              const textDecoration = element.style.textDecoration || "";
-              if (textDecoration.includes("underline")) {
-                const newDecoration = textDecoration
-                  .split(" ")
-                  .filter(d => d !== "underline")
-                  .join(" ");
-                if (newDecoration.trim()) {
-                  element.style.textDecoration = newDecoration;
-                } else {
-                  element.style.textDecoration = "none";
-                }
-              }
-            }
-          } catch (e) {
-            // Skip if error
-          }
-        });
+    const newUnderlineState = !isCurrentlyUnderlined;
+    
+    // ===== STEP 2: Update React State FIRST with flushSync =====
+    // Update React state FIRST to sync className, then update DOM
+    flushSync(() => {
+      setActiveUnderline(newUnderlineState);
+      setDisplayedUnderline(newUnderlineState);
+      setCurrentUnderline(newUnderlineState);
+    });
+    
+    // ===== STEP 3: Update Button Visual DIRECTLY (INSTANT - no delay) =====
+    // Update button DIRECTLY via DOM - after React state update
+    if (underlineButtonRef.current) {
+      const btn = underlineButtonRef.current;
+      
+      if (newUnderlineState) {
+        // Activate button
+        btn.classList.add('active');
+        btn.style.setProperty('background-color', '#F1A124', 'important');
+        btn.style.setProperty('border-color', '#F1A124', 'important');
+        btn.style.setProperty('color', '#ffffff', 'important');
       } else {
-        // Collapsed cursor - remove underline from current node
-        let checkNode = range.startContainer;
-        if (checkNode.nodeType === Node.TEXT_NODE) {
-          checkNode = checkNode.parentElement;
-        }
-        if (checkNode.tagName === "U") {
-          // Unwrap U tag
-          const parent = checkNode.parentNode;
-          while (checkNode.firstChild) {
-            parent.insertBefore(checkNode.firstChild, checkNode);
-          }
-          parent.removeChild(checkNode);
-        } else if (checkNode.style) {
-          const textDecoration = checkNode.style.textDecoration || "";
-          if (textDecoration.includes("underline")) {
-            const newDecoration = textDecoration
-              .split(" ")
-              .filter(d => d !== "underline")
-              .join(" ");
-            if (newDecoration.trim()) {
-              checkNode.style.textDecoration = newDecoration;
-            } else {
-              checkNode.style.textDecoration = "none";
-            }
-          }
-        }
+        // Deactivate button - FORCE REMOVE all active styles
+        // Remove class first
+        btn.classList.remove('active');
+        // Also update className directly - remove 'active' completely and keep only base class
+        const baseClass = 'toolbar-btn';
+        btn.className = baseClass;
+        // Remove all inline styles - multiple methods to ensure it works
+        btn.style.removeProperty('background-color');
+        btn.style.removeProperty('border-color');
+        btn.style.removeProperty('color');
+        // Clear style properties
+        btn.style.backgroundColor = '';
+        btn.style.borderColor = '';
+        btn.style.color = '';
+        // Force override with empty using important to override any CSS
+        btn.style.setProperty('background-color', '', 'important');
+        btn.style.setProperty('border-color', '', 'important');
+        btn.style.setProperty('color', '', 'important');
       }
       
-      // ===== CRITICAL: Update Active State IMMEDIATELY =====
-      setActiveUnderline(false);
-      setDisplayedUnderline(false); // Update UI immediately
+      // Force immediate visual update
+      void btn.offsetHeight;
+    }
+    
+    // Focus editor
+    editorRef.current.focus();
+    
+    // ===== STEP 3: Apply to Editor =====
+    if (range.collapsed) {
+      // Collapsed cursor
+      let node = range.startContainer;
+      if (node.nodeType === Node.TEXT_NODE) {
+        node = node.parentElement;
+      }
       
-      // Then use execCommand to ensure underline is removed
-      if (!range.collapsed) {
-        document.execCommand("underline", false, null);
+      const isInStyleMarker = node.tagName === "SPAN" && 
+        (node.textContent === "\u200B" || node.innerHTML === "\u200B");
+      
+      if (isInStyleMarker) {
+        // Update existing marker
+        let textDecoration = newUnderlineState ? "underline" : (activeStrikethrough ? "line-through" : "none");
+        if (newUnderlineState && activeStrikethrough) {
+          textDecoration = "underline line-through";
+        }
+        node.style.textDecoration = textDecoration;
+        node.style.fontSize = `${activeFontSize}px`;
+        node.style.color = activeColor;
+        node.style.fontWeight = activeBold ? "bold" : "normal";
+        node.style.fontStyle = activeItalic ? "italic" : "normal";
+        if (newUnderlineState) {
+          node.style.setProperty("text-decoration-color", activeColor, "important");
+          node.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
+        }
+        if (activeBgColor !== "transparent") {
+          node.style.backgroundColor = activeBgColor;
+        } else {
+          node.style.backgroundColor = "";
+        }
+        
+        const newRange = document.createRange();
+        newRange.setStartAfter(node);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+        
+        savedSelectionRef.current = {
+          range: newRange.cloneRange(),
+          startContainer: newRange.startContainer,
+          startOffset: newRange.startOffset,
+          endContainer: newRange.endContainer,
+          endOffset: newRange.endOffset,
+          collapsed: true,
+          text: ""
+        };
       } else {
-        // Collapsed cursor - insert style marker without underline immediately
+        // Create new style marker with VISIBLE placeholder for visual feedback
         const span = document.createElement("span");
         span.style.fontSize = `${activeFontSize}px`;
         span.style.color = activeColor;
+        let textDecoration = newUnderlineState ? "underline" : (activeStrikethrough ? "line-through" : "none");
+        if (newUnderlineState && activeStrikethrough) {
+          textDecoration = "underline line-through";
+        }
+        span.style.textDecoration = textDecoration;
         span.style.fontWeight = activeBold ? "bold" : "normal";
         span.style.fontStyle = activeItalic ? "italic" : "normal";
-        span.style.textDecoration = activeStrikethrough ? "line-through" : "none";
+        if (newUnderlineState) {
+          span.style.setProperty("text-decoration-color", activeColor, "important");
+          span.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
+        }
         if (activeBgColor !== "transparent") {
           span.style.backgroundColor = activeBgColor;
         }
-        span.innerHTML = "\u200B"; // Zero-width space
         
-        try {
-          range.insertNode(span);
-          const newRange = document.createRange();
-          newRange.setStartAfter(span);
-          newRange.collapse(true);
-          selection.removeAllRanges();
-          selection.addRange(newRange);
-          
-          // Update saved selection
-          savedSelectionRef.current = {
-            range: newRange.cloneRange(),
-            startContainer: newRange.startContainer,
-            startOffset: newRange.startOffset,
-            endContainer: newRange.endContainer,
-            endOffset: newRange.endOffset,
-            collapsed: newRange.collapsed,
-            text: newRange.toString()
-          };
-        } catch (e) {
-          console.error("Error inserting style marker:", e);
-        }
+        // Insert visible placeholder character that will be replaced when typing
+        // Use a very thin space that's barely visible but shows the style
+        span.innerHTML = "\u2009"; // Thin space (more visible than zero-width)
+        
+        range.insertNode(span);
+        
+        // Force immediate visual update
+        void span.offsetHeight;
+        
+        const newRange = document.createRange();
+        newRange.setStart(span, 0);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+        
+        savedSelectionRef.current = {
+          range: newRange.cloneRange(),
+          startContainer: newRange.startContainer,
+          startOffset: newRange.startOffset,
+          endContainer: newRange.endContainer,
+          endOffset: newRange.endOffset,
+          collapsed: true,
+          text: ""
+        };
+        
+        // Replace thin space with zero-width space after a brief moment (for next typing)
+        setTimeout(() => {
+          if (span && span.textContent === "\u2009") {
+            span.innerHTML = "\u200B";
+          }
+        }, 100);
       }
-      
-      // CRITICAL: Update lastUsedStylesRef IMMEDIATELY so next typing won't have underline
-      lastUsedStylesRef.current.textDecoration = "none";
     } else {
-      // ===== CRITICAL: Update Active State IMMEDIATELY =====
-      setActiveUnderline(true);
-      setDisplayedUnderline(true); // Update UI immediately
+      // Has selection
+      document.execCommand("underline", false, null);
       
-      // Add underline
-      if (!range.collapsed) {
-        document.execCommand("underline", false, null);
-      } else {
-        // Collapsed cursor - insert style marker with underline immediately
-        const span = document.createElement("span");
-        span.style.fontSize = `${activeFontSize}px`;
-        span.style.color = activeColor;
-        span.style.fontWeight = activeBold ? "bold" : "normal";
-        span.style.fontStyle = activeItalic ? "italic" : "normal";
-        span.style.textDecoration = activeStrikethrough ? "underline line-through" : "underline";
-        span.style.setProperty("text-decoration-color", activeColor, "important");
-        span.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
-        if (activeBgColor !== "transparent") {
-          span.style.backgroundColor = activeBgColor;
-        }
-        span.innerHTML = "\u200B"; // Zero-width space
-        
-        try {
-          range.insertNode(span);
-          const newRange = document.createRange();
-          newRange.setStartAfter(span);
-          newRange.collapse(true);
-          selection.removeAllRanges();
-          selection.addRange(newRange);
-          
-          // Update saved selection
-          savedSelectionRef.current = {
-            range: newRange.cloneRange(),
-            startContainer: newRange.startContainer,
-            startOffset: newRange.startOffset,
-            endContainer: newRange.endContainer,
-            endOffset: newRange.endOffset,
-            collapsed: newRange.collapsed,
-            text: newRange.toString()
-          };
-        } catch (e) {
-          console.error("Error inserting underline style marker:", e);
-        }
-      }
-      
-      lastUsedStylesRef.current.textDecoration = "underline";
-    }
-    
-    // Update underline color to match current text color (only if adding underline)
-    if (!hasUnderline) {
-      requestAnimationFrame(() => {
-        try {
-          // Get current text color
-          let currentColor = lastUsedStylesRef.current.color;
-          if (!currentColor || currentColor === "rgb(0, 0, 0)") {
-            // Try to get color from current selection
-            const currentRange = selection.getRangeAt(0);
-            let colorNode = currentRange.startContainer;
-            if (colorNode.nodeType === Node.TEXT_NODE) {
-              colorNode = colorNode.parentElement;
-            }
-            const computedColor = window.getComputedStyle(colorNode).color;
-            if (computedColor && computedColor !== "rgb(0, 0, 0)") {
-              currentColor = computedColor;
-            }
+      try {
+        const isNowUnderlined = document.queryCommandState("underline");
+        setActiveUnderline(isNowUnderlined);
+        setDisplayedUnderline(isNowUnderlined);
+        setCurrentUnderline(isNowUnderlined);
+        if (underlineButtonRef.current) {
+          if (isNowUnderlined) {
+            underlineButtonRef.current.classList.add('active');
+          } else {
+            underlineButtonRef.current.classList.remove('active');
           }
-          
-          // Convert RGB to hex if needed
-          const colorToHex = (color) => {
-            if (color.startsWith('#')) return color;
-            const rgb = color.match(/\d+/g);
-            if (rgb && rgb.length >= 3) {
-              return "#" + rgb.slice(0, 3).map(x => {
-                const hex = parseInt(x).toString(16);
-                return hex.length === 1 ? "0" + hex : hex;
-              }).join("");
-            }
-            return color;
-          };
-          
-          const hexColor = colorToHex(currentColor);
-          
-          // Update underline color for all underlined elements in selection
-          const allUTags = editorRef.current.querySelectorAll("u");
-          allUTags.forEach(uTag => {
-            try {
-              if (range.intersectsNode(uTag) && uTag.style) {
-                uTag.style.setProperty("text-decoration-color", hexColor, "important");
-                uTag.style.setProperty("-webkit-text-decoration-color", hexColor, "important");
-              }
-            } catch (e) {
-              // Skip if error
-            }
-          });
-          
-          // Also update any elements with underline style
-          const allElements = editorRef.current.querySelectorAll("*");
-          allElements.forEach(element => {
-            try {
-              if (range.intersectsNode(element) && element.style) {
-                const computedStyle = window.getComputedStyle(element);
-                if (computedStyle.textDecoration.includes("underline")) {
-                  element.style.setProperty("text-decoration-color", hexColor, "important");
-                  element.style.setProperty("-webkit-text-decoration-color", hexColor, "important");
-                }
-              }
-            } catch (e) {
-              // Skip if error
-            }
-          });
-        } catch (e) {
-          console.error("Error updating underline color in toggleUnderline:", e);
         }
-      });
+      } catch (e) {
+        // Keep state
+      }
     }
     
-    // Update styles IMMEDIATELY (no delay)
-    detectStyles();
+    lastUsedStylesRef.current.textDecoration = newUnderlineState ? "underline" : (activeStrikethrough ? "line-through" : "none");
     handleEditorInput();
   };
 
+  // ===== ULTRA SIMPLE & DIRECT: Toggle Strikethrough Function =====
   const toggleStrikethrough = (e) => {
     if (e) e.preventDefault();
-    // Save selection before toggling
-    saveSelection();
-    formatSelection("strikeThrough");
-    // Update last used style and detect styles after applying
-    requestAnimationFrame(() => {
-      detectStyles();
+    if (!editorRef.current) return;
+    
+    // ===== STEP 1: Get current state FIRST =====
+    const selection = window.getSelection();
+    let range = null;
+    
+    if (selection.rangeCount > 0) {
+      range = selection.getRangeAt(0);
+      if (!editorRef.current.contains(range.commonAncestorContainer)) {
+        range = null;
+      }
+    }
+    
+    if (!range && savedSelectionRef.current) {
+      try {
+        const saved = savedSelectionRef.current;
+        range = document.createRange();
+        range.setStart(saved.startContainer, saved.startOffset);
+        range.setEnd(saved.endContainer, saved.endOffset);
+        if (editorRef.current.contains(range.commonAncestorContainer)) {
+          selection.removeAllRanges();
+          selection.addRange(range);
+        } else {
+          range = null;
+        }
+      } catch (e) {
+        range = null;
+      }
+    }
+    
+    if (!range) {
+      range = document.createRange();
+      range.selectNodeContents(editorRef.current);
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+    
+    // Check current strikethrough state
+    let isCurrentlyStrikethrough = activeStrikethrough;
+    
+    if (range.collapsed) {
+      let node = range.startContainer;
+      if (node.nodeType === Node.TEXT_NODE) {
+        node = node.parentElement;
+      }
+      if (node.tagName === "SPAN" && (node.textContent === "\u200B" || node.innerHTML === "\u200B")) {
+        const textDecoration = node.style.textDecoration || window.getComputedStyle(node).textDecoration;
+        isCurrentlyStrikethrough = textDecoration.includes("line-through");
+      }
+    } else {
+      try {
+        isCurrentlyStrikethrough = document.queryCommandState("strikeThrough");
+      } catch (e) {
+        let node = range.startContainer;
+        if (node.nodeType === Node.TEXT_NODE) {
+          node = node.parentElement;
+        }
+        const textDecoration = window.getComputedStyle(node).textDecoration;
+        isCurrentlyStrikethrough = textDecoration.includes("line-through");
+      }
+    }
+    
+    const newStrikethroughState = !isCurrentlyStrikethrough;
+    
+    // ===== STEP 2: Update React State FIRST with flushSync =====
+    // Update React state FIRST to sync className, then update DOM
+    flushSync(() => {
+      setActiveStrikethrough(newStrikethroughState);
+      setDisplayedStrikethrough(newStrikethroughState);
+      setCurrentStrikethrough(newStrikethroughState);
     });
+    
+    // ===== STEP 3: Update Button Visual DIRECTLY (INSTANT - no delay) =====
+    // Update button DIRECTLY via DOM - after React state update
+    if (strikethroughButtonRef.current) {
+      const btn = strikethroughButtonRef.current;
+      
+      if (newStrikethroughState) {
+        // Activate button
+        btn.classList.add('active');
+        btn.style.setProperty('background-color', '#F1A124', 'important');
+        btn.style.setProperty('border-color', '#F1A124', 'important');
+        btn.style.setProperty('color', '#ffffff', 'important');
+      } else {
+        // Deactivate button - FORCE REMOVE all active styles
+        // Remove class first
+        btn.classList.remove('active');
+        // Also update className directly - remove 'active' completely and keep only base class
+        const baseClass = 'toolbar-btn';
+        btn.className = baseClass;
+        // Remove all inline styles - multiple methods to ensure it works
+        btn.style.removeProperty('background-color');
+        btn.style.removeProperty('border-color');
+        btn.style.removeProperty('color');
+        // Clear style properties
+        btn.style.backgroundColor = '';
+        btn.style.borderColor = '';
+        btn.style.color = '';
+        // Force override with empty using important to override any CSS
+        btn.style.setProperty('background-color', '', 'important');
+        btn.style.setProperty('border-color', '', 'important');
+        btn.style.setProperty('color', '', 'important');
+      }
+      
+      // Force immediate visual update
+      void btn.offsetHeight;
+    }
+    
+    // Focus editor
+    editorRef.current.focus();
+    
+    // ===== STEP 3: Apply to Editor =====
+    if (range.collapsed) {
+      // Collapsed cursor
+      let node = range.startContainer;
+      if (node.nodeType === Node.TEXT_NODE) {
+        node = node.parentElement;
+      }
+      
+      const isInStyleMarker = node.tagName === "SPAN" && 
+        (node.textContent === "\u200B" || node.innerHTML === "\u200B");
+      
+      if (isInStyleMarker) {
+        // Update existing marker
+        let textDecoration = activeUnderline ? "underline" : (newStrikethroughState ? "line-through" : "none");
+        if (activeUnderline && newStrikethroughState) {
+          textDecoration = "underline line-through";
+        }
+        node.style.textDecoration = textDecoration;
+        node.style.fontSize = `${activeFontSize}px`;
+        node.style.color = activeColor;
+        node.style.fontWeight = activeBold ? "bold" : "normal";
+        node.style.fontStyle = activeItalic ? "italic" : "normal";
+        if (activeUnderline) {
+          node.style.setProperty("text-decoration-color", activeColor, "important");
+          node.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
+        }
+        if (activeBgColor !== "transparent") {
+          node.style.backgroundColor = activeBgColor;
+        } else {
+          node.style.backgroundColor = "";
+        }
+        
+        const newRange = document.createRange();
+        newRange.setStartAfter(node);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+        
+        savedSelectionRef.current = {
+          range: newRange.cloneRange(),
+          startContainer: newRange.startContainer,
+          startOffset: newRange.startOffset,
+          endContainer: newRange.endContainer,
+          endOffset: newRange.endOffset,
+          collapsed: true,
+          text: ""
+        };
+      } else {
+        // Create new style marker with VISIBLE placeholder for visual feedback
+        const span = document.createElement("span");
+        span.style.fontSize = `${activeFontSize}px`;
+        span.style.color = activeColor;
+        let textDecoration = activeUnderline ? "underline" : (newStrikethroughState ? "line-through" : "none");
+        if (activeUnderline && newStrikethroughState) {
+          textDecoration = "underline line-through";
+        }
+        span.style.textDecoration = textDecoration;
+        span.style.fontWeight = activeBold ? "bold" : "normal";
+        span.style.fontStyle = activeItalic ? "italic" : "normal";
+        if (activeUnderline) {
+          span.style.setProperty("text-decoration-color", activeColor, "important");
+          span.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
+        }
+        if (activeBgColor !== "transparent") {
+          span.style.backgroundColor = activeBgColor;
+        }
+        
+        // Insert visible placeholder character that will be replaced when typing
+        // Use a very thin space that's barely visible but shows the style
+        span.innerHTML = "\u2009"; // Thin space (more visible than zero-width)
+        
+        range.insertNode(span);
+        
+        // Force immediate visual update
+        void span.offsetHeight;
+        
+        const newRange = document.createRange();
+        newRange.setStart(span, 0);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+        
+        savedSelectionRef.current = {
+          range: newRange.cloneRange(),
+          startContainer: newRange.startContainer,
+          startOffset: newRange.startOffset,
+          endContainer: newRange.endContainer,
+          endOffset: newRange.endOffset,
+          collapsed: true,
+          text: ""
+        };
+        
+        // Replace thin space with zero-width space after a brief moment (for next typing)
+        setTimeout(() => {
+          if (span && span.textContent === "\u2009") {
+            span.innerHTML = "\u200B";
+          }
+        }, 100);
+      }
+    } else {
+      // Has selection
+      document.execCommand("strikeThrough", false, null);
+      
+      try {
+        const isNowStrikethrough = document.queryCommandState("strikeThrough");
+        setActiveStrikethrough(isNowStrikethrough);
+        setDisplayedStrikethrough(isNowStrikethrough);
+        setCurrentStrikethrough(isNowStrikethrough);
+        if (strikethroughButtonRef.current) {
+          if (isNowStrikethrough) {
+            strikethroughButtonRef.current.classList.add('active');
+          } else {
+            strikethroughButtonRef.current.classList.remove('active');
+          }
+        }
+      } catch (e) {
+        // Keep state
+      }
+    }
+    
+    lastUsedStylesRef.current.textDecoration = newStrikethroughState ? "line-through" : (activeUnderline ? "underline" : "none");
+    handleEditorInput();
   };
 
   const paragraphStyles = [
@@ -2480,6 +2715,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
             <Bold size={16} />
           </button>
           <button 
+            ref={italicButtonRef}
             className={`toolbar-btn ${currentItalic ? "active" : ""}`}
             title="Italic"
             onMouseDown={(e) => {
@@ -2649,6 +2885,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
             )}
           </div>
           <button 
+            ref={underlineButtonRef}
             className={`toolbar-btn ${currentUnderline ? "active" : ""}`}
             title="Underline"
             onMouseDown={(e) => {
@@ -2660,6 +2897,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
             <Underline size={16} />
           </button>
           <button 
+            ref={strikethroughButtonRef}
             className={`toolbar-btn ${currentStrikethrough ? "active" : ""}`}
             title="Strikethrough"
             onMouseDown={(e) => {
