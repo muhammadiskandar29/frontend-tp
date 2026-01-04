@@ -1775,30 +1775,49 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     
     const newBoldState = !isCurrentlyBold;
     
-    // ===== STEP 2: Update Button FIRST (INSTANT - no delay) =====
-    // Update button DIRECTLY via DOM - no React, no delay, instant visual feedback
-    if (boldButtonRef.current) {
-      if (newBoldState) {
-        boldButtonRef.current.classList.add('active');
-        // Also set inline style for instant visual feedback
-        boldButtonRef.current.style.backgroundColor = '#F1A124';
-        boldButtonRef.current.style.borderColor = '#F1A124';
-        boldButtonRef.current.style.color = '#ffffff';
-      } else {
-        boldButtonRef.current.classList.remove('active');
-        // Reset to default
-        boldButtonRef.current.style.backgroundColor = '';
-        boldButtonRef.current.style.borderColor = '';
-        boldButtonRef.current.style.color = '';
-      }
-      // Force immediate visual update
-      void boldButtonRef.current.offsetHeight;
-    }
+    // ===== STEP 2: Update React State FIRST with flushSync =====
+    // Update React state FIRST to sync className, then update DOM
+    flushSync(() => {
+      setActiveBold(newBoldState);
+      setDisplayedBold(newBoldState);
+      setCurrentBold(newBoldState);
+    });
     
-    // Update React state (for consistency)
-    setActiveBold(newBoldState);
-    setDisplayedBold(newBoldState);
-    setCurrentBold(newBoldState);
+    // ===== STEP 3: Update Button Visual DIRECTLY (INSTANT - no delay) =====
+    // Update button DIRECTLY via DOM - after React state update
+    if (boldButtonRef.current) {
+      const btn = boldButtonRef.current;
+      
+      if (newBoldState) {
+        // Activate button
+        btn.classList.add('active');
+        btn.style.setProperty('background-color', '#F1A124', 'important');
+        btn.style.setProperty('border-color', '#F1A124', 'important');
+        btn.style.setProperty('color', '#ffffff', 'important');
+      } else {
+        // Deactivate button - FORCE REMOVE all active styles
+        // Remove class first
+        btn.classList.remove('active');
+        // Also update className directly - remove 'active' completely and keep only base class
+        const baseClass = 'toolbar-btn';
+        btn.className = baseClass;
+        // Remove all inline styles - multiple methods to ensure it works
+        btn.style.removeProperty('background-color');
+        btn.style.removeProperty('border-color');
+        btn.style.removeProperty('color');
+        // Clear style properties
+        btn.style.backgroundColor = '';
+        btn.style.borderColor = '';
+        btn.style.color = '';
+        // Force override with empty using important to override any CSS
+        btn.style.setProperty('background-color', '', 'important');
+        btn.style.setProperty('border-color', '', 'important');
+        btn.style.setProperty('color', '', 'important');
+      }
+      
+      // Force immediate visual update
+      void btn.offsetHeight;
+    }
     
     // Focus editor
     editorRef.current.focus();
