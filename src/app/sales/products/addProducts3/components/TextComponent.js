@@ -351,110 +351,102 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           range.deleteContents();
         }
         
-        // Use execCommand first (most reliable)
-        const success = document.execCommand("insertParagraph", false, null);
-        
-        if (success) {
-          // After inserting paragraph, apply active styles to the new paragraph
-          requestAnimationFrame(() => {
-            const newSelection = window.getSelection();
-            if (newSelection.rangeCount > 0) {
-              const newRange = newSelection.getRangeAt(0);
-              let newP = newRange.startContainer;
-              
-              // Find the paragraph element
-              if (newP.nodeType === Node.TEXT_NODE) {
-                newP = newP.parentElement;
-              }
-              while (newP && newP !== editorRef.current && newP.tagName !== "P") {
-                newP = newP.parentElement;
-              }
-              
-              // Apply active styles to new paragraph
-              if (newP && newP.tagName === "P") {
-                newP.style.fontSize = `${activeFontSize}px`;
-                newP.style.color = activeColor;
-                newP.style.fontWeight = activeBold ? "bold" : "normal";
-                newP.style.fontStyle = activeItalic ? "italic" : "normal";
-                newP.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
-                if (activeUnderline) {
-                  newP.style.setProperty("text-decoration-color", activeColor, "important");
-                  newP.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
-                }
-                if (activeStrikethrough && activeUnderline) {
-                  newP.style.textDecoration = "underline line-through";
-                }
-                // Background is always transparent for new paragraph (MS Word behavior)
-                newP.style.backgroundColor = "transparent";
-                
-                // Insert style marker at cursor for next typing
-                const cursorRange = document.createRange();
-                cursorRange.selectNodeContents(newP);
-                cursorRange.collapse(true);
-                
-                const span = document.createElement("span");
-                span.style.fontSize = `${activeFontSize}px`;
-                span.style.color = activeColor;
-                span.style.fontWeight = activeBold ? "bold" : "normal";
-                span.style.fontStyle = activeItalic ? "italic" : "normal";
-                span.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
-                if (activeUnderline) {
-                  span.style.setProperty("text-decoration-color", activeColor, "important");
-                  span.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
-                }
-                if (activeStrikethrough && activeUnderline) {
-                  span.style.textDecoration = "underline line-through";
-                }
-                if (activeBgColor !== "transparent") {
-                  span.style.backgroundColor = activeBgColor;
-                }
-                span.innerHTML = "\u200B";
-                
-                cursorRange.insertNode(span);
-                const finalRange = document.createRange();
-                finalRange.setStartAfter(span);
-                finalRange.collapse(true);
-                newSelection.removeAllRanges();
-                newSelection.addRange(finalRange);
-                
-                // Update saved selection
-                savedSelectionRef.current = {
-                  range: finalRange.cloneRange(),
-                  startContainer: finalRange.startContainer,
-                  startOffset: finalRange.startOffset,
-                  endContainer: finalRange.endContainer,
-                  endOffset: finalRange.endOffset,
-                  collapsed: finalRange.collapsed,
-                  text: finalRange.toString()
-                };
-              }
-            }
-            
-            handleEditorInput();
-          });
-        } else {
-          // Fallback: manual paragraph creation
-          const newP = document.createElement("p");
-          newP.innerHTML = "<br>";
-          
-          // Apply active styles
-          newP.style.fontSize = `${activeFontSize}px`;
-          newP.style.color = activeColor;
-          newP.style.fontWeight = activeBold ? "bold" : "normal";
-          newP.style.fontStyle = activeItalic ? "italic" : "normal";
-          newP.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
-          newP.style.backgroundColor = "transparent";
-          
-          range.insertNode(newP);
-          
-          const newRange = document.createRange();
-          newRange.selectNodeContents(newP);
-          newRange.collapse(true);
-          selection.removeAllRanges();
-          selection.addRange(newRange);
-          
-          handleEditorInput();
+        // Find current paragraph to split
+        let currentP = range.startContainer;
+        if (currentP.nodeType === Node.TEXT_NODE) {
+          currentP = currentP.parentElement;
         }
+        while (currentP && currentP !== editorRef.current && currentP.tagName !== "P") {
+          currentP = currentP.parentElement;
+        }
+        
+        // Create new paragraph with ACTIVE styles immediately
+        const newP = document.createElement("p");
+        newP.innerHTML = "<br>";
+        
+        // Apply active styles to new paragraph IMMEDIATELY
+        newP.style.fontSize = `${activeFontSize}px`;
+        newP.style.color = activeColor;
+        newP.style.fontWeight = activeBold ? "bold" : "normal";
+        newP.style.fontStyle = activeItalic ? "italic" : "normal";
+        newP.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
+        if (activeUnderline) {
+          newP.style.setProperty("text-decoration-color", activeColor, "important");
+          newP.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
+        }
+        if (activeStrikethrough && activeUnderline) {
+          newP.style.textDecoration = "underline line-through";
+        }
+        // Background is always transparent for new paragraph (MS Word behavior)
+        newP.style.backgroundColor = "transparent";
+        
+        // Insert style marker at cursor for next typing
+        const span = document.createElement("span");
+        span.style.fontSize = `${activeFontSize}px`;
+        span.style.color = activeColor;
+        span.style.fontWeight = activeBold ? "bold" : "normal";
+        span.style.fontStyle = activeItalic ? "italic" : "normal";
+        span.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
+        if (activeUnderline) {
+          span.style.setProperty("text-decoration-color", activeColor, "important");
+          span.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
+        }
+        if (activeStrikethrough && activeUnderline) {
+          span.style.textDecoration = "underline line-through";
+        }
+        if (activeBgColor !== "transparent") {
+          span.style.backgroundColor = activeBgColor;
+        }
+        span.innerHTML = "\u200B";
+        newP.insertBefore(span, newP.firstChild);
+        
+        // Insert new paragraph
+        if (currentP && currentP.tagName === "P") {
+          // Split paragraph: move content after cursor to new paragraph
+          const afterRange = range.cloneRange();
+          afterRange.setStart(range.startContainer, range.startOffset);
+          afterRange.setEndAfter(currentP);
+          
+          if (!afterRange.collapsed) {
+            const fragment = afterRange.extractContents();
+            // Remove the <br> from newP and add fragment
+            newP.innerHTML = "";
+            newP.appendChild(span);
+            while (fragment.firstChild) {
+              newP.appendChild(fragment.firstChild);
+            }
+          }
+          
+          // Insert new paragraph after current
+          if (currentP.nextSibling) {
+            currentP.parentNode.insertBefore(newP, currentP.nextSibling);
+          } else {
+            currentP.parentNode.appendChild(newP);
+          }
+        } else {
+          // Not in paragraph, just insert
+          range.insertNode(newP);
+        }
+        
+        // Move cursor to style marker in new paragraph
+        const newRange = document.createRange();
+        newRange.setStartAfter(span);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+        
+        // Update saved selection
+        savedSelectionRef.current = {
+          range: newRange.cloneRange(),
+          startContainer: newRange.startContainer,
+          startOffset: newRange.startOffset,
+          endContainer: newRange.endContainer,
+          endOffset: newRange.endOffset,
+          collapsed: newRange.collapsed,
+          text: newRange.toString()
+        };
+        
+        handleEditorInput();
       } catch (err) {
         console.error("Error inserting paragraph:", err);
         // Last resort: just insert line break
@@ -1777,14 +1769,31 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     }
     
     // Toggle bold - MS Word style: works for selection or sets format for next typing
-    document.execCommand("bold", false, null);
+    const newBoldState = !isBold;
     
-    // Update last used style
-    if (isBold) {
-      lastUsedStylesRef.current.fontWeight = "normal";
+    // ===== CRITICAL: Update Active State =====
+    setActiveBold(newBoldState);
+    
+    // Apply to selection or cursor
+    if (range.collapsed) {
+      // Collapsed cursor - insert style marker with active styles
+      const currentStyles = getAllCurrentStyles(range);
+      currentStyles.bold = newBoldState;
+      currentStyles.fontSize = activeFontSize;
+      currentStyles.textColor = activeColor;
+      currentStyles.bgColor = activeBgColor;
+      currentStyles.italic = activeItalic;
+      currentStyles.underline = activeUnderline;
+      currentStyles.strikethrough = activeStrikethrough;
+      
+      applyStyleWithPreservation(range, currentStyles);
     } else {
-      lastUsedStylesRef.current.fontWeight = "bold";
+      // Has selection - apply to selection
+      document.execCommand("bold", false, null);
     }
+    
+    // Update last used style (legacy)
+    lastUsedStylesRef.current.fontWeight = newBoldState ? "bold" : "normal";
     
     // Update styles
     requestAnimationFrame(() => {
@@ -1856,14 +1865,31 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     }
     
     // Toggle italic - MS Word style: works for selection or sets format for next typing
-    document.execCommand("italic", false, null);
+    const newItalicState = !isItalic;
     
-    // Update last used style
-    if (isItalic) {
-      lastUsedStylesRef.current.fontStyle = "normal";
+    // ===== CRITICAL: Update Active State =====
+    setActiveItalic(newItalicState);
+    
+    // Apply to selection or cursor
+    if (range.collapsed) {
+      // Collapsed cursor - insert style marker with active styles
+      const currentStyles = getAllCurrentStyles(range);
+      currentStyles.italic = newItalicState;
+      currentStyles.fontSize = activeFontSize;
+      currentStyles.textColor = activeColor;
+      currentStyles.bgColor = activeBgColor;
+      currentStyles.bold = activeBold;
+      currentStyles.underline = activeUnderline;
+      currentStyles.strikethrough = activeStrikethrough;
+      
+      applyStyleWithPreservation(range, currentStyles);
     } else {
-      lastUsedStylesRef.current.fontStyle = "italic";
+      // Has selection - apply to selection
+      document.execCommand("italic", false, null);
     }
+    
+    // Update last used style (legacy)
+    lastUsedStylesRef.current.fontStyle = newItalicState ? "italic" : "normal";
     
     // Update styles
     requestAnimationFrame(() => {
@@ -2050,14 +2076,49 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         }
       }
       
+      // ===== CRITICAL: Update Active State =====
+      setActiveUnderline(false);
+      
       // Then use execCommand to ensure underline is removed
-      document.execCommand("underline", false, null);
+      if (!range.collapsed) {
+        document.execCommand("underline", false, null);
+      } else {
+        // Collapsed cursor - insert style marker without underline
+        const currentStyles = getAllCurrentStyles(range);
+        currentStyles.underline = false;
+        currentStyles.fontSize = activeFontSize;
+        currentStyles.textColor = activeColor;
+        currentStyles.bgColor = activeBgColor;
+        currentStyles.bold = activeBold;
+        currentStyles.italic = activeItalic;
+        currentStyles.strikethrough = activeStrikethrough;
+        
+        applyStyleWithPreservation(range, currentStyles);
+      }
       
       // CRITICAL: Update lastUsedStylesRef IMMEDIATELY so next typing won't have underline
       lastUsedStylesRef.current.textDecoration = "none";
     } else {
+      // ===== CRITICAL: Update Active State =====
+      setActiveUnderline(true);
+      
       // Add underline
-      document.execCommand("underline", false, null);
+      if (!range.collapsed) {
+        document.execCommand("underline", false, null);
+      } else {
+        // Collapsed cursor - insert style marker with underline
+        const currentStyles = getAllCurrentStyles(range);
+        currentStyles.underline = true;
+        currentStyles.fontSize = activeFontSize;
+        currentStyles.textColor = activeColor;
+        currentStyles.bgColor = activeBgColor;
+        currentStyles.bold = activeBold;
+        currentStyles.italic = activeItalic;
+        currentStyles.strikethrough = activeStrikethrough;
+        
+        applyStyleWithPreservation(range, currentStyles);
+      }
+      
       lastUsedStylesRef.current.textDecoration = "underline";
     }
     
