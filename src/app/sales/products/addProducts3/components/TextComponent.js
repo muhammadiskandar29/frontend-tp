@@ -1364,13 +1364,12 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     setActiveFontSize(size);
     setDisplayedFontSize(size); // Update UI display
     
-    editorRef.current.focus();
-    
-    // Get current selection
+    // Get current selection FIRST before focusing
     const selection = window.getSelection();
     let range = null;
+    let wasCollapsed = false;
     
-    // Try to restore saved selection first
+    // Try to restore saved selection first (CRITICAL for selection that was saved before focus to input)
     if (savedSelectionRef.current) {
       try {
         const saved = savedSelectionRef.current;
@@ -1378,8 +1377,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         range.setStart(saved.startContainer, saved.startOffset);
         range.setEnd(saved.endContainer, saved.endOffset);
         if (editorRef.current.contains(range.commonAncestorContainer)) {
-          selection.removeAllRanges();
-          selection.addRange(range);
+          wasCollapsed = saved.collapsed;
         } else {
           range = null;
         }
@@ -1391,45 +1389,38 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     // If no saved selection, try current selection
     if (!range && selection.rangeCount > 0) {
       range = selection.getRangeAt(0);
-      if (!editorRef.current.contains(range.commonAncestorContainer)) {
+      if (editorRef.current.contains(range.commonAncestorContainer)) {
+        wasCollapsed = range.collapsed;
+      } else {
         range = null;
       }
     }
     
-    // If still no range, save and create one
-    if (!range) {
-      const savedRange = saveSelection();
-      if (savedRange) {
-        try {
-          range = document.createRange();
-          range.setStart(savedRange.startContainer, savedRange.startOffset);
-          range.setEnd(savedRange.endContainer, savedRange.endOffset);
-          selection.removeAllRanges();
-          selection.addRange(range);
-        } catch (e) {
-          // Create range at cursor
-          range = document.createRange();
-          range.selectNodeContents(editorRef.current);
-          range.collapse(false);
-          selection.removeAllRanges();
-          selection.addRange(range);
-        }
-      } else {
-        // Create range at end
-        range = document.createRange();
-        range.selectNodeContents(editorRef.current);
-        range.collapse(false);
+    // Focus editor and restore selection
+    editorRef.current.focus();
+    
+    if (range) {
+      try {
         selection.removeAllRanges();
         selection.addRange(range);
+      } catch (e) {
+        // Range invalid, create new one
+        range = null;
       }
     }
     
-    // ===== STEP 2: Apply to Selection or Cursor =====
-    // MS Word behavior:
-    // - If has selection: apply to selection
-    // - If collapsed cursor: insert style marker for next typing
+    // If still no range, create one at cursor
+    if (!range) {
+      range = document.createRange();
+      range.selectNodeContents(editorRef.current);
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      wasCollapsed = true;
+    }
     
-    if (range.collapsed) {
+    // ===== STEP 2: Apply to Selection or Cursor =====
+    if (range.collapsed || wasCollapsed) {
       // Collapsed cursor - insert style marker with active styles
       const currentStyles = getAllCurrentStyles(range);
       currentStyles.fontSize = size;
@@ -1442,33 +1433,57 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       
       applyStyleWithPreservation(range, currentStyles);
     } else {
-      // Has selection - apply to selection
-      const currentStyles = getAllCurrentStyles(range);
-      currentStyles.fontSize = size;
+      // Has selection - apply directly to selection (SIMPLE & DIRECT)
+      const contents = range.extractContents();
+      const span = document.createElement("span");
+      span.style.fontSize = `${size}px`;
+      
       // Preserve other styles from selection
-      applyStyleWithPreservation(range, currentStyles);
+      const currentStyles = getAllCurrentStyles(range);
+      if (currentStyles.bold) span.style.fontWeight = "bold";
+      if (currentStyles.italic) span.style.fontStyle = "italic";
+      if (currentStyles.underline) span.style.textDecoration = "underline";
+      if (currentStyles.strikethrough) {
+        const existing = span.style.textDecoration || "";
+        span.style.textDecoration = existing ? `${existing} line-through` : "line-through";
+      }
+      if (currentStyles.textColor) span.style.color = currentStyles.textColor;
+      if (currentStyles.bgColor && currentStyles.bgColor !== "transparent") {
+        span.style.backgroundColor = currentStyles.bgColor;
+      }
+      
+      span.appendChild(contents);
+      range.insertNode(span);
+      
+      // Collapse to end and restore selection
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
     }
+    
+    // Update lastUsedStylesRef
+    lastUsedStylesRef.current.fontSize = size;
     
     // Trigger input to save
     handleEditorInput();
     
-    // CRITICAL: After applying font size to selection, ensure displayed font size is synced
-    // For selection, directly update displayed font size based on what we just applied
-    if (range && !range.collapsed) {
+    // CRITICAL: After applying font size, ensure displayed font size is synced
+    // Don't let detectStyles override what we just applied
+    flushSync(() => {
+      setDisplayedFontSize(size);
+      setSelectedFontSize(size);
+    });
+    
+    // Update UI display (detectStyles untuk update button states)
+    // Tapi jangan panggil detectStyles terlalu cepat - biarkan DOM update dulu
+    setTimeout(() => {
+      detectStyles();
+      // Ensure fontSize tetap sesuai yang baru di-apply setelah detectStyles
       flushSync(() => {
         setDisplayedFontSize(size);
         setSelectedFontSize(size);
       });
-    }
-    
-    // Update UI display (detectStyles untuk update button states)
-    requestAnimationFrame(() => {
-      detectStyles();
-      // Double check after DOM update
-      requestAnimationFrame(() => {
-        detectStyles();
-      });
-    });
+    }, 50);
   };
 
   // Initialize editor content
@@ -1765,9 +1780,23 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     setDisplayedUnderline(detectedUnderline);
     setDisplayedStrikethrough(detectedStrikethrough);
     
-    // Update displayed font size - gunakan detected jika ada, jika tidak gunakan active state
+    // Update displayed font size
+    // CRITICAL: Prioritaskan activeFontSize jika baru di-apply (lebih dari 0.5 detik yang lalu)
+    // Jangan override jika activeFontSize berbeda dengan detected (artinya baru di-apply)
     if (detectedFontSize !== null) {
-      setDisplayedFontSize(detectedFontSize);
+      // Jika activeFontSize berbeda dengan detected lebih dari 1px, kemungkinan baru di-apply
+      // Prioritaskan activeFontSize untuk consistency
+      const diff = Math.abs(activeFontSize - detectedFontSize);
+      if (diff > 1) {
+        // Active state berbeda signifikan, kemungkinan baru di-apply - gunakan active state
+        setDisplayedFontSize(activeFontSize);
+      } else {
+        // Sama atau hampir sama, gunakan detected (lebih akurat dari DOM)
+        setDisplayedFontSize(detectedFontSize);
+      }
+    } else {
+      // Tidak ada detected, gunakan active state
+      setDisplayedFontSize(activeFontSize);
     }
     
     // Update displayed colors - gunakan detected jika ada, jika tidak gunakan active state
@@ -3417,26 +3446,47 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
               }}
               onInput={(e) => {
                 // Allow typing directly - get value from input element
+                // DON'T apply immediately on every keystroke - wait for enter or blur
+                // Just update displayedFontSize for UI feedback
                 const inputValue = e.target.value;
                 const value = parseFloat(inputValue);
                 if (!isNaN(value) && value >= 8 && value <= 200) {
                   const size = Math.round(value);
-                  // Apply immediately when typing - this updates activeFontSize
-                  applyFontSize(size);
+                  // Only update displayed value, don't apply yet
+                  setDisplayedFontSize(size);
                 }
               }}
               onValueChange={(e) => {
                 const size = e.value || displayedFontSize;
                 if (size >= 8 && size <= 200) {
-                  // Apply font size - this updates activeFontSize
+                  // Apply font size when value changes (button click or enter)
                   applyFontSize(size);
+                }
+              }}
+              onKeyDown={(e) => {
+                // When user presses Enter, apply font size
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  const inputValue = e.target.value;
+                  const value = parseFloat(inputValue);
+                  if (!isNaN(value) && value >= 8 && value <= 200) {
+                    const size = Math.round(value);
+                    applyFontSize(size);
+                    // Keep focus on input after apply
+                    e.target.focus();
+                  }
                 }
               }}
               onBlur={(e) => {
                 // Ensure font size is applied when leaving input
-                const size = displayedFontSize;
-                if (size >= 8 && size <= 200) {
+                const inputValue = e.target.value;
+                const value = parseFloat(inputValue);
+                if (!isNaN(value) && value >= 8 && value <= 200) {
+                  const size = Math.round(value);
                   applyFontSize(size);
+                } else {
+                  // If invalid, restore to last valid size
+                  setDisplayedFontSize(activeFontSize);
                 }
               }}
               min={8}
