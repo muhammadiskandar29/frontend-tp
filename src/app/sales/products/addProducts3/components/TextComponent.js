@@ -1452,9 +1452,22 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     // Trigger input to save
     handleEditorInput();
     
-    // Update UI display (detectStyles hanya untuk update button states)
+    // CRITICAL: After applying font size to selection, ensure displayed font size is synced
+    // For selection, directly update displayed font size based on what we just applied
+    if (range && !range.collapsed) {
+      flushSync(() => {
+        setDisplayedFontSize(size);
+        setSelectedFontSize(size);
+      });
+    }
+    
+    // Update UI display (detectStyles untuk update button states)
     requestAnimationFrame(() => {
       detectStyles();
+      // Double check after DOM update
+      requestAnimationFrame(() => {
+        detectStyles();
+      });
     });
   };
 
@@ -1508,14 +1521,84 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     let detectedTextColor = null;
     let detectedBgColor = "transparent";
     
-    // Use queryCommandState for more accurate detection (if available)
-    try {
-      detectedBold = document.queryCommandState("bold");
-      detectedItalic = document.queryCommandState("italic");
-      detectedUnderline = document.queryCommandState("underline");
-      detectedStrikethrough = document.queryCommandState("strikeThrough");
-    } catch (e) {
-      // queryCommandState not available, use manual detection
+    // For selection, check all nodes in selection for more accurate detection
+    if (!range.collapsed) {
+      // Check multiple nodes in selection for mixed styles
+      const walker = document.createTreeWalker(
+        range.commonAncestorContainer,
+        NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
+        {
+          acceptNode: (node) => {
+            if (node.nodeType === Node.TEXT_NODE) {
+              return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+            }
+            return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+          }
+        }
+      );
+      
+      let hasBold = false;
+      let hasItalic = false;
+      let hasUnderline = false;
+      let hasStrikethrough = false;
+      let allBold = true;
+      let allItalic = true;
+      let allUnderline = true;
+      let allStrikethrough = true;
+      let foundAnyNode = false;
+      
+      let checkNode;
+      while (checkNode = walker.nextNode()) {
+        if (checkNode.nodeType === Node.ELEMENT_NODE) {
+          foundAnyNode = true;
+          const computedStyle = window.getComputedStyle(checkNode);
+          const fontWeight = computedStyle.fontWeight;
+          const isBold = fontWeight === "bold" || fontWeight === "700" || fontWeight === "600" ||
+                        (parseInt(fontWeight) >= 600 && parseInt(fontWeight) <= 900) ||
+                        checkNode.tagName === "B" || checkNode.tagName === "STRONG" ||
+                        (checkNode.style && checkNode.style.fontWeight && 
+                         (checkNode.style.fontWeight === "bold" || parseInt(checkNode.style.fontWeight) >= 600));
+          
+          const isItalic = computedStyle.fontStyle === "italic" || checkNode.tagName === "I" || checkNode.tagName === "EM";
+          const textDecoration = computedStyle.textDecoration || checkNode.style.textDecoration || "";
+          const isUnderline = textDecoration.includes("underline") || checkNode.tagName === "U";
+          const isStrikethrough = textDecoration.includes("line-through") || checkNode.tagName === "S" || checkNode.tagName === "STRIKE";
+          
+          if (isBold) hasBold = true; else allBold = false;
+          if (isItalic) hasItalic = true; else allItalic = false;
+          if (isUnderline) hasUnderline = true; else allUnderline = false;
+          if (isStrikethrough) hasStrikethrough = true; else allStrikethrough = false;
+          
+          // Check font size from first element with fontSize
+          if (detectedFontSize === null && checkNode.style && checkNode.style.fontSize) {
+            const fontSize = parseInt(checkNode.style.fontSize);
+            if (!isNaN(fontSize) && fontSize > 0) {
+              detectedFontSize = fontSize;
+            }
+          }
+        }
+      }
+      
+      // For selection, use "all" logic: if all nodes have the style, consider it active
+      // This matches MS Word behavior
+      if (foundAnyNode) {
+        detectedBold = allBold && hasBold;
+        detectedItalic = allItalic && hasItalic;
+        detectedUnderline = allUnderline && hasUnderline;
+        detectedStrikethrough = allStrikethrough && hasStrikethrough;
+      }
+    }
+    
+    // Use queryCommandState for collapsed cursor or as fallback
+    if (range.collapsed || (!detectedBold && !detectedItalic && !detectedUnderline && !detectedStrikethrough)) {
+      try {
+        if (!detectedBold) detectedBold = document.queryCommandState("bold");
+        if (!detectedItalic) detectedItalic = document.queryCommandState("italic");
+        if (!detectedUnderline) detectedUnderline = document.queryCommandState("underline");
+        if (!detectedStrikethrough) detectedStrikethrough = document.queryCommandState("strikeThrough");
+      } catch (e) {
+        // queryCommandState not available, use manual detection
+      }
     }
     
     // First, check the closest node (most specific)
@@ -2581,8 +2664,47 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     // Update lastUsedStylesRef
     lastUsedStylesRef.current.textDecoration = newUnderlineState ? "underline" : "none";
     
+    // CRITICAL: After applying style to selection, ensure button state is synced
+    // Don't rely on detectStyles() alone - directly update based on what we just applied
+    if (!range.collapsed) {
+      // For selection, button state should match what we just applied
+      // Force update button visual and state immediately
+      flushSync(() => {
+        setCurrentUnderline(newUnderlineState);
+        setDisplayedUnderline(newUnderlineState);
+      });
+      
+      // Also update button visual directly to ensure sync
+      if (underlineButtonRef.current) {
+        const btn = underlineButtonRef.current;
+        if (newUnderlineState) {
+          btn.classList.add('active');
+          btn.style.setProperty('background-color', '#F1A124', 'important');
+          btn.style.setProperty('border-color', '#F1A124', 'important');
+          btn.style.setProperty('color', '#ffffff', 'important');
+        } else {
+          btn.classList.remove('active');
+          btn.className = 'toolbar-btn';
+          btn.style.removeProperty('background-color');
+          btn.style.removeProperty('border-color');
+          btn.style.removeProperty('color');
+          btn.style.backgroundColor = '';
+          btn.style.borderColor = '';
+          btn.style.color = '';
+          btn.style.setProperty('background-color', '', 'important');
+          btn.style.setProperty('border-color', '', 'important');
+          btn.style.setProperty('color', '', 'important');
+        }
+        void btn.offsetHeight;
+      }
+    }
+    
     requestAnimationFrame(() => {
       handleEditorInput();
+      // Double check with detectStyles after DOM update
+      requestAnimationFrame(() => {
+        detectStyles();
+      });
     });
   };
 
@@ -2835,8 +2957,42 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         : (hasUnderline ? "underline" : "none");
       lastUsedStylesRef.current.textDecoration = textDecoration;
       
+      // CRITICAL: After applying style to selection, ensure button state is synced
+      flushSync(() => {
+        setCurrentStrikethrough(newStrikethroughState);
+        setDisplayedStrikethrough(newStrikethroughState);
+      });
+      
+      // Also update button visual directly to ensure sync
+      if (strikethroughButtonRef.current) {
+        const btn = strikethroughButtonRef.current;
+        if (newStrikethroughState) {
+          btn.classList.add('active');
+          btn.style.setProperty('background-color', '#F1A124', 'important');
+          btn.style.setProperty('border-color', '#F1A124', 'important');
+          btn.style.setProperty('color', '#ffffff', 'important');
+        } else {
+          btn.classList.remove('active');
+          btn.className = 'toolbar-btn';
+          btn.style.removeProperty('background-color');
+          btn.style.removeProperty('border-color');
+          btn.style.removeProperty('color');
+          btn.style.backgroundColor = '';
+          btn.style.borderColor = '';
+          btn.style.color = '';
+          btn.style.setProperty('background-color', '', 'important');
+          btn.style.setProperty('border-color', '', 'important');
+          btn.style.setProperty('color', '', 'important');
+        }
+        void btn.offsetHeight;
+      }
+      
       requestAnimationFrame(() => {
         handleEditorInput();
+        // Double check with detectStyles after DOM update
+        requestAnimationFrame(() => {
+          detectStyles();
+        });
       });
       
       return;
