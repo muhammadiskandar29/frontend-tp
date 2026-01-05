@@ -1772,6 +1772,38 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     };
   }, []);
 
+  // Sync underline button visual with currentUnderline state
+  useEffect(() => {
+    if (underlineButtonRef.current) {
+      const btn = underlineButtonRef.current;
+      
+      if (currentUnderline) {
+        // Activate button
+        btn.classList.add('active');
+        btn.style.setProperty('background-color', '#F1A124', 'important');
+        btn.style.setProperty('border-color', '#F1A124', 'important');
+        btn.style.setProperty('color', '#ffffff', 'important');
+      } else {
+        // Deactivate button - FORCE REMOVE all active styles
+        btn.classList.remove('active');
+        const baseClass = 'toolbar-btn';
+        btn.className = baseClass;
+        btn.style.removeProperty('background-color');
+        btn.style.removeProperty('border-color');
+        btn.style.removeProperty('color');
+        btn.style.backgroundColor = '';
+        btn.style.borderColor = '';
+        btn.style.color = '';
+        btn.style.setProperty('background-color', '', 'important');
+        btn.style.setProperty('border-color', '', 'important');
+        btn.style.setProperty('color', '', 'important');
+      }
+      
+      // Force immediate visual update
+      void btn.offsetHeight;
+    }
+  }, [currentUnderline]);
+
   // Formatting functions - only apply to selection, don't change global state
   // ===== ULTRA SIMPLE & DIRECT: Toggle Bold Function =====
   const toggleBold = (e) => {
@@ -2455,15 +2487,39 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       
       try {
         const isNowUnderlined = document.queryCommandState("underline");
-        setActiveUnderline(isNowUnderlined);
-        setDisplayedUnderline(isNowUnderlined);
-        setCurrentUnderline(isNowUnderlined);
+        flushSync(() => {
+          setActiveUnderline(isNowUnderlined);
+          setDisplayedUnderline(isNowUnderlined);
+          setCurrentUnderline(isNowUnderlined);
+        });
+        
         if (underlineButtonRef.current) {
+          const btn = underlineButtonRef.current;
+          
           if (isNowUnderlined) {
-            underlineButtonRef.current.classList.add('active');
+            // Activate button
+            btn.classList.add('active');
+            btn.style.setProperty('background-color', '#F1A124', 'important');
+            btn.style.setProperty('border-color', '#F1A124', 'important');
+            btn.style.setProperty('color', '#ffffff', 'important');
           } else {
-            underlineButtonRef.current.classList.remove('active');
+            // Deactivate button - FORCE REMOVE all active styles
+            btn.classList.remove('active');
+            const baseClass = 'toolbar-btn';
+            btn.className = baseClass;
+            btn.style.removeProperty('background-color');
+            btn.style.removeProperty('border-color');
+            btn.style.removeProperty('color');
+            btn.style.backgroundColor = '';
+            btn.style.borderColor = '';
+            btn.style.color = '';
+            btn.style.setProperty('background-color', '', 'important');
+            btn.style.setProperty('border-color', '', 'important');
+            btn.style.setProperty('color', '', 'important');
           }
+          
+          // Force immediate visual update
+          void btn.offsetHeight;
         }
       } catch (e) {
         // Keep state
