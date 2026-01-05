@@ -15,7 +15,11 @@ export default function useKategori() {
   const loadKategori = async () => {
     try {
       const data = await getKategori(); // <- panggil dari lib
-      setKategori(data);
+      // Sort berdasarkan ID untuk menjaga urutan konsisten
+      const sorted = Array.isArray(data) 
+        ? [...data].sort((a, b) => (a.id || 0) - (b.id || 0))
+        : [];
+      setKategori(sorted);
     } catch (err) {
       console.error("❌ Gagal fetch kategori:", err);
     } finally {
@@ -28,7 +32,11 @@ export default function useKategori() {
     try {
       const newKategori = await addKategoriAPI(nama); // <- dari lib
       if (newKategori) {
-        setKategori((prev) => [...prev, newKategori]);
+        setKategori((prev) => {
+          const updated = [...prev, newKategori];
+          // Sort berdasarkan ID untuk menjaga urutan konsisten
+          return updated.sort((a, b) => (a.id || 0) - (b.id || 0));
+        });
         return newKategori;
       }
       return null;
@@ -43,9 +51,12 @@ export default function useKategori() {
     try {
       const updated = await updateKategoriAPI(id, nama); // <- dari lib
       if (updated) {
-        setKategori((prev) =>
-          prev.map((k) => (k.id === id ? { ...k, ...updated } : k))
-        );
+        setKategori((prev) => {
+          // Update item tanpa mengubah urutan (berdasarkan ID)
+          const updatedList = prev.map((k) => (k.id === id ? { ...k, ...updated } : k));
+          // Pastikan tetap terurut berdasarkan ID
+          return updatedList.sort((a, b) => (a.id || 0) - (b.id || 0));
+        });
         return updated;
       }
       return null;

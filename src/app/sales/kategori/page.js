@@ -34,13 +34,15 @@ export default function AdminKategoriPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 25;
 
-  // Filter kategori berdasarkan search
+  // Filter kategori berdasarkan search, tetap urut berdasarkan ID
   const filtered = useMemo(() => {
     const term = debouncedSearch.trim().toLowerCase();
-    return kategori.filter((kat) => {
+    const filteredList = kategori.filter((kat) => {
       if (!term) return true;
       return kat.nama?.toLowerCase().includes(term);
     });
+    // Pastikan tetap terurut berdasarkan ID
+    return filteredList.sort((a, b) => (a.id || 0) - (b.id || 0));
   }, [kategori, debouncedSearch]);
 
   // Pagination
