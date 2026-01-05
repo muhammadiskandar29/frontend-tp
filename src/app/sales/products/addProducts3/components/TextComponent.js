@@ -91,6 +91,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   const underlineButtonRef = useRef(null);
   const strikethroughButtonRef = useRef(null);
   const textColorButtonRef = useRef(null);
+  const bgColorButtonRef = useRef(null);
   
   // Ref untuk tracking apakah state aktif sudah di-initialize dari DOM
   const isActiveStateInitializedRef = useRef(false);
@@ -1162,237 +1163,197 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     });
   };
 
+  // ===== ULTRA SIMPLE & DIRECT: Apply Background Color Function =====
   const applyBgColor = (color) => {
     if (!editorRef.current) return;
     
-    editorRef.current.focus();
+    // ===== STEP 1: Get current state FIRST =====
+    const selection = window.getSelection();
+    let range = null;
     
-    const savedRange = saveSelection();
-    if (!savedRange) {
-      editorRef.current.focus();
-      return;
+    if (selection.rangeCount > 0) {
+      range = selection.getRangeAt(0);
+      if (!editorRef.current.contains(range.commonAncestorContainer)) {
+        range = null;
+      }
     }
     
-    const selection = window.getSelection();
-    selection.removeAllRanges();
-    selection.addRange(savedRange);
+    if (!range && savedSelectionRef.current) {
+      try {
+        const saved = savedSelectionRef.current;
+        range = document.createRange();
+        range.setStart(saved.startContainer, saved.startOffset);
+        range.setEnd(saved.endContainer, saved.endOffset);
+        if (editorRef.current.contains(range.commonAncestorContainer)) {
+          selection.removeAllRanges();
+          selection.addRange(range);
+        } else {
+          range = null;
+        }
+      } catch (e) {
+        range = null;
+      }
+    }
     
-    // Get all current styles
-    const currentStyles = getAllCurrentStyles(savedRange);
+    if (!range) {
+      range = document.createRange();
+      range.selectNodeContents(editorRef.current);
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
     
-    // Update background color in styles
-    currentStyles.bgColor = color === "transparent" ? null : color;
+    // ===== STEP 2: Update React State FIRST with flushSync =====
+    // Update React state FIRST to sync className, then update DOM
+    const bgColorValue = color === "transparent" ? "transparent" : color;
+    flushSync(() => {
+      setActiveBgColor(bgColorValue);
+      setDisplayedBgColor(bgColorValue);
+      setSelectedBgColor(color === "transparent" ? "#FFFF00" : color);
+      setCurrentBgColor(bgColorValue);
+    });
     
-    // Apply all styles (including new bg color) while preserving others
-    applyStyleWithPreservation(savedRange, currentStyles);
+    // ===== STEP 3: Update Button Visual DIRECTLY (INSTANT - no delay) =====
+    // Update button DIRECTLY via DOM - after React state update
+    if (bgColorButtonRef.current) {
+      const btn = bgColorButtonRef.current;
+      const bgColorBar = btn.querySelector('.bg-color-bar');
+      if (bgColorBar) {
+        bgColorBar.style.backgroundColor = color === "transparent" ? "#FFFF00" : color;
+      }
+      // Force immediate visual update
+      void btn.offsetHeight;
+    }
     
-    // Update last used bg color
+    // Focus editor
+    editorRef.current.focus();
+    
+    // ===== STEP 4: Apply to Editor =====
+    if (range.collapsed) {
+      // Collapsed cursor
+      let node = range.startContainer;
+      if (node.nodeType === Node.TEXT_NODE) {
+        node = node.parentElement;
+      }
+      
+      const isInStyleMarker = node.tagName === "SPAN" && 
+        (node.textContent === "\u200B" || node.innerHTML === "\u200B");
+      
+      if (isInStyleMarker) {
+        // Update existing marker
+        if (color === "transparent") {
+          node.style.backgroundColor = "";
+        } else {
+          node.style.backgroundColor = color;
+        }
+        node.style.fontSize = `${activeFontSize}px`;
+        node.style.color = activeColor;
+        node.style.fontWeight = activeBold ? "bold" : "normal";
+        node.style.fontStyle = activeItalic ? "italic" : "normal";
+        node.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
+        if (activeUnderline) {
+          node.style.setProperty("text-decoration-color", activeColor, "important");
+          node.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
+        }
+        
+        const newRange = document.createRange();
+        newRange.setStartAfter(node);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+        
+        savedSelectionRef.current = {
+          range: newRange.cloneRange(),
+          startContainer: newRange.startContainer,
+          startOffset: newRange.startOffset,
+          endContainer: newRange.endContainer,
+          endOffset: newRange.endOffset,
+          collapsed: true,
+          text: ""
+        };
+      } else {
+        // Create new style marker with VISIBLE placeholder for visual feedback
+        const span = document.createElement("span");
+        span.style.fontSize = `${activeFontSize}px`;
+        span.style.color = activeColor;
+        if (color === "transparent") {
+          span.style.backgroundColor = "";
+        } else {
+          span.style.backgroundColor = color;
+        }
+        span.style.fontWeight = activeBold ? "bold" : "normal";
+        span.style.fontStyle = activeItalic ? "italic" : "normal";
+        span.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
+        if (activeUnderline) {
+          span.style.setProperty("text-decoration-color", activeColor, "important");
+          span.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
+        }
+        
+        // Insert visible placeholder character that will be replaced when typing
+        // Use a very thin space that's barely visible but shows the style
+        span.innerHTML = "\u2009"; // Thin space (more visible than zero-width)
+        
+        range.insertNode(span);
+        
+        // Force immediate visual update
+        void span.offsetHeight;
+        
+        const newRange = document.createRange();
+        newRange.setStart(span, 0);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+        
+        savedSelectionRef.current = {
+          range: newRange.cloneRange(),
+          startContainer: newRange.startContainer,
+          startOffset: newRange.startOffset,
+          endContainer: newRange.endContainer,
+          endOffset: newRange.endOffset,
+          collapsed: true,
+          text: ""
+        };
+        
+        // Replace thin space with zero-width space after a brief moment (for next typing)
+        setTimeout(() => {
+          if (span && span.textContent === "\u2009") {
+            span.innerHTML = "\u200B";
+          }
+        }, 100);
+      }
+    } else {
+      // Has selection - apply to selection
+      if (color === "transparent") {
+        // Remove background color
+        const walker = document.createTreeWalker(
+          range.commonAncestorContainer,
+          NodeFilter.SHOW_ELEMENT,
+          {
+            acceptNode: (node) => {
+              return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+            }
+          }
+        );
+        
+        let node;
+        while (node = walker.nextNode()) {
+          if (node.style) {
+            node.style.backgroundColor = "";
+            node.style.background = "";
+          }
+        }
+      } else {
+        document.execCommand("backColor", false, color);
+      }
+    }
+    
     lastUsedStylesRef.current.backgroundColor = color === "transparent" ? "transparent" : color;
     
-    // IMMEDIATELY update state
-    setSelectedBgColor(color);
-    setCurrentBgColor(color === "transparent" ? "transparent" : color);
+    // Close color picker
+    setShowBgColorPicker(false);
     
     // Trigger input to save
     handleEditorInput();
-    
-    // Detect styles after applying
-    requestAnimationFrame(() => {
-      detectStyles();
-    });
-    
-    if (color === "transparent") {
-      // Remove background color - aggressive approach
-      if (!range.collapsed) {
-        // Has selection - remove background from selection
-        // Find all elements with background in selection and remove it
-        const walker = document.createTreeWalker(
-          editorRef.current,
-          NodeFilter.SHOW_ELEMENT,
-          null
-        );
-        
-        const elementsToFix = [];
-        let node;
-        while (node = walker.nextNode()) {
-          if (range.intersectsNode(node)) {
-            const computedStyle = window.getComputedStyle(node);
-            if (computedStyle.backgroundColor !== "transparent" && 
-                computedStyle.backgroundColor !== "rgba(0, 0, 0, 0)") {
-              elementsToFix.push(node);
-            }
-          }
-        }
-        
-        // Remove background from all found elements
-        elementsToFix.forEach(element => {
-          element.style.backgroundColor = "transparent";
-          element.style.background = "transparent";
-        });
-        
-        // Also use removeFormat to remove any mark tags with background
-        document.execCommand("removeFormat", false, null);
-        
-        // Then wrap selection in span with transparent to ensure it's removed
-        try {
-        const span = document.createElement("span");
-        span.style.backgroundColor = "transparent";
-        span.style.background = "transparent";
-        
-          if (range.collapsed) {
-            span.innerHTML = "\u200B";
-            range.insertNode(span);
-          } else {
-        try {
-          range.surroundContents(span);
-        } catch (e) {
-            const contents = range.extractContents();
-            span.appendChild(contents);
-            range.insertNode(span);
-            }
-          }
-        } catch (e) {
-          // Ignore error
-        }
-      } else {
-        // Collapsed cursor - set transparent for next typing
-        // Create span with transparent background
-        const span = document.createElement("span");
-        span.style.backgroundColor = "transparent";
-        span.style.background = "transparent";
-        span.innerHTML = "\u200B";
-        
-        try {
-          range.insertNode(span);
-          const newRange = document.createRange();
-          newRange.setStartAfter(span);
-          newRange.collapse(true);
-          selection.removeAllRanges();
-          selection.addRange(newRange);
-        } catch (e) {
-          // Ignore error
-        }
-      }
-    } else {
-      // Apply background color
-      if (!range.collapsed) {
-        // Has selection - apply to selection
-        document.execCommand("backColor", false, color);
-      } else {
-        // Collapsed cursor - apply for next typing
-      document.execCommand("backColor", false, color);
-      }
-    }
-    
-    // RESTORE preserved styles after applying background color
-    requestAnimationFrame(() => {
-      try {
-        // Restore bold
-        if (preserveBold && !document.queryCommandState("bold")) {
-          document.execCommand("bold", false, null);
-        }
-        // Restore italic
-        if (preserveItalic && !document.queryCommandState("italic")) {
-          document.execCommand("italic", false, null);
-        }
-        // Restore underline - AGGRESSIVE restoration to prevent loss
-        if (preserveUnderline) {
-          const currentRange = selection.getRangeAt(0);
-          let underlineNode = currentRange.startContainer;
-          if (underlineNode.nodeType === Node.TEXT_NODE) {
-            underlineNode = underlineNode.parentElement;
-          }
-          const computedStyle = window.getComputedStyle(underlineNode);
-          const stillHasUnderline = computedStyle.textDecoration.includes("underline") || 
-                                   underlineNode.tagName === "U" ||
-                                   document.queryCommandState("underline");
-          
-          if (!stillHasUnderline) {
-            // Underline was lost - restore it IMMEDIATELY
-            document.execCommand("underline", false, null);
-            // Also ensure underline color matches text color
-            if (preserveTextColor) {
-              requestAnimationFrame(() => {
-                const allUTags = editorRef.current.querySelectorAll("u");
-                allUTags.forEach(uTag => {
-                  try {
-                    if (currentRange.intersectsNode(uTag) && uTag.style) {
-                      uTag.style.setProperty("text-decoration-color", preserveTextColor, "important");
-                      uTag.style.setProperty("-webkit-text-decoration-color", preserveTextColor, "important");
-                    }
-                  } catch (e) {
-                    // Skip if error
-                  }
-                });
-                
-                // Also check elements with underline style
-                const allElements = editorRef.current.querySelectorAll("*");
-                allElements.forEach(element => {
-                  try {
-                    if (currentRange.intersectsNode(element) && element.style) {
-                      const elemStyle = window.getComputedStyle(element);
-                      if (elemStyle.textDecoration.includes("underline")) {
-                        element.style.setProperty("text-decoration-color", preserveTextColor, "important");
-                        element.style.setProperty("-webkit-text-decoration-color", preserveTextColor, "important");
-                      }
-                    }
-                  } catch (e) {
-                    // Skip if error
-                  }
-                });
-              });
-            }
-          }
-        }
-        // Restore strikethrough
-        if (preserveStrikethrough && !document.queryCommandState("strikeThrough")) {
-          document.execCommand("strikeThrough", false, null);
-        }
-        // Restore font size
-        if (preserveFontSize) {
-          const currentRange = selection.getRangeAt(0);
-          let sizeNode = currentRange.startContainer;
-          if (sizeNode.nodeType === Node.TEXT_NODE) {
-            sizeNode = sizeNode.parentElement;
-          }
-          if (sizeNode.style) {
-            sizeNode.style.fontSize = `${preserveFontSize}px`;
-          }
-        }
-        // Restore text color
-        if (preserveTextColor) {
-          const currentRange = selection.getRangeAt(0);
-          let colorNode = currentRange.startContainer;
-          if (colorNode.nodeType === Node.TEXT_NODE) {
-            colorNode = colorNode.parentElement;
-          }
-          if (colorNode.style) {
-            colorNode.style.color = preserveTextColor;
-          }
-        }
-      } catch (e) {
-        // Ignore errors
-      }
-    });
-    
-    // IMMEDIATELY update state for button responsiveness
-    setSelectedBgColor(color === "transparent" ? "#FFFF00" : color);
-    setCurrentBgColor(color);
-    setShowBgColorPicker(false);
-    // Update last used background color
-    lastUsedStylesRef.current.backgroundColor = color;
-    handleEditorInput();
-    // Force immediate style detection for button states
-    requestAnimationFrame(() => {
-      detectStyles();
-      // Double check to ensure button states are synced
-      requestAnimationFrame(() => {
-        detectStyles();
-        if (savedRange) {
-          restoreSelection();
-        }
-      });
-    });
   };
 
   // Apply font size - MS Word style: update active state + apply to selection or prepare for next typing
@@ -2897,6 +2858,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           {/* Background Color Button */}
           <div className="toolbar-color-picker-wrapper word-style-color-picker" ref={bgColorPickerRef}>
             <button 
+              ref={bgColorButtonRef}
               className={`toolbar-btn-bg-color ${showBgColorPicker ? "active" : ""}`}
               title="Text Highlight Color"
               onClick={() => {
