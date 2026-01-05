@@ -797,9 +797,9 @@ export default function AddProducts3Page() {
           </section>
         );
       case "form":
-        // Gunakan productKategori dari state pengaturan, bukan dari block.data.kategori
-        const isFormBuku = productKategori === 13;
-        const isFormWorkshop = productKategori === 15;
+        // Gunakan productKategori dari state pengaturan
+        const isFormBuku = productKategori === 4; // Kategori Buku (4)
+        const isFormWorkshop = productKategori === 6; // Kategori Workshop (6)
         
         return (
           <div style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
@@ -825,13 +825,27 @@ export default function AddProducts3Page() {
                   <label className="compact-label">Email <span className="required">*</span></label>
                   <input type="email" placeholder="email@example.com" className="compact-input" />
                 </div>
+                
+                {/* Alamat - Semua Kategori Sama: Provinsi, Kabupaten, Kecamatan, Kode Pos */}
                 <div className="compact-field">
-                  <label className="compact-label">Alamat <span className="required">*</span></label>
-                  <textarea placeholder="Contoh: Jl. Peta Utara 1, No 62 RT 01/07" className="compact-input compact-textarea" rows={3} />
+                  <label className="compact-label">Provinsi <span className="required">*</span></label>
+                  <input type="text" placeholder="Contoh: DKI Jakarta" className="compact-input" />
+                </div>
+                <div className="compact-field">
+                  <label className="compact-label">Kabupaten/Kota <span className="required">*</span></label>
+                  <input type="text" placeholder="Contoh: Jakarta Selatan" className="compact-input" />
+                </div>
+                <div className="compact-field">
+                  <label className="compact-label">Kecamatan <span className="required">*</span></label>
+                  <input type="text" placeholder="Contoh: Kebayoran Baru" className="compact-input" />
+                </div>
+                <div className="compact-field">
+                  <label className="compact-label">Kode Pos <span className="required">*</span></label>
+                  <input type="text" placeholder="Contoh: 12120" className="compact-input" />
                 </div>
                 
-                {/* Form Ongkir - Kategori Buku (13) */}
-            {isFormBuku && (
+                {/* Form Ongkir - Kategori Buku (4) */}
+                {isFormBuku && (
                   <div className="compact-field">
                     <OngkirCalculator
                       onSelectOngkir={(info) => {
@@ -845,11 +859,11 @@ export default function AddProducts3Page() {
                       defaultCourier="jne"
                       compact={true}
                     />
-                    </div>
+                  </div>
                 )}
 
-                {/* Form Down Payment - Kategori Workshop (15) */}
-            {isFormWorkshop && (
+                {/* Form Down Payment - Kategori Workshop (6) */}
+                {isFormWorkshop && (
                   <div className="compact-field">
                     <label className="compact-label">
                       Jumlah Down Payment <span className="required">*</span>
@@ -857,8 +871,8 @@ export default function AddProducts3Page() {
                     <input type="text" placeholder="Rp 0" className="compact-input" />
                   </div>
                 )}
-                </div>
-              </section>
+              </div>
+            </section>
 
             {/* Rincian Pesanan - General untuk semua kategori */}
             <section className="preview-form-section rincian-pesanan-section" aria-label="Rincian Pesanan">
@@ -1009,10 +1023,10 @@ export default function AddProducts3Page() {
 
   // Fungsi untuk generate FAQ berdasarkan kategori
   const generateFAQByKategori = (kategoriId) => {
-    // Mapping FAQ berdasarkan kategori
+    // Mapping FAQ berdasarkan kategori (1-7)
     const faqMap = {
-      // Kategori Ebook (10)
-      10: [
+      // Kategori Ebook (1)
+      1: [
         {
           question: "Apa saja yang akan saya dapatkan jika membeli ebook ini?",
           answer: "Anda akan mendapatkan akses ke file ebook dalam format PDF yang dapat diunduh dan dibaca kapan saja, plus bonus materi tambahan jika tersedia."
@@ -1034,8 +1048,8 @@ export default function AddProducts3Page() {
           answer: "Kami memberikan garansi kepuasan. Jika tidak puas dengan konten ebook, silakan hubungi customer service kami untuk bantuan."
         }
       ],
-      // Kategori Webinar (11)
-      11: [
+      // Kategori Webinar (2)
+      2: [
         {
           question: "Apa saja yang akan saya dapatkan dari webinar ini?",
           answer: "Anda akan mendapatkan akses live webinar, rekaman lengkap yang dapat ditonton ulang, materi presentasi, dan sertifikat kehadiran."
@@ -1057,8 +1071,8 @@ export default function AddProducts3Page() {
           answer: "Ya, pada sesi live webinar akan ada waktu untuk tanya jawab langsung dengan pembicara melalui fitur Q&A atau chat."
         }
       ],
-      // Kategori Seminar (12)
-      12: [
+      // Kategori Seminar (3)
+      3: [
         {
           question: "Apa saja yang akan saya dapatkan dari seminar ini?",
           answer: "Anda akan mendapatkan tiket masuk seminar, materi presentasi, sertifikat kehadiran, networking session, dan coffee break."
@@ -1080,8 +1094,8 @@ export default function AddProducts3Page() {
           answer: "Ya, tersedia diskon khusus untuk pembelian tiket grup minimal 5 orang. Hubungi customer service kami untuk informasi lebih lanjut."
         }
       ],
-      // Kategori Buku (13)
-      13: [
+      // Kategori Buku (4)
+      4: [
         {
           question: "Apa saja yang akan saya dapatkan jika membeli buku ini?",
           answer: "Anda akan mendapatkan buku fisik berkualitas tinggi dengan konten lengkap dan terpercaya, plus akses ke materi tambahan jika tersedia."
@@ -1103,8 +1117,8 @@ export default function AddProducts3Page() {
           answer: "Kami memberikan garansi untuk buku yang rusak atau cacat saat pengiriman. Silakan hubungi customer service kami jika mengalami masalah."
         }
       ],
-      // Kategori Ecourse (14)
-      14: [
+      // Kategori Ecourse (5)
+      5: [
         {
           question: "Apa saja yang akan saya dapatkan dari ecourse ini?",
           answer: "Anda akan mendapatkan akses ke semua modul pembelajaran, video tutorial, materi download, quiz, sertifikat, dan akses ke komunitas eksklusif."
@@ -1126,8 +1140,8 @@ export default function AddProducts3Page() {
           answer: "Ya, setelah menyelesaikan semua modul dan quiz, Anda akan mendapatkan sertifikat kelulusan yang dapat diunduh dan dicetak."
         }
       ],
-      // Kategori Workshop (15)
-      15: [
+      // Kategori Workshop (6)
+      6: [
         {
           question: "Apa saja yang akan saya dapatkan dari workshop ini?",
           answer: "Anda akan mendapatkan materi lengkap, sertifikat, akses ke recording, dan komunitas eksklusif peserta workshop."
@@ -1149,8 +1163,8 @@ export default function AddProducts3Page() {
           answer: "Anda tetap bisa mengikuti workshop melalui rekaman yang akan diberikan. Namun, untuk interaksi langsung, disarankan hadir sesuai jadwal."
         }
       ],
-      // Kategori Private Mentoring (16)
-      16: [
+      // Kategori Private Mentoring (7)
+      7: [
         {
           question: "Apa saja yang akan saya dapatkan dari private mentoring ini?",
           answer: "Anda akan mendapatkan sesi mentoring one-on-one dengan mentor berpengalaman, personalized action plan, follow-up support, dan akses ke materi eksklusif."

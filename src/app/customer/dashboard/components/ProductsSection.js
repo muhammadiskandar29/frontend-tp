@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function ProductsSection({ products, isLoading, onProductClick }) {
+  const router = useRouter();
   const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
@@ -19,6 +21,165 @@ export default function ProductsSection({ products, isLoading, onProductClick })
   const formatPrice = (price) => {
     if (!price) return "Rp 0";
     return `Rp ${parseInt(price).toLocaleString("id-ID")}`;
+  };
+
+  // Handle product click berdasarkan kategori
+  const handleProductClick = (product) => {
+    if (onProductClick) {
+      onProductClick(product);
+      return;
+    }
+
+    const kategoriId = product.kategori_rel?.id || product.kategori_id || product.kategori;
+    const kategoriIdNum = Number(kategoriId);
+
+    // Mapping kategori ke aksi
+    switch (kategoriIdNum) {
+      case 1: // Ebook - Link GDrive
+        if (product.gdrive_link || product.link_gdrive) {
+          window.open(product.gdrive_link || product.link_gdrive, '_blank');
+        } else {
+          // Fallback ke landing page jika tidak ada link
+          const generateSlug = (text) =>
+            (text || "")
+              .toString()
+              .toLowerCase()
+              .trim()
+              .replace(/[^a-z0-9 -]/g, "")
+              .replace(/\s+/g, "-")
+              .replace(/-+/g, "-");
+          
+          let kodeProduk = product.kode || (product.url ? product.url.replace(/^\//, '') : null);
+          if (!kodeProduk || kodeProduk.includes(' ') || kodeProduk.includes('%20')) {
+            kodeProduk = generateSlug(product.nama);
+          }
+          if (kodeProduk) {
+            window.open(`/landing/${kodeProduk}`, '_blank');
+          }
+        }
+        break;
+
+      case 2: // Webinar - Link Zoom Meet
+        // Cari order yang terkait dengan produk ini
+        router.push(`/customer/webinar/${product.order_id || product.id}`);
+        break;
+
+      case 3: // Seminar - Info lokasi atau link zoom meet
+        // Cek apakah ada link zoom, jika tidak tampilkan info lokasi
+        if (product.zoom_link || product.webinar?.join_url) {
+          router.push(`/customer/webinar/${product.order_id || product.id}`);
+        } else if (product.lokasi_seminar || product.seminar_location) {
+          // Tampilkan modal atau halaman dengan info lokasi
+          alert(`Lokasi Seminar:\n${product.lokasi_seminar || product.seminar_location}`);
+        } else {
+          // Fallback ke landing page
+          const generateSlug = (text) =>
+            (text || "")
+              .toString()
+              .toLowerCase()
+              .trim()
+              .replace(/[^a-z0-9 -]/g, "")
+              .replace(/\s+/g, "-")
+              .replace(/-+/g, "-");
+          
+          let kodeProduk = product.kode || (product.url ? product.url.replace(/^\//, '') : null);
+          if (!kodeProduk || kodeProduk.includes(' ') || kodeProduk.includes('%20')) {
+            kodeProduk = generateSlug(product.nama);
+          }
+          if (kodeProduk) {
+            window.open(`/landing/${kodeProduk}`, '_blank');
+          }
+        }
+        break;
+
+      case 4: // Buku - Lacak pesanan dan detail pesanan
+        router.push(`/customer/orders/${product.order_id || product.id}`);
+        break;
+
+      case 5: // Ecourse - Link YouTube embed
+        if (product.youtube_link || product.link_youtube || product.video) {
+          // Extract YouTube video ID jika full URL
+          let videoId = product.youtube_link || product.link_youtube || product.video;
+          if (videoId.includes('youtube.com/watch?v=')) {
+            videoId = videoId.split('v=')[1]?.split('&')[0];
+          } else if (videoId.includes('youtu.be/')) {
+            videoId = videoId.split('youtu.be/')[1]?.split('?')[0];
+          }
+          
+          // Buka halaman dengan YouTube embed
+          router.push(`/customer/ecourse/${product.order_id || product.id}?video=${videoId}`);
+        } else {
+          // Fallback ke landing page
+          const generateSlug = (text) =>
+            (text || "")
+              .toString()
+              .toLowerCase()
+              .trim()
+              .replace(/[^a-z0-9 -]/g, "")
+              .replace(/\s+/g, "-")
+              .replace(/-+/g, "-");
+          
+          let kodeProduk = product.kode || (product.url ? product.url.replace(/^\//, '') : null);
+          if (!kodeProduk || kodeProduk.includes(' ') || kodeProduk.includes('%20')) {
+            kodeProduk = generateSlug(product.nama);
+          }
+          if (kodeProduk) {
+            window.open(`/landing/${kodeProduk}`, '_blank');
+          }
+        }
+        break;
+
+      case 6: // Workshop - Info lokasi atau link zoom meet
+        // Cek apakah ada link zoom, jika tidak tampilkan info lokasi
+        if (product.zoom_link || product.webinar?.join_url) {
+          router.push(`/customer/webinar/${product.order_id || product.id}`);
+        } else if (product.lokasi_workshop || product.workshop_location) {
+          // Tampilkan modal atau halaman dengan info lokasi
+          alert(`Lokasi Workshop:\n${product.lokasi_workshop || product.workshop_location}`);
+        } else {
+          // Fallback ke landing page
+          const generateSlug = (text) =>
+            (text || "")
+              .toString()
+              .toLowerCase()
+              .trim()
+              .replace(/[^a-z0-9 -]/g, "")
+              .replace(/\s+/g, "-")
+              .replace(/-+/g, "-");
+          
+          let kodeProduk = product.kode || (product.url ? product.url.replace(/^\//, '') : null);
+          if (!kodeProduk || kodeProduk.includes(' ') || kodeProduk.includes('%20')) {
+            kodeProduk = generateSlug(product.nama);
+          }
+          if (kodeProduk) {
+            window.open(`/landing/${kodeProduk}`, '_blank');
+          }
+        }
+        break;
+
+      case 7: // Private Mentoring - Link Zoom Meet
+        router.push(`/customer/webinar/${product.order_id || product.id}`);
+        break;
+
+      default:
+        // Default: buka landing page
+        const generateSlug = (text) =>
+          (text || "")
+            .toString()
+            .toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9 -]/g, "")
+            .replace(/\s+/g, "-")
+            .replace(/-+/g, "-");
+        
+        let kodeProduk = product.kode || (product.url ? product.url.replace(/^\//, '') : null);
+        if (!kodeProduk || kodeProduk.includes(' ') || kodeProduk.includes('%20')) {
+          kodeProduk = generateSlug(product.nama);
+        }
+        if (kodeProduk) {
+          window.open(`/landing/${kodeProduk}`, '_blank');
+        }
+    }
   };
 
   if (isLoading) {
@@ -101,32 +262,23 @@ export default function ProductsSection({ products, isLoading, onProductClick })
                 </div>
                 <button
                   className="product-carousel-card__button"
-                  onClick={() => {
-                    if (onProductClick) {
-                      onProductClick(product);
-                    } else {
-                      const generateSlug = (text) =>
-                        (text || "")
-                          .toString()
-                          .toLowerCase()
-                          .trim()
-                          .replace(/[^a-z0-9 -]/g, "")
-                          .replace(/\s+/g, "-")
-                          .replace(/-+/g, "-");
-                      
-                      let kodeProduk = product.kode || (product.url ? product.url.replace(/^\//, '') : null);
-                      
-                      if (!kodeProduk || kodeProduk.includes(' ') || kodeProduk.includes('%20')) {
-                        kodeProduk = generateSlug(product.nama);
-                      }
-                      
-                      if (kodeProduk) {
-                        window.open(`/landing/${kodeProduk}`, '_blank');
-                      }
-                    }
-                  }}
+                  onClick={() => handleProductClick(product)}
                 >
-                  Lihat Detail
+                  {(() => {
+                    const kategoriId = product.kategori_rel?.id || product.kategori_id || product.kategori;
+                    const kategoriIdNum = Number(kategoriId);
+                    
+                    switch (kategoriIdNum) {
+                      case 1: return "Akses Ebook";
+                      case 2: return "Join Webinar";
+                      case 3: return "Info Seminar";
+                      case 4: return "Lacak Pesanan";
+                      case 5: return "Akses Ecourse";
+                      case 6: return "Info Workshop";
+                      case 7: return "Join Mentoring";
+                      default: return "Lihat Detail";
+                    }
+                  })()}
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <path d="M6 12L10 8L6 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
