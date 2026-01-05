@@ -3623,13 +3623,11 @@ html:has(.add-products3-container) {
 .list-item-editor {
   direction: ltr !important;
   text-align: left !important;
-  unicode-bidi: embed !important;
 }
 
 .list-item-editor * {
   direction: ltr !important;
   text-align: inherit !important;
-  unicode-bidi: embed !important;
 }
 
 /* Force LTR for all content in editor */
@@ -3641,7 +3639,6 @@ html:has(.add-products3-container) {
 .list-item-editor u,
 .list-item-editor s {
   direction: ltr !important;
-  unicode-bidi: embed !important;
 }
 
 /* Testimoni Editor - Ensure LTR direction */
@@ -3649,14 +3646,12 @@ html:has(.add-products3-container) {
 [id^="testimoni-editor-"] {
   direction: ltr !important;
   text-align: left !important;
-  unicode-bidi: embed !important;
 }
 
 #testimoni-editor-0 *,
 [id^="testimoni-editor-"] * {
   direction: ltr !important;
   text-align: inherit !important;
-  unicode-bidi: embed !important;
 }
 
 /* Force LTR for all content in testimoni editor */
@@ -3675,7 +3670,6 @@ html:has(.add-products3-container) {
 #testimoni-editor-0 s,
 [id^="testimoni-editor-"] s {
   direction: ltr !important;
-  unicode-bidi: embed !important;
 }
 
 .rich-text-editor p:last-child {
