@@ -130,15 +130,160 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     onUpdate?.({ ...data, [field]: value });
   };
 
+  // ===== TYPOGRAPHY STANDARD =====
+  const TYPOGRAPHY_STANDARD = {
+    defaultFontSize: 16,
+    defaultLineHeight: 1.5,
+    defaultFontFamily: "Page Font",
+    defaultColor: "#000000",
+    paragraphMargin: "0 0 0 0", // No margin between paragraphs (MS Word style)
+  };
+  
+  // ===== SANITIZE HTML: Clean paste and normalize structure =====
+  const sanitizeHTML = (html) => {
+    if (!html) return "<p></p>";
+    
+    // Create temporary container
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = html;
+    
+    // Remove unwanted tags and attributes
+    const unwantedTags = ["script", "style", "meta", "link", "iframe", "object", "embed"];
+    unwantedTags.forEach(tag => {
+      const elements = tempDiv.querySelectorAll(tag);
+      elements.forEach(el => el.remove());
+    });
+    
+    // Normalize structure: ensure all content is in <p> tags
+    const normalizeStructure = (container) => {
+      const children = Array.from(container.childNodes);
+      let currentP = null;
+      
+      children.forEach(node => {
+        if (node.nodeType === Node.TEXT_NODE) {
+          const text = node.textContent.trim();
+          if (text) {
+            if (!currentP) {
+              currentP = document.createElement("p");
+              container.appendChild(currentP);
+            }
+            currentP.appendChild(document.createTextNode(text));
+          }
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+          if (node.tagName === "P") {
+            // Already a paragraph, keep it
+            currentP = null; // Reset for next content
+            container.appendChild(node);
+          } else if (node.tagName === "BR") {
+            // Line break - create new paragraph
+            if (currentP) {
+              currentP.appendChild(node);
+            }
+            currentP = null; // Next content goes to new paragraph
+          } else if (node.tagName === "DIV") {
+            // Convert div to paragraph
+            const newP = document.createElement("p");
+            while (node.firstChild) {
+              newP.appendChild(node.firstChild);
+            }
+            container.appendChild(newP);
+            currentP = null;
+          } else if (["SPAN", "STRONG", "B", "EM", "I", "U", "S"].includes(node.tagName)) {
+            // Inline elements - add to current paragraph or create one
+            if (!currentP) {
+              currentP = document.createElement("p");
+              container.appendChild(currentP);
+            }
+            currentP.appendChild(node);
+          } else {
+            // Other block elements - create paragraph for them
+            const newP = document.createElement("p");
+            newP.appendChild(node);
+            container.appendChild(newP);
+            currentP = null;
+          }
+        }
+      });
+      
+      // If no paragraphs created, create empty one
+      if (container.children.length === 0) {
+        container.appendChild(document.createElement("p"));
+      }
+    };
+    
+    normalizeStructure(tempDiv);
+    
+    // Clean up inline styles from paragraphs (keep only in spans)
+    const paragraphs = tempDiv.querySelectorAll("p");
+    paragraphs.forEach(p => {
+      // Remove inline styles from paragraph itself
+      p.removeAttribute("style");
+      // Ensure paragraph has no margin/padding
+      p.style.margin = TYPOGRAPHY_STANDARD.paragraphMargin;
+      p.style.padding = "0";
+    });
+    
+    // Clean up empty paragraphs (except last one)
+    const allParagraphs = tempDiv.querySelectorAll("p");
+    for (let i = 0; i < allParagraphs.length - 1; i++) {
+      const p = allParagraphs[i];
+      if (!p.textContent.trim() && p.children.length === 0) {
+        p.remove();
+      }
+    }
+    
+    return tempDiv.innerHTML || "<p></p>";
+  };
+  
   // Rich text editor handlers
   const handleEditorInput = () => {
     if (editorRef.current) {
-      // Don't clean up zero-width space markers - they are style markers for next typing
-      // When user types, the zero-width space gets replaced with actual text automatically
-      // The style marker will be used when user types next character
+      // Sanitize HTML to ensure consistent structure
+      const rawHTML = editorRef.current.innerHTML;
+      const sanitizedHTML = sanitizeHTML(rawHTML);
+      
+      // Only update if different (avoid infinite loop)
+      if (rawHTML !== sanitizedHTML) {
+        const selection = window.getSelection();
+        const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+        const savedOffset = range ? range.startOffset : 0;
+        const savedContainer = range ? range.startContainer : null;
+        
+        editorRef.current.innerHTML = sanitizedHTML;
+        
+        // Restore cursor position
+        if (range && savedContainer) {
+          try {
+            const newRange = document.createRange();
+            // Try to find equivalent position
+            if (savedContainer.nodeType === Node.TEXT_NODE) {
+              const textNodes = [];
+              const walker = document.createTreeWalker(
+                editorRef.current,
+                NodeFilter.SHOW_TEXT,
+                null
+              );
+              let node;
+              while (node = walker.nextNode()) {
+                textNodes.push(node);
+              }
+              if (textNodes.length > 0) {
+                const targetNode = textNodes[Math.min(savedOffset, textNodes.length - 1)];
+                newRange.setStart(targetNode, Math.min(savedOffset, targetNode.textContent.length));
+                newRange.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(newRange);
+              }
+            }
+          } catch (e) {
+            // Restore failed, use default
+          }
+        }
+      }
       
       const html = editorRef.current.innerHTML;
       handleChange("content", html);
+      
       // Detect styles after input - immediate and force update for sync
       requestAnimationFrame(() => {
         detectStyles();
@@ -340,7 +485,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
     }
     
-    // Allow Enter to create new paragraph (MS Word style)
+    // Allow Enter to create new paragraph (MS Word style - CONSISTENT)
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       
@@ -367,27 +512,13 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           currentP = currentP.parentElement;
         }
         
-        // Create new paragraph with ACTIVE styles immediately
+        // Create new paragraph - NO inline styles on paragraph (MS Word style)
+        // Styles only in spans inside paragraph
         const newP = document.createElement("p");
-        newP.innerHTML = "<br>";
+        newP.style.margin = TYPOGRAPHY_STANDARD.paragraphMargin;
+        newP.style.padding = "0";
         
-        // Apply active styles to new paragraph IMMEDIATELY
-        newP.style.fontSize = `${activeFontSize}px`;
-        newP.style.color = activeColor;
-        newP.style.fontWeight = activeBold ? "bold" : "normal";
-        newP.style.fontStyle = activeItalic ? "italic" : "normal";
-        newP.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
-        if (activeUnderline) {
-          newP.style.setProperty("text-decoration-color", activeColor, "important");
-          newP.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
-        }
-        if (activeStrikethrough && activeUnderline) {
-          newP.style.textDecoration = "underline line-through";
-        }
-        // Background is always transparent for new paragraph (MS Word behavior)
-        newP.style.backgroundColor = "transparent";
-        
-        // Insert style marker at cursor for next typing
+        // Create style marker with ACTIVE styles for next typing
         const span = document.createElement("span");
         span.style.fontSize = `${activeFontSize}px`;
         span.style.color = activeColor;
@@ -405,7 +536,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           span.style.backgroundColor = activeBgColor;
         }
         span.innerHTML = "\u200B";
-        newP.insertBefore(span, newP.firstChild);
+        newP.appendChild(span);
         
         // Insert new paragraph
         if (currentP && currentP.tagName === "P") {
@@ -416,9 +547,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           
           if (!afterRange.collapsed) {
             const fragment = afterRange.extractContents();
-            // Remove the <br> from newP and add fragment
-            newP.innerHTML = "";
-            newP.appendChild(span);
+            // Move fragment content to new paragraph (after style marker)
             while (fragment.firstChild) {
               newP.appendChild(fragment.firstChild);
             }
@@ -437,7 +566,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         
         // Move cursor to style marker in new paragraph
         const newRange = document.createRange();
-        newRange.setStartAfter(span);
+        newRange.setStart(span, 0);
         newRange.collapse(true);
         selection.removeAllRanges();
         selection.addRange(newRange);
@@ -1421,39 +1550,123 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     
     // ===== STEP 2: Apply to Selection or Cursor =====
     if (range.collapsed || wasCollapsed) {
-      // Collapsed cursor - insert style marker with active styles
-      const currentStyles = getAllCurrentStyles(range);
-      currentStyles.fontSize = size;
-      currentStyles.textColor = activeColor;
-      currentStyles.bgColor = activeBgColor;
-      currentStyles.bold = activeBold;
-      currentStyles.italic = activeItalic;
-      currentStyles.underline = activeUnderline;
-      currentStyles.strikethrough = activeStrikethrough;
-      
-      applyStyleWithPreservation(range, currentStyles);
-    } else {
-      // Has selection - apply directly to selection (SIMPLE & DIRECT)
-      const contents = range.extractContents();
+      // Collapsed cursor - create style marker with active styles (NO inline style on paragraph)
       const span = document.createElement("span");
       span.style.fontSize = `${size}px`;
-      
-      // Preserve other styles from selection
-      const currentStyles = getAllCurrentStyles(range);
-      if (currentStyles.bold) span.style.fontWeight = "bold";
-      if (currentStyles.italic) span.style.fontStyle = "italic";
-      if (currentStyles.underline) span.style.textDecoration = "underline";
-      if (currentStyles.strikethrough) {
-        const existing = span.style.textDecoration || "";
-        span.style.textDecoration = existing ? `${existing} line-through` : "line-through";
+      span.style.color = activeColor;
+      span.style.fontWeight = activeBold ? "bold" : "normal";
+      span.style.fontStyle = activeItalic ? "italic" : "normal";
+      span.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
+      if (activeUnderline) {
+        span.style.setProperty("text-decoration-color", activeColor, "important");
+        span.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
       }
-      if (currentStyles.textColor) span.style.color = currentStyles.textColor;
-      if (currentStyles.bgColor && currentStyles.bgColor !== "transparent") {
-        span.style.backgroundColor = currentStyles.bgColor;
+      if (activeStrikethrough && activeUnderline) {
+        span.style.textDecoration = "underline line-through";
+      }
+      if (activeBgColor !== "transparent") {
+        span.style.backgroundColor = activeBgColor;
+      }
+      span.innerHTML = "\u200B";
+      
+      try {
+        range.insertNode(span);
+        const newRange = document.createRange();
+        newRange.setStart(span, 0);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+        
+        savedSelectionRef.current = {
+          range: newRange.cloneRange(),
+          startContainer: newRange.startContainer,
+          startOffset: newRange.startOffset,
+          endContainer: newRange.endContainer,
+          endOffset: newRange.endOffset,
+          collapsed: true,
+          text: ""
+        };
+      } catch (e) {
+        console.error("Error inserting font size marker:", e);
+      }
+    } else {
+      // Has selection - apply directly to selection (SIMPLE & DIRECT)
+      // CRITICAL: Don't apply to paragraph, only wrap selection in span
+      const contents = range.extractContents();
+      
+      // Check if selection spans multiple paragraphs - if so, apply to each separately
+      const tempDiv = document.createElement("div");
+      tempDiv.appendChild(contents);
+      const paragraphs = tempDiv.querySelectorAll("p");
+      
+      if (paragraphs.length > 0) {
+        // Selection spans paragraphs - apply font size to all text nodes, not paragraphs
+        const allTextNodes = [];
+        const walker = document.createTreeWalker(
+          tempDiv,
+          NodeFilter.SHOW_TEXT,
+          null
+        );
+        let textNode;
+        while (textNode = walker.nextNode()) {
+          allTextNodes.push(textNode);
+        }
+        
+        // Wrap each text node or group of text nodes in span
+        allTextNodes.forEach(textNode => {
+          if (textNode.textContent.trim()) {
+            const span = document.createElement("span");
+            span.style.fontSize = `${size}px`;
+            
+            // Preserve parent styles
+            const parent = textNode.parentElement;
+            if (parent && parent.style) {
+              if (parent.style.fontWeight) span.style.fontWeight = parent.style.fontWeight;
+              if (parent.style.fontStyle) span.style.fontStyle = parent.style.fontStyle;
+              if (parent.style.textDecoration) span.style.textDecoration = parent.style.textDecoration;
+              if (parent.style.color) span.style.color = parent.style.color;
+              if (parent.style.backgroundColor) span.style.backgroundColor = parent.style.backgroundColor;
+            }
+            
+            const parentElement = textNode.parentNode;
+            parentElement.insertBefore(span, textNode);
+            span.appendChild(textNode);
+          }
+        });
+        
+        // Remove empty paragraphs
+        paragraphs.forEach(p => {
+          if (!p.textContent.trim() && p.children.length === 0) {
+            p.remove();
+          }
+        });
+      } else {
+        // Simple selection - wrap in span
+        const span = document.createElement("span");
+        span.style.fontSize = `${size}px`;
+        
+        // Preserve other styles from selection
+        const currentStyles = getAllCurrentStyles(range);
+        if (currentStyles.bold) span.style.fontWeight = "bold";
+        if (currentStyles.italic) span.style.fontStyle = "italic";
+        if (currentStyles.underline) span.style.textDecoration = "underline";
+        if (currentStyles.strikethrough) {
+          const existing = span.style.textDecoration || "";
+          span.style.textDecoration = existing ? `${existing} line-through` : "line-through";
+        }
+        if (currentStyles.textColor) span.style.color = currentStyles.textColor;
+        if (currentStyles.bgColor && currentStyles.bgColor !== "transparent") {
+          span.style.backgroundColor = currentStyles.bgColor;
+        }
+        
+        span.appendChild(contents);
+        tempDiv.appendChild(span);
       }
       
-      span.appendChild(contents);
-      range.insertNode(span);
+      // Insert back
+      while (tempDiv.firstChild) {
+        range.insertNode(tempDiv.firstChild);
+      }
       
       // Collapse to end and restore selection
       range.collapse(false);
@@ -1492,12 +1705,47 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       if (!content || content === "Text Baru") {
         editorRef.current.innerHTML = "<p></p>";
       } else {
-        editorRef.current.innerHTML = content;
+        // Sanitize content on load
+        const sanitized = sanitizeHTML(content);
+        editorRef.current.innerHTML = sanitized;
       }
+      
+      // Ensure all paragraphs have consistent styling
+      const paragraphs = editorRef.current.querySelectorAll("p");
+      paragraphs.forEach(p => {
+        p.style.margin = TYPOGRAPHY_STANDARD.paragraphMargin;
+        p.style.padding = "0";
+        // Remove inline font-size from paragraph (only in spans)
+        if (p.style.fontSize) {
+          p.style.removeProperty("fontSize");
+        }
+      });
+      
       // Detect styles after content is loaded
       requestAnimationFrame(() => detectStyles());
     }
   }, []);
+  
+  // Ensure paragraphs stay consistent after every input
+  useEffect(() => {
+    if (editorRef.current) {
+      const paragraphs = editorRef.current.querySelectorAll("p");
+      paragraphs.forEach(p => {
+        // Ensure margin is consistent
+        if (p.style.margin !== TYPOGRAPHY_STANDARD.paragraphMargin) {
+          p.style.margin = TYPOGRAPHY_STANDARD.paragraphMargin;
+        }
+        // Ensure no padding
+        if (p.style.padding !== "0") {
+          p.style.padding = "0";
+        }
+        // Remove font-size from paragraph (should only be in spans)
+        if (p.style.fontSize) {
+          p.style.removeProperty("fontSize");
+        }
+      });
+    }
+  }, [content]);
 
   // Detect all styles from current selection/cursor
   const detectStyles = () => {
@@ -3562,6 +3810,63 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           contentEditable
           onInput={handleEditorInput}
           onKeyDown={handleEditorKeyDown}
+          onPaste={(e) => {
+            e.preventDefault();
+            
+            // Get pasted content
+            const clipboardData = e.clipboardData || window.clipboardData;
+            const pastedText = clipboardData.getData("text/plain");
+            const pastedHTML = clipboardData.getData("text/html");
+            
+            const selection = window.getSelection();
+            if (selection.rangeCount === 0) return;
+            
+            const range = selection.getRangeAt(0);
+            
+            // Delete selected content
+            if (!range.collapsed) {
+              range.deleteContents();
+            }
+            
+            // If HTML available, sanitize it
+            if (pastedHTML) {
+              const sanitized = sanitizeHTML(pastedHTML);
+              const tempDiv = document.createElement("div");
+              tempDiv.innerHTML = sanitized;
+              
+              // Insert sanitized content
+              const fragment = document.createDocumentFragment();
+              while (tempDiv.firstChild) {
+                fragment.appendChild(tempDiv.firstChild);
+              }
+              
+              range.insertNode(fragment);
+            } else if (pastedText) {
+              // Plain text - insert as text with current active styles
+              const textNode = document.createTextNode(pastedText);
+              
+              // Wrap in span with active styles
+              const span = document.createElement("span");
+              span.style.fontSize = `${activeFontSize}px`;
+              span.style.color = activeColor;
+              span.style.fontWeight = activeBold ? "bold" : "normal";
+              span.style.fontStyle = activeItalic ? "italic" : "normal";
+              span.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
+              if (activeBgColor !== "transparent") {
+                span.style.backgroundColor = activeBgColor;
+              }
+              
+              span.appendChild(textNode);
+              range.insertNode(span);
+            }
+            
+            // Move cursor to end of inserted content
+            range.collapse(false);
+            selection.removeAllRanges();
+            selection.addRange(range);
+            
+            handleEditorInput();
+          }}
           onMouseUp={(e) => {
             // Don't clear saved selection immediately - let user finish selecting
             requestAnimationFrame(() => {
@@ -3603,6 +3908,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
             fontFamily: fontFamily !== "Page Font" ? fontFamily : "inherit",
             color: textColor,
             textAlign: textAlign,
+            fontSize: `${TYPOGRAPHY_STANDARD.defaultFontSize}px`, // Base font size
           }}
           data-placeholder="Masukkan teks... (Enter untuk paragraf baru)"
         />
