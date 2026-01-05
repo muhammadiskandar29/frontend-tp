@@ -238,49 +238,8 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   // Rich text editor handlers
   const handleEditorInput = () => {
     if (editorRef.current) {
-      // Sanitize HTML to ensure consistent structure
-      const rawHTML = editorRef.current.innerHTML;
-      const sanitizedHTML = sanitizeHTML(rawHTML);
-      
-      // Only update if different (avoid infinite loop)
-      if (rawHTML !== sanitizedHTML) {
-        const selection = window.getSelection();
-        const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
-        const savedOffset = range ? range.startOffset : 0;
-        const savedContainer = range ? range.startContainer : null;
-        
-        editorRef.current.innerHTML = sanitizedHTML;
-        
-        // Restore cursor position
-        if (range && savedContainer) {
-          try {
-            const newRange = document.createRange();
-            // Try to find equivalent position
-            if (savedContainer.nodeType === Node.TEXT_NODE) {
-              const textNodes = [];
-              const walker = document.createTreeWalker(
-                editorRef.current,
-                NodeFilter.SHOW_TEXT,
-                null
-              );
-              let node;
-              while (node = walker.nextNode()) {
-                textNodes.push(node);
-              }
-              if (textNodes.length > 0) {
-                const targetNode = textNodes[Math.min(savedOffset, textNodes.length - 1)];
-                newRange.setStart(targetNode, Math.min(savedOffset, targetNode.textContent.length));
-                newRange.collapse(true);
-                selection.removeAllRanges();
-                selection.addRange(newRange);
-              }
-            }
-          } catch (e) {
-            // Restore failed, use default
-          }
-        }
-      }
-      
+      // DON'T sanitize on every input - only on paste/load
+      // Let browser handle normal typing naturally
       const html = editorRef.current.innerHTML;
       handleChange("content", html);
       
@@ -1726,26 +1685,9 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     }
   }, []);
   
-  // Ensure paragraphs stay consistent after every input
-  useEffect(() => {
-    if (editorRef.current) {
-      const paragraphs = editorRef.current.querySelectorAll("p");
-      paragraphs.forEach(p => {
-        // Ensure margin is consistent
-        if (p.style.margin !== TYPOGRAPHY_STANDARD.paragraphMargin) {
-          p.style.margin = TYPOGRAPHY_STANDARD.paragraphMargin;
-        }
-        // Ensure no padding
-        if (p.style.padding !== "0") {
-          p.style.padding = "0";
-        }
-        // Remove font-size from paragraph (should only be in spans)
-        if (p.style.fontSize) {
-          p.style.removeProperty("fontSize");
-        }
-      });
-    }
-  }, [content]);
+  // REMOVED: useEffect that normalizes paragraphs on every content change
+  // This was too aggressive and caused typing issues
+  // Only normalize on initial load and paste
 
   // Detect all styles from current selection/cursor
   const detectStyles = () => {
