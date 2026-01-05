@@ -27,7 +27,11 @@ export default function useKategori() {
   const addKategori = async (nama) => {
     try {
       const newKategori = await addKategoriAPI(nama); // <- dari lib
-      if (newKategori) setKategori((prev) => [...prev, newKategori]);
+      if (newKategori) {
+        setKategori((prev) => [...prev, newKategori]);
+        return newKategori;
+      }
+      return null;
     } catch (err) {
       console.error("❌ Error addKategori:", err);
       throw err;
@@ -42,7 +46,9 @@ export default function useKategori() {
         setKategori((prev) =>
           prev.map((k) => (k.id === id ? { ...k, ...updated } : k))
         );
+        return updated;
       }
+      return null;
     } catch (err) {
       console.error("❌ Error updateKategori:", err);
       throw err;
@@ -55,7 +61,9 @@ export default function useKategori() {
       const success = await deleteKategoriAPI(id); // <- dari lib
       if (success) {
         setKategori((prev) => prev.filter((k) => k.id !== id));
+        return true;
       }
+      return false;
     } catch (err) {
       console.error("❌ Error deleteKategori:", err);
       throw err;

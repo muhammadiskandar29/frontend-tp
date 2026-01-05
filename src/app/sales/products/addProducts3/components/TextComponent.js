@@ -381,21 +381,27 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
               const currentColorHex = colorToHex(currentColor);
               const activeColorHex = colorToHex(activeColor);
               
-              // Check if DOM styles match ACTIVE STATE (not lastUsedStylesRef)
+              // Check if DOM styles match ACTIVE STATE
+              // Jika style sudah sesuai, tidak perlu create marker - biarkan browser handle naturally
               const fontSizeDiff = Math.abs(currentFontSize - activeFontSize);
               const fontSizeNeedsUpdate = fontSizeDiff > 1;
               
+              // Convert fontWeight to boolean for comparison
+              const isCurrentBold = currentFontWeight === "bold" || 
+                                   currentFontWeight === "700" || 
+                                   currentFontWeight === "600" ||
+                                   (parseInt(currentFontWeight) >= 600 && parseInt(currentFontWeight) <= 900);
+              
               const needsUpdate = 
                 fontSizeNeedsUpdate ||
-                currentColorHex !== activeColorHex ||
-                (currentFontWeight !== (activeBold ? "bold" : "normal") && 
-                 !(currentFontWeight === "bold" && activeBold) &&
-                 !(parseInt(currentFontWeight) >= 600 && activeBold)) ||
-                currentFontStyle !== (activeItalic ? "italic" : "normal") ||
-                (currentTextDecoration !== (activeUnderline ? "underline" : "none") && 
-                 !(currentTextDecoration.includes("underline") && activeUnderline));
+                (currentColorHex && currentColorHex !== activeColorHex) ||
+                (isCurrentBold !== activeBold) ||
+                (currentFontStyle === "italic") !== activeItalic ||
+                (currentTextDecoration.includes("underline")) !== activeUnderline ||
+                (currentTextDecoration.includes("line-through")) !== activeStrikethrough;
               
               // If styles don't match ACTIVE STATE, create style marker with ACTIVE STATE
+              // Tapi hanya jika benar-benar berbeda - jangan force jika sudah sesuai
               if (needsUpdate) {
                 const span = document.createElement("span");
                 span.style.fontSize = `${activeFontSize}px`;
@@ -1680,8 +1686,15 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         }
       });
       
-      // Detect styles after content is loaded
-      requestAnimationFrame(() => detectStyles());
+      // Detect styles after content is loaded - ini akan update active state sesuai style di content
+      // Delay sedikit untuk memastikan DOM sudah siap
+      setTimeout(() => {
+        detectStyles();
+        // Double check setelah DOM fully loaded
+        requestAnimationFrame(() => {
+          detectStyles();
+        });
+      }, 100);
     }
   }, []);
   
@@ -1963,38 +1976,34 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     const hexTextColor = detectedTextColor ? colorToHex(detectedTextColor) : null;
     const hexBgColor = detectedBgColor ? colorToHex(detectedBgColor) : null;
     
-    // ===== CRITICAL: detectStyles() HANYA untuk update UI, TIDAK mengubah active state =====
+    // ===== CRITICAL: detectStyles() SELALU update active state berdasarkan style di posisi cursor =====
+    // Ini memastikan ketika user pindah cursor, active state mengikuti style yang ada
+    // Sehingga ketika typing, akan menggunakan style yang sesuai dengan posisi cursor
+    
     // Update displayed states (untuk UI button/input display)
     setDisplayedBold(detectedBold);
     setDisplayedItalic(detectedItalic);
     setDisplayedUnderline(detectedUnderline);
     setDisplayedStrikethrough(detectedStrikethrough);
     
-    // Update displayed font size
-    // CRITICAL: Prioritaskan activeFontSize jika baru di-apply (lebih dari 0.5 detik yang lalu)
-    // Jangan override jika activeFontSize berbeda dengan detected (artinya baru di-apply)
+    // Update displayed font size - gunakan detected jika ada
     if (detectedFontSize !== null) {
-      // Jika activeFontSize berbeda dengan detected lebih dari 1px, kemungkinan baru di-apply
-      // Prioritaskan activeFontSize untuk consistency
-      const diff = Math.abs(activeFontSize - detectedFontSize);
-      if (diff > 1) {
-        // Active state berbeda signifikan, kemungkinan baru di-apply - gunakan active state
-        setDisplayedFontSize(activeFontSize);
-      } else {
-        // Sama atau hampir sama, gunakan detected (lebih akurat dari DOM)
-        setDisplayedFontSize(detectedFontSize);
-      }
+      setDisplayedFontSize(detectedFontSize);
     } else {
-      // Tidak ada detected, gunakan active state
+      // Jika tidak ada detected, tetap gunakan active state (jangan reset ke default)
       setDisplayedFontSize(activeFontSize);
     }
     
     // Update displayed colors - gunakan detected jika ada, jika tidak gunakan active state
     if (hexTextColor) {
       setDisplayedColor(hexTextColor);
+    } else {
+      setDisplayedColor(activeColor);
     }
     if (hexBgColor) {
       setDisplayedBgColor(hexBgColor);
+    } else {
+      setDisplayedBgColor(activeBgColor);
     }
     
     // Legacy state updates (untuk backward compatibility)
@@ -2014,23 +2023,48 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       setSelectedBgColor(hexBgColor === "transparent" ? "#FFFF00" : hexBgColor);
     }
     
-    // Initialize active state from DOM on first detection (hanya sekali)
-    if (!isActiveStateInitializedRef.current) {
-      if (detectedFontSize !== null) {
-        setActiveFontSize(detectedFontSize);
-      }
-      if (hexTextColor) {
-        setActiveColor(hexTextColor);
-      }
-      if (hexBgColor) {
-        setActiveBgColor(hexBgColor);
-      }
-      setActiveBold(detectedBold);
-      setActiveItalic(detectedItalic);
-      setActiveUnderline(detectedUnderline);
-      setActiveStrikethrough(detectedStrikethrough);
-      isActiveStateInitializedRef.current = true;
+    // ===== SELALU UPDATE ACTIVE STATE berdasarkan style yang terdeteksi =====
+    // Ini memastikan active state selalu mengikuti style di posisi cursor
+    // Ketika user pindah cursor, active state akan update otomatis
+    // Ketika user typing, akan menggunakan style yang sesuai dengan posisi cursor
+    
+    // Update active font size - gunakan detected jika ada, jika tidak tetap active state
+    if (detectedFontSize !== null) {
+      setActiveFontSize(detectedFontSize);
     }
+    // Jika tidak ada detected, tetap gunakan active state (jangan reset ke default)
+    
+    // Update active text color - gunakan detected jika ada, jika tidak tetap active state
+    if (hexTextColor) {
+      setActiveColor(hexTextColor);
+    }
+    // Jika tidak ada detected, tetap gunakan active state (jangan reset ke default)
+    
+    // Update active background color - gunakan detected jika ada, jika tidak tetap active state
+    if (hexBgColor) {
+      setActiveBgColor(hexBgColor);
+    }
+    // Jika tidak ada detected, tetap gunakan active state (jangan reset ke default)
+    
+    // Update active text styles
+    setActiveBold(detectedBold);
+    setActiveItalic(detectedItalic);
+    setActiveUnderline(detectedUnderline);
+    setActiveStrikethrough(detectedStrikethrough);
+    
+    // Update lastUsedStylesRef untuk konsistensi
+    if (detectedFontSize !== null) {
+      lastUsedStylesRef.current.fontSize = detectedFontSize;
+    }
+    if (hexTextColor) {
+      lastUsedStylesRef.current.color = hexTextColor;
+    }
+    if (hexBgColor) {
+      lastUsedStylesRef.current.backgroundColor = hexBgColor;
+    }
+    lastUsedStylesRef.current.fontWeight = detectedBold ? "bold" : "normal";
+    lastUsedStylesRef.current.fontStyle = detectedItalic ? "italic" : "normal";
+    lastUsedStylesRef.current.textDecoration = detectedUnderline ? "underline" : (detectedStrikethrough ? "line-through" : "none");
   };
 
   // Update styles display when selection changes and save selection automatically
