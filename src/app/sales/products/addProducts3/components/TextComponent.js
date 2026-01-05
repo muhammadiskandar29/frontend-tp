@@ -2456,6 +2456,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     }
   };
   
+  // ===== SIMPLE & RESPONSIVE: Toggle Underline Function =====
   const toggleUnderline = (e) => {
     if (e) e.preventDefault();
     if (!editorRef.current) return;
@@ -2466,75 +2467,11 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     const range = selection.getRangeAt(0);
     if (!editorRef.current.contains(range.commonAncestorContainer)) return;
     
-    // ===== SELECTION HANDLING =====
-    if (!range.collapsed) {
-      // Extract contents ONCE - only operate on extracted fragment
-      const fragment = range.extractContents();
-      
-      // NO SCAN - Use intent from button state (like MS Word)
-      // Toggle based on current button state, not DOM scan
-      const currentButtonState = underlineButtonRef.current?.classList.contains('active') || false;
-      const newUnderlineState = !currentButtonState;
-      
-      // Update button visual (no flushSync)
-      if (underlineButtonRef.current) {
-        const btn = underlineButtonRef.current;
-        if (newUnderlineState) {
-          btn.classList.add('active');
-          btn.style.setProperty('background-color', '#F1A124', 'important');
-          btn.style.setProperty('border-color', '#F1A124', 'important');
-          btn.style.setProperty('color', '#ffffff', 'important');
-        } else {
-          btn.classList.remove('active');
-          btn.className = 'toolbar-btn';
-          btn.style.removeProperty('background-color');
-          btn.style.removeProperty('border-color');
-          btn.style.removeProperty('color');
-          btn.style.backgroundColor = '';
-          btn.style.borderColor = '';
-          btn.style.color = '';
-          btn.style.setProperty('background-color', '', 'important');
-          btn.style.setProperty('border-color', '', 'important');
-          btn.style.setProperty('color', '', 'important');
-        }
-        void btn.offsetHeight;
-      }
-      
-      // Update React state
-      setActiveUnderline(newUnderlineState);
-      setDisplayedUnderline(newUnderlineState);
-      setCurrentUnderline(newUnderlineState);
-      
-      editorRef.current.focus();
-      
-      // Apply/remove underline on extracted fragment only
-      if (newUnderlineState) {
-        applyUnderlineToContents(fragment);
-      } else {
-        removeUnderlineFromContents(fragment);
-      }
-      
-      // Insert processed fragment back
-      range.insertNode(fragment);
-      
-      // Collapse to end
-      range.collapse(false);
-      selection.removeAllRanges();
-      selection.addRange(range);
-      
-      lastUsedStylesRef.current.textDecoration = newUnderlineState ? "underline" : "none";
-      requestAnimationFrame(() => {
-        handleEditorInput();
-      });
-      
-      return;
-    }
+    // Get current button state
+    const currentButtonState = underlineButtonRef.current?.classList.contains('active') || false;
+    const newUnderlineState = !currentButtonState;
     
-    // ===== CURSOR HANDLING (O(1) - state-based, no DOM scan) =====
-    const hasUnderline = getUnderlineStateAtCursor(range);
-    const newUnderlineState = !hasUnderline;
-    
-    // Update button visual (no flushSync)
+    // INSTANT: Update button visual FIRST
     if (underlineButtonRef.current) {
       const btn = underlineButtonRef.current;
       if (newUnderlineState) {
@@ -2565,46 +2502,83 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     
     editorRef.current.focus();
     
-    // Toggle underline context at cursor
-    if (newUnderlineState) {
-      // Enable underline - create/update style marker
-      const node = range.startContainer;
-      const parent = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
-      const isStyleMarker = parent && parent.tagName === "SPAN" && 
-        (parent.textContent === "\u200B" || parent.innerHTML === "\u200B");
+    // Apply underline directly
+    if (!range.collapsed) {
+      // SELECTION: Wrap selection with underline span
+      const contents = range.extractContents();
       
-      if (isStyleMarker) {
-        parent.setAttribute("data-u", "1");
-        parent.style.textDecoration = "underline";
+      if (newUnderlineState) {
+        // Apply underline
+        const span = document.createElement("span");
+        span.style.textDecoration = "underline";
+        span.appendChild(contents);
+        range.insertNode(span);
       } else {
-        const marker = document.createElement("span");
-        marker.setAttribute("data-u", "1");
-        marker.style.textDecoration = "underline";
-        marker.innerHTML = "\u200B";
-        range.insertNode(marker);
+        // Remove underline - unwrap all underline spans in selection
+        const tempDiv = document.createElement("div");
+        tempDiv.appendChild(contents);
         
-        const newRange = document.createRange();
-        newRange.setStart(marker, 0);
-        newRange.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
+        // Remove underline from all spans
+        const underlineSpans = tempDiv.querySelectorAll('span[style*="underline"], span[style*="text-decoration"]');
+        underlineSpans.forEach(span => {
+          const textDecoration = span.style.textDecoration || "";
+          const newDecoration = textDecoration
+            .split(" ")
+            .filter(d => d !== "underline")
+            .join(" ");
+          
+          if (newDecoration.trim()) {
+            span.style.textDecoration = newDecoration;
+          } else {
+            span.style.textDecoration = "";
+            // Unwrap if no other styles
+            if (!span.style.fontSize && !span.style.color && 
+                !span.style.fontWeight && !span.style.fontStyle &&
+                !span.style.backgroundColor && !span.style.textDecoration) {
+              const parent = span.parentNode;
+              while (span.firstChild) {
+                parent.insertBefore(span.firstChild, span);
+              }
+              parent.removeChild(span);
+            }
+          }
+        });
         
-        savedSelectionRef.current = {
-          range: newRange.cloneRange(),
-          startContainer: newRange.startContainer,
-          startOffset: newRange.startOffset,
-          endContainer: newRange.endContainer,
-          endOffset: newRange.endOffset,
-          collapsed: true,
-          text: ""
-        };
+        // Insert back
+        while (tempDiv.firstChild) {
+          range.insertNode(tempDiv.firstChild);
+        }
       }
+      
+      // Collapse to end
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
     } else {
-      // Disable underline - break context
-      breakUnderlineContext(range, selection);
+      // CURSOR: Create style marker for next typing
+      const marker = document.createElement("span");
+      marker.style.textDecoration = newUnderlineState ? "underline" : "none";
+      marker.innerHTML = "\u200B";
+      range.insertNode(marker);
+      
+      const newRange = document.createRange();
+      newRange.setStart(marker, 0);
+      newRange.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(newRange);
+      
+      savedSelectionRef.current = {
+        range: newRange.cloneRange(),
+        startContainer: newRange.startContainer,
+        startOffset: newRange.startOffset,
+        endContainer: newRange.endContainer,
+        endOffset: newRange.endOffset,
+        collapsed: true,
+        text: ""
+      };
     }
     
-    // Update lastUsedStylesRef for next typing
+    // Update lastUsedStylesRef
     lastUsedStylesRef.current.textDecoration = newUnderlineState ? "underline" : "none";
     
     requestAnimationFrame(() => {
