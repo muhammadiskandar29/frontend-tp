@@ -541,12 +541,58 @@ export default function AddProducts3Page() {
         if (videoItems.length === 0) {
           return <div className="preview-placeholder">Belum ada video</div>;
         }
+        
+        // Advanced settings untuk video
+        const videoData = block.data || {};
+        const videoAlignment = videoData.alignment || "center";
+        const videoWidth = videoData.videoWidth !== undefined ? videoData.videoWidth : 100; // Default 100% jika belum di-set
+        const videoPaddingTop = videoData.paddingTop || 0;
+        const videoPaddingRight = videoData.paddingRight || 0;
+        const videoPaddingBottom = videoData.paddingBottom || 0;
+        const videoPaddingLeft = videoData.paddingLeft || 0;
+        
+        // Container style dengan alignment dan padding
+        const videoContainerStyle = {
+          display: "flex",
+          flexDirection: "column",
+          gap: "24px",
+          alignItems: "center",
+          width: "100%",
+          paddingTop: `${videoPaddingTop}px`,
+          paddingRight: `${videoPaddingRight}px`,
+          paddingBottom: `${videoPaddingBottom}px`,
+          paddingLeft: `${videoPaddingLeft}px`,
+        };
+        
+        // Video wrapper style dengan width dan aspect ratio 16:9
+        const videoWrapperStyle = {
+          width: `${videoWidth}%`,
+          maxWidth: "100%", // Pastikan tidak melebihi container
+          aspectRatio: "16 / 9",
+          position: "relative",
+          overflow: "hidden",
+          borderRadius: "8px",
+          display: "flex",
+          justifyContent: videoAlignment === "left" ? "flex-start" : videoAlignment === "right" ? "flex-end" : "center",
+        };
+        
         return (
-          <div className="preview-videos">
+          <div className="preview-videos" style={videoContainerStyle}>
             {videoItems.map((item, i) => (
               item.embedUrl ? (
-                <div key={i} className="preview-video-wrapper">
-                  <iframe src={item.embedUrl} title={`Video ${i + 1}`} className="preview-video-iframe" allowFullScreen />
+                <div key={i} className="preview-video-wrapper" style={videoWrapperStyle}>
+                  <iframe 
+                    src={item.embedUrl} 
+                    title={`Video ${i + 1}`} 
+                    className="preview-video-iframe" 
+                    allowFullScreen
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      border: "none",
+                      borderRadius: "8px"
+                    }}
+                  />
                 </div>
               ) : null
             ))}
@@ -579,7 +625,13 @@ export default function AddProducts3Page() {
         
         return (
           <section className="preview-testimonials" aria-label="Customer testimonials">
-            <h2>{testimoniTitle}</h2>
+            <h2 style={{
+              fontSize: "18px",
+              fontWeight: "600",
+              color: "#000000",
+              marginBottom: "20px",
+              textAlign: "left"
+            }}>{testimoniTitle}</h2>
             <div className="testimonials-carousel-wrapper-new">
               {currentIndex > 0 && (
                 <button 
@@ -711,7 +763,12 @@ export default function AddProducts3Page() {
           >
             {listTitle && (
               <div className="preview-list-header">
-                <h3 className="preview-list-title">{listTitle}</h3>
+                <h3 className="preview-list-title" style={{
+                  fontSize: "18px",
+                  fontWeight: "600",
+                  color: "#000000",
+                  margin: "0 0 8px 0"
+                }}>{listTitle}</h3>
                 <div className="preview-list-header-line"></div>
               </div>
             )}
@@ -813,19 +870,19 @@ export default function AddProducts3Page() {
                 boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)"
               }}>
                 <h2 style={{
-                  fontSize: "24px",
-                  fontWeight: "700",
-                  color: "#1f2937",
+                  fontSize: "18px",
+                  fontWeight: "600",
+                  color: "#000000",
                   marginBottom: "8px",
-                  lineHeight: "1.2"
+                  lineHeight: "1.4"
                 }}>
                   {pengaturanForm.nama || "Produk"}
                 </h2>
                 <p style={{
-                  fontSize: "16px",
-                  color: "#6b7280",
+                  fontSize: "18px",
+                  color: "#000000",
                   marginBottom: "20px",
-                  fontWeight: "500"
+                  fontWeight: "600"
                 }}>
                   Pilihan Paket
                 </p>
@@ -919,7 +976,12 @@ export default function AddProducts3Page() {
 
             {/* Form Pemesanan */}
             <section className="preview-form-section compact-form-section" aria-label="Order form">
-              <h2 className="compact-form-title">Lengkapi Data:</h2>
+              <h2 className="compact-form-title" style={{
+                fontSize: "18px",
+                fontWeight: "600",
+                color: "#000000",
+                marginBottom: "12px"
+              }}>Lengkapi Data:</h2>
               <div className="compact-form-card">
                 <div className="compact-field">
                   <label className="compact-label">Nama Lengkap <span className="required">*</span></label>

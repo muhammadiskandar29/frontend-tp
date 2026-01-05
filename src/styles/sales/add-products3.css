@@ -4885,7 +4885,7 @@ html:has(.add-products3-container) {
 
 .preview-video-wrapper {
   width: 100%;
-  max-width: 360px;      /* ukuran thumbnail YouTube */
+  /* max-width removed - now controlled by inline style from component */
   aspect-ratio: 16 / 9;
   position: relative;
   overflow: hidden;
