@@ -90,6 +90,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   const italicButtonRef = useRef(null);
   const underlineButtonRef = useRef(null);
   const strikethroughButtonRef = useRef(null);
+  const textColorButtonRef = useRef(null);
   
   // Ref untuk tracking apakah state aktif sudah di-initialize dari DOM
   const isActiveStateInitializedRef = useRef(false);
@@ -828,21 +829,22 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     }
   };
 
+  // ===== ULTRA SIMPLE & DIRECT: Apply Text Color Function =====
   const applyTextColor = (color) => {
     if (!editorRef.current) return;
     
-    // ===== STEP 1: Update Active State (Single Source of Truth) =====
-    setActiveColor(color);
-    setDisplayedColor(color); // Update UI display
-    
-    editorRef.current.focus();
-    
-    // Get current selection
+    // ===== STEP 1: Get current state FIRST =====
     const selection = window.getSelection();
     let range = null;
     
-    // Try to restore saved selection first
-    if (savedSelectionRef.current) {
+    if (selection.rangeCount > 0) {
+      range = selection.getRangeAt(0);
+      if (!editorRef.current.contains(range.commonAncestorContainer)) {
+        range = null;
+      }
+    }
+    
+    if (!range && savedSelectionRef.current) {
       try {
         const saved = savedSelectionRef.current;
         range = document.createRange();
@@ -859,70 +861,170 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
     }
     
-    // If no saved selection, try current selection
-    if (!range && selection.rangeCount > 0) {
-      range = selection.getRangeAt(0);
-      if (!editorRef.current.contains(range.commonAncestorContainer)) {
-        range = null;
-      }
-    }
-    
-    // If still no range, save and create one
     if (!range) {
-      const savedRange = saveSelection();
-      if (savedRange) {
-        try {
-          range = document.createRange();
-          range.setStart(savedRange.startContainer, savedRange.startOffset);
-          range.setEnd(savedRange.endContainer, savedRange.endOffset);
-          selection.removeAllRanges();
-          selection.addRange(range);
-        } catch (e) {
-          // Create range at cursor
-          range = document.createRange();
-          range.selectNodeContents(editorRef.current);
-          range.collapse(false);
-          selection.removeAllRanges();
-          selection.addRange(range);
-        }
-      } else {
-        // Create range at end
-        range = document.createRange();
-        range.selectNodeContents(editorRef.current);
-        range.collapse(false);
-        selection.removeAllRanges();
-        selection.addRange(range);
-      }
+      range = document.createRange();
+      range.selectNodeContents(editorRef.current);
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
     }
     
-    // ===== STEP 2: Apply to Selection or Cursor =====
-    // MS Word behavior:
-    // - If has selection: apply to selection
-    // - If collapsed cursor: insert style marker for next typing
+    // ===== STEP 2: Update React State FIRST with flushSync =====
+    // Update React state FIRST to sync className, then update DOM
+    flushSync(() => {
+      setActiveColor(color);
+      setDisplayedColor(color);
+      setSelectedColor(color);
+      setCurrentTextColor(color);
+    });
     
+    // ===== STEP 3: Update Button Visual DIRECTLY (INSTANT - no delay) =====
+    // Update button DIRECTLY via DOM - after React state update
+    if (textColorButtonRef.current) {
+      const btn = textColorButtonRef.current;
+      const colorBar = btn.querySelector('.text-color-bar');
+      if (colorBar) {
+        colorBar.style.backgroundColor = color;
+      }
+      // Force immediate visual update
+      void btn.offsetHeight;
+    }
+    
+    // Focus editor
+    editorRef.current.focus();
+    
+    // ===== STEP 4: Apply to Editor =====
     if (range.collapsed) {
-      // Collapsed cursor - insert style marker with active styles
-      const currentStyles = getAllCurrentStyles(range);
-      currentStyles.textColor = color;
-      currentStyles.fontSize = activeFontSize;
-      currentStyles.bgColor = activeBgColor;
-      currentStyles.bold = activeBold;
-      currentStyles.italic = activeItalic;
-      currentStyles.underline = activeUnderline;
-      currentStyles.strikethrough = activeStrikethrough;
+      // Collapsed cursor
+      let node = range.startContainer;
+      if (node.nodeType === Node.TEXT_NODE) {
+        node = node.parentElement;
+      }
       
-      applyStyleWithPreservation(range, currentStyles);
+      const isInStyleMarker = node.tagName === "SPAN" && 
+        (node.textContent === "\u200B" || node.innerHTML === "\u200B");
+      
+      if (isInStyleMarker) {
+        // Update existing marker
+        node.style.color = color;
+        node.style.fontSize = `${activeFontSize}px`;
+        node.style.fontWeight = activeBold ? "bold" : "normal";
+        node.style.fontStyle = activeItalic ? "italic" : "normal";
+        node.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
+        if (activeUnderline) {
+          node.style.setProperty("text-decoration-color", color, "important");
+          node.style.setProperty("-webkit-text-decoration-color", color, "important");
+        }
+        if (activeBgColor !== "transparent") {
+          node.style.backgroundColor = activeBgColor;
+        } else {
+          node.style.backgroundColor = "";
+        }
+        
+        const newRange = document.createRange();
+        newRange.setStartAfter(node);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+        
+        savedSelectionRef.current = {
+          range: newRange.cloneRange(),
+          startContainer: newRange.startContainer,
+          startOffset: newRange.startOffset,
+          endContainer: newRange.endContainer,
+          endOffset: newRange.endOffset,
+          collapsed: true,
+          text: ""
+        };
+      } else {
+        // Create new style marker with VISIBLE placeholder for visual feedback
+        const span = document.createElement("span");
+        span.style.fontSize = `${activeFontSize}px`;
+        span.style.color = color;
+        span.style.fontWeight = activeBold ? "bold" : "normal";
+        span.style.fontStyle = activeItalic ? "italic" : "normal";
+        span.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
+        if (activeUnderline) {
+          span.style.setProperty("text-decoration-color", color, "important");
+          span.style.setProperty("-webkit-text-decoration-color", color, "important");
+        }
+        if (activeBgColor !== "transparent") {
+          span.style.backgroundColor = activeBgColor;
+        }
+        
+        // Insert visible placeholder character that will be replaced when typing
+        // Use a very thin space that's barely visible but shows the style
+        span.innerHTML = "\u2009"; // Thin space (more visible than zero-width)
+        
+        range.insertNode(span);
+        
+        // Force immediate visual update
+        void span.offsetHeight;
+        
+        const newRange = document.createRange();
+        newRange.setStart(span, 0);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+        
+        savedSelectionRef.current = {
+          range: newRange.cloneRange(),
+          startContainer: newRange.startContainer,
+          startOffset: newRange.startOffset,
+          endContainer: newRange.endContainer,
+          endOffset: newRange.endOffset,
+          collapsed: true,
+          text: ""
+        };
+        
+        // Replace thin space with zero-width space after a brief moment (for next typing)
+        setTimeout(() => {
+          if (span && span.textContent === "\u2009") {
+            span.innerHTML = "\u200B";
+          }
+        }, 100);
+      }
     } else {
       // Has selection - apply to selection
-      const currentStyles = getAllCurrentStyles(range);
-      currentStyles.textColor = color;
-      // Preserve other styles from selection
-      applyStyleWithPreservation(range, currentStyles);
+      document.execCommand("foreColor", false, color);
+      
+      // Also manually apply color to ensure it works
+      const walker = document.createTreeWalker(
+        range.commonAncestorContainer,
+        NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT,
+        {
+          acceptNode: (node) => {
+            if (node.nodeType === Node.TEXT_NODE) {
+              return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+            }
+            return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+          }
+        }
+      );
+      
+      let node;
+      while (node = walker.nextNode()) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          let parent = node.parentElement;
+          if (parent && parent.tagName !== "SPAN") {
+            const span = document.createElement("span");
+            span.style.color = color;
+            try {
+              parent.insertBefore(span, node);
+              span.appendChild(node);
+            } catch (e) {
+              // Skip if error
+            }
+          } else if (parent && parent.style) {
+            parent.style.color = color;
+          }
+        } else if (node.nodeType === Node.ELEMENT_NODE && node.style) {
+          node.style.color = color;
+        }
+      }
     }
     
-    // Legacy state updates (untuk backward compatibility)
-    setSelectedColor(color);
-    setCurrentTextColor(color);
+    lastUsedStylesRef.current.color = color;
     
     // Trigger input to save
     handleEditorInput();
@@ -2729,6 +2831,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           {/* Text Color Button */}
           <div className="toolbar-color-picker-wrapper word-style-color-picker" ref={colorPickerRef}>
             <button 
+              ref={textColorButtonRef}
               className={`toolbar-btn-text-color ${showColorPicker ? "active" : ""}`}
               title="Font Color"
               onClick={() => {
