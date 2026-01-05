@@ -75,6 +75,7 @@ export default function AddProducts3Page() {
   const [testimoniIndices, setTestimoniIndices] = useState({});
   const [productKategori, setProductKategori] = useState(null); // Untuk menentukan kategori produk
   const [activeTab, setActiveTab] = useState("konten"); // State untuk tab aktif
+  const [selectedBundling, setSelectedBundling] = useState(null); // State untuk bundling yang dipilih
   
   // State untuk form pengaturan
   const [pengaturanForm, setPengaturanForm] = useState({
@@ -83,6 +84,7 @@ export default function AddProducts3Page() {
     kode: "",
     url: "",
     harga: null,
+    jenis_produk: "fisik", // "fisik" atau "non-fisik"
     isBundling: false,
     bundling: [], // Array of { nama: string, harga: number }
     tanggal_event: null,
@@ -796,9 +798,125 @@ export default function AddProducts3Page() {
         // Gunakan productKategori dari state pengaturan
         const isFormBuku = productKategori === 4; // Kategori Buku (4)
         const isFormWorkshop = productKategori === 6; // Kategori Workshop (6)
+        // Cek jenis produk untuk menentukan apakah perlu ongkir
+        const isProdukFisik = pengaturanForm.jenis_produk === "fisik";
         
         return (
           <div style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
+            {/* Bundling Section - Tampilkan jika ada bundling */}
+            {pengaturanForm.isBundling && pengaturanForm.bundling && pengaturanForm.bundling.length > 0 && (
+              <section className="preview-form-section bundling-section" aria-label="Package Selection" style={{
+                marginBottom: "24px",
+                padding: "24px",
+                backgroundColor: "#ffffff",
+                borderRadius: "12px",
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)"
+              }}>
+                <h2 style={{
+                  fontSize: "24px",
+                  fontWeight: "700",
+                  color: "#1f2937",
+                  marginBottom: "8px",
+                  lineHeight: "1.2"
+                }}>
+                  {pengaturanForm.nama || "Produk"}
+                </h2>
+                <p style={{
+                  fontSize: "16px",
+                  color: "#6b7280",
+                  marginBottom: "20px",
+                  fontWeight: "500"
+                }}>
+                  Pilihan Paket
+                </p>
+                <div style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "12px"
+                }}>
+                  {pengaturanForm.bundling.map((item, index) => {
+                    const isSelected = selectedBundling === index;
+                    const formatHarga = (harga) => {
+                      if (!harga || harga === 0) return "0";
+                      return harga.toLocaleString("id-ID");
+                    };
+                    
+                    return (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => {
+                          setSelectedBundling(index);
+                          // Update harga di Rincian Pemesanan
+                          requestAnimationFrame(() => {
+                            const hargaElement = document.querySelector('.rincian-pesanan-item .rincian-pesanan-price');
+                            const totalElement = document.getElementById('rincian-total');
+                            const ongkirElement = document.getElementById('rincian-ongkir');
+                            
+                            const harga = item.harga || 0;
+                            
+                            if (hargaElement && !hargaElement.id) {
+                              hargaElement.textContent = `Rp ${formatHarga(harga)}`;
+                            }
+                            
+                            if (totalElement) {
+                              // Get ongkir jika ada (untuk kategori 4)
+                              const ongkir = ongkirElement && ongkirElement.textContent !== "Rp 0" 
+                                ? parseInt(ongkirElement.textContent.replace(/[^0-9]/g, '')) || 0 
+                                : 0;
+                              const total = harga + ongkir;
+                              totalElement.textContent = `Rp ${formatHarga(total)}`;
+                            }
+                          });
+                        }}
+                        style={{
+                          flex: "1 1 calc(33.333% - 8px)",
+                          minWidth: "200px",
+                          padding: "16px 20px",
+                          borderRadius: "10px",
+                          border: isSelected ? "2px solid #3b82f6" : "1px solid #e5e7eb",
+                          backgroundColor: isSelected ? "#3b82f6" : "#ffffff",
+                          color: isSelected ? "#ffffff" : "#374151",
+                          fontSize: "15px",
+                          fontWeight: "500",
+                          cursor: "pointer",
+                          transition: "all 0.2s ease",
+                          textAlign: "center",
+                          boxShadow: isSelected ? "0 4px 12px rgba(59, 130, 246, 0.3)" : "0 1px 3px rgba(0, 0, 0, 0.1)",
+                          outline: "none"
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isSelected) {
+                            e.currentTarget.style.backgroundColor = "#f9fafb";
+                            e.currentTarget.style.borderColor = "#d1d5db";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isSelected) {
+                            e.currentTarget.style.backgroundColor = "#ffffff";
+                            e.currentTarget.style.borderColor = "#e5e7eb";
+                          }
+                        }}
+                      >
+                        {item.nama || `Paket ${index + 1}`}
+                        {item.harga && (
+                          <span style={{
+                            display: "block",
+                            marginTop: "4px",
+                            fontSize: "14px",
+                            fontWeight: "600",
+                            opacity: isSelected ? "1" : "0.8"
+                          }}>
+                            Rp {formatHarga(item.harga)}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
             {/* Form Pemesanan */}
             <section className="preview-form-section compact-form-section" aria-label="Order form">
               <h2 className="compact-form-title">Lengkapi Data:</h2>
@@ -840,8 +958,8 @@ export default function AddProducts3Page() {
                   <input type="text" placeholder="Contoh: 12120" className="compact-input" />
                 </div>
                 
-                {/* Form Ongkir - Kategori Buku (4) */}
-                {isFormBuku && (
+                {/* Form Ongkir - Hanya untuk produk Fisik */}
+                {isProdukFisik && (
                   <div className="compact-field">
                     <OngkirCalculator
                       onSelectOngkir={(info) => {
@@ -849,32 +967,33 @@ export default function AddProducts3Page() {
                         const ongkirElement = document.getElementById('rincian-ongkir');
                         const totalElement = document.getElementById('rincian-total');
                         
+                        const formatHarga = (harga) => {
+                          if (!harga || harga === 0) return "0";
+                          return harga.toLocaleString("id-ID");
+                        };
+                        
+                        // Get harga yang aktif (bundling atau default)
+                        let activeHarga = pengaturanForm.harga || 0;
+                        if (pengaturanForm.isBundling && selectedBundling !== null && pengaturanForm.bundling && pengaturanForm.bundling[selectedBundling]) {
+                          activeHarga = pengaturanForm.bundling[selectedBundling].harga || 0;
+                        }
+                        
                         if (ongkirElement && info && info.cost) {
                           const ongkir = info.cost;
-                          const formatHarga = (harga) => {
-                            if (!harga || harga === 0) return "0";
-                            return harga.toLocaleString("id-ID");
-                          };
                           
                           // Update ongkir display
                           ongkirElement.textContent = `Rp ${formatHarga(ongkir)}`;
                           
-                          // Update total (harga + ongkir)
+                          // Update total (harga aktif + ongkir)
                           if (totalElement) {
-                            const harga = pengaturanForm.harga || 0;
-                            const total = harga + ongkir;
+                            const total = activeHarga + ongkir;
                             totalElement.textContent = `Rp ${formatHarga(total)}`;
                           }
                         } else if (ongkirElement) {
                           ongkirElement.textContent = "Rp 0";
-                          // Reset total ke harga saja
+                          // Reset total ke harga aktif saja
                           if (totalElement) {
-                            const harga = pengaturanForm.harga || 0;
-                            const formatHarga = (harga) => {
-                              if (!harga || harga === 0) return "0";
-                              return harga.toLocaleString("id-ID");
-                            };
-                            totalElement.textContent = `Rp ${formatHarga(hargaPromo)}`;
+                            totalElement.textContent = `Rp ${formatHarga(activeHarga)}`;
                           }
                         }
                       }}
@@ -883,17 +1002,23 @@ export default function AddProducts3Page() {
                         const ongkirElement = document.getElementById('rincian-ongkir');
                         const totalElement = document.getElementById('rincian-total');
                         
+                        const formatHarga = (harga) => {
+                          if (!harga || harga === 0) return "0";
+                          return harga.toLocaleString("id-ID");
+                        };
+                        
+                        // Get harga yang aktif (bundling atau default)
+                        let activeHarga = pengaturanForm.harga || 0;
+                        if (pengaturanForm.isBundling && selectedBundling !== null && pengaturanForm.bundling && pengaturanForm.bundling[selectedBundling]) {
+                          activeHarga = pengaturanForm.bundling[selectedBundling].harga || 0;
+                        }
+                        
                         if (ongkirElement) {
                           ongkirElement.textContent = "Rp 0";
                         }
                         
                         if (totalElement) {
-                          const harga = pengaturanForm.harga || 0;
-                          const formatHarga = (harga) => {
-                            if (!harga || harga === 0) return "0";
-                            return harga.toLocaleString("id-ID");
-                          };
-                          totalElement.textContent = `Rp ${formatHarga(harga)}`;
+                          totalElement.textContent = `Rp ${formatHarga(activeHarga)}`;
                         }
                       }}
                       defaultCourier="jne"
@@ -928,13 +1053,17 @@ export default function AddProducts3Page() {
                         if (!harga || harga === 0) return "0";
                         return harga.toLocaleString("id-ID");
                       };
-                      const harga = pengaturanForm.harga || 0;
+                      // Gunakan harga bundling jika dipilih, jika tidak gunakan harga default
+                      let harga = pengaturanForm.harga || 0;
+                      if (pengaturanForm.isBundling && selectedBundling !== null && pengaturanForm.bundling && pengaturanForm.bundling[selectedBundling]) {
+                        harga = pengaturanForm.bundling[selectedBundling].harga || 0;
+                      }
                       return `Rp ${formatHarga(harga)}`;
                     })()}
                   </div>
                 </div>
-                {/* Ongkir - Hanya untuk kategori Buku (id 4) */}
-                {isFormBuku && (
+                {/* Ongkir - Hanya untuk produk Fisik */}
+                {isProdukFisik && (
                   <>
                     <div className="rincian-pesanan-item">
                       <div className="rincian-pesanan-detail">
@@ -955,7 +1084,13 @@ export default function AddProducts3Page() {
                         if (!harga || harga === 0) return "0";
                         return harga.toLocaleString("id-ID");
                       };
-                      const harga = pengaturanForm.harga || 0;
+                      // Gunakan harga bundling jika dipilih, jika tidak gunakan harga default
+                      let harga = pengaturanForm.harga || 0;
+                      if (pengaturanForm.isBundling && selectedBundling !== null && pengaturanForm.bundling && pengaturanForm.bundling[selectedBundling]) {
+                        harga = pengaturanForm.bundling[selectedBundling].harga || 0;
+                      }
+                      // Untuk produk fisik, ongkir akan ditambahkan saat user pilih ongkir
+                      // Untuk non-fisik, total = harga saja (tidak ada ongkir)
                       return `Rp ${formatHarga(harga)}`;
                     })()}
                   </span>
@@ -1347,7 +1482,10 @@ export default function AddProducts3Page() {
           
           if (totalElement) {
             const harga = value || 0;
-            const ongkir = ongkirElement ? parseInt(ongkirElement.textContent.replace(/[^0-9]/g, '')) || 0 : 0;
+            // Hanya hitung ongkir jika produk fisik
+            const ongkir = (pengaturanForm.jenis_produk === "fisik" && ongkirElement) 
+              ? parseInt(ongkirElement.textContent.replace(/[^0-9]/g, '')) || 0 
+              : 0;
             const total = harga + ongkir;
             
             const formatHarga = (harga) => {
@@ -1366,6 +1504,43 @@ export default function AddProducts3Page() {
               return harga.toLocaleString("id-ID");
             };
             hargaElement.textContent = `Rp ${formatHarga(value || 0)}`;
+          }
+        });
+      }
+      
+      // Reset ongkir saat jenis produk berubah
+      if (key === "jenis_produk") {
+        requestAnimationFrame(() => {
+          const ongkirElement = document.getElementById('rincian-ongkir');
+          const totalElement = document.getElementById('rincian-total');
+          
+          const formatHarga = (harga) => {
+            if (!harga || harga === 0) return "0";
+            return harga.toLocaleString("id-ID");
+          };
+          
+          // Get harga aktif (bundling atau default)
+          let activeHarga = pengaturanForm.harga || 0;
+          if (pengaturanForm.isBundling && selectedBundling !== null && pengaturanForm.bundling && pengaturanForm.bundling[selectedBundling]) {
+            activeHarga = pengaturanForm.bundling[selectedBundling].harga || 0;
+          }
+          
+          if (value === "non-fisik") {
+            // Non-fisik: reset ongkir dan total = harga saja
+            if (ongkirElement) {
+              ongkirElement.textContent = "Rp 0";
+            }
+            if (totalElement) {
+              totalElement.textContent = `Rp ${formatHarga(activeHarga)}`;
+            }
+          } else {
+            // Fisik: reset ongkir ke 0, total = harga (ongkir akan dihitung saat user pilih)
+            if (ongkirElement) {
+              ongkirElement.textContent = "Rp 0";
+            }
+            if (totalElement) {
+              totalElement.textContent = `Rp ${formatHarga(activeHarga)}`;
+            }
           }
         });
       }
@@ -1411,6 +1586,7 @@ export default function AddProducts3Page() {
       harga_asli: "0", // Legacy field, tetap kirim 0
       harga_promo: String(pengaturanForm.harga || 0), // Gunakan harga untuk backward compatibility
       harga: String(pengaturanForm.harga || 0),
+      jenis_produk: pengaturanForm.jenis_produk || "fisik",
       isBundling: pengaturanForm.isBundling || false,
       bundling: JSON.stringify(pengaturanForm.bundling || []),
       tanggal_event: formattedDate,
@@ -1645,6 +1821,25 @@ export default function AddProducts3Page() {
                 {/* Harga */}
                 <div className="pengaturan-section">
                   <h3 className="pengaturan-section-title">Harga</h3>
+                  
+                  <div className="pengaturan-form-group">
+                    <label className="pengaturan-label">
+                      Jenis Produk <span className="required">*</span>
+                    </label>
+                    <Dropdown
+                      className="pengaturan-input"
+                      value={pengaturanForm.jenis_produk || "fisik"}
+                      options={[
+                        { label: "Fisik", value: "fisik" },
+                        { label: "Non-Fisik", value: "non-fisik" }
+                      ]}
+                      onChange={(e) => handlePengaturanChange("jenis_produk", e.value)}
+                      placeholder="Pilih jenis produk"
+                    />
+                    <small className="pengaturan-hint">
+                      Produk Fisik memerlukan ongkos kirim, Non-Fisik tidak memerlukan ongkos kirim
+                    </small>
+                  </div>
                   
                   <div className="pengaturan-form-group">
                     <label className="pengaturan-label">
