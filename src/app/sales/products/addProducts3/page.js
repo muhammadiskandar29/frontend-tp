@@ -82,8 +82,9 @@ export default function AddProducts3Page() {
     kategori: null,
     kode: "",
     url: "",
-    harga_asli: null,
-    harga_promo: null,
+    harga: null,
+    isBundling: false,
+    bundling: [], // Array of { nama: string, harga: number }
     tanggal_event: null,
     assign: [],
     background_color: "#ffffff", // Default putih
@@ -858,17 +859,17 @@ export default function AddProducts3Page() {
                           // Update ongkir display
                           ongkirElement.textContent = `Rp ${formatHarga(ongkir)}`;
                           
-                          // Update total (harga promo + ongkir)
+                          // Update total (harga + ongkir)
                           if (totalElement) {
-                            const hargaPromo = pengaturanForm.harga_promo || 0;
-                            const total = hargaPromo + ongkir;
+                            const harga = pengaturanForm.harga || 0;
+                            const total = harga + ongkir;
                             totalElement.textContent = `Rp ${formatHarga(total)}`;
                           }
                         } else if (ongkirElement) {
                           ongkirElement.textContent = "Rp 0";
-                          // Reset total ke harga promo saja
+                          // Reset total ke harga saja
                           if (totalElement) {
-                            const hargaPromo = pengaturanForm.harga_promo || 0;
+                            const harga = pengaturanForm.harga || 0;
                             const formatHarga = (harga) => {
                               if (!harga || harga === 0) return "0";
                               return harga.toLocaleString("id-ID");
@@ -887,12 +888,12 @@ export default function AddProducts3Page() {
                         }
                         
                         if (totalElement) {
-                          const hargaPromo = pengaturanForm.harga_promo || 0;
+                          const harga = pengaturanForm.harga || 0;
                           const formatHarga = (harga) => {
                             if (!harga || harga === 0) return "0";
                             return harga.toLocaleString("id-ID");
                           };
-                          totalElement.textContent = `Rp ${formatHarga(hargaPromo)}`;
+                          totalElement.textContent = `Rp ${formatHarga(harga)}`;
                         }
                       }}
                       defaultCourier="jne"
@@ -927,8 +928,8 @@ export default function AddProducts3Page() {
                         if (!harga || harga === 0) return "0";
                         return harga.toLocaleString("id-ID");
                       };
-                      const hargaPromo = pengaturanForm.harga_promo || 0;
-                      return `Rp ${formatHarga(hargaPromo)}`;
+                      const harga = pengaturanForm.harga || 0;
+                      return `Rp ${formatHarga(harga)}`;
                     })()}
                   </div>
                 </div>
@@ -954,8 +955,8 @@ export default function AddProducts3Page() {
                         if (!harga || harga === 0) return "0";
                         return harga.toLocaleString("id-ID");
                       };
-                      const hargaPromo = pengaturanForm.harga_promo || 0;
-                      return `Rp ${formatHarga(hargaPromo)}`;
+                      const harga = pengaturanForm.harga || 0;
+                      return `Rp ${formatHarga(harga)}`;
                     })()}
                   </span>
                 </div>
@@ -1338,16 +1339,16 @@ export default function AddProducts3Page() {
     } else {
       setPengaturanForm((prev) => ({ ...prev, [key]: value }));
       
-      // Update total di Rincian Pemesanan saat harga promo berubah
-      if (key === "harga_promo") {
+      // Update total di Rincian Pemesanan saat harga berubah
+      if (key === "harga") {
         requestAnimationFrame(() => {
           const totalElement = document.getElementById('rincian-total');
           const ongkirElement = document.getElementById('rincian-ongkir');
           
           if (totalElement) {
-            const hargaPromo = value || 0;
+            const harga = value || 0;
             const ongkir = ongkirElement ? parseInt(ongkirElement.textContent.replace(/[^0-9]/g, '')) || 0 : 0;
-            const total = hargaPromo + ongkir;
+            const total = harga + ongkir;
             
             const formatHarga = (harga) => {
               if (!harga || harga === 0) return "0";
@@ -1384,8 +1385,8 @@ export default function AddProducts3Page() {
       return;
     }
 
-    if (!pengaturanForm.harga_promo) {
-      toast.error("Harga promo wajib diisi");
+    if (!pengaturanForm.harga) {
+      toast.error("Harga wajib diisi");
       return;
     }
 
@@ -1407,8 +1408,11 @@ export default function AddProducts3Page() {
       kategori: String(pengaturanForm.kategori),
       kode: pengaturanForm.kode || generateKode(pengaturanForm.nama),
       url: pengaturanForm.url || `/${generateKode(pengaturanForm.nama)}`,
-      harga_asli: pengaturanForm.harga_asli ? String(pengaturanForm.harga_asli) : "0",
-      harga_promo: String(pengaturanForm.harga_promo),
+      harga_asli: "0", // Legacy field, tetap kirim 0
+      harga_promo: String(pengaturanForm.harga || 0), // Gunakan harga untuk backward compatibility
+      harga: String(pengaturanForm.harga || 0),
+      isBundling: pengaturanForm.isBundling || false,
+      bundling: JSON.stringify(pengaturanForm.bundling || []),
       tanggal_event: formattedDate,
       assign: pengaturanForm.assign,
       background_color: pengaturanForm.background_color || "#ffffff",
@@ -1638,17 +1642,19 @@ export default function AddProducts3Page() {
                   </div>
                 </div>
 
-                {/* Harga Asli */}
+                {/* Harga */}
                 <div className="pengaturan-section">
                   <h3 className="pengaturan-section-title">Harga</h3>
                   
                   <div className="pengaturan-form-group">
-                    <label className="pengaturan-label">Harga Normal</label>
+                    <label className="pengaturan-label">
+                      Harga <span className="required">*</span>
+                    </label>
                     <InputNumber
                       className="pengaturan-input"
-                      value={pengaturanForm.harga_asli}
-                      onValueChange={(e) => handlePengaturanChange("harga_asli", e.value)}
-                      placeholder="Masukkan harga asli"
+                      value={pengaturanForm.harga}
+                      onValueChange={(e) => handlePengaturanChange("harga", e.value)}
+                      placeholder="Masukkan harga"
                       mode="currency"
                       currency="IDR"
                       locale="id-ID"
@@ -1656,21 +1662,97 @@ export default function AddProducts3Page() {
                     />
                   </div>
 
+                  {/* Checkbox Bundling */}
                   <div className="pengaturan-form-group">
-                    <label className="pengaturan-label">
-                      Harga Promo <span className="required">*</span>
+                    <label className="pengaturan-label" style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                      <input
+                        type="checkbox"
+                        checked={pengaturanForm.isBundling || false}
+                        onChange={(e) => handlePengaturanChange("isBundling", e.target.checked)}
+                        style={{ width: "18px", height: "18px", cursor: "pointer" }}
+                      />
+                      <span>Bundling</span>
                     </label>
-                    <InputNumber
-                      className="pengaturan-input"
-                      value={pengaturanForm.harga_promo}
-                      onValueChange={(e) => handlePengaturanChange("harga_promo", e.value)}
-                      placeholder="Masukkan harga promo"
-                      mode="currency"
-                      currency="IDR"
-                      locale="id-ID"
-                      useGrouping={true}
-                    />
                   </div>
+
+                  {/* Form Bundling */}
+                  {pengaturanForm.isBundling && (
+                    <div className="pengaturan-form-group" style={{ marginTop: "16px" }}>
+                      <label className="pengaturan-label" style={{ marginBottom: "12px" }}>Daftar Bundling</label>
+                      {(pengaturanForm.bundling || []).map((item, index) => (
+                        <div key={index} style={{ marginBottom: "12px", padding: "12px", border: "1px solid #e5e7eb", borderRadius: "6px" }}>
+                          <div className="pengaturan-form-group" style={{ marginBottom: "8px" }}>
+                            <label className="pengaturan-label" style={{ fontSize: "14px" }}>Nama Bundling</label>
+                            <InputText
+                              className="pengaturan-input"
+                              value={item.nama || ""}
+                              onChange={(e) => {
+                                const newBundling = [...(pengaturanForm.bundling || [])];
+                                newBundling[index] = { ...newBundling[index], nama: e.target.value };
+                                handlePengaturanChange("bundling", newBundling);
+                              }}
+                              placeholder="Masukkan nama bundling"
+                            />
+                          </div>
+                          <div className="pengaturan-form-group">
+                            <label className="pengaturan-label" style={{ fontSize: "14px" }}>Harga</label>
+                            <InputNumber
+                              className="pengaturan-input"
+                              value={item.harga || null}
+                              onValueChange={(e) => {
+                                const newBundling = [...(pengaturanForm.bundling || [])];
+                                newBundling[index] = { ...newBundling[index], harga: e.value };
+                                handlePengaturanChange("bundling", newBundling);
+                              }}
+                              placeholder="Masukkan harga bundling"
+                              mode="currency"
+                              currency="IDR"
+                              locale="id-ID"
+                              useGrouping={true}
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newBundling = (pengaturanForm.bundling || []).filter((_, i) => i !== index);
+                              handlePengaturanChange("bundling", newBundling);
+                            }}
+                            style={{
+                              marginTop: "8px",
+                              padding: "6px 12px",
+                              backgroundColor: "#ef4444",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                              fontSize: "12px"
+                            }}
+                          >
+                            Hapus
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newBundling = [...(pengaturanForm.bundling || []), { nama: "", harga: null }];
+                          handlePengaturanChange("bundling", newBundling);
+                        }}
+                        style={{
+                          padding: "10px 16px",
+                          backgroundColor: "#F1A124",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                          fontSize: "14px",
+                          fontWeight: "500"
+                        }}
+                      >
+                        + Tambah Bundling
+                      </button>
+                    </div>
+                  )}
 
                   <div className="pengaturan-form-group">
                     <label className="pengaturan-label">Tanggal Event</label>
