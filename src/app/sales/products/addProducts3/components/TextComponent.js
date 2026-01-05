@@ -2329,14 +2329,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     
     const newUnderlineState = !hasUnderline;
     
-    // Update state
-    flushSync(() => {
-      setActiveUnderline(newUnderlineState);
-      setDisplayedUnderline(newUnderlineState);
-      setCurrentUnderline(newUnderlineState);
-    });
-    
-    // Update button visual
+    // INSTANT: Update button visual FIRST (before state update for immediate feedback)
     if (underlineButtonRef.current) {
       const btn = underlineButtonRef.current;
       if (newUnderlineState) {
@@ -2357,35 +2350,44 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         btn.style.setProperty('border-color', '', 'important');
         btn.style.setProperty('color', '', 'important');
       }
-      void btn.offsetHeight;
+      void btn.offsetHeight; // Force immediate reflow
     }
+    
+    // Update state (after visual update for instant feedback)
+    flushSync(() => {
+      setActiveUnderline(newUnderlineState);
+      setDisplayedUnderline(newUnderlineState);
+      setCurrentUnderline(newUnderlineState);
+    });
     
     editorRef.current.focus();
     
     // CRITICAL: When disabling underline at END of underline span, break context
     if (!newUnderlineState && hasUnderline && elementNode.tagName === "SPAN") {
-      // Check if cursor is at END of the underline span's text content
+      // FAST: Check if cursor is at END of the underline span's text content
       let isAtEnd = false;
       
       if (textNode.nodeType === Node.TEXT_NODE) {
-        // Cursor is in a text node - check if it's the last text node and at end
-        const allTextNodes = [];
-        const walker = document.createTreeWalker(
-          elementNode,
-          NodeFilter.SHOW_TEXT,
-          null
-        );
-        let tn;
-        while (tn = walker.nextNode()) {
-          allTextNodes.push(tn);
-        }
-        
-        const lastTextNode = allTextNodes[allTextNodes.length - 1];
-        if (lastTextNode === textNode && offset === textNode.textContent.length) {
+        // Fast check: if textNode is lastChild and offset is at end
+        if (elementNode.lastChild === textNode && offset === textNode.textContent.length) {
           isAtEnd = true;
+        } else {
+          // Fallback: check if there's any node after this text node
+          let foundAfter = false;
+          let currentNode = textNode;
+          while (currentNode && currentNode !== elementNode) {
+            if (currentNode.nextSibling) {
+              foundAfter = true;
+              break;
+            }
+            currentNode = currentNode.parentNode;
+          }
+          if (!foundAfter && offset === textNode.textContent.length) {
+            isAtEnd = true;
+          }
         }
       } else {
-        // Cursor is directly in element - check if empty or at end
+        // Cursor is directly in element - check if empty
         if (elementNode.childNodes.length === 0) {
           isAtEnd = true;
         }
@@ -2485,8 +2487,13 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
     }
     
+    // Update lastUsedStylesRef for next typing
     lastUsedStylesRef.current.textDecoration = newUnderlineState ? "underline" : "none";
-    handleEditorInput();
+    
+    // Call handleEditorInput asynchronously to not block instant visual feedback
+    requestAnimationFrame(() => {
+      handleEditorInput();
+    });
   };
 
   // ===== ULTRA SIMPLE & DIRECT: Toggle Strikethrough Function =====
