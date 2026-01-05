@@ -91,7 +91,7 @@ export default function ProductPage() {
       || (data.kategori ? Number(data.kategori) : null);
     
     // Debug log untuk memastikan kategori terdeteksi
-    if (kategoriId === 13) {
+    if (kategoriId === 4) { // Kategori Buku (4)
       console.log("[PRODUCT] Kategori Buku detected (ID: 13)");
     }
     
@@ -100,7 +100,7 @@ export default function ProductPage() {
 
   const isKategoriBuku = () => {
     const kategoriId = getKategoriId();
-    const isBuku = kategoriId === 13;
+    const isBuku = kategoriId === 4; // Kategori Buku (4)
     if (isBuku) {
       console.log("[PRODUCT] isKategoriBuku: true - OngkirCalculator should appear");
     }
@@ -108,7 +108,7 @@ export default function ProductPage() {
   };
 
   const isKategoriWorkshop = () => {
-    return getKategoriId() === 15;
+    return getKategoriId() === 6; // Kategori Workshop (6)
   };
 
   // FAQ Mapping
@@ -410,8 +410,8 @@ export default function ProductPage() {
 
         case "form": {
           const kategoriId = getKategoriId();
-          const isFormBuku = kategoriId === 13;
-          const isFormWorkshop = kategoriId === 15;
+          const isFormBuku = kategoriId === 4; // Kategori Buku (4)
+          const isFormWorkshop = kategoriId === 6; // Kategori Workshop (6)
           
           // Debug log untuk memastikan form block ter-render dengan benar
           console.log("[PRODUCT] Form block rendering - kategoriId:", kategoriId, "isFormBuku:", isFormBuku, "isFormWorkshop:", isFormWorkshop);
@@ -752,8 +752,7 @@ export default function ProductPage() {
       custom_value: Array.isArray(customerForm.custom_value) 
         ? customerForm.custom_value 
         : (customerForm.custom_value ? [customerForm.custom_value] : []),
-      // Untuk Workshop (kategori 15), tambahkan status_pembayaran: 4
-      ...(isWorkshop ? { status_pembayaran: 4 } : {}),
+      // Workshop tidak lagi menggunakan status_pembayaran: 4, normal seperti kategori lainnya
       // Tambahkan flag untuk dummy products (opsional, untuk tracking)
       ...(isDummyProduct(kode_produk) ? { dummy_product_kode: kode_produk } : {}),
     };
