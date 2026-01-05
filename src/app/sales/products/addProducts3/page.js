@@ -28,7 +28,6 @@ import {
   ListComponent,
   FormComponent,
   FAQComponent,
-  PriceComponent,
   SectionComponent,
   SliderComponent,
   ButtonComponent,
@@ -51,7 +50,6 @@ const COMPONENT_CATEGORIES = {
     components: [
       { id: "text", name: "Teks", icon: Type, color: "#6b7280" },
       { id: "image", name: "Gambar", icon: ImageIcon, color: "#6b7280" },
-      { id: "price", name: "Harga", icon: FileText, color: "#6b7280" },
       { id: "youtube", name: "Video", icon: Youtube, color: "#6b7280" },
       { id: "section", name: "Section", icon: Layout, color: "#6b7280" },
     ]
@@ -149,7 +147,6 @@ export default function AddProducts3Page() {
       testimoni: { items: [] },
       list: { items: [], componentTitle: "" },
       form: { kategori: null }, // Kategori untuk form pemesanan
-      price: {},
       faq: { items: [] },
       slider: { images: [] },
       button: { text: "Klik Disini", link: "#", style: "primary" },
@@ -334,8 +331,6 @@ export default function AddProducts3Page() {
       case "youtube":
       case "video":
         return <VideoComponent {...commonProps} />;
-      case "price":
-        return <PriceComponent {...commonProps} />;
       case "testimoni":
         return <TestimoniComponent {...commonProps} />;
       case "list":
@@ -849,12 +844,56 @@ export default function AddProducts3Page() {
                   <div className="compact-field">
                     <OngkirCalculator
                       onSelectOngkir={(info) => {
-                        // Handle ongkir selection if needed
-                        console.log('Ongkir selected:', info);
+                        // Update ongkir di Rincian Pemesanan
+                        const ongkirElement = document.getElementById('rincian-ongkir');
+                        const totalElement = document.getElementById('rincian-total');
+                        
+                        if (ongkirElement && info && info.cost) {
+                          const ongkir = info.cost;
+                          const formatHarga = (harga) => {
+                            if (!harga || harga === 0) return "0";
+                            return harga.toLocaleString("id-ID");
+                          };
+                          
+                          // Update ongkir display
+                          ongkirElement.textContent = `Rp ${formatHarga(ongkir)}`;
+                          
+                          // Update total (harga promo + ongkir)
+                          if (totalElement) {
+                            const hargaPromo = pengaturanForm.harga_promo || 0;
+                            const total = hargaPromo + ongkir;
+                            totalElement.textContent = `Rp ${formatHarga(total)}`;
+                          }
+                        } else if (ongkirElement) {
+                          ongkirElement.textContent = "Rp 0";
+                          // Reset total ke harga promo saja
+                          if (totalElement) {
+                            const hargaPromo = pengaturanForm.harga_promo || 0;
+                            const formatHarga = (harga) => {
+                              if (!harga || harga === 0) return "0";
+                              return harga.toLocaleString("id-ID");
+                            };
+                            totalElement.textContent = `Rp ${formatHarga(hargaPromo)}`;
+                          }
+                        }
                       }}
                       onAddressChange={(address) => {
-                        // Handle address change if needed
-                        console.log('Address changed:', address);
+                        // Reset ongkir saat alamat berubah
+                        const ongkirElement = document.getElementById('rincian-ongkir');
+                        const totalElement = document.getElementById('rincian-total');
+                        
+                        if (ongkirElement) {
+                          ongkirElement.textContent = "Rp 0";
+                        }
+                        
+                        if (totalElement) {
+                          const hargaPromo = pengaturanForm.harga_promo || 0;
+                          const formatHarga = (harga) => {
+                            if (!harga || harga === 0) return "0";
+                            return harga.toLocaleString("id-ID");
+                          };
+                          totalElement.textContent = `Rp ${formatHarga(hargaPromo)}`;
+                        }
                       }}
                       defaultCourier="jne"
                       compact={true}
@@ -880,14 +919,45 @@ export default function AddProducts3Page() {
                 <h3 className="rincian-pesanan-title">RINCIAN PESANAN:</h3>
                 <div className="rincian-pesanan-item">
                   <div className="rincian-pesanan-detail">
-                    <div className="rincian-pesanan-name">Nama Produk</div>
+                    <div className="rincian-pesanan-name">{pengaturanForm.nama || "Nama Produk"}</div>
                   </div>
-                  <div className="rincian-pesanan-price">Rp 0</div>
+                  <div className="rincian-pesanan-price">
+                    {(() => {
+                      const formatHarga = (harga) => {
+                        if (!harga || harga === 0) return "0";
+                        return harga.toLocaleString("id-ID");
+                      };
+                      const hargaPromo = pengaturanForm.harga_promo || 0;
+                      return `Rp ${formatHarga(hargaPromo)}`;
+                    })()}
+                  </div>
                 </div>
+                {/* Ongkir - Hanya untuk kategori Buku (id 4) */}
+                {isFormBuku && (
+                  <>
+                    <div className="rincian-pesanan-item">
+                      <div className="rincian-pesanan-detail">
+                        <div className="rincian-pesanan-name">Ongkos Kirim</div>
+                      </div>
+                      <div className="rincian-pesanan-price" id="rincian-ongkir">
+                        Rp 0
+                      </div>
+                    </div>
+                  </>
+                )}
                 <div className="rincian-pesanan-divider"></div>
                 <div className="rincian-pesanan-total">
                   <span className="rincian-pesanan-total-label">Total</span>
-                  <span className="rincian-pesanan-total-price">Rp 0</span>
+                  <span className="rincian-pesanan-total-price" id="rincian-total">
+                    {(() => {
+                      const formatHarga = (harga) => {
+                        if (!harga || harga === 0) return "0";
+                        return harga.toLocaleString("id-ID");
+                      };
+                      const hargaPromo = pengaturanForm.harga_promo || 0;
+                      return `Rp ${formatHarga(hargaPromo)}`;
+                    })()}
+                  </span>
                 </div>
               </div>
             </section>
@@ -942,33 +1012,6 @@ export default function AddProducts3Page() {
               </button>
             </div>
           </div>
-        );
-      case "price":
-        // Format harga untuk ditampilkan
-        const formatHarga = (harga) => {
-          if (!harga || harga === 0) return "0";
-          return harga.toLocaleString("id-ID");
-        };
-        
-        const hargaAsli = pengaturanForm.harga_asli || 0;
-        const hargaPromo = pengaturanForm.harga_promo || 0;
-        
-        return (
-          <section className="preview-price-section special-offer-card" aria-label="Special offer" itemScope itemType="https://schema.org/Offer">
-            <h2 className="special-offer-title">Special Offer!</h2>
-            <div className="special-offer-price">
-              {hargaAsli > 0 && hargaAsli > hargaPromo && (
-              <span className="price-old" aria-label="Harga lama">
-                  Rp {formatHarga(hargaAsli)}
-              </span>
-              )}
-              <span className="price-new" itemProp="price" content={hargaPromo}>
-                Rp {formatHarga(hargaPromo)}
-              </span>
-            </div>
-            <meta itemProp="priceCurrency" content="IDR" />
-            <meta itemProp="availability" content="https://schema.org/InStock" />
-          </section>
         );
       case "button":
         return (
@@ -1284,8 +1327,47 @@ export default function AddProducts3Page() {
         kode: kode,
         url: url
       }));
+      
+      // Update nama produk di Rincian Pemesanan
+      requestAnimationFrame(() => {
+        const namaElement = document.querySelector('.rincian-pesanan-name');
+        if (namaElement) {
+          namaElement.textContent = value || "Nama Produk";
+        }
+      });
     } else {
       setPengaturanForm((prev) => ({ ...prev, [key]: value }));
+      
+      // Update total di Rincian Pemesanan saat harga promo berubah
+      if (key === "harga_promo") {
+        requestAnimationFrame(() => {
+          const totalElement = document.getElementById('rincian-total');
+          const ongkirElement = document.getElementById('rincian-ongkir');
+          
+          if (totalElement) {
+            const hargaPromo = value || 0;
+            const ongkir = ongkirElement ? parseInt(ongkirElement.textContent.replace(/[^0-9]/g, '')) || 0 : 0;
+            const total = hargaPromo + ongkir;
+            
+            const formatHarga = (harga) => {
+              if (!harga || harga === 0) return "0";
+              return harga.toLocaleString("id-ID");
+            };
+            
+            totalElement.textContent = `Rp ${formatHarga(total)}`;
+          }
+          
+          // Update harga produk di Rincian Pemesanan
+          const hargaElement = document.querySelector('.rincian-pesanan-item .rincian-pesanan-price');
+          if (hargaElement && !hargaElement.id) {
+            const formatHarga = (harga) => {
+              if (!harga || harga === 0) return "0";
+              return harga.toLocaleString("id-ID");
+            };
+            hargaElement.textContent = `Rp ${formatHarga(value || 0)}`;
+          }
+        });
+      }
     }
   };
 
