@@ -2300,7 +2300,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   };
 
   // ===== SIMPLIFIED: Toggle Underline Function =====
-  // FOCUS: Only handle collapsed cursor at END of underline text
+  // FOCUS: Handle both collapsed cursor and selection/block
   // RULE: Underline = <span style="text-decoration: underline">
   const toggleUnderline = (e) => {
     if (e) e.preventDefault();
@@ -2312,8 +2312,180 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     const range = selection.getRangeAt(0);
     if (!editorRef.current.contains(range.commonAncestorContainer)) return;
     
-    // ONLY handle collapsed cursor
-    if (!range.collapsed) return;
+    // Handle selection/block
+    if (!range.collapsed) {
+      // Check if all selected text has underline
+      let allUnderlined = true;
+      let hasAnyUnderline = false;
+      
+      const walker = document.createTreeWalker(
+        range.commonAncestorContainer,
+        NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
+        {
+          acceptNode: (node) => {
+            if (node.nodeType === Node.TEXT_NODE) {
+              return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+            }
+            return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+          }
+        }
+      );
+      
+      let node;
+      while (node = walker.nextNode()) {
+        if (node.nodeType === Node.ELEMENT_NODE && node.tagName === "SPAN") {
+          const textDecoration = node.style.textDecoration || window.getComputedStyle(node).textDecoration || "";
+          if (textDecoration.includes("underline")) {
+            hasAnyUnderline = true;
+          } else {
+            allUnderlined = false;
+          }
+        } else if (node.nodeType === Node.TEXT_NODE) {
+          const parent = node.parentElement;
+          if (parent && parent.tagName === "SPAN") {
+            const textDecoration = parent.style.textDecoration || window.getComputedStyle(parent).textDecoration || "";
+            if (textDecoration.includes("underline")) {
+              hasAnyUnderline = true;
+            } else {
+              allUnderlined = false;
+            }
+          } else {
+            allUnderlined = false;
+          }
+        }
+      }
+      
+      // Determine new state: if all underlined, remove; otherwise, add
+      const newUnderlineState = !allUnderlined;
+      
+      // INSTANT: Update button visual FIRST
+      if (underlineButtonRef.current) {
+        const btn = underlineButtonRef.current;
+        if (newUnderlineState) {
+          btn.classList.add('active');
+          btn.style.setProperty('background-color', '#F1A124', 'important');
+          btn.style.setProperty('border-color', '#F1A124', 'important');
+          btn.style.setProperty('color', '#ffffff', 'important');
+        } else {
+          btn.classList.remove('active');
+          btn.className = 'toolbar-btn';
+          btn.style.removeProperty('background-color');
+          btn.style.removeProperty('border-color');
+          btn.style.removeProperty('color');
+          btn.style.backgroundColor = '';
+          btn.style.borderColor = '';
+          btn.style.color = '';
+          btn.style.setProperty('background-color', '', 'important');
+          btn.style.setProperty('border-color', '', 'important');
+          btn.style.setProperty('color', '', 'important');
+        }
+        void btn.offsetHeight;
+      }
+      
+      // Update state
+      flushSync(() => {
+        setActiveUnderline(newUnderlineState);
+        setDisplayedUnderline(newUnderlineState);
+        setCurrentUnderline(newUnderlineState);
+      });
+      
+      editorRef.current.focus();
+      
+      // Apply underline to selection
+      if (newUnderlineState) {
+        // Check if selection has strikethrough to preserve it
+        let hasStrikethroughInSelection = false;
+        const checkWalker = document.createTreeWalker(
+          range.commonAncestorContainer,
+          NodeFilter.SHOW_ELEMENT,
+          {
+            acceptNode: (node) => {
+              return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+            }
+          }
+        );
+        let checkNode;
+        while (checkNode = checkWalker.nextNode()) {
+          if (checkNode.tagName === "SPAN") {
+            const textDecoration = checkNode.style.textDecoration || window.getComputedStyle(checkNode).textDecoration || "";
+            if (textDecoration.includes("line-through")) {
+              hasStrikethroughInSelection = true;
+              break;
+            }
+          }
+        }
+        
+        // Wrap selection in underline span
+        const contents = range.extractContents();
+        const span = document.createElement("span");
+        // Preserve strikethrough if present
+        const textDecoration = hasStrikethroughInSelection ? "underline line-through" : "underline";
+        span.style.textDecoration = textDecoration;
+        span.appendChild(contents);
+        range.insertNode(span);
+        
+        // Collapse range to end
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      } else {
+        // Remove underline from selection
+        const walker = document.createTreeWalker(
+          range.commonAncestorContainer,
+          NodeFilter.SHOW_ELEMENT,
+          {
+            acceptNode: (node) => {
+              return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+            }
+          }
+        );
+        
+        let node;
+        const nodesToProcess = [];
+        while (node = walker.nextNode()) {
+          if (node.tagName === "SPAN" && node.style.textDecoration && node.style.textDecoration.includes("underline")) {
+            nodesToProcess.push(node);
+          }
+        }
+        
+        // Process nodes to remove underline (preserve strikethrough if exists)
+        nodesToProcess.forEach(spanNode => {
+          const textDecoration = spanNode.style.textDecoration || "";
+          const hasStrikethrough = textDecoration.includes("line-through");
+          const newDecoration = textDecoration
+            .split(" ")
+            .filter(d => d !== "underline")
+            .join(" ");
+          
+          if (newDecoration.trim()) {
+            spanNode.style.textDecoration = newDecoration;
+          } else {
+            // Preserve strikethrough if exists, otherwise set to none
+            spanNode.style.textDecoration = hasStrikethrough ? "line-through" : "none";
+          }
+          
+          // If span only contains text and no other styles, unwrap it
+          if (!spanNode.style.fontSize && !spanNode.style.color && 
+              !spanNode.style.fontWeight && !spanNode.style.fontStyle &&
+              !spanNode.style.backgroundColor && spanNode.style.textDecoration === "none") {
+            const parent = spanNode.parentNode;
+            while (spanNode.firstChild) {
+              parent.insertBefore(spanNode.firstChild, spanNode);
+            }
+            parent.removeChild(spanNode);
+          }
+        });
+      }
+      
+      lastUsedStylesRef.current.textDecoration = newUnderlineState ? "underline" : "none";
+      requestAnimationFrame(() => {
+        handleEditorInput();
+      });
+      
+      return;
+    }
+    
+    // Handle collapsed cursor (existing logic)
     
     // Get current position
     const textNode = range.startContainer;
@@ -2496,236 +2668,335 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     });
   };
 
-  // ===== ULTRA SIMPLE & DIRECT: Toggle Strikethrough Function =====
+  // ===== SIMPLIFIED: Toggle Strikethrough Function =====
+  // FOCUS: Handle both collapsed cursor and selection/block
+  // RULE: Strikethrough = <span style="text-decoration: line-through">
   const toggleStrikethrough = (e) => {
     if (e) e.preventDefault();
     if (!editorRef.current) return;
     
-    // ===== STEP 1: Get current state FIRST =====
     const selection = window.getSelection();
-    let range = null;
+    if (selection.rangeCount === 0) return;
     
-    if (selection.rangeCount > 0) {
-      range = selection.getRangeAt(0);
-      if (!editorRef.current.contains(range.commonAncestorContainer)) {
-        range = null;
-      }
-    }
+    const range = selection.getRangeAt(0);
+    if (!editorRef.current.contains(range.commonAncestorContainer)) return;
     
-    if (!range && savedSelectionRef.current) {
-      try {
-        const saved = savedSelectionRef.current;
-        range = document.createRange();
-        range.setStart(saved.startContainer, saved.startOffset);
-        range.setEnd(saved.endContainer, saved.endOffset);
-        if (editorRef.current.contains(range.commonAncestorContainer)) {
-          selection.removeAllRanges();
-          selection.addRange(range);
-        } else {
-          range = null;
+    // Handle selection/block
+    if (!range.collapsed) {
+      // Check if all selected text has strikethrough
+      let allStrikethrough = true;
+      let hasAnyStrikethrough = false;
+      
+      const walker = document.createTreeWalker(
+        range.commonAncestorContainer,
+        NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
+        {
+          acceptNode: (node) => {
+            if (node.nodeType === Node.TEXT_NODE) {
+              return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+            }
+            return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+          }
         }
-      } catch (e) {
-        range = null;
-      }
-    }
-    
-    if (!range) {
-      range = document.createRange();
-      range.selectNodeContents(editorRef.current);
-      range.collapse(false);
-      selection.removeAllRanges();
-      selection.addRange(range);
-    }
-    
-    // Check current strikethrough state - ALWAYS check from DOM, not from state
-    let isCurrentlyStrikethrough = false;
-    
-    if (range.collapsed) {
-      // For collapsed cursor, check the actual node style
-      let node = range.startContainer;
-      if (node.nodeType === Node.TEXT_NODE) {
-        node = node.parentElement;
+      );
+      
+      let node;
+      while (node = walker.nextNode()) {
+        if (node.nodeType === Node.ELEMENT_NODE && node.tagName === "SPAN") {
+          const textDecoration = node.style.textDecoration || window.getComputedStyle(node).textDecoration || "";
+          if (textDecoration.includes("line-through")) {
+            hasAnyStrikethrough = true;
+          } else {
+            allStrikethrough = false;
+          }
+        } else if (node.nodeType === Node.TEXT_NODE) {
+          const parent = node.parentElement;
+          if (parent && parent.tagName === "SPAN") {
+            const textDecoration = parent.style.textDecoration || window.getComputedStyle(parent).textDecoration || "";
+            if (textDecoration.includes("line-through")) {
+              hasAnyStrikethrough = true;
+            } else {
+              allStrikethrough = false;
+            }
+          } else {
+            allStrikethrough = false;
+          }
+        }
       }
       
-      // Check if in style marker
-      if (node.tagName === "SPAN" && (node.textContent === "\u200B" || node.innerHTML === "\u200B")) {
-        const textDecoration = node.style.textDecoration || window.getComputedStyle(node).textDecoration;
-        isCurrentlyStrikethrough = textDecoration.includes("line-through");
-      } else {
-        // Check computed style of current node
-        const computedStyle = window.getComputedStyle(node);
-        const textDecoration = computedStyle.textDecoration || node.style.textDecoration || "";
-        isCurrentlyStrikethrough = textDecoration.includes("line-through");
+      // Determine new state: if all strikethrough, remove; otherwise, add
+      const newStrikethroughState = !allStrikethrough;
+      
+      // INSTANT: Update button visual FIRST
+      if (strikethroughButtonRef.current) {
+        const btn = strikethroughButtonRef.current;
+        if (newStrikethroughState) {
+          btn.classList.add('active');
+          btn.style.setProperty('background-color', '#F1A124', 'important');
+          btn.style.setProperty('border-color', '#F1A124', 'important');
+          btn.style.setProperty('color', '#ffffff', 'important');
+        } else {
+          btn.classList.remove('active');
+          btn.className = 'toolbar-btn';
+          btn.style.removeProperty('background-color');
+          btn.style.removeProperty('border-color');
+          btn.style.removeProperty('color');
+          btn.style.backgroundColor = '';
+          btn.style.borderColor = '';
+          btn.style.color = '';
+          btn.style.setProperty('background-color', '', 'important');
+          btn.style.setProperty('border-color', '', 'important');
+          btn.style.setProperty('color', '', 'important');
+        }
+        void btn.offsetHeight;
       }
-    } else {
-      // For selection, check multiple nodes in selection
-      try {
-        isCurrentlyStrikethrough = document.queryCommandState("strikeThrough");
-      } catch (e) {
-        // Fallback: check if any node in selection has strikethrough
+      
+      // Update state
+      flushSync(() => {
+        setActiveStrikethrough(newStrikethroughState);
+        setDisplayedStrikethrough(newStrikethroughState);
+        setCurrentStrikethrough(newStrikethroughState);
+      });
+      
+      editorRef.current.focus();
+      
+      // Apply strikethrough to selection
+      if (newStrikethroughState) {
+        // Wrap selection in strikethrough span
+        const contents = range.extractContents();
+        const span = document.createElement("span");
+        // Preserve underline if active
+        const textDecoration = activeUnderline ? "underline line-through" : "line-through";
+        span.style.textDecoration = textDecoration;
+        span.appendChild(contents);
+        range.insertNode(span);
+        
+        // Collapse range to end
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      } else {
+        // Remove strikethrough from selection
         const walker = document.createTreeWalker(
           range.commonAncestorContainer,
-          NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
+          NodeFilter.SHOW_ELEMENT,
           {
             acceptNode: (node) => {
-              if (node.nodeType === Node.TEXT_NODE) {
-                return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
-              }
               return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
             }
           }
         );
         
         let node;
+        const nodesToProcess = [];
         while (node = walker.nextNode()) {
-          if (node.nodeType === Node.ELEMENT_NODE) {
-            const computedStyle = window.getComputedStyle(node);
-            const textDecoration = computedStyle.textDecoration || node.style.textDecoration || "";
-            if (textDecoration.includes("line-through")) {
-              isCurrentlyStrikethrough = true;
-              break;
-            }
+          if (node.tagName === "SPAN" && node.style.textDecoration && node.style.textDecoration.includes("line-through")) {
+            nodesToProcess.push(node);
           }
         }
+        
+        // Process nodes to remove strikethrough
+        nodesToProcess.forEach(spanNode => {
+          const textDecoration = spanNode.style.textDecoration || "";
+          const newDecoration = textDecoration
+            .split(" ")
+            .filter(d => d !== "line-through")
+            .join(" ");
+          
+          if (newDecoration.trim()) {
+            spanNode.style.textDecoration = newDecoration;
+          } else {
+            spanNode.style.textDecoration = activeUnderline ? "underline" : "none";
+          }
+          
+          // If span only contains text and no other styles, unwrap it
+          if (!spanNode.style.fontSize && !spanNode.style.color && 
+              !spanNode.style.fontWeight && !spanNode.style.fontStyle &&
+              !spanNode.style.backgroundColor && spanNode.style.textDecoration === "none") {
+            const parent = spanNode.parentNode;
+            while (spanNode.firstChild) {
+              parent.insertBefore(spanNode.firstChild, spanNode);
+            }
+            parent.removeChild(spanNode);
+          }
+        });
       }
+      
+      // Update lastUsedStylesRef for next typing
+      const textDecoration = newStrikethroughState 
+        ? (activeUnderline ? "underline line-through" : "line-through")
+        : (activeUnderline ? "underline" : "none");
+      lastUsedStylesRef.current.textDecoration = textDecoration;
+      
+      requestAnimationFrame(() => {
+        handleEditorInput();
+      });
+      
+      return;
     }
     
-    const newStrikethroughState = !isCurrentlyStrikethrough;
+    // Handle collapsed cursor (existing logic)
     
-    // ===== STEP 2: Update React State FIRST with flushSync =====
-    // Update React state FIRST to sync className, then update DOM
+    // Get current position
+    const textNode = range.startContainer;
+    const offset = range.startOffset;
+    const elementNode = textNode.nodeType === Node.TEXT_NODE ? textNode.parentElement : textNode;
+    
+    // Check if current SPAN has strikethrough (ONLY check SPAN)
+    const hasStrikethrough = (() => {
+      if (elementNode.tagName !== "SPAN") return false;
+      const textDecoration = elementNode.style.textDecoration || window.getComputedStyle(elementNode).textDecoration || "";
+      return textDecoration.includes("line-through");
+    })();
+    
+    const newStrikethroughState = !hasStrikethrough;
+    
+    // INSTANT: Update button visual FIRST (before state update for immediate feedback)
+    if (strikethroughButtonRef.current) {
+      const btn = strikethroughButtonRef.current;
+      if (newStrikethroughState) {
+        btn.classList.add('active');
+        btn.style.setProperty('background-color', '#F1A124', 'important');
+        btn.style.setProperty('border-color', '#F1A124', 'important');
+        btn.style.setProperty('color', '#ffffff', 'important');
+      } else {
+        btn.classList.remove('active');
+        btn.className = 'toolbar-btn';
+        btn.style.removeProperty('background-color');
+        btn.style.removeProperty('border-color');
+        btn.style.removeProperty('color');
+        btn.style.backgroundColor = '';
+        btn.style.borderColor = '';
+        btn.style.color = '';
+        btn.style.setProperty('background-color', '', 'important');
+        btn.style.setProperty('border-color', '', 'important');
+        btn.style.setProperty('color', '', 'important');
+      }
+      void btn.offsetHeight; // Force immediate reflow
+    }
+    
+    // Update state (after visual update for instant feedback)
     flushSync(() => {
       setActiveStrikethrough(newStrikethroughState);
       setDisplayedStrikethrough(newStrikethroughState);
       setCurrentStrikethrough(newStrikethroughState);
     });
     
-    // ===== STEP 3: Update Button Visual DIRECTLY (INSTANT - no delay) =====
-    // Update button DIRECTLY via DOM - after React state update
-    if (strikethroughButtonRef.current) {
-      const btn = strikethroughButtonRef.current;
-      
-      if (newStrikethroughState) {
-        // Activate button
-        btn.classList.add('active');
-        btn.style.setProperty('background-color', '#F1A124', 'important');
-        btn.style.setProperty('border-color', '#F1A124', 'important');
-        btn.style.setProperty('color', '#ffffff', 'important');
-      } else {
-        // Deactivate button - FORCE REMOVE all active styles
-        // Remove class first
-        btn.classList.remove('active');
-        // Also update className directly - remove 'active' completely and keep only base class
-        const baseClass = 'toolbar-btn';
-        btn.className = baseClass;
-        // Remove all inline styles - multiple methods to ensure it works
-        btn.style.removeProperty('background-color');
-        btn.style.removeProperty('border-color');
-        btn.style.removeProperty('color');
-        // Clear style properties
-        btn.style.backgroundColor = '';
-        btn.style.borderColor = '';
-        btn.style.color = '';
-        // Force override with empty using important to override any CSS
-        btn.style.setProperty('background-color', '', 'important');
-        btn.style.setProperty('border-color', '', 'important');
-        btn.style.setProperty('color', '', 'important');
-      }
-      
-      // Force immediate visual update
-      void btn.offsetHeight;
-    }
-    
-    // Focus editor
     editorRef.current.focus();
     
-    // ===== STEP 3: Apply to Editor =====
-    if (range.collapsed) {
-      // Collapsed cursor - ALWAYS create/update style marker to ensure next typing uses correct style
-      let node = range.startContainer;
-      if (node.nodeType === Node.TEXT_NODE) {
-        node = node.parentElement;
+    // CRITICAL: When disabling strikethrough at END of strikethrough span, break context
+    if (!newStrikethroughState && hasStrikethrough && elementNode.tagName === "SPAN") {
+      // FAST: Check if cursor is at END of the strikethrough span's text content
+      let isAtEnd = false;
+      
+      if (textNode.nodeType === Node.TEXT_NODE) {
+        // Fast check: if textNode is lastChild and offset is at end
+        if (elementNode.lastChild === textNode && offset === textNode.textContent.length) {
+          isAtEnd = true;
+        } else {
+          // Fallback: check if there's any node after this text node
+          let foundAfter = false;
+          let currentNode = textNode;
+          while (currentNode && currentNode !== elementNode) {
+            if (currentNode.nextSibling) {
+              foundAfter = true;
+              break;
+            }
+            currentNode = currentNode.parentNode;
+          }
+          if (!foundAfter && offset === textNode.textContent.length) {
+            isAtEnd = true;
+          }
+        }
+      } else {
+        // Cursor is directly in element - check if empty
+        if (elementNode.childNodes.length === 0) {
+          isAtEnd = true;
+        }
       }
       
-      const isInStyleMarker = node.tagName === "SPAN" && 
-        (node.textContent === "\u200B" || node.innerHTML === "\u200B" || node.textContent === "\u2009");
-      
-      if (isInStyleMarker) {
-        // Update existing marker - CRITICAL: ensure style is correct for next typing
-        let textDecoration = activeUnderline ? "underline" : (newStrikethroughState ? "line-through" : "none");
-        if (activeUnderline && newStrikethroughState) {
-          textDecoration = "underline line-through";
-        }
-        node.style.textDecoration = textDecoration;
-        node.style.fontSize = `${activeFontSize}px`;
-        node.style.color = activeColor;
-        node.style.fontWeight = activeBold ? "bold" : "normal";
-        node.style.fontStyle = activeItalic ? "italic" : "normal";
-        if (activeUnderline) {
-          node.style.setProperty("text-decoration-color", activeColor, "important");
-          node.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
-        } else {
-          // Remove text-decoration-color when not underlining
-          node.style.removeProperty("text-decoration-color");
-          node.style.removeProperty("-webkit-text-decoration-color");
-        }
-        if (activeBgColor !== "transparent") {
-          node.style.backgroundColor = activeBgColor;
-        } else {
-          node.style.backgroundColor = "";
-        }
+      if (isAtEnd) {
+        // BREAK CONTEXT: Create new boundary node AFTER strikethrough span
+        const newBoundary = document.createElement("span");
+        // Preserve underline if active, otherwise none
+        const textDecoration = activeUnderline ? "underline" : "none";
+        newBoundary.style.textDecoration = textDecoration; // Normal, no strikethrough
+        newBoundary.innerHTML = "\u200B"; // Zero-width space marker
         
-        // Ensure it's a zero-width space for style marker
-        if (node.textContent !== "\u200B" && node.innerHTML !== "\u200B") {
-          node.innerHTML = "\u200B";
+        // Insert AFTER the strikethrough span
+        if (elementNode.parentNode) {
+          if (elementNode.nextSibling) {
+            elementNode.parentNode.insertBefore(newBoundary, elementNode.nextSibling);
+          } else {
+            elementNode.parentNode.appendChild(newBoundary);
+          }
+          
+          // Move cursor to new boundary
+          const newRange = document.createRange();
+          newRange.setStart(newBoundary, 0);
+          newRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+          
+          savedSelectionRef.current = {
+            range: newRange.cloneRange(),
+            startContainer: newRange.startContainer,
+            startOffset: newRange.startOffset,
+            endContainer: newRange.endContainer,
+            endOffset: newRange.endOffset,
+            collapsed: true,
+            text: ""
+          };
+          
+          void newBoundary.offsetHeight;
         }
-        
-        const newRange = document.createRange();
-        newRange.setStart(node, 0);
-        newRange.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
-        
-        savedSelectionRef.current = {
-          range: newRange.cloneRange(),
-          startContainer: newRange.startContainer,
-          startOffset: newRange.startOffset,
-          endContainer: newRange.endContainer,
-          endOffset: newRange.endOffset,
-          collapsed: true,
-          text: ""
-        };
       } else {
-        // Create new style marker - CRITICAL for ensuring next typing uses correct style
-        const span = document.createElement("span");
-        span.style.fontSize = `${activeFontSize}px`;
-        span.style.color = activeColor;
-        let textDecoration = activeUnderline ? "underline" : (newStrikethroughState ? "line-through" : "none");
-        if (activeUnderline && newStrikethroughState) {
-          textDecoration = "underline line-through";
-        }
-        span.style.textDecoration = textDecoration;
-        span.style.fontWeight = activeBold ? "bold" : "normal";
-        span.style.fontStyle = activeItalic ? "italic" : "normal";
-        if (activeUnderline) {
-          span.style.setProperty("text-decoration-color", activeColor, "important");
-          span.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
+        // Cursor is NOT at end - update style marker if exists, or create new one
+        const isStyleMarker = elementNode.textContent === "\u200B" || elementNode.innerHTML === "\u200B";
+        if (isStyleMarker) {
+          // Update existing style marker - preserve underline if active
+          const textDecoration = activeUnderline ? "underline" : "none";
+          elementNode.style.textDecoration = textDecoration;
         } else {
-          // Don't set text-decoration-color when not underlining
-          span.style.removeProperty("text-decoration-color");
-          span.style.removeProperty("-webkit-text-decoration-color");
+          // Create new style marker at cursor
+          const span = document.createElement("span");
+          const textDecoration = activeUnderline ? "underline" : "none";
+          span.style.textDecoration = textDecoration;
+          span.innerHTML = "\u200B";
+          range.insertNode(span);
+          
+          const newRange = document.createRange();
+          newRange.setStart(span, 0);
+          newRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+          
+          savedSelectionRef.current = {
+            range: newRange.cloneRange(),
+            startContainer: newRange.startContainer,
+            startOffset: newRange.startOffset,
+            endContainer: newRange.endContainer,
+            endOffset: newRange.endOffset,
+            collapsed: true,
+            text: ""
+          };
         }
-        if (activeBgColor !== "transparent") {
-          span.style.backgroundColor = activeBgColor;
-        }
-        
-        // Insert zero-width space as style marker
+      }
+    } else if (newStrikethroughState) {
+      // Enabling strikethrough - create/update style marker
+      const isStyleMarker = elementNode.tagName === "SPAN" && 
+        (elementNode.textContent === "\u200B" || elementNode.innerHTML === "\u200B");
+      
+      if (isStyleMarker) {
+        // Update existing style marker - preserve underline if active
+        const textDecoration = activeUnderline ? "underline line-through" : "line-through";
+        elementNode.style.textDecoration = textDecoration;
+      } else {
+        const span = document.createElement("span");
+        const textDecoration = activeUnderline ? "underline line-through" : "line-through";
+        span.style.textDecoration = textDecoration;
         span.innerHTML = "\u200B";
-        
         range.insertNode(span);
-        
-        // Force immediate visual update
-        void span.offsetHeight;
         
         const newRange = document.createRange();
         newRange.setStart(span, 0);
@@ -2743,92 +3014,18 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           text: ""
         };
       }
-    } else {
-      // Has selection
-      if (!newStrikethroughState) {
-        // Removing strikethrough - do it aggressively
-        // Remove strikethrough from all elements in selection
-        const walker = document.createTreeWalker(
-          range.commonAncestorContainer,
-          NodeFilter.SHOW_ELEMENT,
-          {
-            acceptNode: (node) => {
-              return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
-            }
-          }
-        );
-        
-        let node;
-        while (node = walker.nextNode()) {
-          if (node.style) {
-            const textDecoration = node.style.textDecoration || "";
-            if (textDecoration.includes("line-through")) {
-              const newDecoration = textDecoration
-                .split(" ")
-                .filter(d => d !== "line-through")
-                .join(" ");
-              if (newDecoration.trim()) {
-                node.style.textDecoration = newDecoration;
-              } else {
-                node.style.textDecoration = activeUnderline ? "underline" : "none";
-              }
-            }
-          }
-        }
-      }
-      
-      document.execCommand("strikeThrough", false, null);
-      
-      try {
-        const isNowStrikethrough = document.queryCommandState("strikeThrough");
-        flushSync(() => {
-          setActiveStrikethrough(isNowStrikethrough);
-          setDisplayedStrikethrough(isNowStrikethrough);
-          setCurrentStrikethrough(isNowStrikethrough);
-        });
-        
-        if (strikethroughButtonRef.current) {
-          const btn = strikethroughButtonRef.current;
-          
-          if (isNowStrikethrough) {
-            // Activate button
-            btn.classList.add('active');
-            btn.style.setProperty('background-color', '#F1A124', 'important');
-            btn.style.setProperty('border-color', '#F1A124', 'important');
-            btn.style.setProperty('color', '#ffffff', 'important');
-          } else {
-            // Deactivate button - FORCE REMOVE all active styles
-            btn.classList.remove('active');
-            const baseClass = 'toolbar-btn';
-            btn.className = baseClass;
-            btn.style.removeProperty('background-color');
-            btn.style.removeProperty('border-color');
-            btn.style.removeProperty('color');
-            btn.style.backgroundColor = '';
-            btn.style.borderColor = '';
-            btn.style.color = '';
-            btn.style.setProperty('background-color', '', 'important');
-            btn.style.setProperty('border-color', '', 'important');
-            btn.style.setProperty('color', '', 'important');
-          }
-          
-          // Force immediate visual update
-          void btn.offsetHeight;
-        }
-      } catch (e) {
-        // Keep state
-      }
     }
     
-    // CRITICAL: Update lastUsedStylesRef BEFORE handleEditorInput to ensure next typing uses correct style
-    lastUsedStylesRef.current.textDecoration = newStrikethroughState ? "line-through" : (activeUnderline ? "underline" : "none");
-    lastUsedStylesRef.current.fontWeight = activeBold ? "bold" : "normal";
-    lastUsedStylesRef.current.fontStyle = activeItalic ? "italic" : "normal";
-    lastUsedStylesRef.current.fontSize = activeFontSize;
-    lastUsedStylesRef.current.color = activeColor;
-    lastUsedStylesRef.current.backgroundColor = activeBgColor !== "transparent" ? activeBgColor : "transparent";
+    // Update lastUsedStylesRef for next typing
+    const textDecoration = newStrikethroughState 
+      ? (activeUnderline ? "underline line-through" : "line-through")
+      : (activeUnderline ? "underline" : "none");
+    lastUsedStylesRef.current.textDecoration = textDecoration;
     
-    handleEditorInput();
+    // Call handleEditorInput asynchronously to not block instant visual feedback
+    requestAnimationFrame(() => {
+      handleEditorInput();
+    });
   };
 
   const paragraphStyles = [
