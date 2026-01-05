@@ -1804,6 +1804,38 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     }
   }, [currentUnderline]);
 
+  // Sync strikethrough button visual with currentStrikethrough state
+  useEffect(() => {
+    if (strikethroughButtonRef.current) {
+      const btn = strikethroughButtonRef.current;
+      
+      if (currentStrikethrough) {
+        // Activate button
+        btn.classList.add('active');
+        btn.style.setProperty('background-color', '#F1A124', 'important');
+        btn.style.setProperty('border-color', '#F1A124', 'important');
+        btn.style.setProperty('color', '#ffffff', 'important');
+      } else {
+        // Deactivate button - FORCE REMOVE all active styles
+        btn.classList.remove('active');
+        const baseClass = 'toolbar-btn';
+        btn.className = baseClass;
+        btn.style.removeProperty('background-color');
+        btn.style.removeProperty('border-color');
+        btn.style.removeProperty('color');
+        btn.style.backgroundColor = '';
+        btn.style.borderColor = '';
+        btn.style.color = '';
+        btn.style.setProperty('background-color', '', 'important');
+        btn.style.setProperty('border-color', '', 'important');
+        btn.style.setProperty('color', '', 'important');
+      }
+      
+      // Force immediate visual update
+      void btn.offsetHeight;
+    }
+  }, [currentStrikethrough]);
+
   // Formatting functions - only apply to selection, don't change global state
   // ===== ULTRA SIMPLE & DIRECT: Toggle Bold Function =====
   const toggleBold = (e) => {
@@ -2483,6 +2515,54 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
     } else {
       // Has selection
+      if (!newUnderlineState) {
+        // Removing underline - do it aggressively
+        // First, manually remove all U tags in selection
+        const allUTags = editorRef.current.querySelectorAll("u");
+        allUTags.forEach(uTag => {
+          try {
+            if (range.intersectsNode(uTag)) {
+              const parent = uTag.parentNode;
+              while (uTag.firstChild) {
+                parent.insertBefore(uTag.firstChild, uTag);
+              }
+              parent.removeChild(uTag);
+            }
+          } catch (e) {
+            // Skip if error
+          }
+        });
+        
+        // Remove underline from all elements in selection
+        const walker = document.createTreeWalker(
+          range.commonAncestorContainer,
+          NodeFilter.SHOW_ELEMENT,
+          {
+            acceptNode: (node) => {
+              return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+            }
+          }
+        );
+        
+        let node;
+        while (node = walker.nextNode()) {
+          if (node.style) {
+            const textDecoration = node.style.textDecoration || "";
+            if (textDecoration.includes("underline")) {
+              const newDecoration = textDecoration
+                .split(" ")
+                .filter(d => d !== "underline")
+                .join(" ");
+              if (newDecoration.trim()) {
+                node.style.textDecoration = newDecoration;
+              } else {
+                node.style.textDecoration = activeStrikethrough ? "line-through" : "none";
+              }
+            }
+          }
+        }
+      }
+      
       document.execCommand("underline", false, null);
       
       try {
@@ -2746,19 +2826,75 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
     } else {
       // Has selection
+      if (!newStrikethroughState) {
+        // Removing strikethrough - do it aggressively
+        // Remove strikethrough from all elements in selection
+        const walker = document.createTreeWalker(
+          range.commonAncestorContainer,
+          NodeFilter.SHOW_ELEMENT,
+          {
+            acceptNode: (node) => {
+              return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+            }
+          }
+        );
+        
+        let node;
+        while (node = walker.nextNode()) {
+          if (node.style) {
+            const textDecoration = node.style.textDecoration || "";
+            if (textDecoration.includes("line-through")) {
+              const newDecoration = textDecoration
+                .split(" ")
+                .filter(d => d !== "line-through")
+                .join(" ");
+              if (newDecoration.trim()) {
+                node.style.textDecoration = newDecoration;
+              } else {
+                node.style.textDecoration = activeUnderline ? "underline" : "none";
+              }
+            }
+          }
+        }
+      }
+      
       document.execCommand("strikeThrough", false, null);
       
       try {
         const isNowStrikethrough = document.queryCommandState("strikeThrough");
-        setActiveStrikethrough(isNowStrikethrough);
-        setDisplayedStrikethrough(isNowStrikethrough);
-        setCurrentStrikethrough(isNowStrikethrough);
+        flushSync(() => {
+          setActiveStrikethrough(isNowStrikethrough);
+          setDisplayedStrikethrough(isNowStrikethrough);
+          setCurrentStrikethrough(isNowStrikethrough);
+        });
+        
         if (strikethroughButtonRef.current) {
+          const btn = strikethroughButtonRef.current;
+          
           if (isNowStrikethrough) {
-            strikethroughButtonRef.current.classList.add('active');
+            // Activate button
+            btn.classList.add('active');
+            btn.style.setProperty('background-color', '#F1A124', 'important');
+            btn.style.setProperty('border-color', '#F1A124', 'important');
+            btn.style.setProperty('color', '#ffffff', 'important');
           } else {
-            strikethroughButtonRef.current.classList.remove('active');
+            // Deactivate button - FORCE REMOVE all active styles
+            btn.classList.remove('active');
+            const baseClass = 'toolbar-btn';
+            btn.className = baseClass;
+            btn.style.removeProperty('background-color');
+            btn.style.removeProperty('border-color');
+            btn.style.removeProperty('color');
+            btn.style.backgroundColor = '';
+            btn.style.borderColor = '';
+            btn.style.color = '';
+            btn.style.setProperty('background-color', '', 'important');
+            btn.style.setProperty('border-color', '', 'important');
+            btn.style.setProperty('color', '', 'important');
           }
+          
+          // Force immediate visual update
+          void btn.offsetHeight;
         }
       } catch (e) {
         // Keep state
