@@ -1818,9 +1818,10 @@ export default function AddProducts3Page() {
                   </div>
                 </div>
 
-                {/* Harga */}
+                {/* Jenis Produk */}
                 <div className="pengaturan-section">
-                  <h3 className="pengaturan-section-title">Harga</h3>
+                  <h3 className="pengaturan-section-title">Jenis Produk</h3>
+                  <p className="pengaturan-section-description">Tentukan jenis produk untuk menghitung ongkos kirim</p>
                   
                   <div className="pengaturan-form-group">
                     <label className="pengaturan-label">
@@ -1840,6 +1841,11 @@ export default function AddProducts3Page() {
                       Produk Fisik memerlukan ongkos kirim, Non-Fisik tidak memerlukan ongkos kirim
                     </small>
                   </div>
+                </div>
+
+                {/* Harga */}
+                <div className="pengaturan-section">
+                  <h3 className="pengaturan-section-title">Harga</h3>
                   
                   <div className="pengaturan-form-group">
                     <label className="pengaturan-label">
@@ -1985,6 +1991,24 @@ export default function AddProducts3Page() {
                       filterPlaceholder="Cari user..."
                     />
                     <p className="field-hint">Pilih user yang bertanggung jawab menangani produk ini</p>
+                  </div>
+                </div>
+
+                {/* Divider untuk memisahkan settingan produk dengan settingan landing page */}
+                <div style={{
+                  margin: "32px 0",
+                  borderTop: "2px solid #e5e7eb",
+                  paddingTop: "24px"
+                }}>
+                  <div style={{
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    color: "#6b7280",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    marginBottom: "16px"
+                  }}>
+                    Pengaturan Landing Page
                   </div>
                 </div>
 
