@@ -129,7 +129,7 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
             {
               label: "Follow Hari Ini",
               icon: <Calendar size={18} />,
-              href: `${basePath}/followup`,
+              href: `${basePath}/crm`,
             },
           ],
         },

@@ -2340,28 +2340,56 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       selection.addRange(range);
     }
     
-    // Check current underline state
-    let isCurrentlyUnderlined = activeUnderline;
+    // Check current underline state - ALWAYS check from DOM, not from state
+    let isCurrentlyUnderlined = false;
     
     if (range.collapsed) {
+      // For collapsed cursor, check the actual node style
       let node = range.startContainer;
       if (node.nodeType === Node.TEXT_NODE) {
         node = node.parentElement;
       }
+      
+      // Check if in style marker
       if (node.tagName === "SPAN" && (node.textContent === "\u200B" || node.innerHTML === "\u200B")) {
         const textDecoration = node.style.textDecoration || window.getComputedStyle(node).textDecoration;
         isCurrentlyUnderlined = textDecoration.includes("underline");
+      } else {
+        // Check computed style of current node
+        const computedStyle = window.getComputedStyle(node);
+        const textDecoration = computedStyle.textDecoration || node.style.textDecoration || "";
+        isCurrentlyUnderlined = textDecoration.includes("underline") || node.tagName === "U";
       }
     } else {
+      // For selection, check multiple nodes in selection
       try {
         isCurrentlyUnderlined = document.queryCommandState("underline");
       } catch (e) {
-        let node = range.startContainer;
-        if (node.nodeType === Node.TEXT_NODE) {
-          node = node.parentElement;
+        // Fallback: check if any node in selection has underline
+        const walker = document.createTreeWalker(
+          range.commonAncestorContainer,
+          NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
+          {
+            acceptNode: (node) => {
+              if (node.nodeType === Node.TEXT_NODE) {
+                return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+              }
+              return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+            }
+          }
+        );
+        
+        let node;
+        while (node = walker.nextNode()) {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            const computedStyle = window.getComputedStyle(node);
+            const textDecoration = computedStyle.textDecoration || node.style.textDecoration || "";
+            if (textDecoration.includes("underline") || node.tagName === "U") {
+              isCurrentlyUnderlined = true;
+              break;
+            }
+          }
         }
-        const textDecoration = window.getComputedStyle(node).textDecoration;
-        isCurrentlyUnderlined = textDecoration.includes("underline");
       }
     }
     
@@ -2439,6 +2467,10 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         if (newUnderlineState) {
           node.style.setProperty("text-decoration-color", activeColor, "important");
           node.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
+        } else {
+          // Remove text-decoration-color when disabling underline
+          node.style.removeProperty("text-decoration-color");
+          node.style.removeProperty("-webkit-text-decoration-color");
         }
         if (activeBgColor !== "transparent") {
           node.style.backgroundColor = activeBgColor;
@@ -2476,6 +2508,10 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         if (newUnderlineState) {
           span.style.setProperty("text-decoration-color", activeColor, "important");
           span.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
+        } else {
+          // Don't set text-decoration-color when not underlining
+          span.style.removeProperty("text-decoration-color");
+          span.style.removeProperty("-webkit-text-decoration-color");
         }
         if (activeBgColor !== "transparent") {
           span.style.backgroundColor = activeBgColor;
@@ -2651,28 +2687,56 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       selection.addRange(range);
     }
     
-    // Check current strikethrough state
-    let isCurrentlyStrikethrough = activeStrikethrough;
+    // Check current strikethrough state - ALWAYS check from DOM, not from state
+    let isCurrentlyStrikethrough = false;
     
     if (range.collapsed) {
+      // For collapsed cursor, check the actual node style
       let node = range.startContainer;
       if (node.nodeType === Node.TEXT_NODE) {
         node = node.parentElement;
       }
+      
+      // Check if in style marker
       if (node.tagName === "SPAN" && (node.textContent === "\u200B" || node.innerHTML === "\u200B")) {
         const textDecoration = node.style.textDecoration || window.getComputedStyle(node).textDecoration;
         isCurrentlyStrikethrough = textDecoration.includes("line-through");
+      } else {
+        // Check computed style of current node
+        const computedStyle = window.getComputedStyle(node);
+        const textDecoration = computedStyle.textDecoration || node.style.textDecoration || "";
+        isCurrentlyStrikethrough = textDecoration.includes("line-through");
       }
     } else {
+      // For selection, check multiple nodes in selection
       try {
         isCurrentlyStrikethrough = document.queryCommandState("strikeThrough");
       } catch (e) {
-        let node = range.startContainer;
-        if (node.nodeType === Node.TEXT_NODE) {
-          node = node.parentElement;
+        // Fallback: check if any node in selection has strikethrough
+        const walker = document.createTreeWalker(
+          range.commonAncestorContainer,
+          NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
+          {
+            acceptNode: (node) => {
+              if (node.nodeType === Node.TEXT_NODE) {
+                return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+              }
+              return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+            }
+          }
+        );
+        
+        let node;
+        while (node = walker.nextNode()) {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            const computedStyle = window.getComputedStyle(node);
+            const textDecoration = computedStyle.textDecoration || node.style.textDecoration || "";
+            if (textDecoration.includes("line-through")) {
+              isCurrentlyStrikethrough = true;
+              break;
+            }
+          }
         }
-        const textDecoration = window.getComputedStyle(node).textDecoration;
-        isCurrentlyStrikethrough = textDecoration.includes("line-through");
       }
     }
     

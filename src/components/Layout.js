@@ -50,7 +50,7 @@ function generateBreadcrumb(pathname) {
     kategori: "OPERATIONS",
     users: "USER MANAGEMENT",
     broadcast: "COMMUNICATION",
-    // followup intentionally left out so paths like /sales/staff/followup fallback to full path segments
+    // crm intentionally left out so paths like /sales/staff/crm fallback to full path segments
     leads: "CUSTOMERS",
     report: "CUSTOMERS",
   };
