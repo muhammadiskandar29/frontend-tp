@@ -2299,9 +2299,163 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     handleEditorInput();
   };
 
-  // ===== SIMPLIFIED: Toggle Underline Function =====
-  // FOCUS: Handle both collapsed cursor and selection/block
-  // RULE: Underline = <span style="text-decoration: underline">
+  // ===== OPTIMIZED: Toggle Underline Function =====
+  // ARCHITECTURE: Underline as context state, not DOM scan result
+  // CURSOR: O(1) - state-based, no DOM scan
+  // SELECTION: O(1) - only operate on extracted range contents
+  
+  // Helper: Get underline state at cursor (O(1) - no scan, single source of truth: data-u)
+  const getUnderlineStateAtCursor = (range) => {
+    if (range.collapsed) {
+      const node = range.startContainer;
+      const parent = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+      // SINGLE SOURCE OF TRUTH: only check data-u attribute
+      if (parent && parent.tagName === "SPAN") {
+        return parent.hasAttribute("data-u");
+      }
+      // Fallback: check lastUsedStylesRef for context
+      return lastUsedStylesRef.current.textDecoration === "underline";
+    }
+    return false;
+  };
+  
+  // Helper: Apply underline to extracted contents (O(1) - wrap fragment)
+  const applyUnderlineToContents = (fragment) => {
+    const span = document.createElement("span");
+    span.setAttribute("data-u", "1");
+    span.style.textDecoration = "underline";
+    
+    // Move all nodes from fragment to span
+    while (fragment.firstChild) {
+      span.appendChild(fragment.firstChild);
+    }
+    
+    fragment.appendChild(span);
+    return fragment;
+  };
+  
+  // Helper: Remove underline from extracted contents (O(n) - iterative, no recursion, single source: data-u)
+  const removeUnderlineFromContents = (fragment) => {
+    // Collect all underline spans first (iterative, not recursive)
+    // SINGLE SOURCE OF TRUTH: only check data-u attribute
+    const underlineSpans = [];
+    const stack = Array.from(fragment.childNodes);
+    
+    while (stack.length > 0) {
+      const node = stack.pop();
+      if (node.nodeType === Node.ELEMENT_NODE && node.tagName === "SPAN") {
+        if (node.hasAttribute("data-u")) {
+          underlineSpans.push(node);
+        }
+        // Add children to stack (iterative, not recursive)
+        stack.push(...Array.from(node.childNodes));
+      }
+    }
+    
+    // Process all underline spans (unwrap directly)
+    underlineSpans.forEach(spanNode => {
+      // Remove underline (single source: data-u)
+      spanNode.removeAttribute("data-u");
+      const textDecoration = spanNode.style.textDecoration || "";
+      const newDecoration = textDecoration
+        .split(" ")
+        .filter(d => d !== "underline")
+        .join(" ");
+      
+      if (newDecoration.trim()) {
+        spanNode.style.textDecoration = newDecoration;
+      } else {
+        spanNode.style.textDecoration = "";
+      }
+      
+      // Unwrap if span has no other styles
+      if (!spanNode.style.fontSize && !spanNode.style.color && 
+          !spanNode.style.fontWeight && !spanNode.style.fontStyle &&
+          !spanNode.style.backgroundColor && !spanNode.style.textDecoration) {
+        const parent = spanNode.parentNode;
+        if (parent) {
+          while (spanNode.firstChild) {
+            parent.insertBefore(spanNode.firstChild, spanNode);
+          }
+          parent.removeChild(spanNode);
+        }
+      }
+    });
+    
+    return fragment;
+  };
+  
+  // Helper: Break underline context at cursor (O(1), single source: data-u)
+  const breakUnderlineContext = (range, selection) => {
+    const node = range.startContainer;
+    const parent = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+    
+    // SINGLE SOURCE OF TRUTH: only check data-u attribute
+    if (parent && parent.tagName === "SPAN" && parent.hasAttribute("data-u")) {
+      
+      // Check if cursor is at end of underline span
+      let isAtEnd = false;
+      if (node.nodeType === Node.TEXT_NODE) {
+        if (parent.lastChild === node && range.startOffset === node.textContent.length) {
+          isAtEnd = true;
+        }
+      } else if (parent.childNodes.length === 0) {
+        isAtEnd = true;
+      }
+      
+      if (isAtEnd) {
+        // Create boundary node AFTER underline span
+        const boundary = document.createElement("span");
+        boundary.innerHTML = "\u200B";
+        
+        if (parent.parentNode) {
+          if (parent.nextSibling) {
+            parent.parentNode.insertBefore(boundary, parent.nextSibling);
+          } else {
+            parent.parentNode.appendChild(boundary);
+          }
+          
+          const newRange = document.createRange();
+          newRange.setStart(boundary, 0);
+          newRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+          
+          savedSelectionRef.current = {
+            range: newRange.cloneRange(),
+            startContainer: newRange.startContainer,
+            startOffset: newRange.startOffset,
+            endContainer: newRange.endContainer,
+            endOffset: newRange.endOffset,
+            collapsed: true,
+            text: ""
+          };
+        }
+      } else {
+        // Create style marker at cursor
+        const marker = document.createElement("span");
+        marker.innerHTML = "\u200B";
+        range.insertNode(marker);
+        
+        const newRange = document.createRange();
+        newRange.setStart(marker, 0);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+        
+        savedSelectionRef.current = {
+          range: newRange.cloneRange(),
+          startContainer: newRange.startContainer,
+          startOffset: newRange.startOffset,
+          endContainer: newRange.endContainer,
+          endOffset: newRange.endOffset,
+          collapsed: true,
+          text: ""
+        };
+      }
+    }
+  };
+  
   const toggleUnderline = (e) => {
     if (e) e.preventDefault();
     if (!editorRef.current) return;
@@ -2312,53 +2466,17 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     const range = selection.getRangeAt(0);
     if (!editorRef.current.contains(range.commonAncestorContainer)) return;
     
-    // Handle selection/block
+    // ===== SELECTION HANDLING =====
     if (!range.collapsed) {
-      // Check if all selected text has underline
-      let allUnderlined = true;
-      let hasAnyUnderline = false;
+      // Extract contents ONCE - only operate on extracted fragment
+      const fragment = range.extractContents();
       
-      const walker = document.createTreeWalker(
-        range.commonAncestorContainer,
-        NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
-        {
-          acceptNode: (node) => {
-            if (node.nodeType === Node.TEXT_NODE) {
-              return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
-            }
-            return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
-          }
-        }
-      );
+      // NO SCAN - Use intent from button state (like MS Word)
+      // Toggle based on current button state, not DOM scan
+      const currentButtonState = underlineButtonRef.current?.classList.contains('active') || false;
+      const newUnderlineState = !currentButtonState;
       
-      let node;
-      while (node = walker.nextNode()) {
-        if (node.nodeType === Node.ELEMENT_NODE && node.tagName === "SPAN") {
-          const textDecoration = node.style.textDecoration || window.getComputedStyle(node).textDecoration || "";
-          if (textDecoration.includes("underline")) {
-            hasAnyUnderline = true;
-          } else {
-            allUnderlined = false;
-          }
-        } else if (node.nodeType === Node.TEXT_NODE) {
-          const parent = node.parentElement;
-          if (parent && parent.tagName === "SPAN") {
-            const textDecoration = parent.style.textDecoration || window.getComputedStyle(parent).textDecoration || "";
-            if (textDecoration.includes("underline")) {
-              hasAnyUnderline = true;
-            } else {
-              allUnderlined = false;
-            }
-          } else {
-            allUnderlined = false;
-          }
-        }
-      }
-      
-      // Determine new state: if all underlined, remove; otherwise, add
-      const newUnderlineState = !allUnderlined;
-      
-      // INSTANT: Update button visual FIRST
+      // Update button visual (no flushSync)
       if (underlineButtonRef.current) {
         const btn = underlineButtonRef.current;
         if (newUnderlineState) {
@@ -2382,100 +2500,27 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         void btn.offsetHeight;
       }
       
-      // Update state
-      flushSync(() => {
-        setActiveUnderline(newUnderlineState);
-        setDisplayedUnderline(newUnderlineState);
-        setCurrentUnderline(newUnderlineState);
-      });
+      // Update React state
+      setActiveUnderline(newUnderlineState);
+      setDisplayedUnderline(newUnderlineState);
+      setCurrentUnderline(newUnderlineState);
       
       editorRef.current.focus();
       
-      // Apply underline to selection
+      // Apply/remove underline on extracted fragment only
       if (newUnderlineState) {
-        // Check if selection has strikethrough to preserve it
-        let hasStrikethroughInSelection = false;
-        const checkWalker = document.createTreeWalker(
-          range.commonAncestorContainer,
-          NodeFilter.SHOW_ELEMENT,
-          {
-            acceptNode: (node) => {
-              return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
-            }
-          }
-        );
-        let checkNode;
-        while (checkNode = checkWalker.nextNode()) {
-          if (checkNode.tagName === "SPAN") {
-            const textDecoration = checkNode.style.textDecoration || window.getComputedStyle(checkNode).textDecoration || "";
-            if (textDecoration.includes("line-through")) {
-              hasStrikethroughInSelection = true;
-              break;
-            }
-          }
-        }
-        
-        // Wrap selection in underline span
-        const contents = range.extractContents();
-        const span = document.createElement("span");
-        // Preserve strikethrough if present
-        const textDecoration = hasStrikethroughInSelection ? "underline line-through" : "underline";
-        span.style.textDecoration = textDecoration;
-        span.appendChild(contents);
-        range.insertNode(span);
-        
-        // Collapse range to end
-        range.collapse(false);
-        selection.removeAllRanges();
-        selection.addRange(range);
+        applyUnderlineToContents(fragment);
       } else {
-        // Remove underline from selection
-        const walker = document.createTreeWalker(
-          range.commonAncestorContainer,
-          NodeFilter.SHOW_ELEMENT,
-          {
-            acceptNode: (node) => {
-              return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
-            }
-          }
-        );
-        
-        let node;
-        const nodesToProcess = [];
-        while (node = walker.nextNode()) {
-          if (node.tagName === "SPAN" && node.style.textDecoration && node.style.textDecoration.includes("underline")) {
-            nodesToProcess.push(node);
-          }
-        }
-        
-        // Process nodes to remove underline (preserve strikethrough if exists)
-        nodesToProcess.forEach(spanNode => {
-          const textDecoration = spanNode.style.textDecoration || "";
-          const hasStrikethrough = textDecoration.includes("line-through");
-          const newDecoration = textDecoration
-            .split(" ")
-            .filter(d => d !== "underline")
-            .join(" ");
-          
-          if (newDecoration.trim()) {
-            spanNode.style.textDecoration = newDecoration;
-          } else {
-            // Preserve strikethrough if exists, otherwise set to none
-            spanNode.style.textDecoration = hasStrikethrough ? "line-through" : "none";
-          }
-          
-          // If span only contains text and no other styles, unwrap it
-          if (!spanNode.style.fontSize && !spanNode.style.color && 
-              !spanNode.style.fontWeight && !spanNode.style.fontStyle &&
-              !spanNode.style.backgroundColor && spanNode.style.textDecoration === "none") {
-            const parent = spanNode.parentNode;
-            while (spanNode.firstChild) {
-              parent.insertBefore(spanNode.firstChild, spanNode);
-            }
-            parent.removeChild(spanNode);
-          }
-        });
+        removeUnderlineFromContents(fragment);
       }
+      
+      // Insert processed fragment back
+      range.insertNode(fragment);
+      
+      // Collapse to end
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
       
       lastUsedStylesRef.current.textDecoration = newUnderlineState ? "underline" : "none";
       requestAnimationFrame(() => {
@@ -2485,23 +2530,11 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       return;
     }
     
-    // Handle collapsed cursor (existing logic)
-    
-    // Get current position
-    const textNode = range.startContainer;
-    const offset = range.startOffset;
-    const elementNode = textNode.nodeType === Node.TEXT_NODE ? textNode.parentElement : textNode;
-    
-    // Check if current SPAN has underline (ONLY check SPAN, ignore <u> tags)
-    const hasUnderline = (() => {
-      if (elementNode.tagName !== "SPAN") return false;
-      const textDecoration = elementNode.style.textDecoration || window.getComputedStyle(elementNode).textDecoration || "";
-      return textDecoration.includes("underline");
-    })();
-    
+    // ===== CURSOR HANDLING (O(1) - state-based, no DOM scan) =====
+    const hasUnderline = getUnderlineStateAtCursor(range);
     const newUnderlineState = !hasUnderline;
     
-    // INSTANT: Update button visual FIRST (before state update for immediate feedback)
+    // Update button visual (no flushSync)
     if (underlineButtonRef.current) {
       const btn = underlineButtonRef.current;
       if (newUnderlineState) {
@@ -2522,97 +2555,193 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         btn.style.setProperty('border-color', '', 'important');
         btn.style.setProperty('color', '', 'important');
       }
-      void btn.offsetHeight; // Force immediate reflow
+      void btn.offsetHeight;
     }
     
-    // Update state (after visual update for instant feedback)
-    flushSync(() => {
-      setActiveUnderline(newUnderlineState);
-      setDisplayedUnderline(newUnderlineState);
-      setCurrentUnderline(newUnderlineState);
-    });
+    // Update React state
+    setActiveUnderline(newUnderlineState);
+    setDisplayedUnderline(newUnderlineState);
+    setCurrentUnderline(newUnderlineState);
     
     editorRef.current.focus();
     
-    // CRITICAL: When disabling underline at END of underline span, break context
-    if (!newUnderlineState && hasUnderline && elementNode.tagName === "SPAN") {
-      // FAST: Check if cursor is at END of the underline span's text content
-      let isAtEnd = false;
+    // Toggle underline context at cursor
+    if (newUnderlineState) {
+      // Enable underline - create/update style marker
+      const node = range.startContainer;
+      const parent = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+      const isStyleMarker = parent && parent.tagName === "SPAN" && 
+        (parent.textContent === "\u200B" || parent.innerHTML === "\u200B");
       
-      if (textNode.nodeType === Node.TEXT_NODE) {
-        // Fast check: if textNode is lastChild and offset is at end
-        if (elementNode.lastChild === textNode && offset === textNode.textContent.length) {
-          isAtEnd = true;
-        } else {
-          // Fallback: check if there's any node after this text node
-          let foundAfter = false;
-          let currentNode = textNode;
-          while (currentNode && currentNode !== elementNode) {
-            if (currentNode.nextSibling) {
-              foundAfter = true;
-              break;
-            }
-            currentNode = currentNode.parentNode;
-          }
-          if (!foundAfter && offset === textNode.textContent.length) {
-            isAtEnd = true;
-          }
-        }
+      if (isStyleMarker) {
+        parent.setAttribute("data-u", "1");
+        parent.style.textDecoration = "underline";
       } else {
-        // Cursor is directly in element - check if empty
-        if (elementNode.childNodes.length === 0) {
+        const marker = document.createElement("span");
+        marker.setAttribute("data-u", "1");
+        marker.style.textDecoration = "underline";
+        marker.innerHTML = "\u200B";
+        range.insertNode(marker);
+        
+        const newRange = document.createRange();
+        newRange.setStart(marker, 0);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+        
+        savedSelectionRef.current = {
+          range: newRange.cloneRange(),
+          startContainer: newRange.startContainer,
+          startOffset: newRange.startOffset,
+          endContainer: newRange.endContainer,
+          endOffset: newRange.endOffset,
+          collapsed: true,
+          text: ""
+        };
+      }
+    } else {
+      // Disable underline - break context
+      breakUnderlineContext(range, selection);
+    }
+    
+    // Update lastUsedStylesRef for next typing
+    lastUsedStylesRef.current.textDecoration = newUnderlineState ? "underline" : "none";
+    
+    requestAnimationFrame(() => {
+      handleEditorInput();
+    });
+  };
+
+  // ===== OPTIMIZED: Toggle Strikethrough Function =====
+  // ARCHITECTURE: Strikethrough as context state, not DOM scan result
+  // CURSOR: O(1) - state-based, no DOM scan
+  // SELECTION: O(1) - only operate on extracted range contents
+  
+  // Helper: Get strikethrough state at cursor (O(1) - no scan, single source of truth: data-s)
+  const getStrikethroughStateAtCursor = (range) => {
+    if (range.collapsed) {
+      const node = range.startContainer;
+      const parent = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+      // SINGLE SOURCE OF TRUTH: only check data-s attribute
+      if (parent && parent.tagName === "SPAN") {
+        return parent.hasAttribute("data-s");
+      }
+      // Fallback: check lastUsedStylesRef for context
+      return lastUsedStylesRef.current.textDecoration && 
+             lastUsedStylesRef.current.textDecoration.includes("line-through");
+    }
+    return false;
+  };
+  
+  // Helper: Apply strikethrough to extracted contents (O(1) - wrap fragment)
+  const applyStrikethroughToContents = (fragment) => {
+    const span = document.createElement("span");
+    span.setAttribute("data-s", "1");
+    
+    // Preserve underline if active
+    const hasUnderline = activeUnderline || 
+      (lastUsedStylesRef.current.textDecoration && 
+       lastUsedStylesRef.current.textDecoration.includes("underline"));
+    const textDecoration = hasUnderline ? "underline line-through" : "line-through";
+    span.style.textDecoration = textDecoration;
+    
+    // Move all nodes from fragment to span
+    while (fragment.firstChild) {
+      span.appendChild(fragment.firstChild);
+    }
+    
+    fragment.appendChild(span);
+    return fragment;
+  };
+  
+  // Helper: Remove strikethrough from extracted contents (O(n) - iterative, no recursion, single source: data-s)
+  const removeStrikethroughFromContents = (fragment) => {
+    // Collect all strikethrough spans first (iterative, not recursive)
+    // SINGLE SOURCE OF TRUTH: only check data-s attribute
+    const strikethroughSpans = [];
+    const stack = Array.from(fragment.childNodes);
+    
+    while (stack.length > 0) {
+      const node = stack.pop();
+      if (node.nodeType === Node.ELEMENT_NODE && node.tagName === "SPAN") {
+        if (node.hasAttribute("data-s")) {
+          strikethroughSpans.push(node);
+        }
+        // Add children to stack (iterative, not recursive)
+        stack.push(...Array.from(node.childNodes));
+      }
+    }
+    
+    // Process all strikethrough spans (unwrap directly)
+    strikethroughSpans.forEach(spanNode => {
+      // Remove strikethrough (single source: data-s)
+      spanNode.removeAttribute("data-s");
+      const textDecoration = spanNode.style.textDecoration || "";
+      const newDecoration = textDecoration
+        .split(" ")
+        .filter(d => d !== "line-through")
+        .join(" ");
+      
+      if (newDecoration.trim()) {
+        spanNode.style.textDecoration = newDecoration;
+      } else {
+        spanNode.style.textDecoration = "";
+      }
+      
+      // Unwrap if span has no other styles
+      if (!spanNode.style.fontSize && !spanNode.style.color && 
+          !spanNode.style.fontWeight && !spanNode.style.fontStyle &&
+          !spanNode.style.backgroundColor && !spanNode.style.textDecoration) {
+        const parent = spanNode.parentNode;
+        if (parent) {
+          while (spanNode.firstChild) {
+            parent.insertBefore(spanNode.firstChild, spanNode);
+          }
+          parent.removeChild(spanNode);
+        }
+      }
+    });
+    
+    return fragment;
+  };
+  
+  // Helper: Break strikethrough context at cursor (O(1), single source: data-s)
+  const breakStrikethroughContext = (range, selection) => {
+    const node = range.startContainer;
+    const parent = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+    
+    // SINGLE SOURCE OF TRUTH: only check data-s attribute
+    if (parent && parent.tagName === "SPAN" && parent.hasAttribute("data-s")) {
+      
+      // Check if cursor is at end of strikethrough span
+      let isAtEnd = false;
+      if (node.nodeType === Node.TEXT_NODE) {
+        if (parent.lastChild === node && range.startOffset === node.textContent.length) {
           isAtEnd = true;
         }
+      } else if (parent.childNodes.length === 0) {
+        isAtEnd = true;
       }
       
       if (isAtEnd) {
-        // BREAK CONTEXT: Create new boundary node AFTER underline span
-        const newBoundary = document.createElement("span");
-        newBoundary.style.textDecoration = "none"; // Normal, no underline
-        newBoundary.innerHTML = "\u200B"; // Zero-width space marker
+        // Create boundary node AFTER strikethrough span
+        const boundary = document.createElement("span");
+        // Preserve underline if active
+        const hasUnderline = activeUnderline || 
+          (lastUsedStylesRef.current.textDecoration && 
+           lastUsedStylesRef.current.textDecoration.includes("underline"));
+        boundary.style.textDecoration = hasUnderline ? "underline" : "none";
+        boundary.innerHTML = "\u200B";
         
-        // Insert AFTER the underline span
-        if (elementNode.parentNode) {
-          if (elementNode.nextSibling) {
-            elementNode.parentNode.insertBefore(newBoundary, elementNode.nextSibling);
+        if (parent.parentNode) {
+          if (parent.nextSibling) {
+            parent.parentNode.insertBefore(boundary, parent.nextSibling);
           } else {
-            elementNode.parentNode.appendChild(newBoundary);
+            parent.parentNode.appendChild(boundary);
           }
           
-          // Move cursor to new boundary
           const newRange = document.createRange();
-          newRange.setStart(newBoundary, 0);
-          newRange.collapse(true);
-          selection.removeAllRanges();
-          selection.addRange(newRange);
-          
-          savedSelectionRef.current = {
-            range: newRange.cloneRange(),
-            startContainer: newRange.startContainer,
-            startOffset: newRange.startOffset,
-            endContainer: newRange.endContainer,
-            endOffset: newRange.endOffset,
-            collapsed: true,
-            text: ""
-          };
-          
-          void newBoundary.offsetHeight;
-        }
-      } else {
-        // Cursor is NOT at end - update style marker if exists, or create new one
-        const isStyleMarker = elementNode.textContent === "\u200B" || elementNode.innerHTML === "\u200B";
-        if (isStyleMarker) {
-          // Update existing style marker
-          elementNode.style.textDecoration = "none";
-        } else {
-          // Create new style marker at cursor
-          const span = document.createElement("span");
-          span.style.textDecoration = "none";
-          span.innerHTML = "\u200B";
-          range.insertNode(span);
-          
-          const newRange = document.createRange();
-          newRange.setStart(span, 0);
+          newRange.setStart(boundary, 0);
           newRange.collapse(true);
           selection.removeAllRanges();
           selection.addRange(newRange);
@@ -2627,22 +2756,19 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
             text: ""
           };
         }
-      }
-    } else if (newUnderlineState) {
-      // Enabling underline - create/update style marker
-      const isStyleMarker = elementNode.tagName === "SPAN" && 
-        (elementNode.textContent === "\u200B" || elementNode.innerHTML === "\u200B");
-      
-      if (isStyleMarker) {
-        elementNode.style.textDecoration = "underline";
       } else {
-        const span = document.createElement("span");
-        span.style.textDecoration = "underline";
-        span.innerHTML = "\u200B";
-        range.insertNode(span);
+        // Create style marker at cursor
+        const marker = document.createElement("span");
+        // Preserve underline if active
+        const hasUnderline = activeUnderline || 
+          (lastUsedStylesRef.current.textDecoration && 
+           lastUsedStylesRef.current.textDecoration.includes("underline"));
+        marker.style.textDecoration = hasUnderline ? "underline" : "none";
+        marker.innerHTML = "\u200B";
+        range.insertNode(marker);
         
         const newRange = document.createRange();
-        newRange.setStart(span, 0);
+        newRange.setStart(marker, 0);
         newRange.collapse(true);
         selection.removeAllRanges();
         selection.addRange(newRange);
@@ -2658,19 +2784,8 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         };
       }
     }
-    
-    // Update lastUsedStylesRef for next typing
-    lastUsedStylesRef.current.textDecoration = newUnderlineState ? "underline" : "none";
-    
-    // Call handleEditorInput asynchronously to not block instant visual feedback
-    requestAnimationFrame(() => {
-      handleEditorInput();
-    });
   };
-
-  // ===== SIMPLIFIED: Toggle Strikethrough Function =====
-  // FOCUS: Handle both collapsed cursor and selection/block
-  // RULE: Strikethrough = <span style="text-decoration: line-through">
+  
   const toggleStrikethrough = (e) => {
     if (e) e.preventDefault();
     if (!editorRef.current) return;
@@ -2681,53 +2796,17 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     const range = selection.getRangeAt(0);
     if (!editorRef.current.contains(range.commonAncestorContainer)) return;
     
-    // Handle selection/block
+    // ===== SELECTION HANDLING =====
     if (!range.collapsed) {
-      // Check if all selected text has strikethrough
-      let allStrikethrough = true;
-      let hasAnyStrikethrough = false;
+      // Extract contents ONCE - only operate on extracted fragment
+      const fragment = range.extractContents();
       
-      const walker = document.createTreeWalker(
-        range.commonAncestorContainer,
-        NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
-        {
-          acceptNode: (node) => {
-            if (node.nodeType === Node.TEXT_NODE) {
-              return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
-            }
-            return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
-          }
-        }
-      );
+      // NO SCAN - Use intent from button state (like MS Word)
+      // Toggle based on current button state, not DOM scan
+      const currentButtonState = strikethroughButtonRef.current?.classList.contains('active') || false;
+      const newStrikethroughState = !currentButtonState;
       
-      let node;
-      while (node = walker.nextNode()) {
-        if (node.nodeType === Node.ELEMENT_NODE && node.tagName === "SPAN") {
-          const textDecoration = node.style.textDecoration || window.getComputedStyle(node).textDecoration || "";
-          if (textDecoration.includes("line-through")) {
-            hasAnyStrikethrough = true;
-          } else {
-            allStrikethrough = false;
-          }
-        } else if (node.nodeType === Node.TEXT_NODE) {
-          const parent = node.parentElement;
-          if (parent && parent.tagName === "SPAN") {
-            const textDecoration = parent.style.textDecoration || window.getComputedStyle(parent).textDecoration || "";
-            if (textDecoration.includes("line-through")) {
-              hasAnyStrikethrough = true;
-            } else {
-              allStrikethrough = false;
-            }
-          } else {
-            allStrikethrough = false;
-          }
-        }
-      }
-      
-      // Determine new state: if all strikethrough, remove; otherwise, add
-      const newStrikethroughState = !allStrikethrough;
-      
-      // INSTANT: Update button visual FIRST
+      // Update button visual (no flushSync)
       if (strikethroughButtonRef.current) {
         const btn = strikethroughButtonRef.current;
         if (newStrikethroughState) {
@@ -2751,81 +2830,35 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         void btn.offsetHeight;
       }
       
-      // Update state
-      flushSync(() => {
-        setActiveStrikethrough(newStrikethroughState);
-        setDisplayedStrikethrough(newStrikethroughState);
-        setCurrentStrikethrough(newStrikethroughState);
-      });
+      // Update React state
+      setActiveStrikethrough(newStrikethroughState);
+      setDisplayedStrikethrough(newStrikethroughState);
+      setCurrentStrikethrough(newStrikethroughState);
       
       editorRef.current.focus();
       
-      // Apply strikethrough to selection
+      // Apply/remove strikethrough on extracted fragment only
       if (newStrikethroughState) {
-        // Wrap selection in strikethrough span
-        const contents = range.extractContents();
-        const span = document.createElement("span");
-        // Preserve underline if active
-        const textDecoration = activeUnderline ? "underline line-through" : "line-through";
-        span.style.textDecoration = textDecoration;
-        span.appendChild(contents);
-        range.insertNode(span);
-        
-        // Collapse range to end
-        range.collapse(false);
-        selection.removeAllRanges();
-        selection.addRange(range);
+        applyStrikethroughToContents(fragment);
       } else {
-        // Remove strikethrough from selection
-        const walker = document.createTreeWalker(
-          range.commonAncestorContainer,
-          NodeFilter.SHOW_ELEMENT,
-          {
-            acceptNode: (node) => {
-              return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
-            }
-          }
-        );
-        
-        let node;
-        const nodesToProcess = [];
-        while (node = walker.nextNode()) {
-          if (node.tagName === "SPAN" && node.style.textDecoration && node.style.textDecoration.includes("line-through")) {
-            nodesToProcess.push(node);
-          }
-        }
-        
-        // Process nodes to remove strikethrough
-        nodesToProcess.forEach(spanNode => {
-          const textDecoration = spanNode.style.textDecoration || "";
-          const newDecoration = textDecoration
-            .split(" ")
-            .filter(d => d !== "line-through")
-            .join(" ");
-          
-          if (newDecoration.trim()) {
-            spanNode.style.textDecoration = newDecoration;
-          } else {
-            spanNode.style.textDecoration = activeUnderline ? "underline" : "none";
-          }
-          
-          // If span only contains text and no other styles, unwrap it
-          if (!spanNode.style.fontSize && !spanNode.style.color && 
-              !spanNode.style.fontWeight && !spanNode.style.fontStyle &&
-              !spanNode.style.backgroundColor && spanNode.style.textDecoration === "none") {
-            const parent = spanNode.parentNode;
-            while (spanNode.firstChild) {
-              parent.insertBefore(spanNode.firstChild, spanNode);
-            }
-            parent.removeChild(spanNode);
-          }
-        });
+        removeStrikethroughFromContents(fragment);
       }
       
+      // Insert processed fragment back
+      range.insertNode(fragment);
+      
+      // Collapse to end
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      
       // Update lastUsedStylesRef for next typing
+      const hasUnderline = activeUnderline || 
+        (lastUsedStylesRef.current.textDecoration && 
+         lastUsedStylesRef.current.textDecoration.includes("underline"));
       const textDecoration = newStrikethroughState 
-        ? (activeUnderline ? "underline line-through" : "line-through")
-        : (activeUnderline ? "underline" : "none");
+        ? (hasUnderline ? "underline line-through" : "line-through")
+        : (hasUnderline ? "underline" : "none");
       lastUsedStylesRef.current.textDecoration = textDecoration;
       
       requestAnimationFrame(() => {
@@ -2835,23 +2868,11 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       return;
     }
     
-    // Handle collapsed cursor (existing logic)
-    
-    // Get current position
-    const textNode = range.startContainer;
-    const offset = range.startOffset;
-    const elementNode = textNode.nodeType === Node.TEXT_NODE ? textNode.parentElement : textNode;
-    
-    // Check if current SPAN has strikethrough (ONLY check SPAN)
-    const hasStrikethrough = (() => {
-      if (elementNode.tagName !== "SPAN") return false;
-      const textDecoration = elementNode.style.textDecoration || window.getComputedStyle(elementNode).textDecoration || "";
-      return textDecoration.includes("line-through");
-    })();
-    
+    // ===== CURSOR HANDLING (O(1) - state-based, no DOM scan) =====
+    const hasStrikethrough = getStrikethroughStateAtCursor(range);
     const newStrikethroughState = !hasStrikethrough;
     
-    // INSTANT: Update button visual FIRST (before state update for immediate feedback)
+    // Update button visual (no flushSync)
     if (strikethroughButtonRef.current) {
       const btn = strikethroughButtonRef.current;
       if (newStrikethroughState) {
@@ -2872,134 +2893,43 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         btn.style.setProperty('border-color', '', 'important');
         btn.style.setProperty('color', '', 'important');
       }
-      void btn.offsetHeight; // Force immediate reflow
+      void btn.offsetHeight;
     }
     
-    // Update state (after visual update for instant feedback)
-    flushSync(() => {
-      setActiveStrikethrough(newStrikethroughState);
-      setDisplayedStrikethrough(newStrikethroughState);
-      setCurrentStrikethrough(newStrikethroughState);
-    });
+    // Update React state
+    setActiveStrikethrough(newStrikethroughState);
+    setDisplayedStrikethrough(newStrikethroughState);
+    setCurrentStrikethrough(newStrikethroughState);
     
     editorRef.current.focus();
     
-    // CRITICAL: When disabling strikethrough at END of strikethrough span, break context
-    if (!newStrikethroughState && hasStrikethrough && elementNode.tagName === "SPAN") {
-      // FAST: Check if cursor is at END of the strikethrough span's text content
-      let isAtEnd = false;
+    // Toggle strikethrough context at cursor
+    if (newStrikethroughState) {
+      // Enable strikethrough - create/update style marker
+      const node = range.startContainer;
+      const parent = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+      const isStyleMarker = parent && parent.tagName === "SPAN" && 
+        (parent.textContent === "\u200B" || parent.innerHTML === "\u200B");
       
-      if (textNode.nodeType === Node.TEXT_NODE) {
-        // Fast check: if textNode is lastChild and offset is at end
-        if (elementNode.lastChild === textNode && offset === textNode.textContent.length) {
-          isAtEnd = true;
-        } else {
-          // Fallback: check if there's any node after this text node
-          let foundAfter = false;
-          let currentNode = textNode;
-          while (currentNode && currentNode !== elementNode) {
-            if (currentNode.nextSibling) {
-              foundAfter = true;
-              break;
-            }
-            currentNode = currentNode.parentNode;
-          }
-          if (!foundAfter && offset === textNode.textContent.length) {
-            isAtEnd = true;
-          }
-        }
-      } else {
-        // Cursor is directly in element - check if empty
-        if (elementNode.childNodes.length === 0) {
-          isAtEnd = true;
-        }
-      }
-      
-      if (isAtEnd) {
-        // BREAK CONTEXT: Create new boundary node AFTER strikethrough span
-        const newBoundary = document.createElement("span");
-        // Preserve underline if active, otherwise none
-        const textDecoration = activeUnderline ? "underline" : "none";
-        newBoundary.style.textDecoration = textDecoration; // Normal, no strikethrough
-        newBoundary.innerHTML = "\u200B"; // Zero-width space marker
-        
-        // Insert AFTER the strikethrough span
-        if (elementNode.parentNode) {
-          if (elementNode.nextSibling) {
-            elementNode.parentNode.insertBefore(newBoundary, elementNode.nextSibling);
-          } else {
-            elementNode.parentNode.appendChild(newBoundary);
-          }
-          
-          // Move cursor to new boundary
-          const newRange = document.createRange();
-          newRange.setStart(newBoundary, 0);
-          newRange.collapse(true);
-          selection.removeAllRanges();
-          selection.addRange(newRange);
-          
-          savedSelectionRef.current = {
-            range: newRange.cloneRange(),
-            startContainer: newRange.startContainer,
-            startOffset: newRange.startOffset,
-            endContainer: newRange.endContainer,
-            endOffset: newRange.endOffset,
-            collapsed: true,
-            text: ""
-          };
-          
-          void newBoundary.offsetHeight;
-        }
-      } else {
-        // Cursor is NOT at end - update style marker if exists, or create new one
-        const isStyleMarker = elementNode.textContent === "\u200B" || elementNode.innerHTML === "\u200B";
-        if (isStyleMarker) {
-          // Update existing style marker - preserve underline if active
-          const textDecoration = activeUnderline ? "underline" : "none";
-          elementNode.style.textDecoration = textDecoration;
-        } else {
-          // Create new style marker at cursor
-          const span = document.createElement("span");
-          const textDecoration = activeUnderline ? "underline" : "none";
-          span.style.textDecoration = textDecoration;
-          span.innerHTML = "\u200B";
-          range.insertNode(span);
-          
-          const newRange = document.createRange();
-          newRange.setStart(span, 0);
-          newRange.collapse(true);
-          selection.removeAllRanges();
-          selection.addRange(newRange);
-          
-          savedSelectionRef.current = {
-            range: newRange.cloneRange(),
-            startContainer: newRange.startContainer,
-            startOffset: newRange.startOffset,
-            endContainer: newRange.endContainer,
-            endOffset: newRange.endOffset,
-            collapsed: true,
-            text: ""
-          };
-        }
-      }
-    } else if (newStrikethroughState) {
-      // Enabling strikethrough - create/update style marker
-      const isStyleMarker = elementNode.tagName === "SPAN" && 
-        (elementNode.textContent === "\u200B" || elementNode.innerHTML === "\u200B");
+      // Preserve underline if active
+      const hasUnderline = activeUnderline || 
+        (lastUsedStylesRef.current.textDecoration && 
+         lastUsedStylesRef.current.textDecoration.includes("underline"));
       
       if (isStyleMarker) {
-        // Update existing style marker - preserve underline if active
-        const textDecoration = activeUnderline ? "underline line-through" : "line-through";
-        elementNode.style.textDecoration = textDecoration;
+        parent.setAttribute("data-s", "1");
+        const textDecoration = hasUnderline ? "underline line-through" : "line-through";
+        parent.style.textDecoration = textDecoration;
       } else {
-        const span = document.createElement("span");
-        const textDecoration = activeUnderline ? "underline line-through" : "line-through";
-        span.style.textDecoration = textDecoration;
-        span.innerHTML = "\u200B";
-        range.insertNode(span);
+        const marker = document.createElement("span");
+        marker.setAttribute("data-s", "1");
+        const textDecoration = hasUnderline ? "underline line-through" : "line-through";
+        marker.style.textDecoration = textDecoration;
+        marker.innerHTML = "\u200B";
+        range.insertNode(marker);
         
         const newRange = document.createRange();
-        newRange.setStart(span, 0);
+        newRange.setStart(marker, 0);
         newRange.collapse(true);
         selection.removeAllRanges();
         selection.addRange(newRange);
@@ -3014,15 +2944,20 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           text: ""
         };
       }
+    } else {
+      // Disable strikethrough - break context
+      breakStrikethroughContext(range, selection);
     }
     
     // Update lastUsedStylesRef for next typing
+    const hasUnderline = activeUnderline || 
+      (lastUsedStylesRef.current.textDecoration && 
+       lastUsedStylesRef.current.textDecoration.includes("underline"));
     const textDecoration = newStrikethroughState 
-      ? (activeUnderline ? "underline line-through" : "line-through")
-      : (activeUnderline ? "underline" : "none");
+      ? (hasUnderline ? "underline line-through" : "line-through")
+      : (hasUnderline ? "underline" : "none");
     lastUsedStylesRef.current.textDecoration = textDecoration;
     
-    // Call handleEditorInput asynchronously to not block instant visual feedback
     requestAnimationFrame(() => {
       handleEditorInput();
     });
