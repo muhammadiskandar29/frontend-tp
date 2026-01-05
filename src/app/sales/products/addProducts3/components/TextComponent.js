@@ -2444,17 +2444,17 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     
     // ===== STEP 3: Apply to Editor =====
     if (range.collapsed) {
-      // Collapsed cursor
+      // Collapsed cursor - ALWAYS create/update style marker to ensure next typing uses correct style
       let node = range.startContainer;
       if (node.nodeType === Node.TEXT_NODE) {
         node = node.parentElement;
       }
       
       const isInStyleMarker = node.tagName === "SPAN" && 
-        (node.textContent === "\u200B" || node.innerHTML === "\u200B");
+        (node.textContent === "\u200B" || node.innerHTML === "\u200B" || node.textContent === "\u2009");
       
       if (isInStyleMarker) {
-        // Update existing marker
+        // Update existing marker - CRITICAL: ensure style is correct for next typing
         let textDecoration = newUnderlineState ? "underline" : (activeStrikethrough ? "line-through" : "none");
         if (newUnderlineState && activeStrikethrough) {
           textDecoration = "underline line-through";
@@ -2478,8 +2478,13 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           node.style.backgroundColor = "";
         }
         
+        // Ensure it's a zero-width space for style marker
+        if (node.textContent !== "\u200B" && node.innerHTML !== "\u200B") {
+          node.innerHTML = "\u200B";
+        }
+        
         const newRange = document.createRange();
-        newRange.setStartAfter(node);
+        newRange.setStart(node, 0);
         newRange.collapse(true);
         selection.removeAllRanges();
         selection.addRange(newRange);
@@ -2494,7 +2499,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           text: ""
         };
       } else {
-        // Create new style marker with VISIBLE placeholder for visual feedback
+        // Create new style marker - CRITICAL for ensuring next typing uses correct style
         const span = document.createElement("span");
         span.style.fontSize = `${activeFontSize}px`;
         span.style.color = activeColor;
@@ -2517,9 +2522,8 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           span.style.backgroundColor = activeBgColor;
         }
         
-        // Insert visible placeholder character that will be replaced when typing
-        // Use a very thin space that's barely visible but shows the style
-        span.innerHTML = "\u2009"; // Thin space (more visible than zero-width)
+        // Insert zero-width space as style marker
+        span.innerHTML = "\u200B";
         
         range.insertNode(span);
         
@@ -2541,13 +2545,6 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           collapsed: true,
           text: ""
         };
-        
-        // Replace thin space with zero-width space after a brief moment (for next typing)
-        setTimeout(() => {
-          if (span && span.textContent === "\u2009") {
-            span.innerHTML = "\u200B";
-          }
-        }, 100);
       }
     } else {
       // Has selection
@@ -2642,7 +2639,14 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
     }
     
+    // CRITICAL: Update lastUsedStylesRef BEFORE handleEditorInput to ensure next typing uses correct style
     lastUsedStylesRef.current.textDecoration = newUnderlineState ? "underline" : (activeStrikethrough ? "line-through" : "none");
+    lastUsedStylesRef.current.fontWeight = activeBold ? "bold" : "normal";
+    lastUsedStylesRef.current.fontStyle = activeItalic ? "italic" : "normal";
+    lastUsedStylesRef.current.fontSize = activeFontSize;
+    lastUsedStylesRef.current.color = activeColor;
+    lastUsedStylesRef.current.backgroundColor = activeBgColor !== "transparent" ? activeBgColor : "transparent";
+    
     handleEditorInput();
   };
 
@@ -2791,17 +2795,17 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     
     // ===== STEP 3: Apply to Editor =====
     if (range.collapsed) {
-      // Collapsed cursor
+      // Collapsed cursor - ALWAYS create/update style marker to ensure next typing uses correct style
       let node = range.startContainer;
       if (node.nodeType === Node.TEXT_NODE) {
         node = node.parentElement;
       }
       
       const isInStyleMarker = node.tagName === "SPAN" && 
-        (node.textContent === "\u200B" || node.innerHTML === "\u200B");
+        (node.textContent === "\u200B" || node.innerHTML === "\u200B" || node.textContent === "\u2009");
       
       if (isInStyleMarker) {
-        // Update existing marker
+        // Update existing marker - CRITICAL: ensure style is correct for next typing
         let textDecoration = activeUnderline ? "underline" : (newStrikethroughState ? "line-through" : "none");
         if (activeUnderline && newStrikethroughState) {
           textDecoration = "underline line-through";
@@ -2814,6 +2818,10 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         if (activeUnderline) {
           node.style.setProperty("text-decoration-color", activeColor, "important");
           node.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
+        } else {
+          // Remove text-decoration-color when not underlining
+          node.style.removeProperty("text-decoration-color");
+          node.style.removeProperty("-webkit-text-decoration-color");
         }
         if (activeBgColor !== "transparent") {
           node.style.backgroundColor = activeBgColor;
@@ -2821,8 +2829,13 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           node.style.backgroundColor = "";
         }
         
+        // Ensure it's a zero-width space for style marker
+        if (node.textContent !== "\u200B" && node.innerHTML !== "\u200B") {
+          node.innerHTML = "\u200B";
+        }
+        
         const newRange = document.createRange();
-        newRange.setStartAfter(node);
+        newRange.setStart(node, 0);
         newRange.collapse(true);
         selection.removeAllRanges();
         selection.addRange(newRange);
@@ -2837,7 +2850,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           text: ""
         };
       } else {
-        // Create new style marker with VISIBLE placeholder for visual feedback
+        // Create new style marker - CRITICAL for ensuring next typing uses correct style
         const span = document.createElement("span");
         span.style.fontSize = `${activeFontSize}px`;
         span.style.color = activeColor;
@@ -2851,14 +2864,17 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         if (activeUnderline) {
           span.style.setProperty("text-decoration-color", activeColor, "important");
           span.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
+        } else {
+          // Don't set text-decoration-color when not underlining
+          span.style.removeProperty("text-decoration-color");
+          span.style.removeProperty("-webkit-text-decoration-color");
         }
         if (activeBgColor !== "transparent") {
           span.style.backgroundColor = activeBgColor;
         }
         
-        // Insert visible placeholder character that will be replaced when typing
-        // Use a very thin space that's barely visible but shows the style
-        span.innerHTML = "\u2009"; // Thin space (more visible than zero-width)
+        // Insert zero-width space as style marker
+        span.innerHTML = "\u200B";
         
         range.insertNode(span);
         
@@ -2880,13 +2896,6 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           collapsed: true,
           text: ""
         };
-        
-        // Replace thin space with zero-width space after a brief moment (for next typing)
-        setTimeout(() => {
-          if (span && span.textContent === "\u2009") {
-            span.innerHTML = "\u200B";
-          }
-        }, 100);
       }
     } else {
       // Has selection
@@ -2965,7 +2974,14 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
     }
     
+    // CRITICAL: Update lastUsedStylesRef BEFORE handleEditorInput to ensure next typing uses correct style
     lastUsedStylesRef.current.textDecoration = newStrikethroughState ? "line-through" : (activeUnderline ? "underline" : "none");
+    lastUsedStylesRef.current.fontWeight = activeBold ? "bold" : "normal";
+    lastUsedStylesRef.current.fontStyle = activeItalic ? "italic" : "normal";
+    lastUsedStylesRef.current.fontSize = activeFontSize;
+    lastUsedStylesRef.current.color = activeColor;
+    lastUsedStylesRef.current.backgroundColor = activeBgColor !== "transparent" ? activeBgColor : "transparent";
+    
     handleEditorInput();
   };
 
