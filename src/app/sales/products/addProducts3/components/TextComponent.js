@@ -127,7 +127,12 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   }, [showColorPicker, showBgColorPicker]);
 
   const handleChange = (field, value) => {
-    onUpdate?.({ ...data, [field]: value });
+    // CRITICAL: Use flushSync untuk immediate update ke canvas
+    // Ini memastikan semua perubahan (content, lineHeight, fontFamily, textAlign, dll)
+    // langsung terlihat di preview/canvas
+    flushSync(() => {
+      onUpdate?.({ ...data, [field]: value });
+    });
   };
 
   // ===== TYPOGRAPHY STANDARD =====
@@ -241,7 +246,12 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       // DON'T sanitize on every input - only on paste/load
       // Let browser handle normal typing naturally
       const html = editorRef.current.innerHTML;
-      handleChange("content", html);
+      
+      // CRITICAL: Use flushSync untuk immediate update ke canvas
+      // Ini memastikan perubahan langsung terlihat di preview/canvas
+      flushSync(() => {
+        handleChange("content", html);
+      });
       
       // Detect styles after input - immediate and force update for sync
       requestAnimationFrame(() => {
