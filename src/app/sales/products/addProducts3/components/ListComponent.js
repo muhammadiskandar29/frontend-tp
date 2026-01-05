@@ -188,24 +188,14 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       initializeEditorState(i);
     });
   }, [items.length]);
-  
-  // Ensure all editors maintain LTR direction
+
+  // Ensure editors are properly initialized (no aggressive direction forcing)
   useEffect(() => {
     items.forEach((_, i) => {
       const editor = document.getElementById(`list-editor-${i}`);
       if (editor) {
-        editor.style.direction = "ltr";
+        // Only set dir attribute, no unicodeBidi or style.direction
         editor.setAttribute("dir", "ltr");
-        editor.style.unicodeBidi = "embed";
-        // Also ensure all child elements are LTR
-        const allElements = editor.querySelectorAll("*");
-        allElements.forEach((el) => {
-          if (el instanceof HTMLElement) {
-            el.style.direction = "ltr";
-            el.setAttribute("dir", "ltr");
-            el.style.unicodeBidi = "embed";
-          }
-        });
       }
     });
   }, [items]);
@@ -283,26 +273,11 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     
     return color;
   };
-  
+
   // Rich text editor handlers untuk setiap item
   const handleEditorInput = (index) => {
     const editor = document.getElementById(`list-editor-${index}`);
     if (editor) {
-      // Force LTR direction
-      editor.style.direction = "ltr";
-      editor.setAttribute("dir", "ltr");
-      editor.style.unicodeBidi = "embed";
-      
-      // Force LTR pada semua child elements
-      const allElements = editor.querySelectorAll("*");
-      allElements.forEach((el) => {
-        if (el instanceof HTMLElement) {
-          el.style.direction = "ltr";
-          el.setAttribute("dir", "ltr");
-          el.style.unicodeBidi = "embed";
-        }
-      });
-      
       const html = editor.innerHTML;
       updateItem(index, "content", html);
       
@@ -316,25 +291,10 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     }
   };
 
-  // Handle keydown to ensure direction stays LTR
+  // Handle keydown
   const handleEditorKeyDown = (index, e) => {
-    const editor = document.getElementById(`list-editor-${index}`);
-    if (editor) {
-      // Force LTR direction on every keystroke
-      editor.style.direction = "ltr";
-      editor.setAttribute("dir", "ltr");
-      editor.style.unicodeBidi = "embed";
-      
-      // Force LTR pada semua child elements
-      const allElements = editor.querySelectorAll("*");
-      allElements.forEach((el) => {
-        if (el instanceof HTMLElement) {
-          el.style.direction = "ltr";
-          el.setAttribute("dir", "ltr");
-          el.style.unicodeBidi = "embed";
-        }
-      });
-    }
+    // Just save selection, no direction forcing
+    saveSelection(index);
   };
 
   // Initialize editor state for an item
@@ -994,7 +954,7 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
                         </button>
                         {/* Text Color Button */}
                         <div className="toolbar-color-picker-wrapper word-style-color-picker">
-                          <button 
+                        <button 
                             className={`toolbar-btn-text-color ${showColorPicker[i] ? "active" : ""}`}
                             title="Font Color"
                             onClick={() => {
@@ -1276,8 +1236,6 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
                         onInput={() => handleEditorInput(i)}
                         onKeyDown={(e) => {
                           handleEditorKeyDown(i, e);
-                          // Save selection on keydown
-                          saveSelection(i);
                         }}
                         onKeyUp={() => {
                           handleEditorInput(i);
@@ -1304,9 +1262,7 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
                         style={{
                           minHeight: "100px",
                           padding: "12px 14px",
-                          direction: "ltr",
                           textAlign: "left",
-                          unicodeBidi: "embed",
                         }}
                         data-placeholder="Insert text here ..."
                         dangerouslySetInnerHTML={{ __html: item.content || "<p></p>" }}
