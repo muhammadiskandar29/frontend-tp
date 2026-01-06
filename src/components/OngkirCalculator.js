@@ -95,6 +95,27 @@ export default function OngkirCalculator({
     }
   }, [selectedDistrict, selectedCourier]);
 
+  // Call onAddressChange callback when address changes
+  // This ensures data from Raja Ongkir (province, city, district) is sent to backend
+  useEffect(() => {
+    if (onAddressChange) {
+      // Get selected names for address
+      const provinceName = provinces.find(p => p.id === selectedProvince)?.name || '';
+      const cityName = cities.find(c => c.id === selectedCity)?.name || '';
+      const districtName = districts.find(d => d.id === selectedDistrict || d.district_id === selectedDistrict)?.name || '';
+      
+      // Call callback with address data in format expected by landing page
+      // Format: { kota, kecamatan, kelurahan, kode_pos }
+      onAddressChange({
+        provinsi: provinceName,
+        kota: cityName,
+        kecamatan: districtName,
+        kelurahan: cityName, // Use city name as kelurahan/kabupaten
+        kode_pos: "" // Kode pos akan diisi manual atau dari field terpisah
+      });
+    }
+  }, [selectedProvince, selectedCity, selectedDistrict, provinces, cities, districts, onAddressChange]);
+
   const loadProvinces = async () => {
     setLoadingProvinces(true);
     setError("");

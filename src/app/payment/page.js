@@ -18,6 +18,7 @@ export default function BankTransferPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [downPayment, setDownPayment] = useState(downPaymentFromQuery || "");
   const [orderId, setOrderId] = useState(orderIdFromQuery || "");
+  const [isWorkshop, setIsWorkshop] = useState(false);
 
   // Cek dari localStorage sebagai fallback - PRIORITAS localStorage
   useEffect(() => {
@@ -30,9 +31,11 @@ export default function BankTransferPage() {
         // Prioritaskan localStorage untuk downPayment dan orderId
         if (orderData.downPayment) {
           setDownPayment(orderData.downPayment);
+          setIsWorkshop(true);
           console.log("[PAYMENT] Using downPayment from localStorage:", orderData.downPayment);
         } else if (downPaymentFromQuery) {
           setDownPayment(downPaymentFromQuery);
+          setIsWorkshop(true);
         }
         
         if (orderData.orderId) {
@@ -48,6 +51,7 @@ export default function BankTransferPage() {
       // Jika tidak ada di localStorage, gunakan dari query param
       if (downPaymentFromQuery) {
         setDownPayment(downPaymentFromQuery);
+        setIsWorkshop(true);
       }
       if (orderIdFromQuery) {
         setOrderId(orderIdFromQuery);
@@ -55,54 +59,14 @@ export default function BankTransferPage() {
     }
   }, []);
 
-  // Cek isWorkshop - gunakan state yang sudah di-update
-  // Cek isWorkshop - gunakan state yang sudah di-update
-  const [isWorkshop, setIsWorkshop] = useState(false);
-
   // Update isWorkshop setiap kali downPayment berubah
   useEffect(() => {
-    const checkWorkshop = () => {
-      // Cek dari state dulu
-      if (downPayment && parseFloat(downPayment) > 0) {
-        setIsWorkshop(true);
-        return;
-      }
-      
-      // Cek dari localStorage
-      const storedOrder = localStorage.getItem("pending_order");
-      if (storedOrder) {
-        try {
-          const orderData = JSON.parse(storedOrder);
-          if (orderData.downPayment && parseFloat(orderData.downPayment) > 0) {
-            setIsWorkshop(true);
-            if (!downPayment) {
-              setDownPayment(orderData.downPayment);
-            }
-            return;
-          }
-        } catch (e) {
-          console.error("[PAYMENT] Error parsing stored order:", e);
-        }
-      }
-      
+    if (downPayment && parseFloat(downPayment) > 0) {
+      setIsWorkshop(true);
+    } else {
       setIsWorkshop(false);
-    };
-
-    checkWorkshop();
+    }
   }, [downPayment]);
-
-  // Debug log
-  useEffect(() => {
-    console.log("[PAYMENT] Debug info:", {
-      downPaymentFromQuery,
-      downPayment,
-      orderIdFromQuery,
-      orderId,
-      isWorkshop,
-      product,
-      harga
-    });
-  }, [downPayment, orderId, isWorkshop]);
 
   // Nomor rekening BCA (bisa dipindahkan ke env)
   const rekeningBCA = {
@@ -135,7 +99,7 @@ export default function BankTransferPage() {
     }
   };
 
-  // Handle submit konfirmasi pembayaran (untuk workshop)
+  // Handle submit konfirmasi pembayaran
   const handleKonfirmasiPembayaran = async (e) => {
     e.preventDefault();
     setErrorMsg("");
@@ -162,25 +126,50 @@ export default function BankTransferPage() {
       return setErrorMsg("Harap upload bukti pembayaran terlebih dahulu.");
     }
 
-    // Ambil amount dari downPayment (state atau localStorage)
-    let amountToUse = downPayment;
-    if (!amountToUse || parseFloat(amountToUse) <= 0) {
-      // Cek dari localStorage sebagai fallback
-      const storedOrder = localStorage.getItem("pending_order");
-      if (storedOrder) {
-        try {
-          const orderData = JSON.parse(storedOrder);
-          amountToUse = orderData.downPayment;
-          console.log("[PAYMENT] Using amount from localStorage:", amountToUse);
-        } catch (e) {
-          console.error("[PAYMENT] Error parsing stored order for amount:", e);
+    // Ambil amount: untuk workshop pakai downPayment, untuk non-workshop pakai total harga
+    let amountToUse = null;
+    
+    if (isWorkshop || downPayment) {
+      // Workshop: pakai downPayment
+      amountToUse = downPayment;
+      if (!amountToUse || parseFloat(amountToUse) <= 0) {
+        // Cek dari localStorage sebagai fallback
+        const storedOrder = localStorage.getItem("pending_order");
+        if (storedOrder) {
+          try {
+            const orderData = JSON.parse(storedOrder);
+            amountToUse = orderData.downPayment;
+            console.log("[PAYMENT] Using downPayment from localStorage:", amountToUse);
+          } catch (e) {
+            console.error("[PAYMENT] Error parsing stored order for amount:", e);
+          }
+        }
+      }
+    } else {
+      // Non-workshop: pakai total harga
+      amountToUse = harga;
+      if (!amountToUse || parseFloat(amountToUse) <= 0) {
+        // Cek dari localStorage sebagai fallback
+        const storedOrder = localStorage.getItem("pending_order");
+        if (storedOrder) {
+          try {
+            const orderData = JSON.parse(storedOrder);
+            amountToUse = orderData.total_harga || orderData.harga;
+            console.log("[PAYMENT] Using total harga from localStorage:", amountToUse);
+          } catch (e) {
+            console.error("[PAYMENT] Error parsing stored order for amount:", e);
+          }
         }
       }
     }
     
     const amountValue = parseFloat(amountToUse || "0");
     if (!amountValue || amountValue <= 0) {
-      return setErrorMsg("Jumlah pembayaran tidak valid. Pastikan down payment sudah diisi.");
+      return setErrorMsg(
+        isWorkshop || downPayment 
+          ? "Jumlah pembayaran tidak valid. Pastikan down payment sudah diisi." 
+          : "Jumlah pembayaran tidak valid. Pastikan total harga sudah diisi."
+      );
     }
 
     setSubmitting(true);
@@ -306,7 +295,7 @@ export default function BankTransferPage() {
           <p className="total-amount">Rp {Number(harga || 0).toLocaleString("id-ID")}</p>
         </div>
 
-        {/* Total Pembayaran Pertama (untuk Workshop) - SELALU TAMPILKAN jika ada downPayment */}
+        {/* Total Pembayaran Pertama (untuk Workshop) - TAMPILKAN jika ada downPayment */}
         {(isWorkshop || downPayment) && (
           <div className="total-card" style={{ background: "#fef3c7", border: "2px solid #f59e0b" }}>
             <p className="total-label" style={{ color: "#92400e", fontWeight: 600 }}>
@@ -347,10 +336,9 @@ export default function BankTransferPage() {
           </div>
         </div>
 
-        {/* Form Upload Bukti Pembayaran (untuk Workshop) - SELALU TAMPILKAN jika ada downPayment */}
-        {(isWorkshop || downPayment) && (
-          <div className="instruksi-card" style={{ marginTop: "24px" }}>
-            <h3 className="instruksi-title">📤 Upload Bukti Pembayaran</h3>
+        {/* Form Upload Bukti Pembayaran - SELALU TAMPILKAN untuk semua kasus */}
+        <div className="instruksi-card" style={{ marginTop: "24px" }}>
+          <h3 className="instruksi-title">📤 Upload Bukti Pembayaran</h3>
             <form onSubmit={handleKonfirmasiPembayaran}>
               <div style={{ marginBottom: "16px" }}>
                 <input
@@ -456,7 +444,6 @@ export default function BankTransferPage() {
               </button>
             </form>
           </div>
-        )}
 
         {/* Instruksi Card */}
         <div className="instruksi-card">
@@ -470,9 +457,7 @@ export default function BankTransferPage() {
             </li>
             <li>
               <span className="instruksi-icon">✓</span>
-              {isWorkshop 
-                ? "Upload bukti pembayaran setelah melakukan transfer"
-                : "Tim kami akan cek dan verifikasi pembayaran maksimal 1×24 jam"}
+              Upload bukti pembayaran setelah melakukan transfer untuk mempercepat proses verifikasi
             </li>
             <li>
               <span className="instruksi-icon">✓</span>
@@ -504,7 +489,7 @@ export default function BankTransferPage() {
           <p className="info-text">
             💡 <strong>Tips:</strong> {isWorkshop 
               ? "Setelah transfer, upload bukti pembayaran di atas untuk mempercepat proses verifikasi."
-              : "Setelah transfer, klik tombol di atas untuk menghubungi sales kami. Sales akan membantu proses verifikasi pembayaran Anda."}
+              : "Setelah transfer, upload bukti pembayaran di atas untuk mempercepat proses verifikasi. Tim kami akan memverifikasi pembayaran Anda maksimal 1×24 jam."}
           </p>
         </div>
       </div>

@@ -13,7 +13,7 @@ import {
   ArrowUp, ArrowDown, ArrowUpCircle, ArrowDownCircle, PlayCircle,
   PauseCircle, StopCircle, Radio, Square, Hexagon, Triangle,
   AlertCircle, Info, HelpCircle as HelpCircleIcon, Ban, Shield, Key, Unlock,
-  Clock, Users, Tag, Upload, Globe, Share2, Code
+  Clock, Users, Tag, Upload, Globe, Share2, Code, MapPin, Calendar as CalendarIcon
 } from "lucide-react";
 import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
@@ -24,6 +24,7 @@ import { InputNumber } from "primereact/inputnumber";
 import { MultiSelect } from "primereact/multiselect";
 import { Chips } from "primereact/chips";
 import OngkirCalculator from "@/components/OngkirCalculator";
+import { getProvinces, getCities, getDistricts } from "@/utils/shippingService";
 import {
   TextComponent,
   ImageComponent,
@@ -89,6 +90,35 @@ export default function AddProducts3Page() {
   const [productKategori, setProductKategori] = useState(null); // Untuk menentukan kategori produk
   const [activeTab, setActiveTab] = useState("konten"); // State untuk tab aktif
   const [selectedBundling, setSelectedBundling] = useState(null); // State untuk bundling yang dipilih
+  
+  // State untuk form wilayah (produk non-fisik) - HANYA NAMA, BUKAN ID
+  const [regionForm, setRegionForm] = useState({
+    provinsi: "", // Nama provinsi (string)
+    kabupaten: "", // Nama kabupaten/kota (string)
+    kecamatan: "", // Nama kecamatan (string)
+    kode_pos: "" // Kode pos (string)
+  });
+  
+  // State untuk cascading dropdown (internal - untuk fetch)
+  const [regionData, setRegionData] = useState({
+    provinces: [],
+    cities: [],
+    districts: []
+  });
+  
+  // State untuk selected IDs (internal - hanya untuk fetch, tidak disimpan)
+  const [selectedRegionIds, setSelectedRegionIds] = useState({
+    provinceId: "",
+    cityId: "",
+    districtId: ""
+  });
+  
+  // Loading states
+  const [loadingRegion, setLoadingRegion] = useState({
+    provinces: false,
+    cities: false,
+    districts: false
+  });
   
   // State untuk form pengaturan
   const [pengaturanForm, setPengaturanForm] = useState({
@@ -796,7 +826,8 @@ export default function AddProducts3Page() {
           Check, Star, Heart, ThumbsUp, Award, Zap, Flame, Sparkles,
           ArrowUp, ArrowDown, ArrowUpCircle, ArrowDownCircle, PlayCircle,
           PauseCircle, StopCircle, Radio, Square, Hexagon, Triangle,
-          AlertCircle, Info, HelpCircle: HelpCircleIcon, Ban, Shield, Key, Unlock
+          AlertCircle, Info, HelpCircle: HelpCircleIcon, Ban, Shield, Key, Unlock,
+          MapPin, Calendar: CalendarIcon, Clock
         };
         
         const listTitle = block.data.componentTitle || "";
@@ -1069,22 +1100,111 @@ export default function AddProducts3Page() {
                   <input type="email" placeholder="email@example.com" className="compact-input" />
                 </div>
                 
-                {/* Alamat - Semua Kategori Sama: Provinsi, Kabupaten, Kecamatan, Kode Pos */}
+                {/* Form Wilayah - Cascading Dropdown (Selalu tampil untuk form customer) */}
+                {/* Provinsi Dropdown */}
                 <div className="compact-field">
                   <label className="compact-label">Provinsi <span className="required">*</span></label>
-                  <input type="text" placeholder="Contoh: DKI Jakarta" className="compact-input" />
+                  <select
+                    className="compact-input"
+                    value={selectedRegionIds.provinceId}
+                    onChange={(e) => handleRegionChange("provinsi", e.target.value)}
+                    disabled={loadingRegion.provinces}
+                    style={{ 
+                      appearance: 'auto', 
+                      cursor: loadingRegion.provinces ? 'not-allowed' : 'pointer',
+                      backgroundColor: loadingRegion.provinces ? '#f9fafb' : 'white'
+                    }}
+                  >
+                    <option value="">Pilih Provinsi</option>
+                    {regionData.provinces.map((province) => (
+                      <option key={province.id} value={province.id}>
+                        {province.name}
+                      </option>
+                    ))}
+                  </select>
+                  {loadingRegion.provinces && (
+                    <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                      Memuat provinsi...
+                    </small>
+                  )}
                 </div>
+                
+                {/* Kabupaten/Kota Dropdown */}
                 <div className="compact-field">
                   <label className="compact-label">Kabupaten/Kota <span className="required">*</span></label>
-                  <input type="text" placeholder="Contoh: Jakarta Selatan" className="compact-input" />
+                  <select
+                    className="compact-input"
+                    value={selectedRegionIds.cityId}
+                    onChange={(e) => handleRegionChange("kabupaten", e.target.value)}
+                    disabled={!selectedRegionIds.provinceId || loadingRegion.cities}
+                    style={{ 
+                      appearance: 'auto', 
+                      cursor: (!selectedRegionIds.provinceId || loadingRegion.cities) ? 'not-allowed' : 'pointer',
+                      backgroundColor: (!selectedRegionIds.provinceId || loadingRegion.cities) ? '#f9fafb' : 'white'
+                    }}
+                  >
+                    <option value="">Pilih Kabupaten/Kota</option>
+                    {regionData.cities.map((city) => (
+                      <option key={city.id} value={city.id}>
+                        {city.name}
+                      </option>
+                    ))}
+                  </select>
+                  {loadingRegion.cities && (
+                    <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                      Memuat kabupaten/kota...
+                    </small>
+                  )}
                 </div>
+                
+                {/* Kecamatan Dropdown */}
                 <div className="compact-field">
                   <label className="compact-label">Kecamatan <span className="required">*</span></label>
-                  <input type="text" placeholder="Contoh: Kebayoran Baru" className="compact-input" />
+                  <select
+                    className="compact-input"
+                    value={selectedRegionIds.districtId}
+                    onChange={(e) => handleRegionChange("kecamatan", e.target.value)}
+                    disabled={!selectedRegionIds.cityId || loadingRegion.districts}
+                    style={{ 
+                      appearance: 'auto', 
+                      cursor: (!selectedRegionIds.cityId || loadingRegion.districts) ? 'not-allowed' : 'pointer',
+                      backgroundColor: (!selectedRegionIds.cityId || loadingRegion.districts) ? '#f9fafb' : 'white'
+                    }}
+                  >
+                    <option value="">Pilih Kecamatan</option>
+                    {regionData.districts.map((district) => (
+                      <option key={district.id || district.district_id} value={district.id || district.district_id}>
+                        {district.name}
+                      </option>
+                    ))}
+                  </select>
+                  {loadingRegion.districts && (
+                    <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                      Memuat kecamatan...
+                    </small>
+                  )}
                 </div>
+                
+                {/* Kode Pos - Auto dari district atau manual input */}
                 <div className="compact-field">
                   <label className="compact-label">Kode Pos <span className="required">*</span></label>
-                  <input type="text" placeholder="Contoh: 12120" className="compact-input" />
+                  <input
+                    type="text"
+                    placeholder="Contoh: 12120"
+                    className="compact-input"
+                    value={regionForm.kode_pos}
+                    onChange={(e) => handleRegionChange("kode_pos", e.target.value)}
+                    disabled={!selectedRegionIds.districtId}
+                    style={{ 
+                      cursor: !selectedRegionIds.districtId ? 'not-allowed' : 'text',
+                      backgroundColor: !selectedRegionIds.districtId ? '#f9fafb' : 'white'
+                    }}
+                  />
+                  {!selectedRegionIds.districtId && (
+                    <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                      Pilih kecamatan terlebih dahulu
+                    </small>
+                  )}
                 </div>
                 
                 {/* Form Ongkir - Hanya untuk produk Fisik */}
@@ -1153,16 +1273,6 @@ export default function AddProducts3Page() {
                       defaultCourier="jne"
                       compact={true}
                     />
-                  </div>
-                )}
-
-                {/* Form Down Payment - Kategori Workshop (6) */}
-                {isFormWorkshop && (
-                  <div className="compact-field">
-                    <label className="compact-label">
-                      Jumlah Down Payment <span className="required">*</span>
-                    </label>
-                    <input type="text" placeholder="Rp 0" className="compact-input" />
                   </div>
                 )}
               </div>
@@ -1310,6 +1420,7 @@ export default function AddProducts3Page() {
           marginLeft: `${sectionData.marginLeft || 0}px`,
           marginBottom: `${sectionData.marginBetween || 16}px`,
           border: sectionData.border ? `${sectionData.border}px solid ${sectionData.borderColor || "#000000"}` : "none",
+          backgroundColor: sectionData.backgroundColor || "#ffffff",
           borderRadius: sectionData.borderRadius === "none" ? "0" : sectionData.borderRadius || "0",
           boxShadow: sectionData.boxShadow === "none" ? "none" : sectionData.boxShadow || "none",
           display: "block",
@@ -1526,6 +1637,119 @@ export default function AddProducts3Page() {
       }
     ];
   };
+
+  // ==========================================================
+  // LOGIC FORM WILAYAH (CASCADING DROPDOWN) - FORM CUSTOMER
+  // ==========================================================
+  
+  // Load provinces
+  const loadProvinces = async () => {
+    setLoadingRegion(prev => ({ ...prev, provinces: true }));
+    try {
+      const data = await getProvinces();
+      setRegionData(prev => ({ ...prev, provinces: data }));
+    } catch (err) {
+      console.error("Load provinces error:", err);
+    } finally {
+      setLoadingRegion(prev => ({ ...prev, provinces: false }));
+    }
+  };
+  
+  // Load cities
+  const loadCities = async (provinceId) => {
+    setLoadingRegion(prev => ({ ...prev, cities: true }));
+    try {
+      const data = await getCities(provinceId);
+      setRegionData(prev => ({ ...prev, cities: data }));
+    } catch (err) {
+      console.error("Load cities error:", err);
+    } finally {
+      setLoadingRegion(prev => ({ ...prev, cities: false }));
+    }
+  };
+  
+  // Load districts
+  const loadDistricts = async (cityId) => {
+    setLoadingRegion(prev => ({ ...prev, districts: true }));
+    try {
+      const data = await getDistricts(cityId);
+      setRegionData(prev => ({ ...prev, districts: data }));
+    } catch (err) {
+      console.error("Load districts error:", err);
+    } finally {
+      setLoadingRegion(prev => ({ ...prev, districts: false }));
+    }
+  };
+  
+  // Handler untuk update region form (HANYA NAMA)
+  const handleRegionChange = (field, value, id = null) => {
+    if (field === "provinsi") {
+      const province = regionData.provinces.find(p => p.id === value);
+      setSelectedRegionIds(prev => ({ ...prev, provinceId: value || "", cityId: "", districtId: "" }));
+      setRegionForm(prev => ({ 
+        ...prev, 
+        provinsi: province?.name || "",
+        kabupaten: "",
+        kecamatan: "",
+        kode_pos: ""
+      }));
+    } else if (field === "kabupaten") {
+      const city = regionData.cities.find(c => c.id === value);
+      setSelectedRegionIds(prev => ({ ...prev, cityId: value || "", districtId: "" }));
+      setRegionForm(prev => ({ 
+        ...prev, 
+        kabupaten: city?.name || "",
+        kecamatan: "",
+        kode_pos: ""
+      }));
+    } else if (field === "kecamatan") {
+      const district = regionData.districts.find(d => d.id === value || d.district_id === value);
+      setSelectedRegionIds(prev => ({ ...prev, districtId: value || "" }));
+      setRegionForm(prev => ({ 
+        ...prev, 
+        kecamatan: district?.name || "",
+        kode_pos: district?.postal_code || "" // Ambil kode pos dari district jika ada
+      }));
+    } else if (field === "kode_pos") {
+      setRegionForm(prev => ({ ...prev, kode_pos: value }));
+    }
+  };
+  
+  // Load provinces on mount (selalu load untuk form customer)
+  useEffect(() => {
+    loadProvinces();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  
+  // Load cities when province selected
+  useEffect(() => {
+    if (selectedRegionIds.provinceId) {
+      loadCities(selectedRegionIds.provinceId);
+      // Reset child selections
+      setSelectedRegionIds(prev => ({ ...prev, cityId: "", districtId: "" }));
+      setRegionForm(prev => ({ ...prev, kabupaten: "", kecamatan: "", kode_pos: "" }));
+      setRegionData(prev => ({ ...prev, cities: [], districts: [] }));
+    } else {
+      setRegionData(prev => ({ ...prev, cities: [], districts: [] }));
+      setSelectedRegionIds(prev => ({ ...prev, cityId: "", districtId: "" }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRegionIds.provinceId]);
+  
+  // Load districts when city selected
+  useEffect(() => {
+    if (selectedRegionIds.cityId) {
+      loadDistricts(selectedRegionIds.cityId);
+      // Reset child selections
+      setSelectedRegionIds(prev => ({ ...prev, districtId: "" }));
+      setRegionForm(prev => ({ ...prev, kecamatan: "", kode_pos: "" }));
+      setRegionData(prev => ({ ...prev, districts: [] }));
+    } else {
+      setRegionData(prev => ({ ...prev, districts: [] }));
+      setSelectedRegionIds(prev => ({ ...prev, districtId: "" }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRegionIds.cityId]);
 
   // Fetch kategori dan user options
   useEffect(() => {

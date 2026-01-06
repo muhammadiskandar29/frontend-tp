@@ -76,6 +76,7 @@ export default function SectionComponent({
   const marginBetween = data.marginBetween || 16;
   const border = data.border || 0;
   const borderColor = data.borderColor || "#000000";
+  const backgroundColor = data.backgroundColor || "#ffffff";
   const borderRadius = data.borderRadius || "none";
   const boxShadow = data.boxShadow || "none";
   const responsiveType = data.responsiveType || "vertical";
@@ -439,6 +440,26 @@ export default function SectionComponent({
                     title={color}
                   />
                 ))}
+              </div>
+            </div>
+
+            {/* Background Color */}
+            <div className="advance-section-group">
+              <div className="advance-section-label">Background Section</div>
+              <div className="form-field-group">
+                <input
+                  type="color"
+                  value={backgroundColor}
+                  onChange={(e) => handleChange("backgroundColor", e.target.value)}
+                  className="advance-color-input"
+                />
+                <InputText
+                  value={backgroundColor}
+                  onChange={(e) => handleChange("backgroundColor", e.target.value)}
+                  placeholder="#ffffff"
+                  className="w-full form-input"
+                  style={{ marginTop: "8px" }}
+                />
               </div>
             </div>
 
