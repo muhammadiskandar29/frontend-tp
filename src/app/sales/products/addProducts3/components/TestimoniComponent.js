@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { flushSync } from "react-dom";
 import { InputText } from "primereact/inputtext";
 import { InputSwitch } from "primereact/inputswitch";
 import { Button } from "primereact/button";
@@ -13,204 +14,86 @@ import {
 } from "lucide-react";
 import ComponentWrapper from "./ComponentWrapper";
 
-// ProseMirror imports
-import { Schema, DOMParser, DOMSerializer } from "prosemirror-model";
-import { EditorState, Plugin } from "prosemirror-state";
-import { EditorView } from "prosemirror-view";
-import { toggleMark } from "prosemirror-commands";
-import { keymap } from "prosemirror-keymap";
-import { history, redo, undo } from "prosemirror-history";
-import { baseKeymap } from "prosemirror-commands";
+// Tiptap imports
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import UnderlineExtension from '@tiptap/extension-underline';
+import { TextStyle } from '@tiptap/extension-text-style';
+import FontFamily from '@tiptap/extension-font-family';
+import Color from '@tiptap/extension-color';
+import Highlight from '@tiptap/extension-highlight';
+import { FontSize } from './extensions/FontSize';
+
+// TestimoniItemEditor Component - Tiptap editor for each testimonial item
+function TestimoniItemEditor({ itemIndex, content, onUpdate, onEditorReady }) {
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      UnderlineExtension,
+      TextStyle,
+      FontFamily.configure({
+        types: ['textStyle'],
+      }),
+      FontSize,
+      Color.configure({
+        types: ['textStyle'],
+      }),
+      Highlight.configure({
+        multicolor: true,
+      }),
+    ],
+    content: content || '<p></p>',
+    onUpdate: ({ editor }) => {
+      const html = editor.getHTML();
+      onUpdate?.(html);
+    },
+    editorProps: {
+      attributes: {
+        class: 'rich-text-editor testimoni-item-editor',
+        style: `
+          min-height: 100px;
+          padding: 12px 14px;
+          text-align: left;
+          direction: ltr;
+          unicode-bidi: normal;
+        `,
+      },
+    },
+  });
+
+  // Notify parent when editor is ready
+  useEffect(() => {
+    if (editor && onEditorReady) {
+      onEditorReady(editor);
+    }
+  }, [editor, onEditorReady]);
+
+  // Update content when prop changes externally
+  useEffect(() => {
+    if (editor && content !== undefined) {
+      const currentHTML = editor.getHTML();
+      if (currentHTML !== content && content !== '<p></p>') {
+        editor.commands.setContent(content || '<p></p>');
+      }
+    }
+  }, [content, editor]);
+
+  if (!editor) {
+    return null;
+  }
+
+  return <EditorContent editor={editor} />;
+}
 
 export default function TestimoniComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index, isExpanded, onToggleExpand }) {
   const componentTitle = data.componentTitle || "";
   const items = data.items || [];
   const [showImageActions, setShowImageActions] = useState({});
-  const editorViewRefs = useRef({}); // ProseMirror EditorView instances
-  
-  // ===== PROSEMIRROR SCHEMA =====
-  // Schema dasar: paragraph, text, marks (bold, underline)
-  const prosemirrorSchema = new Schema({
-    nodes: {
-      doc: {
-        content: "paragraph+"
-      },
-      paragraph: {
-        content: "inline*",
-        group: "block",
-        parseDOM: [{ tag: "p" }],
-        toDOM: () => ["p", 0]
-      },
-      text: {
-        group: "inline"
-      }
-    },
-    marks: {
-      bold: {
-        parseDOM: [
-          { tag: "strong" },
-          { tag: "b", getAttrs: () => ({}) },
-          { style: "font-weight", getAttrs: (value) => /^(bold|bolder|[5-9]\d{2,})$/.test(value) && null }
-        ],
-        toDOM: () => ["strong", 0]
-      },
-      underline: {
-        parseDOM: [
-          { tag: "u" },
-          { style: "text-decoration", getAttrs: (value) => value === "underline" && null }
-        ],
-        toDOM: () => ["u", 0]
-      }
-    }
-  });
-
-  // ===== PROSEMIRROR HELPER FUNCTIONS =====
-  // Convert HTML string to ProseMirror document
-  const htmlToProseMirror = (html) => {
-    if (!html || html === "Text Baru") {
-      html = "<p></p>";
-    }
-    
-    // Create temporary container
-    const tempDiv = document.createElement("div");
-    tempDiv.innerHTML = html;
-    
-    // Parse HTML to ProseMirror document
-    return DOMParser.fromSchema(prosemirrorSchema).parse(tempDiv);
-  };
-
-  // Convert ProseMirror document to HTML string
-  const proseMirrorToHTML = (state) => {
-    const fragment = DOMSerializer.fromSchema(prosemirrorSchema).serializeFragment(state.doc.content);
-    const tempDiv = document.createElement("div");
-    tempDiv.appendChild(fragment);
-    return tempDiv.innerHTML || "<p></p>";
-  };
-
-  // Initialize ProseMirror editor for a specific item
-  const initializeProseMirror = (itemIndex, content) => {
-    const editorElement = document.getElementById(`testimoni-editor-${itemIndex}`);
-    if (!editorElement) return;
-
-    // Destroy existing editor if any
-    if (editorViewRefs.current[itemIndex]) {
-      editorViewRefs.current[itemIndex].destroy();
-      editorViewRefs.current[itemIndex] = null;
-    }
-
-    // Create initial state from HTML content
-    const doc = htmlToProseMirror(content || "<p></p>");
-    
-    // Plugin to track selection changes and update toolbar
-    const selectionTrackerPlugin = new Plugin({
-      view(editorView) {
-        return {
-          update(view, prevState) {
-            // Update toolbar when selection changes
-            if (prevState.selection !== view.state.selection) {
-              updateToolbarState(itemIndex, view.state);
-            }
-          }
-        };
-      }
-    });
-    
-    const state = EditorState.create({
-      doc,
-      schema: prosemirrorSchema,
-      plugins: [
-        history(),
-        selectionTrackerPlugin,
-        keymap({
-          "Mod-z": undo,
-          "Mod-y": redo,
-          "Mod-Shift-z": redo
-        }),
-        keymap(baseKeymap)
-      ]
-    });
-
-    // Create editor view
-    const view = new EditorView(editorElement, {
-      state,
-      dispatchTransaction: (transaction) => {
-        const newState = view.state.apply(transaction);
-        view.updateState(newState);
-        
-        // Update content on every change
-        const html = proseMirrorToHTML(newState);
-        updateTestimoni(itemIndex, "isiTestimony", html);
-        
-        // Update UI state (bold/underline buttons)
-        updateToolbarState(itemIndex, newState);
-      }
-    });
-
-    editorViewRefs.current[itemIndex] = view;
-  };
-
-  // Update toolbar button states based on current selection
-  const updateToolbarState = (itemIndex, state) => {
-    if (!state) return;
-    
-    const { from, to, empty } = state.selection;
-    
-    // Check if bold is active
-    let boldActive = false;
-    if (empty && state.storedMarks) {
-      boldActive = state.storedMarks.some(m => m.type === prosemirrorSchema.marks.bold);
-    } else if (!empty) {
-      boldActive = state.doc.rangeHasMark(from, to, prosemirrorSchema.marks.bold);
-    }
-    
-    // Check if underline is active
-    let underlineActive = false;
-    if (empty && state.storedMarks) {
-      underlineActive = state.storedMarks.some(m => m.type === prosemirrorSchema.marks.underline);
-    } else if (!empty) {
-      underlineActive = state.doc.rangeHasMark(from, to, prosemirrorSchema.marks.underline);
-    }
-    
-    // Update button visuals
-    const editor = document.getElementById(`testimoni-editor-${itemIndex}`);
-    if (editor) {
-      // Find toolbar - it's in the same testimoni-item-content section
-      const testimoniItem = editor.closest('.testimoni-item-content');
-      if (testimoniItem) {
-        const boldBtn = testimoniItem.querySelector('.toolbar-btn[title="Bold"]');
-        if (boldBtn) {
-          if (boldActive) {
-            boldBtn.classList.add('active');
-            boldBtn.style.setProperty('background-color', '#F1A124', 'important');
-            boldBtn.style.setProperty('border-color', '#F1A124', 'important');
-            boldBtn.style.setProperty('color', '#ffffff', 'important');
-          } else {
-            boldBtn.classList.remove('active');
-            boldBtn.className = 'toolbar-btn';
-            boldBtn.style.removeProperty('background-color');
-            boldBtn.style.removeProperty('border-color');
-            boldBtn.style.removeProperty('color');
-          }
-        }
-        
-        const underlineBtn = testimoniItem.querySelector('.toolbar-btn[title="Underline"]');
-        if (underlineBtn) {
-          if (underlineActive) {
-            underlineBtn.classList.add('active');
-            underlineBtn.style.setProperty('background-color', '#F1A124', 'important');
-            underlineBtn.style.setProperty('border-color', '#F1A124', 'important');
-            underlineBtn.style.setProperty('color', '#ffffff', 'important');
-          } else {
-            underlineBtn.classList.remove('active');
-            underlineBtn.className = 'toolbar-btn';
-            underlineBtn.style.removeProperty('background-color');
-            underlineBtn.style.removeProperty('border-color');
-            underlineBtn.style.removeProperty('color');
-          }
-        }
-      }
-    }
-  };
+  const editorRefs = useRef({}); // Tiptap editor instances
+  const [currentBoldStates, setCurrentBoldStates] = useState({});
+  const [currentItalicStates, setCurrentItalicStates] = useState({});
+  const [currentUnderlineStates, setCurrentUnderlineStates] = useState({});
+  const [currentStrikethroughStates, setCurrentStrikethroughStates] = useState({});
   
   // Auto-expand all items by default
   const [expandedItems, setExpandedItems] = useState(() => {
@@ -271,101 +154,62 @@ export default function TestimoniComponent({ data = {}, onUpdate, onMoveUp, onMo
     }
   };
 
-  // ProseMirror handles input automatically via dispatchTransaction
-  // This function is kept for backward compatibility but no longer needed
-  const handleEditorInput = (index) => {
-    // ProseMirror handles content updates automatically in dispatchTransaction
-    // No manual handling needed
-  };
 
-  // ProseMirror handles keydown automatically via keymap plugins
-  // This function is kept for backward compatibility but no longer needed
-  const handleEditorKeyDown = (index, e) => {
-    // ProseMirror handles keyboard events via keymap plugins
-    // No manual handling needed
-  };
-
-  // Format selection - use ProseMirror for Bold/Underline, execCommand for others
+  // Format selection - use Tiptap for Bold/Underline/Italic/Strikethrough, execCommand for others
   const formatSelection = (index, command, value = null) => {
-    // Use ProseMirror for Bold and Underline
+    const editor = editorRefs.current[index];
+    if (!editor) return;
+    
+    // Use Tiptap for Bold, Underline, Italic, Strikethrough
     if (command === "bold") {
-      if (!editorViewRefs.current[index]) return;
-      const { state, dispatch } = editorViewRefs.current[index];
-      const markType = prosemirrorSchema.marks.bold;
-      toggleMark(markType)(state, dispatch);
-      const newState = editorViewRefs.current[index].state;
-      updateToolbarState(index, newState);
+      editor.chain().focus().toggleBold().run();
+      setCurrentBoldStates(prev => ({ ...prev, [index]: editor.isActive('bold') }));
       return;
     }
     
     if (command === "underline") {
-      if (!editorViewRefs.current[index]) return;
-      const { state, dispatch } = editorViewRefs.current[index];
-      const markType = prosemirrorSchema.marks.underline;
-      toggleMark(markType)(state, dispatch);
-      const newState = editorViewRefs.current[index].state;
-      updateToolbarState(index, newState);
+      editor.chain().focus().toggleUnderline().run();
+      setCurrentUnderlineStates(prev => ({ ...prev, [index]: editor.isActive('underline') }));
       return;
     }
     
-    // For other commands, still use execCommand (not part of requirement)
-    const editor = document.getElementById(`testimoni-editor-${index}`);
-    if (!editor) return;
+    if (command === "italic") {
+      editor.chain().focus().toggleItalic().run();
+      setCurrentItalicStates(prev => ({ ...prev, [index]: editor.isActive('italic') }));
+      return;
+    }
     
-    editor.focus();
+    if (command === "strikeThrough" || command === "strikethrough") {
+      editor.chain().focus().toggleStrike().run();
+      setCurrentStrikethroughStates(prev => ({ ...prev, [index]: editor.isActive('strike') }));
+      return;
+    }
+    
+    // For other commands (link, lists, align), still use execCommand
+    // These are not critical formatting commands, so execCommand is acceptable
+    const editorElement = editorRefs.current[index]?.view?.dom;
+    if (!editorElement) return;
+    
+    editorElement.focus();
     document.execCommand(command, false, value);
-    handleEditorInput(index);
   };
 
-  // Initialize ProseMirror editors for all items
+  // Cleanup editors when items are removed
   useEffect(() => {
-    const timeouts = [];
-    
-    items.forEach((item, i) => {
-      // Initialize ProseMirror editor for this item
-      const timeoutId = setTimeout(() => {
-        initializeProseMirror(i, item.isiTestimony || item.deskripsi || "<p></p>");
-      }, 50); // Small delay to ensure DOM is ready
-      timeouts.push(timeoutId);
-    });
-    
-    // Cleanup: destroy editors for items that no longer exist
     return () => {
-      // Clear all timeouts
-      timeouts.forEach(id => clearTimeout(id));
-      
-      // Destroy editors for items that no longer exist
-      Object.keys(editorViewRefs.current).forEach(itemIndex => {
+      // Cleanup Tiptap editors when component unmounts or items are removed
+      Object.keys(editorRefs.current).forEach(itemIndex => {
         const index = parseInt(itemIndex);
         if (index >= items.length) {
-          // Item was removed, destroy its editor
-          if (editorViewRefs.current[itemIndex]) {
-            editorViewRefs.current[itemIndex].destroy();
-            delete editorViewRefs.current[itemIndex];
+          // Item was removed, cleanup its editor
+          if (editorRefs.current[itemIndex]) {
+            editorRefs.current[itemIndex].destroy();
+            delete editorRefs.current[itemIndex];
           }
         }
       });
     };
-  }, [items.length]); // Re-initialize when number of items changes
-
-  // Update editors when item content changes externally (but avoid infinite loop)
-  useEffect(() => {
-    items.forEach((item, i) => {
-      if (editorViewRefs.current[i]) {
-        const content = item.isiTestimony || item.deskripsi || "<p></p>";
-        if (content !== undefined) {
-          const currentHTML = proseMirrorToHTML(editorViewRefs.current[i].state);
-          // Only re-initialize if content changed externally (not from our own updates)
-          if (currentHTML !== content) {
-            const timeoutId = setTimeout(() => {
-              initializeProseMirror(i, content);
-            }, 100);
-            return () => clearTimeout(timeoutId);
-          }
-        }
-      }
-    });
-  }, [items.map((item, i) => `${i}:${item.isiTestimony || item.deskripsi || ''}`).join('|')]); // Re-initialize when content changes
+  }, [items.length]);
 
   return (
     <ComponentWrapper
@@ -534,28 +378,28 @@ export default function TestimoniComponent({ data = {}, onUpdate, onMoveUp, onMo
                     <div className="text-editor-toolbar">
                       <div className="toolbar-row">
                         <button 
-                          className="toolbar-btn"
+                          className={`toolbar-btn ${currentBoldStates[i] ? "active" : ""}`}
                           title="Bold"
                           onClick={() => formatSelection(i, "bold")}
                         >
                           <Bold size={16} />
                         </button>
                         <button 
-                          className="toolbar-btn"
+                          className={`toolbar-btn ${currentItalicStates[i] ? "active" : ""}`}
                           title="Italic"
                           onClick={() => formatSelection(i, "italic")}
                         >
                           <Italic size={16} />
                         </button>
                         <button 
-                          className="toolbar-btn"
+                          className={`toolbar-btn ${currentUnderlineStates[i] ? "active" : ""}`}
                           title="Underline"
                           onClick={() => formatSelection(i, "underline")}
                         >
                           <Underline size={16} />
                         </button>
                         <button 
-                          className="toolbar-btn"
+                          className={`toolbar-btn ${currentStrikethroughStates[i] ? "active" : ""}`}
                           title="Strikethrough"
                           onClick={() => formatSelection(i, "strikeThrough")}
                         >
@@ -616,19 +460,39 @@ export default function TestimoniComponent({ data = {}, onUpdate, onMoveUp, onMo
                       </div>
                     </div>
 
-                    {/* Rich Text Editor Area - ProseMirror */}
+                    {/* Rich Text Editor Area - Tiptap */}
                     <div className="text-editor-area">
-                      <div
-                        id={`testimoni-editor-${i}`}
-                        className="rich-text-editor list-item-editor"
-                        dir="ltr"
-                        spellCheck={false}
-                        style={{
-                          minHeight: "100px",
-                          padding: "12px 14px",
-                          direction: "ltr",
-                          textAlign: "left",
-                          unicodeBidi: "embed",
+                      <TestimoniItemEditor
+                        itemIndex={i}
+                        content={item.isiTestimony || item.deskripsi}
+                        onUpdate={(html) => {
+                          flushSync(() => {
+                            updateTestimoni(i, "isiTestimony", html);
+                          });
+                        }}
+                        onEditorReady={(editor) => {
+                          editorRefs.current[i] = editor;
+                          
+                          // Sync button states
+                          setCurrentBoldStates(prev => ({ ...prev, [i]: editor.isActive('bold') }));
+                          setCurrentItalicStates(prev => ({ ...prev, [i]: editor.isActive('italic') }));
+                          setCurrentUnderlineStates(prev => ({ ...prev, [i]: editor.isActive('underline') }));
+                          setCurrentStrikethroughStates(prev => ({ ...prev, [i]: editor.isActive('strike') }));
+                          
+                          // Setup sync for button state changes
+                          const updateButtonStates = () => {
+                            try {
+                              setCurrentBoldStates(prev => ({ ...prev, [i]: editor.isActive('bold') }));
+                              setCurrentItalicStates(prev => ({ ...prev, [i]: editor.isActive('italic') }));
+                              setCurrentUnderlineStates(prev => ({ ...prev, [i]: editor.isActive('underline') }));
+                              setCurrentStrikethroughStates(prev => ({ ...prev, [i]: editor.isActive('strike') }));
+                            } catch (e) {
+                              console.error("Error updating button states:", e);
+                            }
+                          };
+                          
+                          editor.on('selectionUpdate', updateButtonStates);
+                          editor.on('transaction', updateButtonStates);
                         }}
                       />
                     </div>

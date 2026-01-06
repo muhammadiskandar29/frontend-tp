@@ -25,14 +25,15 @@ import {
 } from "lucide-react";
 import ComponentWrapper from "./ComponentWrapper";
 
-// ProseMirror imports
-import { Schema, DOMParser, DOMSerializer } from "prosemirror-model";
-import { EditorState, Plugin } from "prosemirror-state";
-import { EditorView } from "prosemirror-view";
-import { toggleMark } from "prosemirror-commands";
-import { keymap } from "prosemirror-keymap";
-import { history, redo, undo } from "prosemirror-history";
-import { baseKeymap } from "prosemirror-commands";
+// Tiptap imports
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import UnderlineExtension from '@tiptap/extension-underline';
+import { TextStyle } from '@tiptap/extension-text-style';
+import FontFamily from '@tiptap/extension-font-family';
+import Color from '@tiptap/extension-color';
+import Highlight from '@tiptap/extension-highlight';
+import { FontSize } from './extensions/FontSize';
 
 // Icon options - banyak icon seperti di gambar
 const ICON_OPTIONS = [
@@ -98,6 +99,67 @@ const presetColors = [
   "#FF9999", "#99FF99", "#9999FF", "#FFFF99", "#FF99FF", "#99FFFF", "#FFCC99", "#CC99FF"
 ];
 
+// ListItemEditor Component - Tiptap editor for each list item
+function ListItemEditor({ itemIndex, content, onUpdate, onEditorReady }) {
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      UnderlineExtension,
+      TextStyle,
+      FontFamily.configure({
+        types: ['textStyle'],
+      }),
+      FontSize,
+      Color.configure({
+        types: ['textStyle'],
+      }),
+      Highlight.configure({
+        multicolor: true,
+      }),
+    ],
+    content: content || '<p></p>',
+    onUpdate: ({ editor }) => {
+      const html = editor.getHTML();
+      onUpdate?.(html);
+    },
+    editorProps: {
+      attributes: {
+        class: 'rich-text-editor list-item-editor',
+        style: `
+          min-height: 100px;
+          padding: 12px 14px;
+          text-align: left;
+          direction: ltr;
+          unicode-bidi: normal;
+        `,
+      },
+    },
+  });
+
+  // Notify parent when editor is ready
+  useEffect(() => {
+    if (editor && onEditorReady) {
+      onEditorReady(editor);
+    }
+  }, [editor, onEditorReady]);
+
+  // Update content when prop changes externally
+  useEffect(() => {
+    if (editor && content !== undefined) {
+      const currentHTML = editor.getHTML();
+      if (currentHTML !== content && content !== '<p></p>') {
+        editor.commands.setContent(content || '<p></p>');
+      }
+    }
+  }, [content, editor]);
+
+  if (!editor) {
+    return null;
+  }
+
+  return <EditorContent editor={editor} />;
+}
+
 export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index, isExpanded, onToggleExpand }) {
   const items = data.items || [];
   const componentTitle = data.componentTitle || "";
@@ -113,199 +175,28 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   const [showMoreBgColors, setShowMoreBgColors] = useState({});
   
   // Refs untuk setiap editor
-  const editorRefs = useRef({});
-  const savedSelectionRefs = useRef({});
-  const lastUsedStylesRefs = useRef({});
-  const editorViewRefs = useRef({}); // ProseMirror EditorView instances
+  const editorRefs = useRef({}); // Tiptap editor instances
+  const textColorButtonRefs = useRef({});
+  const bgColorButtonRefs = useRef({});
   
-  // ===== PROSEMIRROR SCHEMA =====
-  // Schema dasar: paragraph, text, marks (bold, underline)
-  const prosemirrorSchema = new Schema({
-    nodes: {
-      doc: {
-        content: "paragraph+"
-      },
-      paragraph: {
-        content: "inline*",
-        group: "block",
-        parseDOM: [{ tag: "p" }],
-        toDOM: () => ["p", 0]
-      },
-      text: {
-        group: "inline"
-      }
-    },
-    marks: {
-      bold: {
-        parseDOM: [
-          { tag: "strong" },
-          { tag: "b", getAttrs: () => ({}) },
-          { style: "font-weight", getAttrs: (value) => /^(bold|bolder|[5-9]\d{2,})$/.test(value) && null }
-        ],
-        toDOM: () => ["strong", 0]
-      },
-      underline: {
-        parseDOM: [
-          { tag: "u" },
-          { style: "text-decoration", getAttrs: (value) => value === "underline" && null }
-        ],
-        toDOM: () => ["u", 0]
-      }
+  // State untuk setiap editor (per item index)
+  const [currentTextColors, setCurrentTextColors] = useState({});
+  const [currentBgColors, setCurrentBgColors] = useState({});
+  const [selectedColors, setSelectedColors] = useState({});
+  const [selectedBgColors, setSelectedBgColors] = useState({});
+  const [currentBoldStates, setCurrentBoldStates] = useState({});
+  const [currentUnderlineStates, setCurrentUnderlineStates] = useState({});
+  const [currentItalicStates, setCurrentItalicStates] = useState({});
+  const [currentStrikethroughStates, setCurrentStrikethroughStates] = useState({});
+  
+  // Helper function to get or create editor for an item
+  const getEditor = (itemIndex) => {
+    if (!editorRefs.current[itemIndex]) {
+      // Editor will be created via useEditor in a separate component
+      // For now, return null and we'll create editors in useEffect
+      return null;
     }
-  });
-
-  // ===== PROSEMIRROR HELPER FUNCTIONS =====
-  // Convert HTML string to ProseMirror document
-  const htmlToProseMirror = (html) => {
-    if (!html || html === "Text Baru") {
-      html = "<p></p>";
-    }
-    
-    // Create temporary container
-    const tempDiv = document.createElement("div");
-    tempDiv.innerHTML = html;
-    
-    // Parse HTML to ProseMirror document
-    return DOMParser.fromSchema(prosemirrorSchema).parse(tempDiv);
-  };
-
-  // Convert ProseMirror document to HTML string
-  const proseMirrorToHTML = (state) => {
-    const fragment = DOMSerializer.fromSchema(prosemirrorSchema).serializeFragment(state.doc.content);
-    const tempDiv = document.createElement("div");
-    tempDiv.appendChild(fragment);
-    return tempDiv.innerHTML || "<p></p>";
-  };
-
-  // Initialize ProseMirror editor for a specific item
-  const initializeProseMirror = (itemIndex, content) => {
-    const editorElement = document.getElementById(`list-editor-${itemIndex}`);
-    if (!editorElement) return;
-
-    // Destroy existing editor if any
-    if (editorViewRefs.current[itemIndex]) {
-      editorViewRefs.current[itemIndex].destroy();
-      editorViewRefs.current[itemIndex] = null;
-    }
-
-    // Create initial state from HTML content
-    const doc = htmlToProseMirror(content || "<p></p>");
-    
-    // Plugin to track selection changes and update toolbar
-    const selectionTrackerPlugin = new Plugin({
-      view(editorView) {
-        return {
-          update(view, prevState) {
-            // Update toolbar when selection changes
-            if (prevState.selection !== view.state.selection) {
-              updateToolbarState(itemIndex, view.state);
-            }
-          }
-        };
-      }
-    });
-    
-    const state = EditorState.create({
-      doc,
-      schema: prosemirrorSchema,
-      plugins: [
-        history(),
-        selectionTrackerPlugin,
-        keymap({
-          "Mod-z": undo,
-          "Mod-y": redo,
-          "Mod-Shift-z": redo
-        }),
-        keymap(baseKeymap)
-      ]
-    });
-
-    // Create editor view
-    const view = new EditorView(editorElement, {
-      state,
-      dispatchTransaction: (transaction) => {
-        const newState = view.state.apply(transaction);
-        view.updateState(newState);
-        
-        // Update content on every change
-        const html = proseMirrorToHTML(newState);
-        updateItem(itemIndex, "content", html, true);
-        
-        // Update UI state (bold/underline buttons)
-        updateToolbarState(itemIndex, newState);
-      }
-    });
-
-    editorViewRefs.current[itemIndex] = view;
-  };
-
-  // Update toolbar button states based on current selection
-  const updateToolbarState = (itemIndex, state) => {
-    if (!state) return;
-    
-    const { from, to, empty } = state.selection;
-    
-    // Check if bold is active
-    let boldActive = false;
-    if (empty && state.storedMarks) {
-      boldActive = state.storedMarks.some(m => m.type === prosemirrorSchema.marks.bold);
-    } else if (!empty) {
-      boldActive = state.doc.rangeHasMark(from, to, prosemirrorSchema.marks.bold);
-    }
-    
-    updateEditorState(itemIndex, {
-      currentBold: boldActive,
-      activeBold: boldActive
-    });
-    
-    // Check if underline is active
-    let underlineActive = false;
-    if (empty && state.storedMarks) {
-      underlineActive = state.storedMarks.some(m => m.type === prosemirrorSchema.marks.underline);
-    } else if (!empty) {
-      underlineActive = state.doc.rangeHasMark(from, to, prosemirrorSchema.marks.underline);
-    }
-    
-    updateEditorState(itemIndex, {
-      currentUnderline: underlineActive,
-      activeUnderline: underlineActive
-    });
-    
-    // Update button visuals
-    const editor = document.getElementById(`list-editor-${itemIndex}`);
-    if (editor) {
-      const boldBtn = editor.parentElement?.querySelector('.toolbar-btn[title="Bold"]');
-      if (boldBtn) {
-        if (boldActive) {
-          boldBtn.classList.add('active');
-          boldBtn.style.setProperty('background-color', '#F1A124', 'important');
-          boldBtn.style.setProperty('border-color', '#F1A124', 'important');
-          boldBtn.style.setProperty('color', '#ffffff', 'important');
-        } else {
-          boldBtn.classList.remove('active');
-          boldBtn.className = 'toolbar-btn';
-          boldBtn.style.removeProperty('background-color');
-          boldBtn.style.removeProperty('border-color');
-          boldBtn.style.removeProperty('color');
-        }
-      }
-      
-      const underlineBtn = editor.parentElement?.querySelector('.toolbar-btn[title="Underline"]');
-      if (underlineBtn) {
-        if (underlineActive) {
-          underlineBtn.classList.add('active');
-          underlineBtn.style.setProperty('background-color', '#F1A124', 'important');
-          underlineBtn.style.setProperty('border-color', '#F1A124', 'important');
-          underlineBtn.style.setProperty('color', '#ffffff', 'important');
-        } else {
-          underlineBtn.classList.remove('active');
-          underlineBtn.className = 'toolbar-btn';
-          underlineBtn.style.removeProperty('background-color');
-          underlineBtn.style.removeProperty('border-color');
-          underlineBtn.style.removeProperty('color');
-        }
-      }
-    }
+    return editorRefs.current[itemIndex];
   };
   
   // Advance settings
@@ -395,54 +286,23 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       initializeEditorState(i);
     });
   }, [items.length]);
-
-  // Ensure editors are properly initialized with STRONG LTR enforcement
-  // Initialize ProseMirror editors for all items
+  
+  // Cleanup editors when items are removed
   useEffect(() => {
-    const timeouts = [];
-    
-    items.forEach((item, i) => {
-      // Initialize ProseMirror editor for this item
-      const timeoutId = setTimeout(() => {
-        initializeProseMirror(i, item.content);
-      }, 50); // Small delay to ensure DOM is ready
-      timeouts.push(timeoutId);
-    });
-    
-    // Cleanup: destroy editors for items that no longer exist
     return () => {
-      // Clear all timeouts
-      timeouts.forEach(id => clearTimeout(id));
-      
-      // Destroy editors for items that no longer exist
-      Object.keys(editorViewRefs.current).forEach(itemIndex => {
+      // Cleanup Tiptap editors when component unmounts or items are removed
+      Object.keys(editorRefs.current).forEach(itemIndex => {
         const index = parseInt(itemIndex);
         if (index >= items.length) {
-          // Item was removed, destroy its editor
-          if (editorViewRefs.current[itemIndex]) {
-            editorViewRefs.current[itemIndex].destroy();
-            delete editorViewRefs.current[itemIndex];
+          // Item was removed, cleanup its editor
+          if (editorRefs.current[itemIndex]) {
+            editorRefs.current[itemIndex].destroy();
+            delete editorRefs.current[itemIndex];
           }
         }
       });
     };
-  }, [items.length]); // Re-initialize when number of items changes
-
-  // Update editors when item content changes externally (but avoid infinite loop)
-  useEffect(() => {
-    items.forEach((item, i) => {
-      if (editorViewRefs.current[i] && item.content !== undefined) {
-        const currentHTML = proseMirrorToHTML(editorViewRefs.current[i].state);
-        // Only re-initialize if content changed externally (not from our own updates)
-        if (currentHTML !== item.content) {
-          const timeoutId = setTimeout(() => {
-            initializeProseMirror(i, item.content);
-          }, 100);
-          return () => clearTimeout(timeoutId);
-        }
-      }
-    });
-  }, [items.map((item, i) => `${i}:${item.content || ''}`).join('|')]); // Re-initialize when content changes
+  }, [items.length]);
 
   // Detect styles from selection/cursor - simple version using queryCommandState
   const detectStyles = (itemIndex) => {
@@ -633,6 +493,23 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   
   // Get editor state helper
   const getEditorState = (itemIndex) => {
+    // Get state from new state objects
+    return {
+      currentBold: currentBoldStates[itemIndex] || false,
+      currentItalic: currentItalicStates[itemIndex] || false,
+      currentUnderline: currentUnderlineStates[itemIndex] || false,
+      currentStrikethrough: currentStrikethroughStates[itemIndex] || false,
+      currentTextColor: currentTextColors[itemIndex] || "#000000",
+      currentBgColor: currentBgColors[itemIndex] || "transparent",
+      selectedColor: selectedColors[itemIndex] || "#000000",
+      selectedBgColor: selectedBgColors[itemIndex] || "#FFFF00",
+      displayedFontSize: editorStates[itemIndex]?.displayedFontSize || 16,
+      ...editorStates[itemIndex]
+    };
+  };
+  
+  // Legacy getEditorState - keeping for backward compatibility
+  const getEditorStateOld = (itemIndex) => {
     initializeEditorState(itemIndex);
     return editorStates[itemIndex] || {
       activeFontSize: 16,
@@ -706,169 +583,121 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     }
   };
   
-  // ProseMirror toggle bold - simple and stable
+  // Tiptap toggle bold
   const toggleBold = (itemIndex, e) => {
     if (e) e.preventDefault();
-    if (!editorViewRefs.current[itemIndex]) return;
+    const editor = editorRefs.current[itemIndex];
+    if (!editor) return;
     
-    const { state, dispatch } = editorViewRefs.current[itemIndex];
-    const markType = prosemirrorSchema.marks.bold;
-    
-    // Use ProseMirror's toggleMark command - handles selection stability automatically
-    toggleMark(markType)(state, dispatch);
+    editor.chain().focus().toggleBold().run();
     
     // Update UI state
-    const newState = editorViewRefs.current[itemIndex].state;
-    updateToolbarState(itemIndex, newState);
+    setCurrentBoldStates(prev => ({
+      ...prev,
+      [itemIndex]: editor.isActive('bold')
+    }));
   };
   
   const toggleItalic = (itemIndex, e) => {
     if (e) e.preventDefault();
-    const editor = document.getElementById(`list-editor-${itemIndex}`);
+    const editor = editorRefs.current[itemIndex];
     if (!editor) return;
     
-    // Ensure LTR
-    editor.setAttribute("dir", "ltr");
-    editor.style.direction = "ltr";
-    
-    editor.focus();
-    restoreSelection(itemIndex);
-    
-    // Use execCommand for simplicity
-    document.execCommand("italic", false, null);
-    
-    // Update button visual
-    const isItalic = document.queryCommandState("italic");
-    const btn = editor.parentElement?.querySelector('.toolbar-btn[title="Italic"]');
-    if (btn) {
-      if (isItalic) {
-        btn.classList.add('active');
-        btn.style.setProperty('background-color', '#F1A124', 'important');
-        btn.style.setProperty('border-color', '#F1A124', 'important');
-        btn.style.setProperty('color', '#ffffff', 'important');
-      } else {
-        btn.classList.remove('active');
-        btn.className = 'toolbar-btn';
-        btn.style.removeProperty('background-color');
-        btn.style.removeProperty('border-color');
-        btn.style.removeProperty('color');
-      }
-    }
-    
-    updateEditorState(itemIndex, {
-      activeItalic: isItalic,
-      currentItalic: isItalic
-    });
-    
-    handleEditorInput(itemIndex);
-  };
-  
-  // ProseMirror toggle underline - simple and stable
-  const toggleUnderline = (itemIndex, e) => {
-    if (e) e.preventDefault();
-    if (!editorViewRefs.current[itemIndex]) return;
-    
-    const { state, dispatch } = editorViewRefs.current[itemIndex];
-    const markType = prosemirrorSchema.marks.underline;
-    
-    // Use ProseMirror's toggleMark command - handles selection stability automatically
-    toggleMark(markType)(state, dispatch);
+    editor.chain().focus().toggleItalic().run();
     
     // Update UI state
-    const newState = editorViewRefs.current[itemIndex].state;
-    updateToolbarState(itemIndex, newState);
+    setCurrentItalicStates(prev => ({
+      ...prev,
+      [itemIndex]: editor.isActive('italic')
+    }));
   };
   
-  // Simple toggle strikethrough using execCommand
+  // Tiptap toggle underline
+  const toggleUnderline = (itemIndex, e) => {
+    if (e) e.preventDefault();
+    const editor = editorRefs.current[itemIndex];
+    if (!editor) return;
+    
+    editor.chain().focus().toggleUnderline().run();
+    
+    // Update UI state
+    setCurrentUnderlineStates(prev => ({
+      ...prev,
+      [itemIndex]: editor.isActive('underline')
+    }));
+  };
+  
+  // Tiptap toggle strikethrough
   const toggleStrikethrough = (itemIndex, e) => {
     if (e) e.preventDefault();
-    const editor = document.getElementById(`list-editor-${itemIndex}`);
+    const editor = editorRefs.current[itemIndex];
     if (!editor) return;
     
-    // Ensure LTR
-    editor.setAttribute("dir", "ltr");
-    editor.style.direction = "ltr";
+    editor.chain().focus().toggleStrike().run();
     
-    editor.focus();
-    restoreSelection(itemIndex);
-    
-    // Use execCommand for strikethrough
-    document.execCommand("strikeThrough", false, null);
-    
-    // Update button visual
-    const isStrikethrough = document.queryCommandState("strikeThrough");
-    const btn = editor.parentElement?.querySelector('.toolbar-btn[title="Strikethrough"]');
-    if (btn) {
-      if (isStrikethrough) {
-        btn.classList.add('active');
-        btn.style.setProperty('background-color', '#F1A124', 'important');
-        btn.style.setProperty('border-color', '#F1A124', 'important');
-        btn.style.setProperty('color', '#ffffff', 'important');
-      } else {
-        btn.classList.remove('active');
-        btn.className = 'toolbar-btn';
-        btn.style.removeProperty('background-color');
-        btn.style.removeProperty('border-color');
-        btn.style.removeProperty('color');
-      }
-    }
-    
-    updateEditorState(itemIndex, {
-      activeStrikethrough: isStrikethrough,
-      currentStrikethrough: isStrikethrough
-    });
-    
-    handleEditorInput(itemIndex);
+    // Update UI state
+    setCurrentStrikethroughStates(prev => ({
+      ...prev,
+      [itemIndex]: editor.isActive('strike')
+    }));
   };
   
-  // Apply text color - simple version
+  // Apply text color using Tiptap
   const applyTextColor = (itemIndex, color) => {
-    const editor = document.getElementById(`list-editor-${itemIndex}`);
+    const editor = editorRefs.current[itemIndex];
     if (!editor) return;
     
-    // Ensure LTR
-    editor.setAttribute("dir", "ltr");
-    editor.style.direction = "ltr";
+    editor.chain().focus().setColor(color).run();
     
-    editor.focus();
-    restoreSelection(itemIndex);
+    flushSync(() => {
+      setCurrentTextColors(prev => ({ ...prev, [itemIndex]: color }));
+      setSelectedColors(prev => ({ ...prev, [itemIndex]: color }));
+    });
     
-    // Use execCommand for color
-    document.execCommand("foreColor", false, color);
-    
-    updateEditorState(itemIndex, {
-      activeColor: color,
-      currentTextColor: color,
-      selectedColor: color
+    requestAnimationFrame(() => {
+      if (textColorButtonRefs.current[itemIndex]) {
+        const btn = textColorButtonRefs.current[itemIndex];
+        const colorBar = btn.querySelector('.text-color-bar');
+        if (colorBar) {
+          colorBar.style.backgroundColor = color;
+        }
+      }
     });
     
     setShowColorPicker(prev => ({ ...prev, [itemIndex]: false }));
-    handleEditorInput(itemIndex);
   };
   
-  // Apply background color - simple version
+  // Apply background color using Tiptap
   const applyBgColor = (itemIndex, color) => {
-    const editor = document.getElementById(`list-editor-${itemIndex}`);
+    const editor = editorRefs.current[itemIndex];
     if (!editor) return;
     
-    // Ensure LTR
-    editor.setAttribute("dir", "ltr");
-    editor.style.direction = "ltr";
+    const bgColorValue = color === "transparent" ? "transparent" : color;
     
-    editor.focus();
-    restoreSelection(itemIndex);
+    editor.chain().focus();
     
-    // Use execCommand for background color
-    document.execCommand("backColor", false, color === "transparent" ? "#ffffff" : color);
+    if (color === "transparent") {
+      editor.chain().focus().unsetHighlight().run();
+    } else {
+      editor.chain().focus().setHighlight({ color: color }).run();
+    }
     
-    updateEditorState(itemIndex, {
-      activeBgColor: color,
-      currentBgColor: color,
-      selectedBgColor: color === "transparent" ? "#FFFF00" : color
+    flushSync(() => {
+      setCurrentBgColors(prev => ({ ...prev, [itemIndex]: bgColorValue }));
+      setSelectedBgColors(prev => ({ ...prev, [itemIndex]: color === "transparent" ? "#FFFF00" : color }));
+    });
+    
+    requestAnimationFrame(() => {
+      if (bgColorButtonRefs.current[itemIndex]) {
+        const btn = bgColorButtonRefs.current[itemIndex];
+        const bgColorBar = btn.querySelector('.bg-color-bar');
+        if (bgColorBar) {
+          bgColorBar.style.backgroundColor = color === "transparent" ? "#FFFF00" : color;
+        }
+      }
     });
     
     setShowBgColorPicker(prev => ({ ...prev, [itemIndex]: false }));
-    handleEditorInput(itemIndex);
   };
   
   // Apply font size - simple version
@@ -1010,10 +839,6 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
                         <button 
                           className={`toolbar-btn ${getEditorState(i).currentBold ? "active" : ""}`}
                           title="Bold"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            saveSelection(i);
-                          }}
                           onClick={(e) => toggleBold(i, e)}
                         >
                           <Bold size={16} />
@@ -1021,10 +846,6 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
                         <button 
                           className={`toolbar-btn ${getEditorState(i).currentItalic ? "active" : ""}`}
                           title="Italic"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            saveSelection(i);
-                          }}
                           onClick={(e) => toggleItalic(i, e)}
                         >
                           <Italic size={16} />
@@ -1032,6 +853,7 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
                         {/* Text Color Button */}
                         <div className="toolbar-color-picker-wrapper word-style-color-picker">
                         <button 
+                            ref={(el) => { textColorButtonRefs.current[i] = el; }}
                             className={`toolbar-btn-text-color ${showColorPicker[i] ? "active" : ""}`}
                             title="Font Color"
                             onClick={() => {
@@ -1096,7 +918,8 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
                         </div>
                         {/* Background Color Button */}
                         <div className="toolbar-color-picker-wrapper word-style-color-picker">
-                          <button 
+                          <button
+                            ref={(el) => { bgColorButtonRefs.current[i] = el; }}
                             className={`toolbar-btn-bg-color ${showBgColorPicker[i] ? "active" : ""}`}
                             title="Text Highlight Color"
                             onClick={() => {
@@ -1188,10 +1011,6 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
                         <button 
                           className={`toolbar-btn ${getEditorState(i).currentUnderline ? "active" : ""}`}
                           title="Underline"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            saveSelection(i);
-                          }}
                           onClick={(e) => toggleUnderline(i, e)}
                         >
                           <Underline size={16} />
@@ -1199,10 +1018,6 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
                         <button 
                           className={`toolbar-btn ${getEditorState(i).currentStrikethrough ? "active" : ""}`}
                           title="Strikethrough"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            saveSelection(i);
-                          }}
                           onClick={(e) => toggleStrikethrough(i, e)}
                         >
                           <Strikethrough size={16} />
@@ -1305,19 +1120,84 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
                       </div>
                     </div>
 
-                    {/* Rich Text Editor Area - ProseMirror */}
+                    {/* Rich Text Editor Area - Tiptap */}
                     <div className="text-editor-area">
-                      <div
-                        id={`list-editor-${i}`}
-                        className="rich-text-editor list-item-editor"
-                        dir="ltr"
-                        spellCheck={false}
-                        style={{
-                          minHeight: "100px",
-                          padding: "12px 14px",
-                          textAlign: "left",
-                          direction: "ltr",
-                          unicodeBidi: "normal",
+                      <ListItemEditor
+                        itemIndex={i}
+                        content={item.content}
+                        onUpdate={(html) => {
+                          updateItem(i, "content", html, true);
+                        }}
+                        onEditorReady={(editor) => {
+                          editorRefs.current[i] = editor;
+                          
+                          // Initialize color states from editor
+                          const textStyleAttrs = editor.getAttributes('textStyle');
+                          const highlightAttrs = editor.getAttributes('highlight');
+                          const detectedTextColor = textStyleAttrs.color || "#000000";
+                          const detectedBgColor = highlightAttrs.color || "transparent";
+                          
+                          setCurrentTextColors(prev => ({ ...prev, [i]: detectedTextColor }));
+                          setCurrentBgColors(prev => ({ ...prev, [i]: detectedBgColor }));
+                          setSelectedColors(prev => ({ ...prev, [i]: detectedTextColor }));
+                          setSelectedBgColors(prev => ({ ...prev, [i]: detectedBgColor === "transparent" ? "#FFFF00" : detectedBgColor }));
+                          
+                          // Sync button states
+                          setCurrentBoldStates(prev => ({ ...prev, [i]: editor.isActive('bold') }));
+                          setCurrentItalicStates(prev => ({ ...prev, [i]: editor.isActive('italic') }));
+                          setCurrentUnderlineStates(prev => ({ ...prev, [i]: editor.isActive('underline') }));
+                          setCurrentStrikethroughStates(prev => ({ ...prev, [i]: editor.isActive('strike') }));
+                          
+                          // Setup sync for color changes
+                          const updateColorFromSelection = () => {
+                            try {
+                              const textStyleAttrs = editor.getAttributes('textStyle');
+                              const highlightAttrs = editor.getAttributes('highlight');
+                              
+                              const detectedTextColor = textStyleAttrs.color || "#000000";
+                              const detectedBgColor = highlightAttrs.color || "transparent";
+                              
+                              setCurrentTextColors(prev => {
+                                if (prev[i] !== detectedTextColor) {
+                                  return { ...prev, [i]: detectedTextColor };
+                                }
+                                return prev;
+                              });
+                              
+                              setCurrentBgColors(prev => {
+                                if (prev[i] !== detectedBgColor) {
+                                  return { ...prev, [i]: detectedBgColor };
+                                }
+                                return prev;
+                              });
+                              
+                              setSelectedColors(prev => ({ ...prev, [i]: detectedTextColor }));
+                              setSelectedBgColors(prev => ({ ...prev, [i]: detectedBgColor === "transparent" ? "#FFFF00" : detectedBgColor }));
+                              
+                              // Update button visuals
+                              requestAnimationFrame(() => {
+                                if (textColorButtonRefs.current[i]) {
+                                  const colorBar = textColorButtonRefs.current[i].querySelector('.text-color-bar');
+                                  if (colorBar) colorBar.style.backgroundColor = detectedTextColor;
+                                }
+                                if (bgColorButtonRefs.current[i]) {
+                                  const bgColorBar = bgColorButtonRefs.current[i].querySelector('.bg-color-bar');
+                                  if (bgColorBar) bgColorBar.style.backgroundColor = detectedBgColor === "transparent" ? "#FFFF00" : detectedBgColor;
+                                }
+                              });
+                              
+                              // Update button states
+                              setCurrentBoldStates(prev => ({ ...prev, [i]: editor.isActive('bold') }));
+                              setCurrentItalicStates(prev => ({ ...prev, [i]: editor.isActive('italic') }));
+                              setCurrentUnderlineStates(prev => ({ ...prev, [i]: editor.isActive('underline') }));
+                              setCurrentStrikethroughStates(prev => ({ ...prev, [i]: editor.isActive('strike') }));
+                            } catch (e) {
+                              console.error("Error updating color from selection:", e);
+                            }
+                          };
+                          
+                          editor.on('selectionUpdate', updateColorFromSelection);
+                          editor.on('transaction', updateColorFromSelection);
                         }}
                       />
                     </div>
