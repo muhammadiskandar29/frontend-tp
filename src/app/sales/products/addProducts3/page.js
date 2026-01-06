@@ -191,9 +191,7 @@ export default function AddProducts3Page() {
         seconds: 0, 
         promoText: "Promo Berakhir Dalam:",
         textColor: "#e5e7eb",
-        bgColorHours: "#1f2937",
-        bgColorMinutes: "#1f2937",
-        bgColorSeconds: "#1f2937",
+        bgColor: "#1f2937",
         numberStyle: "flip"
       },
     };

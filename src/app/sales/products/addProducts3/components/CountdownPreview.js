@@ -8,9 +8,7 @@ export default function CountdownPreview({ data = {}, index }) {
   const seconds = data.seconds || 0;
   const promoText = data.promoText || "Promo Berakhir Dalam:";
   const textColor = data.textColor || "#e5e7eb";
-  const bgColorHours = data.bgColorHours || "#1f2937";
-  const bgColorMinutes = data.bgColorMinutes || "#1f2937";
-  const bgColorSeconds = data.bgColorSeconds || "#1f2937";
+  const bgColor = data.bgColor || "#1f2937";
   const numberStyle = data.numberStyle || "flip";
   
   const [timeLeft, setTimeLeft] = useState({
@@ -234,11 +232,11 @@ export default function CountdownPreview({ data = {}, index }) {
         alignItems: "center",
         flexWrap: "wrap"
       }}>
-        {renderNumber(formattedTime.hours, bgColorHours)}
+        {renderNumber(formattedTime.hours, bgColor)}
         <span style={{ fontSize: "40px", color: "#6b7280", fontWeight: "bold" }}>:</span>
-        {renderNumber(formattedTime.minutes, bgColorMinutes)}
+        {renderNumber(formattedTime.minutes, bgColor)}
         <span style={{ fontSize: "40px", color: "#6b7280", fontWeight: "bold" }}>:</span>
-        {renderNumber(formattedTime.seconds, bgColorSeconds)}
+        {renderNumber(formattedTime.seconds, bgColor)}
       </div>
       <div style={{ 
         display: "flex", 

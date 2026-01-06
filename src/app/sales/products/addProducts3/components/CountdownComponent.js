@@ -5,7 +5,7 @@ import { flushSync } from "react-dom";
 import { InputNumber } from "primereact/inputnumber";
 import { InputText } from "primereact/inputtext";
 import { Dropdown } from "primereact/dropdown";
-import { Clock } from "lucide-react";
+import { Clock, ChevronUp, ChevronDown } from "lucide-react";
 import ComponentWrapper from "./ComponentWrapper";
 
 export default function CountdownComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index, isExpanded, onToggleExpand }) {
@@ -14,9 +14,7 @@ export default function CountdownComponent({ data = {}, onUpdate, onMoveUp, onMo
   const seconds = data.seconds || 0;
   const promoText = data.promoText || "Promo Berakhir Dalam:";
   const textColor = data.textColor || "#e5e7eb";
-  const bgColorHours = data.bgColorHours || "#1f2937";
-  const bgColorMinutes = data.bgColorMinutes || "#1f2937";
-  const bgColorSeconds = data.bgColorSeconds || "#1f2937";
+  const bgColor = data.bgColor || "#1f2937";
   const numberStyle = data.numberStyle || "flip"; // flip, simple, modern
   
   const [timeLeft, setTimeLeft] = useState({
@@ -254,42 +252,209 @@ export default function CountdownComponent({ data = {}, onUpdate, onMoveUp, onMo
 
         <div className="form-field-group">
           <label className="form-label-small">Durasi Countdown</label>
-          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px", display: "block" }}>Jam</label>
-              <InputNumber
-                value={hours}
-                onValueChange={(e) => handleChange("hours", e.value || 0)}
-                min={0}
-                max={23}
-                className="w-full"
-                showButtons
-                buttonLayout="horizontal"
-              />
+          <div style={{ display: "flex", gap: "16px", alignItems: "flex-start", justifyContent: "center" }}>
+            {/* Jam */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+              <label style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>Jam</label>
+              <div style={{ 
+                display: "flex", 
+                flexDirection: "column", 
+                alignItems: "center",
+                border: "1px solid #e5e7eb",
+                borderRadius: "8px",
+                overflow: "hidden",
+                backgroundColor: "#ffffff"
+              }}>
+                <button
+                  type="button"
+                  onClick={() => handleChange("hours", Math.min(23, hours + 1))}
+                  style={{
+                    width: "60px",
+                    height: "32px",
+                    border: "none",
+                    borderBottom: "1px solid #e5e7eb",
+                    backgroundColor: "#f9fafb",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 0
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = "#f3f4f6"}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = "#f9fafb"}
+                >
+                  <ChevronUp size={14} color="#6b7280" />
+                </button>
+                <div style={{
+                  width: "60px",
+                  height: "60px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "28px",
+                  fontWeight: "bold",
+                  color: "#1f2937",
+                  fontFamily: "monospace"
+                }}>
+                  {String(hours).padStart(2, '0')}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleChange("hours", Math.max(0, hours - 1))}
+                  style={{
+                    width: "60px",
+                    height: "32px",
+                    border: "none",
+                    borderTop: "1px solid #e5e7eb",
+                    backgroundColor: "#f9fafb",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 0
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = "#f3f4f6"}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = "#f9fafb"}
+                >
+                  <ChevronDown size={14} color="#6b7280" />
+                </button>
+              </div>
             </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px", display: "block" }}>Menit</label>
-              <InputNumber
-                value={minutes}
-                onValueChange={(e) => handleChange("minutes", e.value || 0)}
-                min={0}
-                max={59}
-                className="w-full"
-                showButtons
-                buttonLayout="horizontal"
-              />
+
+            {/* Menit */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+              <label style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>Menit</label>
+              <div style={{ 
+                display: "flex", 
+                flexDirection: "column", 
+                alignItems: "center",
+                border: "1px solid #e5e7eb",
+                borderRadius: "8px",
+                overflow: "hidden",
+                backgroundColor: "#ffffff"
+              }}>
+                <button
+                  type="button"
+                  onClick={() => handleChange("minutes", Math.min(59, minutes + 1))}
+                  style={{
+                    width: "60px",
+                    height: "32px",
+                    border: "none",
+                    borderBottom: "1px solid #e5e7eb",
+                    backgroundColor: "#f9fafb",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 0
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = "#f3f4f6"}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = "#f9fafb"}
+                >
+                  <ChevronUp size={14} color="#6b7280" />
+                </button>
+                <div style={{
+                  width: "60px",
+                  height: "60px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "28px",
+                  fontWeight: "bold",
+                  color: "#1f2937",
+                  fontFamily: "monospace"
+                }}>
+                  {String(minutes).padStart(2, '0')}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleChange("minutes", Math.max(0, minutes - 1))}
+                  style={{
+                    width: "60px",
+                    height: "32px",
+                    border: "none",
+                    borderTop: "1px solid #e5e7eb",
+                    backgroundColor: "#f9fafb",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 0
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = "#f3f4f6"}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = "#f9fafb"}
+                >
+                  <ChevronDown size={14} color="#6b7280" />
+                </button>
+              </div>
             </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px", display: "block" }}>Detik</label>
-              <InputNumber
-                value={seconds}
-                onValueChange={(e) => handleChange("seconds", e.value || 0)}
-                min={0}
-                max={59}
-                className="w-full"
-                showButtons
-                buttonLayout="horizontal"
-              />
+
+            {/* Detik */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+              <label style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>Detik</label>
+              <div style={{ 
+                display: "flex", 
+                flexDirection: "column", 
+                alignItems: "center",
+                border: "1px solid #e5e7eb",
+                borderRadius: "8px",
+                overflow: "hidden",
+                backgroundColor: "#ffffff"
+              }}>
+                <button
+                  type="button"
+                  onClick={() => handleChange("seconds", Math.min(59, seconds + 1))}
+                  style={{
+                    width: "60px",
+                    height: "32px",
+                    border: "none",
+                    borderBottom: "1px solid #e5e7eb",
+                    backgroundColor: "#f9fafb",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 0
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = "#f3f4f6"}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = "#f9fafb"}
+                >
+                  <ChevronUp size={14} color="#6b7280" />
+                </button>
+                <div style={{
+                  width: "60px",
+                  height: "60px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "28px",
+                  fontWeight: "bold",
+                  color: "#1f2937",
+                  fontFamily: "monospace"
+                }}>
+                  {String(seconds).padStart(2, '0')}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleChange("seconds", Math.max(0, seconds - 1))}
+                  style={{
+                    width: "60px",
+                    height: "32px",
+                    border: "none",
+                    borderTop: "1px solid #e5e7eb",
+                    backgroundColor: "#f9fafb",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 0
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = "#f3f4f6"}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = "#f9fafb"}
+                >
+                  <ChevronDown size={14} color="#6b7280" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -328,55 +493,17 @@ export default function CountdownComponent({ data = {}, onUpdate, onMoveUp, onMo
         </div>
 
         <div className="form-field-group">
-          <label className="form-label-small">Background Jam</label>
+          <label className="form-label-small">Background</label>
           <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
             <input
               type="color"
-              value={bgColorHours}
-              onChange={(e) => handleChange("bgColorHours", e.target.value)}
+              value={bgColor}
+              onChange={(e) => handleChange("bgColor", e.target.value)}
               style={{ width: "50px", height: "40px", border: "1px solid #e5e7eb", borderRadius: "4px", cursor: "pointer" }}
             />
             <InputText
-              value={bgColorHours}
-              onChange={(e) => handleChange("bgColorHours", e.target.value)}
-              placeholder="#1f2937"
-              className="form-input"
-              style={{ flex: 1 }}
-            />
-          </div>
-        </div>
-
-        <div className="form-field-group">
-          <label className="form-label-small">Background Menit</label>
-          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-            <input
-              type="color"
-              value={bgColorMinutes}
-              onChange={(e) => handleChange("bgColorMinutes", e.target.value)}
-              style={{ width: "50px", height: "40px", border: "1px solid #e5e7eb", borderRadius: "4px", cursor: "pointer" }}
-            />
-            <InputText
-              value={bgColorMinutes}
-              onChange={(e) => handleChange("bgColorMinutes", e.target.value)}
-              placeholder="#1f2937"
-              className="form-input"
-              style={{ flex: 1 }}
-            />
-          </div>
-        </div>
-
-        <div className="form-field-group">
-          <label className="form-label-small">Background Detik</label>
-          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-            <input
-              type="color"
-              value={bgColorSeconds}
-              onChange={(e) => handleChange("bgColorSeconds", e.target.value)}
-              style={{ width: "50px", height: "40px", border: "1px solid #e5e7eb", borderRadius: "4px", cursor: "pointer" }}
-            />
-            <InputText
-              value={bgColorSeconds}
-              onChange={(e) => handleChange("bgColorSeconds", e.target.value)}
+              value={bgColor}
+              onChange={(e) => handleChange("bgColor", e.target.value)}
               placeholder="#1f2937"
               className="form-input"
               style={{ flex: 1 }}
@@ -402,11 +529,11 @@ export default function CountdownComponent({ data = {}, onUpdate, onMoveUp, onMo
               alignItems: "center",
               flexWrap: "wrap"
             }}>
-              {renderNumber(formattedTime.hours, bgColorHours)}
+              {renderNumber(formattedTime.hours, bgColor)}
               <span style={{ fontSize: "32px", color: "#6b7280", fontWeight: "bold" }}>:</span>
-              {renderNumber(formattedTime.minutes, bgColorMinutes)}
+              {renderNumber(formattedTime.minutes, bgColor)}
               <span style={{ fontSize: "32px", color: "#6b7280", fontWeight: "bold" }}>:</span>
-              {renderNumber(formattedTime.seconds, bgColorSeconds)}
+              {renderNumber(formattedTime.seconds, bgColor)}
             </div>
             <div style={{ 
               display: "flex", 
