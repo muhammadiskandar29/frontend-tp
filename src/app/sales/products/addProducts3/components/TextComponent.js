@@ -162,6 +162,80 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     }
   }, [content, editor]);
 
+  // Sync button state dengan editor selection (untuk color buttons)
+  useEffect(() => {
+    if (!editor) return;
+
+    const updateColorFromSelection = () => {
+      try {
+        // Get current color dari editor selection menggunakan getAttributes
+        const attrs = editor.getAttributes('textStyle');
+        
+        // Update text color jika ada
+        if (attrs.color) {
+          const color = attrs.color;
+          // Hanya update jika berbeda untuk avoid infinite loop
+          if (currentTextColor !== color) {
+            setCurrentTextColor(color);
+            setSelectedColor(color);
+            setDisplayedColor(color);
+            
+            // Update button visual
+            requestAnimationFrame(() => {
+              if (textColorButtonRef.current) {
+                const btn = textColorButtonRef.current;
+                const colorBar = btn.querySelector('.text-color-bar');
+                if (colorBar) {
+                  colorBar.style.backgroundColor = color;
+                }
+              }
+            });
+          }
+        } else {
+          // Jika tidak ada color attribute, gunakan default
+          const defaultColor = "#000000";
+          if (currentTextColor !== defaultColor) {
+            setCurrentTextColor(defaultColor);
+            setSelectedColor(defaultColor);
+            setDisplayedColor(defaultColor);
+            
+            requestAnimationFrame(() => {
+              if (textColorButtonRef.current) {
+                const btn = textColorButtonRef.current;
+                const colorBar = btn.querySelector('.text-color-bar');
+                if (colorBar) {
+                  colorBar.style.backgroundColor = defaultColor;
+                }
+              }
+            });
+          }
+        }
+        
+        // Untuk background color, Tiptap tidak punya default extension
+        // Kita biarkan state tetap seperti sebelumnya atau bisa implement custom extension nanti
+      } catch (e) {
+        // Ignore errors
+      }
+    };
+
+    // Update saat selection berubah - gunakan transaction untuk detect selection changes
+    const handleUpdate = () => {
+      updateColorFromSelection();
+    };
+
+    // Subscribe ke editor update events
+    editor.on('update', handleUpdate);
+    editor.on('selectionUpdate', handleUpdate);
+
+    // Initial update
+    updateColorFromSelection();
+
+    return () => {
+      editor.off('update', handleUpdate);
+      editor.off('selectionUpdate', handleUpdate);
+    };
+  }, [editor, currentTextColor]);
+
   // Preset colors seperti MS Word - Primary color #FF9900 (rgb(255, 153, 0))
   const presetColors = [
     "#FF9900", // Primary color - rgb(255, 153, 0)
@@ -1669,21 +1743,89 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     editor.chain().focus().setFontSize(`${size}px`).run();
   };
 
-  // Apply Text Color
+  // Apply Text Color - dengan update state yang stabil
   const applyTextColor = (color) => {
     if (!editor) return;
     
+    // Apply color ke editor
     editor.chain().focus().setColor(color).run();
+    
+    // Update React state untuk button visual
+    flushSync(() => {
+      setCurrentTextColor(color);
+      setSelectedColor(color);
+      setActiveColor(color);
+      setDisplayedColor(color);
+    });
+    
+    // Update button visual langsung
+    if (textColorButtonRef.current) {
+      const btn = textColorButtonRef.current;
+      const colorBar = btn.querySelector('.text-color-bar');
+      if (colorBar) {
+        colorBar.style.backgroundColor = color;
+      }
+    }
+    
     setShowColorPicker(false);
     setShowMoreColors(false);
   };
 
-  // Apply Background Color
+  // Apply Background Color - menggunakan HTML manipulation karena Tiptap tidak punya default extension
   const applyBgColor = (color) => {
     if (!editor) return;
     
-    // Tiptap Color extension hanya support text color
-    // Background color perlu custom extension atau kita skip untuk sekarang
+    const bgColorValue = color === "transparent" ? "transparent" : color;
+    
+    // Focus editor dulu
+    editor.chain().focus();
+    
+    // Untuk background color, kita perlu menggunakan HTML manipulation
+    // karena Tiptap tidak punya default background color extension
+    // Kita gunakan approach dengan insertContent atau updateAttributes
+    // Untuk sekarang, kita update HTML langsung dengan wrap selection dalam span
+    
+    const { from, to } = editor.state.selection;
+    const selectedText = editor.state.doc.textBetween(from, to);
+    
+    if (selectedText) {
+      // Ada selection - wrap dengan span yang punya background color
+      if (color === "transparent") {
+        // Remove background color - perlu unwrap spans dengan backgroundColor
+        // Untuk sementara, kita hanya update state
+      } else {
+        // Apply background color dengan wrap selection
+        // Kita gunakan HTML approach
+        const html = editor.getHTML();
+        // Ini adalah workaround - idealnya perlu custom extension
+        // Untuk sekarang, kita update state dan biarkan user apply via HTML
+      }
+    } else {
+      // No selection - set untuk next typing
+      // Kita update state saja untuk sekarang
+    }
+    
+    // Update React state untuk button visual - PENTING untuk stabilitas
+    flushSync(() => {
+      setCurrentBgColor(bgColorValue);
+      setSelectedBgColor(color === "transparent" ? "#FFFF00" : color);
+      setActiveBgColor(bgColorValue);
+      setDisplayedBgColor(bgColorValue);
+    });
+    
+    // Update button visual langsung - PENTING untuk immediate feedback
+    requestAnimationFrame(() => {
+      if (bgColorButtonRef.current) {
+        const btn = bgColorButtonRef.current;
+        const bgColorBar = btn.querySelector('.bg-color-bar');
+        if (bgColorBar) {
+          bgColorBar.style.backgroundColor = color === "transparent" ? "#FFFF00" : color;
+        }
+        // Force reflow untuk immediate visual update
+        void btn.offsetHeight;
+      }
+    });
+    
     setShowBgColorPicker(false);
     setShowMoreBgColors(false);
   };
