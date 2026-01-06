@@ -787,7 +787,7 @@ background-color: white;
 
 .pengaturan-content .p-dropdown-item,
 .pengaturan-content .p-multiselect-item {
-  color: #3b82f6 !important;
+  color: #F1A124 !important;
   padding: 8px 12px !important;
   background: transparent !important;
   background-color: transparent !important;
@@ -803,7 +803,7 @@ background-color: white;
 .pengaturan-content .p-multiselect-item.p-highlight {
   background: #f3f4f6 !important;
   background-color: #f3f4f6 !important;
-  color: #3b82f6 !important;
+  color: #F1A124 !important;
 }
 
 /* ===== BODY & HTML OVERFLOW FIX ===== */
@@ -1583,12 +1583,12 @@ html:has(.add-products3-container) {
 
 /* ===== SELECTED DATE - BLUE BACKGROUND (Like in Image) ===== */
 .pengaturan-input .p-datepicker-calendar td > span.p-highlight {
-  background: #3b82f6 !important;
-  background-color: #3b82f6 !important;
+  background: #F1A124 !important;
+  background-color: #F1A124 !important;
   color: #ffffff !important;
   font-weight: 600 !important;
-  border: 2px solid #2563eb !important;
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3) !important;
+  border: 2px solid #F1A124 !important;
+  box-shadow: 0 2px 4px rgba(241, 161, 36, 0.3) !important;
 }
 
 /* ===== TODAY DATE - LIGHT GRAY BACKGROUND ===== */
@@ -1705,16 +1705,16 @@ html:has(.add-products3-container) {
 }
 
 .pengaturan-input .p-datepicker-buttonbar .p-button.p-button-primary {
-  background: #3b82f6 !important;
-  border-color: #3b82f6 !important;
+  background: #F1A124 !important;
+  border-color: #F1A124 !important;
   color: #ffffff !important;
 }
 
 .pengaturan-input .p-datepicker-buttonbar .p-button.p-button-primary:hover {
-  background: #2563eb !important;
-  border-color: #2563eb !important;
+  background: #F1A124 !important;
+  border-color: #F1A124 !important;
   transform: translateY(-1px) !important;
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3) !important;
+  box-shadow: 0 2px 4px rgba(241, 161, 36, 0.3) !important;
 }
 
 .pengaturan-input .p-datepicker-buttonbar .p-button.p-button-primary:active {
@@ -2651,7 +2651,7 @@ html:has(.add-products3-container) {
 .upload-text {
   font-weight: 600;
   font-size: 14px;
-  color: #3b82f6;
+  color: #F1A124;
   margin-bottom: 4px;
 }
 
@@ -2668,7 +2668,7 @@ html:has(.add-products3-container) {
 
 .uploaded-image-preview-box {
   position: relative;
-  border: 2px solid #3b82f6;
+  border: 2px solid #F1A124;
   border-radius: 8px;
   overflow: hidden;
   background: #ffffff;
@@ -2745,7 +2745,7 @@ html:has(.add-products3-container) {
 }
 
 .add-image-link {
-  color: #3b82f6;
+  color: #F1A124;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -2755,8 +2755,40 @@ html:has(.add-products3-container) {
 }
 
 .add-image-link:hover {
-  color: #2563eb;
+  color: #F1A124;
   text-decoration: underline;
+}
+
+/* Meta Upload Label */
+.meta-upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  border: 2px dashed #F1A124;
+  border-radius: 8px;
+  background: #fffbeb;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  gap: 8px;
+}
+
+.meta-upload-label:hover {
+  border-color: #F1A124;
+  background: #fff7e6;
+}
+
+.meta-upload-label span {
+  color: #F1A124;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.meta-upload-label small {
+  color: #6b7280;
+  font-size: 12px;
 }
 
 /* ===== ADVANCE SECTION - Enhanced ===== */
@@ -2864,8 +2896,8 @@ html:has(.add-products3-container) {
 }
 
 .advance-bg-type-btn.active {
-  background: #3b82f6;
-  border-color: #3b82f6;
+  background: #F1A124;
+  border-color: #F1A124;
   color: #ffffff;
 }
 
@@ -2906,8 +2938,8 @@ html:has(.add-products3-container) {
 }
 
 .advance-device-btn.active {
-  background: #3b82f6;
-  border-color: #3b82f6;
+  background: #F1A124;
+  border-color: #F1A124;
   color: #ffffff;
 }
 
@@ -2994,8 +3026,8 @@ html:has(.add-products3-container) {
 }
 
 .advance-toggle-btn.active {
-  background: #3b82f6;
-  border-color: #3b82f6;
+  background: #F1A124;
+  border-color: #F1A124;
   color: #ffffff;
 }
 
@@ -3120,8 +3152,8 @@ html:has(.add-products3-container) {
 }
 
 .aspect-ratio-btn.active {
-  background: #3b82f6;
-  border-color: #3b82f6;
+  background: #F1A124;
+  border-color: #F1A124;
   color: #ffffff;
 }
 
@@ -3163,7 +3195,7 @@ html:has(.add-products3-container) {
 .p-slider .p-slider-handle {
   width: 18px;
   height: 18px;
-  background: #3b82f6;
+  background: #F1A124;
   border: 2px solid #ffffff;
   border-radius: 50%;
   transition: all 0.2s ease;
@@ -3171,17 +3203,17 @@ html:has(.add-products3-container) {
 }
 
 .p-slider .p-slider-handle:hover {
-  background: #2563eb;
+  background: #F1A124;
   transform: scale(1.1);
 }
 
 .p-slider .p-slider-handle:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  box-shadow: 0 0 0 3px rgba(241, 161, 36, 0.2);
 }
 
 .p-slider .p-slider-range {
-  background: #3b82f6;
+  background: #F1A124;
 }
 
 .p-slider .p-slider-track {
@@ -4683,8 +4715,8 @@ html:has(.add-products3-container) {
 
 .compact-input:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #F1A124;
+  box-shadow: 0 0 0 3px rgba(241, 161, 36, 0.1);
 }
 
 .compact-textarea {
@@ -4704,8 +4736,8 @@ html:has(.add-products3-container) {
 }
 
 .wa-input-wrapper:focus-within {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #F1A124;
+  box-shadow: 0 0 0 3px rgba(241, 161, 36, 0.1);
 }
 
 .wa-prefix {
@@ -5069,7 +5101,7 @@ html:has(.add-products3-container) {
 
 .rincian-pesanan-card {
   background: white;
-  border: 1px solid #3b82f6;
+  border: 1px solid #F1A124;
   border-radius: 8px;
   padding: 16px;
   box-sizing: border-box;
@@ -5684,15 +5716,15 @@ html:has(.add-products3-container) {
 
 .icon-color-swatch:hover {
   transform: scale(1.1);
-  border-color: #3b82f6;
+  border-color: #F1A124;
   z-index: 1;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .icon-color-swatch.selected {
-  border-color: #3b82f6;
+  border-color: #F1A124;
   border-width: 2px;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  box-shadow: 0 0 0 2px rgba(241, 161, 36, 0.2);
 }
 
 /* Icon Picker Trigger */
@@ -5712,7 +5744,7 @@ html:has(.add-products3-container) {
 }
 
 .icon-picker-trigger:hover {
-  border-color: #3b82f6;
+  border-color: #F1A124;
 }
 
 /* Icon Picker Grid */
@@ -5742,7 +5774,7 @@ html:has(.add-products3-container) {
 }
 
 .icon-picker-item:hover {
-  border-color: #3b82f6;
+  border-color: #F1A124;
   background: #f0f9ff;
   transform: scale(1.05);
 }

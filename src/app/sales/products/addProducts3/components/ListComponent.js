@@ -91,7 +91,7 @@ const PRESET_ICON_COLORS = [
   "#10b981", // Green
   "#f59e0b", // Yellow
   "#ef4444", // Red
-  "#3b82f6", // Blue
+  "#F1A124", // Orange
 ];
 
 // Preset colors untuk text editor (sama seperti TextComponent)
@@ -1220,7 +1220,7 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
                           className={`icon-color-swatch ${iconColor === color ? "selected" : ""}`}
                           style={{ 
                             backgroundColor: color,
-                            border: iconColor === color ? "2px solid #3b82f6" : "1px solid #e5e7eb"
+                            border: iconColor === color ? "2px solid #F1A124" : "1px solid #e5e7eb"
                           }}
                           onClick={() => updateItem(i, "iconColor", color)}
                           title={color}

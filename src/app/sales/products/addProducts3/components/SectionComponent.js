@@ -301,10 +301,10 @@ export default function SectionComponent({
   const presetBorderColors = [
     "#FF9900", // Primary
     "#000000",
-    "#3b82f6",
+    "#F1A124",
     "#10b981",
     "#ef4444",
-    "linear-gradient(90deg, #3b82f6 0%, #ef4444 100%)",
+    "linear-gradient(90deg, #F1A124 0%, #ef4444 100%)",
   ];
 
   return (
