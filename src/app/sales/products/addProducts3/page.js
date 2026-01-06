@@ -39,9 +39,11 @@ import {
   AnimationComponent,
   CountdownComponent,
   ImageSliderComponent,
+  QuotaInfoComponent,
 } from './components';
 import CountdownPreview from './components/CountdownPreview';
 import ImageSliderPreview from './components/ImageSliderPreview';
+import QuotaInfoPreview from './components/QuotaInfoPreview';
 // PrimeReact Theme & Core
 import "primereact/resources/themes/lara-light-amber/theme.css";
 import "primereact/resources/primereact.min.css";
@@ -68,6 +70,7 @@ const COMPONENT_CATEGORIES = {
       { id: "faq", name: "FAQ", icon: HelpCircle, color: "#6b7280" },
       { id: "countdown", name: "Countdown", icon: Clock, color: "#6b7280" },
       { id: "image-slider", name: "Image Slider", icon: ImageIcon, color: "#6b7280" },
+      { id: "quota-info", name: "Info Kuota", icon: Users, color: "#6b7280" },
     ]
   }
 };
@@ -165,6 +168,13 @@ export default function AddProducts3Page() {
         autoslide: false,
         autoslideDuration: 5,
         showCaption: false
+      },
+      "quota-info": {
+        totalKuota: 60,
+        sisaKuota: 47,
+        headline: "Sisa kuota terbatas!",
+        subtext: "Jangan tunda lagi, amankan kursi Anda sebelum kuota habis.",
+        highlightText: "Daftar sekarang sebelum kehabisan."
       },
       button: { text: "Klik Disini", link: "#", style: "primary" },
       embed: { code: "" },
@@ -394,6 +404,8 @@ export default function AddProducts3Page() {
         return <CountdownComponent {...commonProps} />;
       case "image-slider":
         return <ImageSliderComponent {...commonProps} />;
+      case "quota-info":
+        return <QuotaInfoComponent {...commonProps} />;
       default:
         return <div>Unknown component: {block.type}</div>;
     }
@@ -1252,6 +1264,8 @@ export default function AddProducts3Page() {
         return <CountdownPreview data={block.data || {}} index={block.id} />;
       case "image-slider":
         return <ImageSliderPreview data={block.data || {}} />;
+      case "quota-info":
+        return <QuotaInfoPreview data={block.data || {}} />;
       case "section":
         const sectionData = block.data || {};
         const sectionComponentId = sectionData.componentId || `section-${block.id}`;
@@ -1546,15 +1560,10 @@ export default function AddProducts3Page() {
   // Handler untuk update form pengaturan
   const handlePengaturanChange = (key, value) => {
     if (key === "nama") {
-      // Auto-generate kode dan URL dari nama
-      const kode = generateKode(value);
-      const url = kode ? `/${kode}` : "";
-      console.log("[AUTO-GENERATE] Nama:", value, "→ Kode:", kode, "→ URL:", url);
+      // Nama produk tidak auto-generate kode dan URL
       setPengaturanForm((prev) => ({ 
         ...prev, 
-        nama: value,
-        kode: kode,
-        url: url
+        nama: value
       }));
       
       // Update nama produk di Rincian Pemesanan
@@ -1564,6 +1573,15 @@ export default function AddProducts3Page() {
           namaElement.textContent = value || "Nama Produk";
         }
       });
+    } else if (key === "kode") {
+      // Kode produk bisa custom ketik bebas
+      // URL auto-generate dari kode produk
+      const url = value ? `/${generateKode(value)}` : "";
+      setPengaturanForm((prev) => ({ 
+        ...prev, 
+        kode: value,
+        url: url
+      }));
     } else {
       setPengaturanForm((prev) => ({ ...prev, [key]: value }));
       
@@ -1891,11 +1909,10 @@ export default function AddProducts3Page() {
                     <InputText
                       className="pengaturan-input"
                       value={pengaturanForm.kode || ""}
-                      placeholder="Otomatis dari nama produk"
-                      readOnly
-                      style={{ background: "#f9fafb", cursor: "not-allowed" }}
+                      onChange={(e) => handlePengaturanChange("kode", e.target.value)}
+                      placeholder="Masukkan kode produk (custom)"
                     />
-                    <small className="pengaturan-hint">Kode otomatis di-generate dari nama produk</small>
+                    <small className="pengaturan-hint">Kode produk dapat diketik bebas, URL akan otomatis di-generate dari kode produk</small>
                   </div>
 
                   <div className="pengaturan-form-group">

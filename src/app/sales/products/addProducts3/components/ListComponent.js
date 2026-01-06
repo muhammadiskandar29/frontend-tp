@@ -21,7 +21,7 @@ import {
   ArrowUp, ArrowDown, ArrowUpCircle, ArrowDownCircle, PlayCircle,
   PauseCircle, StopCircle, Radio, Square, Hexagon, Triangle,
   AlertCircle, Info, HelpCircle, Ban, Shield, Key, Unlock,
-  Image as ImageIcon, Smile
+  Image as ImageIcon, Smile, MapPin, Calendar, Clock
 } from "lucide-react";
 import ComponentWrapper from "./ComponentWrapper";
 
@@ -80,6 +80,9 @@ const ICON_OPTIONS = [
   { name: "Shield", component: Shield },
   { name: "Key", component: Key },
   { name: "Unlock", component: Unlock },
+  { name: "MapPin", component: MapPin },
+  { name: "Calendar", component: Calendar },
+  { name: "Clock", component: Clock },
 ];
 
 // Preset colors untuk icon
