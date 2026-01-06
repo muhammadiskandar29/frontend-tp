@@ -25,6 +25,7 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import FontFamily from '@tiptap/extension-font-family';
 import Color from '@tiptap/extension-color';
 import { FontSize } from './extensions/FontSize';
+import { DOMSerializer } from 'prosemirror-model';
 
 export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index, isExpanded, onToggleExpand }) {
   const content = data.content || "<p>Text Baru</p>";
@@ -1771,7 +1772,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     setShowMoreColors(false);
   };
 
-  // Apply Background Color - menggunakan HTML manipulation karena Tiptap tidak punya default extension
+  // Apply Background Color - menggunakan Tiptap dengan delete dan insert
   const applyBgColor = (color) => {
     if (!editor) return;
     
@@ -1780,29 +1781,70 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     // Focus editor dulu
     editor.chain().focus();
     
-    // Untuk background color, kita perlu menggunakan HTML manipulation
-    // karena Tiptap tidak punya default background color extension
-    // Kita gunakan approach dengan insertContent atau updateAttributes
-    // Untuk sekarang, kita update HTML langsung dengan wrap selection dalam span
-    
     const { from, to } = editor.state.selection;
-    const selectedText = editor.state.doc.textBetween(from, to);
+    const isEmpty = from === to;
     
-    if (selectedText) {
+    if (isEmpty) {
+      // No selection - set untuk next typing
+      // Kita hanya update state untuk next typing
+      // Background color akan diterapkan saat user mengetik (perlu custom extension untuk ini)
+    } else {
       // Ada selection - wrap dengan span yang punya background color
       if (color === "transparent") {
-        // Remove background color - perlu unwrap spans dengan backgroundColor
-        // Untuk sementara, kita hanya update state
-      } else {
-        // Apply background color dengan wrap selection
-        // Kita gunakan HTML approach
+        // Remove background color - ambil HTML, remove backgroundColor dari spans
         const html = editor.getHTML();
-        // Ini adalah workaround - idealnya perlu custom extension
-        // Untuk sekarang, kita update state dan biarkan user apply via HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        
+        // Cari semua span dengan backgroundColor dan remove
+        const spansWithBg = tempDiv.querySelectorAll('span[style*="background-color"], span[style*="background-color"]');
+        spansWithBg.forEach(span => {
+          const style = span.getAttribute('style') || '';
+          const newStyle = style
+            .split(';')
+            .map(s => s.trim())
+            .filter(s => s && !s.toLowerCase().startsWith('background-color'))
+            .join(';')
+            .trim();
+          
+          if (newStyle) {
+            span.setAttribute('style', newStyle);
+          } else {
+            // Unwrap span jika tidak ada style lain
+            const parent = span.parentNode;
+            while (span.firstChild) {
+              parent.insertBefore(span.firstChild, span);
+            }
+            parent.removeChild(span);
+          }
+        });
+        
+        // Update editor dengan HTML yang sudah dibersihkan
+        const newHTML = tempDiv.innerHTML;
+        editor.commands.setContent(newHTML);
+      } else {
+        // Apply background color - extract HTML dari selection, wrap dengan span
+        // Gunakan Tiptap's DOMSerializer untuk preserve formatting
+        
+        // Extract fragment dari selection
+        const fragment = editor.state.doc.slice(from, to);
+        
+        // Serialize fragment ke HTML menggunakan DOMSerializer
+        const serializer = DOMSerializer.fromSchema(editor.state.schema);
+        const serializedFragment = serializer.serializeFragment(fragment.content);
+        
+        // Convert serialized fragment ke HTML string
+        const tempDiv = document.createElement('div');
+        tempDiv.appendChild(serializedFragment);
+        const selectedHTML = tempDiv.innerHTML;
+        
+        // Wrap selected HTML dengan span yang punya backgroundColor
+        const wrappedContent = `<span style="background-color: ${color}">${selectedHTML}</span>`;
+        
+        // Delete selection dan insert wrapped content
+        editor.commands.deleteSelection();
+        editor.commands.insertContent(wrappedContent);
       }
-    } else {
-      // No selection - set untuk next typing
-      // Kita update state saja untuk sekarang
     }
     
     // Update React state untuk button visual - PENTING untuk stabilitas
