@@ -1266,8 +1266,8 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           if (newHTML !== content && content !== undefined) {
             initializeProseMirror();
           }
-        }
-      }, 100);
+          }
+        }, 100);
       
       return () => clearTimeout(timeoutId);
     }
@@ -1842,7 +1842,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       if (color === "transparent") {
         // Remove highlight
         editor.chain().focus().unsetHighlight().run();
-      } else {
+          } else {
         // Apply highlight dengan color menggunakan toggleHighlight
         // toggleHighlight({ color }) akan apply color jika belum ada, atau remove jika sudah ada dengan color yang sama
         const currentHighlight = editor.getAttributes('highlight');

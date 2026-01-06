@@ -178,6 +178,8 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   const editorRefs = useRef({}); // Tiptap editor instances
   const textColorButtonRefs = useRef({});
   const bgColorButtonRefs = useRef({});
+  const lastUsedStylesRefs = useRef({}); // Legacy ref untuk backward compatibility
+  const savedSelectionRefs = useRef({}); // Legacy ref untuk backward compatibility (tidak digunakan lagi dengan Tiptap)
   
   // State untuk setiap editor (per item index)
   const [currentTextColors, setCurrentTextColors] = useState({});
