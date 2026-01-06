@@ -17,14 +17,14 @@ import {
 } from "lucide-react";
 import ComponentWrapper from "./ComponentWrapper";
 
-// ProseMirror imports
-import { Schema, DOMParser, DOMSerializer } from "prosemirror-model";
-import { EditorState, Plugin } from "prosemirror-state";
-import { EditorView } from "prosemirror-view";
-import { toggleMark } from "prosemirror-commands";
-import { keymap } from "prosemirror-keymap";
-import { history, redo, undo } from "prosemirror-history";
-import { baseKeymap } from "prosemirror-commands";
+// Tiptap imports
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import UnderlineExtension from '@tiptap/extension-underline';
+import TextStyle from '@tiptap/extension-text-style';
+import FontFamily from '@tiptap/extension-font-family';
+import Color from '@tiptap/extension-color';
+import { FontSize } from './extensions/FontSize';
 
 export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index, isExpanded, onToggleExpand }) {
   const content = data.content || "<p>Text Baru</p>";
@@ -93,54 +93,55 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   
   const colorPickerRef = useRef(null);
   const bgColorPickerRef = useRef(null);
-  const editorRef = useRef(null);
-  const editorViewRef = useRef(null);
-  const savedSelectionRef = useRef(null);
-  const boldButtonRef = useRef(null);
-  const italicButtonRef = useRef(null);
-  const underlineButtonRef = useRef(null);
-  const strikethroughButtonRef = useRef(null);
-  const textColorButtonRef = useRef(null);
-  const bgColorButtonRef = useRef(null);
   
-  // Ref untuk tracking apakah state aktif sudah di-initialize dari DOM
-  const isActiveStateInitializedRef = useRef(false);
-
-  // ===== PROSEMIRROR SCHEMA =====
-  // Schema dasar: paragraph, text, marks (bold, underline)
-  const prosemirrorSchema = new Schema({
-    nodes: {
-      doc: {
-        content: "paragraph+"
-      },
-      paragraph: {
-        content: "inline*",
-        group: "block",
-        parseDOM: [{ tag: "p" }],
-        toDOM: () => ["p", 0]
-      },
-      text: {
-        group: "inline"
-      }
+  // ===== TIPTAP EDITOR SETUP =====
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      UnderlineExtension,
+      TextStyle,
+      FontFamily.configure({
+        types: ['textStyle'],
+      }),
+      FontSize,
+      Color.configure({
+        types: ['textStyle'],
+      }),
+    ],
+    content: content || '<p></p>',
+    onUpdate: ({ editor }) => {
+      // Export HTML on every change
+      const html = editor.getHTML();
+      flushSync(() => {
+        handleChange("content", html);
+      });
     },
-    marks: {
-      bold: {
-        parseDOM: [
-          { tag: "strong" },
-          { tag: "b", getAttrs: () => ({}) },
-          { style: "font-weight", getAttrs: (value) => /^(bold|bolder|[5-9]\d{2,})$/.test(value) && null }
-        ],
-        toDOM: () => ["strong", 0]
+    editorProps: {
+      attributes: {
+        class: 'rich-text-editor',
+        style: `
+          min-height: 200px;
+          padding: 12px 14px;
+          line-height: ${lineHeight};
+          font-family: ${fontFamily !== "Page Font" ? fontFamily : "inherit"};
+          color: ${textColor};
+          text-align: ${textAlign};
+          font-size: 16px;
+        `,
       },
-      underline: {
-        parseDOM: [
-          { tag: "u" },
-          { style: "text-decoration", getAttrs: (value) => value === "underline" && null }
-        ],
-        toDOM: () => ["u", 0]
+    },
+  });
+
+  // Update editor content when content prop changes externally
+  useEffect(() => {
+    if (editor && content !== undefined) {
+      const currentHTML = editor.getHTML();
+      // Only update if content changed externally (not from our own updates)
+      if (currentHTML !== content) {
+        editor.commands.setContent(content || '<p></p>');
       }
     }
-  });
+  }, [content, editor]);
 
   // Preset colors seperti MS Word - Primary color #FF9900 (rgb(255, 153, 0))
   const presetColors = [
@@ -1095,743 +1096,11 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     }
   };
 
-  // ===== ULTRA SIMPLE & DIRECT: Apply Text Color Function =====
-  const applyTextColor = (color) => {
-    if (!editorRef.current) return;
-    
-    // ===== STEP 1: Get current state FIRST =====
-    const selection = window.getSelection();
-    let range = null;
-    
-    if (selection.rangeCount > 0) {
-      range = selection.getRangeAt(0);
-      if (!editorRef.current.contains(range.commonAncestorContainer)) {
-        range = null;
-      }
-    }
-    
-    if (!range && savedSelectionRef.current) {
-      try {
-        const saved = savedSelectionRef.current;
-        range = document.createRange();
-        range.setStart(saved.startContainer, saved.startOffset);
-        range.setEnd(saved.endContainer, saved.endOffset);
-        if (editorRef.current.contains(range.commonAncestorContainer)) {
-          selection.removeAllRanges();
-          selection.addRange(range);
-        } else {
-          range = null;
-        }
-      } catch (e) {
-        range = null;
-      }
-    }
-    
-    if (!range) {
-      range = document.createRange();
-      range.selectNodeContents(editorRef.current);
-      range.collapse(false);
-      selection.removeAllRanges();
-      selection.addRange(range);
-    }
-    
-    // ===== STEP 2: Update React State FIRST with flushSync =====
-    // Update React state FIRST to sync className, then update DOM
-    flushSync(() => {
-      setActiveColor(color);
-      setDisplayedColor(color);
-      setSelectedColor(color);
-      setCurrentTextColor(color);
-    });
-    
-    // ===== STEP 3: Update Button Visual DIRECTLY (INSTANT - no delay) =====
-    // Update button DIRECTLY via DOM - after React state update
-    if (textColorButtonRef.current) {
-      const btn = textColorButtonRef.current;
-      const colorBar = btn.querySelector('.text-color-bar');
-      if (colorBar) {
-        colorBar.style.backgroundColor = color;
-      }
-      // Force immediate visual update
-      void btn.offsetHeight;
-    }
-    
-    // Focus editor
-    editorRef.current.focus();
-    
-    // ===== STEP 4: Apply to Editor =====
-    if (range.collapsed) {
-      // Collapsed cursor
-      let node = range.startContainer;
-      if (node.nodeType === Node.TEXT_NODE) {
-        node = node.parentElement;
-      }
-      
-      const isInStyleMarker = node.tagName === "SPAN" && 
-        (node.textContent === "\u200B" || node.innerHTML === "\u200B");
-      
-      if (isInStyleMarker) {
-        // Update existing marker
-        node.style.color = color;
-        node.style.fontSize = `${activeFontSize}px`;
-        node.style.fontWeight = activeBold ? "bold" : "normal";
-        node.style.fontStyle = activeItalic ? "italic" : "normal";
-        node.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
-        if (activeUnderline) {
-          node.style.setProperty("text-decoration-color", color, "important");
-          node.style.setProperty("-webkit-text-decoration-color", color, "important");
-        }
-        if (activeBgColor !== "transparent") {
-          node.style.backgroundColor = activeBgColor;
-        } else {
-          node.style.backgroundColor = "";
-        }
-        
-        const newRange = document.createRange();
-        newRange.setStartAfter(node);
-        newRange.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
-        
-        savedSelectionRef.current = {
-          range: newRange.cloneRange(),
-          startContainer: newRange.startContainer,
-          startOffset: newRange.startOffset,
-          endContainer: newRange.endContainer,
-          endOffset: newRange.endOffset,
-          collapsed: true,
-          text: ""
-        };
-      } else {
-        // Create new style marker with VISIBLE placeholder for visual feedback
-        const span = document.createElement("span");
-        span.style.fontSize = `${activeFontSize}px`;
-        span.style.color = color;
-        span.style.fontWeight = activeBold ? "bold" : "normal";
-        span.style.fontStyle = activeItalic ? "italic" : "normal";
-        span.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
-        if (activeUnderline) {
-          span.style.setProperty("text-decoration-color", color, "important");
-          span.style.setProperty("-webkit-text-decoration-color", color, "important");
-        }
-        if (activeBgColor !== "transparent") {
-          span.style.backgroundColor = activeBgColor;
-        }
-        
-        // Insert visible placeholder character that will be replaced when typing
-        // Use a very thin space that's barely visible but shows the style
-        span.innerHTML = "\u2009"; // Thin space (more visible than zero-width)
-        
-        range.insertNode(span);
-        
-        // Force immediate visual update
-        void span.offsetHeight;
-        
-        const newRange = document.createRange();
-        newRange.setStart(span, 0);
-        newRange.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
-        
-        savedSelectionRef.current = {
-          range: newRange.cloneRange(),
-          startContainer: newRange.startContainer,
-          startOffset: newRange.startOffset,
-          endContainer: newRange.endContainer,
-          endOffset: newRange.endOffset,
-          collapsed: true,
-          text: ""
-        };
-        
-        // Replace thin space with zero-width space after a brief moment (for next typing)
-        setTimeout(() => {
-          if (span && span.textContent === "\u2009") {
-            span.innerHTML = "\u200B";
-          }
-        }, 100);
-      }
-    } else {
-      // Has selection - apply to selection
-      document.execCommand("foreColor", false, color);
-      
-      // Also manually apply color to ensure it works
-      const walker = document.createTreeWalker(
-        range.commonAncestorContainer,
-        NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT,
-        {
-          acceptNode: (node) => {
-            if (node.nodeType === Node.TEXT_NODE) {
-              return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
-            }
-            return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
-          }
-        }
-      );
-      
-      let node;
-      while (node = walker.nextNode()) {
-        if (node.nodeType === Node.TEXT_NODE) {
-          let parent = node.parentElement;
-          if (parent && parent.tagName !== "SPAN") {
-            const span = document.createElement("span");
-            span.style.color = color;
-            try {
-              parent.insertBefore(span, node);
-              span.appendChild(node);
-            } catch (e) {
-              // Skip if error
-            }
-          } else if (parent && parent.style) {
-            parent.style.color = color;
-          }
-        } else if (node.nodeType === Node.ELEMENT_NODE && node.style) {
-          node.style.color = color;
-        }
-      }
-    }
-    
-    lastUsedStylesRef.current.color = color;
-    
-    // Trigger input to save - INSTANT canvas update
-    handleEditorInput();
-    
-    // Also update underline color to match text color - run in background, don't block canvas
-    setTimeout(() => {
-      try {
-        // Get the range after foreColor is applied
-        const range = selection.getRangeAt(0);
-        
-        // Helper function to update underline color on an element
-        const updateUnderlineColor = (element) => {
-          if (!element || !element.style) return;
-          try {
-                const computedStyle = window.getComputedStyle(element);
-                const hasUnderline = computedStyle.textDecoration.includes("underline") || 
-                                     element.tagName === "U" ||
-                                 (element.style.textDecoration && 
-                                      element.style.textDecoration.includes("underline"));
-                
-            if (hasUnderline) {
-                  element.style.setProperty("text-decoration-color", color, "important");
-                  element.style.setProperty("-webkit-text-decoration-color", color, "important");
-              }
-            } catch (e) {
-              // Skip if error
-            }
-        };
-        
-        // Method 1: Update all U tags in the entire editor that have the same color
-        const allUTags = editorRef.current.querySelectorAll("u");
-        allUTags.forEach(uTag => {
-          try {
-            // Check if this U tag has the same text color as the applied color
-            const computedStyle = window.getComputedStyle(uTag);
-            const textColor = computedStyle.color;
-            const colorMatches = textColor === color || 
-                               (textColor.includes("rgb") && color.includes("rgb") && 
-                                textColor.replace(/\s/g, "") === color.replace(/\s/g, ""));
-            
-            // Also check if it's in the selection
-            const inSelection = range.intersectsNode(uTag);
-            
-            if (inSelection || colorMatches) {
-              updateUnderlineColor(uTag);
-            }
-          } catch (e) {
-            // Skip if error
-          }
-        });
-        
-        // Method 2: Find all elements with underline in selection and update them
-        const container = range.commonAncestorContainer;
-        const parent = container.nodeType === Node.ELEMENT_NODE ? container : container.parentElement;
-        
-        if (parent && editorRef.current.contains(parent)) {
-          // Get all elements that intersect with selection
-          const allElements = parent.querySelectorAll("*");
-          
-          allElements.forEach(element => {
-            try {
-              if (range.intersectsNode(element)) {
-                updateUnderlineColor(element);
-              }
-            } catch (e) {
-              // Skip if error
-            }
-          });
-        }
-        
-        // Method 3: Walk up the DOM tree from selection start and update all parents
-        let checkNode = range.startContainer;
-        if (checkNode.nodeType === Node.TEXT_NODE) {
-          checkNode = checkNode.parentElement;
-        }
-        
-        while (checkNode && checkNode !== editorRef.current) {
-          updateUnderlineColor(checkNode);
-          checkNode = checkNode.parentElement;
-        }
-        
-        // Method 4: Find ALL elements with underline in the entire editor and update if they have matching color
-        const allElementsWithUnderline = editorRef.current.querySelectorAll("*");
-        allElementsWithUnderline.forEach(element => {
-          try {
-            if (!element.style) return;
-            const computedStyle = window.getComputedStyle(element);
-              const hasUnderline = computedStyle.textDecoration.includes("underline") || 
-                               element.tagName === "U";
-              
-              if (hasUnderline) {
-              // Check if text color matches the applied color
-              const textColor = computedStyle.color;
-              const colorMatches = textColor === color || 
-                                 (textColor.includes("rgb") && color.includes("rgb") && 
-                                  textColor.replace(/\s/g, "") === color.replace(/\s/g, ""));
-              
-              // Also check if it's in the selection
-              const inSelection = range.intersectsNode(element);
-              
-              if (inSelection || colorMatches) {
-                updateUnderlineColor(element);
-              }
-            }
-          } catch (e) {
-            // Skip if error
-          }
-        });
-        
-        // Method 5: Update all elements with inline style that have underline
-        const allStyledElements = editorRef.current.querySelectorAll("[style*='text-decoration']");
-        allStyledElements.forEach(element => {
-          try {
-            if (range.intersectsNode(element)) {
-              updateUnderlineColor(element);
-            }
-          } catch (e) {
-            // Skip if error
-          }
-        });
-      } catch (e) {
-        console.error("Error updating underline color:", e);
-      }
-      
-      restoreSelection();
-      // State already updated above for immediate responsiveness
-      setShowColorPicker(false);
-      handleEditorInput();
-      // Force immediate style detection for button states - run in background, don't block canvas
-      setTimeout(() => {
-        detectStyles();
-      }, 0);
-    });
-  };
+  // applyTextColor lama dihapus - menggunakan versi Tiptap di bawah
 
-  // ===== ULTRA SIMPLE & DIRECT: Apply Background Color Function =====
-  const applyBgColor = (color) => {
-    if (!editorRef.current) return;
-    
-    // ===== STEP 1: Get current state FIRST =====
-    const selection = window.getSelection();
-    let range = null;
-    
-    if (selection.rangeCount > 0) {
-      range = selection.getRangeAt(0);
-      if (!editorRef.current.contains(range.commonAncestorContainer)) {
-        range = null;
-      }
-    }
-    
-    if (!range && savedSelectionRef.current) {
-      try {
-        const saved = savedSelectionRef.current;
-        range = document.createRange();
-        range.setStart(saved.startContainer, saved.startOffset);
-        range.setEnd(saved.endContainer, saved.endOffset);
-        if (editorRef.current.contains(range.commonAncestorContainer)) {
-          selection.removeAllRanges();
-          selection.addRange(range);
-        } else {
-          range = null;
-        }
-      } catch (e) {
-        range = null;
-      }
-    }
-    
-    if (!range) {
-      range = document.createRange();
-      range.selectNodeContents(editorRef.current);
-      range.collapse(false);
-      selection.removeAllRanges();
-      selection.addRange(range);
-    }
-    
-    // ===== STEP 2: Update React State FIRST with flushSync =====
-    // Update React state FIRST to sync className, then update DOM
-    const bgColorValue = color === "transparent" ? "transparent" : color;
-    flushSync(() => {
-      setActiveBgColor(bgColorValue);
-      setDisplayedBgColor(bgColorValue);
-      setSelectedBgColor(color === "transparent" ? "#FFFF00" : color);
-      setCurrentBgColor(bgColorValue);
-    });
-    
-    // ===== STEP 3: Update Button Visual DIRECTLY (INSTANT - no delay) =====
-    // Update button DIRECTLY via DOM - after React state update
-    if (bgColorButtonRef.current) {
-      const btn = bgColorButtonRef.current;
-      const bgColorBar = btn.querySelector('.bg-color-bar');
-      if (bgColorBar) {
-        bgColorBar.style.backgroundColor = color === "transparent" ? "#FFFF00" : color;
-      }
-      // Force immediate visual update
-      void btn.offsetHeight;
-    }
-    
-    // Focus editor
-    editorRef.current.focus();
-    
-    // ===== STEP 4: Apply to Editor =====
-    if (range.collapsed) {
-      // Collapsed cursor
-      let node = range.startContainer;
-      if (node.nodeType === Node.TEXT_NODE) {
-        node = node.parentElement;
-      }
-      
-      const isInStyleMarker = node.tagName === "SPAN" && 
-        (node.textContent === "\u200B" || node.innerHTML === "\u200B");
-      
-      if (isInStyleMarker) {
-        // Update existing marker
-        if (color === "transparent") {
-          node.style.backgroundColor = "";
-        } else {
-          node.style.backgroundColor = color;
-        }
-        node.style.fontSize = `${activeFontSize}px`;
-        node.style.color = activeColor;
-        node.style.fontWeight = activeBold ? "bold" : "normal";
-        node.style.fontStyle = activeItalic ? "italic" : "normal";
-        node.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
-        if (activeUnderline) {
-          node.style.setProperty("text-decoration-color", activeColor, "important");
-          node.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
-        }
-        
-        const newRange = document.createRange();
-        newRange.setStartAfter(node);
-        newRange.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
-        
-        savedSelectionRef.current = {
-          range: newRange.cloneRange(),
-          startContainer: newRange.startContainer,
-          startOffset: newRange.startOffset,
-          endContainer: newRange.endContainer,
-          endOffset: newRange.endOffset,
-          collapsed: true,
-          text: ""
-        };
-      } else {
-        // Create new style marker with VISIBLE placeholder for visual feedback
-        const span = document.createElement("span");
-        span.style.fontSize = `${activeFontSize}px`;
-        span.style.color = activeColor;
-        if (color === "transparent") {
-          span.style.backgroundColor = "";
-        } else {
-          span.style.backgroundColor = color;
-        }
-        span.style.fontWeight = activeBold ? "bold" : "normal";
-        span.style.fontStyle = activeItalic ? "italic" : "normal";
-        span.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
-        if (activeUnderline) {
-          span.style.setProperty("text-decoration-color", activeColor, "important");
-          span.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
-        }
-        
-        // Insert visible placeholder character that will be replaced when typing
-        // Use a very thin space that's barely visible but shows the style
-        span.innerHTML = "\u2009"; // Thin space (more visible than zero-width)
-        
-        range.insertNode(span);
-        
-        // Force immediate visual update
-        void span.offsetHeight;
-        
-        const newRange = document.createRange();
-        newRange.setStart(span, 0);
-        newRange.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
-        
-        savedSelectionRef.current = {
-          range: newRange.cloneRange(),
-          startContainer: newRange.startContainer,
-          startOffset: newRange.startOffset,
-          endContainer: newRange.endContainer,
-          endOffset: newRange.endOffset,
-          collapsed: true,
-          text: ""
-        };
-        
-        // Replace thin space with zero-width space after a brief moment (for next typing)
-        setTimeout(() => {
-          if (span && span.textContent === "\u2009") {
-            span.innerHTML = "\u200B";
-          }
-        }, 100);
-      }
-    } else {
-      // Has selection - apply to selection
-      if (color === "transparent") {
-        // Remove background color
-        const walker = document.createTreeWalker(
-          range.commonAncestorContainer,
-          NodeFilter.SHOW_ELEMENT,
-          {
-            acceptNode: (node) => {
-              return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
-            }
-          }
-        );
-        
-        let node;
-        while (node = walker.nextNode()) {
-          if (node.style) {
-            node.style.backgroundColor = "";
-            node.style.background = "";
-          }
-        }
-      } else {
-        document.execCommand("backColor", false, color);
-      }
-    }
-    
-    lastUsedStylesRef.current.backgroundColor = color === "transparent" ? "transparent" : color;
-    
-    // Close color picker
-    setShowBgColorPicker(false);
-    
-    // Trigger input to save
-    handleEditorInput();
-  };
+  // applyBgColor lama dihapus - menggunakan versi Tiptap di bawah
 
-  // Apply font size - MS Word style: update active state + apply to selection or prepare for next typing
-  const applyFontSize = (size) => {
-    if (!editorRef.current || !size) return;
-    
-    // ===== STEP 1: Update Active State (Single Source of Truth) =====
-    setActiveFontSize(size);
-    setDisplayedFontSize(size); // Update UI display
-    
-    // Get current selection FIRST before focusing
-    const selection = window.getSelection();
-    let range = null;
-    let wasCollapsed = false;
-    
-    // Try to restore saved selection first (CRITICAL for selection that was saved before focus to input)
-    if (savedSelectionRef.current) {
-      try {
-        const saved = savedSelectionRef.current;
-        range = document.createRange();
-        range.setStart(saved.startContainer, saved.startOffset);
-        range.setEnd(saved.endContainer, saved.endOffset);
-        if (editorRef.current.contains(range.commonAncestorContainer)) {
-          wasCollapsed = saved.collapsed;
-        } else {
-          range = null;
-        }
-      } catch (e) {
-        range = null;
-      }
-    }
-    
-    // If no saved selection, try current selection
-    if (!range && selection.rangeCount > 0) {
-      range = selection.getRangeAt(0);
-      if (editorRef.current.contains(range.commonAncestorContainer)) {
-        wasCollapsed = range.collapsed;
-      } else {
-        range = null;
-      }
-    }
-    
-    // Focus editor and restore selection
-    editorRef.current.focus();
-    
-    if (range) {
-      try {
-        selection.removeAllRanges();
-        selection.addRange(range);
-      } catch (e) {
-        // Range invalid, create new one
-        range = null;
-      }
-    }
-    
-    // If still no range, create one at cursor
-    if (!range) {
-      range = document.createRange();
-      range.selectNodeContents(editorRef.current);
-      range.collapse(false);
-      selection.removeAllRanges();
-      selection.addRange(range);
-      wasCollapsed = true;
-    }
-    
-    // ===== STEP 2: Apply to Selection or Cursor =====
-    if (range.collapsed || wasCollapsed) {
-      // Collapsed cursor - create style marker with active styles (NO inline style on paragraph)
-      const span = document.createElement("span");
-      span.style.fontSize = `${size}px`;
-      span.style.color = activeColor;
-      span.style.fontWeight = activeBold ? "bold" : "normal";
-      span.style.fontStyle = activeItalic ? "italic" : "normal";
-      span.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
-      if (activeUnderline) {
-        span.style.setProperty("text-decoration-color", activeColor, "important");
-        span.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
-      }
-      if (activeStrikethrough && activeUnderline) {
-        span.style.textDecoration = "underline line-through";
-      }
-      if (activeBgColor !== "transparent") {
-        span.style.backgroundColor = activeBgColor;
-      }
-      span.innerHTML = "\u200B";
-      
-      try {
-        range.insertNode(span);
-        const newRange = document.createRange();
-        newRange.setStart(span, 0);
-        newRange.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
-        
-        savedSelectionRef.current = {
-          range: newRange.cloneRange(),
-          startContainer: newRange.startContainer,
-          startOffset: newRange.startOffset,
-          endContainer: newRange.endContainer,
-          endOffset: newRange.endOffset,
-          collapsed: true,
-          text: ""
-        };
-      } catch (e) {
-        console.error("Error inserting font size marker:", e);
-      }
-    } else {
-      // Has selection - apply directly to selection (SIMPLE & DIRECT)
-      // CRITICAL: Don't apply to paragraph, only wrap selection in span
-      const contents = range.extractContents();
-      
-      // Check if selection spans multiple paragraphs - if so, apply to each separately
-      const tempDiv = document.createElement("div");
-      tempDiv.appendChild(contents);
-      const paragraphs = tempDiv.querySelectorAll("p");
-      
-      if (paragraphs.length > 0) {
-        // Selection spans paragraphs - apply font size to all text nodes, not paragraphs
-        const allTextNodes = [];
-        const walker = document.createTreeWalker(
-          tempDiv,
-          NodeFilter.SHOW_TEXT,
-          null
-        );
-        let textNode;
-        while (textNode = walker.nextNode()) {
-          allTextNodes.push(textNode);
-        }
-        
-        // Wrap each text node or group of text nodes in span
-        allTextNodes.forEach(textNode => {
-          if (textNode.textContent.trim()) {
-            const span = document.createElement("span");
-            span.style.fontSize = `${size}px`;
-            
-            // Preserve parent styles
-            const parent = textNode.parentElement;
-            if (parent && parent.style) {
-              if (parent.style.fontWeight) span.style.fontWeight = parent.style.fontWeight;
-              if (parent.style.fontStyle) span.style.fontStyle = parent.style.fontStyle;
-              if (parent.style.textDecoration) span.style.textDecoration = parent.style.textDecoration;
-              if (parent.style.color) span.style.color = parent.style.color;
-              if (parent.style.backgroundColor) span.style.backgroundColor = parent.style.backgroundColor;
-            }
-            
-            const parentElement = textNode.parentNode;
-            parentElement.insertBefore(span, textNode);
-            span.appendChild(textNode);
-          }
-        });
-        
-        // Remove empty paragraphs
-        paragraphs.forEach(p => {
-          if (!p.textContent.trim() && p.children.length === 0) {
-            p.remove();
-          }
-        });
-      } else {
-        // Simple selection - wrap in span
-        const span = document.createElement("span");
-        span.style.fontSize = `${size}px`;
-        
-        // Preserve other styles from selection
-        const currentStyles = getAllCurrentStyles(range);
-        if (currentStyles.bold) span.style.fontWeight = "bold";
-        if (currentStyles.italic) span.style.fontStyle = "italic";
-        if (currentStyles.underline) span.style.textDecoration = "underline";
-        if (currentStyles.strikethrough) {
-          const existing = span.style.textDecoration || "";
-          span.style.textDecoration = existing ? `${existing} line-through` : "line-through";
-        }
-        if (currentStyles.textColor) span.style.color = currentStyles.textColor;
-        if (currentStyles.bgColor && currentStyles.bgColor !== "transparent") {
-          span.style.backgroundColor = currentStyles.bgColor;
-        }
-        
-        span.appendChild(contents);
-        tempDiv.appendChild(span);
-      }
-      
-      // Insert back
-      while (tempDiv.firstChild) {
-        range.insertNode(tempDiv.firstChild);
-      }
-      
-      // Collapse to end and restore selection
-      range.collapse(false);
-      selection.removeAllRanges();
-      selection.addRange(range);
-    }
-    
-    // Update lastUsedStylesRef
-    lastUsedStylesRef.current.fontSize = size;
-    
-    // Trigger input to save
-    handleEditorInput();
-    
-    // CRITICAL: After applying font size, ensure displayed font size is synced
-    // Don't let detectStyles override what we just applied
-    flushSync(() => {
-      setDisplayedFontSize(size);
-      setSelectedFontSize(size);
-    });
-    
-    // Update UI display (detectStyles untuk update button states)
-    // Tapi jangan panggil detectStyles terlalu cepat - biarkan DOM update dulu
-    setTimeout(() => {
-      detectStyles();
-      // Ensure fontSize tetap sesuai yang baru di-apply setelah detectStyles
-      flushSync(() => {
-        setDisplayedFontSize(size);
-        setSelectedFontSize(size);
-      });
-    }, 50);
-  };
+  // applyFontSize lama dihapus - menggunakan versi Tiptap di bawah
 
   // Initialize ProseMirror editor
   useEffect(() => {
@@ -2341,22 +1610,63 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     }
   }, [currentStrikethrough]);
 
-  // Formatting functions - only apply to selection, don't change global state
-  // ===== ULTRA SIMPLE & DIRECT: Toggle Bold Function =====
-  // ProseMirror toggle bold - simple and stable
+  // ===== TIPTAP FORMATTING FUNCTIONS =====
+  // Toggle Bold - menggunakan editor.chain() untuk stabilitas
   const toggleBold = (e) => {
     if (e) e.preventDefault();
-    if (!editorViewRef.current) return;
+    if (!editor) return;
     
-    const { state, dispatch } = editorViewRef.current;
-    const markType = prosemirrorSchema.marks.bold;
+    editor.chain().focus().toggleBold().run();
+  };
+
+  // Toggle Italic
+  const toggleItalic = (e) => {
+    if (e) e.preventDefault();
+    if (!editor) return;
     
-    // Use ProseMirror's toggleMark command - handles selection stability automatically
-    toggleMark(markType)(state, dispatch);
+    editor.chain().focus().toggleItalic().run();
+  };
+
+  // Toggle Underline
+  const toggleUnderline = (e) => {
+    if (e) e.preventDefault();
+    if (!editor) return;
     
-    // Update UI state
-    const newState = editorViewRef.current.state;
-    updateToolbarState(newState);
+    editor.chain().focus().toggleUnderline().run();
+  };
+
+  // Toggle Strikethrough
+  const toggleStrikethrough = (e) => {
+    if (e) e.preventDefault();
+    if (!editor) return;
+    
+    editor.chain().focus().toggleStrike().run();
+  };
+
+  // Apply Font Size
+  const applyFontSize = (size) => {
+    if (!editor) return;
+    
+    editor.chain().focus().setFontSize(`${size}px`).run();
+  };
+
+  // Apply Text Color
+  const applyTextColor = (color) => {
+    if (!editor) return;
+    
+    editor.chain().focus().setColor(color).run();
+    setShowColorPicker(false);
+    setShowMoreColors(false);
+  };
+
+  // Apply Background Color
+  const applyBgColor = (color) => {
+    if (!editor) return;
+    
+    // Tiptap Color extension hanya support text color
+    // Background color perlu custom extension atau kita skip untuk sekarang
+    setShowBgColorPicker(false);
+    setShowMoreBgColors(false);
   };
 
   // Legacy toggleBold code removed - replaced with ProseMirror version above
@@ -2590,236 +1900,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     handleEditorInput();
   };
 
-  // ===== ULTRA SIMPLE & DIRECT: Toggle Italic Function =====
-  const toggleItalic = (e) => {
-    if (e) e.preventDefault();
-    if (!editorRef.current) return;
-    
-    // ===== STEP 1: Get current state FIRST =====
-    const selection = window.getSelection();
-    let range = null;
-    
-    if (selection.rangeCount > 0) {
-      range = selection.getRangeAt(0);
-      if (!editorRef.current.contains(range.commonAncestorContainer)) {
-        range = null;
-      }
-    }
-    
-    if (!range && savedSelectionRef.current) {
-      try {
-        const saved = savedSelectionRef.current;
-        range = document.createRange();
-        range.setStart(saved.startContainer, saved.startOffset);
-        range.setEnd(saved.endContainer, saved.endOffset);
-        if (editorRef.current.contains(range.commonAncestorContainer)) {
-          selection.removeAllRanges();
-          selection.addRange(range);
-        } else {
-          range = null;
-        }
-      } catch (e) {
-        range = null;
-      }
-    }
-    
-    if (!range) {
-      range = document.createRange();
-      range.selectNodeContents(editorRef.current);
-      range.collapse(false);
-      selection.removeAllRanges();
-      selection.addRange(range);
-    }
-    
-    // Check current italic state
-    let isCurrentlyItalic = activeItalic;
-    
-    if (range.collapsed) {
-      let node = range.startContainer;
-      if (node.nodeType === Node.TEXT_NODE) {
-        node = node.parentElement;
-      }
-      if (node.tagName === "SPAN" && (node.textContent === "\u200B" || node.innerHTML === "\u200B")) {
-        const fontStyle = node.style.fontStyle || window.getComputedStyle(node).fontStyle;
-        isCurrentlyItalic = fontStyle === "italic";
-      }
-    } else {
-      try {
-        isCurrentlyItalic = document.queryCommandState("italic");
-      } catch (e) {
-        let node = range.startContainer;
-        if (node.nodeType === Node.TEXT_NODE) {
-          node = node.parentElement;
-        }
-        const fontStyle = window.getComputedStyle(node).fontStyle;
-        isCurrentlyItalic = fontStyle === "italic";
-      }
-    }
-    
-    const newItalicState = !isCurrentlyItalic;
-    
-    // ===== STEP 2: Update React State FIRST with flushSync =====
-    // Update React state FIRST to sync className, then update DOM
-    flushSync(() => {
-      setActiveItalic(newItalicState);
-      setDisplayedItalic(newItalicState);
-      setCurrentItalic(newItalicState);
-    });
-    
-    // ===== STEP 3: Update Button Visual DIRECTLY (INSTANT - no delay) =====
-    // Update button DIRECTLY via DOM - after React state update
-    if (italicButtonRef.current) {
-      const btn = italicButtonRef.current;
-      
-      if (newItalicState) {
-        // Activate button
-        btn.classList.add('active');
-        btn.style.setProperty('background-color', '#F1A124', 'important');
-        btn.style.setProperty('border-color', '#F1A124', 'important');
-        btn.style.setProperty('color', '#ffffff', 'important');
-      } else {
-        // Deactivate button - FORCE REMOVE all active styles
-        // Remove class first
-        btn.classList.remove('active');
-        // Also update className directly - remove 'active' completely and keep only base class
-        const baseClass = 'toolbar-btn';
-        btn.className = baseClass;
-        // Remove all inline styles - multiple methods to ensure it works
-        btn.style.removeProperty('background-color');
-        btn.style.removeProperty('border-color');
-        btn.style.removeProperty('color');
-        // Clear style properties
-        btn.style.backgroundColor = '';
-        btn.style.borderColor = '';
-        btn.style.color = '';
-        // Force override with empty using important to override any CSS
-        btn.style.setProperty('background-color', '', 'important');
-        btn.style.setProperty('border-color', '', 'important');
-        btn.style.setProperty('color', '', 'important');
-      }
-      
-      // Force immediate visual update
-      void btn.offsetHeight;
-    }
-    
-    // Focus editor
-    editorRef.current.focus();
-    
-    // ===== STEP 3: Apply to Editor =====
-    if (range.collapsed) {
-      // Collapsed cursor
-      let node = range.startContainer;
-      if (node.nodeType === Node.TEXT_NODE) {
-        node = node.parentElement;
-      }
-      
-      const isInStyleMarker = node.tagName === "SPAN" && 
-        (node.textContent === "\u200B" || node.innerHTML === "\u200B");
-      
-      if (isInStyleMarker) {
-        // Update existing marker
-        node.style.fontStyle = newItalicState ? "italic" : "normal";
-        node.style.fontSize = `${activeFontSize}px`;
-        node.style.color = activeColor;
-        node.style.fontWeight = activeBold ? "bold" : "normal";
-        node.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
-        if (activeUnderline) {
-          node.style.setProperty("text-decoration-color", activeColor, "important");
-          node.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
-        }
-        if (activeBgColor !== "transparent") {
-          node.style.backgroundColor = activeBgColor;
-        } else {
-          node.style.backgroundColor = "";
-        }
-        
-        const newRange = document.createRange();
-        newRange.setStartAfter(node);
-        newRange.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
-        
-        savedSelectionRef.current = {
-          range: newRange.cloneRange(),
-          startContainer: newRange.startContainer,
-          startOffset: newRange.startOffset,
-          endContainer: newRange.endContainer,
-          endOffset: newRange.endOffset,
-          collapsed: true,
-          text: ""
-        };
-      } else {
-        // Create new style marker with VISIBLE placeholder for visual feedback
-        const span = document.createElement("span");
-        span.style.fontSize = `${activeFontSize}px`;
-        span.style.color = activeColor;
-        span.style.fontStyle = newItalicState ? "italic" : "normal";
-        span.style.fontWeight = activeBold ? "bold" : "normal";
-        span.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
-        if (activeUnderline) {
-          span.style.setProperty("text-decoration-color", activeColor, "important");
-          span.style.setProperty("-webkit-text-decoration-color", activeColor, "important");
-        }
-        if (activeBgColor !== "transparent") {
-          span.style.backgroundColor = activeBgColor;
-        }
-        
-        // Insert visible placeholder character that will be replaced when typing
-        // Use a very thin space that's barely visible but shows the style
-        span.innerHTML = "\u2009"; // Thin space (more visible than zero-width)
-        
-        range.insertNode(span);
-        
-        // Force immediate visual update
-        void span.offsetHeight;
-        
-        const newRange = document.createRange();
-        newRange.setStart(span, 0);
-        newRange.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
-        
-        savedSelectionRef.current = {
-          range: newRange.cloneRange(),
-          startContainer: newRange.startContainer,
-          startOffset: newRange.startOffset,
-          endContainer: newRange.endContainer,
-          endOffset: newRange.endOffset,
-          collapsed: true,
-          text: ""
-        };
-        
-        // Replace thin space with zero-width space after a brief moment (for next typing)
-        setTimeout(() => {
-          if (span && span.textContent === "\u2009") {
-            span.innerHTML = "\u200B";
-          }
-        }, 100);
-      }
-    } else {
-      // Has selection
-      document.execCommand("italic", false, null);
-      
-      try {
-        const isNowItalic = document.queryCommandState("italic");
-        setActiveItalic(isNowItalic);
-        setDisplayedItalic(isNowItalic);
-        setCurrentItalic(isNowItalic);
-        if (italicButtonRef.current) {
-          if (isNowItalic) {
-            italicButtonRef.current.classList.add('active');
-          } else {
-            italicButtonRef.current.classList.remove('active');
-          }
-        }
-      } catch (e) {
-        // Keep state
-      }
-    }
-    
-    lastUsedStylesRef.current.fontStyle = newItalicState ? "italic" : "normal";
-    handleEditorInput();
-  };
+  // toggleItalic lama dihapus - menggunakan versi Tiptap di bawah
 
   // ===== OPTIMIZED: Toggle Underline Function =====
   // ARCHITECTURE: Underline as context state, not DOM scan result
@@ -2978,21 +2059,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     }
   };
   
-  // ProseMirror toggle underline - simple and stable
-  const toggleUnderline = (e) => {
-    if (e) e.preventDefault();
-    if (!editorViewRef.current) return;
-    
-    const { state, dispatch } = editorViewRef.current;
-    const markType = prosemirrorSchema.marks.underline;
-    
-    // Use ProseMirror's toggleMark command - handles selection stability automatically
-    toggleMark(markType)(state, dispatch);
-    
-    // Update UI state
-    const newState = editorViewRef.current.state;
-    updateToolbarState(newState);
-  };
+  // toggleUnderline lama dihapus - menggunakan versi Tiptap di bawah
 
   // ===== OPTIMIZED: Toggle Strikethrough Function =====
   // ARCHITECTURE: Strikethrough as context state, not DOM scan result
@@ -3168,216 +2235,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     }
   };
   
-  const toggleStrikethrough = (e) => {
-    if (e) e.preventDefault();
-    if (!editorRef.current) return;
-    
-    const selection = window.getSelection();
-    if (selection.rangeCount === 0) return;
-    
-    const range = selection.getRangeAt(0);
-    if (!editorRef.current.contains(range.commonAncestorContainer)) return;
-    
-    // ===== SELECTION HANDLING =====
-    if (!range.collapsed) {
-      // Extract contents ONCE - only operate on extracted fragment
-      const fragment = range.extractContents();
-      
-      // NO SCAN - Use intent from button state (like MS Word)
-      // Toggle based on current button state, not DOM scan
-      const currentButtonState = strikethroughButtonRef.current?.classList.contains('active') || false;
-      const newStrikethroughState = !currentButtonState;
-      
-      // Update button visual (no flushSync)
-      if (strikethroughButtonRef.current) {
-        const btn = strikethroughButtonRef.current;
-        if (newStrikethroughState) {
-          btn.classList.add('active');
-          btn.style.setProperty('background-color', '#F1A124', 'important');
-          btn.style.setProperty('border-color', '#F1A124', 'important');
-          btn.style.setProperty('color', '#ffffff', 'important');
-        } else {
-          btn.classList.remove('active');
-          btn.className = 'toolbar-btn';
-          btn.style.removeProperty('background-color');
-          btn.style.removeProperty('border-color');
-          btn.style.removeProperty('color');
-          btn.style.backgroundColor = '';
-          btn.style.borderColor = '';
-          btn.style.color = '';
-          btn.style.setProperty('background-color', '', 'important');
-          btn.style.setProperty('border-color', '', 'important');
-          btn.style.setProperty('color', '', 'important');
-        }
-        void btn.offsetHeight;
-      }
-      
-      // Update React state
-      setActiveStrikethrough(newStrikethroughState);
-      setDisplayedStrikethrough(newStrikethroughState);
-      setCurrentStrikethrough(newStrikethroughState);
-      
-      editorRef.current.focus();
-      
-      // Apply/remove strikethrough on extracted fragment only
-      if (newStrikethroughState) {
-        applyStrikethroughToContents(fragment);
-      } else {
-        removeStrikethroughFromContents(fragment);
-      }
-      
-      // Insert processed fragment back
-      range.insertNode(fragment);
-      
-      // Collapse to end
-      range.collapse(false);
-      selection.removeAllRanges();
-      selection.addRange(range);
-      
-      // Update lastUsedStylesRef for next typing
-      const hasUnderline = activeUnderline || 
-        (lastUsedStylesRef.current.textDecoration && 
-         lastUsedStylesRef.current.textDecoration.includes("underline"));
-      const textDecoration = newStrikethroughState 
-        ? (hasUnderline ? "underline line-through" : "line-through")
-        : (hasUnderline ? "underline" : "none");
-      lastUsedStylesRef.current.textDecoration = textDecoration;
-      
-      // CRITICAL: After applying style to selection, ensure button state is synced
-      flushSync(() => {
-        setCurrentStrikethrough(newStrikethroughState);
-        setDisplayedStrikethrough(newStrikethroughState);
-      });
-      
-      // Also update button visual directly to ensure sync
-      if (strikethroughButtonRef.current) {
-        const btn = strikethroughButtonRef.current;
-        if (newStrikethroughState) {
-          btn.classList.add('active');
-          btn.style.setProperty('background-color', '#F1A124', 'important');
-          btn.style.setProperty('border-color', '#F1A124', 'important');
-          btn.style.setProperty('color', '#ffffff', 'important');
-        } else {
-          btn.classList.remove('active');
-          btn.className = 'toolbar-btn';
-          btn.style.removeProperty('background-color');
-          btn.style.removeProperty('border-color');
-          btn.style.removeProperty('color');
-          btn.style.backgroundColor = '';
-          btn.style.borderColor = '';
-          btn.style.color = '';
-          btn.style.setProperty('background-color', '', 'important');
-          btn.style.setProperty('border-color', '', 'important');
-          btn.style.setProperty('color', '', 'important');
-        }
-        void btn.offsetHeight;
-      }
-      
-      requestAnimationFrame(() => {
-        handleEditorInput();
-        // Double check with detectStyles after DOM update
-        requestAnimationFrame(() => {
-          detectStyles();
-        });
-      });
-      
-      return;
-    }
-    
-    // ===== CURSOR HANDLING (O(1) - state-based, no DOM scan) =====
-    const hasStrikethrough = getStrikethroughStateAtCursor(range);
-    const newStrikethroughState = !hasStrikethrough;
-    
-    // Update button visual (no flushSync)
-    if (strikethroughButtonRef.current) {
-      const btn = strikethroughButtonRef.current;
-      if (newStrikethroughState) {
-        btn.classList.add('active');
-        btn.style.setProperty('background-color', '#F1A124', 'important');
-        btn.style.setProperty('border-color', '#F1A124', 'important');
-        btn.style.setProperty('color', '#ffffff', 'important');
-      } else {
-        btn.classList.remove('active');
-        btn.className = 'toolbar-btn';
-        btn.style.removeProperty('background-color');
-        btn.style.removeProperty('border-color');
-        btn.style.removeProperty('color');
-        btn.style.backgroundColor = '';
-        btn.style.borderColor = '';
-        btn.style.color = '';
-        btn.style.setProperty('background-color', '', 'important');
-        btn.style.setProperty('border-color', '', 'important');
-        btn.style.setProperty('color', '', 'important');
-      }
-      void btn.offsetHeight;
-    }
-    
-    // Update React state
-    setActiveStrikethrough(newStrikethroughState);
-    setDisplayedStrikethrough(newStrikethroughState);
-    setCurrentStrikethrough(newStrikethroughState);
-    
-    editorRef.current.focus();
-    
-    // Toggle strikethrough context at cursor
-    if (newStrikethroughState) {
-      // Enable strikethrough - create/update style marker
-      const node = range.startContainer;
-      const parent = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
-      const isStyleMarker = parent && parent.tagName === "SPAN" && 
-        (parent.textContent === "\u200B" || parent.innerHTML === "\u200B");
-      
-      // Preserve underline if active
-      const hasUnderline = activeUnderline || 
-        (lastUsedStylesRef.current.textDecoration && 
-         lastUsedStylesRef.current.textDecoration.includes("underline"));
-      
-      if (isStyleMarker) {
-        parent.setAttribute("data-s", "1");
-        const textDecoration = hasUnderline ? "underline line-through" : "line-through";
-        parent.style.textDecoration = textDecoration;
-      } else {
-        const marker = document.createElement("span");
-        marker.setAttribute("data-s", "1");
-        const textDecoration = hasUnderline ? "underline line-through" : "line-through";
-        marker.style.textDecoration = textDecoration;
-        marker.innerHTML = "\u200B";
-        range.insertNode(marker);
-        
-        const newRange = document.createRange();
-        newRange.setStart(marker, 0);
-        newRange.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
-        
-        savedSelectionRef.current = {
-          range: newRange.cloneRange(),
-          startContainer: newRange.startContainer,
-          startOffset: newRange.startOffset,
-          endContainer: newRange.endContainer,
-          endOffset: newRange.endOffset,
-          collapsed: true,
-          text: ""
-        };
-      }
-    } else {
-      // Disable strikethrough - break context
-      breakStrikethroughContext(range, selection);
-    }
-    
-    // Update lastUsedStylesRef for next typing
-    const hasUnderline = activeUnderline || 
-      (lastUsedStylesRef.current.textDecoration && 
-       lastUsedStylesRef.current.textDecoration.includes("underline"));
-    const textDecoration = newStrikethroughState 
-      ? (hasUnderline ? "underline line-through" : "line-through")
-      : (hasUnderline ? "underline" : "none");
-    lastUsedStylesRef.current.textDecoration = textDecoration;
-    
-    requestAnimationFrame(() => {
-      handleEditorInput();
-    });
-  };
+  // toggleStrikethrough lama dihapus - menggunakan versi Tiptap di bawah
 
   const paragraphStyles = [
     { label: "Normal", value: "normal" },
@@ -3432,26 +2290,18 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         {/* Row 1: Bold, Italic, Text Color, Background Color, Underline, Strikethrough, Link, Lists, Align */}
         <div className="toolbar-row">
           <button 
-            ref={boldButtonRef}
-            className={`toolbar-btn ${currentBold ? "active" : ""}`}
+            className={`toolbar-btn ${editor?.isActive('bold') ? "active" : ""}`}
             title="Bold"
-            onMouseDown={(e) => {
-              e.preventDefault();
-              saveSelection();
-            }}
             onClick={toggleBold}
+            disabled={!editor}
           >
             <Bold size={16} />
           </button>
           <button 
-            ref={italicButtonRef}
-            className={`toolbar-btn ${currentItalic ? "active" : ""}`}
+            className={`toolbar-btn ${editor?.isActive('italic') ? "active" : ""}`}
             title="Italic"
-            onMouseDown={(e) => {
-              e.preventDefault();
-              saveSelection();
-            }}
             onClick={toggleItalic}
+            disabled={!editor}
           >
             <Italic size={16} />
           </button>
@@ -3616,26 +2466,18 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
             )}
           </div>
           <button 
-            ref={underlineButtonRef}
-            className={`toolbar-btn ${currentUnderline ? "active" : ""}`}
+            className={`toolbar-btn ${editor?.isActive('underline') ? "active" : ""}`}
             title="Underline"
-            onMouseDown={(e) => {
-              e.preventDefault();
-              saveSelection();
-            }}
             onClick={toggleUnderline}
+            disabled={!editor}
           >
             <Underline size={16} />
           </button>
           <button 
-            ref={strikethroughButtonRef}
-            className={`toolbar-btn ${currentStrikethrough ? "active" : ""}`}
+            className={`toolbar-btn ${editor?.isActive('strike') ? "active" : ""}`}
             title="Strikethrough"
-            onMouseDown={(e) => {
-              e.preventDefault();
-              saveSelection();
-            }}
             onClick={toggleStrikethrough}
+            disabled={!editor}
           >
             <Strikethrough size={16} />
           </button>
@@ -3812,21 +2654,9 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         </div>
       </div>
 
-      {/* Rich Text Editor Area - ProseMirror */}
+      {/* Rich Text Editor Area - Tiptap */}
       <div className={`text-editor-area ${darkEditor ? 'dark' : ''}`}>
-        <div
-          ref={editorRef}
-          className="rich-text-editor"
-          style={{
-            minHeight: "200px",
-            padding: "12px 14px",
-            lineHeight: lineHeight,
-            fontFamily: fontFamily !== "Page Font" ? fontFamily : "inherit",
-            color: textColor,
-            textAlign: textAlign,
-            fontSize: `${TYPOGRAPHY_STANDARD.defaultFontSize}px`,
-          }}
-        />
+        <EditorContent editor={editor} />
       </div>
 
       {/* Advance Section */}
