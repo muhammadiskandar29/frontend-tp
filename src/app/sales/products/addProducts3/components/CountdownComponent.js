@@ -267,7 +267,7 @@ export default function CountdownComponent({ data = {}, onUpdate, onMoveUp, onMo
               }}>
                 <button
                   type="button"
-                  onClick={() => handleChange("hours", Math.min(23, hours + 1))}
+                  onClick={() => handleChange("hours", Math.min(24, hours + 1))}
                   style={{
                     width: "60px",
                     height: "32px",
@@ -511,45 +511,6 @@ export default function CountdownComponent({ data = {}, onUpdate, onMoveUp, onMo
           </div>
         </div>
 
-        <div className="form-field-group">
-          <label className="form-label-small">Preview Countdown</label>
-          <div style={{ 
-            padding: "20px", 
-            backgroundColor: "transparent",
-            borderRadius: "8px",
-            textAlign: "center"
-          }}>
-            <div style={{ color: "#374151", fontSize: "14px", marginBottom: "16px", fontWeight: "500" }}>
-              {promoText}
-            </div>
-            <div style={{ 
-              display: "flex", 
-              gap: "12px", 
-              justifyContent: "center",
-              alignItems: "center",
-              flexWrap: "wrap"
-            }}>
-              {renderNumber(formattedTime.hours, bgColor)}
-              <span style={{ fontSize: "32px", color: "#6b7280", fontWeight: "bold" }}>:</span>
-              {renderNumber(formattedTime.minutes, bgColor)}
-              <span style={{ fontSize: "32px", color: "#6b7280", fontWeight: "bold" }}>:</span>
-              {renderNumber(formattedTime.seconds, bgColor)}
-            </div>
-            <div style={{ 
-              display: "flex", 
-              gap: "80px", 
-              justifyContent: "center",
-              marginTop: "12px",
-              fontSize: "12px",
-              color: "#6b7280",
-              fontWeight: "500"
-            }}>
-              <span>Jam</span>
-              <span>Menit</span>
-              <span>Detik</span>
-            </div>
-          </div>
-        </div>
       </div>
     </ComponentWrapper>
   );
