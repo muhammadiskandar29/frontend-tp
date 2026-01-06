@@ -2221,28 +2221,30 @@ export default function AddProducts3Page() {
                 </div>
               )}
               
-              {/* Preview komponen */}
-              {blocks.map((block) => (
-                <div 
-                  key={block.id} 
-                  className="canvas-preview-block"
-                  onClick={() => {
-                    // Scroll ke komponen di sidebar
-                    const componentElement = componentRefs.current[block.id];
-                    if (componentElement) {
-                      componentElement.scrollIntoView({ behavior: "smooth", block: "center" });
-                      // Expand komponen jika collapsed
-                      if (collapsedBlockIds.has(block.id)) {
-                        handleToggleExpand(block.id);
+              {/* Preview komponen - hanya render blocks tanpa parentId (bukan child dari section) */}
+              {blocks
+                .filter(block => !block.parentId) // Hanya render blocks yang bukan child dari section
+                .map((block) => (
+                  <div 
+                    key={block.id} 
+                    className="canvas-preview-block"
+                    onClick={() => {
+                      // Scroll ke komponen di sidebar
+                      const componentElement = componentRefs.current[block.id];
+                      if (componentElement) {
+                        componentElement.scrollIntoView({ behavior: "smooth", block: "center" });
+                        // Expand komponen jika collapsed
+                        if (collapsedBlockIds.has(block.id)) {
+                          handleToggleExpand(block.id);
+                        }
                       }
-                    }
-                  }}
-                  style={{ cursor: "pointer" }}
-                  title="Klik untuk scroll ke komponen di sidebar"
-                >
-                  {renderPreview(block)}
-                </div>
-              ))}
+                    }}
+                    style={{ cursor: "pointer" }}
+                    title="Klik untuk scroll ke komponen di sidebar"
+                  >
+                    {renderPreview(block)}
+                  </div>
+                ))}
             </div>
 
             {/* Footer */}

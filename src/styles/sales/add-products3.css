@@ -4386,11 +4386,26 @@ html:has(.add-products3-container) {
   overflow: hidden;
 }
 
+/* Canvas Preview - Allow carousel to accommodate flexible cards */
+.canvas-preview-block .testimonials-carousel-wrapper-new {
+  overflow: visible;
+}
+
+.canvas-preview-block .testimonials-carousel-new {
+  overflow: visible;
+}
+
 .testimonials-track-new {
   display: flex;
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   gap: 16px;
   padding: 0;
+}
+
+/* Canvas Preview - Allow flexible track */
+.canvas-preview-block .testimonials-track-new {
+  flex-wrap: nowrap;
+  align-items: stretch;
 }
 
 .testi-card-new {
@@ -4480,6 +4495,29 @@ html:has(.add-products3-container) {
   line-height: 1.6;
   font-size: 14px;
   margin-top: 8px;
+}
+
+/* Canvas Preview - Flexible Testimonial Cards */
+.canvas-preview-block .testi-card-new {
+  flex: 1 1 auto;
+  min-width: 200px;
+  max-width: none;
+  width: auto;
+}
+
+.canvas-preview-block .testi-desc-new {
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.canvas-preview-block .testi-desc-new p {
+  white-space: normal;
+  margin: 0;
+}
+
+.canvas-preview-block .testi-desc-new * {
+  white-space: normal;
 }
 
 /* Navigation Buttons - New */
