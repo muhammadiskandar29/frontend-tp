@@ -38,8 +38,10 @@ import {
   ScrollTargetComponent,
   AnimationComponent,
   CountdownComponent,
+  ImageSliderComponent,
 } from './components';
 import CountdownPreview from './components/CountdownPreview';
+import ImageSliderPreview from './components/ImageSliderPreview';
 // PrimeReact Theme & Core
 import "primereact/resources/themes/lara-light-amber/theme.css";
 import "primereact/resources/primereact.min.css";
@@ -65,6 +67,7 @@ const COMPONENT_CATEGORIES = {
       { id: "testimoni", name: "Testimoni", icon: MessageSquare, color: "#6b7280" },
       { id: "faq", name: "FAQ", icon: HelpCircle, color: "#6b7280" },
       { id: "countdown", name: "Countdown", icon: Clock, color: "#6b7280" },
+      { id: "image-slider", name: "Image Slider", icon: ImageIcon, color: "#6b7280" },
     ]
   }
 };
@@ -156,6 +159,13 @@ export default function AddProducts3Page() {
       form: { kategori: null }, // Kategori untuk form pemesanan
       faq: { items: [] },
       slider: { images: [] },
+      "image-slider": { 
+        images: [],
+        sliderType: "gallery",
+        autoslide: false,
+        autoslideDuration: 5,
+        showCaption: false
+      },
       button: { text: "Klik Disini", link: "#", style: "primary" },
       embed: { code: "" },
       section: { 
@@ -384,6 +394,8 @@ export default function AddProducts3Page() {
         return <AnimationComponent {...commonProps} />;
       case "countdown":
         return <CountdownComponent {...commonProps} />;
+      case "image-slider":
+        return <ImageSliderComponent {...commonProps} />;
       default:
         return <div>Unknown component: {block.type}</div>;
     }
@@ -1240,6 +1252,8 @@ export default function AddProducts3Page() {
         return <div dangerouslySetInnerHTML={{ __html: block.data.code || "" }} />;
       case "countdown":
         return <CountdownPreview data={block.data || {}} index={block.id} />;
+      case "image-slider":
+        return <ImageSliderPreview data={block.data || {}} />;
       case "section":
         const sectionData = block.data || {};
         const sectionComponentId = sectionData.componentId || `section-${block.id}`;

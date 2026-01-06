@@ -2744,6 +2744,21 @@ html:has(.add-products3-container) {
   box-shadow: 0 2px 4px rgba(241, 161, 36, 0.2);
 }
 
+.add-image-link {
+  color: #3b82f6;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: color 0.2s ease;
+}
+
+.add-image-link:hover {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
 /* ===== ADVANCE SECTION - Enhanced ===== */
 .component-advance-section {
   border-top: 1.5px solid #e5e7eb;
