@@ -100,6 +100,19 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   const underlineButtonRef = useRef(null);
   const strikethroughButtonRef = useRef(null);
   
+  // Legacy refs untuk backward compatibility (masih digunakan di beberapa fungsi)
+  const editorRef = useRef(null);
+  const editorViewRef = useRef(null);
+  const savedSelectionRef = useRef(null);
+  const lastUsedStylesRef = useRef({
+    fontSize: 16,
+    color: "#000000",
+    backgroundColor: "transparent",
+    fontWeight: "normal",
+    fontStyle: "normal",
+    textDecoration: "none"
+  });
+  
   // ===== TIPTAP EDITOR SETUP =====
   const editor = useEditor({
     extensions: [
