@@ -9,9 +9,9 @@ import { Clock, ChevronUp, ChevronDown } from "lucide-react";
 import ComponentWrapper from "./ComponentWrapper";
 
 export default function CountdownComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index, isExpanded, onToggleExpand }) {
-  const hours = data.hours || 2;
-  const minutes = data.minutes || 0;
-  const seconds = data.seconds || 0;
+  const hours = data.hours !== undefined ? data.hours : 0;
+  const minutes = data.minutes !== undefined ? data.minutes : 0;
+  const seconds = data.seconds !== undefined ? data.seconds : 0;
   const promoText = data.promoText || "Promo Berakhir Dalam:";
   const textColor = data.textColor || "#e5e7eb";
   const bgColor = data.bgColor || "#1f2937";

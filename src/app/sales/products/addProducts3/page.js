@@ -186,7 +186,7 @@ export default function AddProducts3Page() {
       "scroll-target": { target: "" },
       animation: { type: "fade" },
       countdown: { 
-        hours: 2, 
+        hours: 0, 
         minutes: 0, 
         seconds: 0, 
         promoText: "Promo Berakhir Dalam:",
