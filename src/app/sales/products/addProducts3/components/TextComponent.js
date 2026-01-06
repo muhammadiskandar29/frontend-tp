@@ -21,11 +21,11 @@ import ComponentWrapper from "./ComponentWrapper";
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import UnderlineExtension from '@tiptap/extension-underline';
-import { TextStyle } from '@tiptap/extension-text-style';
+import TextStyle from '@tiptap/extension-text-style';
 import FontFamily from '@tiptap/extension-font-family';
 import Color from '@tiptap/extension-color';
+import Highlight from '@tiptap/extension-highlight';
 import { FontSize } from './extensions/FontSize';
-import { DOMSerializer } from 'prosemirror-model';
 
 export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index, isExpanded, onToggleExpand }) {
   const content = data.content || "<p>Text Baru</p>";
@@ -119,13 +119,16 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     extensions: [
       StarterKit,
       UnderlineExtension,
-      TextStyle,
+      TextStyle, // WAJIB untuk Color extension
       FontFamily.configure({
         types: ['textStyle'],
       }),
       FontSize,
       Color.configure({
         types: ['textStyle'],
+      }),
+      Highlight.configure({
+        multicolor: true, // Enable multiple colors untuk highlight/background color
       }),
     ],
     content: content || '<p></p>',
@@ -169,12 +172,12 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
 
     const updateColorFromSelection = () => {
       try {
-        // Get current color dari editor selection menggunakan getAttributes
-        const attrs = editor.getAttributes('textStyle');
+        // Get current text color dari editor selection
+        const textStyleAttrs = editor.getAttributes('textStyle');
         
         // Update text color jika ada
-        if (attrs.color) {
-          const color = attrs.color;
+        if (textStyleAttrs.color) {
+          const color = textStyleAttrs.color;
           // Hanya update jika berbeda untuk avoid infinite loop
           if (currentTextColor !== color) {
             setCurrentTextColor(color);
@@ -212,14 +215,54 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           }
         }
         
-        // Untuk background color, Tiptap tidak punya default extension
-        // Kita biarkan state tetap seperti sebelumnya atau bisa implement custom extension nanti
+        // Get current background color dari highlight extension
+        const highlightAttrs = editor.getAttributes('highlight');
+        if (highlightAttrs && highlightAttrs.color) {
+          const bgColor = highlightAttrs.color;
+          // Hanya update jika berbeda
+          if (currentBgColor !== bgColor) {
+            setCurrentBgColor(bgColor);
+            setSelectedBgColor(bgColor);
+            setDisplayedBgColor(bgColor);
+            setActiveBgColor(bgColor);
+            
+            // Update button visual
+            requestAnimationFrame(() => {
+              if (bgColorButtonRef.current) {
+                const btn = bgColorButtonRef.current;
+                const bgColorBar = btn.querySelector('.bg-color-bar');
+                if (bgColorBar) {
+                  bgColorBar.style.backgroundColor = bgColor;
+                }
+              }
+            });
+          }
+        } else {
+          // Tidak ada highlight - set ke transparent
+          const defaultBgColor = "transparent";
+          if (currentBgColor !== defaultBgColor) {
+            setCurrentBgColor(defaultBgColor);
+            setSelectedBgColor("#FFFF00");
+            setDisplayedBgColor(defaultBgColor);
+            setActiveBgColor(defaultBgColor);
+            
+            requestAnimationFrame(() => {
+              if (bgColorButtonRef.current) {
+                const btn = bgColorButtonRef.current;
+                const bgColorBar = btn.querySelector('.bg-color-bar');
+                if (bgColorBar) {
+                  bgColorBar.style.backgroundColor = "#FFFF00";
+                }
+              }
+            });
+          }
+        }
       } catch (e) {
         // Ignore errors
       }
     };
 
-    // Update saat selection berubah - gunakan transaction untuk detect selection changes
+    // Update saat selection berubah
     const handleUpdate = () => {
       updateColorFromSelection();
     };
@@ -235,7 +278,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       editor.off('update', handleUpdate);
       editor.off('selectionUpdate', handleUpdate);
     };
-  }, [editor, currentTextColor]);
+  }, [editor, currentTextColor, currentBgColor]);
 
   // Preset colors seperti MS Word - Primary color #FF9900 (rgb(255, 153, 0))
   const presetColors = [
@@ -1772,7 +1815,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     setShowMoreColors(false);
   };
 
-  // Apply Background Color - menggunakan Tiptap dengan delete dan insert
+  // Apply Background Color - menggunakan Highlight extension (CARA BENAR)
   const applyBgColor = (color) => {
     if (!editor) return;
     
@@ -1785,65 +1828,31 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     const isEmpty = from === to;
     
     if (isEmpty) {
-      // No selection - set untuk next typing
-      // Kita hanya update state untuk next typing
-      // Background color akan diterapkan saat user mengetik (perlu custom extension untuk ini)
+      // No selection - set highlight untuk next typing
+      // Jika sudah ada highlight dengan color yang sama, remove
+      // Jika belum atau color berbeda, set untuk next typing
+      const currentHighlight = editor.getAttributes('highlight');
+      if (currentHighlight && currentHighlight.color === color) {
+        // Remove highlight jika color sama
+        editor.chain().toggleHighlight().run();
+      }
+      // Untuk next typing, highlight akan diterapkan dengan color yang dipilih
     } else {
-      // Ada selection - wrap dengan span yang punya background color
+      // Ada selection - apply atau remove highlight
       if (color === "transparent") {
-        // Remove background color - ambil HTML, remove backgroundColor dari spans
-        const html = editor.getHTML();
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = html;
-        
-        // Cari semua span dengan backgroundColor dan remove
-        const spansWithBg = tempDiv.querySelectorAll('span[style*="background-color"], span[style*="background-color"]');
-        spansWithBg.forEach(span => {
-          const style = span.getAttribute('style') || '';
-          const newStyle = style
-            .split(';')
-            .map(s => s.trim())
-            .filter(s => s && !s.toLowerCase().startsWith('background-color'))
-            .join(';')
-            .trim();
-          
-          if (newStyle) {
-            span.setAttribute('style', newStyle);
-          } else {
-            // Unwrap span jika tidak ada style lain
-            const parent = span.parentNode;
-            while (span.firstChild) {
-              parent.insertBefore(span.firstChild, span);
-            }
-            parent.removeChild(span);
-          }
-        });
-        
-        // Update editor dengan HTML yang sudah dibersihkan
-        const newHTML = tempDiv.innerHTML;
-        editor.commands.setContent(newHTML);
+        // Remove highlight
+        editor.chain().focus().unsetHighlight().run();
       } else {
-        // Apply background color - extract HTML dari selection, wrap dengan span
-        // Gunakan Tiptap's DOMSerializer untuk preserve formatting
-        
-        // Extract fragment dari selection
-        const fragment = editor.state.doc.slice(from, to);
-        
-        // Serialize fragment ke HTML menggunakan DOMSerializer
-        const serializer = DOMSerializer.fromSchema(editor.state.schema);
-        const serializedFragment = serializer.serializeFragment(fragment.content);
-        
-        // Convert serialized fragment ke HTML string
-        const tempDiv = document.createElement('div');
-        tempDiv.appendChild(serializedFragment);
-        const selectedHTML = tempDiv.innerHTML;
-        
-        // Wrap selected HTML dengan span yang punya backgroundColor
-        const wrappedContent = `<span style="background-color: ${color}">${selectedHTML}</span>`;
-        
-        // Delete selection dan insert wrapped content
-        editor.commands.deleteSelection();
-        editor.commands.insertContent(wrappedContent);
+        // Apply highlight dengan color menggunakan toggleHighlight
+        // toggleHighlight({ color }) akan apply color jika belum ada, atau remove jika sudah ada dengan color yang sama
+        const currentHighlight = editor.getAttributes('highlight');
+        if (currentHighlight && currentHighlight.color === color) {
+          // Jika sudah ada highlight dengan color yang sama, remove
+          editor.chain().focus().unsetHighlight().run();
+        } else {
+          // Apply highlight dengan color baru
+          editor.chain().focus().toggleHighlight({ color: color }).run();
+        }
       }
     }
     
