@@ -3583,7 +3583,6 @@ html:has(.add-products3-container) {
   overflow-wrap: break-word;
   direction: ltr !important;
   text-align: left !important;
-  unicode-bidi: embed;
   transition: none !important; /* No transition for immediate updates */
 }
 
@@ -3616,7 +3615,6 @@ html:has(.add-products3-container) {
   line-height: 1.2; /* Tighter line height */
   direction: ltr !important;
   text-align: left !important;
-  unicode-bidi: embed;
 }
 
 /* List Item Editor - Ensure LTR direction */

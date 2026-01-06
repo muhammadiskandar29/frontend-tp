@@ -278,6 +278,14 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   const handleEditorInput = (index) => {
     const editor = document.getElementById(`list-editor-${index}`);
     if (editor) {
+      // Ensure direction stays LTR
+      if (editor.getAttribute("dir") !== "ltr") {
+        editor.setAttribute("dir", "ltr");
+      }
+      if (editor.style.direction !== "ltr") {
+        editor.style.direction = "ltr";
+      }
+      
       const html = editor.innerHTML;
       updateItem(index, "content", html);
       
@@ -293,7 +301,16 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
 
   // Handle keydown
   const handleEditorKeyDown = (index, e) => {
-    // Just save selection, no direction forcing
+    const editor = document.getElementById(`list-editor-${index}`);
+    if (editor) {
+      // Ensure direction stays LTR on keydown
+      if (editor.getAttribute("dir") !== "ltr") {
+        editor.setAttribute("dir", "ltr");
+      }
+      if (editor.style.direction !== "ltr") {
+        editor.style.direction = "ltr";
+      }
+    }
     saveSelection(index);
   };
 
@@ -1263,6 +1280,7 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
                           minHeight: "100px",
                           padding: "12px 14px",
                           textAlign: "left",
+                          direction: "ltr",
                         }}
                         data-placeholder="Insert text here ..."
                         dangerouslySetInnerHTML={{ __html: item.content || "<p></p>" }}
