@@ -12,7 +12,8 @@ import {
   Check, Star, Heart, ThumbsUp, Award, Zap, Flame, Sparkles,
   ArrowUp, ArrowDown, ArrowUpCircle, ArrowDownCircle, PlayCircle,
   PauseCircle, StopCircle, Radio, Square, Hexagon, Triangle,
-  AlertCircle, Info, HelpCircle as HelpCircleIcon, Ban, Shield, Key, Unlock
+  AlertCircle, Info, HelpCircle as HelpCircleIcon, Ban, Shield, Key, Unlock,
+  Clock
 } from "lucide-react";
 import { InputText } from "primereact/inputtext";
 import { Dropdown } from "primereact/dropdown";
@@ -36,7 +37,9 @@ import {
   DividerComponent,
   ScrollTargetComponent,
   AnimationComponent,
+  CountdownComponent,
 } from './components';
+import CountdownPreview from './components/CountdownPreview';
 // PrimeReact Theme & Core
 import "primereact/resources/themes/lara-light-amber/theme.css";
 import "primereact/resources/primereact.min.css";
@@ -61,6 +64,7 @@ const COMPONENT_CATEGORIES = {
       { id: "list", name: "Daftar", icon: List, color: "#6b7280" },
       { id: "testimoni", name: "Testimoni", icon: MessageSquare, color: "#6b7280" },
       { id: "faq", name: "FAQ", icon: HelpCircle, color: "#6b7280" },
+      { id: "countdown", name: "Countdown", icon: Clock, color: "#6b7280" },
     ]
   }
 };
@@ -171,6 +175,17 @@ export default function AddProducts3Page() {
       divider: { style: "solid", color: "#e5e7eb" },
       "scroll-target": { target: "" },
       animation: { type: "fade" },
+      countdown: { 
+        hours: 2, 
+        minutes: 0, 
+        seconds: 0, 
+        promoText: "Promo Berakhir Dalam:",
+        textColor: "#e5e7eb",
+        bgColorHours: "#1f2937",
+        bgColorMinutes: "#1f2937",
+        bgColorSeconds: "#1f2937",
+        numberStyle: "flip"
+      },
     };
     return defaults[componentId] || {};
   };
@@ -367,6 +382,8 @@ export default function AddProducts3Page() {
         return <ScrollTargetComponent {...commonProps} />;
       case "animation":
         return <AnimationComponent {...commonProps} />;
+      case "countdown":
+        return <CountdownComponent {...commonProps} />;
       default:
         return <div>Unknown component: {block.type}</div>;
     }
@@ -1221,6 +1238,8 @@ export default function AddProducts3Page() {
         return <div dangerouslySetInnerHTML={{ __html: block.data.code || "" }} />;
       case "embed":
         return <div dangerouslySetInnerHTML={{ __html: block.data.code || "" }} />;
+      case "countdown":
+        return <CountdownPreview data={block.data || {}} index={block.id} />;
       case "section":
         const sectionData = block.data || {};
         const sectionComponentId = sectionData.componentId || `section-${block.id}`;
