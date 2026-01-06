@@ -189,21 +189,35 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     });
   }, [items.length]);
 
-  // Ensure editors are properly initialized (no aggressive direction forcing)
+  // Ensure editors are properly initialized with STRONG LTR enforcement
   useEffect(() => {
     items.forEach((_, i) => {
       const editor = document.getElementById(`list-editor-${i}`);
       if (editor) {
-        // Only set dir attribute, no unicodeBidi or style.direction
+        // STRONG LTR enforcement
         editor.setAttribute("dir", "ltr");
+        editor.style.direction = "ltr";
+        editor.style.unicodeBidi = "normal";
+        
+        // Force all child elements to LTR
+        const allElements = editor.querySelectorAll("*");
+        allElements.forEach(el => {
+          el.setAttribute("dir", "ltr");
+          el.style.direction = "ltr";
+          el.style.unicodeBidi = "normal";
+        });
       }
     });
   }, [items]);
 
-  // Detect styles from selection/cursor
+  // Detect styles from selection/cursor - simple version using queryCommandState
   const detectStyles = (itemIndex) => {
     const editor = document.getElementById(`list-editor-${itemIndex}`);
     if (!editor) return;
+    
+    // Ensure LTR
+    editor.setAttribute("dir", "ltr");
+    editor.style.direction = "ltr";
     
     const selection = window.getSelection();
     if (selection.rangeCount === 0) return;
@@ -211,28 +225,19 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     const range = selection.getRangeAt(0);
     if (!editor.contains(range.commonAncestorContainer)) return;
     
+    // Use queryCommandState for simple detection
+    const isBold = document.queryCommandState("bold");
+    const isItalic = document.queryCommandState("italic");
+    const isUnderline = document.queryCommandState("underline");
+    const isStrikethrough = document.queryCommandState("strikeThrough");
+    
+    // For color and font size, still use computed style
     let node = range.startContainer;
     if (node.nodeType === Node.TEXT_NODE) {
       node = node.parentElement;
     }
     
     const computedStyle = window.getComputedStyle(node);
-    const state = getEditorState(itemIndex);
-    
-    // Detect bold
-    const fontWeight = computedStyle.fontWeight || node.style.fontWeight;
-    const isBold = fontWeight === "bold" || parseInt(fontWeight) >= 600;
-    
-    // Detect italic
-    const fontStyle = computedStyle.fontStyle || node.style.fontStyle;
-    const isItalic = fontStyle === "italic";
-    
-    // Detect underline
-    const textDecoration = computedStyle.textDecoration || node.style.textDecoration || "";
-    const isUnderline = textDecoration.includes("underline");
-    
-    // Detect strikethrough
-    const isStrikethrough = textDecoration.includes("line-through");
     
     // Detect color
     const color = computedStyle.color || node.style.color || "#000000";
@@ -256,6 +261,71 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       currentBgColor: bgColorHex,
       displayedFontSize: fontSizeNum || 16
     });
+    
+    // Update button visuals
+    const boldBtn = editor.parentElement?.querySelector('.toolbar-btn[title="Bold"]');
+    if (boldBtn) {
+      if (isBold) {
+        boldBtn.classList.add('active');
+        boldBtn.style.setProperty('background-color', '#F1A124', 'important');
+        boldBtn.style.setProperty('border-color', '#F1A124', 'important');
+        boldBtn.style.setProperty('color', '#ffffff', 'important');
+      } else {
+        boldBtn.classList.remove('active');
+        boldBtn.className = 'toolbar-btn';
+        boldBtn.style.removeProperty('background-color');
+        boldBtn.style.removeProperty('border-color');
+        boldBtn.style.removeProperty('color');
+      }
+    }
+    
+    const italicBtn = editor.parentElement?.querySelector('.toolbar-btn[title="Italic"]');
+    if (italicBtn) {
+      if (isItalic) {
+        italicBtn.classList.add('active');
+        italicBtn.style.setProperty('background-color', '#F1A124', 'important');
+        italicBtn.style.setProperty('border-color', '#F1A124', 'important');
+        italicBtn.style.setProperty('color', '#ffffff', 'important');
+      } else {
+        italicBtn.classList.remove('active');
+        italicBtn.className = 'toolbar-btn';
+        italicBtn.style.removeProperty('background-color');
+        italicBtn.style.removeProperty('border-color');
+        italicBtn.style.removeProperty('color');
+      }
+    }
+    
+    const underlineBtn = editor.parentElement?.querySelector('.toolbar-btn[title="Underline"]');
+    if (underlineBtn) {
+      if (isUnderline) {
+        underlineBtn.classList.add('active');
+        underlineBtn.style.setProperty('background-color', '#F1A124', 'important');
+        underlineBtn.style.setProperty('border-color', '#F1A124', 'important');
+        underlineBtn.style.setProperty('color', '#ffffff', 'important');
+      } else {
+        underlineBtn.classList.remove('active');
+        underlineBtn.className = 'toolbar-btn';
+        underlineBtn.style.removeProperty('background-color');
+        underlineBtn.style.removeProperty('border-color');
+        underlineBtn.style.removeProperty('color');
+      }
+    }
+    
+    const strikethroughBtn = editor.parentElement?.querySelector('.toolbar-btn[title="Strikethrough"]');
+    if (strikethroughBtn) {
+      if (isStrikethrough) {
+        strikethroughBtn.classList.add('active');
+        strikethroughBtn.style.setProperty('background-color', '#F1A124', 'important');
+        strikethroughBtn.style.setProperty('border-color', '#F1A124', 'important');
+        strikethroughBtn.style.setProperty('color', '#ffffff', 'important');
+      } else {
+        strikethroughBtn.classList.remove('active');
+        strikethroughBtn.className = 'toolbar-btn';
+        strikethroughBtn.style.removeProperty('background-color');
+        strikethroughBtn.style.removeProperty('border-color');
+        strikethroughBtn.style.removeProperty('color');
+      }
+    }
   };
   
   // Helper: Convert RGB to Hex
@@ -274,42 +344,41 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     return color;
   };
 
-  // Rich text editor handlers untuk setiap item
+  // Simple text editor handlers - independent from TextComponent
   const handleEditorInput = (index) => {
     const editor = document.getElementById(`list-editor-${index}`);
     if (editor) {
-      // Ensure direction stays LTR
-      if (editor.getAttribute("dir") !== "ltr") {
-        editor.setAttribute("dir", "ltr");
-      }
-      if (editor.style.direction !== "ltr") {
-        editor.style.direction = "ltr";
-      }
+      // STRONG LTR enforcement - prevent any RTL
+      editor.setAttribute("dir", "ltr");
+      editor.style.direction = "ltr";
+      editor.style.unicodeBidi = "normal";
+      
+      // Force all child elements to LTR
+      const allElements = editor.querySelectorAll("*");
+      allElements.forEach(el => {
+        el.setAttribute("dir", "ltr");
+        el.style.direction = "ltr";
+        el.style.unicodeBidi = "normal";
+      });
       
       const html = editor.innerHTML;
       updateItem(index, "content", html);
       
-      // Detect styles after input
+      // Simple style detection
       requestAnimationFrame(() => {
         detectStyles(index);
-        requestAnimationFrame(() => {
-          detectStyles(index);
-        });
       });
     }
   };
 
-  // Handle keydown
+  // Handle keydown - ensure LTR
   const handleEditorKeyDown = (index, e) => {
     const editor = document.getElementById(`list-editor-${index}`);
     if (editor) {
-      // Ensure direction stays LTR on keydown
-      if (editor.getAttribute("dir") !== "ltr") {
-        editor.setAttribute("dir", "ltr");
-      }
-      if (editor.style.direction !== "ltr") {
-        editor.style.direction = "ltr";
-      }
+      // STRONG LTR enforcement on every keystroke
+      editor.setAttribute("dir", "ltr");
+      editor.style.direction = "ltr";
+      editor.style.unicodeBidi = "normal";
     }
     saveSelection(index);
   };
@@ -427,22 +496,27 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     }
   };
   
-  // Simple toggle functions (sama seperti TextComponent yang disederhanakan)
+  // Simple toggle functions using execCommand - independent editor
   const toggleBold = (itemIndex, e) => {
     if (e) e.preventDefault();
     const editor = document.getElementById(`list-editor-${itemIndex}`);
     if (!editor) return;
     
-    const state = getEditorState(itemIndex);
-    const newBoldState = !state.currentBold;
+    // Ensure LTR
+    editor.setAttribute("dir", "ltr");
+    editor.style.direction = "ltr";
     
     editor.focus();
     restoreSelection(itemIndex);
     
+    // Use execCommand for simplicity
+    document.execCommand("bold", false, null);
+    
     // Update button visual
+    const isBold = document.queryCommandState("bold");
     const btn = editor.parentElement?.querySelector('.toolbar-btn[title="Bold"]');
     if (btn) {
-      if (newBoldState) {
+      if (isBold) {
         btn.classList.add('active');
         btn.style.setProperty('background-color', '#F1A124', 'important');
         btn.style.setProperty('border-color', '#F1A124', 'important');
@@ -456,40 +530,10 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
     }
     
-    // Apply bold
-    const selection = window.getSelection();
-    if (selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      if (!range.collapsed) {
-        const contents = range.extractContents();
-        const span = document.createElement("span");
-        span.style.fontWeight = newBoldState ? "bold" : "normal";
-        span.appendChild(contents);
-        range.insertNode(span);
-        range.collapse(false);
-        selection.removeAllRanges();
-        selection.addRange(range);
-      } else {
-        const marker = document.createElement("span");
-        marker.style.fontWeight = newBoldState ? "bold" : "normal";
-        marker.innerHTML = "\u200B";
-        range.insertNode(marker);
-        const newRange = document.createRange();
-        newRange.setStart(marker, 0);
-        newRange.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
-      }
-    }
-    
     updateEditorState(itemIndex, {
-      activeBold: newBoldState,
-      currentBold: newBoldState
+      activeBold: isBold,
+      currentBold: isBold
     });
-    
-    if (lastUsedStylesRefs.current[itemIndex]) {
-      lastUsedStylesRefs.current[itemIndex].fontWeight = newBoldState ? "bold" : "normal";
-    }
     
     handleEditorInput(itemIndex);
   };
@@ -499,16 +543,21 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     const editor = document.getElementById(`list-editor-${itemIndex}`);
     if (!editor) return;
     
-    const state = getEditorState(itemIndex);
-    const newItalicState = !state.currentItalic;
+    // Ensure LTR
+    editor.setAttribute("dir", "ltr");
+    editor.style.direction = "ltr";
     
     editor.focus();
     restoreSelection(itemIndex);
     
+    // Use execCommand for simplicity
+    document.execCommand("italic", false, null);
+    
     // Update button visual
+    const isItalic = document.queryCommandState("italic");
     const btn = editor.parentElement?.querySelector('.toolbar-btn[title="Italic"]');
     if (btn) {
-      if (newItalicState) {
+      if (isItalic) {
         btn.classList.add('active');
         btn.style.setProperty('background-color', '#F1A124', 'important');
         btn.style.setProperty('border-color', '#F1A124', 'important');
@@ -522,64 +571,35 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
     }
     
-    // Apply italic
-    const selection = window.getSelection();
-    if (selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      if (!range.collapsed) {
-        const contents = range.extractContents();
-        const span = document.createElement("span");
-        span.style.fontStyle = newItalicState ? "italic" : "normal";
-        span.appendChild(contents);
-        range.insertNode(span);
-        range.collapse(false);
-        selection.removeAllRanges();
-        selection.addRange(range);
-      } else {
-        const marker = document.createElement("span");
-        marker.style.fontStyle = newItalicState ? "italic" : "normal";
-        marker.innerHTML = "\u200B";
-        range.insertNode(marker);
-        const newRange = document.createRange();
-        newRange.setStart(marker, 0);
-        newRange.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
-      }
-    }
-    
     updateEditorState(itemIndex, {
-      activeItalic: newItalicState,
-      currentItalic: newItalicState
+      activeItalic: isItalic,
+      currentItalic: isItalic
     });
-    
-    if (lastUsedStylesRefs.current[itemIndex]) {
-      lastUsedStylesRefs.current[itemIndex].fontStyle = newItalicState ? "italic" : "normal";
-    }
     
     handleEditorInput(itemIndex);
   };
   
-  // Simple toggle underline (sama seperti versi sederhana di TextComponent)
+  // Simple toggle underline using execCommand
   const toggleUnderline = (itemIndex, e) => {
     if (e) e.preventDefault();
     const editor = document.getElementById(`list-editor-${itemIndex}`);
     if (!editor) return;
     
-    const selection = window.getSelection();
-    if (selection.rangeCount === 0) return;
+    // Ensure LTR
+    editor.setAttribute("dir", "ltr");
+    editor.style.direction = "ltr";
     
-    const range = selection.getRangeAt(0);
-    if (!editor.contains(range.commonAncestorContainer)) return;
+    editor.focus();
+    restoreSelection(itemIndex);
     
-    const state = getEditorState(itemIndex);
-    const currentButtonState = state.currentUnderline || false;
-    const newUnderlineState = !currentButtonState;
+    // Use execCommand for simplicity
+    document.execCommand("underline", false, null);
     
     // Update button visual
+    const isUnderline = document.queryCommandState("underline");
     const btn = editor.parentElement?.querySelector('.toolbar-btn[title="Underline"]');
     if (btn) {
-      if (newUnderlineState) {
+      if (isUnderline) {
         btn.classList.add('active');
         btn.style.setProperty('background-color', '#F1A124', 'important');
         btn.style.setProperty('border-color', '#F1A124', 'important');
@@ -593,76 +613,35 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
     }
     
-    editor.focus();
-    
-    // Apply underline directly
-    if (!range.collapsed) {
-      const contents = range.extractContents();
-      if (newUnderlineState) {
-        const span = document.createElement("span");
-        span.style.textDecoration = "underline";
-        span.appendChild(contents);
-        range.insertNode(span);
-      } else {
-        const tempDiv = document.createElement("div");
-        tempDiv.appendChild(contents);
-        const underlineSpans = tempDiv.querySelectorAll('span[style*="underline"]');
-        underlineSpans.forEach(span => {
-          const textDecoration = span.style.textDecoration || "";
-          const newDecoration = textDecoration.split(" ").filter(d => d !== "underline").join(" ");
-          span.style.textDecoration = newDecoration || "";
-        });
-        while (tempDiv.firstChild) {
-          range.insertNode(tempDiv.firstChild);
-        }
-      }
-      range.collapse(false);
-      selection.removeAllRanges();
-      selection.addRange(range);
-    } else {
-      const marker = document.createElement("span");
-      marker.style.textDecoration = newUnderlineState ? "underline" : "none";
-      marker.innerHTML = "\u200B";
-      range.insertNode(marker);
-      const newRange = document.createRange();
-      newRange.setStart(marker, 0);
-      newRange.collapse(true);
-      selection.removeAllRanges();
-      selection.addRange(newRange);
-    }
-    
     updateEditorState(itemIndex, {
-      activeUnderline: newUnderlineState,
-      currentUnderline: newUnderlineState
+      activeUnderline: isUnderline,
+      currentUnderline: isUnderline
     });
-    
-    if (lastUsedStylesRefs.current[itemIndex]) {
-      lastUsedStylesRefs.current[itemIndex].textDecoration = newUnderlineState ? "underline" : "none";
-    }
     
     handleEditorInput(itemIndex);
   };
   
-  // Simple toggle strikethrough
+  // Simple toggle strikethrough using execCommand
   const toggleStrikethrough = (itemIndex, e) => {
     if (e) e.preventDefault();
     const editor = document.getElementById(`list-editor-${itemIndex}`);
     if (!editor) return;
     
-    const selection = window.getSelection();
-    if (selection.rangeCount === 0) return;
+    // Ensure LTR
+    editor.setAttribute("dir", "ltr");
+    editor.style.direction = "ltr";
     
-    const range = selection.getRangeAt(0);
-    if (!editor.contains(range.commonAncestorContainer)) return;
+    editor.focus();
+    restoreSelection(itemIndex);
     
-    const state = getEditorState(itemIndex);
-    const currentButtonState = state.currentStrikethrough || false;
-    const newStrikethroughState = !currentButtonState;
+    // Use execCommand for strikethrough
+    document.execCommand("strikeThrough", false, null);
     
     // Update button visual
+    const isStrikethrough = document.queryCommandState("strikeThrough");
     const btn = editor.parentElement?.querySelector('.toolbar-btn[title="Strikethrough"]');
     if (btn) {
-      if (newStrikethroughState) {
+      if (isStrikethrough) {
         btn.classList.add('active');
         btn.style.setProperty('background-color', '#F1A124', 'important');
         btn.style.setProperty('border-color', '#F1A124', 'important');
@@ -676,95 +655,28 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       }
     }
     
-    editor.focus();
-    
-    // Apply strikethrough directly
-    if (!range.collapsed) {
-      const contents = range.extractContents();
-      if (newStrikethroughState) {
-        const span = document.createElement("span");
-        span.style.textDecoration = "line-through";
-        span.appendChild(contents);
-        range.insertNode(span);
-      } else {
-        const tempDiv = document.createElement("div");
-        tempDiv.appendChild(contents);
-        const strikethroughSpans = tempDiv.querySelectorAll('span[style*="line-through"]');
-        strikethroughSpans.forEach(span => {
-          const textDecoration = span.style.textDecoration || "";
-          const newDecoration = textDecoration.split(" ").filter(d => d !== "line-through").join(" ");
-          span.style.textDecoration = newDecoration || "";
-        });
-        while (tempDiv.firstChild) {
-          range.insertNode(tempDiv.firstChild);
-        }
-      }
-      range.collapse(false);
-      selection.removeAllRanges();
-      selection.addRange(range);
-    } else {
-      const marker = document.createElement("span");
-      marker.style.textDecoration = newStrikethroughState ? "line-through" : "none";
-      marker.innerHTML = "\u200B";
-      range.insertNode(marker);
-      const newRange = document.createRange();
-      newRange.setStart(marker, 0);
-      newRange.collapse(true);
-      selection.removeAllRanges();
-      selection.addRange(newRange);
-    }
-    
     updateEditorState(itemIndex, {
-      activeStrikethrough: newStrikethroughState,
-      currentStrikethrough: newStrikethroughState
+      activeStrikethrough: isStrikethrough,
+      currentStrikethrough: isStrikethrough
     });
-    
-    if (lastUsedStylesRefs.current[itemIndex]) {
-      const currentDecoration = lastUsedStylesRefs.current[itemIndex].textDecoration || "none";
-      if (newStrikethroughState) {
-        lastUsedStylesRefs.current[itemIndex].textDecoration = currentDecoration.includes("underline") 
-          ? "underline line-through" : "line-through";
-      } else {
-        lastUsedStylesRefs.current[itemIndex].textDecoration = currentDecoration.includes("underline")
-          ? "underline" : "none";
-      }
-    }
     
     handleEditorInput(itemIndex);
   };
   
-  // Apply text color
+  // Apply text color - simple version
   const applyTextColor = (itemIndex, color) => {
     const editor = document.getElementById(`list-editor-${itemIndex}`);
     if (!editor) return;
     
+    // Ensure LTR
+    editor.setAttribute("dir", "ltr");
+    editor.style.direction = "ltr";
+    
     editor.focus();
     restoreSelection(itemIndex);
     
-    const selection = window.getSelection();
-    if (selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      if (!range.collapsed) {
-        const contents = range.extractContents();
-        const span = document.createElement("span");
-        span.style.color = color;
-        span.appendChild(contents);
-        range.insertNode(span);
-        range.collapse(false);
-        selection.removeAllRanges();
-        selection.addRange(range);
-      } else {
-        const marker = document.createElement("span");
-        marker.style.color = color;
-        marker.innerHTML = "\u200B";
-        range.insertNode(marker);
-        const newRange = document.createRange();
-        newRange.setStart(marker, 0);
-        newRange.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
-      }
-    }
+    // Use execCommand for color
+    document.execCommand("foreColor", false, color);
     
     updateEditorState(itemIndex, {
       activeColor: color,
@@ -772,46 +684,24 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       selectedColor: color
     });
     
-    if (lastUsedStylesRefs.current[itemIndex]) {
-      lastUsedStylesRefs.current[itemIndex].color = color;
-    }
-    
     setShowColorPicker(prev => ({ ...prev, [itemIndex]: false }));
     handleEditorInput(itemIndex);
   };
   
-  // Apply background color
+  // Apply background color - simple version
   const applyBgColor = (itemIndex, color) => {
     const editor = document.getElementById(`list-editor-${itemIndex}`);
     if (!editor) return;
     
+    // Ensure LTR
+    editor.setAttribute("dir", "ltr");
+    editor.style.direction = "ltr";
+    
     editor.focus();
     restoreSelection(itemIndex);
     
-    const selection = window.getSelection();
-    if (selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      if (!range.collapsed) {
-        const contents = range.extractContents();
-        const span = document.createElement("span");
-        span.style.backgroundColor = color === "transparent" ? "" : color;
-        span.appendChild(contents);
-        range.insertNode(span);
-        range.collapse(false);
-        selection.removeAllRanges();
-        selection.addRange(range);
-      } else {
-        const marker = document.createElement("span");
-        marker.style.backgroundColor = color === "transparent" ? "" : color;
-        marker.innerHTML = "\u200B";
-        range.insertNode(marker);
-        const newRange = document.createRange();
-        newRange.setStart(marker, 0);
-        newRange.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
-      }
-    }
+    // Use execCommand for background color
+    document.execCommand("backColor", false, color === "transparent" ? "#ffffff" : color);
     
     updateEditorState(itemIndex, {
       activeBgColor: color,
@@ -819,22 +709,25 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       selectedBgColor: color === "transparent" ? "#FFFF00" : color
     });
     
-    if (lastUsedStylesRefs.current[itemIndex]) {
-      lastUsedStylesRefs.current[itemIndex].backgroundColor = color;
-    }
-    
     setShowBgColorPicker(prev => ({ ...prev, [itemIndex]: false }));
     handleEditorInput(itemIndex);
   };
   
-  // Apply font size
+  // Apply font size - simple version
   const applyFontSize = (itemIndex, size) => {
     const editor = document.getElementById(`list-editor-${itemIndex}`);
     if (!editor) return;
     
+    // Ensure LTR
+    editor.setAttribute("dir", "ltr");
+    editor.style.direction = "ltr";
+    
     editor.focus();
     restoreSelection(itemIndex);
     
+    // Use execCommand for font size
+    document.execCommand("fontSize", false, "3"); // Base size
+    // Then apply actual size via style
     const selection = window.getSelection();
     if (selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
@@ -842,6 +735,8 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         const contents = range.extractContents();
         const span = document.createElement("span");
         span.style.fontSize = `${size}px`;
+        span.setAttribute("dir", "ltr");
+        span.style.direction = "ltr";
         span.appendChild(contents);
         range.insertNode(span);
         range.collapse(false);
@@ -850,6 +745,8 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       } else {
         const marker = document.createElement("span");
         marker.style.fontSize = `${size}px`;
+        marker.setAttribute("dir", "ltr");
+        marker.style.direction = "ltr";
         marker.innerHTML = "\u200B";
         range.insertNode(marker);
         const newRange = document.createRange();
@@ -864,10 +761,6 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       activeFontSize: size,
       displayedFontSize: size
     });
-    
-    if (lastUsedStylesRefs.current[itemIndex]) {
-      lastUsedStylesRefs.current[itemIndex].fontSize = size;
-    }
     
     handleEditorInput(itemIndex);
   };
@@ -1281,6 +1174,7 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
                           padding: "12px 14px",
                           textAlign: "left",
                           direction: "ltr",
+                          unicodeBidi: "normal",
                         }}
                         data-placeholder="Insert text here ..."
                         dangerouslySetInnerHTML={{ __html: item.content || "<p></p>" }}

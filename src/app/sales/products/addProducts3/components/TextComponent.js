@@ -247,20 +247,17 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       // Let browser handle normal typing naturally
       const html = editorRef.current.innerHTML;
       
-      // CRITICAL: Use flushSync untuk immediate update ke canvas
+      // CRITICAL: Update content FIRST - INSTANT, no delay
       // Ini memastikan perubahan langsung terlihat di preview/canvas
       flushSync(() => {
         handleChange("content", html);
       });
       
-      // Detect styles after input - immediate and force update for sync
-      requestAnimationFrame(() => {
+      // Detect styles AFTER content update - run in background, don't block canvas update
+      // Use setTimeout with 0 delay to run after current execution, but don't delay content update
+      setTimeout(() => {
         detectStyles();
-        // Force another detect to ensure button states are synced
-        requestAnimationFrame(() => {
-          detectStyles();
-        });
-      });
+      }, 0);
     }
   };
 
@@ -752,7 +749,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       requestAnimationFrame(() => {
         restoreSelection();
         handleEditorInput();
-        requestAnimationFrame(() => detectStyles());
+        setTimeout(() => detectStyles(), 0);
       });
     } else {
       // Collapsed cursor - set format for next typing (MS Word style)
@@ -1131,11 +1128,11 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     
     lastUsedStylesRef.current.color = color;
     
-    // Trigger input to save
+    // Trigger input to save - INSTANT canvas update
     handleEditorInput();
     
-    // Also update underline color to match text color - VERY aggressive approach
-    requestAnimationFrame(() => {
+    // Also update underline color to match text color - run in background, don't block canvas
+    setTimeout(() => {
       try {
         // Get the range after foreColor is applied
         const range = selection.getRangeAt(0);
@@ -1258,12 +1255,10 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       // State already updated above for immediate responsiveness
       setShowColorPicker(false);
       handleEditorInput();
-      // Force immediate style detection for button states
-      requestAnimationFrame(() => {
+      // Force immediate style detection for button states - run in background, don't block canvas
+      setTimeout(() => {
         detectStyles();
-        // Double check to ensure button states are synced
-        requestAnimationFrame(() => detectStyles());
-      });
+      }, 0);
     });
   };
 
@@ -3858,33 +3853,28 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
             requestAnimationFrame(() => {
             detectStyles();
               // Force another detect to ensure sync
-              requestAnimationFrame(() => detectStyles());
+              setTimeout(() => detectStyles(), 0);
             });
           }}
           onKeyUp={() => {
-            requestAnimationFrame(() => {
+            // Detect styles in background, don't block canvas update
+            setTimeout(() => {
               detectStyles();
-              // Force another detect to ensure sync
-              requestAnimationFrame(() => detectStyles());
-            });
+            }, 0);
           }}
           onClick={(e) => {
-            // Auto-detect styles when clicking
-            requestAnimationFrame(() => {
+            // Auto-detect styles when clicking - run in background, don't block canvas
+            setTimeout(() => {
               detectStyles();
-              // Force another detect to ensure sync
-              requestAnimationFrame(() => {
-                detectStyles();
               const selection = window.getSelection();
               if (selection.rangeCount === 0 || selection.getRangeAt(0).collapsed) {
                 // User clicked but didn't select anything - clear saved selection
                 savedSelectionRef.current = null;
-                } else {
-                  // User has selection - save it
-                  saveSelection();
+              } else {
+                // User has selection - save it
+                saveSelection();
               }
-              });
-            });
+            }, 0);
           }}
           className="rich-text-editor"
           style={{
