@@ -13,7 +13,7 @@ import {
   ArrowUp, ArrowDown, ArrowUpCircle, ArrowDownCircle, PlayCircle,
   PauseCircle, StopCircle, Radio, Square, Hexagon, Triangle,
   AlertCircle, Info, HelpCircle as HelpCircleIcon, Ban, Shield, Key, Unlock,
-  Clock, Users, Tag, Image as ImageIcon, Upload, Globe, Share2, Code
+  Clock, Users, Tag, Upload, Globe, Share2, Code
 } from "lucide-react";
 import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
