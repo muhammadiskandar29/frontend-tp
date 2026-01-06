@@ -93,6 +93,12 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   
   const colorPickerRef = useRef(null);
   const bgColorPickerRef = useRef(null);
+  const textColorButtonRef = useRef(null);
+  const bgColorButtonRef = useRef(null);
+  const boldButtonRef = useRef(null);
+  const italicButtonRef = useRef(null);
+  const underlineButtonRef = useRef(null);
+  const strikethroughButtonRef = useRef(null);
   
   // ===== TIPTAP EDITOR SETUP =====
   const editor = useEditor({
