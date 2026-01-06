@@ -17,6 +17,15 @@ import {
 } from "lucide-react";
 import ComponentWrapper from "./ComponentWrapper";
 
+// ProseMirror imports
+import { Schema, DOMParser, DOMSerializer } from "prosemirror-model";
+import { EditorState, Plugin } from "prosemirror-state";
+import { EditorView } from "prosemirror-view";
+import { toggleMark } from "prosemirror-commands";
+import { keymap } from "prosemirror-keymap";
+import { history, redo, undo } from "prosemirror-history";
+import { baseKeymap } from "prosemirror-commands";
+
 export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index, isExpanded, onToggleExpand }) {
   const content = data.content || "<p>Text Baru</p>";
   const darkEditor = data.darkEditor || false;
@@ -85,6 +94,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   const colorPickerRef = useRef(null);
   const bgColorPickerRef = useRef(null);
   const editorRef = useRef(null);
+  const editorViewRef = useRef(null);
   const savedSelectionRef = useRef(null);
   const boldButtonRef = useRef(null);
   const italicButtonRef = useRef(null);
@@ -95,6 +105,42 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   
   // Ref untuk tracking apakah state aktif sudah di-initialize dari DOM
   const isActiveStateInitializedRef = useRef(false);
+
+  // ===== PROSEMIRROR SCHEMA =====
+  // Schema dasar: paragraph, text, marks (bold, underline)
+  const prosemirrorSchema = new Schema({
+    nodes: {
+      doc: {
+        content: "paragraph+"
+      },
+      paragraph: {
+        content: "inline*",
+        group: "block",
+        parseDOM: [{ tag: "p" }],
+        toDOM: () => ["p", 0]
+      },
+      text: {
+        group: "inline"
+      }
+    },
+    marks: {
+      bold: {
+        parseDOM: [
+          { tag: "strong" },
+          { tag: "b", getAttrs: () => ({}) },
+          { style: "font-weight", getAttrs: (value) => /^(bold|bolder|[5-9]\d{2,})$/.test(value) && null }
+        ],
+        toDOM: () => ["strong", 0]
+      },
+      underline: {
+        parseDOM: [
+          { tag: "u" },
+          { style: "text-decoration", getAttrs: (value) => value === "underline" && null }
+        ],
+        toDOM: () => ["u", 0]
+      }
+    }
+  });
 
   // Preset colors seperti MS Word - Primary color #FF9900 (rgb(255, 153, 0))
   const presetColors = [
@@ -142,6 +188,124 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     defaultFontFamily: "Page Font",
     defaultColor: "#000000",
     paragraphMargin: "0 0 0 0", // No margin between paragraphs (MS Word style)
+  };
+
+  // ===== PROSEMIRROR HELPER FUNCTIONS =====
+  // Convert HTML string to ProseMirror document
+  const htmlToProseMirror = (html) => {
+    if (!html || html === "Text Baru") {
+      html = "<p></p>";
+    }
+    
+    // Create temporary container
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = html;
+    
+    // Parse HTML to ProseMirror document
+    return DOMParser.fromSchema(prosemirrorSchema).parse(tempDiv);
+  };
+
+  // Convert ProseMirror document to HTML string
+  const proseMirrorToHTML = (state) => {
+    const fragment = DOMSerializer.fromSchema(prosemirrorSchema).serializeFragment(state.doc.content);
+    const tempDiv = document.createElement("div");
+    tempDiv.appendChild(fragment);
+    return tempDiv.innerHTML || "<p></p>";
+  };
+
+  // Initialize ProseMirror editor
+  const initializeProseMirror = () => {
+    if (!editorRef.current) return;
+
+    // Destroy existing editor if any
+    if (editorViewRef.current) {
+      editorViewRef.current.destroy();
+      editorViewRef.current = null;
+    }
+
+    // Create initial state from HTML content
+    const doc = htmlToProseMirror(content);
+    
+    // Plugin to track selection changes and update toolbar
+    const selectionTrackerPlugin = new Plugin({
+      view(editorView) {
+        return {
+          update(view, prevState) {
+            // Update toolbar when selection changes
+            if (prevState.selection !== view.state.selection) {
+              updateToolbarState(view.state);
+            }
+          }
+        };
+      }
+    });
+    
+    const state = EditorState.create({
+      doc,
+      schema: prosemirrorSchema,
+      plugins: [
+        history(),
+        selectionTrackerPlugin,
+        keymap({
+          "Mod-z": undo,
+          "Mod-y": redo,
+          "Mod-Shift-z": redo
+        }),
+        keymap(baseKeymap)
+      ]
+    });
+
+    // Create editor view
+    const view = new EditorView(editorRef.current, {
+      state,
+      dispatchTransaction: (transaction) => {
+        const newState = view.state.apply(transaction);
+        view.updateState(newState);
+        
+        // Update content on every change
+        const html = proseMirrorToHTML(newState);
+        flushSync(() => {
+          handleChange("content", html);
+        });
+        
+        // Update UI state (bold/underline buttons)
+        updateToolbarState(newState);
+      }
+    });
+
+    editorViewRef.current = view;
+  };
+
+  // Update toolbar button states based on current selection
+  const updateToolbarState = (state) => {
+    if (!state) return;
+    
+    const { from, to, empty } = state.selection;
+    
+    // Check if bold is active
+    // For collapsed selection, check storedMarks. For range, check if mark exists in range
+    let boldActive = false;
+    if (empty && state.storedMarks) {
+      boldActive = state.storedMarks.some(m => m.type === prosemirrorSchema.marks.bold);
+    } else if (!empty) {
+      boldActive = state.doc.rangeHasMark(from, to, prosemirrorSchema.marks.bold);
+    }
+    
+    setCurrentBold(boldActive);
+    setDisplayedBold(boldActive);
+    setActiveBold(boldActive);
+    
+    // Check if underline is active
+    let underlineActive = false;
+    if (empty && state.storedMarks) {
+      underlineActive = state.storedMarks.some(m => m.type === prosemirrorSchema.marks.underline);
+    } else if (!empty) {
+      underlineActive = state.doc.rangeHasMark(from, to, prosemirrorSchema.marks.underline);
+    }
+    
+    setCurrentUnderline(underlineActive);
+    setDisplayedUnderline(underlineActive);
+    setActiveUnderline(underlineActive);
   };
   
   // ===== SANITIZE HTML: Clean paste and normalize structure =====
@@ -1669,39 +1833,39 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     }, 50);
   };
 
-  // Initialize editor content
+  // Initialize ProseMirror editor
   useEffect(() => {
     if (editorRef.current) {
-      if (!content || content === "Text Baru") {
-        editorRef.current.innerHTML = "<p></p>";
-      } else {
-        // Sanitize content on load
-        const sanitized = sanitizeHTML(content);
-        editorRef.current.innerHTML = sanitized;
-      }
+      initializeProseMirror();
       
-      // Ensure all paragraphs have consistent styling
-      const paragraphs = editorRef.current.querySelectorAll("p");
-      paragraphs.forEach(p => {
-        p.style.margin = TYPOGRAPHY_STANDARD.paragraphMargin;
-        p.style.padding = "0";
-        // Remove inline font-size from paragraph (only in spans)
-        if (p.style.fontSize) {
-          p.style.removeProperty("fontSize");
+      // Cleanup on unmount
+      return () => {
+        if (editorViewRef.current) {
+          editorViewRef.current.destroy();
+          editorViewRef.current = null;
         }
-      });
-      
-      // Detect styles after content is loaded - ini akan update active state sesuai style di content
-      // Delay sedikit untuk memastikan DOM sudah siap
-      setTimeout(() => {
-        detectStyles();
-        // Double check setelah DOM fully loaded
-        requestAnimationFrame(() => {
-          detectStyles();
-        });
-      }, 100);
+      };
     }
   }, []);
+
+  // Re-initialize editor when content changes externally (but avoid infinite loop)
+  useEffect(() => {
+    if (editorViewRef.current && editorRef.current && content !== undefined) {
+      const currentHTML = proseMirrorToHTML(editorViewRef.current.state);
+      // Only re-initialize if content changed externally (not from our own updates)
+      // Use a small delay to avoid race conditions
+      const timeoutId = setTimeout(() => {
+        if (editorViewRef.current) {
+          const newHTML = proseMirrorToHTML(editorViewRef.current.state);
+          if (newHTML !== content && content !== undefined) {
+            initializeProseMirror();
+          }
+        }
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [content]);
   
   // REMOVED: useEffect that normalizes paragraphs on every content change
   // This was too aggressive and caused typing issues
@@ -2179,7 +2343,24 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
 
   // Formatting functions - only apply to selection, don't change global state
   // ===== ULTRA SIMPLE & DIRECT: Toggle Bold Function =====
+  // ProseMirror toggle bold - simple and stable
   const toggleBold = (e) => {
+    if (e) e.preventDefault();
+    if (!editorViewRef.current) return;
+    
+    const { state, dispatch } = editorViewRef.current;
+    const markType = prosemirrorSchema.marks.bold;
+    
+    // Use ProseMirror's toggleMark command - handles selection stability automatically
+    toggleMark(markType)(state, dispatch);
+    
+    // Update UI state
+    const newState = editorViewRef.current.state;
+    updateToolbarState(newState);
+  };
+
+  // Legacy toggleBold code removed - replaced with ProseMirror version above
+  const toggleBold_OLD = (e) => {
     if (e) e.preventDefault();
     if (!editorRef.current) return;
     
@@ -2797,173 +2978,20 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     }
   };
   
-  // ===== SIMPLE & RESPONSIVE: Toggle Underline Function =====
+  // ProseMirror toggle underline - simple and stable
   const toggleUnderline = (e) => {
     if (e) e.preventDefault();
-    if (!editorRef.current) return;
+    if (!editorViewRef.current) return;
     
-    const selection = window.getSelection();
-    if (selection.rangeCount === 0) return;
+    const { state, dispatch } = editorViewRef.current;
+    const markType = prosemirrorSchema.marks.underline;
     
-    const range = selection.getRangeAt(0);
-    if (!editorRef.current.contains(range.commonAncestorContainer)) return;
+    // Use ProseMirror's toggleMark command - handles selection stability automatically
+    toggleMark(markType)(state, dispatch);
     
-    // Get current button state
-    const currentButtonState = underlineButtonRef.current?.classList.contains('active') || false;
-    const newUnderlineState = !currentButtonState;
-    
-    // INSTANT: Update button visual FIRST
-    if (underlineButtonRef.current) {
-      const btn = underlineButtonRef.current;
-      if (newUnderlineState) {
-        btn.classList.add('active');
-        btn.style.setProperty('background-color', '#F1A124', 'important');
-        btn.style.setProperty('border-color', '#F1A124', 'important');
-        btn.style.setProperty('color', '#ffffff', 'important');
-      } else {
-        btn.classList.remove('active');
-        btn.className = 'toolbar-btn';
-        btn.style.removeProperty('background-color');
-        btn.style.removeProperty('border-color');
-        btn.style.removeProperty('color');
-        btn.style.backgroundColor = '';
-        btn.style.borderColor = '';
-        btn.style.color = '';
-        btn.style.setProperty('background-color', '', 'important');
-        btn.style.setProperty('border-color', '', 'important');
-        btn.style.setProperty('color', '', 'important');
-      }
-      void btn.offsetHeight;
-    }
-    
-    // Update React state
-    setActiveUnderline(newUnderlineState);
-    setDisplayedUnderline(newUnderlineState);
-    setCurrentUnderline(newUnderlineState);
-    
-    editorRef.current.focus();
-    
-    // Apply underline directly
-    if (!range.collapsed) {
-      // SELECTION: Wrap selection with underline span
-      const contents = range.extractContents();
-      
-      if (newUnderlineState) {
-        // Apply underline
-        const span = document.createElement("span");
-        span.style.textDecoration = "underline";
-        span.appendChild(contents);
-        range.insertNode(span);
-      } else {
-        // Remove underline - unwrap all underline spans in selection
-        const tempDiv = document.createElement("div");
-        tempDiv.appendChild(contents);
-        
-        // Remove underline from all spans
-        const underlineSpans = tempDiv.querySelectorAll('span[style*="underline"], span[style*="text-decoration"]');
-        underlineSpans.forEach(span => {
-          const textDecoration = span.style.textDecoration || "";
-          const newDecoration = textDecoration
-            .split(" ")
-            .filter(d => d !== "underline")
-            .join(" ");
-          
-          if (newDecoration.trim()) {
-            span.style.textDecoration = newDecoration;
-          } else {
-            span.style.textDecoration = "";
-            // Unwrap if no other styles
-            if (!span.style.fontSize && !span.style.color && 
-                !span.style.fontWeight && !span.style.fontStyle &&
-                !span.style.backgroundColor && !span.style.textDecoration) {
-              const parent = span.parentNode;
-              while (span.firstChild) {
-                parent.insertBefore(span.firstChild, span);
-              }
-              parent.removeChild(span);
-            }
-          }
-        });
-        
-        // Insert back
-        while (tempDiv.firstChild) {
-          range.insertNode(tempDiv.firstChild);
-        }
-      }
-      
-      // Collapse to end
-      range.collapse(false);
-      selection.removeAllRanges();
-      selection.addRange(range);
-    } else {
-      // CURSOR: Create style marker for next typing
-      const marker = document.createElement("span");
-      marker.style.textDecoration = newUnderlineState ? "underline" : "none";
-      marker.innerHTML = "\u200B";
-      range.insertNode(marker);
-      
-      const newRange = document.createRange();
-      newRange.setStart(marker, 0);
-      newRange.collapse(true);
-      selection.removeAllRanges();
-      selection.addRange(newRange);
-      
-      savedSelectionRef.current = {
-        range: newRange.cloneRange(),
-        startContainer: newRange.startContainer,
-        startOffset: newRange.startOffset,
-        endContainer: newRange.endContainer,
-        endOffset: newRange.endOffset,
-        collapsed: true,
-        text: ""
-      };
-    }
-    
-    // Update lastUsedStylesRef
-    lastUsedStylesRef.current.textDecoration = newUnderlineState ? "underline" : "none";
-    
-    // CRITICAL: After applying style to selection, ensure button state is synced
-    // Don't rely on detectStyles() alone - directly update based on what we just applied
-    if (!range.collapsed) {
-      // For selection, button state should match what we just applied
-      // Force update button visual and state immediately
-      flushSync(() => {
-        setCurrentUnderline(newUnderlineState);
-        setDisplayedUnderline(newUnderlineState);
-      });
-      
-      // Also update button visual directly to ensure sync
-      if (underlineButtonRef.current) {
-        const btn = underlineButtonRef.current;
-        if (newUnderlineState) {
-          btn.classList.add('active');
-          btn.style.setProperty('background-color', '#F1A124', 'important');
-          btn.style.setProperty('border-color', '#F1A124', 'important');
-          btn.style.setProperty('color', '#ffffff', 'important');
-        } else {
-          btn.classList.remove('active');
-          btn.className = 'toolbar-btn';
-          btn.style.removeProperty('background-color');
-          btn.style.removeProperty('border-color');
-          btn.style.removeProperty('color');
-          btn.style.backgroundColor = '';
-          btn.style.borderColor = '';
-          btn.style.color = '';
-          btn.style.setProperty('background-color', '', 'important');
-          btn.style.setProperty('border-color', '', 'important');
-          btn.style.setProperty('color', '', 'important');
-        }
-        void btn.offsetHeight;
-      }
-    }
-    
-    requestAnimationFrame(() => {
-      handleEditorInput();
-      // Double check with detectStyles after DOM update
-      requestAnimationFrame(() => {
-        detectStyles();
-      });
-    });
+    // Update UI state
+    const newState = editorViewRef.current.state;
+    updateToolbarState(newState);
   };
 
   // ===== OPTIMIZED: Toggle Strikethrough Function =====
@@ -3784,98 +3812,10 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
         </div>
       </div>
 
-      {/* Rich Text Editor Area */}
+      {/* Rich Text Editor Area - ProseMirror */}
       <div className={`text-editor-area ${darkEditor ? 'dark' : ''}`}>
         <div
           ref={editorRef}
-          contentEditable
-          onInput={handleEditorInput}
-          onKeyDown={handleEditorKeyDown}
-          onPaste={(e) => {
-            e.preventDefault();
-            
-            // Get pasted content
-            const clipboardData = e.clipboardData || window.clipboardData;
-            const pastedText = clipboardData.getData("text/plain");
-            const pastedHTML = clipboardData.getData("text/html");
-            
-            const selection = window.getSelection();
-            if (selection.rangeCount === 0) return;
-            
-            const range = selection.getRangeAt(0);
-            
-            // Delete selected content
-            if (!range.collapsed) {
-              range.deleteContents();
-            }
-            
-            // If HTML available, sanitize it
-            if (pastedHTML) {
-              const sanitized = sanitizeHTML(pastedHTML);
-              const tempDiv = document.createElement("div");
-              tempDiv.innerHTML = sanitized;
-              
-              // Insert sanitized content
-              const fragment = document.createDocumentFragment();
-              while (tempDiv.firstChild) {
-                fragment.appendChild(tempDiv.firstChild);
-              }
-              
-              range.insertNode(fragment);
-            } else if (pastedText) {
-              // Plain text - insert as text with current active styles
-              const textNode = document.createTextNode(pastedText);
-              
-              // Wrap in span with active styles
-              const span = document.createElement("span");
-              span.style.fontSize = `${activeFontSize}px`;
-              span.style.color = activeColor;
-              span.style.fontWeight = activeBold ? "bold" : "normal";
-              span.style.fontStyle = activeItalic ? "italic" : "normal";
-              span.style.textDecoration = activeUnderline ? "underline" : (activeStrikethrough ? "line-through" : "none");
-              if (activeBgColor !== "transparent") {
-                span.style.backgroundColor = activeBgColor;
-              }
-              
-              span.appendChild(textNode);
-              range.insertNode(span);
-            }
-            
-            // Move cursor to end of inserted content
-            range.collapse(false);
-            selection.removeAllRanges();
-            selection.addRange(range);
-            
-            handleEditorInput();
-          }}
-          onMouseUp={(e) => {
-            // Don't clear saved selection immediately - let user finish selecting
-            requestAnimationFrame(() => {
-            detectStyles();
-              // Force another detect to ensure sync
-              setTimeout(() => detectStyles(), 0);
-            });
-          }}
-          onKeyUp={() => {
-            // Detect styles in background, don't block canvas update
-            setTimeout(() => {
-              detectStyles();
-            }, 0);
-          }}
-          onClick={(e) => {
-            // Auto-detect styles when clicking - run in background, don't block canvas
-            setTimeout(() => {
-              detectStyles();
-              const selection = window.getSelection();
-              if (selection.rangeCount === 0 || selection.getRangeAt(0).collapsed) {
-                // User clicked but didn't select anything - clear saved selection
-                savedSelectionRef.current = null;
-              } else {
-                // User has selection - save it
-                saveSelection();
-              }
-            }, 0);
-          }}
           className="rich-text-editor"
           style={{
             minHeight: "200px",
@@ -3884,9 +3824,8 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
             fontFamily: fontFamily !== "Page Font" ? fontFamily : "inherit",
             color: textColor,
             textAlign: textAlign,
-            fontSize: `${TYPOGRAPHY_STANDARD.defaultFontSize}px`, // Base font size
+            fontSize: `${TYPOGRAPHY_STANDARD.defaultFontSize}px`,
           }}
-          data-placeholder="Masukkan teks... (Enter untuk paragraf baru)"
         />
       </div>
 

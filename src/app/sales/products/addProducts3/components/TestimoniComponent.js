@@ -13,10 +13,204 @@ import {
 } from "lucide-react";
 import ComponentWrapper from "./ComponentWrapper";
 
+// ProseMirror imports
+import { Schema, DOMParser, DOMSerializer } from "prosemirror-model";
+import { EditorState, Plugin } from "prosemirror-state";
+import { EditorView } from "prosemirror-view";
+import { toggleMark } from "prosemirror-commands";
+import { keymap } from "prosemirror-keymap";
+import { history, redo, undo } from "prosemirror-history";
+import { baseKeymap } from "prosemirror-commands";
+
 export default function TestimoniComponent({ data = {}, onUpdate, onMoveUp, onMoveDown, onDelete, index, isExpanded, onToggleExpand }) {
   const componentTitle = data.componentTitle || "";
   const items = data.items || [];
   const [showImageActions, setShowImageActions] = useState({});
+  const editorViewRefs = useRef({}); // ProseMirror EditorView instances
+  
+  // ===== PROSEMIRROR SCHEMA =====
+  // Schema dasar: paragraph, text, marks (bold, underline)
+  const prosemirrorSchema = new Schema({
+    nodes: {
+      doc: {
+        content: "paragraph+"
+      },
+      paragraph: {
+        content: "inline*",
+        group: "block",
+        parseDOM: [{ tag: "p" }],
+        toDOM: () => ["p", 0]
+      },
+      text: {
+        group: "inline"
+      }
+    },
+    marks: {
+      bold: {
+        parseDOM: [
+          { tag: "strong" },
+          { tag: "b", getAttrs: () => ({}) },
+          { style: "font-weight", getAttrs: (value) => /^(bold|bolder|[5-9]\d{2,})$/.test(value) && null }
+        ],
+        toDOM: () => ["strong", 0]
+      },
+      underline: {
+        parseDOM: [
+          { tag: "u" },
+          { style: "text-decoration", getAttrs: (value) => value === "underline" && null }
+        ],
+        toDOM: () => ["u", 0]
+      }
+    }
+  });
+
+  // ===== PROSEMIRROR HELPER FUNCTIONS =====
+  // Convert HTML string to ProseMirror document
+  const htmlToProseMirror = (html) => {
+    if (!html || html === "Text Baru") {
+      html = "<p></p>";
+    }
+    
+    // Create temporary container
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = html;
+    
+    // Parse HTML to ProseMirror document
+    return DOMParser.fromSchema(prosemirrorSchema).parse(tempDiv);
+  };
+
+  // Convert ProseMirror document to HTML string
+  const proseMirrorToHTML = (state) => {
+    const fragment = DOMSerializer.fromSchema(prosemirrorSchema).serializeFragment(state.doc.content);
+    const tempDiv = document.createElement("div");
+    tempDiv.appendChild(fragment);
+    return tempDiv.innerHTML || "<p></p>";
+  };
+
+  // Initialize ProseMirror editor for a specific item
+  const initializeProseMirror = (itemIndex, content) => {
+    const editorElement = document.getElementById(`testimoni-editor-${itemIndex}`);
+    if (!editorElement) return;
+
+    // Destroy existing editor if any
+    if (editorViewRefs.current[itemIndex]) {
+      editorViewRefs.current[itemIndex].destroy();
+      editorViewRefs.current[itemIndex] = null;
+    }
+
+    // Create initial state from HTML content
+    const doc = htmlToProseMirror(content || "<p></p>");
+    
+    // Plugin to track selection changes and update toolbar
+    const selectionTrackerPlugin = new Plugin({
+      view(editorView) {
+        return {
+          update(view, prevState) {
+            // Update toolbar when selection changes
+            if (prevState.selection !== view.state.selection) {
+              updateToolbarState(itemIndex, view.state);
+            }
+          }
+        };
+      }
+    });
+    
+    const state = EditorState.create({
+      doc,
+      schema: prosemirrorSchema,
+      plugins: [
+        history(),
+        selectionTrackerPlugin,
+        keymap({
+          "Mod-z": undo,
+          "Mod-y": redo,
+          "Mod-Shift-z": redo
+        }),
+        keymap(baseKeymap)
+      ]
+    });
+
+    // Create editor view
+    const view = new EditorView(editorElement, {
+      state,
+      dispatchTransaction: (transaction) => {
+        const newState = view.state.apply(transaction);
+        view.updateState(newState);
+        
+        // Update content on every change
+        const html = proseMirrorToHTML(newState);
+        updateTestimoni(itemIndex, "isiTestimony", html);
+        
+        // Update UI state (bold/underline buttons)
+        updateToolbarState(itemIndex, newState);
+      }
+    });
+
+    editorViewRefs.current[itemIndex] = view;
+  };
+
+  // Update toolbar button states based on current selection
+  const updateToolbarState = (itemIndex, state) => {
+    if (!state) return;
+    
+    const { from, to, empty } = state.selection;
+    
+    // Check if bold is active
+    let boldActive = false;
+    if (empty && state.storedMarks) {
+      boldActive = state.storedMarks.some(m => m.type === prosemirrorSchema.marks.bold);
+    } else if (!empty) {
+      boldActive = state.doc.rangeHasMark(from, to, prosemirrorSchema.marks.bold);
+    }
+    
+    // Check if underline is active
+    let underlineActive = false;
+    if (empty && state.storedMarks) {
+      underlineActive = state.storedMarks.some(m => m.type === prosemirrorSchema.marks.underline);
+    } else if (!empty) {
+      underlineActive = state.doc.rangeHasMark(from, to, prosemirrorSchema.marks.underline);
+    }
+    
+    // Update button visuals
+    const editor = document.getElementById(`testimoni-editor-${itemIndex}`);
+    if (editor) {
+      // Find toolbar - it's in the same testimoni-item-content section
+      const testimoniItem = editor.closest('.testimoni-item-content');
+      if (testimoniItem) {
+        const boldBtn = testimoniItem.querySelector('.toolbar-btn[title="Bold"]');
+        if (boldBtn) {
+          if (boldActive) {
+            boldBtn.classList.add('active');
+            boldBtn.style.setProperty('background-color', '#F1A124', 'important');
+            boldBtn.style.setProperty('border-color', '#F1A124', 'important');
+            boldBtn.style.setProperty('color', '#ffffff', 'important');
+          } else {
+            boldBtn.classList.remove('active');
+            boldBtn.className = 'toolbar-btn';
+            boldBtn.style.removeProperty('background-color');
+            boldBtn.style.removeProperty('border-color');
+            boldBtn.style.removeProperty('color');
+          }
+        }
+        
+        const underlineBtn = testimoniItem.querySelector('.toolbar-btn[title="Underline"]');
+        if (underlineBtn) {
+          if (underlineActive) {
+            underlineBtn.classList.add('active');
+            underlineBtn.style.setProperty('background-color', '#F1A124', 'important');
+            underlineBtn.style.setProperty('border-color', '#F1A124', 'important');
+            underlineBtn.style.setProperty('color', '#ffffff', 'important');
+          } else {
+            underlineBtn.classList.remove('active');
+            underlineBtn.className = 'toolbar-btn';
+            underlineBtn.style.removeProperty('background-color');
+            underlineBtn.style.removeProperty('border-color');
+            underlineBtn.style.removeProperty('color');
+          }
+        }
+      }
+    }
+  };
   
   // Auto-expand all items by default
   const [expandedItems, setExpandedItems] = useState(() => {
@@ -77,50 +271,44 @@ export default function TestimoniComponent({ data = {}, onUpdate, onMoveUp, onMo
     }
   };
 
-  // Rich text editor handlers untuk setiap item
+  // ProseMirror handles input automatically via dispatchTransaction
+  // This function is kept for backward compatibility but no longer needed
   const handleEditorInput = (index) => {
-    const editor = document.getElementById(`testimoni-editor-${index}`);
-    if (editor) {
-      // Force LTR direction
-      editor.style.direction = "ltr";
-      editor.setAttribute("dir", "ltr");
-      
-      // Force LTR pada semua child elements
-      const allElements = editor.querySelectorAll("*");
-      allElements.forEach((el) => {
-        if (el instanceof HTMLElement) {
-          el.style.direction = "ltr";
-          el.setAttribute("dir", "ltr");
-          el.style.unicodeBidi = "embed";
-        }
-      });
-      
-      const html = editor.innerHTML;
-      updateTestimoni(index, "isiTestimony", html);
-    }
+    // ProseMirror handles content updates automatically in dispatchTransaction
+    // No manual handling needed
   };
 
+  // ProseMirror handles keydown automatically via keymap plugins
+  // This function is kept for backward compatibility but no longer needed
   const handleEditorKeyDown = (index, e) => {
-    const editor = document.getElementById(`testimoni-editor-${index}`);
-    if (editor) {
-      // Force LTR direction on every keystroke
-      editor.style.direction = "ltr";
-      editor.setAttribute("dir", "ltr");
-      editor.style.unicodeBidi = "embed";
-      
-      // Force LTR pada semua child elements
-      const allElements = editor.querySelectorAll("*");
-      allElements.forEach((el) => {
-        if (el instanceof HTMLElement) {
-          el.style.direction = "ltr";
-          el.setAttribute("dir", "ltr");
-          el.style.unicodeBidi = "embed";
-        }
-      });
-    }
+    // ProseMirror handles keyboard events via keymap plugins
+    // No manual handling needed
   };
 
+  // Format selection - use ProseMirror for Bold/Underline, execCommand for others
   const formatSelection = (index, command, value = null) => {
+    // Use ProseMirror for Bold and Underline
+    if (command === "bold") {
+      if (!editorViewRefs.current[index]) return;
+      const { state, dispatch } = editorViewRefs.current[index];
+      const markType = prosemirrorSchema.marks.bold;
+      toggleMark(markType)(state, dispatch);
+      const newState = editorViewRefs.current[index].state;
+      updateToolbarState(index, newState);
+      return;
+    }
+    
+    if (command === "underline") {
+      if (!editorViewRefs.current[index]) return;
+      const { state, dispatch } = editorViewRefs.current[index];
+      const markType = prosemirrorSchema.marks.underline;
+      toggleMark(markType)(state, dispatch);
+      const newState = editorViewRefs.current[index].state;
+      updateToolbarState(index, newState);
+      return;
+    }
+    
+    // For other commands, still use execCommand (not part of requirement)
     const editor = document.getElementById(`testimoni-editor-${index}`);
     if (!editor) return;
     
@@ -129,25 +317,55 @@ export default function TestimoniComponent({ data = {}, onUpdate, onMoveUp, onMo
     handleEditorInput(index);
   };
 
-  // Ensure all editors maintain LTR direction
+  // Initialize ProseMirror editors for all items
   useEffect(() => {
-    items.forEach((_, i) => {
-      const editor = document.getElementById(`testimoni-editor-${i}`);
-      if (editor) {
-        editor.style.direction = "ltr";
-        editor.setAttribute("dir", "ltr");
-        editor.style.unicodeBidi = "embed";
-        const allElements = editor.querySelectorAll("*");
-        allElements.forEach((el) => {
-          if (el instanceof HTMLElement) {
-            el.style.direction = "ltr";
-            el.setAttribute("dir", "ltr");
-            el.style.unicodeBidi = "embed";
+    const timeouts = [];
+    
+    items.forEach((item, i) => {
+      // Initialize ProseMirror editor for this item
+      const timeoutId = setTimeout(() => {
+        initializeProseMirror(i, item.isiTestimony || item.deskripsi || "<p></p>");
+      }, 50); // Small delay to ensure DOM is ready
+      timeouts.push(timeoutId);
+    });
+    
+    // Cleanup: destroy editors for items that no longer exist
+    return () => {
+      // Clear all timeouts
+      timeouts.forEach(id => clearTimeout(id));
+      
+      // Destroy editors for items that no longer exist
+      Object.keys(editorViewRefs.current).forEach(itemIndex => {
+        const index = parseInt(itemIndex);
+        if (index >= items.length) {
+          // Item was removed, destroy its editor
+          if (editorViewRefs.current[itemIndex]) {
+            editorViewRefs.current[itemIndex].destroy();
+            delete editorViewRefs.current[itemIndex];
           }
-        });
+        }
+      });
+    };
+  }, [items.length]); // Re-initialize when number of items changes
+
+  // Update editors when item content changes externally (but avoid infinite loop)
+  useEffect(() => {
+    items.forEach((item, i) => {
+      if (editorViewRefs.current[i]) {
+        const content = item.isiTestimony || item.deskripsi || "<p></p>";
+        if (content !== undefined) {
+          const currentHTML = proseMirrorToHTML(editorViewRefs.current[i].state);
+          // Only re-initialize if content changed externally (not from our own updates)
+          if (currentHTML !== content) {
+            const timeoutId = setTimeout(() => {
+              initializeProseMirror(i, content);
+            }, 100);
+            return () => clearTimeout(timeoutId);
+          }
+        }
       }
     });
-  }, [items]);
+  }, [items.map((item, i) => `${i}:${item.isiTestimony || item.deskripsi || ''}`).join('|')]); // Re-initialize when content changes
 
   return (
     <ComponentWrapper
@@ -398,14 +616,10 @@ export default function TestimoniComponent({ data = {}, onUpdate, onMoveUp, onMo
                       </div>
                     </div>
 
-                    {/* Rich Text Editor Area */}
+                    {/* Rich Text Editor Area - ProseMirror */}
                     <div className="text-editor-area">
                       <div
                         id={`testimoni-editor-${i}`}
-                        contentEditable
-                        onInput={() => handleEditorInput(i)}
-                        onKeyDown={(e) => handleEditorKeyDown(i, e)}
-                        onKeyUp={() => handleEditorInput(i)}
                         className="rich-text-editor list-item-editor"
                         dir="ltr"
                         spellCheck={false}
@@ -416,8 +630,6 @@ export default function TestimoniComponent({ data = {}, onUpdate, onMoveUp, onMo
                           textAlign: "left",
                           unicodeBidi: "embed",
                         }}
-                        data-placeholder="Masukkan isi testimony..."
-                        dangerouslySetInnerHTML={{ __html: item.isiTestimony || item.deskripsi || "<p></p>" }}
                       />
                     </div>
                   </div>

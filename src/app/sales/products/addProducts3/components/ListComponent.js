@@ -25,6 +25,15 @@ import {
 } from "lucide-react";
 import ComponentWrapper from "./ComponentWrapper";
 
+// ProseMirror imports
+import { Schema, DOMParser, DOMSerializer } from "prosemirror-model";
+import { EditorState, Plugin } from "prosemirror-state";
+import { EditorView } from "prosemirror-view";
+import { toggleMark } from "prosemirror-commands";
+import { keymap } from "prosemirror-keymap";
+import { history, redo, undo } from "prosemirror-history";
+import { baseKeymap } from "prosemirror-commands";
+
 // Icon options - banyak icon seperti di gambar
 const ICON_OPTIONS = [
   { name: "CheckCircle2", component: CheckCircle2 },
@@ -107,6 +116,197 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   const editorRefs = useRef({});
   const savedSelectionRefs = useRef({});
   const lastUsedStylesRefs = useRef({});
+  const editorViewRefs = useRef({}); // ProseMirror EditorView instances
+  
+  // ===== PROSEMIRROR SCHEMA =====
+  // Schema dasar: paragraph, text, marks (bold, underline)
+  const prosemirrorSchema = new Schema({
+    nodes: {
+      doc: {
+        content: "paragraph+"
+      },
+      paragraph: {
+        content: "inline*",
+        group: "block",
+        parseDOM: [{ tag: "p" }],
+        toDOM: () => ["p", 0]
+      },
+      text: {
+        group: "inline"
+      }
+    },
+    marks: {
+      bold: {
+        parseDOM: [
+          { tag: "strong" },
+          { tag: "b", getAttrs: () => ({}) },
+          { style: "font-weight", getAttrs: (value) => /^(bold|bolder|[5-9]\d{2,})$/.test(value) && null }
+        ],
+        toDOM: () => ["strong", 0]
+      },
+      underline: {
+        parseDOM: [
+          { tag: "u" },
+          { style: "text-decoration", getAttrs: (value) => value === "underline" && null }
+        ],
+        toDOM: () => ["u", 0]
+      }
+    }
+  });
+
+  // ===== PROSEMIRROR HELPER FUNCTIONS =====
+  // Convert HTML string to ProseMirror document
+  const htmlToProseMirror = (html) => {
+    if (!html || html === "Text Baru") {
+      html = "<p></p>";
+    }
+    
+    // Create temporary container
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = html;
+    
+    // Parse HTML to ProseMirror document
+    return DOMParser.fromSchema(prosemirrorSchema).parse(tempDiv);
+  };
+
+  // Convert ProseMirror document to HTML string
+  const proseMirrorToHTML = (state) => {
+    const fragment = DOMSerializer.fromSchema(prosemirrorSchema).serializeFragment(state.doc.content);
+    const tempDiv = document.createElement("div");
+    tempDiv.appendChild(fragment);
+    return tempDiv.innerHTML || "<p></p>";
+  };
+
+  // Initialize ProseMirror editor for a specific item
+  const initializeProseMirror = (itemIndex, content) => {
+    const editorElement = document.getElementById(`list-editor-${itemIndex}`);
+    if (!editorElement) return;
+
+    // Destroy existing editor if any
+    if (editorViewRefs.current[itemIndex]) {
+      editorViewRefs.current[itemIndex].destroy();
+      editorViewRefs.current[itemIndex] = null;
+    }
+
+    // Create initial state from HTML content
+    const doc = htmlToProseMirror(content || "<p></p>");
+    
+    // Plugin to track selection changes and update toolbar
+    const selectionTrackerPlugin = new Plugin({
+      view(editorView) {
+        return {
+          update(view, prevState) {
+            // Update toolbar when selection changes
+            if (prevState.selection !== view.state.selection) {
+              updateToolbarState(itemIndex, view.state);
+            }
+          }
+        };
+      }
+    });
+    
+    const state = EditorState.create({
+      doc,
+      schema: prosemirrorSchema,
+      plugins: [
+        history(),
+        selectionTrackerPlugin,
+        keymap({
+          "Mod-z": undo,
+          "Mod-y": redo,
+          "Mod-Shift-z": redo
+        }),
+        keymap(baseKeymap)
+      ]
+    });
+
+    // Create editor view
+    const view = new EditorView(editorElement, {
+      state,
+      dispatchTransaction: (transaction) => {
+        const newState = view.state.apply(transaction);
+        view.updateState(newState);
+        
+        // Update content on every change
+        const html = proseMirrorToHTML(newState);
+        updateItem(itemIndex, "content", html, true);
+        
+        // Update UI state (bold/underline buttons)
+        updateToolbarState(itemIndex, newState);
+      }
+    });
+
+    editorViewRefs.current[itemIndex] = view;
+  };
+
+  // Update toolbar button states based on current selection
+  const updateToolbarState = (itemIndex, state) => {
+    if (!state) return;
+    
+    const { from, to, empty } = state.selection;
+    
+    // Check if bold is active
+    let boldActive = false;
+    if (empty && state.storedMarks) {
+      boldActive = state.storedMarks.some(m => m.type === prosemirrorSchema.marks.bold);
+    } else if (!empty) {
+      boldActive = state.doc.rangeHasMark(from, to, prosemirrorSchema.marks.bold);
+    }
+    
+    updateEditorState(itemIndex, {
+      currentBold: boldActive,
+      activeBold: boldActive
+    });
+    
+    // Check if underline is active
+    let underlineActive = false;
+    if (empty && state.storedMarks) {
+      underlineActive = state.storedMarks.some(m => m.type === prosemirrorSchema.marks.underline);
+    } else if (!empty) {
+      underlineActive = state.doc.rangeHasMark(from, to, prosemirrorSchema.marks.underline);
+    }
+    
+    updateEditorState(itemIndex, {
+      currentUnderline: underlineActive,
+      activeUnderline: underlineActive
+    });
+    
+    // Update button visuals
+    const editor = document.getElementById(`list-editor-${itemIndex}`);
+    if (editor) {
+      const boldBtn = editor.parentElement?.querySelector('.toolbar-btn[title="Bold"]');
+      if (boldBtn) {
+        if (boldActive) {
+          boldBtn.classList.add('active');
+          boldBtn.style.setProperty('background-color', '#F1A124', 'important');
+          boldBtn.style.setProperty('border-color', '#F1A124', 'important');
+          boldBtn.style.setProperty('color', '#ffffff', 'important');
+        } else {
+          boldBtn.classList.remove('active');
+          boldBtn.className = 'toolbar-btn';
+          boldBtn.style.removeProperty('background-color');
+          boldBtn.style.removeProperty('border-color');
+          boldBtn.style.removeProperty('color');
+        }
+      }
+      
+      const underlineBtn = editor.parentElement?.querySelector('.toolbar-btn[title="Underline"]');
+      if (underlineBtn) {
+        if (underlineActive) {
+          underlineBtn.classList.add('active');
+          underlineBtn.style.setProperty('background-color', '#F1A124', 'important');
+          underlineBtn.style.setProperty('border-color', '#F1A124', 'important');
+          underlineBtn.style.setProperty('color', '#ffffff', 'important');
+        } else {
+          underlineBtn.classList.remove('active');
+          underlineBtn.className = 'toolbar-btn';
+          underlineBtn.style.removeProperty('background-color');
+          underlineBtn.style.removeProperty('border-color');
+          underlineBtn.style.removeProperty('color');
+        }
+      }
+    }
+  };
   
   // Advance settings
   const paddingTop = data.paddingTop || 0;
@@ -142,10 +342,17 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     onUpdate?.({ ...data, items: newItems });
   };
 
-  const updateItem = (index, field, value) => {
+  const updateItem = (index, field, value, immediate = false) => {
     const newItems = [...items];
     newItems[index] = { ...newItems[index], [field]: value };
-    onUpdate?.({ ...data, items: newItems });
+    // Use flushSync for immediate canvas update when needed
+    if (immediate) {
+      flushSync(() => {
+        onUpdate?.({ ...data, items: newItems });
+      });
+    } else {
+      onUpdate?.({ ...data, items: newItems });
+    }
   };
 
   const toggleItemExpand = (index) => {
@@ -190,25 +397,52 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   }, [items.length]);
 
   // Ensure editors are properly initialized with STRONG LTR enforcement
+  // Initialize ProseMirror editors for all items
   useEffect(() => {
-    items.forEach((_, i) => {
-      const editor = document.getElementById(`list-editor-${i}`);
-      if (editor) {
-        // STRONG LTR enforcement
-        editor.setAttribute("dir", "ltr");
-        editor.style.direction = "ltr";
-        editor.style.unicodeBidi = "normal";
-        
-        // Force all child elements to LTR
-        const allElements = editor.querySelectorAll("*");
-        allElements.forEach(el => {
-          el.setAttribute("dir", "ltr");
-          el.style.direction = "ltr";
-          el.style.unicodeBidi = "normal";
-        });
+    const timeouts = [];
+    
+    items.forEach((item, i) => {
+      // Initialize ProseMirror editor for this item
+      const timeoutId = setTimeout(() => {
+        initializeProseMirror(i, item.content);
+      }, 50); // Small delay to ensure DOM is ready
+      timeouts.push(timeoutId);
+    });
+    
+    // Cleanup: destroy editors for items that no longer exist
+    return () => {
+      // Clear all timeouts
+      timeouts.forEach(id => clearTimeout(id));
+      
+      // Destroy editors for items that no longer exist
+      Object.keys(editorViewRefs.current).forEach(itemIndex => {
+        const index = parseInt(itemIndex);
+        if (index >= items.length) {
+          // Item was removed, destroy its editor
+          if (editorViewRefs.current[itemIndex]) {
+            editorViewRefs.current[itemIndex].destroy();
+            delete editorViewRefs.current[itemIndex];
+          }
+        }
+      });
+    };
+  }, [items.length]); // Re-initialize when number of items changes
+
+  // Update editors when item content changes externally (but avoid infinite loop)
+  useEffect(() => {
+    items.forEach((item, i) => {
+      if (editorViewRefs.current[i] && item.content !== undefined) {
+        const currentHTML = proseMirrorToHTML(editorViewRefs.current[i].state);
+        // Only re-initialize if content changed externally (not from our own updates)
+        if (currentHTML !== item.content) {
+          const timeoutId = setTimeout(() => {
+            initializeProseMirror(i, item.content);
+          }, 100);
+          return () => clearTimeout(timeoutId);
+        }
       }
     });
-  }, [items]);
+  }, [items.map((item, i) => `${i}:${item.content || ''}`).join('|')]); // Re-initialize when content changes
 
   // Detect styles from selection/cursor - simple version using queryCommandState
   const detectStyles = (itemIndex) => {
@@ -345,42 +579,18 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   };
 
   // Simple text editor handlers - independent from TextComponent
+  // ProseMirror handles input automatically via dispatchTransaction
+  // This function is kept for backward compatibility but no longer needed
   const handleEditorInput = (index) => {
-    const editor = document.getElementById(`list-editor-${index}`);
-    if (editor) {
-      // STRONG LTR enforcement - prevent any RTL
-      editor.setAttribute("dir", "ltr");
-      editor.style.direction = "ltr";
-      editor.style.unicodeBidi = "normal";
-      
-      // Force all child elements to LTR
-      const allElements = editor.querySelectorAll("*");
-      allElements.forEach(el => {
-        el.setAttribute("dir", "ltr");
-        el.style.direction = "ltr";
-        el.style.unicodeBidi = "normal";
-      });
-      
-      const html = editor.innerHTML;
-      updateItem(index, "content", html);
-      
-      // Simple style detection
-      requestAnimationFrame(() => {
-        detectStyles(index);
-      });
-    }
+    // ProseMirror handles content updates automatically in dispatchTransaction
+    // No manual handling needed
   };
 
-  // Handle keydown - ensure LTR
+  // ProseMirror handles keydown automatically via keymap plugins
+  // This function is kept for backward compatibility but no longer needed
   const handleEditorKeyDown = (index, e) => {
-    const editor = document.getElementById(`list-editor-${index}`);
-    if (editor) {
-      // STRONG LTR enforcement on every keystroke
-      editor.setAttribute("dir", "ltr");
-      editor.style.direction = "ltr";
-      editor.style.unicodeBidi = "normal";
-    }
-    saveSelection(index);
+    // ProseMirror handles keyboard events via keymap plugins
+    // No manual handling needed
   };
 
   // Initialize editor state for an item
@@ -496,46 +706,20 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     }
   };
   
-  // Simple toggle functions using execCommand - independent editor
+  // ProseMirror toggle bold - simple and stable
   const toggleBold = (itemIndex, e) => {
     if (e) e.preventDefault();
-    const editor = document.getElementById(`list-editor-${itemIndex}`);
-    if (!editor) return;
+    if (!editorViewRefs.current[itemIndex]) return;
     
-    // Ensure LTR
-    editor.setAttribute("dir", "ltr");
-    editor.style.direction = "ltr";
+    const { state, dispatch } = editorViewRefs.current[itemIndex];
+    const markType = prosemirrorSchema.marks.bold;
     
-    editor.focus();
-    restoreSelection(itemIndex);
+    // Use ProseMirror's toggleMark command - handles selection stability automatically
+    toggleMark(markType)(state, dispatch);
     
-    // Use execCommand for simplicity
-    document.execCommand("bold", false, null);
-    
-    // Update button visual
-    const isBold = document.queryCommandState("bold");
-    const btn = editor.parentElement?.querySelector('.toolbar-btn[title="Bold"]');
-    if (btn) {
-      if (isBold) {
-        btn.classList.add('active');
-        btn.style.setProperty('background-color', '#F1A124', 'important');
-        btn.style.setProperty('border-color', '#F1A124', 'important');
-        btn.style.setProperty('color', '#ffffff', 'important');
-      } else {
-        btn.classList.remove('active');
-        btn.className = 'toolbar-btn';
-        btn.style.removeProperty('background-color');
-        btn.style.removeProperty('border-color');
-        btn.style.removeProperty('color');
-      }
-    }
-    
-    updateEditorState(itemIndex, {
-      activeBold: isBold,
-      currentBold: isBold
-    });
-    
-    handleEditorInput(itemIndex);
+    // Update UI state
+    const newState = editorViewRefs.current[itemIndex].state;
+    updateToolbarState(itemIndex, newState);
   };
   
   const toggleItalic = (itemIndex, e) => {
@@ -579,46 +763,20 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     handleEditorInput(itemIndex);
   };
   
-  // Simple toggle underline using execCommand
+  // ProseMirror toggle underline - simple and stable
   const toggleUnderline = (itemIndex, e) => {
     if (e) e.preventDefault();
-    const editor = document.getElementById(`list-editor-${itemIndex}`);
-    if (!editor) return;
+    if (!editorViewRefs.current[itemIndex]) return;
     
-    // Ensure LTR
-    editor.setAttribute("dir", "ltr");
-    editor.style.direction = "ltr";
+    const { state, dispatch } = editorViewRefs.current[itemIndex];
+    const markType = prosemirrorSchema.marks.underline;
     
-    editor.focus();
-    restoreSelection(itemIndex);
+    // Use ProseMirror's toggleMark command - handles selection stability automatically
+    toggleMark(markType)(state, dispatch);
     
-    // Use execCommand for simplicity
-    document.execCommand("underline", false, null);
-    
-    // Update button visual
-    const isUnderline = document.queryCommandState("underline");
-    const btn = editor.parentElement?.querySelector('.toolbar-btn[title="Underline"]');
-    if (btn) {
-      if (isUnderline) {
-        btn.classList.add('active');
-        btn.style.setProperty('background-color', '#F1A124', 'important');
-        btn.style.setProperty('border-color', '#F1A124', 'important');
-        btn.style.setProperty('color', '#ffffff', 'important');
-      } else {
-        btn.classList.remove('active');
-        btn.className = 'toolbar-btn';
-        btn.style.removeProperty('background-color');
-        btn.style.removeProperty('border-color');
-        btn.style.removeProperty('color');
-      }
-    }
-    
-    updateEditorState(itemIndex, {
-      activeUnderline: isUnderline,
-      currentUnderline: isUnderline
-    });
-    
-    handleEditorInput(itemIndex);
+    // Update UI state
+    const newState = editorViewRefs.current[itemIndex].state;
+    updateToolbarState(itemIndex, newState);
   };
   
   // Simple toggle strikethrough using execCommand
@@ -725,28 +883,30 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     editor.focus();
     restoreSelection(itemIndex);
     
-    // Use execCommand for font size
-    document.execCommand("fontSize", false, "3"); // Base size
-    // Then apply actual size via style
+    // Apply font size directly via style (no execCommand for more control)
     const selection = window.getSelection();
     if (selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
       if (!range.collapsed) {
+        // Selection: wrap content in span with font size
         const contents = range.extractContents();
         const span = document.createElement("span");
         span.style.fontSize = `${size}px`;
         span.setAttribute("dir", "ltr");
         span.style.direction = "ltr";
+        span.style.unicodeBidi = "normal";
         span.appendChild(contents);
         range.insertNode(span);
         range.collapse(false);
         selection.removeAllRanges();
         selection.addRange(range);
       } else {
+        // Collapsed cursor: insert marker span
         const marker = document.createElement("span");
         marker.style.fontSize = `${size}px`;
         marker.setAttribute("dir", "ltr");
         marker.style.direction = "ltr";
+        marker.style.unicodeBidi = "normal";
         marker.innerHTML = "\u200B";
         range.insertNode(marker);
         const newRange = document.createRange();
@@ -762,7 +922,14 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
       displayedFontSize: size
     });
     
-    handleEditorInput(itemIndex);
+    // Immediately update content and canvas
+    const html = editor.innerHTML;
+    updateItem(itemIndex, "content", html, true);
+    
+    // Also call handleEditorInput for style detection
+    requestAnimationFrame(() => {
+      detectStyles(itemIndex);
+    });
   };
   
   // Format selection (untuk command lain seperti link, list, dll)
@@ -1138,34 +1305,10 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
                       </div>
                     </div>
 
-                    {/* Rich Text Editor Area */}
+                    {/* Rich Text Editor Area - ProseMirror */}
                     <div className="text-editor-area">
                       <div
                         id={`list-editor-${i}`}
-                        contentEditable
-                        onInput={() => handleEditorInput(i)}
-                        onKeyDown={(e) => {
-                          handleEditorKeyDown(i, e);
-                        }}
-                        onKeyUp={() => {
-                          handleEditorInput(i);
-                          requestAnimationFrame(() => {
-                            detectStyles(i);
-                            requestAnimationFrame(() => detectStyles(i));
-                          });
-                        }}
-                        onMouseUp={() => {
-                          requestAnimationFrame(() => {
-                            detectStyles(i);
-                            requestAnimationFrame(() => detectStyles(i));
-                          });
-                        }}
-                        onClick={() => {
-                          requestAnimationFrame(() => {
-                            detectStyles(i);
-                            requestAnimationFrame(() => detectStyles(i));
-                          });
-                        }}
                         className="rich-text-editor list-item-editor"
                         dir="ltr"
                         spellCheck={false}
@@ -1176,8 +1319,6 @@ export default function ListComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
                           direction: "ltr",
                           unicodeBidi: "normal",
                         }}
-                        data-placeholder="Insert text here ..."
-                        dangerouslySetInnerHTML={{ __html: item.content || "<p></p>" }}
                       />
                     </div>
                   </div>
