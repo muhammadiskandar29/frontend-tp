@@ -732,53 +732,98 @@ export async function POST(request) {
       }
 
     } else {
-      // Handle JSON request (untuk backward compatibility)
+      // Handle JSON request (untuk backward compatibility dan format baru)
       const reqBody = await request.json();
       
       console.log("[ROUTE] ========== INCOMING JSON PAYLOAD ==========");
       console.log("Payload keys:", Object.keys(reqBody));
       console.log("[ROUTE] ============================================");
       
-      // Extract and structure payload
-      const payload = await extractPayload(reqBody);
+      // Check if this is the new format with landingpage array
+      const isNewFormat = reqBody.landingpage && Array.isArray(reqBody.landingpage);
+      
+      let payloadToSend;
+      
+      if (isNewFormat) {
+        // New format: langsung forward dengan struktur yang sesuai
+        console.log("[ROUTE] Detected new JSON format with landingpage array");
+        
+        payloadToSend = {
+          nama: reqBody.nama || "",
+          kategori: String(reqBody.kategori || ""),
+          kode: reqBody.kode || "",
+          url: reqBody.url || "",
+          harga: String(reqBody.harga || "0"),
+          jenis_produk: reqBody.jenis_produk || "non-fisik",
+          isBundling: reqBody.isBundling || false,
+          bundling: reqBody.bundling ? JSON.stringify(reqBody.bundling) : JSON.stringify([]),
+          tanggal_event: reqBody.tanggal_event || null,
+          assign: reqBody.assign ? JSON.stringify(reqBody.assign) : JSON.stringify([]),
+          status: String(reqBody.status || "1"),
+          landingpage: JSON.stringify(reqBody.landingpage || []),
+        };
+        
+        // Validate required fields
+        if (!payloadToSend.nama || !payloadToSend.kategori || !payloadToSend.kode) {
+          return NextResponse.json(
+            {
+              success: false,
+              message: "Validation error: nama, kategori, dan kode wajib diisi",
+              errors: {
+                nama: !payloadToSend.nama ? ["Nama wajib diisi"] : [],
+                kategori: !payloadToSend.kategori ? ["Kategori wajib diisi"] : [],
+                kode: !payloadToSend.kode ? ["Kode wajib diisi"] : [],
+              },
+            },
+            { status: 400, headers: corsHeaders }
+          );
+        }
+      } else {
+        // Old format: extract and structure payload
+        const payload = await extractPayload(reqBody);
 
-      // Validate payload
-      const validationErrors = validatePayload(payload);
+        // Validate payload
+        const validationErrors = validatePayload(payload);
 
-      if (validationErrors.length > 0) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: "Validation error",
-            errors: validationErrors,
-          },
-          { status: 400, headers: corsHeaders }
-        );
+        if (validationErrors.length > 0) {
+          return NextResponse.json(
+            {
+              success: false,
+              message: "Validation error",
+              errors: validationErrors,
+            },
+            { status: 400, headers: corsHeaders }
+          );
+        }
+
+        // Convert payload untuk backend Laravel
+        payloadToSend = {
+          ...payload,
+          assign: JSON.stringify(payload.assign || []),
+          list_point: JSON.stringify(payload.list_point || []),
+          custom_field: JSON.stringify(payload.custom_field || []),
+          event_fb_pixel: JSON.stringify(payload.event_fb_pixel || []),
+          fb_pixel: JSON.stringify(payload.fb_pixel || []),
+          gtm: JSON.stringify(payload.gtm || []),
+          video: JSON.stringify(payload.video || []),
+          gambar: JSON.stringify(payload.gambar || []),
+          testimoni: JSON.stringify(payload.testimoni || []),
+        };
+
+        if (payloadToSend.header === null || payloadToSend.header === undefined || payloadToSend.header === "") {
+          delete payloadToSend.header;
+        }
+
+        payloadToSend.kategori = String(payloadToSend.kategori);
+        // user_input tidak perlu dikirim, backend ambil dari auth()->user()->id
+        payloadToSend.landingpage = String(payloadToSend.landingpage || "1");
+        payloadToSend.harga_asli = String(payloadToSend.harga_asli || "0");
+        payloadToSend.harga_coret = String(payloadToSend.harga_coret || "0");
       }
 
-      // Convert payload untuk backend Laravel
-      const payloadToSend = {
-        ...payload,
-        assign: JSON.stringify(payload.assign || []),
-        list_point: JSON.stringify(payload.list_point || []),
-        custom_field: JSON.stringify(payload.custom_field || []),
-        event_fb_pixel: JSON.stringify(payload.event_fb_pixel || []),
-        fb_pixel: JSON.stringify(payload.fb_pixel || []),
-        gtm: JSON.stringify(payload.gtm || []),
-        video: JSON.stringify(payload.video || []),
-        gambar: JSON.stringify(payload.gambar || []),
-        testimoni: JSON.stringify(payload.testimoni || []),
-      };
-
-      if (payloadToSend.header === null || payloadToSend.header === undefined || payloadToSend.header === "") {
-        delete payloadToSend.header;
-      }
-
-      payloadToSend.kategori = String(payloadToSend.kategori);
-      // user_input tidak perlu dikirim, backend ambil dari auth()->user()->id
-      payloadToSend.landingpage = String(payloadToSend.landingpage || "1");
-      payloadToSend.harga_asli = String(payloadToSend.harga_asli || "0");
-      payloadToSend.harga_coret = String(payloadToSend.harga_coret || "0");
+      console.log("[ROUTE] ========== PAYLOAD TO SEND ==========");
+      console.log("Payload keys:", Object.keys(payloadToSend));
+      console.log("[ROUTE] =====================================");
 
       // Send JSON to backend
       response = await fetch(`${BACKEND_URL}/api/sales/produk`, {
@@ -794,13 +839,14 @@ export async function POST(request) {
     
     // Handle response
     let data;
+    let responseText = null;
     try {
       // Jika response sudah punya method json(), gunakan itu
       if (typeof response.json === "function") {
         data = await response.json();
       } else {
         // Fallback: parse dari text
-        const responseText = await response.text();
+        responseText = await response.text();
         data = JSON.parse(responseText);
       }
       
@@ -823,12 +869,21 @@ export async function POST(request) {
       }
     } catch (parseError) {
       console.error("[ROUTE] ❌ Failed to parse response:", parseError);
+      // Try to get response text for error logging
+      try {
+        if (!responseText && typeof response.text === "function") {
+          responseText = await response.text();
+        }
+      } catch (e) {
+        // Ignore
+      }
       return NextResponse.json(
         {
           success: false,
           message: "Backend error: Response bukan JSON",
           error: parseError.message,
           status: response.status,
+          rawResponse: responseText ? responseText.substring(0, 500) : null,
         },
         { status: response.status || 500, headers: corsHeaders }
       );
@@ -839,7 +894,9 @@ export async function POST(request) {
       console.error("[ROUTE] ========== BACKEND ERROR RESPONSE ==========");
       console.error("Status:", response.status);
       console.error("Response data:", JSON.stringify(data, null, 2));
-      console.error("Response text (raw):", responseText.substring(0, 500));
+      if (responseText) {
+        console.error("Response text (raw):", responseText.substring(0, 500));
+      }
       
       let extractedErrors = {};
       let extractedErrorFields = [];

@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import OngkirCalculator from "@/components/OngkirCalculator";
-import { getDummyProduct, isDummyProduct } from "@/data/dummy-products";
 import "@/styles/sales/add-products3.css"; // Canvas style
 import "@/styles/ongkir.css";
 
@@ -36,12 +35,13 @@ export default function ProductPage() {
   const searchParams = useSearchParams();
 
   const [paymentMethod, setPaymentMethod] = useState("");
-  const [data, setData] = useState(null);
+  const [productData, setProductData] = useState(null);
+  const [landingpage, setLandingpage] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [testimoniIndices, setTestimoniIndices] = useState({});
 
   const sumber = searchParams.get("utm_sumber") || "website";
-  const salesWA = "6281234567890";
 
   const [customerForm, setCustomerForm] = useState({
     nama: "",
@@ -53,7 +53,6 @@ export default function ProductPage() {
 
   const [ongkir, setOngkir] = useState(0);
   const [ongkirInfo, setOngkirInfo] = useState({ courier: '', service: '' });
-  const [downPayment, setDownPayment] = useState(0);
   const [ongkirAddress, setOngkirAddress] = useState({
     kota: "",
     kecamatan: "",
@@ -61,7 +60,6 @@ export default function ProductPage() {
     kode_pos: "",
   });
   const [alamatLengkap, setAlamatLengkap] = useState("");
-  const [validProductId, setValidProductId] = useState(null); // ID produk valid dari database (untuk dummy products)
 
   const formatPrice = (price) => {
     if (!price) return "0";
@@ -69,46 +67,17 @@ export default function ProductPage() {
     return (isNaN(numPrice) ? 0 : numPrice).toLocaleString("id-ID");
   };
 
-  const formatPriceInput = (value) => {
-    if (!value) return "";
-    const numValue = typeof value === "string" ? parseInt(value.replace(/[^\d]/g, "")) : value;
-    return isNaN(numValue) ? "" : `Rp ${numValue.toLocaleString("id-ID")}`;
-  };
-
-  const parsePriceInput = (value) => {
-    if (!value) return 0;
-    const numValue = parseInt(value.replace(/[^\d]/g, ""), 10);
-    return isNaN(numValue) ? 0 : numValue;
-  };
-
   const getKategoriId = () => {
-    if (!data) {
-      console.warn("[PRODUCT] getKategoriId: data is null");
-      return null;
-    }
-    const kategoriId = data.kategori_id 
-      || (data.kategori_rel?.id ? Number(data.kategori_rel.id) : null)
-      || (data.kategori ? Number(data.kategori) : null);
-    
-    // Debug log untuk memastikan kategori terdeteksi
-    if (kategoriId === 4) { // Kategori Buku (4)
-      console.log("[PRODUCT] Kategori Buku detected (ID: 13)");
-    }
-    
+    if (!productData) return null;
+    const kategoriId = productData.kategori_id 
+      || (productData.kategori_rel?.id ? Number(productData.kategori_rel.id) : null)
+      || (productData.kategori ? Number(productData.kategori) : null);
     return kategoriId;
   };
 
   const isKategoriBuku = () => {
     const kategoriId = getKategoriId();
-    const isBuku = kategoriId === 4; // Kategori Buku (4)
-    if (isBuku) {
-      console.log("[PRODUCT] isKategoriBuku: true - OngkirCalculator should appear");
-    }
-    return isBuku;
-  };
-
-  const isKategoriWorkshop = () => {
-    return getKategoriId() === 6; // Kategori Workshop (6)
+    return kategoriId === 4; // Kategori Buku (4)
   };
 
   // FAQ Mapping
@@ -192,488 +161,511 @@ export default function ProductPage() {
     setAlamatLengkap(alamatFinal);
   };
 
-  // Render Blocks
-  const renderBlocks = (blocks, productData) => {
-    if (!blocks || !Array.isArray(blocks)) return null;
-    const sortedBlocks = [...blocks].sort((a, b) => (a.order || 0) - (b.order || 0));
+  // Helper untuk convert YouTube URL ke embed URL
+  const convertToEmbedUrl = (url) => {
+    if (!url) return null;
+    if (url.includes("/embed/")) return url;
+    if (url.includes("watch?v=")) {
+      const videoId = url.split("watch?v=")[1]?.split("&")[0];
+      return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+    }
+    if (url.includes("youtu.be/")) {
+      const videoId = url.split("youtu.be/")[1]?.split("?")[0];
+      return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+    }
+    return url;
+  };
 
-    return sortedBlocks.map((block) => {
-      switch (block.type) {
-        case "text":
-          return (
-            <div key={block.id} className="canvas-preview-block">
-              <div className="preview-text">{block.data.content || "Teks..."}</div>
-            </div>
-          );
+  // Render Block berdasarkan struktur content/style/config
+  const renderBlock = (block) => {
+    if (!block || !block.type) return null;
 
-        case "image":
-          return (
-            <div key={block.id} className="canvas-preview-block">
-              {block.data.src ? (
-                <div className="preview-image-wrapper">
-                  <img 
-                    src={block.data.src} 
-                    alt={block.data.alt || ""} 
-                    className="preview-image-full preview-image-auto-aspect"
-                    loading="lazy"
-                  />
-                  {block.data.caption && <p className="preview-caption">{block.data.caption}</p>}
-                </div>
-              ) : (
-                <div className="preview-placeholder">Gambar belum diupload</div>
-              )}
-            </div>
-          );
+    const { type, content, style, config } = block;
+    const blockStyle = style?.container || {};
+    const textStyle = style?.text || {};
+    const containerStyle = {
+      paddingTop: blockStyle.padding?.top || blockStyle.paddingTop || 0,
+      paddingRight: blockStyle.padding?.right || blockStyle.paddingRight || 0,
+      paddingBottom: blockStyle.padding?.bottom || blockStyle.paddingBottom || 0,
+      paddingLeft: blockStyle.padding?.left || blockStyle.paddingLeft || 0,
+      marginTop: blockStyle.margin?.top || blockStyle.marginTop || 0,
+      marginRight: blockStyle.margin?.right || blockStyle.marginRight || 0,
+      marginBottom: blockStyle.margin?.bottom || blockStyle.marginBottom || 0,
+      marginLeft: blockStyle.margin?.left || blockStyle.marginLeft || 0,
+      backgroundColor: blockStyle.backgroundColor || blockStyle.bgColor || 'transparent',
+      backgroundImage: blockStyle.backgroundImage ? `url(${blockStyle.backgroundImage})` : 'none',
+      border: blockStyle.border || 'none',
+      borderRadius: blockStyle.borderRadius || 0,
+      boxShadow: blockStyle.boxShadow || 'none',
+    };
 
-        case "youtube":
-        case "video":
-          const videoItems = block.data.items || [];
-          if (videoItems.length === 0) {
-            return (
-              <div key={block.id} className="canvas-preview-block">
-                <div className="preview-placeholder">Belum ada video</div>
+    const textContentStyle = {
+      color: textStyle.color || textStyle.textColor || '#000',
+      fontFamily: textStyle.fontFamily || 'inherit',
+      fontSize: textStyle.fontSize ? `${textStyle.fontSize}px` : 'inherit',
+      fontWeight: textStyle.fontWeight || 'normal',
+      lineHeight: textStyle.lineHeight || 1.5,
+      textAlign: textStyle.textAlign || textStyle.alignment || 'left',
+    };
+
+    switch (type) {
+      case "text": {
+        const htmlContent = content?.html || content || "";
+        return (
+          <div key={block.order} className="canvas-preview-block" style={containerStyle}>
+            <div 
+              className="preview-text" 
+              style={textContentStyle}
+              dangerouslySetInnerHTML={{ __html: htmlContent }}
+            />
+          </div>
+        );
+      }
+
+      case "image": {
+        const src = content?.src || content?.url || "";
+        const alt = content?.alt || "";
+        const caption = content?.caption || "";
+        const alignment = style?.container?.alignment || "center";
+        const imageWidth = style?.container?.imageWidth || "100%";
+        const imageFit = style?.container?.imageFit || "contain";
+        
+        return (
+          <div key={block.order} className="canvas-preview-block" style={containerStyle}>
+            {src ? (
+              <div className="preview-image-wrapper" style={{ textAlign: alignment }}>
+                <img 
+                  src={src} 
+                  alt={alt} 
+                  className="preview-image-full preview-image-auto-aspect"
+                  style={{ width: imageWidth, objectFit: imageFit }}
+                  loading="lazy"
+                />
+                {caption && <p className="preview-caption">{caption}</p>}
               </div>
-            );
-          }
-          
-          // Helper function untuk convert YouTube watch URL ke embed URL
-          const convertToEmbedUrl = (url) => {
-            if (!url) return null;
-            // Jika sudah embed URL, return langsung
-            if (url.includes("/embed/")) return url;
-            // Jika watch URL, convert ke embed
-            if (url.includes("watch?v=")) {
-              const videoId = url.split("watch?v=")[1]?.split("&")[0];
-              return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
-            }
-            // Jika short URL (youtu.be), convert ke embed
-            if (url.includes("youtu.be/")) {
-              const videoId = url.split("youtu.be/")[1]?.split("?")[0];
-              return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
-            }
-            return url;
-          };
-          
-          return (
-            <div key={block.id} className="canvas-preview-block">
-              <div className="preview-videos">
-                {videoItems.map((item, i) => {
-                  const embedUrl = item.embedUrl ? convertToEmbedUrl(item.embedUrl) : null;
-                  return embedUrl ? (
-                    <div key={i} className="preview-video-wrapper preview-video-thumbnail">
-                      <iframe 
-                        src={embedUrl} 
-                        title={`Video ${i + 1}`} 
-                        className="preview-video-iframe" 
-                        allowFullScreen 
-                      />
-                    </div>
-                  ) : null;
-                })}
-              </div>
-            </div>
-          );
+            ) : (
+              <div className="preview-placeholder">Gambar belum diupload</div>
+            )}
+          </div>
+        );
+      }
 
-        case "testimoni":
-          const testimoniItems = block.data.items || [];
-          if (testimoniItems.length === 0) {
-            return (
-              <div key={block.id} className="canvas-preview-block">
-                <div className="preview-placeholder">Belum ada testimoni</div>
-              </div>
-            );
-          }
-          
-          const currentIndex = testimoniIndices[block.id] || 0;
-          const maxIndex = Math.max(0, testimoniItems.length - 3);
-          
-          const handlePrev = () => {
-            setTestimoniIndices(prev => ({
-              ...prev,
-              [block.id]: Math.max(0, currentIndex - 1)
-            }));
-          };
-          
-          const handleNext = () => {
-            setTestimoniIndices(prev => ({
-              ...prev,
-              [block.id]: Math.min(maxIndex, currentIndex + 1)
-            }));
-          };
-          
+      case "youtube":
+      case "video": {
+        const items = content?.items || [];
+        if (items.length === 0) {
           return (
-            <div key={block.id} className="canvas-preview-block">
-              <section className="preview-testimonials" aria-label="Customer testimonials">
-                <h2>Testimoni Pembeli</h2>
-                <div className="testimonials-carousel-wrapper-new">
-                  {currentIndex > 0 && (
-                    <button 
-                      className="testimoni-nav-btn-new testimoni-nav-prev-new"
-                      onClick={handlePrev}
-                      aria-label="Previous testimonials"
-                    >
-                      ‹
-                    </button>
-                  )}
-                  <div className="testimonials-carousel-new" itemScope itemType="https://schema.org/Review">
-                    <div 
-                      className="testimonials-track-new"
-                      style={{ transform: `translateX(-${currentIndex * 28}%)` }}
-                    >
-                      {testimoniItems.map((item, i) => (
-                        <article key={i} className="testi-card-new" itemScope itemType="https://schema.org/Review">
-                          <div className="testi-header-new">
-                            {item.gambar ? (
-                              <div className="testi-avatar-wrapper-new">
-                                <img 
-                                  src={item.gambar} 
-                                  alt={`Foto ${item.nama}`}
-                                  className="testi-avatar-new"
-                                  itemProp="author"
-                                  loading="lazy"
-                                />
-                              </div>
-                            ) : (
-                              <div className="testi-avatar-wrapper-new">
-                                <div className="testi-avatar-placeholder-new">
-                                  {item.nama?.charAt(0)?.toUpperCase() || "U"}
-                                </div>
-                              </div>
-                            )}
-                            <div className="testi-info-new">
-                              <div className="testi-name-new" itemProp="author" itemScope itemType="https://schema.org/Person">
-                                <span itemProp="name">{item.nama || "Nama"}</span>
-                              </div>
-                              <div className="testi-stars-new">
-                                <span className="star-new">★</span>
-                                <span className="star-new">★</span>
-                                <span className="star-new">★</span>
-                                <span className="star-new">★</span>
-                                <span className="star-new">★</span>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="testi-desc-new" itemProp="reviewBody">{item.deskripsi || "Deskripsi testimoni"}</div>
-                        </article>
-                      ))}
-                    </div>
-                  </div>
-                  {currentIndex < maxIndex && testimoniItems.length > 3 && (
-                    <button 
-                      className="testimoni-nav-btn-new testimoni-nav-next-new"
-                      onClick={handleNext}
-                      aria-label="Next testimonials"
-                    >
-                      ›
-                    </button>
-                  )}
-                </div>
-              </section>
-            </div>
-          );
-
-        case "list":
-          return (
-            <div key={block.id} className="canvas-preview-block">
-              <ul className="preview-list">
-                {block.data.items?.map((item, i) => (
-                  <li key={i}>{item.nama || `Point ${i + 1}`}</li>
-                ))}
-                {(!block.data.items || block.data.items.length === 0) && (
-                  <div className="preview-placeholder">Belum ada list point</div>
-                )}
-              </ul>
-            </div>
-          );
-
-        case "faq": {
-          const kategoriIdFaq = getKategoriId();
-          const faqItems = getFAQByKategori(kategoriIdFaq);
-          
-          return (
-            <div key={block.id} className="canvas-preview-block">
-              <section className="preview-faq-section" aria-label="Frequently Asked Questions">
-                <h2 className="faq-title">Pertanyaan yang Sering Diajukan</h2>
-                <div className="faq-container">
-                  {faqItems.map((faq, index) => (
-                    <FAQItem 
-                      key={index}
-                      question={faq.question} 
-                      answer={faq.answer}
-                    />
-                  ))}
-                </div>
-              </section>
+            <div key={block.order} className="canvas-preview-block" style={containerStyle}>
+              <div className="preview-placeholder">Belum ada video</div>
             </div>
           );
         }
+        
+        return (
+          <div key={block.order} className="canvas-preview-block" style={containerStyle}>
+            <div className="preview-videos">
+              {items.map((item) => {
+                const embedUrl = item.embedUrl || (item.url ? convertToEmbedUrl(item.url) : null);
+                return embedUrl ? (
+                  <div key={item.url || item.embedUrl} className="preview-video-wrapper preview-video-thumbnail">
+                    <iframe 
+                      src={embedUrl} 
+                      title="Video" 
+                      className="preview-video-iframe" 
+                      allowFullScreen 
+                    />
+                  </div>
+                ) : null;
+              })}
+            </div>
+          </div>
+        );
+      }
 
-        case "form": {
-          const kategoriId = getKategoriId();
-          const isFormBuku = kategoriId === 4; // Kategori Buku (4)
-          const isFormWorkshop = kategoriId === 6; // Kategori Workshop (6)
-          
-          // Debug log untuk memastikan form block ter-render dengan benar
-          console.log("[PRODUCT] Form block rendering - kategoriId:", kategoriId, "isFormBuku:", isFormBuku, "isFormWorkshop:", isFormWorkshop);
-          
+      case "testimoni": {
+        const items = content?.items || [];
+        if (items.length === 0) {
           return (
-            <div key={block.id} className="canvas-preview-block">
-              <section className="preview-form-section compact-form-section" aria-label="Order form">
-                <h2 className="compact-form-title">Lengkapi Data:</h2>
-                <div className="compact-form-card">
-                  <div className="compact-field">
-                    <label className="compact-label">Nama Lengkap <span className="required">*</span></label>
-                    <input 
-                      type="text" 
-                      placeholder="Contoh: Krisdayanti" 
-                      className="compact-input"
-                      value={customerForm.nama}
-                      onChange={(e) => setCustomerForm({ ...customerForm, nama: e.target.value })}
-                    />
+            <div key={block.order} className="canvas-preview-block" style={containerStyle}>
+              <div className="preview-placeholder">Belum ada testimoni</div>
+            </div>
+          );
+        }
+        
+        const currentIndex = testimoniIndices[block.order] || 0;
+        const maxIndex = Math.max(0, items.length - 3);
+        
+        const handlePrev = () => {
+          setTestimoniIndices(prev => ({
+            ...prev,
+            [block.order]: Math.max(0, currentIndex - 1)
+          }));
+        };
+        
+        const handleNext = () => {
+          setTestimoniIndices(prev => ({
+            ...prev,
+            [block.order]: Math.min(maxIndex, currentIndex + 1)
+          }));
+        };
+        
+        const componentTitle = content?.componentTitle || config?.title || "Testimoni Pembeli";
+        
+        return (
+          <div key={block.order} className="canvas-preview-block" style={containerStyle}>
+            <section className="preview-testimonials" aria-label="Customer testimonials">
+              <h2>{componentTitle}</h2>
+              <div className="testimonials-carousel-wrapper-new">
+                {currentIndex > 0 && (
+                  <button 
+                    className="testimoni-nav-btn-new testimoni-nav-prev-new"
+                    onClick={handlePrev}
+                    aria-label="Previous testimonials"
+                  >
+                    ‹
+                  </button>
+                )}
+                <div className="testimonials-carousel-new" itemScope itemType="https://schema.org/Review">
+                  <div 
+                    className="testimonials-track-new"
+                    style={{ transform: `translateX(-${currentIndex * 28}%)` }}
+                  >
+                    {items.map((item, i) => (
+                      <article key={i} className="testi-card-new" itemScope itemType="https://schema.org/Review">
+                        <div className="testi-header-new">
+                          {item.gambar ? (
+                            <div className="testi-avatar-wrapper-new">
+                              <img 
+                                src={item.gambar} 
+                                alt={`Foto ${item.nama}`}
+                                className="testi-avatar-new"
+                                itemProp="author"
+                                loading="lazy"
+                              />
+                            </div>
+                          ) : (
+                            <div className="testi-avatar-wrapper-new">
+                              <div className="testi-avatar-placeholder-new">
+                                {item.nama?.charAt(0)?.toUpperCase() || "U"}
+                              </div>
+                            </div>
+                          )}
+                          <div className="testi-info-new">
+                            <div className="testi-name-new" itemProp="author" itemScope itemType="https://schema.org/Person">
+                              <span itemProp="name">{item.nama || "Nama"}</span>
+                            </div>
+                            {item.jabatan && (
+                              <div className="testi-job-new">{item.jabatan}</div>
+                            )}
+                            {item.showRating !== false && (
+                              <div className="testi-stars-new">
+                                {[...Array(item.rating || 5)].map((_, idx) => (
+                                  <span key={idx} className="star-new">★</span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="testi-desc-new" itemProp="reviewBody">
+                          {item.isiTestimony || item.deskripsi || "Deskripsi testimoni"}
+                        </div>
+                      </article>
+                    ))}
                   </div>
-                  <div className="compact-field">
-                    <label className="compact-label">No. WhatsApp <span className="required">*</span></label>
-                    <div className="wa-input-wrapper">
-                      <div className="wa-prefix">
-                        <span className="flag">🇮🇩</span>
-                        <span className="code">+62</span>
-                      </div>
-                      <input 
-                        type="tel" 
-                        placeholder="812345678" 
-                        className="compact-input wa-input"
-                        value={customerForm.wa.replace(/^(\+62|62|0)/, '')}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/\D/g, '');
-                          setCustomerForm({ ...customerForm, wa: '62' + val });
-                        }}
-                      />
+                </div>
+                {currentIndex < maxIndex && items.length > 3 && (
+                  <button 
+                    className="testimoni-nav-btn-new testimoni-nav-next-new"
+                    onClick={handleNext}
+                    aria-label="Next testimonials"
+                  >
+                    ›
+                  </button>
+                )}
+              </div>
+            </section>
+          </div>
+        );
+      }
+
+      case "list": {
+        const items = content?.items || [];
+        const componentTitle = content?.componentTitle || config?.title || "";
+        
+        return (
+          <div key={block.order} className="canvas-preview-block" style={containerStyle}>
+            {componentTitle && <h2>{componentTitle}</h2>}
+            <ul className="preview-list" style={textContentStyle}>
+              {items.map((item, i) => (
+                <li key={i}>
+                  {item.icon && (
+                    <span style={{ color: item.iconColor || 'inherit', marginRight: '8px' }}>
+                      {item.icon}
+                    </span>
+                  )}
+                  <span dangerouslySetInnerHTML={{ __html: item.content || item.nama || `Point ${i + 1}` }} />
+                </li>
+              ))}
+              {items.length === 0 && (
+                <div className="preview-placeholder">Belum ada list point</div>
+              )}
+            </ul>
+          </div>
+        );
+      }
+
+      case "faq": {
+        const kategoriId = getKategoriId();
+        const faqItems = getFAQByKategori(kategoriId);
+        
+        return (
+          <div key={block.order} className="canvas-preview-block" style={containerStyle}>
+            <section className="preview-faq-section" aria-label="Frequently Asked Questions">
+              <h2 className="faq-title">Pertanyaan yang Sering Diajukan</h2>
+              <div className="faq-container">
+                {faqItems.map((faq, index) => (
+                  <FAQItem 
+                    key={index}
+                    question={faq.question} 
+                    answer={faq.answer}
+                  />
+                ))}
+              </div>
+            </section>
+          </div>
+        );
+      }
+
+      case "form": {
+        const kategoriId = getKategoriId();
+        const isFormBuku = kategoriId === 4; // Kategori Buku (4)
+        
+        return (
+          <div key={block.order} className="canvas-preview-block" style={containerStyle}>
+            <section className="preview-form-section compact-form-section" aria-label="Order form">
+              <h2 className="compact-form-title">Lengkapi Data:</h2>
+              <div className="compact-form-card">
+                <div className="compact-field">
+                  <label className="compact-label">Nama Lengkap <span className="required">*</span></label>
+                  <input 
+                    type="text" 
+                    placeholder="Contoh: Krisdayanti" 
+                    className="compact-input"
+                    value={customerForm.nama}
+                    onChange={(e) => setCustomerForm({ ...customerForm, nama: e.target.value })}
+                  />
+                </div>
+                <div className="compact-field">
+                  <label className="compact-label">No. WhatsApp <span className="required">*</span></label>
+                  <div className="wa-input-wrapper">
+                    <div className="wa-prefix">
+                      <span className="flag">🇮🇩</span>
+                      <span className="code">+62</span>
                     </div>
-                  </div>
-                  <div className="compact-field">
-                    <label className="compact-label">Email <span className="required">*</span></label>
                     <input 
-                      type="email" 
-                      placeholder="email@example.com" 
-                      className="compact-input"
-                      value={customerForm.email}
-                      onChange={(e) => setCustomerForm({ ...customerForm, email: e.target.value })}
-                    />
-                  </div>
-                  <div className="compact-field">
-                    <label className="compact-label">Alamat <span className="required">*</span></label>
-                    <textarea 
-                      placeholder="Contoh: Jl. Peta Utara 1, No 62 RT 01/07" 
-                      className="compact-input compact-textarea" 
-                      rows={3}
-                      value={customerForm.alamat}
+                      type="tel" 
+                      placeholder="812345678" 
+                      className="compact-input wa-input"
+                      value={customerForm.wa.replace(/^(\+62|62|0)/, '')}
                       onChange={(e) => {
-                        setCustomerForm({ ...customerForm, alamat: e.target.value });
-                        generateAlamatLengkap(e.target.value, ongkirAddress);
+                        const val = e.target.value.replace(/\D/g, '');
+                        setCustomerForm({ ...customerForm, wa: '62' + val });
                       }}
                     />
                   </div>
-                  
-                  {isFormBuku && (
-                    <div className="compact-field">
-                      <OngkirCalculator
-                        onSelectOngkir={(info) => {
-                          if (typeof info === 'object' && info.cost !== undefined) {
-                            setOngkir(info.cost);
-                            setOngkirInfo({ courier: info.courier || '', service: info.service || '' });
-                          } else {
-                            setOngkir(info);
-                          }
-                        }}
-                        onAddressChange={(address) => {
-                          setOngkirAddress(address);
-                          generateAlamatLengkap(customerForm.alamat, address);
-                        }}
-                        defaultCourier="jne"
-                        compact={true}
-                      />
-                    </div>
-                  )}
-
-                  {isFormWorkshop && (
-                    <div className="compact-field">
-                      <label className="compact-label">
-                        Jumlah Down Payment <span className="required">*</span>
-                      </label>
-                      <input 
-                        type="text" 
-                        placeholder="Rp 0" 
-                        className="compact-input"
-                        value={formatPriceInput(downPayment)}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          const parsed = parsePriceInput(value);
-                          setDownPayment(parsed);
-                        }}
-                      />
-                    </div>
-                  )}
                 </div>
-              </section>
+                <div className="compact-field">
+                  <label className="compact-label">Email <span className="required">*</span></label>
+                  <input 
+                    type="email" 
+                    placeholder="email@example.com" 
+                    className="compact-input"
+                    value={customerForm.email}
+                    onChange={(e) => setCustomerForm({ ...customerForm, email: e.target.value })}
+                  />
+                </div>
+                <div className="compact-field">
+                  <label className="compact-label">Alamat <span className="required">*</span></label>
+                  <textarea 
+                    placeholder="Contoh: Jl. Peta Utara 1, No 62 RT 01/07" 
+                    className="compact-input compact-textarea" 
+                    rows={3}
+                    value={customerForm.alamat}
+                    onChange={(e) => {
+                      setCustomerForm({ ...customerForm, alamat: e.target.value });
+                      generateAlamatLengkap(e.target.value, ongkirAddress);
+                    }}
+                  />
+                </div>
+                
+                {isFormBuku && (
+                  <div className="compact-field">
+                    <OngkirCalculator
+                      onSelectOngkir={(info) => {
+                        if (typeof info === 'object' && info.cost !== undefined) {
+                          setOngkir(info.cost);
+                          setOngkirInfo({ courier: info.courier || '', service: info.service || '' });
+                        } else {
+                          setOngkir(info);
+                        }
+                      }}
+                      onAddressChange={(address) => {
+                        setOngkirAddress(address);
+                        generateAlamatLengkap(customerForm.alamat, address);
+                      }}
+                      defaultCourier="jne"
+                      compact={true}
+                    />
+                  </div>
+                )}
+              </div>
+            </section>
 
-              <section className="preview-form-section rincian-pesanan-section" aria-label="Rincian Pesanan">
-                <div className="rincian-pesanan-card">
-                  <h3 className="rincian-pesanan-title">RINCIAN PESANAN:</h3>
+            <section className="preview-form-section rincian-pesanan-section" aria-label="Rincian Pesanan">
+              <div className="rincian-pesanan-card">
+                <h3 className="rincian-pesanan-title">RINCIAN PESANAN:</h3>
+                <div className="rincian-pesanan-item">
+                  <div className="rincian-pesanan-detail">
+                    <div className="rincian-pesanan-name">{productData?.nama || "Nama Produk"}</div>
+                  </div>
+                  <div className="rincian-pesanan-price">
+                    Rp {formatPrice(productData?.harga || 0)}
+                  </div>
+                </div>
+                {isFormBuku && ongkir > 0 && (
                   <div className="rincian-pesanan-item">
                     <div className="rincian-pesanan-detail">
-                      <div className="rincian-pesanan-name">{productData?.nama || "Nama Produk"}</div>
+                      <div className="rincian-pesanan-name">Ongkir</div>
                     </div>
-                    <div className="rincian-pesanan-price">
-                      Rp {formatPrice(productData?.harga_promo || productData?.harga_asli || 0)}
-                    </div>
+                    <div className="rincian-pesanan-price">Rp {formatPrice(ongkir)}</div>
                   </div>
-                  {isFormBuku && ongkir > 0 && (
-                    <div className="rincian-pesanan-item">
-                      <div className="rincian-pesanan-detail">
-                        <div className="rincian-pesanan-name">Ongkir</div>
-                      </div>
-                      <div className="rincian-pesanan-price">Rp {formatPrice(ongkir)}</div>
-                    </div>
-                  )}
-                  {isFormWorkshop && downPayment > 0 && (
-                    <div className="rincian-pesanan-item">
-                      <div className="rincian-pesanan-detail">
-                        <div className="rincian-pesanan-name">Down Payment</div>
-                      </div>
-                      <div className="rincian-pesanan-price">Rp {formatPrice(downPayment)}</div>
-                    </div>
-                  )}
-                  <div className="rincian-pesanan-divider"></div>
-                  <div className="rincian-pesanan-total">
-                    <span className="rincian-pesanan-total-label">Total</span>
-                    <span className="rincian-pesanan-total-price">
-                      Rp {formatPrice(
-                        isFormBuku 
-                          ? (parseInt(productData?.harga_promo || productData?.harga_asli || 0) + ongkir) 
-                          : parseInt(productData?.harga_promo || productData?.harga_asli || 0)
-                      )}
-                    </span>
-                  </div>
-                  {isFormWorkshop && downPayment > 0 && (
-                    <div style={{ marginTop: '8px', fontSize: '12px', color: '#6b7280', textAlign: 'center' }}>
-                      Pembayaran pertama: Rp {formatPrice(downPayment)}
-                    </div>
-                  )}
-                </div>
-              </section>
-
-              <section className="preview-payment-section payment-section" aria-label="Payment methods">
-                <h2 className="payment-title">Metode Pembayaran</h2>
-                <div className="payment-options-vertical">
-                  <label className="payment-option-row">
-                    <input 
-                      type="radio" 
-                      name="payment" 
-                      value="manual"
-                      checked={paymentMethod === "manual"}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                    />
-                    <span className="payment-label">Bank Transfer (Manual)</span>
-                    <div className="payment-icons-inline">
-                      <img className="pay-icon" src="/assets/bca.png" alt="BCA" />
-                    </div>
-                  </label>
-                  <label className="payment-option-row">
-                    <input 
-                      type="radio" 
-                      name="payment" 
-                      value="ewallet"
-                      checked={paymentMethod === "ewallet"}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                    />
-                    <span className="payment-label">E-Payment</span>
-                    <div className="payment-icons-inline">
-                      <img className="pay-icon" src="/assets/qris.svg" alt="QRIS" />
-                      <img className="pay-icon" src="/assets/dana.png" alt="DANA" />
-                      <img className="pay-icon" src="/assets/ovo.png" alt="OVO" />
-                      <img className="pay-icon" src="/assets/link.png" alt="LinkAja" />
-                    </div>
-                  </label>
-                  <label className="payment-option-row">
-                    <input 
-                      type="radio" 
-                      name="payment" 
-                      value="cc"
-                      checked={paymentMethod === "cc"}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                    />
-                    <span className="payment-label">Credit / Debit Card</span>
-                    <div className="payment-icons-inline">
-                      <img className="pay-icon" src="/assets/visa.svg" alt="Visa" />
-                      <img className="pay-icon" src="/assets/master.png" alt="Mastercard" />
-                      <img className="pay-icon" src="/assets/jcb.png" alt="JCB" />
-                    </div>
-                  </label>
-                  <label className="payment-option-row">
-                    <input 
-                      type="radio" 
-                      name="payment" 
-                      value="va"
-                      checked={paymentMethod === "va"}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                    />
-                    <span className="payment-label">Virtual Account</span>
-                    <div className="payment-icons-inline">
-                      <img className="pay-icon" src="/assets/bca.png" alt="BCA" />
-                      <img className="pay-icon" src="/assets/mandiri.png" alt="Mandiri" />
-                      <img className="pay-icon" src="/assets/bni.png" alt="BNI" />
-                      <img className="pay-icon" src="/assets/permata.svg" alt="Permata" />
-                    </div>
-                  </label>
-                </div>
-              </section>
-
-              <div className="preview-form-submit-wrapper">
-                <button 
-                  type="button" 
-                  className="preview-form-submit-btn"
-                  onClick={handleSubmit}
-                  disabled={submitting}
-                >
-                  {submitting ? "Memproses..." : "Pesan Sekarang"}
-                </button>
-              </div>
-            </div>
-          );
-        }
-
-        case "price":
-          const hargaAsli = productData?.harga_asli || productData?.harga_coret || 0;
-          const hargaPromo = productData?.harga_promo || productData?.harga_asli || 0;
-          
-          return (
-            <div key={block.id} className="canvas-preview-block">
-              <section className="preview-price-section special-offer-card" aria-label="Special offer" itemScope itemType="https://schema.org/Offer">
-                <h2 className="special-offer-title">Special Offer!</h2>
-                <div className="special-offer-price">
-                  {hargaAsli > 0 && hargaAsli > hargaPromo && (
-                    <span className="price-old" aria-label="Harga lama">
-                      Rp {formatPrice(hargaAsli)}
-                    </span>
-                  )}
-                  <span className="price-new" itemProp="price" content={hargaPromo}>
-                    Rp {formatPrice(hargaPromo)}
+                )}
+                <div className="rincian-pesanan-divider"></div>
+                <div className="rincian-pesanan-total">
+                  <span className="rincian-pesanan-total-label">Total</span>
+                  <span className="rincian-pesanan-total-price">
+                    Rp {formatPrice(
+                      isFormBuku 
+                        ? (parseInt(productData?.harga || 0) + ongkir) 
+                        : parseInt(productData?.harga || 0)
+                    )}
                   </span>
                 </div>
-                <meta itemProp="priceCurrency" content="IDR" />
-                <meta itemProp="availability" content="https://schema.org/InStock" />
-              </section>
-            </div>
-          );
+              </div>
+            </section>
 
-        default:
-          return (
-            <div key={block.id} className="canvas-preview-block">
-              <div className="preview-placeholder">{block.type}</div>
+            <section className="preview-payment-section payment-section" aria-label="Payment methods">
+              <h2 className="payment-title">Metode Pembayaran</h2>
+              <div className="payment-options-vertical">
+                <label className="payment-option-row">
+                  <input 
+                    type="radio" 
+                    name="payment" 
+                    value="manual"
+                    checked={paymentMethod === "manual"}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  />
+                  <span className="payment-label">Bank Transfer (Manual)</span>
+                  <div className="payment-icons-inline">
+                    <img className="pay-icon" src="/assets/bca.png" alt="BCA" />
+                  </div>
+                </label>
+                <label className="payment-option-row">
+                  <input 
+                    type="radio" 
+                    name="payment" 
+                    value="ewallet"
+                    checked={paymentMethod === "ewallet"}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  />
+                  <span className="payment-label">E-Payment</span>
+                  <div className="payment-icons-inline">
+                    <img className="pay-icon" src="/assets/qris.svg" alt="QRIS" />
+                    <img className="pay-icon" src="/assets/dana.png" alt="DANA" />
+                    <img className="pay-icon" src="/assets/ovo.png" alt="OVO" />
+                    <img className="pay-icon" src="/assets/link.png" alt="LinkAja" />
+                  </div>
+                </label>
+                <label className="payment-option-row">
+                  <input 
+                    type="radio" 
+                    name="payment" 
+                    value="cc"
+                    checked={paymentMethod === "cc"}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  />
+                  <span className="payment-label">Credit / Debit Card</span>
+                  <div className="payment-icons-inline">
+                    <img className="pay-icon" src="/assets/visa.svg" alt="Visa" />
+                    <img className="pay-icon" src="/assets/master.png" alt="Mastercard" />
+                    <img className="pay-icon" src="/assets/jcb.png" alt="JCB" />
+                  </div>
+                </label>
+                <label className="payment-option-row">
+                  <input 
+                    type="radio" 
+                    name="payment" 
+                    value="va"
+                    checked={paymentMethod === "va"}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  />
+                  <span className="payment-label">Virtual Account</span>
+                  <div className="payment-icons-inline">
+                    <img className="pay-icon" src="/assets/bca.png" alt="BCA" />
+                    <img className="pay-icon" src="/assets/mandiri.png" alt="Mandiri" />
+                    <img className="pay-icon" src="/assets/bni.png" alt="BNI" />
+                    <img className="pay-icon" src="/assets/permata.svg" alt="Permata" />
+                  </div>
+                </label>
+              </div>
+            </section>
+
+            <div className="preview-form-submit-wrapper">
+              <button 
+                type="button" 
+                className="preview-form-submit-btn"
+                onClick={handleSubmit}
+                disabled={submitting}
+              >
+                {submitting ? "Memproses..." : "Pesan Sekarang"}
+              </button>
             </div>
-          );
+          </div>
+        );
       }
-    });
+
+      case "price": {
+        const harga = productData?.harga || 0;
+        const hargaAsli = productData?.harga_asli || productData?.harga_coret || 0;
+        
+        return (
+          <div key={block.order} className="canvas-preview-block" style={containerStyle}>
+            <section className="preview-price-section special-offer-card" aria-label="Special offer" itemScope itemType="https://schema.org/Offer">
+              <h2 className="special-offer-title">Special Offer!</h2>
+              <div className="special-offer-price">
+                {hargaAsli > 0 && hargaAsli > harga && (
+                  <span className="price-old" aria-label="Harga lama">
+                    Rp {formatPrice(hargaAsli)}
+                  </span>
+                )}
+                <span className="price-new" itemProp="price" content={harga}>
+                  Rp {formatPrice(harga)}
+                </span>
+              </div>
+              <meta itemProp="priceCurrency" content="IDR" />
+              <meta itemProp="availability" content="https://schema.org/InStock" />
+            </section>
+          </div>
+        );
+      }
+
+      default:
+        return (
+          <div key={block.order} className="canvas-preview-block" style={containerStyle}>
+            <div className="preview-placeholder">{type}</div>
+          </div>
+        );
+    }
   };
 
   // Handle Submit
@@ -689,95 +681,44 @@ export default function ProductPage() {
       return toast.error("Silakan hitung ongkir terlebih dahulu");
     }
 
-    const isWorkshopCheck = isKategoriWorkshop();
-    if (isWorkshopCheck && (!downPayment || downPayment === 0)) {
-      return toast.error("Silakan masukkan jumlah down payment");
-    }
-
     setSubmitting(true);
 
-    if (!data) {
+    if (!productData) {
       return toast.error("Data produk tidak valid");
     }
     
-    const hargaProduk = parseInt(data.harga_promo || data.harga_asli || '0', 10);
+    const hargaProduk = parseInt(productData.harga || '0', 10);
     const ongkirValue = isKategoriBuku() ? (ongkir || 0) : 0;
-    const downPaymentValue = isKategoriWorkshop() ? (downPayment || 0) : 0;
     
-    // Total harga untuk workshop tetap harga produk penuh (bukan down payment)
-    // Down payment adalah pembayaran pertama, bukan total harga
     const totalHarga = isKategoriBuku() 
       ? hargaProduk + ongkirValue 
-      : hargaProduk; // Workshop tetap harga produk penuh
-
-    // Untuk dummy products, gunakan validProductId jika ada, jika tidak gunakan data.id
-    // Backend akan validasi produk ID, jadi kita perlu ID yang valid dari database
-    const productIdToUse = isDummyProduct(kode_produk) && validProductId 
-      ? validProductId 
-      : parseInt(data.id, 10);
-    
-    // Jika dummy product dan tidak ada validProductId, tampilkan warning
-    if (isDummyProduct(kode_produk) && !validProductId) {
-      console.warn("[PRODUCT] ⚠️ Dummy product tanpa validProductId, akan menggunakan dummy ID:", data.id);
-      console.warn("[PRODUCT] ⚠️ Backend mungkin akan error karena produk ID tidak ditemukan di database");
-      console.warn("[PRODUCT] 💡 Solusi: Pastikan ada produk real di database, atau buat produk dummy di backend");
-    }
-    
-    const isWorkshop = isKategoriWorkshop();
-    const kategoriId = getKategoriId();
-    
-    console.log("[PRODUCT] Submitting order with product ID:", productIdToUse, {
-      isDummy: isDummyProduct(kode_produk),
-      validProductId: validProductId,
-      dataId: data.id,
-      willUse: productIdToUse,
-      kategoriId: kategoriId,
-      isWorkshop: isWorkshop,
-      kategori: data.kategori,
-      kategori_rel: data.kategori_rel
-    });
+      : hargaProduk;
 
     const payload = {
       nama: customerForm.nama,
       wa: customerForm.wa,
       email: customerForm.email,
       alamat: alamatLengkap || customerForm.alamat || '',
-      produk: productIdToUse, // Gunakan validProductId untuk dummy products
+      produk: parseInt(productData.id, 10),
       harga: String(hargaProduk),
       ongkir: String(ongkirValue),
-      down_payment: isWorkshop ? String(downPaymentValue) : undefined,
       total_harga: String(totalHarga),
       metode_bayar: paymentMethod,
       sumber: sumber || 'website',
       custom_value: Array.isArray(customerForm.custom_value) 
         ? customerForm.custom_value 
         : (customerForm.custom_value ? [customerForm.custom_value] : []),
-      // Workshop tidak lagi menggunakan status_pembayaran: 4, normal seperti kategori lainnya
-      // Tambahkan flag untuk dummy products (opsional, untuk tracking)
-      ...(isDummyProduct(kode_produk) ? { dummy_product_kode: kode_produk } : {}),
     };
 
-    console.log("[PRODUCT] Order payload:", {
-      ...payload,
-      hasStatusPembayaran: payload.status_pembayaran !== undefined,
-      statusPembayaran: payload.status_pembayaran,
-      hasDownPayment: payload.down_payment !== undefined,
-      downPayment: payload.down_payment
-    });
-
     try {
-      const { product_name, ...orderPayload } = payload;
-      
       const response = await fetch("/api/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(orderPayload),
+        body: JSON.stringify(payload),
       });
 
       const order = await response.json();
       
-      console.log("📥 Order response:", order);
-
       if (!response.ok || !order?.success) {
         const errorMessage = order?.message || order?.error || "Gagal membuat order";
         throw new Error(errorMessage);
@@ -795,13 +736,9 @@ export default function ProductPage() {
         customerId = rawCustomer;
       }
 
-      const hargaProdukFinal = parseInt(data.harga_promo || data.harga_asli || '0', 10);
-      const ongkirValueFinal = isKategoriBuku() ? (ongkir || 0) : 0;
-      const downPaymentValueFinal = isKategoriWorkshop() ? (downPayment || 0) : 0;
-      // Total harga untuk workshop tetap harga produk penuh (bukan down payment)
       const totalHargaFinal = isKategoriBuku() 
-        ? hargaProdukFinal + ongkirValueFinal 
-        : hargaProdukFinal; // Workshop tetap harga produk penuh
+        ? hargaProduk + ongkirValue 
+        : hargaProduk;
 
       const pendingOrder = {
         orderId: orderId,
@@ -809,15 +746,12 @@ export default function ProductPage() {
         nama: customerForm.nama,
         wa: customerForm.wa,
         email: customerForm.email,
-        productName: data.nama || "Produk",
+        productName: productData.nama || "Produk",
         totalHarga: String(totalHargaFinal),
         paymentMethod: paymentMethod,
         landingUrl: window.location.pathname,
-        // Tambahkan down_payment untuk workshop
-        ...(isKategoriWorkshop() && downPaymentValueFinal > 0 ? { downPayment: String(downPaymentValueFinal) } : {}),
       };
 
-      console.log("📦 [PRODUCT] Saving pending order:", pendingOrder);
       localStorage.setItem("pending_order", JSON.stringify(pendingOrder));
 
       if (customerId) {
@@ -836,102 +770,137 @@ export default function ProductPage() {
     }
   };
 
-  // Fetch Data
+  // Fetch Data dari Backend
   useEffect(() => {
-    // Set dummy data immediately (synchronous) untuk menghindari race condition
-    if (isDummyProduct(kode_produk)) {
-      const dummyData = getDummyProduct(kode_produk);
-      if (dummyData) {
-        console.log("[PRODUCT] Using dummy product:", kode_produk);
-        // Set data langsung tanpa await untuk memastikan render tidak blocked
-        setData(dummyData);
-        
-        // Fetch validProductId di background (non-blocking) dengan setTimeout
-        // Ini tidak menghalangi render halaman
-        setTimeout(async () => {
-          try {
-            const token = localStorage.getItem("token");
-            const headers = token ? { Authorization: `Bearer ${token}` } : {};
-            
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 detik timeout
-            
-            const productsRes = await fetch("/api/sales/produk", { 
-              headers,
-              signal: controller.signal
-            });
-            
-            clearTimeout(timeoutId);
-            
-            if (productsRes && productsRes.ok) {
-              const productsJson = await productsRes.json();
-              
-              if (productsJson.success && Array.isArray(productsJson.data) && productsJson.data.length > 0) {
-                // Ambil produk pertama yang aktif
-                const firstProduct = productsJson.data.find(p => p.status === "1" || p.status === 1) || productsJson.data[0];
-                if (firstProduct && firstProduct.id) {
-                  console.log("[PRODUCT] Using valid product ID for dummy product:", firstProduct.id);
-                  setValidProductId(Number(firstProduct.id));
-                }
-              }
-            }
-          } catch (err) {
-            // Error handling yang tidak blocking - hanya log warning
-            if (err.name !== 'AbortError') {
-              console.warn("[PRODUCT] Failed to fetch valid product ID (non-blocking):", err.message);
-            }
-            // Jika gagal fetch, tetap gunakan dummy ID (backend akan handle error)
-          }
-        }, 100); // Delay kecil untuk tidak blocking initial render
-        
+    async function fetchProduct() {
+      if (!kode_produk) {
+        setLoading(false);
         return;
+      }
+
+      try {
+        setLoading(true);
+        const res = await fetch(`/api/landing/${kode_produk}`, {
+          cache: "no-store",
+        });
+        
+        const json = await res.json();
+
+        if (!res.ok || !json.success || !json.data) {
+          throw new Error(json.message || "Produk tidak ditemukan");
+        }
+
+        const data = json.data;
+        
+        // Set product data
+        setProductData({
+          id: data.id,
+          nama: data.nama,
+          harga: data.harga,
+          harga_asli: data.harga_asli,
+          harga_coret: data.harga_coret,
+          kategori: data.kategori,
+          kategori_id: data.kategori_id,
+          kategori_rel: data.kategori_rel,
+        });
+
+        // Parse landingpage array
+        let landingpageData = data.landingpage;
+        
+        // Handle jika landingpage adalah string (legacy), parse ke array
+        if (typeof landingpageData === 'string') {
+          try {
+            landingpageData = JSON.parse(landingpageData);
+          } catch (e) {
+            console.warn("[PRODUCT] Failed to parse landingpage string:", e);
+            landingpageData = null;
+          }
+        }
+
+        // Pastikan landingpage adalah array
+        if (!Array.isArray(landingpageData)) {
+          console.warn("[PRODUCT] landingpage is not an array:", landingpageData);
+          landingpageData = null;
+        }
+
+        setLandingpage(landingpageData);
+
+      } catch (err) {
+        console.error("[PRODUCT] Error fetching product:", err);
+        toast.error(err.message || "Gagal memuat data produk");
+      } finally {
+        setLoading(false);
       }
     }
 
-    // TODO: Fetch dari API untuk produk real (nanti saat backend siap)
-    // async function fetchRealProduct() {
-    //   try {
-    //     const res = await fetch(`/api/product/${kode_produk}`, { cache: "no-store" });
-    //     const json = await res.json();
-    //     if (json.success && json.data) {
-    //       setData(json.data);
-    //     }
-    //   } catch (err) {
-    //     console.error("Product fetch failed:", err);
-    //   }
-    // }
-    // fetchRealProduct();
+    fetchProduct();
   }, [kode_produk]);
 
-  // Render langsung tanpa loading state
-  // Data dummy langsung di-set secara synchronous, jadi tidak perlu loading
-  // Tapi tetap check data untuk menghindari error
-  if (!data) {
-    console.log("[PRODUCT] Waiting for data to load...");
-    return null; // Return null jika data belum ada, tidak tampilkan loading
+  if (loading) {
+    return (
+      <div className="add-products3-container">
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          minHeight: '100vh',
+          flexDirection: 'column',
+          gap: '1rem'
+        }}>
+          <div style={{
+            width: "48px",
+            height: "48px",
+            border: "4px solid #3b82f6",
+            borderTopColor: "transparent",
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite",
+          }} />
+          <p>Memuat produk...</p>
+        </div>
+      </div>
+    );
   }
-  
-  // Debug log untuk memastikan data sudah ter-set
-  console.log("[PRODUCT] Data loaded:", {
-    nama: data.nama,
-    kategori_id: data.kategori_id,
-    kategori: data.kategori,
-    kategori_rel: data.kategori_rel
-  });
+
+  if (!productData) {
+    return (
+      <div className="add-products3-container">
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          minHeight: '100vh',
+          flexDirection: 'column',
+          gap: '1rem'
+        }}>
+          <h2>Produk tidak ditemukan</h2>
+          <p>Produk dengan kode "{kode_produk}" tidak ditemukan.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Parse blocks dari landingpage array
+  // Index 0 adalah settings, index 1+ adalah blocks
+  const blocks = landingpage && Array.isArray(landingpage) 
+    ? landingpage.filter((item, index) => index > 0 && item.type !== 'settings')
+    : [];
+
+  // Sort blocks by order
+  const sortedBlocks = [...blocks].sort((a, b) => (a.order || 0) - (b.order || 0));
 
   return (
     <div className="add-products3-container" itemScope itemType="https://schema.org/Product">
       <div className="page-builder-canvas">
         <div className="canvas-wrapper">
           {/* Nama Produk - Selalu muncul di paling atas */}
-          {data.nama && (
+          {productData.nama && (
             <div className="canvas-preview-block canvas-product-title-block">
-              <h1 className="preview-product-title" itemProp="name">{data.nama}</h1>
+              <h1 className="preview-product-title" itemProp="name">{productData.nama}</h1>
             </div>
           )}
           
-          {/* Render Blocks */}
-          {data.blocks && renderBlocks(data.blocks, data)}
+          {/* Render Blocks dari landingpage */}
+          {sortedBlocks.map((block) => renderBlock(block))}
         </div>
       </div>
 
@@ -968,4 +937,3 @@ export default function ProductPage() {
     </div>
   );
 }
-

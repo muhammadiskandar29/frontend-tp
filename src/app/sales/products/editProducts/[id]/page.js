@@ -1946,6 +1946,219 @@ export default function Page() {
             onClick={deleteProduct}
             disabled={isSubmitting}
           />
+          {/* Test button untuk POST /api/sales/produk dengan format JSON baru */}
+          <Button 
+            label="Test POST API" 
+            icon="pi pi-send"
+            className="p-button-secondary" 
+            onClick={async () => {
+              try {
+                const token = localStorage.getItem("token");
+                const testPayload = {
+                  "nama": "Workshop Digital Marketing Premium 2024",
+                  "kategori": "15",
+                  "kode": "workshop-digital-marketing-premium-2024",
+                  "url": "/workshop-digital-marketing-premium-2024",
+                  "harga": "2500000",
+                  "jenis_produk": "non-fisik",
+                  "isBundling": true,
+                  "bundling": [
+                    {
+                      "nama": "Paket Early Bird",
+                      "harga": 2000000
+                    },
+                    {
+                      "nama": "Paket Regular",
+                      "harga": 2500000
+                    },
+                    {
+                      "nama": "Paket VIP",
+                      "harga": 3500000
+                    }
+                  ],
+                  "tanggal_event": "2024-12-15T09:00:00.000Z",
+                  "assign": [1, 5, 10],
+                  "status": "1",
+                  "landingpage": [
+                    {
+                      "type": "settings",
+                      "background_color": "#f8f9fa",
+                      "page_title": "Workshop Digital Marketing Premium 2024 - Belajar Strategi Digital Marketing Terbaru",
+                      "tags": [
+                        "digital-marketing",
+                        "workshop",
+                        "premium",
+                        "belajar-online",
+                        "strategi-marketing"
+                      ],
+                      "seo_title": "Workshop Digital Marketing Premium 2024 | Belajar Strategi Digital Marketing",
+                      "meta_description": "Workshop Digital Marketing Premium 2024 dengan materi lengkap 8 modul, sertifikat resmi, akses recording seumur hidup, dan komunitas eksklusif.",
+                      "meta_image": "https://example.com/images/workshop-og-image.jpg",
+                      "favicon": "https://example.com/favicon.ico",
+                      "preview_url": "https://ternak-properti.myscalev.com/workshop-digital-marketing-premium-2024",
+                      "loading_logo": "https://example.com/loading-logo.png",
+                      "disable_crawler": false,
+                      "disable_rightclick": false,
+                      "html_language": "id",
+                      "disable_custom_font": false,
+                      "analytics": {
+                        "facebook": {
+                          "pixels": [
+                            {
+                              "id": "123456789012345",
+                              "events": [
+                                {
+                                  "name": "ViewContent",
+                                  "params": {
+                                    "content_name": "Workshop Digital Marketing Premium 2024",
+                                    "content_category": "Education",
+                                    "valueSource": "product.price",
+                                    "currency": "IDR"
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        "tiktok": {
+                          "pixels": [
+                            {
+                              "id": "C1234567890ABCDEF",
+                              "events": [
+                                {
+                                  "name": "ViewContent",
+                                  "params": {
+                                    "content_name": "Workshop Digital Marketing Premium 2024",
+                                    "content_type": "course",
+                                    "valueSource": "product.price",
+                                    "currency": "IDR"
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        "google": {
+                          "gtm": "GTM-XXXXXXX"
+                        }
+                      },
+                      "customScripts": {
+                        "enabled": true,
+                        "templates": [
+                          {
+                            "id": "fb-pixel-1",
+                            "type": "facebook-pixel",
+                            "pixelId": "123456789012345",
+                            "autoEvents": true
+                          }
+                        ],
+                        "customCode": "<script>console.log('Custom script loaded');</script>"
+                      },
+                      "form": {
+                        "type": "non-fisik",
+                        "fields": [
+                          {
+                            "name": "nama",
+                            "label": "Nama Lengkap",
+                            "type": "text",
+                            "required": true,
+                            "placeholder": "Masukkan nama lengkap"
+                          },
+                          {
+                            "name": "wa",
+                            "label": "Nomor WhatsApp",
+                            "type": "tel",
+                            "required": true,
+                            "placeholder": "6281234567890"
+                          },
+                          {
+                            "name": "email",
+                            "label": "Email",
+                            "type": "email",
+                            "required": false,
+                            "placeholder": "email@example.com"
+                          }
+                        ],
+                        "optionalFields": {
+                          "address": {
+                            "enabled": false
+                          }
+                        },
+                        "submitConfig": {
+                          "buttonText": "Daftar Sekarang",
+                          "buttonColor": "#F1A124",
+                          "kategori": 15
+                        }
+                      },
+                      "form_preview_address": {
+                        "provinsi": "Jawa Barat",
+                        "kabupaten": "Kota Bandung",
+                        "kecamatan": "Cibeunying Kidul",
+                        "kode_pos": "40121"
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "order": 1,
+                      "content": {
+                        "html": "<h1>Selamat Datang di Workshop Digital Marketing Premium</h1><p>Pelajari strategi digital marketing terbaru dari para ahli dengan materi lengkap dan praktis yang bisa langsung diterapkan.</p>"
+                      },
+                      "style": {
+                        "text": {
+                          "fontFamily": "Inter, sans-serif",
+                          "color": "#1a1a1a",
+                          "align": "center",
+                          "lineHeight": 1.8
+                        },
+                        "container": {
+                          "padding": {
+                            "top": 60,
+                            "right": 40,
+                            "bottom": 60,
+                            "left": 40
+                          },
+                          "background": {
+                            "type": "color",
+                            "color": "#ffffff"
+                          }
+                        }
+                      },
+                      "config": {
+                        "componentId": "text-header-1725123456789",
+                        "deviceView": "desktop"
+                      }
+                    }
+                  ]
+                };
+
+                console.log("[TEST API] Sending POST request to /api/sales/produk");
+                console.log("[TEST API] Payload:", JSON.stringify(testPayload, null, 2));
+
+                const res = await fetch("/api/sales/produk", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify(testPayload),
+                });
+
+                const data = await res.json();
+                console.log("[TEST API] Response:", data);
+
+                if (res.ok && data.success) {
+                  alert(`✅ Success! ${data.message || "Produk berhasil dibuat"}`);
+                } else {
+                  alert(`❌ Error: ${data.message || "Gagal membuat produk"}\n\nDetail: ${JSON.stringify(data.errors || {}, null, 2)}`);
+                }
+              } catch (error) {
+                console.error("[TEST API] Error:", error);
+                alert(`❌ Error: ${error.message}`);
+              }
+            }}
+            disabled={isSubmitting}
+          />
         </div>
         <p className="submit-hint">
           {isSubmitting 

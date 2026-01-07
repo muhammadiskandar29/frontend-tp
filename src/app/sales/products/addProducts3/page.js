@@ -1930,6 +1930,692 @@ export default function AddProducts3Page() {
     }
   };
 
+  // ============================================
+  // FUNGSI TRANSFORMASI PAYLOAD (Struktur Baru)
+  // ============================================
+
+  // Transformasi block dari flat data ke content/style/config
+  const transformBlock = (block) => {
+    const { type, data = {}, order } = block;
+    
+    // Extract content, style, dan config berdasarkan type
+    let content = {};
+    let style = {};
+    let config = {};
+
+    switch (type) {
+      case "text":
+        content = {
+          html: data.content || "<p></p>"
+        };
+        style = {
+          text: {
+            fontFamily: data.fontFamily && data.fontFamily !== "Page Font" ? data.fontFamily : "Inter, sans-serif",
+            color: data.textColor || "#1a1a1a",
+            align: data.textAlign || "left",
+            lineHeight: data.lineHeight || 1.8,
+            fontWeight: data.fontWeight || "normal",
+            fontStyle: data.fontStyle || "normal",
+            textDecoration: data.textDecoration || "none",
+            textTransform: data.textTransform || "none",
+            letterSpacing: data.letterSpacing || 0,
+            backgroundColor: data.backgroundColor || "transparent"
+          },
+          container: {
+            padding: {
+              top: data.paddingTop || 0,
+              right: data.paddingRight || 0,
+              bottom: data.paddingBottom || 0,
+              left: data.paddingLeft || 0
+            },
+            margin: {
+              top: 0,
+              right: 0,
+              bottom: 0,
+              left: 0
+            },
+            background: {
+              type: data.bgType || "none",
+              color: data.bgColor || "#ffffff",
+              image: data.bgImage || "",
+              size: "cover",
+              position: "center",
+              repeat: "no-repeat"
+            },
+            border: {
+              width: 0,
+              style: "solid",
+              color: "#e5e7eb",
+              radius: "0px"
+            },
+            shadow: "none"
+          }
+        };
+        config = {
+          componentId: data.componentId || `text-${Date.now()}`,
+          deviceView: data.deviceView || "desktop",
+          ...(data.parentId ? { parentId: data.parentId } : {})
+        };
+        break;
+
+      case "image":
+        content = {
+          src: data.src || "",
+          alt: data.alt || "",
+          caption: data.caption || ""
+        };
+        style = {
+          image: {
+            alignment: data.alignment || "center",
+            width: data.imageWidth || 100,
+            fit: data.imageFit || "fill",
+            aspectRatio: data.aspectRatio || "OFF"
+          },
+          container: {
+            padding: {
+              top: data.paddingTop || 0,
+              right: data.paddingRight || 0,
+              bottom: data.paddingBottom || 0,
+              left: data.paddingLeft || 0
+            },
+            margin: {
+              top: 0,
+              right: 0,
+              bottom: 0,
+              left: 0
+            },
+            background: {
+              type: data.backgroundType || "none",
+              color: data.backgroundColor || "#ffffff",
+              image: data.backgroundImage || ""
+            },
+            border: {
+              width: 0,
+              style: "solid",
+              color: "#e5e7eb",
+              radius: "0px"
+            },
+            shadow: "none"
+          }
+        };
+        config = {
+          componentId: data.componentId || `image-${Date.now()}`,
+          device: data.device || "mobile"
+        };
+        break;
+
+      case "youtube":
+      case "video":
+        content = {
+          items: (data.items || []).map(item => ({
+            url: item.url || "",
+            embedUrl: item.embedUrl || item.url || ""
+          }))
+        };
+        style = {
+          video: {
+            alignment: data.alignment || "center",
+            width: data.videoWidth || 100
+          },
+          container: {
+            padding: {
+              top: data.paddingTop || 0,
+              right: data.paddingRight || 0,
+              bottom: data.paddingBottom || 0,
+              left: data.paddingLeft || 0
+            }
+          }
+        };
+        config = {
+          componentId: data.componentId || `video-${Date.now()}`
+        };
+        break;
+
+      case "testimoni":
+        content = {
+          items: (data.items || []).map(item => ({
+            gambar: item.gambar || "",
+            nama: item.nama || "",
+            jabatan: item.jabatan || "",
+            isiTestimony: item.isiTestimony || item.deskripsi || "<p></p>",
+            showRating: item.showRating !== false,
+            rating: item.rating || 5
+          }))
+        };
+        style = {
+          text: {
+            fontFamily: "Inter, sans-serif",
+            color: "#1a1a1a"
+          },
+          container: {
+            padding: {
+              top: 60,
+              right: 40,
+              bottom: 60,
+              left: 40
+            },
+            background: {
+              type: "color",
+              color: "#f8f9fa"
+            },
+            border: {
+              width: 0,
+              radius: "16px"
+            },
+            shadow: "0 2px 8px rgba(0,0,0,0.1)"
+          }
+        };
+        config = {
+          componentId: data.componentId || `testimoni-${Date.now()}`,
+          componentTitle: data.componentTitle || "Testimoni Pembeli"
+        };
+        break;
+
+      case "list":
+        content = {
+          items: (data.items || []).map(item => ({
+            nama: item.nama || "",
+            content: item.content || "<p></p>",
+            icon: item.icon || "CheckCircle2",
+            iconColor: item.iconColor || "#10b981"
+          })),
+          style: data.style || "icon"
+        };
+        style = {
+          text: {
+            fontFamily: "Inter, sans-serif",
+            color: "#1a1a1a",
+            fontSize: 18,
+            lineHeight: 1.8
+          },
+          container: {
+            padding: {
+              top: data.paddingTop || 20,
+              right: data.paddingRight || 0,
+              bottom: data.paddingBottom || 20,
+              left: data.paddingLeft || 0
+            },
+            spacing: 16,
+            alignment: "left"
+          }
+        };
+        config = {
+          componentId: data.componentId || `list-${Date.now()}`,
+          componentTitle: data.componentTitle || "",
+          ...(data.parentId ? { parentId: data.parentId } : {})
+        };
+        break;
+
+      case "section":
+        content = {
+          title: data.title || "",
+          children: data.children || []
+        };
+        style = {
+          container: {
+            margin: {
+              top: 0,
+              right: 0,
+              bottom: 0,
+              left: 0
+            },
+            marginBetween: data.marginBetween || 24,
+            border: {
+              width: data.border?.width || 2,
+              style: "solid",
+              color: data.border?.color || "#e5e7eb",
+              radius: data.border?.radius || "16px"
+            },
+            background: {
+              type: "color",
+              color: data.backgroundColor || "#f9fafb"
+            },
+            padding: {
+              top: data.padding?.top || 40,
+              right: data.padding?.right || 40,
+              bottom: data.padding?.bottom || 40,
+              left: data.padding?.left || 40
+            },
+            shadow: data.shadow || "0 4px 6px rgba(0,0,0,0.1)",
+            responsiveType: data.responsiveType || "vertical"
+          }
+        };
+        config = {
+          componentId: data.componentId || `section-${Date.now()}`
+        };
+        break;
+
+      case "countdown":
+        content = {
+          hours: data.hours !== undefined ? data.hours : 0,
+          minutes: data.minutes !== undefined ? data.minutes : 0,
+          seconds: data.seconds !== undefined ? data.seconds : 0,
+          promoText: data.promoText || "Promo Berakhir Dalam:"
+        };
+        style = {
+          text: {
+            color: data.textColor || "#ffffff",
+            fontFamily: "monospace"
+          },
+          container: {
+            background: {
+              type: "color",
+              color: data.bgColor || "#1a1a1a"
+            }
+          },
+          numberStyle: data.numberStyle || "flip"
+        };
+        config = {
+          componentId: data.componentId || `countdown-${Date.now()}`
+        };
+        break;
+
+      case "faq":
+        content = {};
+        style = {};
+        config = {
+          componentId: data.componentId || `faq-${Date.now()}`
+        };
+        break;
+
+      case "form":
+        content = {};
+        style = {};
+        config = {
+          componentId: data.componentId || `form-${Date.now()}`
+        };
+        break;
+
+      case "image-slider":
+        content = {
+          images: (data.images || []).map(img => ({
+            src: img.src || "",
+            alt: img.alt || "",
+            caption: img.caption || "",
+            link: img.link || "",
+            postal_code: img.postal_code || ""
+          })),
+          autoplay: data.autoslide || false,
+          interval: data.autoslideDuration || 5000,
+          showDots: true,
+          showArrows: true
+        };
+        style = {
+          container: {
+            height: "500px",
+            borderRadius: "12px",
+            shadow: "0 4px 12px rgba(0,0,0,0.15)"
+          }
+        };
+        config = {
+          componentId: data.componentId || `image-slider-${Date.now()}`
+        };
+        break;
+
+      case "quota-info":
+        content = {
+          totalQuota: data.totalKuota || 60,
+          currentQuota: data.sisaKuota || 47,
+          remainingQuota: (data.totalKuota || 60) - (data.sisaKuota || 47),
+          showProgress: true,
+          showNumber: true
+        };
+        style = {
+          text: {
+            fontFamily: "Inter, sans-serif",
+            color: "#1a1a1a",
+            numberColor: "#2563eb",
+            fontSize: 24,
+            fontWeight: "600"
+          },
+          container: {
+            padding: {
+              top: 30,
+              right: 30,
+              bottom: 30,
+              left: 30
+            },
+            background: {
+              type: "color",
+              color: "#f0f9ff"
+            },
+            border: {
+              width: 0,
+              radius: "12px"
+            },
+            shadow: "0 2px 8px rgba(0,0,0,0.1)"
+          }
+        };
+        config = {
+          componentId: data.componentId || `quota-info-${Date.now()}`
+        };
+        break;
+
+      case "button":
+        content = {
+          text: data.text || "Klik Disini",
+          link: data.link || "#"
+        };
+        style = {
+          button: {
+            style: data.style || "primary",
+            backgroundColor: "#ff6c00",
+            textColor: "#ffffff",
+            hoverColor: "#c85400",
+            fontSize: 18,
+            fontWeight: "600",
+            borderRadius: "8px",
+            padding: {
+              top: 16,
+              right: 32,
+              bottom: 16,
+              left: 32
+            },
+            shadow: "0 4px 12px rgba(255, 108, 0, 0.3)",
+            alignment: "center"
+          }
+        };
+        config = {
+          componentId: data.componentId || `button-${Date.now()}`
+        };
+        break;
+
+      case "html":
+        content = {
+          code: data.code || ""
+        };
+        style = {};
+        config = {
+          componentId: data.componentId || `html-${Date.now()}`
+        };
+        break;
+
+      case "embed":
+        content = {
+          code: data.code || ""
+        };
+        style = {};
+        config = {
+          componentId: data.componentId || `embed-${Date.now()}`
+        };
+        break;
+
+      case "divider":
+        content = {
+          style: data.style || "solid",
+          color: data.color || "#e5e7eb",
+          width: "100%",
+          height: data.height || 2
+        };
+        style = {
+          container: {
+            margin: {
+              top: 60,
+              right: 0,
+              bottom: 60,
+              left: 0
+            },
+            alignment: "center"
+          }
+        };
+        config = {
+          componentId: data.componentId || `divider-${Date.now()}`
+        };
+        break;
+
+      case "scroll-target":
+        content = {
+          target: data.target || "",
+          label: data.label || ""
+        };
+        style = {};
+        config = {
+          componentId: data.componentId || `scroll-target-${Date.now()}`
+        };
+        break;
+
+      case "animation":
+        content = {
+          type: data.type || "fadeIn",
+          duration: data.duration || 1000,
+          delay: data.delay || 0,
+          easing: data.easing || "ease-in-out"
+        };
+        style = {};
+        config = {
+          componentId: data.componentId || `animation-${Date.now()}`
+        };
+        break;
+
+      default:
+        // Fallback untuk komponen lain
+        content = data;
+        style = {};
+        config = {
+          componentId: data.componentId || `${type}-${Date.now()}`
+        };
+    }
+
+    return {
+      type,
+      order: order || 0,
+      content,
+      style,
+      config
+    };
+  };
+
+  // Transformasi analytics dari flat ke terstruktur dengan valueSource
+  const transformAnalytics = () => {
+    const analytics = {
+      facebook: {
+        pixels: []
+      },
+      tiktok: {
+        pixels: []
+      },
+      google: {
+        gtm: pengaturanForm.google_gtm || ""
+      }
+    };
+
+    // Transform Facebook Pixels
+    if (pengaturanForm.facebook_pixels && pengaturanForm.facebook_pixels.length > 0) {
+      pengaturanForm.facebook_pixels.forEach((pixelId, index) => {
+        if (pixelId && pixelId.trim()) {
+          const events = [];
+          
+          // Transform Facebook Events
+          if (pengaturanForm.facebook_events && pengaturanForm.facebook_events[index]) {
+            const eventNames = Array.isArray(pengaturanForm.facebook_events[index]) 
+              ? pengaturanForm.facebook_events[index] 
+              : [];
+            
+            eventNames.forEach((eventName, eventIndex) => {
+              const eventParams = pengaturanForm.facebook_event_params?.[index]?.[eventIndex] || {};
+              
+              // Convert value ke valueSource jika ada
+              const params = { ...eventParams };
+              if (params.value !== undefined) {
+                // Tentukan valueSource berdasarkan event name
+                if (eventName === "ViewContent") {
+                  params.valueSource = "product.price";
+                } else if (eventName === "AddToCart") {
+                  params.valueSource = "selectedBundle.price";
+                } else if (eventName === "Purchase") {
+                  params.valueSource = "order.total";
+                } else {
+                  params.valueSource = "product.price";
+                }
+                delete params.value; // Hapus value hard-coded
+              }
+              
+              events.push({
+                name: eventName,
+                params: {
+                  content_name: pengaturanForm.nama || "Product",
+                  content_category: "Education",
+                  currency: "IDR",
+                  ...params
+                }
+              });
+            });
+          }
+
+          analytics.facebook.pixels.push({
+            id: pixelId,
+            events: events.length > 0 ? events : [
+              {
+                name: "ViewContent",
+                params: {
+                  content_name: pengaturanForm.nama || "Product",
+                  content_category: "Education",
+                  valueSource: "product.price",
+                  currency: "IDR"
+                }
+              }
+            ]
+          });
+        }
+      });
+    }
+
+    // Transform TikTok Pixels
+    if (pengaturanForm.tiktok_pixels && pengaturanForm.tiktok_pixels.length > 0) {
+      pengaturanForm.tiktok_pixels.forEach((pixelId, index) => {
+        if (pixelId && pixelId.trim()) {
+          const events = [];
+          
+          // Transform TikTok Events
+          if (pengaturanForm.tiktok_events && pengaturanForm.tiktok_events[index]) {
+            const eventNames = Array.isArray(pengaturanForm.tiktok_events[index]) 
+              ? pengaturanForm.tiktok_events[index] 
+              : [];
+            
+            eventNames.forEach((eventName) => {
+              events.push({
+                name: eventName,
+                params: {
+                  content_name: pengaturanForm.nama || "Product",
+                  content_type: "course",
+                  valueSource: "product.price",
+                  currency: "IDR"
+                }
+              });
+            });
+          }
+
+          analytics.tiktok.pixels.push({
+            id: pixelId,
+            events: events.length > 0 ? events : [
+              {
+                name: "ViewContent",
+                params: {
+                  content_name: pengaturanForm.nama || "Product",
+                  content_type: "course",
+                  valueSource: "product.price",
+                  currency: "IDR"
+                }
+              }
+            ]
+          });
+        }
+      });
+    }
+
+    return analytics;
+  };
+
+  // Transformasi custom scripts
+  const transformCustomScripts = () => {
+    const templates = [];
+
+    // Facebook Pixel Templates
+    if (pengaturanForm.facebook_pixels && pengaturanForm.facebook_pixels.length > 0) {
+      pengaturanForm.facebook_pixels.forEach((pixelId, index) => {
+        if (pixelId && pixelId.trim()) {
+          templates.push({
+            id: `fb-pixel-${index + 1}`,
+            type: "facebook-pixel",
+            pixelId: pixelId,
+            autoEvents: true
+          });
+        }
+      });
+    }
+
+    // Google GTM Template
+    if (pengaturanForm.google_gtm && pengaturanForm.google_gtm.trim()) {
+      templates.push({
+        id: "google-gtm-1",
+        type: "google-gtm",
+        gtmId: pengaturanForm.google_gtm
+      });
+    }
+
+    return {
+      enabled: pengaturanForm.enable_custom_head_script || false,
+      templates,
+      customCode: pengaturanForm.custom_head_script || ""
+    };
+  };
+
+  // Transformasi form untuk landingpage
+  const transformForm = () => {
+    const isFisik = pengaturanForm.jenis_produk === "fisik";
+    
+    return {
+      type: pengaturanForm.jenis_produk || "non-fisik",
+      fields: [
+        {
+          name: "nama",
+          label: "Nama Lengkap",
+          type: "text",
+          required: true,
+          placeholder: "Masukkan nama lengkap"
+        },
+        {
+          name: "wa",
+          label: "Nomor WhatsApp",
+          type: "tel",
+          required: true,
+          placeholder: "6281234567890"
+        },
+        {
+          name: "email",
+          label: "Email",
+          type: "email",
+          required: false,
+          placeholder: "email@example.com"
+        }
+      ],
+      optionalFields: {
+        address: {
+          enabled: isFisik
+        }
+      },
+      submitConfig: {
+        buttonText: "Daftar Sekarang",
+        buttonColor: "#F1A124",
+        kategori: pengaturanForm.kategori ? Number(pengaturanForm.kategori) : null
+      }
+    };
+  };
+
+  // Transformasi form preview address (untuk preview/style form builder)
+  const transformFormPreviewAddress = () => {
+    // Hanya kirim jika ada data (untuk preview form builder)
+    if (regionForm.provinsi || regionForm.kabupaten || regionForm.kecamatan || regionForm.kode_pos) {
+      return {
+        provinsi: regionForm.provinsi || "",
+        kabupaten: regionForm.kabupaten || "",
+        kecamatan: regionForm.kecamatan || "",
+        kode_pos: regionForm.kode_pos || ""
+      };
+    }
+    return null;
+  };
+
   // Handler untuk save dan publish
   const handleSaveAndPublish = async () => {
     // Validasi
@@ -1960,29 +2646,63 @@ export default function AddProducts3Page() {
       formattedDate = date.toISOString();
     }
 
-    // Prepare payload
+    // Transform blocks
+    const transformedBlocks = blocks.map(transformBlock);
+
+    // Transform analytics
+    const analytics = transformAnalytics();
+
+    // Transform custom scripts
+    const customScripts = transformCustomScripts();
+
+    // Transform form
+    const form = transformForm();
+
+    // Transform form preview address
+    const formPreviewAddress = transformFormPreviewAddress();
+
+    // Build settings object untuk landingpage array
+    const settingsObject = {
+      type: "settings",
+      background_color: pengaturanForm.background_color || "#ffffff",
+      page_title: pengaturanForm.page_title || "",
+      tags: pengaturanForm.tags || [],
+      seo_title: pengaturanForm.seo_title || "",
+      meta_description: pengaturanForm.meta_description || "",
+      meta_image: pengaturanForm.meta_image || "",
+      favicon: pengaturanForm.favicon || "",
+      preview_url: pengaturanForm.preview_url || "",
+      loading_logo: pengaturanForm.loading_logo || "",
+      disable_crawler: pengaturanForm.disable_crawler || false,
+      disable_rightclick: pengaturanForm.disable_rightclick || false,
+      html_language: pengaturanForm.html_language || "id",
+      disable_custom_font: pengaturanForm.disable_custom_font || false,
+      analytics,
+      customScripts,
+      form,
+      ...(formPreviewAddress ? { form_preview_address: formPreviewAddress } : {})
+    };
+
+    // Build landingpage array: [settings, ...blocks]
+    const landingpageArray = [
+      settingsObject,
+      ...transformedBlocks
+    ];
+
+    // Prepare payload dengan struktur baru
     const payload = {
       nama: pengaturanForm.nama.trim(),
       kategori: String(pengaturanForm.kategori),
       kode: pengaturanForm.kode || generateKode(pengaturanForm.nama),
       url: pengaturanForm.url || `/${generateKode(pengaturanForm.nama)}`,
-      harga_asli: "0", // Legacy field, tetap kirim 0
-      harga_promo: String(pengaturanForm.harga || 0), // Gunakan harga untuk backward compatibility
       harga: String(pengaturanForm.harga || 0),
       jenis_produk: pengaturanForm.jenis_produk || "fisik",
       isBundling: pengaturanForm.isBundling || false,
-      bundling: JSON.stringify(pengaturanForm.bundling || []),
+      bundling: pengaturanForm.bundling || [], // Array, bukan stringified
       tanggal_event: formattedDate,
       assign: pengaturanForm.assign,
-      background_color: pengaturanForm.background_color || "#ffffff",
-      page_title: pengaturanForm.page_title || "",
-      landingpage: "1",
       status: "1",
-      blocks: blocks.map(block => ({
-        type: block.type,
-        data: block.data,
-        order: block.order
-      }))
+      landingpage: landingpageArray
     };
 
     try {
