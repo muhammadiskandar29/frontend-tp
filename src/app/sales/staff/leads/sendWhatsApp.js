@@ -85,12 +85,16 @@ export default function SendWhatsAppModal({ lead, onClose, onSuccess }) {
     if (!pendapatan || pendapatan === "-" || pendapatan === 0) return "—";
     // Format untuk range pendapatan (pendapatan_bln)
     const mapping = {
-      "<1jt": "< 1 Juta",
-      "1-5jt": "1 - 5 Juta",
-      "5-10jt": "5 - 10 Juta",
-      "10-15jt": "10 - 15 Juta",
-      "15-20jt": "15 - 20 Juta",
-      ">20jt": "> 20 Juta",
+      "10-20jt": "10 - 20 Juta",
+      "20-30jt": "20 - 30 Juta",
+      "30-40jt": "30 - 40 Juta",
+      "40-50jt": "40 - 50 Juta",
+      "50-60jt": "50 - 60 Juta",
+      "60-70jt": "60 - 70 Juta",
+      "70-80jt": "70 - 80 Juta",
+      "80-90jt": "80 - 90 Juta",
+      "90-100jt": "90 - 100 Juta",
+      ">100jt": "> 100 Juta",
     };
     // Jika sudah dalam format range, langsung return mapping
     if (mapping[pendapatan]) {

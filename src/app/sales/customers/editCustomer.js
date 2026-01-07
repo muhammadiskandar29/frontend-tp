@@ -389,12 +389,16 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
                   onChange={handleChange}
                 >
                   <option value="">Pilih Range Pendapatan</option>
-                  <option value="<1jt">&lt; 1 Juta</option>
-                  <option value="1-5jt">1 - 5 Juta</option>
-                  <option value="5-10jt">5 - 10 Juta</option>
-                  <option value="10-15jt">10 - 15 Juta</option>
-                  <option value="15-20jt">15 - 20 Juta</option>
-                  <option value=">20jt">&gt; 20 Juta</option>
+                  <option value="10-20jt">10 - 20 Juta</option>
+                  <option value="20-30jt">20 - 30 Juta</option>
+                  <option value="30-40jt">30 - 40 Juta</option>
+                  <option value="40-50jt">40 - 50 Juta</option>
+                  <option value="50-60jt">50 - 60 Juta</option>
+                  <option value="60-70jt">60 - 70 Juta</option>
+                  <option value="70-80jt">70 - 80 Juta</option>
+                  <option value="80-90jt">80 - 90 Juta</option>
+                  <option value="90-100jt">90 - 100 Juta</option>
+                  <option value=">100jt">&gt; 100 Juta</option>
                 </select>
               </div>
 
