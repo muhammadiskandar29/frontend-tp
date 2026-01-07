@@ -181,7 +181,8 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
       setRegionForm(prev => ({ 
         ...prev, 
         kecamatan: district?.name || "",
-        kode_pos: district?.postal_code || "" // Ambil kode pos dari district jika ada
+        // Ambil kode pos dari district jika ada, jika tidak pertahankan yang sudah ada atau kosongkan
+        kode_pos: district?.postal_code || prev.kode_pos || ""
       }));
     } else if (field === "kode_pos") {
       setRegionForm(prev => ({ ...prev, kode_pos: value }));
@@ -197,7 +198,10 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
   // Initialize province ID dari customer data setelah provinces loaded
   useEffect(() => {
     if (regionData.provinces.length > 0 && regionForm.provinsi && !selectedRegionIds.provinceId) {
-      const province = regionData.provinces.find(p => p.name === regionForm.provinsi);
+      // Cari province dengan case-insensitive dan trim untuk menghindari masalah whitespace
+      const province = regionData.provinces.find(p => 
+        p.name?.trim().toLowerCase() === regionForm.provinsi?.trim().toLowerCase()
+      );
       if (province) {
         setSelectedRegionIds(prev => ({ ...prev, provinceId: province.id }));
       }
@@ -224,7 +228,10 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
   // Initialize city ID dari customer data setelah cities loaded
   useEffect(() => {
     if (regionData.cities.length > 0 && regionForm.kabupaten && !selectedRegionIds.cityId) {
-      const city = regionData.cities.find(c => c.name === regionForm.kabupaten);
+      // Cari city dengan case-insensitive dan trim untuk menghindari masalah whitespace
+      const city = regionData.cities.find(c => 
+        c.name?.trim().toLowerCase() === regionForm.kabupaten?.trim().toLowerCase()
+      );
       if (city) {
         setSelectedRegionIds(prev => ({ ...prev, cityId: city.id }));
       }
@@ -251,9 +258,16 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
   // Initialize district ID dari customer data setelah districts loaded
   useEffect(() => {
     if (regionData.districts.length > 0 && regionForm.kecamatan && !selectedRegionIds.districtId) {
-      const district = regionData.districts.find(d => d.name === regionForm.kecamatan);
+      // Cari district dengan case-insensitive dan trim untuk menghindari masalah whitespace
+      const district = regionData.districts.find(d => 
+        d.name?.trim().toLowerCase() === regionForm.kecamatan?.trim().toLowerCase()
+      );
       if (district) {
         setSelectedRegionIds(prev => ({ ...prev, districtId: district.id || district.district_id }));
+        // Pastikan kode_pos terisi jika ada di district atau pertahankan yang sudah ada
+        if (district.postal_code && !regionForm.kode_pos) {
+          setRegionForm(prev => ({ ...prev, kode_pos: district.postal_code }));
+        }
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -267,9 +281,39 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
       return;
     }
 
-    // Validasi form wilayah
-    if (!regionForm.provinsi || !regionForm.kabupaten || !regionForm.kecamatan || !regionForm.kode_pos) {
-      toastError("Lengkapi data alamat (Provinsi, Kabupaten/Kota, Kecamatan, dan Kode Pos)!");
+    // Validasi form wilayah - pastikan semua field terisi dengan trim
+    const provinsi = regionForm.provinsi?.trim() || "";
+    const kabupaten = regionForm.kabupaten?.trim() || "";
+    const kecamatan = regionForm.kecamatan?.trim() || "";
+    const kode_pos = regionForm.kode_pos?.trim() || "";
+
+    // Validasi lengkap dengan pesan yang lebih spesifik
+    if (!provinsi) {
+      toastError("Pilih Provinsi terlebih dahulu!");
+      return;
+    }
+    if (!kabupaten) {
+      toastError("Pilih Kabupaten/Kota terlebih dahulu!");
+      return;
+    }
+    if (!kecamatan) {
+      toastError("Pilih Kecamatan terlebih dahulu!");
+      return;
+    }
+    if (!kode_pos) {
+      toastError("Kode Pos wajib diisi! Pilih Kecamatan untuk auto-fill atau isi manual.");
+      return;
+    }
+
+    // Validasi kode pos harus angka
+    if (!/^\d+$/.test(kode_pos)) {
+      toastError("Kode Pos harus berupa angka!");
+      return;
+    }
+
+    // Pastikan selectedRegionIds juga terisi (untuk memastikan dropdown sudah dipilih)
+    if (!selectedRegionIds.provinceId || !selectedRegionIds.cityId || !selectedRegionIds.districtId) {
+      toastError("Pastikan semua dropdown alamat sudah dipilih dengan benar!");
       return;
     }
 
@@ -277,13 +321,13 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
     const token = localStorage.getItem("token");
 
     try {
-      // Prepare payload dengan format alamat baru
+      // Prepare payload dengan format alamat baru - pastikan semua string
       const payload = {
         ...formData,
-        provinsi: regionForm.provinsi,
-        kabupaten: regionForm.kabupaten,
-        kecamatan: regionForm.kecamatan,
-        kode_pos: regionForm.kode_pos,
+        provinsi: provinsi,
+        kabupaten: kabupaten,
+        kecamatan: kecamatan,
+        kode_pos: kode_pos,
       };
 
       const res = await fetch(`${BASE_URL}/sales/customer/${customer.id}`, {

@@ -161,7 +161,8 @@ export default function AddCustomerModal({ onClose, onSuccess }) {
       setRegionForm(prev => ({ 
         ...prev, 
         kecamatan: district?.name || "",
-        kode_pos: district?.postal_code || "" // Ambil kode pos dari district jika ada
+        // Ambil kode pos dari district jika ada, jika tidak kosongkan agar user bisa isi manual
+        kode_pos: district?.postal_code || prev.kode_pos || ""
       }));
     } else if (field === "kode_pos") {
       setRegionForm(prev => ({ ...prev, kode_pos: value }));
@@ -212,9 +213,39 @@ export default function AddCustomerModal({ onClose, onSuccess }) {
       return;
     }
 
-    // Validasi form wilayah
-    if (!regionForm.provinsi || !regionForm.kabupaten || !regionForm.kecamatan || !regionForm.kode_pos) {
-      toastError("Lengkapi data alamat (Provinsi, Kabupaten/Kota, Kecamatan, dan Kode Pos)!");
+    // Validasi form wilayah - pastikan semua field terisi dengan trim
+    const provinsi = regionForm.provinsi?.trim() || "";
+    const kabupaten = regionForm.kabupaten?.trim() || "";
+    const kecamatan = regionForm.kecamatan?.trim() || "";
+    const kode_pos = regionForm.kode_pos?.trim() || "";
+
+    // Validasi lengkap dengan pesan yang lebih spesifik
+    if (!provinsi) {
+      toastError("Pilih Provinsi terlebih dahulu!");
+      return;
+    }
+    if (!kabupaten) {
+      toastError("Pilih Kabupaten/Kota terlebih dahulu!");
+      return;
+    }
+    if (!kecamatan) {
+      toastError("Pilih Kecamatan terlebih dahulu!");
+      return;
+    }
+    if (!kode_pos) {
+      toastError("Kode Pos wajib diisi! Pilih Kecamatan untuk auto-fill atau isi manual.");
+      return;
+    }
+
+    // Validasi kode pos harus angka
+    if (!/^\d+$/.test(kode_pos)) {
+      toastError("Kode Pos harus berupa angka!");
+      return;
+    }
+
+    // Pastikan selectedRegionIds juga terisi (untuk memastikan dropdown sudah dipilih)
+    if (!selectedRegionIds.provinceId || !selectedRegionIds.cityId || !selectedRegionIds.districtId) {
+      toastError("Pastikan semua dropdown alamat sudah dipilih dengan benar!");
       return;
     }
 
@@ -222,13 +253,13 @@ export default function AddCustomerModal({ onClose, onSuccess }) {
     const token = localStorage.getItem("token");
 
     try {
-      // Prepare payload dengan format alamat baru
+      // Prepare payload dengan format alamat baru - pastikan semua string
       const payload = {
         ...formData,
-        provinsi: regionForm.provinsi,
-        kabupaten: regionForm.kabupaten,
-        kecamatan: regionForm.kecamatan,
-        kode_pos: regionForm.kode_pos,
+        provinsi: provinsi,
+        kabupaten: kabupaten,
+        kecamatan: kecamatan,
+        kode_pos: kode_pos,
       };
 
       const res = await fetch(`${BASE_URL}/sales/customer`, {
