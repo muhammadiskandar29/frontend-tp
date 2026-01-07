@@ -21,6 +21,25 @@ const formatValue = (value) => {
   return value || "—";
 };
 
+// Helper untuk format tanggal lahir dengan pemisah
+const formatTanggalLahir = (tanggal) => {
+  if (!tanggal) return "—";
+  
+  // Jika sudah ada pemisah, biarkan seperti itu
+  if (tanggal.includes("-") || tanggal.includes("/")) {
+    return tanggal;
+  }
+  
+  // Jika tidak ada pemisah, format menjadi dd-mm-yyyy
+  const digits = tanggal.replace(/\D/g, "");
+  if (digits.length === 8) {
+    return `${digits.slice(0, 2)}-${digits.slice(2, 4)}-${digits.slice(4, 8)}`;
+  }
+  
+  // Jika format tidak sesuai, kembalikan asli
+  return tanggal;
+};
+
 // Helper untuk format Instagram
 const formatInstagram = (value) => {
   if (!value) return "—";
@@ -106,13 +125,41 @@ export default function ViewCustomerModal({ customer, onClose }) {
             <div className="detail-item">
               <span className="detail-label">Tanggal Lahir</span>
               <span className="detail-colon">:</span>
-              <span className="detail-value">{formatValue(customer.tanggal_lahir)}</span>
+              <span className="detail-value">{formatTanggalLahir(customer.tanggal_lahir)}</span>
+            </div>
+
+            {/* Alamat - Format Baru (Provinsi, Kabupaten/Kota, Kecamatan, Kode Pos) */}
+            {/* Backward compatibility: jika ada alamat lama, tampilkan juga */}
+            {customer.alamat && (!customer.provinsi || !customer.kabupaten || !customer.kecamatan || !customer.kode_pos) && (
+              <div className="detail-item">
+                <span className="detail-label">Alamat</span>
+                <span className="detail-colon">:</span>
+                <span className="detail-value">{formatValue(customer.alamat)}</span>
+              </div>
+            )}
+
+            <div className="detail-item">
+              <span className="detail-label">Provinsi</span>
+              <span className="detail-colon">:</span>
+              <span className="detail-value">{formatValue(customer.provinsi)}</span>
             </div>
 
             <div className="detail-item">
-              <span className="detail-label">Alamat</span>
+              <span className="detail-label">Kabupaten/Kota</span>
               <span className="detail-colon">:</span>
-              <span className="detail-value">{formatValue(customer.alamat)}</span>
+              <span className="detail-value">{formatValue(customer.kabupaten)}</span>
+            </div>
+
+            <div className="detail-item">
+              <span className="detail-label">Kecamatan</span>
+              <span className="detail-colon">:</span>
+              <span className="detail-value">{formatValue(customer.kecamatan)}</span>
+            </div>
+
+            <div className="detail-item">
+              <span className="detail-label">Kode Pos</span>
+              <span className="detail-colon">:</span>
+              <span className="detail-value">{formatValue(customer.kode_pos)}</span>
             </div>
           </div>
         </div>

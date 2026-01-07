@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useCallback, memo } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import { getCustomers, deleteCustomer } from "@/lib/sales/customer";
-import { Users, CheckCircle, Filter } from "lucide-react";
+import { Users, CheckCircle, Filter, ChevronDown } from "lucide-react";
 import dynamic from "next/dynamic";
 import "@/styles/sales/dashboard-premium.css";
 import "@/styles/sales/admin.css";
 import "@/styles/sales/customers-premium.css";
+import "@/styles/sales/leads.css";
 
 // Lazy load modals
 const EditCustomerModal = dynamic(() => import("./editCustomer"), { ssr: false });
@@ -18,10 +19,12 @@ const AddCustomerModal = dynamic(() => import("./addCustomer"), { ssr: false });
 const HistoryCustomerModal = dynamic(() => import("./historyCustomer"), { ssr: false });
 const FollowupLogModal = dynamic(() => import("./followupLog"), { ssr: false });
 
+import { toastSuccess, toastError, toastWarning } from "@/lib/toast";
+
 /**
  * Simple debounce hook to avoid rerunning expensive computations
  */
-function useDebouncedValue(value, delay = 250) {
+function useDebouncedValue(value, delay = 500) {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
     const id = setTimeout(() => setDebounced(value), delay);
@@ -30,7 +33,6 @@ function useDebouncedValue(value, delay = 250) {
   return debounced;
 }
 
-import { toastSuccess, toastError, toastWarning } from "@/lib/toast";
 const CUSTOMERS_COLUMNS = [
   "#",
   "Nama",
@@ -44,10 +46,16 @@ const CUSTOMERS_COLUMNS = [
 
 export default function AdminCustomerPage() {
   const router = useRouter();
+  // Pagination state dengan fallback pagination
+  const [page, setPage] = useState(1);
   const [customers, setCustomers] = useState([]);
+  const [hasMore, setHasMore] = useState(true); // penentu masih ada halaman berikutnya
+  const [loading, setLoading] = useState(false);
+  const [paginationInfo, setPaginationInfo] = useState(null); // Store pagination info from backend
+  const perPage = 15; // Data per halaman
+  
   const [searchInput, setSearchInput] = useState("");
-  const debouncedSearch = useDebouncedValue(searchInput);
-  const [filterPreset, setFilterPreset] = useState("all"); // all | today
+  const debouncedSearch = useDebouncedValue(searchInput, 500); // Debounce 500ms
   const [showEdit, setShowEdit] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -55,73 +63,156 @@ export default function AdminCustomerPage() {
   const [showHistory, setShowHistory] = useState(false);
   const [showFollowupLog, setShowFollowupLog] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
-  const [needsRefresh, setNeedsRefresh] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 25;
+  
+  // Filter state - hanya verifikasi
+  const [verifikasiFilter, setVerifikasiFilter] = useState("all"); // all | verified | unverified
+  const [showVerifikasiDropdown, setShowVerifikasiDropdown] = useState(false);
+  
+  // Filter options
+  const VERIFIKASI_OPTIONS = [
+    { value: "all", label: "Semua Verifikasi" },
+    { value: "verified", label: "Verified" },
+    { value: "unverified", label: "Unverified" },
+  ];
+  
+  // Convert filter untuk API (termasuk search)
+  const filters = useMemo(() => ({
+    verifikasi: verifikasiFilter,
+    status: "all",
+    dateRange: null,
+    jenis_kelamin: "all",
+    search: debouncedSearch.trim() || null, // Add search to filters
+  }), [verifikasiFilter, debouncedSearch]);
 
-  const getCustomerDate = useCallback((c) => {
-    const raw =
-      c?.created_at ||
-      c?.createdAt ||
-      c?.tanggal ||
-      c?.date ||
-      c?.created ||
-      c?.updated_at ||
-      c?.updatedAt;
-    if (!raw) return null;
-    const d = new Date(raw);
-    return Number.isNaN(d.getTime()) ? null : d;
-  }, []);
+  // Memoize summary statistics untuk performa
+  const summaryStats = useMemo(() => {
+    const verified = customers.filter((c) => c.verifikasi === "1" || c.verifikasi === true).length;
+    const unverified = customers.filter((c) => c.verifikasi !== "1" && c.verifikasi !== true).length;
+    return { verified, unverified };
+  }, [customers]);
+  
+  const fetchingRef = useRef(false); // Prevent multiple simultaneous fetches
 
-  // 🔹 Load data dari backend, batched via needsRefresh flag
-  useEffect(() => {
-    if (!needsRefresh) return;
-    const loadCustomers = async () => {
-      try {
-        const data = await getCustomers();
-        setCustomers(data);
-      } catch (err) {
-        console.error("Error fetching customers:", err);
-        toastError("Gagal memuat data customer");
-      } finally {
-        setNeedsRefresh(false);
+  // 🔹 Fetch customers dengan fallback pagination - optimized
+  const fetchCustomers = useCallback(async (pageNumber = 1) => {
+    // Prevent multiple simultaneous calls using ref
+    if (fetchingRef.current) {
+      return;
+    }
+
+    fetchingRef.current = true;
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setLoading(false);
+        fetchingRef.current = false;
+        return;
       }
-    };
-    loadCustomers();
-  }, [needsRefresh]);
 
-  // 🔹 Filter pencarian (memoized + debounced input)
-  const filtered = useMemo(() => {
-    const term = debouncedSearch.trim().toLowerCase();
-    return customers.filter((c) => {
-      if (c.status !== "1") return false;
-      if (filterPreset === "today") {
-        const d = getCustomerDate(c);
-        if (!d) return false;
-        const now = new Date();
-        const sameDay =
-          d.getFullYear() === now.getFullYear() &&
-          d.getMonth() === now.getMonth() &&
-          d.getDate() === now.getDate();
-        if (!sameDay) return false;
+      const result = await getCustomers(pageNumber, perPage, filters);
+      
+      if (result.success && result.data && Array.isArray(result.data)) {
+        // Filter dan sort data di frontend untuk memastikan filter bekerja dengan benar
+        let filteredData = [...result.data];
+        
+        // Apply verifikasi filter jika bukan "all" (fallback jika backend tidak memproses filter)
+        if (filters.verifikasi && filters.verifikasi !== "all") {
+          if (filters.verifikasi === "verified") {
+            filteredData = filteredData.filter(
+              (c) => c.verifikasi === "1" || c.verifikasi === true || c.verifikasi === 1
+            );
+          } else if (filters.verifikasi === "unverified") {
+            filteredData = filteredData.filter(
+              (c) => !(c.verifikasi === "1" || c.verifikasi === true || c.verifikasi === 1)
+            );
+          }
+        }
+        
+        // Sort data dari terbaru ke terlama berdasarkan create_at atau id
+        filteredData.sort((a, b) => {
+          // Prioritas: create_at jika ada, fallback ke id
+          const dateA = a.create_at ? new Date(a.create_at).getTime() : 0;
+          const dateB = b.create_at ? new Date(b.create_at).getTime() : 0;
+          
+          if (dateA !== 0 && dateB !== 0) {
+            return dateB - dateA; // Terbaru di atas
+          }
+          
+          // Fallback ke id jika create_at tidak ada
+          const idA = a.id || 0;
+          const idB = b.id || 0;
+          return idB - idA; // ID lebih besar (terbaru) di atas
+        });
+        
+        // Selalu replace data (bukan append) - setiap page menampilkan data yang berbeda
+        setCustomers(filteredData);
+
+        // Gunakan pagination object jika tersedia
+        if (result.pagination && typeof result.pagination === 'object') {
+          // Struktur pagination: { current_page, last_page, per_page, total }
+          const isLastPage = result.pagination.current_page >= result.pagination.last_page;
+          setHasMore(!isLastPage);
+          setPaginationInfo(result.pagination);
+        } else {
+          setPaginationInfo(null);
+          // Fallback pagination: cek jumlah data untuk menentukan hasMore
+          if (result.data.length < perPage) {
+            setHasMore(false); // sudah halaman terakhir
+          } else {
+            setHasMore(true); // masih ada halaman berikutnya
+          }
+        }
+      } else {
+        // Jika response tidak sesuai format yang diharapkan
+        setCustomers([]);
+        setHasMore(false);
       }
-      if (!term) return true;
-      return [c.nama, c.email, c.wa].some((field) => field?.toLowerCase().includes(term));
-    });
-  }, [customers, debouncedSearch, filterPreset, getCustomerDate]);
+      
+      setLoading(false);
+      fetchingRef.current = false;
+    } catch (err) {
+      toastError("Gagal memuat data customer");
+      setLoading(false);
+      fetchingRef.current = false;
+    }
+  }, [perPage, filters]);
 
-  // 🔹 Pagination logic
-  const totalPages = Math.ceil(filtered.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedData = useMemo(() => {
-    return filtered.slice(startIndex, endIndex);
-  }, [filtered, startIndex, endIndex]);
-
-  // Reset to page 1 when search changes
+  // Initial load: fetch page 1
   useEffect(() => {
-    setCurrentPage(1);
-  }, [debouncedSearch, filterPreset]);
+    setPage(1);
+    setCustomers([]);
+    setHasMore(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Hanya sekali saat mount
+
+  // Reset to page 1 when search or filter changes
+  useEffect(() => {
+    setPage(1);
+    setCustomers([]);
+    setHasMore(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, verifikasiFilter]); // Reset when search or filter changes
+
+  // Fetch data saat page atau filters berubah
+  useEffect(() => {
+    if (page > 0) {
+      fetchCustomers(page);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, filters]); // Depend pada page dan filters
+
+  // 🔹 Next page
+  const handleNextPage = useCallback(() => {
+    if (loading || !hasMore) return;
+    setPage(prev => prev + 1);
+  }, [hasMore, loading]);
+
+  // 🔹 Previous page
+  const handlePrevPage = useCallback(() => {
+    if (loading || page <= 1) return;
+    setPage(prev => prev - 1);
+  }, [page, loading]);
 
   // 🔹 Helpers
   const closeAllModals = () => {
@@ -132,7 +223,13 @@ export default function AdminCustomerPage() {
     setSelectedCustomer(null);
   };
 
-  const requestRefresh = (message, type = "success") => {
+  // 🔹 Refresh all data (reset to page 1)
+  const requestRefresh = async (message, type = "success") => {
+    setPage(1);
+    setCustomers([]);
+    setHasMore(true);
+    await fetchCustomers(1);
+    if (message) {
     if (type === "error") {
       toastError(message);
     } else if (type === "warning") {
@@ -140,7 +237,7 @@ export default function AdminCustomerPage() {
     } else {
       toastSuccess(message);
     }
-    setNeedsRefresh(true);
+    }
   };
 
   // 🔹 Handler edit
@@ -188,9 +285,53 @@ export default function AdminCustomerPage() {
     setShowFollowupLog(true);
   };
 
+  // 🔹 Filter handler - verifikasi filter langsung terapkan saat dipilih
+  const handleVerifikasiFilterChange = (value) => {
+    setVerifikasiFilter(value);
+    setShowVerifikasiDropdown(false);
+    setPage(1); // Reset to page 1 when filter changes
+  };
+
   return (
     <Layout title="Manage Customers">
       <div className="dashboard-shell customers-shell">
+      <section className="dashboard-summary customers-summary">
+          <article className="summary-card summary-card--combined summary-card--three-cols">
+            <div className="summary-card__column">
+              <div className={`summary-card__icon accent-orange`}>
+                <Users size={22} />
+              </div>
+              <div>
+                <p className="summary-card__label">Total customers</p>
+                <p className="summary-card__value">{paginationInfo?.total || customers.length}</p>
+              </div>
+            </div>
+            <div className="summary-card__divider"></div>
+            <div className="summary-card__column">
+              <div className={`summary-card__icon accent-orange`}>
+                <CheckCircle size={22} />
+              </div>
+              <div>
+                <p className="summary-card__label">Verified</p>
+                <p className="summary-card__value">
+                  {summaryStats.verified}
+                </p>
+              </div>
+            </div>
+            <div className="summary-card__divider"></div>
+            <div className="summary-card__column">
+              <div className={`summary-card__icon accent-orange`}>
+                <Filter size={22} />
+              </div>
+              <div>
+                <p className="summary-card__label">Unverified</p>
+                <p className="summary-card__value">
+                  {summaryStats.unverified}
+                </p>
+              </div>
+            </div>
+          </article>
+        </section>
         <section className="dashboard-hero customers-hero">
           <div className="customers-toolbar">
             <div className="customers-search">
@@ -203,71 +344,36 @@ export default function AdminCustomerPage() {
               />
               <span className="customers-search__icon pi pi-search" />
             </div>
-            <div className="customers-filters" aria-label="Filter pelanggan">
-              <button
-                type="button"
-                className={`customers-filter-btn ${filterPreset === "all" ? "is-active" : ""}`}
-                onClick={() => setFilterPreset("all")}
-              >
-                Semua
-              </button>
-              <button
-                type="button"
-                className={`customers-filter-btn ${filterPreset === "today" ? "is-active" : ""}`}
-                onClick={() => setFilterPreset("today")}
-                title="Filter customer yang tanggalnya hari ini (butuh field tanggal dari API)"
-              >
-                Hari Ini
-              </button>
-              <button
-                type="button"
-                className="customers-filter-btn customers-filter-icon-btn"
-                title="Filter"
-                aria-label="Filter"
-                onClick={() => {}}
-              >
-                <Filter size={16} />
-              </button>
+            <div className="customers-filters" aria-label="Filter pelanggan" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              {/* Verifikasi Filter Dropdown */}
+              <div className="leads-filter-dropdown" style={{ position: "relative" }}>
+                <button
+                  type="button"
+                  className={`leads-filter-btn ${verifikasiFilter !== "all" ? "is-active" : ""}`}
+                  onClick={() => {
+                    setShowVerifikasiDropdown(!showVerifikasiDropdown);
+                  }}
+                >
+                  {VERIFIKASI_OPTIONS.find((opt) => opt.value === verifikasiFilter)?.label || "Semua Verifikasi"}
+                  <ChevronDown size={16} style={{ marginLeft: "0.5rem" }} />
+                </button>
+                {showVerifikasiDropdown && (
+                  <div className="leads-filter-dropdown-menu">
+                    {VERIFIKASI_OPTIONS.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={`leads-filter-dropdown-item ${verifikasiFilter === option.value ? "is-selected" : ""}`}
+                        onClick={() => handleVerifikasiFilterChange(option.value)}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </section>
-
-        <section className="dashboard-summary customers-summary">
-          <article className="summary-card summary-card--combined summary-card--three-cols">
-            <div className="summary-card__column">
-              <div className={`summary-card__icon accent-orange`}>
-                <Users size={22} />
-              </div>
-              <div>
-                <p className="summary-card__label">Total customers</p>
-                <p className="summary-card__value">{customers.length}</p>
-              </div>
-            </div>
-            <div className="summary-card__divider"></div>
-            <div className="summary-card__column">
-              <div className={`summary-card__icon accent-orange`}>
-                <CheckCircle size={22} />
-              </div>
-              <div>
-                <p className="summary-card__label">Verified</p>
-                <p className="summary-card__value">
-                  {customers.filter((c) => c.verifikasi === "1" || c.verifikasi === true).length}
-                </p>
-              </div>
-            </div>
-            <div className="summary-card__divider"></div>
-            <div className="summary-card__column">
-              <div className={`summary-card__icon accent-orange`}>
-                <Filter size={22} />
-              </div>
-              <div>
-                <p className="summary-card__label">Unverified</p>
-                <p className="summary-card__value">
-                  {customers.filter((c) => c.verifikasi !== "1" && c.verifikasi !== true).length}
-                </p>
-              </div>
-            </div>
-          </article>
         </section>
 
         <section className="panel customers-panel">
@@ -279,7 +385,7 @@ export default function AdminCustomerPage() {
             <div className="customers-toolbar-buttons">
               <button 
                 className="customers-button customers-button--secondary" 
-                onClick={() => router.push("/sales/staff/report-followup/report")}
+                onClick={() => router.push("/sales/followup/report")}
               >
                 <i className="pi pi-chart-bar" style={{ marginRight: "6px" }} />
                 Report Follow Up
@@ -298,11 +404,13 @@ export default function AdminCustomerPage() {
                 ))}
               </div>
               <div className="customers-table__body">
-                {paginatedData.length > 0 ? (
-                  paginatedData.map((cust, i) => (
+                {loading && customers.length === 0 ? (
+                  <p className="customers-empty">Loading data...</p>
+                ) : customers.length > 0 ? (
+                  customers.map((cust, i) => (
                   <div className="customers-table__row" key={cust.id || `${cust.email}-${i}`}>
                     <div className="customers-table__cell" data-label="#">
-                      {startIndex + i + 1}
+                      {(page - 1) * perPage + i + 1}
                     </div>
                     <div className="customers-table__cell customers-table__cell--strong" data-label="Nama">
                       {cust.nama || "-"}
@@ -393,34 +501,89 @@ export default function AdminCustomerPage() {
                 ))
               ) : (
                 <p className="customers-empty">
-                  {customers.length ? "Tidak ada hasil pencarian." : "Loading data..."}
+                  {debouncedSearch.trim() ? "Tidak ada hasil pencarian." : "Tidak ada data customer"}
                 </p>
               )}
               </div>
             </div>
           </div>
 
-          {totalPages > 1 && (
-            <div className="customers-pagination">
+          {/* Pagination dengan Next/Previous Button */}
+          <div className="customers-pagination" style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "1rem", padding: "1.5rem", flexWrap: "wrap" }}>
+            {/* Previous Button */}
               <button
                 className="customers-pagination__btn"
-                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
+              onClick={handlePrevPage}
+              disabled={page === 1 || loading}
+              aria-label="Previous page"
+              style={{
+                padding: "0.75rem 1rem",
+                minWidth: "100px",
+                background: page === 1 || loading ? "#e5e7eb" : "#f1a124",
+                color: page === 1 || loading ? "#9ca3af" : "#fff",
+                border: "none",
+                borderRadius: "0.5rem",
+                cursor: page === 1 || loading ? "not-allowed" : "pointer",
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                justifyContent: "center",
+                transition: "all 0.2s ease"
+              }}
               >
                 <i className="pi pi-chevron-left" />
+              Previous
               </button>
-              <span className="customers-pagination__info">
-                Page {currentPage} of {totalPages} ({filtered.length} total)
+
+            {/* Page Info */}
+            <div style={{ 
+              display: "flex", 
+              alignItems: "center", 
+              gap: "0.5rem",
+              fontSize: "0.95rem",
+              color: "var(--dash-text)",
+              fontWeight: 500
+            }}>
+              {loading ? (
+                <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <i className="pi pi-spin pi-spinner" />
+                  Loading...
+                </span>
+              ) : (
+                <span>
+                  Page {paginationInfo?.current_page || page} of {paginationInfo?.last_page || "?"}
+                  {paginationInfo?.total && ` (${paginationInfo.total} total)`}
               </span>
+              )}
+            </div>
+
+            {/* Next Button */}
               <button
                 className="customers-pagination__btn"
-                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-              >
+              onClick={handleNextPage}
+              disabled={!hasMore || loading}
+              aria-label="Next page"
+              style={{
+                padding: "0.75rem 1rem",
+                minWidth: "100px",
+                background: !hasMore || loading ? "#e5e7eb" : "#f1a124",
+                color: !hasMore || loading ? "#9ca3af" : "#fff",
+                border: "none",
+                borderRadius: "0.5rem",
+                cursor: !hasMore || loading ? "not-allowed" : "pointer",
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                justifyContent: "center",
+                transition: "all 0.2s ease"
+              }}
+            >
+              Next
                 <i className="pi pi-chevron-right" />
               </button>
             </div>
-          )}
         </section>
 
         {/* MODALS */}
@@ -485,6 +648,21 @@ export default function AdminCustomerPage() {
               requestRefresh(msg);
               setShowAdd(false);
             }}
+          />
+        )}
+
+        {/* Close dropdown when clicking outside */}
+        {showVerifikasiDropdown && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 999,
+            }}
+            onClick={() => setShowVerifikasiDropdown(false)}
           />
         )}
 
