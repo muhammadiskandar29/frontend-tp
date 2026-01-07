@@ -157,7 +157,12 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
   // Handler untuk update region form (HANYA NAMA)
   const handleRegionChange = (field, value) => {
     if (field === "provinsi") {
-      const province = regionData.provinces.find(p => p.id === value);
+      // Konversi value ke string untuk matching yang lebih robust
+      const provinceId = String(value || "");
+      // Cari province dengan konversi tipe data (handle string/number)
+      const province = regionData.provinces.find(p => 
+        String(p.id) === provinceId || p.id === value || p.id === Number(value)
+      );
       setSelectedRegionIds(prev => ({ ...prev, provinceId: value || "", cityId: "", districtId: "" }));
       setRegionForm(prev => ({ 
         ...prev, 
@@ -167,7 +172,12 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
         kode_pos: ""
       }));
     } else if (field === "kabupaten") {
-      const city = regionData.cities.find(c => c.id === value);
+      // Konversi value ke string untuk matching yang lebih robust
+      const cityId = String(value || "");
+      // Cari city dengan konversi tipe data (handle string/number)
+      const city = regionData.cities.find(c => 
+        String(c.id) === cityId || c.id === value || c.id === Number(value)
+      );
       setSelectedRegionIds(prev => ({ ...prev, cityId: value || "", districtId: "" }));
       setRegionForm(prev => ({ 
         ...prev, 
@@ -176,7 +186,17 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
         kode_pos: ""
       }));
     } else if (field === "kecamatan") {
-      const district = regionData.districts.find(d => d.id === value || d.district_id === value);
+      // Konversi value ke string untuk matching yang lebih robust
+      const districtId = String(value || "");
+      // Cari district dengan konversi tipe data (handle string/number dan id/district_id)
+      const district = regionData.districts.find(d => 
+        String(d.id) === districtId || 
+        String(d.district_id) === districtId ||
+        d.id === value || 
+        d.district_id === value ||
+        d.id === Number(value) ||
+        d.district_id === Number(value)
+      );
       setSelectedRegionIds(prev => ({ ...prev, districtId: value || "" }));
       setRegionForm(prev => ({ 
         ...prev, 
@@ -274,23 +294,77 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
       return;
     }
 
-    // Validasi form wilayah - pastikan semua field terisi dengan trim
-    const provinsi = regionForm.provinsi?.trim() || "";
-    const kabupaten = regionForm.kabupaten?.trim() || "";
-    const kecamatan = regionForm.kecamatan?.trim() || "";
-    const kode_pos = regionForm.kode_pos?.trim() || "";
-
-    // Validasi lengkap dengan pesan yang lebih spesifik
-    if (!provinsi) {
+    // Validasi selectedRegionIds terlebih dahulu (ini yang langsung dari dropdown)
+    if (!selectedRegionIds.provinceId) {
       toastError("Pilih Provinsi terlebih dahulu!");
       return;
     }
-    if (!kabupaten) {
+    if (!selectedRegionIds.cityId) {
       toastError("Pilih Kabupaten/Kota terlebih dahulu!");
       return;
     }
-    if (!kecamatan) {
+    if (!selectedRegionIds.districtId) {
       toastError("Pilih Kecamatan terlebih dahulu!");
+      return;
+    }
+
+    // Ambil nama dari regionData berdasarkan selectedRegionIds (selalu ambil dari regionData untuk memastikan)
+    let provinsi = regionForm.provinsi?.trim() || "";
+    let kabupaten = regionForm.kabupaten?.trim() || "";
+    let kecamatan = regionForm.kecamatan?.trim() || "";
+    let kode_pos = regionForm.kode_pos?.trim() || "";
+
+    // SELALU ambil dari regionData berdasarkan selectedRegionIds untuk memastikan data terbaru
+    if (selectedRegionIds.provinceId) {
+      const provinceId = String(selectedRegionIds.provinceId);
+      const province = regionData.provinces.find(p => 
+        String(p.id) === provinceId || p.id === selectedRegionIds.provinceId || p.id === Number(selectedRegionIds.provinceId)
+      );
+      if (province?.name) {
+        provinsi = province.name.trim();
+      }
+    }
+    
+    if (selectedRegionIds.cityId) {
+      const cityId = String(selectedRegionIds.cityId);
+      const city = regionData.cities.find(c => 
+        String(c.id) === cityId || c.id === selectedRegionIds.cityId || c.id === Number(selectedRegionIds.cityId)
+      );
+      if (city?.name) {
+        kabupaten = city.name.trim();
+      }
+    }
+    
+    if (selectedRegionIds.districtId) {
+      const districtId = String(selectedRegionIds.districtId);
+      const district = regionData.districts.find(d => 
+        String(d.id) === districtId || 
+        String(d.district_id) === districtId ||
+        d.id === selectedRegionIds.districtId || 
+        d.district_id === selectedRegionIds.districtId ||
+        d.id === Number(selectedRegionIds.districtId) ||
+        d.district_id === Number(selectedRegionIds.districtId)
+      );
+      if (district?.name) {
+        kecamatan = district.name.trim();
+      }
+      // Ambil kode pos juga jika belum terisi
+      if (!kode_pos && district?.postal_code) {
+        kode_pos = String(district.postal_code).trim();
+      }
+    }
+
+    // Validasi final - pastikan semua nama terisi
+    if (!provinsi) {
+      toastError("Provinsi tidak ditemukan. Silakan pilih ulang Provinsi!");
+      return;
+    }
+    if (!kabupaten) {
+      toastError("Kabupaten/Kota tidak ditemukan. Silakan pilih ulang Kabupaten/Kota!");
+      return;
+    }
+    if (!kecamatan) {
+      toastError("Kecamatan tidak ditemukan. Silakan pilih ulang Kecamatan!");
       return;
     }
     if (!kode_pos) {
@@ -301,12 +375,6 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
     // Validasi kode pos harus angka
     if (!/^\d+$/.test(kode_pos)) {
       toastError("Kode Pos harus berupa angka!");
-      return;
-    }
-
-    // Pastikan selectedRegionIds juga terisi (untuk memastikan dropdown sudah dipilih)
-    if (!selectedRegionIds.provinceId || !selectedRegionIds.cityId || !selectedRegionIds.districtId) {
-      toastError("Pastikan semua dropdown alamat sudah dipilih dengan benar!");
       return;
     }
 

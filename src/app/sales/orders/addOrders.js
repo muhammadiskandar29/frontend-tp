@@ -11,7 +11,8 @@ export default function AddOrders({ onClose, onAdd }) {
     nama: "",
     wa: "",
     email: "",
-    alamat: "",
+    alamat_customer: "", // Alamat customer (untuk data customer)
+    alamat: "", // Alamat pengiriman (untuk order)
     customer: "",
     produk: "",
     harga: "",
@@ -28,23 +29,43 @@ export default function AddOrders({ onClose, onAdd }) {
   const [customerResults, setCustomerResults] = useState([]);
   const [productResults, setProductResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingSearch, setLoadingSearch] = useState(false);
   const [message, setMessage] = useState("");
   const { createOrder } = useOrders();
+  
+  // Debounce untuk search customer
+  const [debouncedCustomerSearch, setDebouncedCustomerSearch] = useState("");
 
-  // === Search Customer pakai api() ===
+  // === Search Customer pakai api() dengan search parameter ===
   const handleSearchCustomer = async (keyword) => {
-    setCustomerSearch(keyword);
-    if (!keyword.trim()) return setCustomerResults([]);
-
-    const res = await api("/sales/customer", { method: "GET" });
-    if (res?.success && Array.isArray(res.data)) {
-      const filtered = res.data.filter((cust) =>
-        cust.nama?.toLowerCase().split(" ").some((w) => w.startsWith(keyword.toLowerCase())) ||
-        cust.wa?.toLowerCase().startsWith(keyword.toLowerCase())
-      );
-      setCustomerResults(filtered);
-    } else {
+    if (!keyword || !keyword.trim()) {
       setCustomerResults([]);
+      setLoadingSearch(false);
+      return;
+    }
+
+    setLoadingSearch(true);
+    try {
+      // Gunakan API dengan parameter search dan per_page untuk hasil maksimal
+      const searchKeyword = keyword.trim();
+      const params = new URLSearchParams({
+        search: searchKeyword,
+        page: "1",
+        per_page: "50", // Ambil lebih banyak hasil untuk search (bisa disesuaikan)
+      });
+
+      const res = await api(`/sales/customer?${params.toString()}`, { method: "GET" });
+      
+      if (res?.success && Array.isArray(res.data)) {
+        setCustomerResults(res.data);
+      } else {
+        setCustomerResults([]);
+      }
+    } catch (error) {
+      console.error("Error searching customer:", error);
+      setCustomerResults([]);
+    } finally {
+      setLoadingSearch(false);
     }
   };
 
@@ -66,9 +87,25 @@ export default function AddOrders({ onClose, onAdd }) {
     }
   };
 
+  // Debounce customer search
   useEffect(() => {
-    if (customerSearch.trim().length >= 2) handleSearchCustomer(customerSearch);
+    const timer = setTimeout(() => {
+      setDebouncedCustomerSearch(customerSearch);
+    }, 400); // Debounce 400ms
+
+    return () => clearTimeout(timer);
   }, [customerSearch]);
+
+  // Handle search customer dengan debounce
+  useEffect(() => {
+    if (debouncedCustomerSearch.trim().length >= 2) {
+      handleSearchCustomer(debouncedCustomerSearch);
+    } else {
+      setCustomerResults([]);
+      setLoadingSearch(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedCustomerSearch]);
 
   useEffect(() => {
     if (productSearch.trim().length >= 2) handleSearchProduct(productSearch);
@@ -82,7 +119,11 @@ export default function AddOrders({ onClose, onAdd }) {
       nama: cust.nama || "",
       wa: cust.wa || "",
       email: cust.email || "",
-      alamat: cust.alamat || "",
+      alamat_customer: cust.alamat || cust.provinsi ? 
+        `${cust.alamat || ""}${cust.provinsi ? `, ${cust.provinsi}` : ""}${cust.kabupaten ? `, ${cust.kabupaten}` : ""}${cust.kecamatan ? `, ${cust.kecamatan}` : ""}${cust.kode_pos ? ` ${cust.kode_pos}` : ""}`.trim() : "",
+      // Jika alamat pengiriman kosong, isi dengan alamat customer
+      alamat: prev.alamat || (cust.alamat || cust.provinsi ? 
+        `${cust.alamat || ""}${cust.provinsi ? `, ${cust.provinsi}` : ""}${cust.kabupaten ? `, ${cust.kabupaten}` : ""}${cust.kecamatan ? `, ${cust.kecamatan}` : ""}${cust.kode_pos ? ` ${cust.kode_pos}` : ""}`.trim() : ""),
     }));
     setCustomerSearch(`${cust.nama} | ${cust.wa}`);
     setCustomerResults([]);
@@ -96,7 +137,8 @@ export default function AddOrders({ onClose, onAdd }) {
       nama: "",
       wa: "",
       email: "",
-      alamat: "",
+      alamat_customer: "",
+      // Jangan reset alamat pengiriman, biarkan user isi manual
     }));
     setCustomerSearch("");
     setCustomerResults([]);
@@ -225,8 +267,10 @@ export default function AddOrders({ onClose, onAdd }) {
   const customerId = formData.customer;
   const hasSelectedCustomer = Boolean(customerId);
   const isSearchActive = customerSearch.trim().length >= 2;
-  const noCustomerFound = isSearchActive && customerResults.length === 0;
-  const displayCustomerForm = showCustomerForm || !hasSelectedCustomer || noCustomerFound;
+  // Hanya tampilkan "tidak ditemukan" jika search aktif, tidak ada hasil, DAN belum ada customer terpilih
+  const noCustomerFound = isSearchActive && customerResults.length === 0 && !hasSelectedCustomer;
+  // Tampilkan form jika: user ingin edit form, belum ada customer terpilih, atau tidak ada hasil search
+  const displayCustomerForm = showCustomerForm || !hasSelectedCustomer || (isSearchActive && customerResults.length === 0);
 
   return (
     <div
@@ -276,16 +320,36 @@ export default function AddOrders({ onClose, onAdd }) {
                 </div>
 
                 <label className="orders-field">
-                  Cari Customer (Nama / WA)
-                  <input
-                    type="text"
-                    value={customerSearch}
-                    onChange={(e) => {
-                      setCustomerSearch(e.target.value);
-                      setShowCustomerForm(false);
-                    }}
-                    placeholder="Ketik minimal 2 huruf..."
-                  />
+                  Cari Customer (Nama / WA / Email)
+                  <div style={{ position: "relative" }}>
+                    <input
+                      type="text"
+                      value={customerSearch}
+                      onChange={(e) => {
+                        setCustomerSearch(e.target.value);
+                        setShowCustomerForm(false);
+                      }}
+                      placeholder="Ketik minimal 2 huruf untuk mencari..."
+                      disabled={loadingSearch}
+                    />
+                    {loadingSearch && (
+                      <div style={{
+                        position: "absolute",
+                        right: "12px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        color: "#6b7280",
+                        fontSize: "14px"
+                      }}>
+                        <i className="pi pi-spin pi-spinner"></i>
+                      </div>
+                    )}
+                  </div>
+                  <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                    {customerSearch.trim().length > 0 && customerSearch.trim().length < 2 && "Ketik minimal 2 huruf untuk mencari"}
+                    {customerSearch.trim().length >= 2 && !loadingSearch && customerResults.length > 0 && `Ditemukan ${customerResults.length} customer`}
+                    {customerSearch.trim().length >= 2 && !loadingSearch && customerResults.length === 0 && "Tidak ada hasil"}
+                  </small>
                 </label>
 
                 {customerResults.length > 0 && (
@@ -297,8 +361,18 @@ export default function AddOrders({ onClose, onAdd }) {
                         className="orders-suggestion-item"
                         onClick={() => handleSelectCustomer(c)}
                       >
-                        <strong>{c.nama}</strong>
-                        <span>{c.wa}</span>
+                        <div style={{ flex: 1 }}>
+                          <strong>{c.nama || "-"}</strong>
+                          {c.nama_panggilan && c.nama_panggilan !== c.nama && (
+                            <span style={{ fontSize: "12px", color: "#6b7280", marginLeft: "8px" }}>
+                              ({c.nama_panggilan})
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "2px" }}>
+                          {c.wa && <span style={{ fontSize: "13px" }}>{c.wa}</span>}
+                          {c.email && <span style={{ fontSize: "12px", color: "#6b7280" }}>{c.email}</span>}
+                        </div>
                       </button>
                     ))}
                   </div>
@@ -306,38 +380,129 @@ export default function AddOrders({ onClose, onAdd }) {
 
                 {noCustomerFound && (
                   <div className="orders-empty-state">
+                    <i className="pi pi-info-circle" style={{ marginRight: "6px" }}></i>
                     Customer tidak ditemukan. Isi formulir di bawah untuk menambah data baru.
                   </div>
                 )}
 
-                {hasSelectedCustomer && (
+                {/* Customer Selected Card - hanya tampil jika customer sudah dipilih dan tidak dalam mode edit */}
+                {hasSelectedCustomer && !showCustomerForm && (
                   <div className="customer-selected-card">
-                    <div>
-                      <span>Customer Terpilih</span>
-                      <strong>{formData.nama || "-"}</strong>
+                    <div className="customer-selected-header">
+                      <div>
+                        <span className="customer-selected-label">Customer Terpilih</span>
+                        <strong className="customer-selected-name">{formData.nama || "-"}</strong>
+                      </div>
+                      <button
+                        type="button"
+                        className="orders-link-btn"
+                        onClick={() => setShowCustomerForm(true)}
+                      >
+                        Edit
+                      </button>
                     </div>
-                    <ul>
-                      <li>WA: {formData.wa || "-"}</li>
-                      <li>Email: {formData.email || "-"}</li>
-                      <li>Alamat: {formData.alamat || "-"}</li>
-                    </ul>
-                    <button
-                      type="button"
-                      className="orders-link-btn"
-                      onClick={() => setShowCustomerForm(true)}
-                    >
-                      Ubah Data Customer
-                    </button>
+                    <div className="customer-selected-info">
+                      <div className="customer-info-item">
+                        <span className="customer-info-label">WA:</span>
+                        <span className="customer-info-value">{formData.wa || "-"}</span>
+                      </div>
+                      <div className="customer-info-item">
+                        <span className="customer-info-label">Email:</span>
+                        <span className="customer-info-value">{formData.email || "-"}</span>
+                      </div>
+                      {formData.alamat_customer && (
+                        <div className="customer-info-item">
+                          <span className="customer-info-label">Alamat:</span>
+                          <span className="customer-info-value">{formData.alamat_customer}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
-                {/* Field alamat selalu ditampilkan (required untuk order) */}
-                {hasSelectedCustomer && (
-                  <label className="orders-field" style={{ marginTop: "12px" }}>
+                {/* Form Customer - tampil jika belum ada customer terpilih atau dalam mode edit */}
+                {displayCustomerForm && (
+                  <div className="customer-form-card">
+                    <div className="customer-form-header">
+                      <h5>{hasSelectedCustomer ? "Edit Data Customer" : "Data Customer Baru"}</h5>
+                      {hasSelectedCustomer && (
+                        <button
+                          type="button"
+                          className="orders-link-btn"
+                          onClick={() => {
+                            setShowCustomerForm(false);
+                          }}
+                        >
+                          Batal Edit
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="customer-form-fields">
+                      <label className="orders-field">
+                        Nama *
+                        <input
+                          type="text"
+                          name="nama"
+                          value={formData.nama}
+                          onChange={handleChange}
+                          placeholder="Nama customer"
+                          required
+                        />
+                      </label>
+
+                      <div className="orders-dual-grid">
+                        <label className="orders-field">
+                          WA (gunakan 62) *
+                          <input 
+                            type="text" 
+                            name="wa" 
+                            value={formData.wa} 
+                            onChange={handleChange}
+                            placeholder="6281234567890"
+                            required
+                          />
+                        </label>
+                        <label className="orders-field">
+                          Email
+                          <input
+                            type="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            placeholder="email@example.com"
+                          />
+                        </label>
+                      </div>
+
+                      <label className="orders-field">
+                        Alamat Customer
+                        <textarea
+                          name="alamat_customer"
+                          rows={2}
+                          value={formData.alamat_customer}
+                          onChange={handleChange}
+                          placeholder="Alamat lengkap customer"
+                        />
+                      </label>
+
+                      {!hasSelectedCustomer && (
+                        <p className="customer-hint">
+                          <i className="pi pi-info-circle" style={{ marginRight: "6px" }}></i>
+                          Simpan order akan otomatis menambahkan customer baru.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Field Alamat Pengiriman - selalu tampil jika ada customer (selected atau form) */}
+                {(hasSelectedCustomer || displayCustomerForm) && (
+                  <label className="orders-field" style={{ marginTop: "16px" }}>
                     Alamat Pengiriman *
                     <textarea
                       name="alamat"
-                      rows={2}
+                      rows={3}
                       value={formData.alamat}
                       onChange={handleChange}
                       placeholder="Alamat lengkap untuk pengiriman order (wajib diisi)"
@@ -347,54 +512,6 @@ export default function AddOrders({ onClose, onAdd }) {
                       Alamat ini digunakan untuk order, bisa berbeda dengan alamat customer
                     </small>
                   </label>
-                )}
-
-                {displayCustomerForm && (
-                  <div className="customer-form-card">
-                    <label className="orders-field">
-                      Nama
-                      <input
-                        type="text"
-                        name="nama"
-                        value={formData.nama}
-                        onChange={handleChange}
-                        placeholder="Nama customer"
-                      />
-                    </label>
-
-                    <div className="orders-dual-grid">
-                      <label className="orders-field">
-                        WA (gunakan 62)
-                        <input type="text" name="wa" value={formData.wa} onChange={handleChange} />
-                      </label>
-                      <label className="orders-field">
-                        Email
-                        <input
-                          type="email"
-                          name="email"
-                          value={formData.email}
-                          onChange={handleChange}
-                        />
-                      </label>
-                    </div>
-
-                    <label className="orders-field">
-                      Alamat
-                      <textarea
-                        name="alamat"
-                        rows={2}
-                        value={formData.alamat}
-                        onChange={handleChange}
-                        placeholder="Alamat lengkap customer"
-                      />
-                    </label>
-
-                    {!hasSelectedCustomer && (
-                      <p className="customer-hint">
-                        Simpan order akan otomatis menambahkan customer baru.
-                      </p>
-                    )}
-                  </div>
                 )}
               </section>
 
@@ -658,26 +775,69 @@ export default function AddOrders({ onClose, onAdd }) {
           margin: 16px 0;
           padding: 16px;
           border-radius: 12px;
-          background: #eef2ff;
-          border: 1px solid #c7d2fe;
+          background: #f0f9ff;
+          border: 1px solid #bae6fd;
         }
-        .customer-selected-card span {
-          font-size: 13px;
-          color: #6366f1;
+        .customer-selected-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 12px;
         }
-        .customer-selected-card strong {
+        .customer-selected-label {
           display: block;
-          font-size: 18px;
-          margin-top: 4px;
+          font-size: 12px;
+          color: #0284c7;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 4px;
         }
-        .customer-selected-card ul {
-          margin: 12px 0;
-          padding-left: 18px;
-          color: #374151;
+        .customer-selected-name {
+          display: block;
+          font-size: 16px;
+          font-weight: 600;
+          color: #0c4a6e;
+          margin: 0;
+        }
+        .customer-selected-info {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .customer-info-item {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
           font-size: 14px;
         }
-        .customer-selected-card ul li {
-          margin-bottom: 4px;
+        .customer-info-label {
+          font-weight: 600;
+          color: #475569;
+          min-width: 60px;
+        }
+        .customer-info-value {
+          color: #1e293b;
+          flex: 1;
+        }
+        .customer-form-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 16px;
+          padding-bottom: 12px;
+          border-bottom: 1px solid #e5e7eb;
+        }
+        .customer-form-header h5 {
+          margin: 0;
+          font-size: 16px;
+          font-weight: 600;
+          color: #111827;
+        }
+        .customer-form-fields {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
         }
         .customer-hint {
           margin: 0;
