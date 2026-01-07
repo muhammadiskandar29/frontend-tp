@@ -137,7 +137,12 @@ export default function AddCustomerModal({ onClose, onSuccess }) {
   // Handler untuk update region form (HANYA NAMA)
   const handleRegionChange = (field, value) => {
     if (field === "provinsi") {
-      const province = regionData.provinces.find(p => p.id === value);
+      // Konversi value ke string untuk matching yang lebih robust
+      const provinceId = String(value || "");
+      // Cari province dengan konversi tipe data (handle string/number)
+      const province = regionData.provinces.find(p => 
+        String(p.id) === provinceId || p.id === value || p.id === Number(value)
+      );
       setSelectedRegionIds(prev => ({ ...prev, provinceId: value || "", cityId: "", districtId: "" }));
       setRegionForm(prev => ({ 
         ...prev, 
@@ -147,7 +152,12 @@ export default function AddCustomerModal({ onClose, onSuccess }) {
         kode_pos: ""
       }));
     } else if (field === "kabupaten") {
-      const city = regionData.cities.find(c => c.id === value);
+      // Konversi value ke string untuk matching yang lebih robust
+      const cityId = String(value || "");
+      // Cari city dengan konversi tipe data (handle string/number)
+      const city = regionData.cities.find(c => 
+        String(c.id) === cityId || c.id === value || c.id === Number(value)
+      );
       setSelectedRegionIds(prev => ({ ...prev, cityId: value || "", districtId: "" }));
       setRegionForm(prev => ({ 
         ...prev, 
@@ -156,12 +166,22 @@ export default function AddCustomerModal({ onClose, onSuccess }) {
         kode_pos: ""
       }));
     } else if (field === "kecamatan") {
-      const district = regionData.districts.find(d => d.id === value || d.district_id === value);
+      // Konversi value ke string untuk matching yang lebih robust
+      const districtId = String(value || "");
+      // Cari district dengan konversi tipe data (handle string/number dan id/district_id)
+      const district = regionData.districts.find(d => 
+        String(d.id) === districtId || 
+        String(d.district_id) === districtId ||
+        d.id === value || 
+        d.district_id === value ||
+        d.id === Number(value) ||
+        d.district_id === Number(value)
+      );
       setSelectedRegionIds(prev => ({ ...prev, districtId: value || "" }));
       setRegionForm(prev => ({ 
         ...prev, 
         kecamatan: district?.name || "",
-        // Ambil kode pos dari district jika ada, jika tidak kosongkan agar user bisa isi manual
+        // Ambil kode pos dari district jika ada, jika tidak pertahankan yang sudah ada atau kosongkan
         kode_pos: district?.postal_code || prev.kode_pos || ""
       }));
     } else if (field === "kode_pos") {
@@ -227,27 +247,49 @@ export default function AddCustomerModal({ onClose, onSuccess }) {
       return;
     }
 
-    // Ambil nama dari regionData berdasarkan selectedRegionIds (jika regionForm kosong)
+    // Ambil nama dari regionData berdasarkan selectedRegionIds (selalu ambil dari regionData untuk memastikan)
     let provinsi = regionForm.provinsi?.trim() || "";
     let kabupaten = regionForm.kabupaten?.trim() || "";
     let kecamatan = regionForm.kecamatan?.trim() || "";
     let kode_pos = regionForm.kode_pos?.trim() || "";
 
-    // Jika regionForm kosong tapi selectedRegionIds terisi, ambil dari regionData
-    if (!provinsi && selectedRegionIds.provinceId) {
-      const province = regionData.provinces.find(p => p.id === selectedRegionIds.provinceId);
-      provinsi = province?.name || "";
+    // SELALU ambil dari regionData berdasarkan selectedRegionIds untuk memastikan data terbaru
+    if (selectedRegionIds.provinceId) {
+      const provinceId = String(selectedRegionIds.provinceId);
+      const province = regionData.provinces.find(p => 
+        String(p.id) === provinceId || p.id === selectedRegionIds.provinceId || p.id === Number(selectedRegionIds.provinceId)
+      );
+      if (province?.name) {
+        provinsi = province.name.trim();
+      }
     }
-    if (!kabupaten && selectedRegionIds.cityId) {
-      const city = regionData.cities.find(c => c.id === selectedRegionIds.cityId);
-      kabupaten = city?.name || "";
+    
+    if (selectedRegionIds.cityId) {
+      const cityId = String(selectedRegionIds.cityId);
+      const city = regionData.cities.find(c => 
+        String(c.id) === cityId || c.id === selectedRegionIds.cityId || c.id === Number(selectedRegionIds.cityId)
+      );
+      if (city?.name) {
+        kabupaten = city.name.trim();
+      }
     }
-    if (!kecamatan && selectedRegionIds.districtId) {
-      const district = regionData.districts.find(d => d.id === selectedRegionIds.districtId || d.district_id === selectedRegionIds.districtId);
-      kecamatan = district?.name || "";
+    
+    if (selectedRegionIds.districtId) {
+      const districtId = String(selectedRegionIds.districtId);
+      const district = regionData.districts.find(d => 
+        String(d.id) === districtId || 
+        String(d.district_id) === districtId ||
+        d.id === selectedRegionIds.districtId || 
+        d.district_id === selectedRegionIds.districtId ||
+        d.id === Number(selectedRegionIds.districtId) ||
+        d.district_id === Number(selectedRegionIds.districtId)
+      );
+      if (district?.name) {
+        kecamatan = district.name.trim();
+      }
       // Ambil kode pos juga jika belum terisi
       if (!kode_pos && district?.postal_code) {
-        kode_pos = district.postal_code;
+        kode_pos = String(district.postal_code).trim();
       }
     }
 
