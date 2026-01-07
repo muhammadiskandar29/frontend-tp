@@ -213,23 +213,55 @@ export default function AddCustomerModal({ onClose, onSuccess }) {
       return;
     }
 
-    // Validasi form wilayah - pastikan semua field terisi dengan trim
-    const provinsi = regionForm.provinsi?.trim() || "";
-    const kabupaten = regionForm.kabupaten?.trim() || "";
-    const kecamatan = regionForm.kecamatan?.trim() || "";
-    const kode_pos = regionForm.kode_pos?.trim() || "";
-
-    // Validasi lengkap dengan pesan yang lebih spesifik
-    if (!provinsi) {
+    // Validasi selectedRegionIds terlebih dahulu (ini yang langsung dari dropdown)
+    if (!selectedRegionIds.provinceId) {
       toastError("Pilih Provinsi terlebih dahulu!");
       return;
     }
-    if (!kabupaten) {
+    if (!selectedRegionIds.cityId) {
       toastError("Pilih Kabupaten/Kota terlebih dahulu!");
       return;
     }
-    if (!kecamatan) {
+    if (!selectedRegionIds.districtId) {
       toastError("Pilih Kecamatan terlebih dahulu!");
+      return;
+    }
+
+    // Ambil nama dari regionData berdasarkan selectedRegionIds (jika regionForm kosong)
+    let provinsi = regionForm.provinsi?.trim() || "";
+    let kabupaten = regionForm.kabupaten?.trim() || "";
+    let kecamatan = regionForm.kecamatan?.trim() || "";
+    let kode_pos = regionForm.kode_pos?.trim() || "";
+
+    // Jika regionForm kosong tapi selectedRegionIds terisi, ambil dari regionData
+    if (!provinsi && selectedRegionIds.provinceId) {
+      const province = regionData.provinces.find(p => p.id === selectedRegionIds.provinceId);
+      provinsi = province?.name || "";
+    }
+    if (!kabupaten && selectedRegionIds.cityId) {
+      const city = regionData.cities.find(c => c.id === selectedRegionIds.cityId);
+      kabupaten = city?.name || "";
+    }
+    if (!kecamatan && selectedRegionIds.districtId) {
+      const district = regionData.districts.find(d => d.id === selectedRegionIds.districtId || d.district_id === selectedRegionIds.districtId);
+      kecamatan = district?.name || "";
+      // Ambil kode pos juga jika belum terisi
+      if (!kode_pos && district?.postal_code) {
+        kode_pos = district.postal_code;
+      }
+    }
+
+    // Validasi final - pastikan semua nama terisi
+    if (!provinsi) {
+      toastError("Provinsi tidak ditemukan. Silakan pilih ulang Provinsi!");
+      return;
+    }
+    if (!kabupaten) {
+      toastError("Kabupaten/Kota tidak ditemukan. Silakan pilih ulang Kabupaten/Kota!");
+      return;
+    }
+    if (!kecamatan) {
+      toastError("Kecamatan tidak ditemukan. Silakan pilih ulang Kecamatan!");
       return;
     }
     if (!kode_pos) {
@@ -240,12 +272,6 @@ export default function AddCustomerModal({ onClose, onSuccess }) {
     // Validasi kode pos harus angka
     if (!/^\d+$/.test(kode_pos)) {
       toastError("Kode Pos harus berupa angka!");
-      return;
-    }
-
-    // Pastikan selectedRegionIds juga terisi (untuk memastikan dropdown sudah dipilih)
-    if (!selectedRegionIds.provinceId || !selectedRegionIds.cityId || !selectedRegionIds.districtId) {
-      toastError("Pastikan semua dropdown alamat sudah dipilih dengan benar!");
       return;
     }
 
