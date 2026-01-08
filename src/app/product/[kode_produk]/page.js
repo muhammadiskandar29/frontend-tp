@@ -674,7 +674,7 @@ export default function ProductPage() {
         // ✅ GENERAL: Tambahkan max-width untuk membatasi ukuran maksimal gambar agar tidak terlalu besar
         const imageWrapperStyle = {
           width: `${imageWidth}%`, // ✅ Width setting (50%) = width dari wrapper, bukan gambar
-          maxWidth: "750px", // ✅ Batasi ukuran maksimal (900px) agar tidak terlalu besar
+          maxWidth: "625px", // ✅ Batasi ukuran maksimal (900px) agar tidak terlalu besar
           ...aspectRatioStyle,
           ...imageBackgroundStyle,
           overflow: "hidden",
