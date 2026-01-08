@@ -42,15 +42,15 @@ function FAQItem({ question, answer }) {
   );
 }
 
-// ✅ Countdown Component - SAMA PERSIS dengan CountdownPreview di addProducts3
+// ✅ Countdown Component - GENERAL: Styling sesuai gambar (minimalis, dark grey boxes)
 function CountdownComponent({ data = {}, componentId, containerStyle = {} }) {
   const hours = data.hours !== undefined ? data.hours : 0;
   const minutes = data.minutes !== undefined ? data.minutes : 0;
   const seconds = data.seconds !== undefined ? data.seconds : 0;
   const promoText = data.promoText || "Promo Berakhir Dalam:";
-  const textColor = data.textColor || "#e5e7eb";
-  const bgColor = data.bgColor || "#1f2937";
-  const numberStyle = data.numberStyle || "flip";
+  // ✅ GENERAL: Warna tetap dark grey dan white untuk konsistensi dengan gambar
+  const bgColor = data.bgColor || "#374151"; // Dark grey default
+  const textColor = data.textColor || "#ffffff"; // White text default
   
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
   const intervalRef = useRef(null);
@@ -124,82 +124,45 @@ function CountdownComponent({ data = {}, componentId, containerStyle = {} }) {
 
   const formattedTime = formatTime(timeLeft);
 
-  const renderNumber = (value, bgColor) => {
-    if (numberStyle === "flip") {
-      return (
-        <div style={{
-          backgroundColor: bgColor,
-          borderRadius: "8px",
-          padding: "20px 32px",
-          position: "relative",
-          boxShadow: "inset 0 2px 4px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2)",
-          minWidth: "100px",
-          textAlign: "center"
-        }}>
-          <div style={{
-            fontSize: "64px",
-            fontWeight: "bold",
-            color: textColor,
-            fontFamily: "monospace",
-            lineHeight: "1",
-            position: "relative",
-            textShadow: "0 1px 2px rgba(0, 0, 0, 0.5)"
-          }}>
-            {value}
-            <div style={{
-              position: "absolute",
-              top: "50%",
-              left: 0,
-              right: 0,
-              height: "1px",
-              backgroundColor: "rgba(255, 255, 255, 0.1)",
-              transform: "translateY(-50%)"
-            }} />
-          </div>
-        </div>
-      );
-    } else if (numberStyle === "modern") {
-      return (
-        <div style={{
-          backgroundColor: bgColor,
-          borderRadius: "12px",
-          padding: "24px 36px",
-          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-          minWidth: "100px",
-          textAlign: "center"
-        }}>
-          <div style={{
-            fontSize: "64px",
-            fontWeight: "bold",
-            color: textColor,
-            fontFamily: "monospace",
-            lineHeight: "1"
-          }}>
-            {value}
-          </div>
-        </div>
-      );
-    } else {
-      return (
-        <div style={{
-          backgroundColor: bgColor,
-          borderRadius: "8px",
-          padding: "20px 32px",
-          minWidth: "100px",
-          textAlign: "center"
-        }}>
-          <div style={{
-            fontSize: "64px",
-            fontWeight: "bold",
-            color: textColor,
-            fontFamily: "monospace",
-            lineHeight: "1"
-          }}>
-            {value}
-          </div>
-        </div>
-      );
-    }
+  const renderNumber = (value, label) => {
+    // ✅ GENERAL: Styling sesuai gambar - dark grey box dengan white text, rounded corners
+    // Menggunakan bgColor dan textColor dari props untuk konsistensi
+    const boxStyle = {
+      backgroundColor: bgColor, // Dark grey (#374151) atau dari props
+      borderRadius: "8px", // Slightly rounded corners
+      padding: "16px 24px",
+      minWidth: "80px",
+      textAlign: "center",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      boxShadow: "none", // Clean, minimal shadow
+    };
+
+    const numberStyle = {
+      fontSize: "48px",
+      fontWeight: "bold",
+      color: textColor, // White (#ffffff) atau dari props
+      fontFamily: "monospace",
+      lineHeight: "1",
+      margin: 0,
+    };
+
+    const labelStyle = {
+      fontSize: "14px",
+      color: "#374151", // Dark grey untuk label (tetap konsisten)
+      fontWeight: "500",
+      marginTop: "8px",
+      textAlign: "center",
+    };
+
+    return (
+      <div style={boxStyle}>
+        <div style={numberStyle}>{value}</div>
+        {label && <div style={labelStyle}>{label}</div>}
+      </div>
+    );
   };
 
   return (
@@ -210,39 +173,51 @@ function CountdownComponent({ data = {}, componentId, containerStyle = {} }) {
       textAlign: "center",
       ...containerStyle
     }}>
+      {/* ✅ Teks "Promo Berakhir Dalam:" - centered di atas */}
       <div style={{ 
         color: "#374151", 
-        fontSize: "18px", 
-        marginBottom: "20px", 
-        fontWeight: "600" 
+        fontSize: "16px", 
+        marginBottom: "24px", 
+        fontWeight: "500",
+        textAlign: "center"
       }}>
         {promoText}
       </div>
+      
+      {/* ✅ Container untuk countdown boxes dengan colon separator */}
       <div style={{ 
         display: "flex", 
-        gap: "16px", 
+        gap: "12px", 
         justifyContent: "center",
-        alignItems: "center",
+        alignItems: "flex-start", // Align ke atas agar label sejajar
         flexWrap: "wrap"
       }}>
-        {renderNumber(formattedTime.hours, bgColor)}
-        <span style={{ fontSize: "40px", color: "#6b7280", fontWeight: "bold" }}>:</span>
-        {renderNumber(formattedTime.minutes, bgColor)}
-        <span style={{ fontSize: "40px", color: "#6b7280", fontWeight: "bold" }}>:</span>
-        {renderNumber(formattedTime.seconds, bgColor)}
-      </div>
-      <div style={{ 
-        display: "flex", 
-        gap: "120px", 
-        justifyContent: "center",
-        marginTop: "16px",
-        fontSize: "14px",
-        color: "#6b7280",
-        fontWeight: "500"
-      }}>
-        <span>Jam</span>
-        <span>Menit</span>
-        <span>Detik</span>
+        {/* Hours box dengan label */}
+        {renderNumber(formattedTime.hours, "Jam")}
+        
+        {/* Colon separator */}
+        <span style={{ 
+          fontSize: "32px", 
+          color: "#374151", 
+          fontWeight: "bold",
+          marginTop: "16px", // Align dengan angka
+          lineHeight: "48px" // Match dengan tinggi angka
+        }}>:</span>
+        
+        {/* Minutes box dengan label */}
+        {renderNumber(formattedTime.minutes, "Menit")}
+        
+        {/* Colon separator */}
+        <span style={{ 
+          fontSize: "32px", 
+          color: "#374151", 
+          fontWeight: "bold",
+          marginTop: "16px",
+          lineHeight: "48px"
+        }}>:</span>
+        
+        {/* Seconds box dengan label */}
+        {renderNumber(formattedTime.seconds, "Detik")}
       </div>
     </div>
   );
@@ -678,21 +653,23 @@ export default function ProductPage() {
         };
 
         // ✅ Container style with alignment - SAMA PERSIS dengan renderPreview di addProducts3
-        const containerStyle = {
+        // Container ini untuk alignment (center/left/right) dan padding
+        // JANGAN gunakan containerStyle dari getContainerStyles() karena akan override alignment
+        const imageContainerStyle = {
           display: "flex",
           justifyContent: alignment === "left" ? "flex-start" : alignment === "right" ? "flex-end" : "center",
           width: "100%",
           ...imagePaddingStyle,
         };
 
-        // ✅ Image wrapper style - SAMA PERSIS dengan renderPreview di addProducts3
-        // Image wrapper style - ukuran akan berubah sesuai aspect ratio yang dipilih
+        // ✅ Image wrapper style - ukuran akan berubah sesuai aspect ratio yang dipilih
+        // Wrapper ini yang diatur width-nya (50%, 100%, dll) - gambar di dalam tetap 100% dari wrapper
         const imageWrapperStyle = {
-          width: `${imageWidth}%`,
+          width: `${imageWidth}%`, // ✅ Width setting (50%) = width dari wrapper, bukan gambar
           ...aspectRatioStyle,
           ...imageBackgroundStyle,
           overflow: "hidden",
-          borderRadius: "4px", // ✅ SAMA dengan addProducts3
+          borderRadius: "4px",
           position: "relative",
         };
         
@@ -700,13 +677,13 @@ export default function ProductPage() {
         // CSS aspect-ratio akan menghitung tinggi berdasarkan lebar dan ratio
 
         return (
-          <div style={containerStyle}>
+          <div style={imageContainerStyle}>
             <div style={imageWrapperStyle}>
               <img 
                 src={imageData.src} 
                 alt={imageData.alt || ""} 
                 style={{
-                  width: "100%",
+                  width: "100%", // ✅ Gambar selalu 100% dari wrapper (bukan dari setting)
                   height: "100%",
                   objectFit: objectFitValue,
                   objectPosition: "center",
