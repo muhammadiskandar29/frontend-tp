@@ -1826,6 +1826,47 @@ export default function AddProducts3Page() {
       // Hapus dash di awal dan akhir
       .replace(/^-+|-+$/g, "");
   };
+  
+  // Handler khusus untuk input kode produk - lebih stabil untuk ketik manual
+  const handleKodeChange = (e) => {
+    const input = e.target;
+    const inputValue = e.target.value;
+    const cursorPos = input.selectionStart || 0;
+    const selectionEnd = input.selectionEnd || cursorPos;
+    
+    // Langsung ganti spasi dengan dash (agar terlihat di UI)
+    let processedValue = inputValue.replace(/\s/g, '-');
+    
+    // Format menggunakan single source of truth
+    const formattedValue = formatSlug(processedValue);
+    const url = formattedValue ? `/${formattedValue}` : "";
+    
+    // Hitung posisi cursor baru yang lebih akurat
+    // Simpan karakter yang ada sebelum cursor untuk mapping yang lebih tepat
+    const textBeforeCursor = processedValue.slice(0, cursorPos);
+    const formattedBeforeCursor = formatSlug(textBeforeCursor);
+    
+    // Jika panjang sama, cursor tetap di posisi yang sama
+    // Jika berbeda, hitung offset berdasarkan karakter yang dihapus
+    let newCursorPos = formattedBeforeCursor.length;
+    
+    // Pastikan cursor tidak melebihi panjang formatted value
+    newCursorPos = Math.min(newCursorPos, formattedValue.length);
+    
+    // Update state
+    setPengaturanForm((prev) => ({ 
+      ...prev, 
+      kode: formattedValue,
+      url: url
+    }));
+    
+    // Preserve cursor position setelah state update
+    requestAnimationFrame(() => {
+      if (input && document.activeElement === input) {
+        input.setSelectionRange(newCursorPos, newCursorPos);
+      }
+    });
+  };
 
   // Handler untuk update form pengaturan
   const handlePengaturanChange = (key, value) => {
@@ -2899,40 +2940,7 @@ export default function AddProducts3Page() {
                     <InputText
                       className="pengaturan-input"
                       value={pengaturanForm.kode || ""}
-                      onChange={(e) => {
-                        const input = e.target;
-                        let inputValue = e.target.value;
-                        const cursorPos = input.selectionStart || 0;
-                        
-                        // Langsung ganti spasi dengan dash SEBELUM format (agar dash terlihat di UI)
-                        // Ini memastikan spasi langsung menjadi dash, bukan hilang
-                        if (inputValue.includes(' ')) {
-                          inputValue = inputValue.replace(/\s/g, '-');
-                        }
-                        
-                        // Format menggunakan single source of truth
-                        const formattedValue = formatSlug(inputValue);
-                        const url = formattedValue ? `/${formattedValue}` : "";
-                        
-                        // Hitung posisi cursor baru: format bagian sebelum cursor
-                        const textBeforeCursor = inputValue.slice(0, cursorPos);
-                        const formattedBeforeCursor = formatSlug(textBeforeCursor);
-                        const newCursorPos = Math.min(formattedBeforeCursor.length, formattedValue.length);
-                        
-                        // Update state - ini akan trigger re-render dengan value yang sudah diformat (dengan dash)
-                        setPengaturanForm((prev) => ({ 
-                          ...prev, 
-                          kode: formattedValue,
-                          url: url
-                        }));
-                        
-                        // Preserve cursor position - gunakan requestAnimationFrame untuk sync dengan render
-                        requestAnimationFrame(() => {
-                          if (input && document.activeElement === input) {
-                            input.setSelectionRange(newCursorPos, newCursorPos);
-                          }
-                        });
-                      }}
+                      onChange={handleKodeChange}
                       placeholder="seminar-as-bandung"
                     />
                     <small className="pengaturan-hint">
