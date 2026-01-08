@@ -1830,43 +1830,34 @@ export default function AddProducts3Page() {
   // Handler khusus untuk input kode produk - lebih stabil untuk ketik manual
   const handleKodeChange = (e) => {
     const input = e.target;
-    const inputValue = e.target.value;
-    const cursorPos = input.selectionStart || 0;
-    const selectionEnd = input.selectionEnd || cursorPos;
-    
-    // Langsung ganti spasi dengan dash (agar terlihat di UI)
-    let processedValue = inputValue.replace(/\s/g, '-');
-    
-    // Format menggunakan single source of truth
-    const formattedValue = formatSlug(processedValue);
+    const rawValue = input.value;
+  
+    const cursorPos = input.selectionStart ?? 0;
+  
+    const formattedValue = formatSlug(rawValue);
     const url = formattedValue ? `/${formattedValue}` : "";
-    
-    // Hitung posisi cursor baru yang lebih akurat
-    // Simpan karakter yang ada sebelum cursor untuk mapping yang lebih tepat
-    const textBeforeCursor = processedValue.slice(0, cursorPos);
-    const formattedBeforeCursor = formatSlug(textBeforeCursor);
-    
-    // Jika panjang sama, cursor tetap di posisi yang sama
-    // Jika berbeda, hitung offset berdasarkan karakter yang dihapus
-    let newCursorPos = formattedBeforeCursor.length;
-    
-    // Pastikan cursor tidak melebihi panjang formatted value
-    newCursorPos = Math.min(newCursorPos, formattedValue.length);
-    
-    // Update state
-    setPengaturanForm((prev) => ({ 
-      ...prev, 
+  
+    const beforeCursor = rawValue.slice(0, cursorPos);
+    const formattedBeforeCursor = formatSlug(beforeCursor);
+  
+    const newCursorPos = Math.min(
+      formattedBeforeCursor.length,
+      formattedValue.length
+    );
+  
+    setPengaturanForm(prev => ({
+      ...prev,
       kode: formattedValue,
-      url: url
+      url
     }));
-    
-    // Preserve cursor position setelah state update
+  
     requestAnimationFrame(() => {
-      if (input && document.activeElement === input) {
+      if (document.activeElement === input) {
         input.setSelectionRange(newCursorPos, newCursorPos);
       }
     });
   };
+  
 
   // Handler untuk update form pengaturan
   const handlePengaturanChange = (key, value) => {
