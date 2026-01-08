@@ -394,57 +394,133 @@ export default function ProductPage() {
     return url;
   };
 
+  // ✅ FUNGSI HELPER: Convert style.text dari backend ke CSS text properties (GENERAL - otomatis baca semua field)
+  const getTextStyles = (styleText = {}) => {
+    const textStyles = {};
+    
+    // Font properties
+    if (styleText.fontFamily) textStyles.fontFamily = styleText.fontFamily !== "Page Font" ? styleText.fontFamily : "inherit";
+    if (styleText.color !== undefined) textStyles.color = styleText.color;
+    if (styleText.lineHeight !== undefined) textStyles.lineHeight = styleText.lineHeight;
+    if (styleText.fontWeight !== undefined) textStyles.fontWeight = styleText.fontWeight;
+    if (styleText.fontStyle !== undefined) textStyles.fontStyle = styleText.fontStyle;
+    if (styleText.textDecoration !== undefined) textStyles.textDecoration = styleText.textDecoration;
+    if (styleText.textTransform !== undefined) textStyles.textTransform = styleText.textTransform;
+    if (styleText.letterSpacing !== undefined) textStyles.letterSpacing = `${styleText.letterSpacing}px`;
+    if (styleText.backgroundColor !== undefined) {
+      textStyles.backgroundColor = styleText.backgroundColor !== "transparent" ? styleText.backgroundColor : "transparent";
+    }
+    
+    // Text alignment - handle "align" (dari backend) dan "textAlign" (legacy)
+    if (styleText.align !== undefined) {
+      textStyles.textAlign = styleText.align;
+    } else if (styleText.alignment !== undefined) {
+      textStyles.textAlign = styleText.alignment;
+    } else if (styleText.textAlign !== undefined) {
+      textStyles.textAlign = styleText.textAlign;
+    }
+    
+    return textStyles;
+  };
+
+  // ✅ FUNGSI HELPER: Convert style.container dari backend ke CSS container properties (GENERAL - otomatis baca semua field)
+  const getContainerStyles = (styleContainer = {}) => {
+    const containerStyles = {};
+    
+    // Padding - handle nested (padding.top) dan flat (paddingTop)
+    if (styleContainer.padding) {
+      if (styleContainer.padding.top !== undefined) containerStyles.paddingTop = `${styleContainer.padding.top}px`;
+      if (styleContainer.padding.right !== undefined) containerStyles.paddingRight = `${styleContainer.padding.right}px`;
+      if (styleContainer.padding.bottom !== undefined) containerStyles.paddingBottom = `${styleContainer.padding.bottom}px`;
+      if (styleContainer.padding.left !== undefined) containerStyles.paddingLeft = `${styleContainer.padding.left}px`;
+    } else {
+      if (styleContainer.paddingTop !== undefined) containerStyles.paddingTop = `${styleContainer.paddingTop}px`;
+      if (styleContainer.paddingRight !== undefined) containerStyles.paddingRight = `${styleContainer.paddingRight}px`;
+      if (styleContainer.paddingBottom !== undefined) containerStyles.paddingBottom = `${styleContainer.paddingBottom}px`;
+      if (styleContainer.paddingLeft !== undefined) containerStyles.paddingLeft = `${styleContainer.paddingLeft}px`;
+    }
+    
+    // Margin - handle nested (margin.top) dan flat (marginTop)
+    if (styleContainer.margin) {
+      if (styleContainer.margin.top !== undefined) containerStyles.marginTop = `${styleContainer.margin.top}px`;
+      if (styleContainer.margin.right !== undefined) containerStyles.marginRight = `${styleContainer.margin.right}px`;
+      if (styleContainer.margin.bottom !== undefined) containerStyles.marginBottom = `${styleContainer.margin.bottom}px`;
+      if (styleContainer.margin.left !== undefined) containerStyles.marginLeft = `${styleContainer.margin.left}px`;
+    } else {
+      if (styleContainer.marginTop !== undefined) containerStyles.marginTop = `${styleContainer.marginTop}px`;
+      if (styleContainer.marginRight !== undefined) containerStyles.marginRight = `${styleContainer.marginRight}px`;
+      if (styleContainer.marginBottom !== undefined) containerStyles.marginBottom = `${styleContainer.marginBottom}px`;
+      if (styleContainer.marginLeft !== undefined) containerStyles.marginLeft = `${styleContainer.marginLeft}px`;
+    }
+    
+    // Background - handle nested (background.color) dan flat (bgColor)
+    if (styleContainer.background) {
+      if (styleContainer.background.type === "color" && styleContainer.background.color) {
+        containerStyles.backgroundColor = styleContainer.background.color;
+      } else if (styleContainer.background.type === "image" && styleContainer.background.image) {
+        containerStyles.backgroundImage = `url(${styleContainer.background.image})`;
+        containerStyles.backgroundSize = styleContainer.background.size || "cover";
+        containerStyles.backgroundPosition = styleContainer.background.position || "center";
+        containerStyles.backgroundRepeat = styleContainer.background.repeat || "no-repeat";
+      }
+    } else {
+      if (styleContainer.bgColor) containerStyles.backgroundColor = styleContainer.bgColor;
+      if (styleContainer.bgImage) containerStyles.backgroundImage = `url(${styleContainer.bgImage})`;
+    }
+    
+    // Border - handle nested (border.width) dan flat
+    if (styleContainer.border) {
+      if (styleContainer.border.width) {
+        containerStyles.border = `${styleContainer.border.width}px ${styleContainer.border.style || 'solid'} ${styleContainer.border.color || '#e5e7eb'}`;
+      }
+      if (styleContainer.border.radius !== undefined) {
+        containerStyles.borderRadius = styleContainer.border.radius === "0px" || styleContainer.border.radius === "0" ? 0 : styleContainer.border.radius;
+      }
+    }
+    
+    // Shadow
+    if (styleContainer.shadow !== undefined) {
+      containerStyles.boxShadow = styleContainer.shadow === "none" ? "none" : styleContainer.shadow;
+    }
+    
+    return containerStyles;
+  };
+
   // Render Block berdasarkan struktur content/style/config - SAMA PERSIS dengan renderPreview di addProducts3
   const renderBlock = (block, allBlocks = []) => {
     if (!block || !block.type) return null;
 
-    // Adaptasi dari format content/style/config ke format block.data (untuk kompatibilitas dengan renderPreview)
-    // Di addProducts3, renderPreview menggunakan block.data, tapi di product page kita punya content/style/config
-    // Jadi kita perlu mengadaptasi data untuk match dengan renderPreview logic
-    
     const { type, content, style, config } = block;
     
-    // Define containerStyle at the top of renderBlock for consistent use across all block types
-    const containerStyle = {
-      paddingTop: style?.container?.padding?.top || style?.container?.paddingTop || 0,
-      paddingRight: style?.container?.padding?.right || style?.container?.paddingRight || 0,
-      paddingBottom: style?.container?.padding?.bottom || style?.container?.paddingBottom || 0,
-      paddingLeft: style?.container?.padding?.left || style?.container?.paddingLeft || 0,
-      marginTop: style?.container?.margin?.top || style?.container?.marginTop || 0,
-      marginRight: style?.container?.margin?.right || style?.container?.marginRight || 0,
-      marginBottom: style?.container?.margin?.bottom || style?.container?.marginBottom || 0,
-      marginLeft: style?.container?.margin?.left || style?.container?.marginLeft || 0,
-      backgroundColor: style?.container?.background?.color || style?.container?.bgColor || 'transparent',
-      backgroundImage: style?.container?.background?.image ? `url(${style.container.background.image})` : 'none',
-      border: style?.container?.border?.width ? `${style.container.border.width}px ${style.container.border.style || 'solid'} ${style.container.border.color || '#e5e7eb'}` : 'none',
-      borderRadius: style?.container?.border?.radius || 0,
-      boxShadow: style?.container?.shadow || 'none',
-      // textAlign untuk container dihapus - biar text block yang handle sendiri via style.text.align
-    };
+    // ✅ GENERAL: Otomatis baca semua field dari style.container dari backend
+    const containerStyle = getContainerStyles(style?.container || {});
+    
+    // ✅ GENERAL: Otomatis baca semua field dari style.text dari backend
+    const textStylesFromBackend = getTextStyles(style?.text || {});
     
     // Simulasi block.data dari content/style/config untuk kompatibilitas dengan renderPreview logic
     const blockData = {
-      // Text data
+      // Text data - menggunakan textStylesFromBackend yang sudah di-generate otomatis
       content: content?.html || content || "",
-      textColor: style?.text?.color || style?.text?.textColor || "#000000",
-      fontFamily: style?.text?.fontFamily || "inherit",
+      textColor: style?.text?.color || "#000000",
+      fontFamily: textStylesFromBackend.fontFamily || "inherit",
       lineHeight: style?.text?.lineHeight || 1.5,
-      // ✅ PRIORITAS: align (dari backend) > alignment > textAlign > default "left"
-      textAlign: style?.text?.align || style?.text?.alignment || style?.text?.textAlign || "left",
+      textAlign: textStylesFromBackend.textAlign || "left",
       fontWeight: style?.text?.fontWeight || "normal",
       fontStyle: style?.text?.fontStyle || "normal",
       textDecoration: style?.text?.textDecoration || "none",
       textTransform: style?.text?.textTransform || "none",
       letterSpacing: style?.text?.letterSpacing || 0,
       backgroundColor: style?.text?.backgroundColor || "transparent",
-      paragraphStyle: config?.tag || config?.paragraphStyle || "div", // ✅ Gunakan config.tag jika ada (sama dengan addProducts3)
-      bgType: style?.text?.background?.type || style?.text?.bgType || "none", // ✅ Ambil dari style.text.background.type atau fallback ke style.text.bgType
-      bgColor: style?.text?.background?.color || style?.text?.bgColor || "#ffffff", // ✅ Ambil dari style.text.background.color atau fallback ke style.text.bgColor
-      bgImage: style?.text?.background?.image || style?.text?.bgImage || "", // ✅ Ambil dari style.text.background.image atau fallback ke style.text.bgImage
-      paddingTop: style?.text?.padding?.top || style?.text?.paddingTop || style?.container?.padding?.top || style?.container?.paddingTop || 0,
-      paddingRight: style?.text?.padding?.right || style?.text?.paddingRight || style?.container?.padding?.right || style?.container?.paddingRight || 0,
-      paddingBottom: style?.text?.padding?.bottom || style?.text?.paddingBottom || style?.container?.padding?.bottom || style?.container?.paddingBottom || 0,
-      paddingLeft: style?.text?.padding?.left || style?.text?.paddingLeft || style?.container?.padding?.left || style?.container?.paddingLeft || 0,
+      paragraphStyle: config?.tag || config?.paragraphStyle || "div",
+      bgType: style?.text?.background?.type || style?.text?.bgType || "none",
+      bgColor: style?.text?.background?.color || style?.text?.bgColor || "#ffffff",
+      bgImage: style?.text?.background?.image || style?.text?.bgImage || "",
+      // Padding dari style.text atau fallback ke style.container
+      paddingTop: style?.text?.padding?.top ?? style?.text?.paddingTop ?? style?.container?.padding?.top ?? style?.container?.paddingTop ?? 0,
+      paddingRight: style?.text?.padding?.right ?? style?.text?.paddingRight ?? style?.container?.padding?.right ?? style?.container?.paddingRight ?? 0,
+      paddingBottom: style?.text?.padding?.bottom ?? style?.text?.paddingBottom ?? style?.container?.padding?.bottom ?? style?.container?.paddingBottom ?? 0,
+      paddingLeft: style?.text?.padding?.left ?? style?.text?.paddingLeft ?? style?.container?.padding?.left ?? style?.container?.paddingLeft ?? 0,
       
       // Image data
       src: content?.src || content?.url || "",
@@ -482,23 +558,21 @@ export default function ProductPage() {
     switch (type) {
       case "text": {
         const textData = blockData;
-        // ✅ SAMA PERSIS dengan renderPreview di addProducts3
+        
+        // ✅ GENERAL: Gunakan textStylesFromBackend yang sudah di-generate otomatis dari style.text
+        // Tambahkan default values untuk field yang tidak ada di backend
         const textStyles = {
           // fontSize removed - now handled by inline styles in HTML content (sama dengan addProducts3)
-          lineHeight: textData.lineHeight || 1.5, // ✅ SAMA dengan addProducts3 (default 1.5, CSS akan override ke 1.2)
-          fontFamily: textData.fontFamily && textData.fontFamily !== "Page Font" 
-            ? textData.fontFamily 
-            : "inherit",
-          color: textData.textColor || "#000000", // ✅ SAMA dengan addProducts3
-          backgroundColor: textData.backgroundColor && textData.backgroundColor !== "transparent"
-            ? textData.backgroundColor
-            : "transparent",
-          textAlign: textData.textAlign || "left",
-          fontWeight: textData.fontWeight || "normal",
-          fontStyle: textData.fontStyle || "normal",
-          textDecoration: textData.textDecoration || "none",
-          textTransform: textData.textTransform || "none",
-          letterSpacing: textData.letterSpacing ? `${textData.letterSpacing}px` : "0px",
+          lineHeight: textStylesFromBackend.lineHeight ?? textData.lineHeight ?? 1.5,
+          fontFamily: textStylesFromBackend.fontFamily ?? (textData.fontFamily && textData.fontFamily !== "Page Font" ? textData.fontFamily : "inherit"),
+          color: textStylesFromBackend.color ?? textData.textColor ?? "#000000",
+          backgroundColor: textStylesFromBackend.backgroundColor ?? (textData.backgroundColor && textData.backgroundColor !== "transparent" ? textData.backgroundColor : "transparent"),
+          textAlign: textStylesFromBackend.textAlign ?? textData.textAlign ?? "left", // ✅ PRIORITAS: dari backend (align) > fallback
+          fontWeight: textStylesFromBackend.fontWeight ?? textData.fontWeight ?? "normal",
+          fontStyle: textStylesFromBackend.fontStyle ?? textData.fontStyle ?? "normal",
+          textDecoration: textStylesFromBackend.textDecoration ?? textData.textDecoration ?? "none",
+          textTransform: textStylesFromBackend.textTransform ?? textData.textTransform ?? "none",
+          letterSpacing: textStylesFromBackend.letterSpacing ?? (textData.letterSpacing ? `${textData.letterSpacing}px` : "0px"),
           padding: textData.backgroundColor && textData.backgroundColor !== "transparent" ? "8px 12px" : "0",
           borderRadius: textData.backgroundColor && textData.backgroundColor !== "transparent" ? "4px" : "0",
         };
