@@ -241,16 +241,6 @@ export default function CountdownComponent({ data = {}, onUpdate, onMoveUp, onMo
     >
       <div className="countdown-component-content">
         <div className="form-field-group">
-          <label className="form-label-small">Text Promo</label>
-          <InputText
-            value={promoText}
-            onChange={(e) => handleChange("promoText", e.target.value)}
-            placeholder="Promo Berakhir Dalam:"
-            className="w-full form-input"
-          />
-        </div>
-
-        <div className="form-field-group">
           <label className="form-label-small">Durasi Countdown</label>
           <div style={{ display: "flex", gap: "16px", alignItems: "flex-start", justifyContent: "center" }}>
             {/* Jam */}

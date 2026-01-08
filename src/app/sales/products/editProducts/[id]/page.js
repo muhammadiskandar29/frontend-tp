@@ -259,7 +259,6 @@ export default function EditProductsPage() {
         hours: 0, 
         minutes: 0, 
         seconds: 0, 
-        promoText: "Promo Berakhir Dalam:",
         textColor: "#e5e7eb",
         bgColor: "#1f2937",
         numberStyle: "flip"
@@ -1914,7 +1913,6 @@ export default function EditProductsPage() {
             hours: content?.hours !== undefined ? content.hours : 0,
             minutes: content?.minutes !== undefined ? content.minutes : 0,
             seconds: content?.seconds !== undefined ? content.seconds : 0,
-            promoText: content?.promoText || "Promo Berakhir Dalam:",
             textColor: style?.text?.color || "#ffffff",
             bgColor: style?.container?.background?.color || "#1a1a1a",
             numberStyle: style?.numberStyle || "flip",
@@ -2641,7 +2639,6 @@ export default function EditProductsPage() {
           hours: data.hours !== undefined ? data.hours : 0,
           minutes: data.minutes !== undefined ? data.minutes : 0,
           seconds: data.seconds !== undefined ? data.seconds : 0,
-          promoText: data.promoText || "Promo Berakhir Dalam:"
         };
         style = {
           text: {
