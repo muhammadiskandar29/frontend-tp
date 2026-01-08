@@ -879,11 +879,35 @@ export default function AddProducts3Page() {
                     <InputText
                       className="pengaturan-input"
                       value={pengaturanForm.kode || ""}
-                      onChange={(e) => {
+                      onKeyDown={(e) => {
+                        // Prevent spacebar dari mengetik spasi, langsung ganti dengan dash
+                        if (e.key === ' ' || e.key === 'Space') {
+                          e.preventDefault();
+                          const input = e.target;
+                          const currentValue = pengaturanForm.kode || '';
+                          const cursorPos = input.selectionStart || currentValue.length;
+                          const newValue = currentValue.slice(0, cursorPos) + '-' + currentValue.slice(cursorPos);
+                          const formattedValue = generateKode(newValue);
+                          const url = formattedValue ? `/${formattedValue}` : "";
+                          setPengaturanForm((prev) => ({ 
+                            ...prev, 
+                            kode: formattedValue,
+                            url: url
+                          }));
+                          // Set cursor position setelah update
+                          setTimeout(() => {
+                            const newCursorPos = Math.min(cursorPos + 1, formattedValue.length);
+                            input.setSelectionRange(newCursorPos, newCursorPos);
+                          }, 0);
+                        }
+                      }}
+                      onInput={(e) => {
                         // Format real-time saat mengetik: spasi langsung jadi dash, auto lowercase
                         let inputValue = e.target.value;
                         // Langsung ganti spasi dengan dash saat mengetik
-                        inputValue = inputValue.replace(/\s/g, '-');
+                        if (inputValue.includes(' ')) {
+                          inputValue = inputValue.replace(/\s/g, '-');
+                        }
                         // Langsung lowercase
                         inputValue = inputValue.toLowerCase();
                         // Hapus karakter khusus selain huruf, angka, dan dash
@@ -901,20 +925,29 @@ export default function AddProducts3Page() {
                           url: url
                         }));
                       }}
-                      onKeyDown={(e) => {
-                        // Prevent spacebar dari mengetik spasi, langsung ganti dengan dash
-                        if (e.key === ' ') {
-                          e.preventDefault();
-                          const currentValue = pengaturanForm.kode || '';
-                          const newValue = currentValue + '-';
-                          const formattedValue = generateKode(newValue);
-                          const url = formattedValue ? `/${formattedValue}` : "";
-                          setPengaturanForm((prev) => ({ 
-                            ...prev, 
-                            kode: formattedValue,
-                            url: url
-                          }));
+                      onChange={(e) => {
+                        // Format real-time saat mengetik: spasi langsung jadi dash, auto lowercase
+                        let inputValue = e.target.value;
+                        // Langsung ganti spasi dengan dash saat mengetik
+                        if (inputValue.includes(' ')) {
+                          inputValue = inputValue.replace(/\s/g, '-');
                         }
+                        // Langsung lowercase
+                        inputValue = inputValue.toLowerCase();
+                        // Hapus karakter khusus selain huruf, angka, dan dash
+                        inputValue = inputValue.replace(/[^a-z0-9-]/g, '');
+                        // Hapus multiple dash menjadi single dash
+                        inputValue = inputValue.replace(/-+/g, '-');
+                        // Hapus dash di awal dan akhir
+                        inputValue = inputValue.replace(/^-+|-+$/g, '');
+                        
+                        // Update langsung dengan format yang sudah benar
+                        const url = inputValue ? `/${inputValue}` : "";
+                        setPengaturanForm((prev) => ({ 
+                          ...prev, 
+                          kode: inputValue,
+                          url: url
+                        }));
                       }}
                       placeholder="seminar-as-bandung"
                     />
