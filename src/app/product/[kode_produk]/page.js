@@ -196,6 +196,24 @@ export default function ProductPage() {
     
     const { type, content, style, config } = block;
     
+    // Define containerStyle at the top of renderBlock for consistent use across all block types
+    const containerStyle = {
+      paddingTop: style?.container?.padding?.top || style?.container?.paddingTop || 0,
+      paddingRight: style?.container?.padding?.right || style?.container?.paddingRight || 0,
+      paddingBottom: style?.container?.padding?.bottom || style?.container?.paddingBottom || 0,
+      paddingLeft: style?.container?.padding?.left || style?.container?.paddingLeft || 0,
+      marginTop: style?.container?.margin?.top || style?.container?.marginTop || 0,
+      marginRight: style?.container?.margin?.right || style?.container?.marginRight || 0,
+      marginBottom: style?.container?.margin?.bottom || style?.container?.marginBottom || 0,
+      marginLeft: style?.container?.margin?.left || style?.container?.marginLeft || 0,
+      backgroundColor: style?.container?.background?.color || style?.container?.bgColor || 'transparent',
+      backgroundImage: style?.container?.background?.image ? `url(${style.container.background.image})` : 'none',
+      border: style?.container?.border?.width ? `${style.container.border.width}px ${style.container.border.style || 'solid'} ${style.container.border.color || '#e5e7eb'}` : 'none',
+      borderRadius: style?.container?.border?.radius || 0,
+      boxShadow: style?.container?.shadow || 'none',
+      textAlign: style?.container?.alignment || 'left', // Default alignment for container
+    };
+    
     // Simulasi block.data dari content/style/config untuk kompatibilitas dengan renderPreview logic
     const blockData = {
       // Text data
@@ -1164,18 +1182,40 @@ export default function ProductPage() {
 
   // Sort blocks by order - ensure numeric comparison and stable sort
   const sortedBlocks = [...blocks].sort((a, b) => {
-    const orderA = typeof a.order === 'number' ? a.order : (typeof a.order === 'string' ? parseInt(a.order, 10) : Infinity);
-    const orderB = typeof b.order === 'number' ? b.order : (typeof b.order === 'string' ? parseInt(b.order, 10) : Infinity);
+    // Extract order value - handle number, string, or undefined
+    const getOrderValue = (block) => {
+      if (block === null || block === undefined) return Infinity;
+      if (typeof block.order === 'number') return block.order;
+      if (typeof block.order === 'string') {
+        const parsed = parseInt(block.order.trim(), 10);
+        return isNaN(parsed) ? Infinity : parsed;
+      }
+      // If order is missing, try to use array index as fallback (not ideal, but better than Infinity)
+      return Infinity;
+    };
     
-    // If both orders are invalid, maintain original order
-    if (isNaN(orderA) && isNaN(orderB)) {
+    const orderA = getOrderValue(a);
+    const orderB = getOrderValue(b);
+    
+    // If both orders are invalid, maintain original order (stable sort)
+    if (orderA === Infinity && orderB === Infinity) {
       return 0;
     }
-    if (isNaN(orderA)) return 1;
-    if (isNaN(orderB)) return -1;
+    if (orderA === Infinity) return 1; // Blocks without order go to end
+    if (orderB === Infinity) return -1; // Blocks without order go to end
+    
+    // Numeric comparison - if equal, maintain original order (stable sort)
+    if (orderA === orderB) {
+      return 0;
+    }
     
     return orderA - orderB;
   });
+  
+  // Debug logging (can be removed in production)
+  if (process.env.NODE_ENV === 'development' && sortedBlocks.length > 0) {
+    console.log('[PRODUCT] Blocks order:', sortedBlocks.map(b => ({ type: b.type, order: b.order })));
+  }
 
   // Ambil logo dari settings (jika ada)
   const settings = landingpage && Array.isArray(landingpage) && landingpage.length > 0 && landingpage[0].type === 'settings'
@@ -1199,11 +1239,15 @@ export default function ProductPage() {
           {/* Content Area - Center dengan padding */}
           <div className="canvas-content-area">
             {/* Render Blocks dari landingpage */}
-            {sortedBlocks.map((block) => (
-              <div key={block.order} className="canvas-preview-block">
-                {renderBlock(block)}
-              </div>
-            ))}
+            {sortedBlocks.map((block, index) => {
+              // Use componentId if available, otherwise use order + type + index for uniqueness
+              const uniqueKey = block.config?.componentId || `${block.type}-${block.order}-${index}`;
+              return (
+                <div key={uniqueKey} className="canvas-preview-block">
+                  {renderBlock(block)}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
