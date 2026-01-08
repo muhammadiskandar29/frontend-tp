@@ -14,6 +14,8 @@ import {
   MapPin, Calendar as CalendarIcon, Clock
 } from "lucide-react";
 import OngkirCalculator from "@/components/OngkirCalculator";
+import ImageSliderPreview from "@/app/sales/products/addProducts3/components/ImageSliderPreview";
+import QuotaInfoPreview from "@/app/sales/products/addProducts3/components/QuotaInfoPreview";
 import "@/styles/sales/add-products3.css"; // Canvas style
 import "@/styles/ongkir.css";
 
@@ -393,7 +395,7 @@ export default function ProductPage() {
   };
 
   // Render Block berdasarkan struktur content/style/config - SAMA PERSIS dengan renderPreview di addProducts3
-  const renderBlock = (block) => {
+  const renderBlock = (block, allBlocks = []) => {
     if (!block || !block.type) return null;
 
     // Adaptasi dari format content/style/config ke format block.data (untuk kompatibilitas dengan renderPreview)
@@ -1205,9 +1207,134 @@ export default function ProductPage() {
         );
       }
 
+      case "button": {
+        // ✅ SAMA PERSIS dengan renderPreview di addProducts3
+        const buttonData = content || {};
+        const buttonStyle = buttonData.style || style?.button?.style || 'primary';
+        const buttonText = buttonData.text || content?.text || "Klik Disini";
+        
+        return (
+          <div style={containerStyle}>
+            <button className={`preview-button preview-button-${buttonStyle}`}>
+              {buttonText}
+            </button>
+          </div>
+        );
+      }
+
+      case "html": {
+        // ✅ SAMA PERSIS dengan renderPreview di addProducts3
+        const htmlCode = content?.code || content || "";
+        
+        return (
+          <div style={containerStyle} dangerouslySetInnerHTML={{ __html: htmlCode }} />
+        );
+      }
+
+      case "embed": {
+        // ✅ SAMA PERSIS dengan renderPreview di addProducts3
+        const embedCode = content?.code || content || "";
+        
+        return (
+          <div style={containerStyle} dangerouslySetInnerHTML={{ __html: embedCode }} />
+        );
+      }
+
+      case "image-slider": {
+        // ✅ SAMA PERSIS dengan renderPreview di addProducts3
+        const sliderData = content || {};
+        
+        // Adaptasi dari content/style/config ke format yang diharapkan ImageSliderPreview
+        const adaptedData = {
+          images: sliderData.images || sliderData.items || [],
+          sliderType: sliderData.sliderType || "gallery",
+          autoslide: sliderData.autoslide || false,
+          autoslideDuration: sliderData.autoslideDuration || 5,
+          showCaption: sliderData.showCaption || false,
+          alignment: style?.image?.alignment || style?.container?.alignment || "center",
+          imageWidth: style?.image?.width || style?.container?.imageWidth || 100,
+          imageFit: style?.image?.fit || style?.container?.imageFit || "fill",
+          aspectRatio: style?.image?.aspectRatio || style?.container?.aspectRatio || "OFF",
+          backgroundType: style?.container?.background?.type || "none",
+          backgroundColor: style?.container?.background?.color || "#ffffff",
+          backgroundImage: style?.container?.background?.image || "",
+          paddingTop: style?.container?.padding?.top || style?.container?.paddingTop || 0,
+          paddingRight: style?.container?.padding?.right || style?.container?.paddingRight || 0,
+          paddingBottom: style?.container?.padding?.bottom || style?.container?.paddingBottom || 0,
+          paddingLeft: style?.container?.padding?.left || style?.container?.paddingLeft || 0,
+        };
+        
+        return (
+          <div style={containerStyle}>
+            <ImageSliderPreview data={adaptedData} />
+          </div>
+        );
+      }
+
+      case "quota-info": {
+        // ✅ SAMA PERSIS dengan renderPreview di addProducts3
+        const quotaData = content || {};
+        
+        return (
+          <div style={containerStyle}>
+            <QuotaInfoPreview data={quotaData} />
+          </div>
+        );
+      }
+
+      case "section": {
+        // ✅ SAMA PERSIS dengan renderPreview di addProducts3
+        const sectionData = content || {};
+        const sectionComponentId = config?.componentId || sectionData.componentId || `section-${block.order || 'default'}`;
+        const sectionChildren = sectionData.children || config?.children || [];
+        
+        // Build section styles from advance settings
+        const sectionStyles = {
+          marginRight: `${style?.container?.margin?.right || style?.container?.marginRight || sectionData.marginRight || 0}px`,
+          marginLeft: `${style?.container?.margin?.left || style?.container?.marginLeft || sectionData.marginLeft || 0}px`,
+          marginBottom: `${style?.container?.margin?.bottom || style?.container?.marginBottom || sectionData.marginBetween || 16}px`,
+          border: style?.container?.border?.width ? `${style.container.border.width}px ${style.container.border.style || 'solid'} ${style.container.border.color || "#000000"}` : (sectionData.border ? `${sectionData.border}px solid ${sectionData.borderColor || "#000000"}` : "none"),
+          backgroundColor: style?.container?.background?.color || style?.container?.backgroundColor || sectionData.backgroundColor || "#ffffff",
+          borderRadius: style?.container?.border?.radius || (sectionData.borderRadius === "none" ? "0" : sectionData.borderRadius || "0"),
+          boxShadow: style?.container?.shadow || (sectionData.boxShadow === "none" ? "none" : sectionData.boxShadow || "none"),
+          display: "block",
+          width: "100%",
+          padding: style?.container?.padding ? `${style.container.padding.top || 0}px ${style.container.padding.right || 0}px ${style.container.padding.bottom || 0}px ${style.container.padding.left || 0}px` : (sectionData.padding || "16px"),
+        };
+        
+        // Find child blocks by both parentId and children array (sama dengan addProducts3)
+        const sectionChildBlocks = allBlocks.filter(b => {
+          if (!b || !b.type) return false;
+          // Check by parentId (from config.parentId)
+          if (b.config?.parentId === sectionComponentId) return true;
+          // Check by children array (using componentId or order)
+          const childId = b.config?.componentId || b.order;
+          return sectionChildren.includes(childId);
+        });
+        
+        return (
+          <div className="preview-section" style={{...containerStyle, ...sectionStyles}}>
+            {sectionChildBlocks.length === 0 ? (
+              <div className="preview-placeholder">Section kosong - tambahkan komponen</div>
+            ) : (
+              sectionChildBlocks.map((childBlock) => {
+                const childComponentId = childBlock.config?.componentId;
+                const childUniqueKey = childComponentId || `section-child-${childBlock.type}-${childBlock.order || 'default'}`;
+                
+                return (
+                  <div key={childUniqueKey} className="preview-section-child">
+                    {renderBlock(childBlock, allBlocks)}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        );
+      }
+
       default:
         return (
-          <div className="preview-placeholder">{type}</div>
+          <div className="preview-placeholder" style={containerStyle}>{type}</div>
         );
     }
   };
@@ -1504,7 +1631,7 @@ export default function ProductPage() {
                   
                   return (
                     <div key={fallbackKey} className="canvas-preview-block">
-                      {renderBlock(block)}
+                      {renderBlock(block, blocks)}
                     </div>
                   );
                 }
@@ -1512,7 +1639,7 @@ export default function ProductPage() {
                 // ✅ Key dari componentId (unik dan permanen)
                 return (
                   <div key={componentId} className="canvas-preview-block">
-                    {renderBlock(block)}
+                    {renderBlock(block, blocks)}
                   </div>
                 );
               })
