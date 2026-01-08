@@ -721,7 +721,8 @@ export default function AddProducts3Page() {
         url: url
       }));
     } else if (key === "kode") {
-      // Auto-format kode: spasi jadi dash, lowercase, hapus karakter khusus
+      // Auto-format kode secara real-time: spasi jadi dash, lowercase, hapus karakter khusus
+      // Format langsung saat user mengetik
       const formattedKode = generateKode(value);
       const url = formattedKode ? `/${formattedKode}` : "";
       setPengaturanForm((prev) => ({ 
@@ -878,11 +879,15 @@ export default function AddProducts3Page() {
                     <InputText
                       className="pengaturan-input"
                       value={pengaturanForm.kode || ""}
-                      onChange={(e) => handlePengaturanChange("kode", e.target.value)}
+                      onChange={(e) => {
+                        // Format real-time saat mengetik: spasi jadi dash, auto lowercase
+                        const inputValue = e.target.value;
+                        handlePengaturanChange("kode", inputValue);
+                      }}
                       placeholder="seminar-as-bandung"
                     />
                     <small className="pengaturan-hint">
-                      Kode otomatis di-generate dari nama produk. Spasi akan otomatis menjadi dash (-) dan huruf menjadi kecil.
+                      Spasi otomatis menjadi dash (-) dan huruf menjadi kecil saat mengetik. URL akan otomatis mengikuti.
                     </small>
                   </div>
 
