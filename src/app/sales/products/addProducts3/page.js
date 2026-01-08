@@ -1850,12 +1850,6 @@ export default function AddProducts3Page() {
       kode: formattedValue,
       url
     }));
-  
-    requestAnimationFrame(() => {
-      if (document.activeElement === input) {
-        input.setSelectionRange(newCursorPos, newCursorPos);
-      }
-    });
   };
   
 
