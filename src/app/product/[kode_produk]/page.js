@@ -1185,9 +1185,11 @@ export default function ProductPage() {
     );
   }
 
-  // Parse blocks dari landingpage array
+  // ✅ ABAIKAN ORDER DARI BACKEND
+  // ✅ PAKAI URUTAN ARRAY SAJA: Backend sudah kirim urutan → itu sumber kebenaran
   // Filter: ambil semua item yang bukan settings (type !== 'settings')
-  const rawBlocks = landingpage && Array.isArray(landingpage) 
+  // Urutan array dari backend adalah sumber kebenaran, tidak perlu sorting
+  const blocks = landingpage && Array.isArray(landingpage) 
     ? landingpage.filter((item) => {
         // Pastikan item valid dan bukan settings
         if (!item || !item.type) return false;
@@ -1195,69 +1197,18 @@ export default function ProductPage() {
         return true;
       })
     : [];
-
-  // ✅ NORMALISASI ORDER: Deterministik, tidak ada Infinity, tidak ada tabrakan
-  // Setiap block mendapat __order yang unik dan valid
-  const normalizedBlocks = rawBlocks.map((block, originalIndex) => {
-    // Extract order value - convert to number
-    let normalizedOrder;
-    
-    const order = block.order;
-    
-    // Try to convert to number
-    if (typeof order === 'number' && Number.isFinite(order)) {
-      normalizedOrder = order;
-    } else if (typeof order === 'string') {
-      const trimmed = order.trim();
-      if (trimmed !== '') {
-        const parsed = Number(trimmed);
-        normalizedOrder = Number.isFinite(parsed) ? parsed : null;
-      } else {
-        normalizedOrder = null;
-      }
-    } else {
-      normalizedOrder = null;
-    }
-    
-    // Jika order tidak valid, gunakan offset besar + originalIndex untuk deterministik
-    // Ini memastikan blocks tanpa order tetap punya urutan yang konsisten
-    const finalOrder = normalizedOrder !== null 
-      ? normalizedOrder 
-      : 9999 + originalIndex;
-    
-    return {
-      ...block,
-      __order: finalOrder,
-      __originalIndex: originalIndex, // Untuk tie-breaker jika order sama
-    };
-  });
-
-  // ✅ SORT: Urutkan berdasarkan __order, jika sama gunakan __originalIndex
-  const sortedBlocks = [...normalizedBlocks].sort((a, b) => {
-    const diff = a.__order - b.__order;
-    
-    // Jika order sama, gunakan originalIndex untuk deterministik
-    if (diff === 0) {
-      return a.__originalIndex - b.__originalIndex;
-    }
-    
-    return diff;
-  });
   
-  // Debug logging untuk memastikan urutan benar
-  if (rawBlocks.length > 0) {
-    console.log('[PRODUCT] Total blocks:', rawBlocks.length);
-    console.log('[PRODUCT] Normalized blocks:', sortedBlocks.map((b, idx) => ({ 
-      renderIndex: idx,
+  // Debug logging
+  if (blocks.length > 0) {
+    console.log('[PRODUCT] Total blocks:', blocks.length);
+    console.log('[PRODUCT] Blocks (urutan array dari backend):', blocks.map((b, idx) => ({ 
+      arrayIndex: idx,
       type: b.type, 
-      originalOrder: b.order,
-      normalizedOrder: b.__order,
-      componentId: b.config?.componentId || 'MISSING',
-      originalIndex: b.__originalIndex
+      componentId: b.config?.componentId || 'MISSING'
     })));
     
     // Warning jika ada componentId yang missing
-    const missingComponentIds = sortedBlocks.filter(b => !b.config?.componentId);
+    const missingComponentIds = blocks.filter(b => !b.config?.componentId);
     if (missingComponentIds.length > 0) {
       console.warn('[PRODUCT] ⚠️ Blocks tanpa componentId:', missingComponentIds.length);
       console.warn('[PRODUCT] Ini bisa menyebabkan React key collision!');
@@ -1285,22 +1236,21 @@ export default function ProductPage() {
 
           {/* Content Area - Center dengan padding */}
           <div className="canvas-content-area">
-            {/* Render Blocks dari landingpage - sudah diurutkan berdasarkan order */}
-            {sortedBlocks.length > 0 ? (
-              sortedBlocks.map((block) => {
+            {/* ✅ Render Blocks sesuai urutan array dari backend (sumber kebenaran) */}
+            {blocks.length > 0 ? (
+              blocks.map((block, index) => {
                 // ✅ KEY HARUS DARI componentId (WAJIB dari backend)
                 // Jika componentId tidak ada, ini adalah bug backend/builder, bukan frontend
-                // Fallback: gunakan kombinasi yang deterministik berdasarkan data block
+                // Fallback: gunakan kombinasi yang deterministik berdasarkan array index
                 const componentId = block.config?.componentId;
                 
                 if (!componentId) {
                   // ⚠️ WARNING: componentId missing - ini seharusnya tidak terjadi
-                  // Fallback menggunakan kombinasi yang deterministik
-                  const fallbackKey = `block-${block.type}-${block.__order}-${block.__originalIndex}`;
+                  // Fallback menggunakan array index (deterministik karena urutan array tidak berubah)
+                  const fallbackKey = `block-${block.type}-${index}`;
                   console.warn(`[PRODUCT] ⚠️ Block tanpa componentId, menggunakan fallback key: ${fallbackKey}`, {
                     type: block.type,
-                    order: block.order,
-                    normalizedOrder: block.__order
+                    arrayIndex: index
                   });
                   
                   return (
