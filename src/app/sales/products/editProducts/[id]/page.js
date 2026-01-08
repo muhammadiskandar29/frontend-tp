@@ -1,932 +1,2043 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { toast } from "react-hot-toast";
+import { 
+  Type, Image as ImageIcon, FileText, List, MessageSquare, 
+  HelpCircle, Youtube, X, ArrowLeft, ChevronDown, Layout,
+  CheckCircle2, Circle, Minus, ArrowRight, ArrowRightCircle,
+  ArrowLeft as ArrowLeftIcon, ArrowLeftRight, ChevronRight, CheckSquare, ShieldCheck,
+  Lock, Dot, Target, Link as LinkIcon, PlusCircle, MinusCircle,
+  Check, Star, Heart, ThumbsUp, Award, Zap, Flame, Sparkles,
+  ArrowUp, ArrowDown, ArrowUpCircle, ArrowDownCircle, PlayCircle,
+  PauseCircle, StopCircle, Radio, Square, Hexagon, Triangle,
+  AlertCircle, Info, HelpCircle as HelpCircleIcon, Ban, Shield, Key, Unlock,
+  Clock, Users, Tag, Upload, Globe, Share2, Code, MapPin, Calendar as CalendarIcon
+} from "lucide-react";
 import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
-import { InputNumber } from "primereact/inputnumber";
-import { Calendar } from "primereact/calendar";
-import { Dropdown } from "primereact/dropdown";
 import { InputSwitch } from "primereact/inputswitch";
-import { Button } from "primereact/button";
-import LandingTemplate from "@/components/LandingTemplate";
+import { Dropdown } from "primereact/dropdown";
+import { Calendar } from "primereact/calendar";
+import { InputNumber } from "primereact/inputnumber";
 import { MultiSelect } from "primereact/multiselect";
-import { ArrowLeft } from "lucide-react";
-import "@/styles/sales/add-products.css";
+import { Chips } from "primereact/chips";
+import OngkirCalculator from "@/components/OngkirCalculator";
+import { getProvinces, getCities, getDistricts } from "@/utils/shippingService";
+import {
+  TextComponent,
+  ImageComponent,
+  VideoComponent,
+  TestimoniComponent,
+  ListComponent,
+  FormComponent,
+  FAQComponent,
+  SectionComponent,
+  SliderComponent,
+  ButtonComponent,
+  EmbedComponent,
+  HTMLComponent,
+  DividerComponent,
+  ScrollTargetComponent,
+  AnimationComponent,
+  CountdownComponent,
+  ImageSliderComponent,
+  QuotaInfoComponent,
+} from '../../addProducts3/components';
+import CountdownPreview from '../../addProducts3/components/CountdownPreview';
+import ImageSliderPreview from '../../addProducts3/components/ImageSliderPreview';
+import QuotaInfoPreview from '../../addProducts3/components/QuotaInfoPreview';
+// PrimeReact Theme & Core
+import "primereact/resources/themes/lara-light-amber/theme.css";
+import "primereact/resources/primereact.min.css";
+import "@/styles/sales/add-products3.css";
+import "@/styles/ongkir.css";
 
-export default function Page() {
+// Komponen yang tersedia
+const COMPONENT_CATEGORIES = {
+  seringDigunakan: {
+    label: "Sering Digunakan",
+    components: [
+      { id: "text", name: "Teks", icon: Type, color: "#6b7280" },
+      { id: "image", name: "Gambar", icon: ImageIcon, color: "#6b7280" },
+      { id: "youtube", name: "Video", icon: Youtube, color: "#6b7280" },
+      { id: "section", name: "Section", icon: Layout, color: "#6b7280" },
+    ]
+  },
+  formPemesanan: {
+    label: "Form Pemesanan Online",
+    components: [
+      { id: "form", name: "Form Pemesanan", icon: FileText, color: "#6b7280" },
+      { id: "list", name: "Daftar", icon: List, color: "#6b7280" },
+      { id: "testimoni", name: "Testimoni", icon: MessageSquare, color: "#6b7280" },
+      { id: "faq", name: "FAQ", icon: HelpCircle, color: "#6b7280" },
+      { id: "countdown", name: "Countdown", icon: Clock, color: "#6b7280" },
+      { id: "image-slider", name: "Image Slider", icon: ImageIcon, color: "#6b7280" },
+      { id: "quota-info", name: "Info Kuota", icon: Users, color: "#6b7280" },
+    ]
+  }
+};
+
+export default function EditProductsPage() {
   const router = useRouter();
   const params = useParams();
   const productId = params?.id;
-
-  // ============================
-  // SLUGIFY - Generate kode dari nama
-  // ============================
-  const generateKode = (text) => {
-    return (text || "")
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-");
-  };
-
-
-  // ============================
-  // FORMAT TANGGAL KE BACKEND
-  // ============================
-  const formatDateForBackend = (date) => {
-    if (!date) return "";
-    const d = new Date(date);
-    const pad = (v) => (v < 10 ? `0${v}` : v);
-    const year = d.getFullYear();
-    const month = pad(d.getMonth() + 1);
-    const day = pad(d.getDate());
-    const hours = pad(d.getHours());
-    const minutes = pad(d.getMinutes());
-    const seconds = pad(d.getSeconds());
-    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-  };
-
-  // ============================
-  // DEFAULT FORM
-  // ============================
-  const defaultForm = {
-    id: null,
-    kategori: null, // Integer, bukan array
-    user_input: [],
+  const [showComponentModal, setShowComponentModal] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [blocks, setBlocks] = useState([]);
+  // Default expanded untuk semua komponen - gunakan Set untuk track collapsed blocks
+  const [collapsedBlockIds, setCollapsedBlockIds] = useState(new Set());
+  const [testimoniIndices, setTestimoniIndices] = useState({});
+  const [productKategori, setProductKategori] = useState(null); // Untuk menentukan kategori produk
+  const [activeTab, setActiveTab] = useState("konten"); // State untuk tab aktif
+  const [selectedBundling, setSelectedBundling] = useState(null); // State untuk bundling yang dipilih
+  
+  // State untuk form wilayah (produk non-fisik) - HANYA NAMA, BUKAN ID
+  const [regionForm, setRegionForm] = useState({
+    provinsi: "", // Nama provinsi (string)
+    kabupaten: "", // Nama kabupaten/kota (string)
+    kecamatan: "", // Nama kecamatan (string)
+    kode_pos: "" // Kode pos (string)
+  });
+  
+  // State untuk cascading dropdown (internal - untuk fetch)
+  const [regionData, setRegionData] = useState({
+    provinces: [],
+    cities: [],
+    districts: []
+  });
+  
+  // State untuk selected IDs (internal - hanya untuk fetch, tidak disimpan)
+  const [selectedRegionIds, setSelectedRegionIds] = useState({
+    provinceId: "",
+    cityId: "",
+    districtId: ""
+  });
+  
+  // Loading states
+  const [loadingRegion, setLoadingRegion] = useState({
+    provinces: false,
+    cities: false,
+    districts: false
+  });
+  
+  // State untuk form pengaturan
+  const [pengaturanForm, setPengaturanForm] = useState({
     nama: "",
-    url: "",
+    kategori: null,
     kode: "",
-    header: { type: "file", value: null },
-    harga_coret: "",
-    harga_asli: "",
-    deskripsi: "",
-    tanggal_event: "",
-    gambar: [], // [{ path: {type:'file', value:File}, caption }]
-    landingpage: "1", // 1 = non-fisik, 2 = fisik
-    status: 1,
+    url: "",
+    harga: null,
+    jenis_produk: "fisik", // "fisik" atau "non-fisik"
+    isBundling: false,
+    bundling: [], // Array of { nama: string, harga: number }
+    tanggal_event: null,
     assign: [],
-    custom_field: [],
-    list_point: [],
-    testimoni: [],
-    fb_pixel: [],
-    event_fb_pixel: [],
-    gtm: [],
-    video: "",
-  };
-
-  const [form, setForm] = useState(defaultForm);
-  const [loading, setLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState("");
-
-  // ============================
-  // HANDLER INPUT
-  // ============================
-  const handleChange = (key, value) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const updateArrayItem = (key, i, field, value) => {
-    const arr = [...form[key]];
-    if (field) arr[i][field] = value;
-    else arr[i] = value;
-    setForm((p) => ({ ...p, [key]: arr }));
-  };
-
-  const addArray = (key, value) => {
-    setForm((p) => ({ ...p, [key]: [...p[key], value] }));
-  };
-
-  const removeArray = (key, index) => {
-    const arr = [...form[key]];
-    arr.splice(index, 1);
-    setForm((p) => ({ ...p, [key]: arr }));
-  };
-
-  // ============================
-  // HELPER: Build Image URL via Proxy
-  // ============================
-  const buildImageUrl = (path) => {
-    if (!path) return "";
-    if (typeof path !== "string") return "";
-    // Jika sudah URL lengkap (http/https), return langsung
-    if (path.startsWith("http://") || path.startsWith("https://")) return path;
-    // Jika blob URL (untuk preview file baru)
-    if (path.startsWith("blob:")) return path;
-    // Gunakan proxy untuk path dari backend
-    let cleanPath = path.replace(/^storage\//, "").replace(/^\//, "");
-    return `/api/image?path=${encodeURIComponent(cleanPath)}`;
-  };
-
-  // ============================
-  // DELETE: Hapus Gambar Gallery via API
-  // ============================
-  const deleteGalleryImage = async (index) => {
-    if (!productId) return;
-    
-    const confirmed = window.confirm(`Hapus gambar ke-${index + 1} dari server?`);
-    if (!confirmed) return;
-
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`/api/sales/produk/${productId}/gambar/${index}`, {
-        method: "DELETE",
-        headers: {
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await res.json();
-      
-      if (!res.ok || !data.success) {
-        alert(data.message || "Gagal menghapus gambar");
-        return;
-      }
-
-      alert("Gambar berhasil dihapus");
-      // Refresh data produk
-      await fetchProductData(false);
-    } catch (error) {
-      console.error("Delete gallery error:", error);
-      alert("Terjadi kesalahan saat menghapus gambar");
-    }
-  };
-
-  // ============================
-  // DELETE: Hapus Testimoni via API
-  // ============================
-  const deleteTestimoni = async (index) => {
-    if (!productId) return;
-    
-    const confirmed = window.confirm(`Hapus testimoni ke-${index + 1} dari server?`);
-    if (!confirmed) return;
-
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`/api/sales/produk/${productId}/testimoni/${index}`, {
-        method: "DELETE",
-        headers: {
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await res.json();
-      
-      if (!res.ok || !data.success) {
-        alert(data.message || "Gagal menghapus testimoni");
-        return;
-      }
-
-      alert("Testimoni berhasil dihapus");
-      // Refresh data produk
-      await fetchProductData(false);
-    } catch (error) {
-      console.error("Delete testimoni error:", error);
-      alert("Terjadi kesalahan saat menghapus testimoni");
-    }
-  };
-
-  // ============================
-  // DELETE: Hapus Data Produk
-  // ============================
-  const deleteProduct = async () => {
-    if (!productId) {
-      alert("Product ID tidak ditemukan!");
-      return;
-    }
-
-    const confirmed = window.confirm(
-      "Apakah Anda yakin ingin menghapus produk ini? Tindakan ini tidak dapat dibatalkan."
-    );
-    if (!confirmed) return;
-
-    try {
-      setIsSubmitting(true);
-      setSubmitStatus("Menghapus produk...");
-
-      const token = localStorage.getItem("token");
-      const res = await fetch(`/api/sales/produk/${productId}`, {
-        method: "DELETE",
-        headers: {
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        alert(data.message || "Gagal menghapus produk");
-        setIsSubmitting(false);
-        setSubmitStatus("");
-        return;
-      }
-
-      alert("Produk berhasil dihapus");
-      // Redirect ke halaman products
-      router.push("/sales/products");
-    } catch (error) {
-      console.error("Delete product error:", error);
-      alert("Terjadi kesalahan saat menghapus produk");
-      setIsSubmitting(false);
-      setSubmitStatus("");
-    }
-  };
-
-  // ============================
-  // COMPRESS IMAGE BEFORE UPLOAD
-  // Sama seperti addProducts/page.js
-  // ============================
-  const compressImage = (file, maxWidth = 1600, maxHeight = 1600, quality = 0.75) => {
-    return new Promise((resolve, reject) => {
-      if (!file || !file.type.startsWith('image/')) {
-        resolve(file);
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          let width = img.width;
-          let height = img.height;
-
-          // Calculate new dimensions
-          if (width > maxWidth || height > maxHeight) {
-            if (width > height) {
-              height = Math.round((height * maxWidth) / width);
-              width = maxWidth;
-            } else {
-              width = Math.round((width * maxHeight) / height);
-              height = maxHeight;
-            }
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-    
-          // Convert to blob with compression
-          canvas.toBlob(
-            (blob) => {
-              if (blob) {
-                // Create new File object with compressed data
-                const compressedFile = new File([blob], file.name, {
-                  type: 'image/jpeg',
-                  lastModified: Date.now()
-                });
-                resolve(compressedFile);
-              } else {
-                resolve(file);
-              }
-            },
-            'image/jpeg',
-            quality
-          );
-        };
-        img.onerror = () => resolve(file);
-        img.src = e.target.result;
-      };
-      reader.onerror = () => resolve(file);
-      reader.readAsDataURL(file);
-    });
-  };
-
-  // ============================
-  // BUILD PRODUCT FORMDATA
-  // Sama persis dengan addProducts/page.js
-  // Sesuai dokumentasi Postman: multipart/form-data dengan file langsung
-  // Array fields sebagai JSON string
-  // ============================
-  async function buildProductFormData(form, kategoriId, normalizedAssign, onProgress = null) {
-    // ============================
-    // AMBIL DATA ORIGINAL DARI LOCALSTORAGE SEBAGAI FALLBACK
-    // ============================
-    let originalData = null;
-    try {
-      const stored = localStorage.getItem(`product_original_data_${productId}`);
-      if (stored) {
-        originalData = JSON.parse(stored);
-        console.log("[FORMDATA] ✅ Original data loaded from localStorage:", {
-          productId: productId,
-          fields: Object.keys(originalData)
-        });
-      }
-    } catch (error) {
-      console.error("[FORMDATA] ❌ Failed to load original data from localStorage:", error);
-    }
-    
-    // Helper: gunakan nilai dari form jika ada, jika tidak gunakan original data
-    const getValue = (key, defaultValue = "") => {
-      const formValue = form[key];
-      if (formValue !== null && formValue !== undefined && formValue !== "") {
-        return formValue;
-      }
-      if (originalData && originalData[key] !== null && originalData[key] !== undefined) {
-        return originalData[key];
-      }
-      return defaultValue;
-    };
-    
-    // SELALU generate kode dari nama (auto generate dengan dash)
-    const kode = generateKode(form.nama) || getValue("kode") || "produk-baru";
-    
-    const formData = new FormData();
-    
-    // ============================
-    // 0. _method: "PUT" - WAJIB UNTUK LARAVEL FORMDATA PUT REQUEST
-    // ============================
-    formData.append("_method", "PUT");
-    
-    // ============================
-    // 1. BASIC FIELDS - SELALU KIRIM, GUNAKAN ORIGINAL DATA SEBAGAI FALLBACK
-    // ============================
-    formData.append("kategori", String(kategoriId || getValue("kategori") || ""));
-    formData.append("nama", form.nama || getValue("nama") || "");
-    formData.append("kode", kode);
-    formData.append("url", "/" + kode);
-    formData.append("deskripsi", form.deskripsi || getValue("deskripsi") || "");
-    formData.append("harga_asli", String(form.harga_asli || getValue("harga_asli") || 0));
-    formData.append("harga_coret", String(form.harga_coret || getValue("harga_coret") || 0));
-    
-    // Tanggal event: gunakan dari form jika ada, jika tidak dari original data
-    const tanggalEvent = form.tanggal_event 
-      ? formatDateForBackend(form.tanggal_event) 
-      : (originalData?.tanggal_event || "");
-    formData.append("tanggal_event", tanggalEvent);
-    
-    formData.append("landingpage", String(form.landingpage || getValue("landingpage") || "1"));
-    formData.append("status", String(form.status || getValue("status") || "1"));
-    
-    console.log("[FORMDATA] Basic fields:", {
-      kategori: kategoriId,
-      nama: form.nama,
-      kode: kode,
-      url: "/" + kode
-    });
-    
-    // ============================
-    // 2. HEADER IMAGE - File langsung (jika ada file baru)
-    // Jika tidak ada file baru, jangan kirim field header (backend akan keep existing)
-    // ============================
-    if (form.header?.type === "file" && form.header.value) {
-      if (onProgress) {
-        onProgress("Mengompresi header image...");
-      }
-      const compressedHeader = await compressImage(form.header.value);
-      formData.append("header", compressedHeader);
-    }
-    // Jika header existing (type === "url"), tidak perlu append
-    // Backend akan keep existing header jika field header tidak dikirim
-    
-    // ============================
-    // 3. GAMBAR GALLERY - File langsung
-    // Format: gambar[0][file], gambar[0][caption], gambar[1][file], gambar[1][caption]
-    // SELALU kirim caption untuk semua gambar yang ada (dari form atau original data)
-    // ============================
-    // Gunakan form.gambar jika ada, jika tidak gunakan original data
-    const gambarFromForm = form.gambar || [];
-    const gambarFromOriginal = originalData?.gambar || [];
-    // Ambil yang lebih banyak untuk memastikan semua gambar dikirim
-    const maxGambarLength = Math.max(gambarFromForm.length, gambarFromOriginal.length);
-    
-    const gambarFiles = gambarFromForm.filter(g => g.path && g.path.type === "file" && g.path.value);
-    if (onProgress && gambarFiles.length > 0) {
-      onProgress(`Mengompresi ${gambarFiles.length} gambar...`);
-    }
-    
-    for (let i = 0; i < maxGambarLength; i++) {
-      const g = gambarFromForm[i];
-      const origG = gambarFromOriginal[i];
-      
-      // Jika ada file baru, kirim file
-      if (g && g.path && g.path.type === "file" && g.path.value) {
-        if (onProgress) {
-          onProgress(`Mengompresi gambar ${i + 1}/${gambarFiles.length}...`);
-        }
-        const compressedGambar = await compressImage(g.path.value);
-        formData.append(`gambar[${i}][file]`, compressedGambar);
-        formData.append(`gambar[${i}][caption]`, g.caption || "");
-      } else {
-        // Tidak ada file baru, tapi tetap kirim caption (dari form atau original)
-        const caption = g?.caption || origG?.caption || "";
-        formData.append(`gambar[${i}][caption]`, caption);
-      }
-    }
-    
-    // ============================
-    // 4. TESTIMONI - File langsung
-    // Format: testimoni[0][gambar], testimoni[0][nama], testimoni[0][deskripsi]
-    // SELALU kirim semua testimoni yang ada (dari form atau original data)
-    // ============================
-    const testimoniFromForm = form.testimoni || [];
-    const testimoniFromOriginal = originalData?.testimoni || [];
-    // Ambil yang lebih banyak untuk memastikan semua testimoni dikirim
-    const maxTestimoniLength = Math.max(testimoniFromForm.length, testimoniFromOriginal.length);
-    
-    const testimoniFiles = testimoniFromForm.filter(t => t.gambar && t.gambar.type === "file" && t.gambar.value);
-    if (onProgress && testimoniFiles.length > 0) {
-      onProgress(`Mengompresi ${testimoniFiles.length} testimoni...`);
-    }
-    
-    for (let i = 0; i < maxTestimoniLength; i++) {
-      const t = testimoniFromForm[i];
-      const origT = testimoniFromOriginal[i];
-      
-      // Jika ada file baru, kirim file
-      if (t && t.gambar && t.gambar.type === "file" && t.gambar.value) {
-        if (onProgress) {
-          onProgress(`Mengompresi testimoni ${i + 1}/${testimoniFiles.length}...`);
-        }
-        const compressedTestimoni = await compressImage(t.gambar.value);
-        formData.append(`testimoni[${i}][gambar]`, compressedTestimoni);
-      }
-      
-      // Selalu kirim nama dan deskripsi (dari form atau original data)
-      const nama = t?.nama || origT?.nama || "";
-      const deskripsi = t?.deskripsi || origT?.deskripsi || "";
-      formData.append(`testimoni[${i}][nama]`, nama);
-      formData.append(`testimoni[${i}][deskripsi]`, deskripsi);
-    }
-    
-    // ============================
-    // 5. ARRAY FIELDS - Sebagai JSON string (sesuai Postman)
-    // Gunakan original data sebagai fallback jika form field kosong
-    // ============================
-    // custom_field - JSON string
-    const customFieldArray = (form.custom_field && form.custom_field.length > 0)
-      ? form.custom_field.map((f, idx) => ({
-          nama_field: f.label || f.key || "",
-          urutan: idx + 1,
-        }))
-      : (originalData?.custom_field || []).map((f, idx) => ({
-          nama_field: f.nama_field || f.label || "",
-          urutan: idx + 1,
-        }));
-    formData.append("custom_field", JSON.stringify(customFieldArray));
-    
-    // list_point - JSON string
-    const listPointArray = (form.list_point && form.list_point.length > 0)
-      ? form.list_point.map((p, idx) => ({
-          nama: p.nama || "",
-          urutan: idx + 1,
-        }))
-      : (originalData?.list_point || []).map((p, idx) => ({
-          nama: typeof p === "string" ? p : (p.nama || ""),
-          urutan: idx + 1,
-        }));
-    formData.append("list_point", JSON.stringify(listPointArray));
-    
-    // assign - JSON string (array of numbers)
-    const assignArray = (normalizedAssign && normalizedAssign.length > 0)
-      ? normalizedAssign
-      : (originalData?.assign || []);
-    formData.append("assign", JSON.stringify(assignArray));
-    
-    // fb_pixel - JSON string (array of numbers)
-    const fbPixelArray = (form.fb_pixel && form.fb_pixel.length > 0)
-      ? form.fb_pixel.map(v => Number(v)).filter(n => !Number.isNaN(n))
-      : (originalData?.fb_pixel || []).map(v => Number(v)).filter(n => !Number.isNaN(n));
-    formData.append("fb_pixel", JSON.stringify(fbPixelArray));
-    
-    // event_fb_pixel - JSON string
-    const eventFbPixelArray = (form.event_fb_pixel && form.event_fb_pixel.length > 0)
-      ? form.event_fb_pixel.map((ev) => ({ 
-          event: ev || "" 
-        }))
-      : (originalData?.event_fb_pixel || []).map((ev) => ({
-          event: typeof ev === "string" ? ev : (ev.event || "")
-        }));
-    formData.append("event_fb_pixel", JSON.stringify(eventFbPixelArray));
-    
-    // gtm - JSON string (array of numbers)
-    const gtmArray = (form.gtm && form.gtm.length > 0)
-      ? form.gtm.map(v => Number(v)).filter(n => !Number.isNaN(n))
-      : (originalData?.gtm || []).map(v => Number(v)).filter(n => !Number.isNaN(n));
-    formData.append("gtm", JSON.stringify(gtmArray));
-    
-    // video - JSON string (array of strings)
-    let videoArray = [];
-    if (form.video) {
-      videoArray = form.video.split(",").map((v) => v.trim()).filter((v) => v);
-    } else if (originalData?.video && originalData.video.length > 0) {
-      videoArray = originalData.video;
-    }
-    
-    // Pastikan video selalu dikirim, bahkan jika kosong (untuk clear video)
-    const videoJsonString = JSON.stringify(videoArray);
-    formData.append("video", videoJsonString);
-    
-    console.log("[FORMDATA] Video field:", {
-      form_video: form.video,
-      videoArray: videoArray,
-      videoJsonString: videoJsonString,
-      videoCount: videoArray.length
-    });
-    
-    // Log semua array fields untuk debugging
-    console.log("[FORMDATA] Array fields:", {
-      assign: normalizedAssign,
-      list_point: listPointArray,
-      custom_field: customFieldArray,
-      event_fb_pixel: eventFbPixelArray,
-      fb_pixel: fbPixelArray,
-      gtm: gtmArray,
-      video: videoArray,
-    });
-    
-    return formData;
-  }
-
-  // ============================
-  // SUBMIT - POST ke /api/admin/produk/{id}
-  // Sama persis dengan addProducts/page.js tapi endpoint berbeda
-  // ============================
-  const handleSubmit = async () => {
-    if (isSubmitting) return;
-    setIsSubmitting(true);
-
-    try {
-      if (!productId) {
-        alert("Product ID tidak ditemukan!");
-        setIsSubmitting(false);
-        return;
-      }
-
-      // 1) kategori validation - ambil ID dari kategori yang dipilih
-      console.log("[VALIDATION] ========== KATEGORI VALIDATION ==========");
-      console.log("form.kategori raw:", form.kategori);
-      console.log("form.kategori type:", typeof form.kategori);
-      
-      let kategoriId = null;
-      if (form.kategori !== null && form.kategori !== undefined && form.kategori !== "") {
-        // form.kategori adalah string ID dari dropdown (contoh: "7")
-        kategoriId = Number(form.kategori);
-        console.log("Kategori ID parsed:", kategoriId);
-      }
-      
-      console.log("[VALIDATION] Kategori check:", {
-        formKategori: form.kategori,
-        kategoriId: kategoriId,
-        type: typeof form.kategori,
-        isValid: !Number.isNaN(kategoriId) && kategoriId > 0
-      });
-      console.log("[VALIDATION] ========================================");
-      
-      if (!kategoriId || Number.isNaN(kategoriId) || kategoriId <= 0) {
-        console.error("[VALIDATION] KATEGORI INVALID!");
-        alert("Kategori wajib dipilih!");
-        setIsSubmitting(false);
-        return;
-      }
-      
-      console.log("[VALIDATION] Kategori valid:", kategoriId);
-
-      // 2) assign normalization
-      const normalizedAssign = Array.isArray(form.assign)
-        ? form.assign.map(a => Number(a)).filter(n => !Number.isNaN(n) && n > 0)
-        : [];
-      if (normalizedAssign.length === 0) {
-        alert("Pilih minimal 1 penanggung jawab (assign).");
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Build FormData dengan progress indicator (sama seperti addProducts)
-      setSubmitStatus("Mempersiapkan data...");
-      const formData = await buildProductFormData(
-        form, 
-        kategoriId, 
-        normalizedAssign,
-        (message) => setSubmitStatus(message)
-      );
-
-      // DEBUG: Log FormData untuk tracking (detail)
-      console.log("[FORMDATA] ========== DETAIL FORMDATA ==========");
-      const formDataEntries = [];
-      const formDataJSON = {};
-      
-      for (const [key, value] of formData.entries()) {
-        if (value instanceof File) {
-          formDataEntries.push({ key, type: "File", name: value.name, size: `${(value.size / 1024).toFixed(2)} KB` });
-          formDataJSON[key] = {
-            type: "File",
-            name: value.name,
-            size: `${(value.size / 1024).toFixed(2)} KB`,
-            sizeBytes: value.size,
-            mimeType: value.type
-          };
-          console.log(`  ${key}: [File] ${value.name} (${(value.size / 1024).toFixed(2)} KB)`);
-        } else {
-          const str = String(value);
-          formDataEntries.push({ key, type: "String", value: str.length > 200 ? str.substring(0, 200) + "..." : str });
-          
-          // Try to parse JSON strings for better readability
-          let displayValue = str;
-          try {
-            const parsed = JSON.parse(str);
-            formDataJSON[key] = parsed;
-            displayValue = Array.isArray(parsed) 
-              ? `[Array(${parsed.length})] ${JSON.stringify(parsed).substring(0, 200)}...`
-              : typeof parsed === "object"
-              ? `[Object] ${JSON.stringify(parsed).substring(0, 200)}...`
-              : parsed;
-          } catch {
-            formDataJSON[key] = str.length > 200 ? str.substring(0, 200) + "..." : str;
-          }
-          
-          console.log(`  ${key}: ${displayValue.length > 200 ? displayValue.substring(0, 200) + "..." : displayValue}`);
-        }
-      }
-      console.table(formDataEntries);
-      
-      // Tampilkan sebagai JSON yang readable
-      console.log("[FORMDATA] ========== FORMDATA AS JSON ==========");
-      console.log(JSON.stringify(formDataJSON, null, 2));
-      console.log("[FORMDATA] =====================================");
-      
-      // Verify critical fields
-      console.log("[FORMDATA] ========== CRITICAL FIELDS VERIFICATION ==========");
-      const kategoriInFormData = formData.get("kategori");
-      const namaInFormData = formData.get("nama");
-      const assignInFormData = formData.get("assign");
-      const headerInFormData = formData.get("header");
-      const videoInFormData = formData.get("video");
-      
-      // Parse video untuk verifikasi
-      let videoParsed = null;
-      if (videoInFormData) {
-        try {
-          videoParsed = JSON.parse(String(videoInFormData));
-        } catch (e) {
-          console.error("[FORMDATA] Video parse error:", e);
-        }
-      }
-      
-      console.log({
-        kategori: {
-          value: kategoriInFormData,
-          type: typeof kategoriInFormData,
-          exists: kategoriInFormData !== null,
-          isEmpty: kategoriInFormData === "" || kategoriInFormData === "null" || kategoriInFormData === "undefined"
-        },
-        nama: {
-          value: namaInFormData,
-          type: typeof namaInFormData,
-          exists: namaInFormData !== null,
-          isEmpty: !namaInFormData || namaInFormData === ""
-        },
-        assign: {
-          value: assignInFormData,
-          type: typeof assignInFormData,
-          parsed: assignInFormData ? JSON.parse(assignInFormData) : null
-        },
-        header: {
-          exists: headerInFormData !== null,
-          isFile: headerInFormData instanceof File,
-          name: headerInFormData instanceof File ? headerInFormData.name : null
-        },
-        video: {
-          value: videoInFormData,
-          type: typeof videoInFormData,
-          exists: videoInFormData !== null,
-          parsed: videoParsed,
-          isArray: Array.isArray(videoParsed),
-          count: Array.isArray(videoParsed) ? videoParsed.length : 0,
-          raw: String(videoInFormData)
-        }
-      });
-      
-      // Final check sebelum kirim (sama seperti addProducts, tapi header tidak wajib untuk edit)
-      if (!kategoriInFormData || kategoriInFormData === "" || kategoriInFormData === "null" || kategoriInFormData === "undefined") {
-        console.error("[FORMDATA] ❌ KATEGORI TIDAK ADA DI FORMDATA!");
-        throw new Error("Kategori tidak ditemukan di FormData. Pastikan kategori sudah dipilih.");
-      }
-      
-      if (!namaInFormData || namaInFormData === "") {
-        console.error("[FORMDATA] ❌ NAMA TIDAK ADA DI FORMDATA!");
-        throw new Error("Nama produk tidak ditemukan di FormData.");
-      }
-      
-      // Note: Header tidak wajib untuk edit (bisa menggunakan existing image)
-      // Tapi jika ada header file baru, pastikan sudah di-append
-      if (form.header?.type === "file" && form.header.value && !headerInFormData) {
-        console.warn("[FORMDATA] Header file baru tidak ditemukan di FormData, tapi ini OK untuk edit");
-      }
-      
-      console.log("[FORMDATA] All critical fields verified");
-      console.log("[FORMDATA] =================================================");
-
-      // ============================
-      // SIMPAN REQUEST DATA KE LOCALSTORAGE DULU
-      // ============================
-      console.log("[LOCALSTORAGE] ========== SAVING REQUEST DATA ==========");
-      const requestDataToSave = {
-        timestamp: new Date().toISOString(),
-        productId: productId,
-        formData: formDataJSON
-      };
-      
-      // Simpan ke localStorage
-      try {
-        localStorage.setItem("last_product_update_request", JSON.stringify(requestDataToSave, null, 2));
-        console.log("[LOCALSTORAGE] Request data saved to localStorage");
-        console.log("[LOCALSTORAGE] Key: 'last_product_update_request'");
-        console.log("[LOCALSTORAGE] Data preview:", {
-          timestamp: requestDataToSave.timestamp,
-          productId: requestDataToSave.productId,
-          fieldsCount: Object.keys(requestDataToSave.formData).length,
-          fields: Object.keys(requestDataToSave.formData)
-        });
-        console.log("[LOCALSTORAGE] Full data:", JSON.stringify(requestDataToSave, null, 2));
-      } catch (error) {
-        console.error("[LOCALSTORAGE] Failed to save to localStorage:", error);
-      }
-      console.log("[LOCALSTORAGE] ==========================================");
-
-      // FETCH dengan FormData (sama seperti addProducts, tapi endpoint berbeda)
-      setSubmitStatus("Mengirim data ke server...");
-      
-      // Log request untuk network tracking
-      console.log("[NETWORK] ========== REQUEST FORMDATA ==========");
-      console.log("URL:", `/api/sales/produk/${productId}`);
-      console.log("Method:", "POST (with _method=PUT in FormData)");
-      console.log("Content-Type:", "multipart/form-data (auto-set by browser)");
-      const token = localStorage.getItem("token") || "";
-      console.log("Headers:", {
-        "Accept": "application/json",
-        "Authorization": token ? `Bearer ${token.substring(0, 20)}...` : "MISSING"
-      });
-      console.log("FormData entries count:", formDataEntries.length);
-      
-      // Verify data sebelum kirim
-      console.log("[NETWORK] ========== PRE-SEND VERIFICATION ==========");
-      const preMethod = formData.get("_method");
-      const preKategori = formData.get("kategori");
-      const preNama = formData.get("nama");
-      const preAssign = formData.get("assign");
-      const preHeader = formData.get("header");
-      console.log("_method:", preMethod);
-      console.log("Kategori:", preKategori);
-      console.log("Nama:", preNama);
-      console.log("Assign:", preAssign);
-      console.log("Header:", preHeader instanceof File ? `File(${preHeader.name}, ${(preHeader.size / 1024).toFixed(2)} KB)` : "NULL");
-      console.log("[NETWORK] ===========================================");
-      console.log("[NETWORK] ======================================");
-      
-      const res = await fetch(`/api/sales/produk/${productId}`, {
-        method: "POST", // WAJIB POST untuk FormData, dengan _method=PUT di FormData
-        headers: {
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`
-          // Jangan set Content-Type, browser akan set otomatis dengan boundary untuk FormData
-        },
-        body: formData
-      });
-      
-      console.log("[NETWORK] ========== RESPONSE RECEIVED ==========");
-      console.log("Response status:", res.status);
-      console.log("Response statusText:", res.statusText);
-      console.log("Response headers:", Object.fromEntries(res.headers.entries()));
-      console.log("[NETWORK] =======================================");
-
-      const contentType = res.headers.get("content-type") || "";
-      let data;
-      if (contentType.includes("application/json")) {
-        data = await res.json();
-      } else {
-        const text = await res.text();
-        throw new Error("Non-JSON response: " + text.slice(0, 400));
-      }
-
-      if (!res.ok) {
-        console.error("[API ERROR] ========== DETAIL ERROR ==========");
-        console.error("Status:", res.status);
-        console.error("Response:", data);
-        console.error("Full error object:", JSON.stringify(data, null, 2));
-        
-        // Extract detailed error information
-        let errorDetails = "\n\nDetail Error:\n";
-        
-        if (data.errors && typeof data.errors === "object" && Object.keys(data.errors).length > 0) {
-          errorDetails += "Field yang error:\n";
-          for (const [field, messages] of Object.entries(data.errors)) {
-            const msgArray = Array.isArray(messages) ? messages : [messages];
-            errorDetails += `  ${field}: ${msgArray.join(", ")}\n`;
-          }
-        } else if (data.errorFields && data.errorFields.length > 0) {
-          errorDetails += `Field yang error: ${data.errorFields.join(", ")}\n`;
-        } else {
-          // Parse error dari message jika ada
-          const message = data.message || "";
-          const fieldMatches = message.match(/(\w+)\s+field\s+is\s+required/gi);
-          if (fieldMatches) {
-            errorDetails += "Field yang error (dari message):\n";
-            fieldMatches.forEach(match => {
-              const field = match.match(/(\w+)\s+field/i)?.[1];
-              if (field) {
-                errorDetails += `  ❌ ${field}: wajib diisi\n`;
-              }
-            });
-          }
-        }
-        
-        console.error(errorDetails);
-        
-        // Log debug info jika ada
-        if (data.debug) {
-          console.error("[API ERROR] Debug info:", data.debug);
-        }
-        
-        console.error("[API ERROR] ====================================");
-        
-        setSubmitStatus("");
-        const errorMessage = data.detailedMessage || data.message || "Gagal memperbarui produk";
-        
-        // Tampilkan alert dengan detail
-        alert(errorMessage);
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Handle success response sesuai format backend
-      console.log("[API SUCCESS] ========== RESPONSE DATA ==========");
-      console.log("[API SUCCESS] Full response:", JSON.stringify(data, null, 2));
-      console.log("[API SUCCESS] Response success:", data.success);
-      console.log("[API SUCCESS] Response message:", data.message);
-      console.log("[API SUCCESS] Response data:", data.data);
-      console.log("[API SUCCESS] ====================================");
-      
-      setSubmitStatus("");
-      
-      if (data.success) {
-        alert(data.message || "Produk berhasil diperbarui!");
-        // Refresh data produk untuk memastikan data ter-update
-        await fetchProductData(false);
-        router.push("/sales/products");
-      } else {
-        alert("Produk berhasil diperbarui!");
-        // Refresh data produk untuk memastikan data ter-update
-        await fetchProductData(false);
-        router.push("/sales/products");
-      }
-    } catch (err) {
-      console.error("[SUBMIT ERROR]", err);
-      setSubmitStatus("");
-      
-      // Tampilkan error message yang lebih user-friendly
-      let errorMessage = "Terjadi kesalahan saat submit";
-      
-      if (err.message) {
-        if (err.message.includes("NetworkError") || err.message.includes("Failed to fetch")) {
-          errorMessage = "Gagal terhubung ke server. Pastikan koneksi internet stabil dan coba lagi.";
-        } else if (err.message.includes("upload")) {
-          errorMessage = `Gagal upload file: ${err.message}`;
-        } else {
-          errorMessage = err.message;
-        }
-      }
-      
-      alert(errorMessage);
-    } finally {
-      setIsSubmitting(false);
-      setSubmitStatus("");
-    }
-  };
-
+    background_color: "#ffffff", // Default putih
+    page_title: "", // Custom page title
+    // SEO & Meta
+    tags: [],
+    seo_title: "",
+    meta_description: "",
+    meta_image: "",
+    favicon: "",
+    // Preview
+    preview_url: "",
+    // Settings
+    loading_logo: "",
+    disable_crawler: false,
+    disable_rightclick: false,
+    html_language: "id",
+    disable_custom_font: false,
+    // Analytics
+    facebook_pixels: [],
+    facebook_events: [],
+    facebook_event_params: {},
+    tiktok_pixels: [],
+    tiktok_events: [],
+    tiktok_event_params: {},
+    google_gtm: "",
+    // Other
+    custom_head_script: "",
+    enable_custom_head_script: false
+  });
+  
+  // State untuk options dropdown
   const [kategoriOptions, setKategoriOptions] = useState([]);
   const [userOptions, setUserOptions] = useState([]);
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [createdByUser, setCreatedByUser] = useState(null); // User yang membuat produk
+  const [showBgColorPicker, setShowBgColorPicker] = useState(false);
+  const bgColorPickerRef = useRef(null);
+  
+  // Refs untuk scroll ke komponen di sidebar
+  const componentRefs = useRef({});
 
-  // Function untuk fetch data produk
-  const fetchProductData = async (setLoadingState = false) => {
+  // Close background color picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (bgColorPickerRef.current && !bgColorPickerRef.current.contains(event.target)) {
+        setShowBgColorPicker(false);
+      }
+    };
+
+    if (showBgColorPicker) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showBgColorPicker]);
+
+  // Preset background colors - Primary color #FF9900 (rgb(255, 153, 0))
+  const presetBgColors = [
+    { name: "Primary Orange", value: "#FF9900" }, // Primary color - rgb(255, 153, 0)
+    { name: "Putih", value: "#ffffff" },
+    { name: "Hitam", value: "#000000" },
+    { name: "Abu-abu Terang", value: "#f3f4f6" },
+    { name: "Abu-abu Gelap", value: "#374151" },
+    { name: "Biru Muda", value: "#dbeafe" },
+    { name: "Biru", value: "#F1A124" },
+    { name: "Hijau Muda", value: "#d1fae5" },
+    { name: "Hijau", value: "#10b981" },
+    { name: "Kuning Muda", value: "#fef3c7" },
+    { name: "Kuning", value: "#f59e0b" },
+    { name: "Merah Muda", value: "#fce7f3" },
+    { name: "Merah", value: "#ef4444" },
+    { name: "Ungu Muda", value: "#e9d5ff" },
+    { name: "Ungu", value: "#8b5cf6" },
+    { name: "Orange Muda", value: "#fed7aa" },
+    { name: "Orange", value: "#f97316" },
+  ];
+
+
+  // Default data untuk setiap komponen
+  const getDefaultData = (componentId) => {
+    const defaults = {
+      text: { content: "<p></p>" },
+      image: { src: "", alt: "", caption: "" },
+      video: { items: [] },
+      testimoni: { items: [] },
+      list: { items: [], componentTitle: "" },
+      form: { kategori: null }, // Kategori untuk form pemesanan
+      faq: { items: [] },
+      slider: { images: [] },
+      "image-slider": { 
+        images: [],
+        sliderType: "gallery",
+        autoslide: false,
+        autoslideDuration: 5,
+        showCaption: false
+      },
+      "quota-info": {
+        totalKuota: 60,
+        sisaKuota: 47,
+        headline: "Sisa kuota terbatas!",
+        subtext: "Jangan tunda lagi, amankan kursi Anda sebelum kuota habis.",
+        highlightText: "Daftar sekarang sebelum kehabisan."
+      },
+      button: { text: "Klik Disini", link: "#", style: "primary" },
+      embed: { code: "" },
+      section: { 
+        children: [], // Array of block IDs that are children of this section
+        marginRight: 0,
+        marginLeft: 0,
+        marginBetween: 16,
+        border: 0,
+        borderColor: "#000000",
+        borderRadius: "none",
+        boxShadow: "none",
+        responsiveType: "vertical",
+        componentId: `section-${Date.now()}`,
+        title: "Section"
+      },
+      html: { code: "" },
+      divider: { style: "solid", color: "#e5e7eb" },
+      "scroll-target": { target: "" },
+      animation: { type: "fade" },
+      countdown: { 
+        hours: 0, 
+        minutes: 0, 
+        seconds: 0, 
+        promoText: "Promo Berakhir Dalam:",
+        textColor: "#e5e7eb",
+        bgColor: "#1f2937",
+        numberStyle: "flip"
+      },
+    };
+    return defaults[componentId] || {};
+  };
+
+  // Handler untuk menambah komponen baru
+  const handleAddComponent = (componentId) => {
+    // Cek apakah form sudah ada
+    if (componentId === "form") {
+      const formExists = blocks.some(b => b.type === "form");
+      if (formExists) {
+        alert("Form Pemesanan sudah ada dan tidak bisa ditambahkan lagi");
+        setShowComponentModal(false);
+        return;
+      }
+    }
+    
+    const newBlock = {
+      id: `block-${Date.now()}`,
+      type: componentId,
+      data: getDefaultData(componentId),
+      order: blocks.length + 1,
+    };
+    
+    setBlocks([...blocks, newBlock]);
+    // Komponen baru default expanded (tidak perlu ditambahkan ke collapsedBlockIds)
+    setShowComponentModal(false);
+  };
+
+  // Handler untuk update block data
+  const handleUpdateBlock = (blockId, newData) => {
+    setBlocks(blocks.map(block => 
+      block.id === blockId 
+        ? { ...block, data: { ...block.data, ...newData } }
+        : block
+    ));
+  };
+
+  // Handler untuk menambah child block ke section
+  const handleAddChildBlock = (newBlock) => {
+    setBlocks([...blocks, newBlock]);
+  };
+
+  // Handler untuk update child block
+  const handleUpdateChildBlock = (childId, newData) => {
+    setBlocks(blocks.map(block => 
+      block.id === childId 
+        ? { ...block, data: { ...block.data, ...newData } }
+        : block
+    ));
+  };
+
+  // Handler untuk delete child block
+  const handleDeleteChildBlock = (childId) => {
+    setBlocks(blocks.filter(block => block.id !== childId));
+  };
+
+  // Handler untuk move child block
+  const handleMoveChildBlock = (childId, direction) => {
+    // Find the block and its parent section
+    const childBlock = blocks.find(b => b.id === childId);
+    if (!childBlock || !childBlock.parentId) return;
+    
+    // Find parent section by componentId
+    const parentSection = blocks.find(b => 
+      b.type === "section" && 
+      (b.data.componentId === childBlock.parentId || b.id === childBlock.parentId)
+    );
+    if (!parentSection || !parentSection.data.children) return;
+    
+    const children = parentSection.data.children;
+    const currentIndex = children.indexOf(childId);
+    if (currentIndex === -1) return;
+    
+    const newIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex < 0 || newIndex >= children.length) return;
+    
+    const newChildren = [...children];
+    [newChildren[currentIndex], newChildren[newIndex]] = [newChildren[newIndex], newChildren[currentIndex]];
+    
+    handleUpdateBlock(parentSection.id, { ...parentSection.data, children: newChildren });
+  };
+
+  // Handler untuk reorder blocks
+  const moveBlock = (blockId, direction) => {
+    const index = blocks.findIndex(b => b.id === blockId);
+    if (index === -1) return;
+    
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= blocks.length) return;
+    
+    const newBlocks = [...blocks];
+    [newBlocks[index], newBlocks[newIndex]] = [newBlocks[newIndex], newBlocks[index]];
+    setBlocks(newBlocks);
+  };
+
+  // Handler untuk delete block
+  const deleteBlock = (blockId) => {
+    const block = blocks.find(b => b.id === blockId);
+    if (block && block.type === "form") {
+      alert("Form Pemesanan tidak bisa dihapus");
+      return;
+    }
+    setBlocks(blocks.filter(b => b.id !== blockId));
+  };
+
+  // Handler untuk expand/collapse komponen
+  const handleToggleExpand = (blockId) => {
+    console.log('[handleToggleExpand] Called with blockId:', blockId);
+    console.log('[handleToggleExpand] Current collapsedBlockIds:', Array.from(collapsedBlockIds));
+    console.log('[handleToggleExpand] Block exists?', blocks.find(b => b.id === blockId));
+    
+    setCollapsedBlockIds((prev) => {
+      const newSet = new Set(prev);
+      const wasCollapsed = newSet.has(blockId);
+      console.log('[handleToggleExpand] Before toggle - wasCollapsed:', wasCollapsed);
+      
+      if (wasCollapsed) {
+        // Jika sudah collapsed, expand (hapus dari set)
+        newSet.delete(blockId);
+        console.log('[handleToggleExpand] Expanding block - removed from set');
+      } else {
+        // Jika sudah expanded, collapse (tambah ke set)
+        newSet.add(blockId);
+        console.log('[handleToggleExpand] Collapsing block - added to set');
+      }
+      
+      console.log('[handleToggleExpand] After toggle - newSet:', Array.from(newSet));
+      console.log('[handleToggleExpand] BlockId:', blockId, 'Now Collapsed:', newSet.has(blockId));
+      return newSet;
+    });
+  };
+
+  // Render komponen form editing di sidebar
+  const renderComponent = (block, index) => {
+    // Default expanded, kecuali jika ada di collapsedBlockIds
+    const isExpanded = !collapsedBlockIds.has(block.id);
+    
+    console.log('[renderComponent] Block:', block.id, 'Type:', block.type, 'isExpanded:', isExpanded, 'inCollapsedSet:', collapsedBlockIds.has(block.id));
+    
+    const commonProps = {
+      data: block.data,
+      onUpdate: (newData) => handleUpdateBlock(block.id, newData),
+      blockId: block.id,
+      index: index,
+      onMoveUp: () => moveBlock(block.id, 'up'),
+      onMoveDown: () => moveBlock(block.id, 'down'),
+      onDelete: () => deleteBlock(block.id),
+      isExpanded: isExpanded,
+      onToggleExpand: () => {
+        console.log('[renderComponent] onToggleExpand callback called for block:', block.id);
+        handleToggleExpand(block.id);
+      },
+      isRequired: block.type === "form", // Form tidak bisa dihapus
+    };
+
+    switch (block.type) {
+      case "text":
+        return <TextComponent {...commonProps} />;
+      case "image":
+        return <ImageComponent {...commonProps} />;
+      case "youtube":
+      case "video":
+        return <VideoComponent {...commonProps} />;
+      case "testimoni":
+        return <TestimoniComponent {...commonProps} />;
+      case "list":
+        return <ListComponent {...commonProps} />;
+      case "form":
+        return <FormComponent {...commonProps} productKategori={productKategori} />;
+      case "faq":
+        return <FAQComponent {...commonProps} productKategori={productKategori} />;
+      case "slider":
+        return <SliderComponent {...commonProps} />;
+      case "button":
+        return <ButtonComponent {...commonProps} />;
+      case "embed":
+        return <EmbedComponent {...commonProps} />;
+      case "section":
+        return (
+          <SectionComponent 
+            {...commonProps}
+            allBlocks={blocks}
+            onAddChildBlock={handleAddChildBlock}
+            onUpdateChildBlock={handleUpdateChildBlock}
+            onDeleteChildBlock={handleDeleteChildBlock}
+            onMoveChildBlock={handleMoveChildBlock}
+          />
+        );
+      case "html":
+        return <HTMLComponent {...commonProps} />;
+      case "divider":
+        return <DividerComponent {...commonProps} />;
+      case "scroll-target":
+        return <ScrollTargetComponent {...commonProps} />;
+      case "animation":
+        return <AnimationComponent {...commonProps} />;
+      case "countdown":
+        return <CountdownComponent {...commonProps} />;
+      case "image-slider":
+        return <ImageSliderComponent {...commonProps} />;
+      case "quota-info":
+        return <QuotaInfoComponent {...commonProps} />;
+      default:
+        return <div>Unknown component: {block.type}</div>;
+    }
+  };
+
+  // Render preview di canvas
+  const renderPreview = (block) => {
+    switch (block.type) {
+      case "text":
+        const textData = block.data || {};
+        const textStyles = {
+          // fontSize removed - now handled by inline styles in HTML content
+          lineHeight: textData.lineHeight || 1.5,
+          fontFamily: textData.fontFamily && textData.fontFamily !== "Page Font" 
+            ? textData.fontFamily 
+            : "inherit",
+          color: textData.textColor || "#000000",
+          backgroundColor: textData.backgroundColor && textData.backgroundColor !== "transparent"
+            ? textData.backgroundColor
+            : "transparent",
+          textAlign: textData.textAlign || "left",
+          fontWeight: textData.fontWeight || "normal",
+          fontStyle: textData.fontStyle || "normal",
+          textDecoration: textData.textDecoration || "none",
+          textTransform: textData.textTransform || "none",
+          letterSpacing: textData.letterSpacing ? `${textData.letterSpacing}px` : "0px",
+          padding: textData.backgroundColor && textData.backgroundColor !== "transparent" ? "8px 12px" : "0",
+          borderRadius: textData.backgroundColor && textData.backgroundColor !== "transparent" ? "4px" : "0",
+        };
+
+        // Determine tag based on paragraph style
+        const Tag = textData.paragraphStyle === "h1" ? "h1" :
+                    textData.paragraphStyle === "h2" ? "h2" :
+                    textData.paragraphStyle === "h3" ? "h3" : "div";
+
+        // Background dari advance settings
+        let textBackgroundStyle = {};
+        if (textData.bgType === "color") {
+          textBackgroundStyle.backgroundColor = textData.bgColor || "#ffffff";
+        } else if (textData.bgType === "image" && textData.bgImage) {
+          textBackgroundStyle.backgroundImage = `url(${textData.bgImage})`;
+          textBackgroundStyle.backgroundSize = "cover";
+          textBackgroundStyle.backgroundPosition = "center";
+        }
+        
+        // Padding dari advance settings
+        const textPaddingStyle = {
+          paddingTop: `${textData.paddingTop || 0}px`,
+          paddingRight: `${textData.paddingRight || 0}px`,
+          paddingBottom: `${textData.paddingBottom || 0}px`,
+          paddingLeft: `${textData.paddingLeft || 0}px`,
+        };
+        
+        // Rich text content (HTML)
+        const richContent = textData.content || "<p>Teks...</p>";
+        
+        return (
+          <Tag 
+            className="preview-text" 
+            style={{
+              ...textStyles,
+              ...textBackgroundStyle,
+              ...textPaddingStyle,
+              display: "block",
+              width: "100%"
+            }}
+            dangerouslySetInnerHTML={{ __html: richContent }}
+          />
+        );
+      case "image":
+        const imageData = block.data;
+        if (!imageData.src) {
+          return <div className="preview-placeholder">Gambar belum diupload</div>;
+        }
+
+        // Advanced settings
+        const alignment = imageData.alignment || "center";
+        const imageWidth = imageData.imageWidth || 100;
+        const imageFit = imageData.imageFit || "fill";
+        const aspectRatio = imageData.aspectRatio || "OFF";
+        const backgroundType = imageData.backgroundType || "none";
+        const backgroundColor = imageData.backgroundColor || "#ffffff";
+        const backgroundImage = imageData.backgroundImage || "";
+        const paddingTop = imageData.paddingTop || 0;
+        const paddingRight = imageData.paddingRight || 0;
+        const paddingBottom = imageData.paddingBottom || 0;
+        const paddingLeft = imageData.paddingLeft || 0;
+
+        // Calculate aspect ratio - ketika dipilih, gambar akan di-crop sesuai ratio
+        let aspectRatioStyle = {};
+        if (aspectRatio !== "OFF") {
+          const [width, height] = aspectRatio.split(":").map(Number);
+          if (width && height) {
+            // Set aspect ratio pada wrapper untuk membuat frame crop
+            // Ini akan membuat wrapper memiliki ukuran sesuai aspect ratio
+            aspectRatioStyle.aspectRatio = `${width} / ${height}`;
+          }
+        }
+
+        // Background style
+        let imageBackgroundStyle = {};
+        if (backgroundType === "color") {
+          imageBackgroundStyle.backgroundColor = backgroundColor;
+        } else if (backgroundType === "image" && backgroundImage) {
+          imageBackgroundStyle.backgroundImage = `url(${backgroundImage})`;
+          imageBackgroundStyle.backgroundSize = "cover";
+          imageBackgroundStyle.backgroundPosition = "center";
+        }
+
+        // Image fit style - jika aspect ratio dipilih, gunakan cover untuk crop
+        // Jika aspect ratio OFF, gunakan fill atau contain sesuai pilihan
+        let objectFitValue;
+        if (aspectRatio !== "OFF") {
+          // Ketika aspect ratio dipilih, gunakan cover untuk crop gambar
+          // Cover akan memotong gambar agar mengisi frame sesuai aspect ratio
+          objectFitValue = "cover";
+        } else {
+          // Ketika aspect ratio OFF, gunakan fill atau contain sesuai pilihan
+          objectFitValue = imageFit === "fill" ? "fill" : imageFit === "fit" ? "contain" : "fill";
+        }
+
+        // Padding style
+        const imagePaddingStyle = {
+          paddingTop: `${paddingTop}px`,
+          paddingRight: `${paddingRight}px`,
+          paddingBottom: `${paddingBottom}px`,
+          paddingLeft: `${paddingLeft}px`,
+        };
+
+        // Container style with alignment
+        const containerStyle = {
+          display: "flex",
+          justifyContent: alignment === "left" ? "flex-start" : alignment === "right" ? "flex-end" : "center",
+          width: "100%",
+          ...imagePaddingStyle,
+        };
+
+        // Image wrapper style - ukuran akan berubah sesuai aspect ratio yang dipilih
+        const imageWrapperStyle = {
+          width: `${imageWidth}%`,
+          ...aspectRatioStyle,
+          ...imageBackgroundStyle,
+          overflow: "hidden",
+          borderRadius: "4px",
+          position: "relative",
+        };
+
+        // Ketika aspect ratio dipilih, wrapper akan otomatis memiliki tinggi sesuai ratio
+        // CSS aspect-ratio akan menghitung tinggi berdasarkan lebar dan ratio
+
+        return (
+          <div style={containerStyle}>
+            <div style={imageWrapperStyle}>
+              <img 
+                src={imageData.src} 
+                alt={imageData.alt || ""} 
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: objectFitValue,
+                  objectPosition: "center",
+                  display: "block",
+                }}
+              />
+            </div>
+            {imageData.caption && <p className="preview-caption">{imageData.caption}</p>}
+          </div>
+        );
+      case "youtube":
+      case "video":
+        const videoItems = block.data.items || [];
+        if (videoItems.length === 0) {
+          return <div className="preview-placeholder">Belum ada video</div>;
+        }
+        
+        // Advanced settings untuk video
+        const videoData = block.data || {};
+        const videoAlignment = videoData.alignment || "center";
+        const videoWidth = videoData.videoWidth !== undefined ? videoData.videoWidth : 100; // Default 100% jika belum di-set
+        const videoPaddingTop = videoData.paddingTop || 0;
+        const videoPaddingRight = videoData.paddingRight || 0;
+        const videoPaddingBottom = videoData.paddingBottom || 0;
+        const videoPaddingLeft = videoData.paddingLeft || 0;
+        
+        // Container style dengan alignment dan padding
+        const videoContainerStyle = {
+          display: "flex",
+          flexDirection: "column",
+          gap: "24px",
+          alignItems: "center",
+          width: "100%",
+          paddingTop: `${videoPaddingTop}px`,
+          paddingRight: `${videoPaddingRight}px`,
+          paddingBottom: `${videoPaddingBottom}px`,
+          paddingLeft: `${videoPaddingLeft}px`,
+        };
+        
+        // Video wrapper style dengan width dan aspect ratio 16:9
+        const videoWrapperStyle = {
+          width: `${videoWidth}%`,
+          maxWidth: "100%", // Pastikan tidak melebihi container
+          aspectRatio: "16 / 9",
+          position: "relative",
+          overflow: "hidden",
+          borderRadius: "8px",
+          display: "flex",
+          justifyContent: videoAlignment === "left" ? "flex-start" : videoAlignment === "right" ? "flex-end" : "center",
+        };
+        
+        return (
+          <div className="preview-videos" style={videoContainerStyle}>
+            {videoItems.map((item, i) => (
+              item.embedUrl ? (
+                <div key={i} className="preview-video-wrapper" style={videoWrapperStyle}>
+                  <iframe 
+                    src={item.embedUrl} 
+                    title={`Video ${i + 1}`} 
+                    className="preview-video-iframe" 
+                    allowFullScreen
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      border: "none",
+                      borderRadius: "8px"
+                    }}
+                  />
+                </div>
+              ) : null
+            ))}
+          </div>
+        );
+      case "testimoni":
+        const testimoniItems = block.data.items || [];
+        if (testimoniItems.length === 0) {
+          return <div className="preview-placeholder">Belum ada testimoni</div>;
+        }
+        
+        const currentIndex = testimoniIndices[block.id] || 0;
+        const maxIndex = Math.max(0, testimoniItems.length - 3);
+        
+        const handlePrev = () => {
+          setTestimoniIndices(prev => ({
+            ...prev,
+            [block.id]: Math.max(0, currentIndex - 1)
+          }));
+        };
+        
+        const handleNext = () => {
+          setTestimoniIndices(prev => ({
+            ...prev,
+            [block.id]: Math.min(maxIndex, currentIndex + 1)
+          }));
+        };
+        
+        const testimoniTitle = block.data.componentTitle || "Testimoni Pembeli";
+        
+        return (
+          <section className="preview-testimonials" aria-label="Customer testimonials">
+            <h2 style={{
+              fontSize: "18px",
+              fontWeight: "600",
+              color: "#000000",
+              marginBottom: "20px",
+              textAlign: "left"
+            }}>{testimoniTitle}</h2>
+            <div className="testimonials-carousel-wrapper-new">
+              {currentIndex > 0 && (
+                <button 
+                  className="testimoni-nav-btn-new testimoni-nav-prev-new"
+                  onClick={handlePrev}
+                  aria-label="Previous testimonials"
+                >
+                  ‹
+                </button>
+              )}
+              <div className="testimonials-carousel-new" itemScope itemType="https://schema.org/Review">
+                <div 
+                  className="testimonials-track-new"
+                  style={{ transform: `translateX(-${currentIndex * 32}%)` }}
+                >
+                  {testimoniItems.map((item, i) => {
+                    return (
+                      <article key={i} className="testi-card-new" itemScope itemType="https://schema.org/Review">
+                        <div className="testi-header-new">
+                          {item.gambar ? (
+                            <div className="testi-avatar-wrapper-new">
+                              <img 
+                                src={item.gambar} 
+                                alt={`Foto ${item.nama}`}
+                                className="testi-avatar-new"
+                                itemProp="author"
+                                loading="lazy"
+                              />
+                            </div>
+                          ) : (
+                            <div className="testi-avatar-wrapper-new">
+                              <div className="testi-avatar-placeholder-new">
+                                {item.nama?.charAt(0)?.toUpperCase() || "U"}
+                              </div>
+                            </div>
+                          )}
+                          <div className="testi-info-new">
+                            <div className="testi-name-new" itemProp="author" itemScope itemType="https://schema.org/Person">
+                              <span itemProp="name">{item.nama || "Nama"}</span>
+                              {item.jabatan && (
+                                <div className="testi-job-new" style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
+                                  {item.jabatan}
+                                </div>
+                              )}
+                            </div>
+                            {item.showRating !== false && (
+                              <div className="testi-stars-new">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <span 
+                                    key={star} 
+                                    className="star-new"
+                                    style={{ 
+                                      color: star <= (item.rating || 5) ? "#fbbf24" : "#d1d5db" 
+                                    }}
+                                  >
+                                    ★
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div 
+                          className="testi-desc-new" 
+                          itemProp="reviewBody"
+                          dangerouslySetInnerHTML={{ 
+                            __html: item.isiTestimony || item.deskripsi || "<p>Deskripsi testimoni</p>" 
+                          }}
+                        />
+                      </article>
+                    );
+                  })}
+                </div>
+              </div>
+              {currentIndex < maxIndex && testimoniItems.length > 3 && (
+                <button 
+                  className="testimoni-nav-btn-new testimoni-nav-next-new"
+                  onClick={handleNext}
+                  aria-label="Next testimonials"
+                >
+                  ›
+                </button>
+              )}
+            </div>
+          </section>
+        );
+      case "list":
+        const listItems = block.data.items || [];
+        
+        // Icon mapping
+        const iconMap = {
+          CheckCircle2, Circle, Minus, ArrowRight, ArrowRightCircle,
+          ArrowLeft: ArrowLeftIcon, ArrowLeftRight, ChevronRight, CheckSquare, ShieldCheck,
+          Lock, Dot, Target, Link: LinkIcon, PlusCircle, MinusCircle,
+          Check, Star, Heart, ThumbsUp, Award, Zap, Flame, Sparkles,
+          ArrowUp, ArrowDown, ArrowUpCircle, ArrowDownCircle, PlayCircle,
+          PauseCircle, StopCircle, Radio, Square, Hexagon, Triangle,
+          AlertCircle, Info, HelpCircle: HelpCircleIcon, Ban, Shield, Key, Unlock,
+          MapPin, Calendar: CalendarIcon, Clock
+        };
+        
+        const listTitle = block.data.componentTitle || "";
+        const listData = block.data || {};
+        
+        // Build styles from advance settings
+        const listStyles = {
+          paddingTop: `${listData.paddingTop || 0}px`,
+          paddingRight: `${listData.paddingRight || 0}px`,
+          paddingBottom: `${listData.paddingBottom || 0}px`,
+          paddingLeft: `${listData.paddingLeft || 0}px`,
+        };
+        
+        // Background dari advance settings
+        let listBackgroundStyle = {};
+        if (listData.bgType === "color") {
+          listBackgroundStyle.backgroundColor = listData.bgColor || "#ffffff";
+        } else if (listData.bgType === "image" && listData.bgImage) {
+          listBackgroundStyle.backgroundImage = `url(${listData.bgImage})`;
+          listBackgroundStyle.backgroundSize = "cover";
+          listBackgroundStyle.backgroundPosition = "center";
+        }
+        
+        return (
+          <div 
+            className="preview-list-wrapper"
+            style={{
+              ...listStyles,
+              ...listBackgroundStyle,
+            }}
+          >
+            {listTitle && (
+              <div className="preview-list-header">
+                <h3 className="preview-list-title" style={{
+                  fontSize: "18px",
+                  fontWeight: "600",
+                  color: "#000000",
+                  margin: "0 0 8px 0"
+                }}>{listTitle}</h3>
+                <div className="preview-list-header-line"></div>
+              </div>
+            )}
+            {listItems.length === 0 ? (
+              <div className="preview-placeholder">Belum ada list point</div>
+            ) : (
+              <ul className="preview-list">
+                {listItems.map((item, i) => {
+                  const iconName = item.icon || "CheckCircle2";
+                  const iconColor = item.iconColor || "#000000";
+                  const content = item.content || item.nama || `Point ${i + 1}`;
+                  const IconComponent = iconMap[iconName] || CheckCircle2;
+                  
+                  return (
+                    <li key={i} className="preview-list-item">
+                      <span className="preview-list-icon" style={{ color: iconColor }}>
+                        <IconComponent size={20} strokeWidth={2} />
+                      </span>
+                      <div className="preview-list-content" dangerouslySetInnerHTML={{ __html: content || `<p>Point ${i + 1}</p>` }} />
+                    </li>
+                  );
+                })}
+                <li className="preview-list-add-indicator">
+                  <span>»</span>
+                </li>
+              </ul>
+            )}
+          </div>
+        );
+      case "faq":
+        // Generate FAQ berdasarkan kategori produk
+        const faqItems = generateFAQByKategori(productKategori);
+        
+        // FAQ Item Component untuk preview
+        const FAQItem = ({ question, answer }) => {
+          const [isOpen, setIsOpen] = useState(false);
+          return (
+            <div className="faq-item">
+              <button 
+                className="faq-question" 
+                onClick={() => setIsOpen(!isOpen)}
+                aria-expanded={isOpen}
+              >
+                <span>{question}</span>
+                <span className="faq-icon">{isOpen ? "−" : "+"}</span>
+              </button>
+              {isOpen && (
+                <div className="faq-answer">
+                  <p>{answer}</p>
+                </div>
+              )}
+            </div>
+          );
+        };
+        
+        if (!productKategori) {
+          return (
+            <section className="preview-faq-section">
+              <h2 className="faq-title">Pertanyaan yang Sering Diajukan</h2>
+              <div className="faq-container">
+                <div className="preview-placeholder">
+                  Pilih kategori produk di tab Pengaturan untuk melihat FAQ otomatis
+                </div>
+              </div>
+            </section>
+          );
+        }
+        
+        return (
+          <section className="preview-faq-section" aria-label="Frequently Asked Questions">
+            <h2 className="faq-title">Pertanyaan yang Sering Diajukan</h2>
+            <div className="faq-container">
+              {faqItems.map((faq, index) => (
+                <FAQItem 
+                  key={index}
+                  question={faq.question} 
+                  answer={faq.answer}
+                />
+              ))}
+            </div>
+          </section>
+        );
+      case "form":
+        // Gunakan productKategori dari state pengaturan
+        const isFormBuku = productKategori === 4; // Kategori Buku (4)
+        const isFormWorkshop = productKategori === 6; // Kategori Workshop (6)
+        // Cek jenis produk untuk menentukan apakah perlu ongkir
+        const isProdukFisik = pengaturanForm.jenis_produk === "fisik";
+        
+        return (
+          <div style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
+            {/* Bundling Section - Tampilkan jika ada bundling */}
+            {pengaturanForm.isBundling && pengaturanForm.bundling && pengaturanForm.bundling.length > 0 && (
+              <section className="preview-form-section bundling-section" aria-label="Package Selection" style={{
+                marginBottom: "24px",
+                padding: "24px",
+                backgroundColor: "#ffffff",
+                borderRadius: "12px",
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)"
+              }}>
+                <h2 style={{
+                  fontSize: "18px",
+                  fontWeight: "600",
+                  color: "#000000",
+                  marginBottom: "8px",
+                  lineHeight: "1.4"
+                }}>
+                  {pengaturanForm.nama || "Produk"}
+                </h2>
+                <p style={{
+                  fontSize: "18px",
+                  color: "#000000",
+                  marginBottom: "20px",
+                  fontWeight: "600"
+                }}>
+                  Pilihan Paket
+                </p>
+                <div style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "12px"
+                }}>
+                  {pengaturanForm.bundling.map((item, index) => {
+                    const isSelected = selectedBundling === index;
+                    const formatHarga = (harga) => {
+                      if (!harga || harga === 0) return "0";
+                      return harga.toLocaleString("id-ID");
+                    };
+                    
+                    return (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => {
+                          setSelectedBundling(index);
+                          // Update harga di Rincian Pemesanan
+                          requestAnimationFrame(() => {
+                            const hargaElement = document.querySelector('.rincian-pesanan-item .rincian-pesanan-price');
+                            const totalElement = document.getElementById('rincian-total');
+                            const ongkirElement = document.getElementById('rincian-ongkir');
+                            
+                            const harga = item.harga || 0;
+                            
+                            if (hargaElement && !hargaElement.id) {
+                              hargaElement.textContent = `Rp ${formatHarga(harga)}`;
+                            }
+                            
+                            if (totalElement) {
+                              // Get ongkir jika ada (untuk kategori 4)
+                              const ongkir = ongkirElement && ongkirElement.textContent !== "Rp 0" 
+                                ? parseInt(ongkirElement.textContent.replace(/[^0-9]/g, '')) || 0 
+                                : 0;
+                              const total = harga + ongkir;
+                              totalElement.textContent = `Rp ${formatHarga(total)}`;
+                            }
+                          });
+                        }}
+                        style={{
+                          flex: "1 1 calc(33.333% - 8px)",
+                          minWidth: "200px",
+                          padding: "16px 20px",
+                          borderRadius: "10px",
+                          border: isSelected ? "2px solid #F1A124" : "1px solid #e5e7eb",
+                          backgroundColor: isSelected ? "#F1A124" : "#ffffff",
+                          color: isSelected ? "#ffffff" : "#374151",
+                          fontSize: "15px",
+                          fontWeight: "500",
+                          cursor: "pointer",
+                          transition: "all 0.2s ease",
+                          textAlign: "center",
+                          boxShadow: isSelected ? "0 4px 12px rgba(241, 161, 36, 0.3)" : "0 1px 3px rgba(0, 0, 0, 0.1)",
+                          outline: "none"
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isSelected) {
+                            e.currentTarget.style.backgroundColor = "#f9fafb";
+                            e.currentTarget.style.borderColor = "#d1d5db";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isSelected) {
+                            e.currentTarget.style.backgroundColor = "#ffffff";
+                            e.currentTarget.style.borderColor = "#e5e7eb";
+                          }
+                        }}
+                      >
+                        {item.nama || `Paket ${index + 1}`}
+                        {item.harga && (
+                          <span style={{
+                            display: "block",
+                            marginTop: "4px",
+                            fontSize: "14px",
+                            fontWeight: "600",
+                            opacity: isSelected ? "1" : "0.8"
+                          }}>
+                            Rp {formatHarga(item.harga)}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* Form Pemesanan */}
+            <section className="preview-form-section compact-form-section" aria-label="Order form">
+              <h2 className="compact-form-title" style={{
+                fontSize: "18px",
+                fontWeight: "600",
+                color: "#000000",
+                marginBottom: "12px"
+              }}>Lengkapi Data:</h2>
+              <div className="compact-form-card">
+                <div className="compact-field">
+                  <label className="compact-label">Nama Lengkap <span className="required">*</span></label>
+                  <input type="text" placeholder="Contoh: Krisdayanti" className="compact-input" />
+                </div>
+                <div className="compact-field">
+                  <label className="compact-label">No. WhatsApp <span className="required">*</span></label>
+                  <div className="wa-input-wrapper">
+                    <div className="wa-prefix">
+                      <span className="flag">🇮🇩</span>
+                      <span className="code">+62</span>
+                    </div>
+                    <input type="tel" placeholder="812345678" className="compact-input wa-input" />
+                  </div>
+                </div>
+                <div className="compact-field">
+                  <label className="compact-label">Email <span className="required">*</span></label>
+                  <input type="email" placeholder="email@example.com" className="compact-input" />
+                </div>
+                
+                {/* Form Wilayah - Cascading Dropdown (Selalu tampil untuk form customer) */}
+                {/* Provinsi Dropdown */}
+                <div className="compact-field">
+                  <label className="compact-label">Provinsi <span className="required">*</span></label>
+                  <select
+                    className="compact-input"
+                    value={selectedRegionIds.provinceId}
+                    onChange={(e) => handleRegionChange("provinsi", e.target.value)}
+                    disabled={loadingRegion.provinces}
+                    style={{ 
+                      appearance: 'auto', 
+                      cursor: loadingRegion.provinces ? 'not-allowed' : 'pointer',
+                      backgroundColor: loadingRegion.provinces ? '#f9fafb' : 'white'
+                    }}
+                  >
+                    <option value="">Pilih Provinsi</option>
+                    {regionData.provinces.map((province) => (
+                      <option key={province.id} value={province.id}>
+                        {province.name}
+                      </option>
+                    ))}
+                  </select>
+                  {loadingRegion.provinces && (
+                    <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                      Memuat provinsi...
+                    </small>
+                  )}
+                </div>
+                
+                {/* Kabupaten/Kota Dropdown */}
+                <div className="compact-field">
+                  <label className="compact-label">Kabupaten/Kota <span className="required">*</span></label>
+                  <select
+                    className="compact-input"
+                    value={selectedRegionIds.cityId}
+                    onChange={(e) => handleRegionChange("kabupaten", e.target.value)}
+                    disabled={!selectedRegionIds.provinceId || loadingRegion.cities}
+                    style={{ 
+                      appearance: 'auto', 
+                      cursor: (!selectedRegionIds.provinceId || loadingRegion.cities) ? 'not-allowed' : 'pointer',
+                      backgroundColor: (!selectedRegionIds.provinceId || loadingRegion.cities) ? '#f9fafb' : 'white'
+                    }}
+                  >
+                    <option value="">Pilih Kabupaten/Kota</option>
+                    {regionData.cities.map((city) => (
+                      <option key={city.id} value={city.id}>
+                        {city.name}
+                      </option>
+                    ))}
+                  </select>
+                  {loadingRegion.cities && (
+                    <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                      Memuat kabupaten/kota...
+                    </small>
+                  )}
+                </div>
+                
+                {/* Kecamatan Dropdown */}
+                <div className="compact-field">
+                  <label className="compact-label">Kecamatan <span className="required">*</span></label>
+                  <select
+                    className="compact-input"
+                    value={selectedRegionIds.districtId}
+                    onChange={(e) => handleRegionChange("kecamatan", e.target.value)}
+                    disabled={!selectedRegionIds.cityId || loadingRegion.districts}
+                    style={{ 
+                      appearance: 'auto', 
+                      cursor: (!selectedRegionIds.cityId || loadingRegion.districts) ? 'not-allowed' : 'pointer',
+                      backgroundColor: (!selectedRegionIds.cityId || loadingRegion.districts) ? '#f9fafb' : 'white'
+                    }}
+                  >
+                    <option value="">Pilih Kecamatan</option>
+                    {regionData.districts.map((district) => (
+                      <option key={district.id || district.district_id} value={district.id || district.district_id}>
+                        {district.name}
+                      </option>
+                    ))}
+                  </select>
+                  {loadingRegion.districts && (
+                    <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                      Memuat kecamatan...
+                    </small>
+                  )}
+                </div>
+                
+                {/* Kode Pos - Auto dari district atau manual input */}
+                <div className="compact-field">
+                  <label className="compact-label">Kode Pos <span className="required">*</span></label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: 12120"
+                    className="compact-input"
+                    value={regionForm.kode_pos}
+                    onChange={(e) => handleRegionChange("kode_pos", e.target.value)}
+                    disabled={!selectedRegionIds.districtId}
+                    style={{ 
+                      cursor: !selectedRegionIds.districtId ? 'not-allowed' : 'text',
+                      backgroundColor: !selectedRegionIds.districtId ? '#f9fafb' : 'white'
+                    }}
+                  />
+                  {!selectedRegionIds.districtId && (
+                    <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                      Pilih kecamatan terlebih dahulu
+                    </small>
+                  )}
+                </div>
+                
+                {/* Form Ongkir - Hanya untuk produk Fisik */}
+                {isProdukFisik && (
+                  <div className="compact-field">
+                    <OngkirCalculator
+                      onSelectOngkir={(info) => {
+                        // Update ongkir di Rincian Pemesanan
+                        const ongkirElement = document.getElementById('rincian-ongkir');
+                        const totalElement = document.getElementById('rincian-total');
+                        
+                        const formatHarga = (harga) => {
+                          if (!harga || harga === 0) return "0";
+                          return harga.toLocaleString("id-ID");
+                        };
+                        
+                        // Get harga yang aktif (bundling atau default)
+                        let activeHarga = pengaturanForm.harga || 0;
+                        if (pengaturanForm.isBundling && selectedBundling !== null && pengaturanForm.bundling && pengaturanForm.bundling[selectedBundling]) {
+                          activeHarga = pengaturanForm.bundling[selectedBundling].harga || 0;
+                        }
+                        
+                        if (ongkirElement && info && info.cost) {
+                          const ongkir = info.cost;
+                          
+                          // Update ongkir display
+                          ongkirElement.textContent = `Rp ${formatHarga(ongkir)}`;
+                          
+                          // Update total (harga aktif + ongkir)
+                          if (totalElement) {
+                            const total = activeHarga + ongkir;
+                            totalElement.textContent = `Rp ${formatHarga(total)}`;
+                          }
+                        } else if (ongkirElement) {
+                          ongkirElement.textContent = "Rp 0";
+                          // Reset total ke harga aktif saja
+                          if (totalElement) {
+                            totalElement.textContent = `Rp ${formatHarga(activeHarga)}`;
+                          }
+                        }
+                      }}
+                      onAddressChange={(address) => {
+                        // Reset ongkir saat alamat berubah
+                        const ongkirElement = document.getElementById('rincian-ongkir');
+                        const totalElement = document.getElementById('rincian-total');
+                        
+                        const formatHarga = (harga) => {
+                          if (!harga || harga === 0) return "0";
+                          return harga.toLocaleString("id-ID");
+                        };
+                        
+                        // Get harga yang aktif (bundling atau default)
+                        let activeHarga = pengaturanForm.harga || 0;
+                        if (pengaturanForm.isBundling && selectedBundling !== null && pengaturanForm.bundling && pengaturanForm.bundling[selectedBundling]) {
+                          activeHarga = pengaturanForm.bundling[selectedBundling].harga || 0;
+                        }
+                        
+                        if (ongkirElement) {
+                          ongkirElement.textContent = "Rp 0";
+                        }
+                        
+                        if (totalElement) {
+                          totalElement.textContent = `Rp ${formatHarga(activeHarga)}`;
+                        }
+                      }}
+                      defaultCourier="jne"
+                      compact={true}
+                    />
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* Rincian Pesanan - General untuk semua kategori */}
+            <section className="preview-form-section rincian-pesanan-section" aria-label="Rincian Pesanan">
+              <div className="rincian-pesanan-card">
+                <h3 className="rincian-pesanan-title">RINCIAN PESANAN:</h3>
+                <div className="rincian-pesanan-item">
+                  <div className="rincian-pesanan-detail">
+                    <div className="rincian-pesanan-name">{pengaturanForm.nama || "Nama Produk"}</div>
+                  </div>
+                  <div className="rincian-pesanan-price">
+                    {(() => {
+                      const formatHarga = (harga) => {
+                        if (!harga || harga === 0) return "0";
+                        return harga.toLocaleString("id-ID");
+                      };
+                      // Gunakan harga bundling jika dipilih, jika tidak gunakan harga default
+                      let harga = pengaturanForm.harga || 0;
+                      if (pengaturanForm.isBundling && selectedBundling !== null && pengaturanForm.bundling && pengaturanForm.bundling[selectedBundling]) {
+                        harga = pengaturanForm.bundling[selectedBundling].harga || 0;
+                      }
+                      return `Rp ${formatHarga(harga)}`;
+                    })()}
+                  </div>
+                </div>
+                {/* Ongkir - Hanya untuk produk Fisik */}
+                {isProdukFisik && (
+                  <>
+                    <div className="rincian-pesanan-item">
+                      <div className="rincian-pesanan-detail">
+                        <div className="rincian-pesanan-name">Ongkos Kirim</div>
+                      </div>
+                      <div className="rincian-pesanan-price" id="rincian-ongkir">
+                        Rp 0
+                      </div>
+                    </div>
+                  </>
+                )}
+                <div className="rincian-pesanan-divider"></div>
+                <div className="rincian-pesanan-total">
+                  <span className="rincian-pesanan-total-label">Total</span>
+                  <span className="rincian-pesanan-total-price" id="rincian-total">
+                    {(() => {
+                      const formatHarga = (harga) => {
+                        if (!harga || harga === 0) return "0";
+                        return harga.toLocaleString("id-ID");
+                      };
+                      // Gunakan harga bundling jika dipilih, jika tidak gunakan harga default
+                      let harga = pengaturanForm.harga || 0;
+                      if (pengaturanForm.isBundling && selectedBundling !== null && pengaturanForm.bundling && pengaturanForm.bundling[selectedBundling]) {
+                        harga = pengaturanForm.bundling[selectedBundling].harga || 0;
+                      }
+                      // Untuk produk fisik, ongkir akan ditambahkan saat user pilih ongkir
+                      // Untuk non-fisik, total = harga saja (tidak ada ongkir)
+                      return `Rp ${formatHarga(harga)}`;
+                    })()}
+                  </span>
+                </div>
+              </div>
+            </section>
+
+            {/* Payment Section - Selalu muncul */}
+            <section className="preview-payment-section payment-section" aria-label="Payment methods">
+              <h2 className="payment-title">Metode Pembayaran</h2>
+              <div className="payment-options-vertical">
+                <label className="payment-option-row">
+                  <input type="radio" name="payment" value="manual" />
+                  <span className="payment-label">Bank Transfer (Manual)</span>
+                  <div className="payment-icons-inline">
+                    <img className="pay-icon" src="/assets/bca.png" alt="BCA" />
+                  </div>
+                </label>
+                <label className="payment-option-row">
+                  <input type="radio" name="payment" value="ewallet" />
+                  <span className="payment-label">E-Payment</span>
+                  <div className="payment-icons-inline">
+                    <img className="pay-icon" src="/assets/qris.svg" alt="QRIS" />
+                    <img className="pay-icon" src="/assets/dana.png" alt="DANA" />
+                    <img className="pay-icon" src="/assets/ovo.png" alt="OVO" />
+                    <img className="pay-icon" src="/assets/link.png" alt="LinkAja" />
+                  </div>
+                </label>
+                <label className="payment-option-row">
+                  <input type="radio" name="payment" value="cc" />
+                  <span className="payment-label">Credit / Debit Card</span>
+                  <div className="payment-icons-inline">
+                    <img className="pay-icon" src="/assets/visa.svg" alt="Visa" />
+                    <img className="pay-icon" src="/assets/master.png" alt="Mastercard" />
+                    <img className="pay-icon" src="/assets/jcb.png" alt="JCB" />
+                  </div>
+                </label>
+                <label className="payment-option-row">
+                  <input type="radio" name="payment" value="va" />
+                  <span className="payment-label">Virtual Account</span>
+                  <div className="payment-icons-inline">
+                    <img className="pay-icon" src="/assets/bca.png" alt="BCA" />
+                    <img className="pay-icon" src="/assets/mandiri.png" alt="Mandiri" />
+                    <img className="pay-icon" src="/assets/bni.png" alt="BNI" />
+                    <img className="pay-icon" src="/assets/permata.svg" alt="Permata" />
+                  </div>
+                </label>
+              </div>
+            </section>
+
+            {/* Button Pesan Sekarang */}
+            <div className="preview-form-submit-wrapper">
+              <button type="button" className="preview-form-submit-btn">
+                Pesan Sekarang
+              </button>
+            </div>
+          </div>
+        );
+      case "button":
+        return (
+          <button className={`preview-button preview-button-${block.data.style || 'primary'}`}>
+            {block.data.text || "Klik Disini"}
+          </button>
+        );
+      case "html":
+        return <div dangerouslySetInnerHTML={{ __html: block.data.code || "" }} />;
+      case "embed":
+        return <div dangerouslySetInnerHTML={{ __html: block.data.code || "" }} />;
+      case "countdown":
+        return <CountdownPreview data={block.data || {}} index={block.id} />;
+      case "image-slider":
+        return <ImageSliderPreview data={block.data || {}} />;
+      case "quota-info":
+        return <QuotaInfoPreview data={block.data || {}} />;
+      case "section":
+        const sectionData = block.data || {};
+        const sectionComponentId = sectionData.componentId || `section-${block.id}`;
+        const sectionChildren = sectionData.children || [];
+        
+        // Find child blocks by both parentId and children array
+        const sectionChildBlocks = blocks.filter(b => 
+          b.parentId === sectionComponentId || sectionChildren.includes(b.id)
+        );
+        
+        // Build section styles from advance settings
+        const sectionStyles = {
+          marginRight: `${sectionData.marginRight || 0}px`,
+          marginLeft: `${sectionData.marginLeft || 0}px`,
+          marginBottom: `${sectionData.marginBetween || 16}px`,
+          border: sectionData.border ? `${sectionData.border}px solid ${sectionData.borderColor || "#000000"}` : "none",
+          backgroundColor: sectionData.backgroundColor || "#ffffff",
+          borderRadius: sectionData.borderRadius === "none" ? "0" : sectionData.borderRadius || "0",
+          boxShadow: sectionData.boxShadow === "none" ? "none" : sectionData.boxShadow || "none",
+          display: "block",
+          width: "100%",
+          padding: "16px",
+        };
+        
+        return (
+          <div className="preview-section" style={sectionStyles}>
+            {sectionChildBlocks.length === 0 ? (
+              <div className="preview-placeholder">Section kosong - tambahkan komponen</div>
+            ) : (
+              sectionChildBlocks.map((childBlock) => (
+                <div key={childBlock.id} className="preview-section-child">
+                  {renderPreview(childBlock)}
+                </div>
+              ))
+            )}
+          </div>
+        );
+      default:
+        return <div className="preview-placeholder">{block.type}</div>;
+    }
+  };
+
+  // Fungsi untuk generate FAQ berdasarkan kategori
+  const generateFAQByKategori = (kategoriId) => {
+    // Mapping FAQ berdasarkan kategori (1-7)
+    const faqMap = {
+      // Kategori Ebook (1)
+      1: [
+        {
+          question: "Apa saja yang akan saya dapatkan jika membeli ebook ini?",
+          answer: "Anda akan mendapatkan akses ke file ebook dalam format PDF yang dapat diunduh dan dibaca kapan saja, plus bonus materi tambahan jika tersedia."
+        },
+        {
+          question: "Bagaimana cara mengakses ebook setelah pembelian?",
+          answer: "Setelah pembayaran dikonfirmasi, Anda akan menerima email berisi link download dan akses ke member area untuk mengunduh ebook."
+        },
+        {
+          question: "Apakah ebook bisa diunduh berkali-kali?",
+          answer: "Ya, setelah pembelian, Anda memiliki akses seumur hidup dan dapat mengunduh ebook berkali-kali sesuai kebutuhan."
+        },
+        {
+          question: "Apakah ebook bisa dibaca di semua perangkat?",
+          answer: "Ya, ebook dalam format PDF dapat dibaca di smartphone, tablet, laptop, dan komputer dengan aplikasi PDF reader."
+        },
+        {
+          question: "Apakah ada garansi untuk ebook yang dibeli?",
+          answer: "Kami memberikan garansi kepuasan. Jika tidak puas dengan konten ebook, silakan hubungi customer service kami untuk bantuan."
+        }
+      ],
+      // Kategori Webinar (2)
+      2: [
+        {
+          question: "Apa saja yang akan saya dapatkan dari webinar ini?",
+          answer: "Anda akan mendapatkan akses live webinar, rekaman lengkap yang dapat ditonton ulang, materi presentasi, dan sertifikat kehadiran."
+        },
+        {
+          question: "Bagaimana cara mengikuti webinar?",
+          answer: "Setelah pembayaran dikonfirmasi, Anda akan menerima email berisi link Zoom/meeting room dan jadwal webinar. Link akan dikirim 1 hari sebelum acara."
+        },
+        {
+          question: "Apakah ada rekaman jika saya tidak bisa hadir live?",
+          answer: "Ya, semua peserta akan mendapatkan akses ke rekaman webinar yang dapat ditonton ulang kapan saja setelah acara selesai."
+        },
+        {
+          question: "Berapa lama akses rekaman webinar tersedia?",
+          answer: "Akses rekaman webinar tersedia seumur hidup. Anda dapat menonton ulang kapan saja melalui member area."
+        },
+        {
+          question: "Apakah saya bisa bertanya langsung kepada pembicara?",
+          answer: "Ya, pada sesi live webinar akan ada waktu untuk tanya jawab langsung dengan pembicara melalui fitur Q&A atau chat."
+        }
+      ],
+      // Kategori Seminar (3)
+      3: [
+        {
+          question: "Apa saja yang akan saya dapatkan dari seminar ini?",
+          answer: "Anda akan mendapatkan tiket masuk seminar, materi presentasi, sertifikat kehadiran, networking session, dan coffee break."
+        },
+        {
+          question: "Di mana lokasi seminar akan dilaksanakan?",
+          answer: "Lokasi seminar akan diinformasikan melalui email setelah pembayaran dikonfirmasi. Biasanya di hotel atau venue yang mudah dijangkau."
+        },
+        {
+          question: "Apakah ada rekaman seminar yang bisa saya akses?",
+          answer: "Tergantung kebijakan acara. Jika tersedia, rekaman akan dibagikan kepada peserta setelah seminar selesai melalui email."
+        },
+        {
+          question: "Bagaimana jika saya tidak bisa hadir di tanggal yang ditentukan?",
+          answer: "Silakan hubungi customer service kami untuk informasi refund atau transfer tiket ke peserta lain. Kebijakan dapat berbeda tergantung waktu pemberitahuan."
+        },
+        {
+          question: "Apakah ada diskon untuk pembelian tiket grup?",
+          answer: "Ya, tersedia diskon khusus untuk pembelian tiket grup minimal 5 orang. Hubungi customer service kami untuk informasi lebih lanjut."
+        }
+      ],
+      // Kategori Buku (4)
+      4: [
+        {
+          question: "Apa saja yang akan saya dapatkan jika membeli buku ini?",
+          answer: "Anda akan mendapatkan buku fisik berkualitas tinggi dengan konten lengkap dan terpercaya, plus akses ke materi tambahan jika tersedia."
+        },
+        {
+          question: "Berapa lama waktu pengiriman buku?",
+          answer: "Waktu pengiriman bervariasi tergantung lokasi Anda. Untuk wilayah Jabodetabek biasanya 2-3 hari kerja, sedangkan luar kota 3-7 hari kerja."
+        },
+        {
+          question: "Apakah buku ini tersedia dalam format digital?",
+          answer: "Saat ini buku tersedia dalam format fisik. Format digital akan diinformasikan lebih lanjut jika tersedia."
+        },
+        {
+          question: "Bagaimana cara menghitung ongkos kirim?",
+          answer: "Ongkos kirim akan dihitung otomatis berdasarkan alamat pengiriman Anda. Anda dapat melihat estimasi ongkir setelah memasukkan alamat lengkap."
+        },
+        {
+          question: "Apakah ada garansi untuk buku yang dibeli?",
+          answer: "Kami memberikan garansi untuk buku yang rusak atau cacat saat pengiriman. Silakan hubungi customer service kami jika mengalami masalah."
+        }
+      ],
+      // Kategori Ecourse (5)
+      5: [
+        {
+          question: "Apa saja yang akan saya dapatkan dari ecourse ini?",
+          answer: "Anda akan mendapatkan akses ke semua modul pembelajaran, video tutorial, materi download, quiz, sertifikat, dan akses ke komunitas eksklusif."
+        },
+        {
+          question: "Berapa lama akses ke ecourse tersedia?",
+          answer: "Akses ke ecourse tersedia seumur hidup. Anda dapat belajar kapan saja dan mengulang materi sesuai kebutuhan."
+        },
+        {
+          question: "Apakah ada support atau mentoring selama belajar?",
+          answer: "Ya, tersedia support melalui grup komunitas, email, atau sesi Q&A berkala dengan instruktur untuk membantu proses pembelajaran Anda."
+        },
+        {
+          question: "Apakah ecourse bisa diakses dari mobile?",
+          answer: "Ya, platform ecourse kami mobile-friendly dan dapat diakses melalui smartphone, tablet, atau laptop dengan koneksi internet."
+        },
+        {
+          question: "Apakah ada ujian atau sertifikat setelah menyelesaikan ecourse?",
+          answer: "Ya, setelah menyelesaikan semua modul dan quiz, Anda akan mendapatkan sertifikat kelulusan yang dapat diunduh dan dicetak."
+        }
+      ],
+      // Kategori Workshop (6)
+      6: [
+        {
+          question: "Apa saja yang akan saya dapatkan dari workshop ini?",
+          answer: "Anda akan mendapatkan materi lengkap, sertifikat, akses ke recording, dan komunitas eksklusif peserta workshop."
+        },
+        {
+          question: "Apakah workshop ini cocok untuk pemula?",
+          answer: "Ya, workshop ini dirancang untuk semua level, termasuk pemula. Materi akan disampaikan secara bertahap dan mudah dipahami."
+        },
+        {
+          question: "Bagaimana sistem pembayaran untuk workshop?",
+          answer: "Anda dapat melakukan pembayaran penuh atau menggunakan sistem down payment (uang muka) terlebih dahulu, kemudian melunasi sebelum workshop dimulai."
+        },
+        {
+          question: "Apakah ada rekaman workshop yang bisa saya akses nanti?",
+          answer: "Ya, semua peserta akan mendapatkan akses ke rekaman workshop yang dapat ditonton ulang kapan saja."
+        },
+        {
+          question: "Bagaimana jika saya tidak bisa hadir di tanggal yang ditentukan?",
+          answer: "Anda tetap bisa mengikuti workshop melalui rekaman yang akan diberikan. Namun, untuk interaksi langsung, disarankan hadir sesuai jadwal."
+        }
+      ],
+      // Kategori Private Mentoring (7)
+      7: [
+        {
+          question: "Apa saja yang akan saya dapatkan dari private mentoring ini?",
+          answer: "Anda akan mendapatkan sesi mentoring one-on-one dengan mentor berpengalaman, personalized action plan, follow-up support, dan akses ke materi eksklusif."
+        },
+        {
+          question: "Berapa kali sesi mentoring yang akan saya dapatkan?",
+          answer: "Jumlah sesi mentoring tergantung paket yang dipilih. Detail lengkap akan diinformasikan setelah pembayaran dikonfirmasi."
+        },
+        {
+          question: "Bagaimana cara menjadwalkan sesi mentoring?",
+          answer: "Setelah pembayaran dikonfirmasi, tim kami akan menghubungi Anda untuk mengatur jadwal sesi mentoring yang sesuai dengan waktu luang Anda."
+        },
+        {
+          question: "Apakah sesi mentoring dilakukan online atau offline?",
+          answer: "Tersedia pilihan online (via Zoom/Google Meet) atau offline (jika memungkinkan). Detail akan dibahas saat konfirmasi jadwal."
+        },
+        {
+          question: "Apakah ada follow-up setelah sesi mentoring selesai?",
+          answer: "Ya, tersedia follow-up support melalui email atau grup komunitas untuk memastikan Anda dapat menerapkan ilmu yang didapat."
+        }
+      ]
+    };
+
+    // Return FAQ sesuai kategori, atau default jika tidak ada
+    return faqMap[kategoriId] || [
+      {
+        question: "Apa saja yang akan saya dapatkan dari produk ini?",
+        answer: "Anda akan mendapatkan akses penuh ke semua fitur dan konten yang tersedia dalam paket produk ini."
+      },
+      {
+        question: "Bagaimana cara menggunakan produk ini?",
+        answer: "Setelah pembayaran dikonfirmasi, Anda akan mendapatkan panduan lengkap dan akses ke platform produk."
+      },
+      {
+        question: "Apakah ada garansi untuk produk ini?",
+        answer: "Kami memberikan garansi kepuasan. Jika tidak puas, silakan hubungi customer service kami untuk bantuan."
+      },
+      {
+        question: "Bagaimana sistem pembayarannya?",
+        answer: "Pembayaran dapat dilakukan melalui berbagai metode yang tersedia. Setelah pembayaran dikonfirmasi, akses akan segera diberikan."
+      },
+      {
+        question: "Apakah ada dukungan setelah pembelian?",
+        answer: "Ya, tim customer service kami siap membantu Anda selama menggunakan produk ini. Hubungi kami kapan saja jika ada pertanyaan."
+      }
+    ];
+  };
+
+  // ==========================================================
+  // LOGIC FORM WILAYAH (CASCADING DROPDOWN) - FORM CUSTOMER
+  // ==========================================================
+  
+  // Load provinces
+  const loadProvinces = async () => {
+    setLoadingRegion(prev => ({ ...prev, provinces: true }));
+    try {
+      const data = await getProvinces();
+      setRegionData(prev => ({ ...prev, provinces: data }));
+    } catch (err) {
+      console.error("Load provinces error:", err);
+    } finally {
+      setLoadingRegion(prev => ({ ...prev, provinces: false }));
+    }
+  };
+  
+  // Load cities
+  const loadCities = async (provinceId) => {
+    setLoadingRegion(prev => ({ ...prev, cities: true }));
+    try {
+      const data = await getCities(provinceId);
+      setRegionData(prev => ({ ...prev, cities: data }));
+    } catch (err) {
+      console.error("Load cities error:", err);
+    } finally {
+      setLoadingRegion(prev => ({ ...prev, cities: false }));
+    }
+  };
+  
+  // Load districts
+  const loadDistricts = async (cityId) => {
+    setLoadingRegion(prev => ({ ...prev, districts: true }));
+    try {
+      const data = await getDistricts(cityId);
+      setRegionData(prev => ({ ...prev, districts: data }));
+    } catch (err) {
+      console.error("Load districts error:", err);
+    } finally {
+      setLoadingRegion(prev => ({ ...prev, districts: false }));
+    }
+  };
+  
+  // Handler untuk update region form (HANYA NAMA)
+  const handleRegionChange = (field, value, id = null) => {
+    if (field === "provinsi") {
+      // Konversi value ke string untuk matching yang lebih robust
+      const provinceId = String(value || "");
+      // Cari province dengan konversi tipe data (handle string/number)
+      const province = regionData.provinces.find(p => 
+        String(p.id) === provinceId || p.id === value || p.id === Number(value)
+      );
+      setSelectedRegionIds(prev => ({ ...prev, provinceId: value || "", cityId: "", districtId: "" }));
+      setRegionForm(prev => ({ 
+        ...prev, 
+        provinsi: province?.name || "",
+        kabupaten: "",
+        kecamatan: "",
+        kode_pos: ""
+      }));
+    } else if (field === "kabupaten") {
+      // Konversi value ke string untuk matching yang lebih robust
+      const cityId = String(value || "");
+      // Cari city dengan konversi tipe data (handle string/number)
+      const city = regionData.cities.find(c => 
+        String(c.id) === cityId || c.id === value || c.id === Number(value)
+      );
+      setSelectedRegionIds(prev => ({ ...prev, cityId: value || "", districtId: "" }));
+      setRegionForm(prev => ({ 
+        ...prev, 
+        kabupaten: city?.name || "",
+        kecamatan: "",
+        kode_pos: ""
+      }));
+    } else if (field === "kecamatan") {
+      // Konversi value ke string untuk matching yang lebih robust
+      const districtId = String(value || "");
+      // Cari district dengan konversi tipe data (handle string/number dan id/district_id)
+      const district = regionData.districts.find(d => 
+        String(d.id) === districtId || 
+        String(d.district_id) === districtId ||
+        d.id === value || 
+        d.district_id === value ||
+        d.id === Number(value) ||
+        d.district_id === Number(value)
+      );
+      setSelectedRegionIds(prev => ({ ...prev, districtId: value || "" }));
+      setRegionForm(prev => ({ 
+        ...prev, 
+        kecamatan: district?.name || "",
+        kode_pos: district?.postal_code || "" // Ambil kode pos dari district jika ada
+      }));
+    } else if (field === "kode_pos") {
+      setRegionForm(prev => ({ ...prev, kode_pos: value }));
+    }
+  };
+  
+  // Load provinces on mount (selalu load untuk form customer)
+  useEffect(() => {
+    loadProvinces();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  
+  // Load cities when province selected
+  useEffect(() => {
+    if (selectedRegionIds.provinceId) {
+      loadCities(selectedRegionIds.provinceId);
+      // Reset child selections
+      setSelectedRegionIds(prev => ({ ...prev, cityId: "", districtId: "" }));
+      setRegionForm(prev => ({ ...prev, kabupaten: "", kecamatan: "", kode_pos: "" }));
+      setRegionData(prev => ({ ...prev, cities: [], districts: [] }));
+    } else {
+      setRegionData(prev => ({ ...prev, cities: [], districts: [] }));
+      setSelectedRegionIds(prev => ({ ...prev, cityId: "", districtId: "" }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRegionIds.provinceId]);
+  
+  // Load districts when city selected
+  useEffect(() => {
+    if (selectedRegionIds.cityId) {
+      loadDistricts(selectedRegionIds.cityId);
+      // Reset child selections
+      setSelectedRegionIds(prev => ({ ...prev, districtId: "" }));
+      setRegionForm(prev => ({ ...prev, kecamatan: "", kode_pos: "" }));
+      setRegionData(prev => ({ ...prev, districts: [] }));
+    } else {
+      setRegionData(prev => ({ ...prev, districts: [] }));
+      setSelectedRegionIds(prev => ({ ...prev, districtId: "" }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRegionIds.cityId]);
+
+  // Loading state untuk edit mode
+  const [loading, setLoading] = useState(true);
+
+  // Function untuk parse landingpage array dari backend ke blocks dan pengaturanForm
+  const parseLandingpageArray = (landingpageArray) => {
+    if (!landingpageArray || !Array.isArray(landingpageArray) || landingpageArray.length === 0) {
+      return { blocks: [], settings: {} };
+    }
+
+    // Index 0 adalah settings object
+    const settings = landingpageArray[0] || {};
+    
+    // Index 1+ adalah blocks
+    const blocksData = landingpageArray.slice(1) || [];
+
+    // Transform blocks dari struktur baru (content/style/config) ke struktur editor (data)
+    const parsedBlocks = blocksData.map((block, index) => {
+      const { type, content, style, config, order } = block;
+      
+      // Transform kembali ke struktur editor
+      let data = {};
+      
+      switch (type) {
+        case "text":
+          data = {
+            content: content?.html || "",
+            fontFamily: style?.text?.fontFamily || "Page Font",
+            textColor: style?.text?.color || "#1a1a1a",
+            textAlign: style?.text?.align || "left",
+            lineHeight: style?.text?.lineHeight || 1.8,
+            fontWeight: style?.text?.fontWeight || "normal",
+            fontStyle: style?.text?.fontStyle || "normal",
+            textDecoration: style?.text?.textDecoration || "none",
+            textTransform: style?.text?.textTransform || "none",
+            letterSpacing: style?.text?.letterSpacing || 0,
+            backgroundColor: style?.text?.backgroundColor || "transparent",
+            paddingTop: style?.container?.padding?.top || 0,
+            paddingRight: style?.container?.padding?.right || 0,
+            paddingBottom: style?.container?.padding?.bottom || 0,
+            paddingLeft: style?.container?.padding?.left || 0,
+            bgType: style?.container?.background?.type || "none",
+            bgColor: style?.container?.background?.color || "#ffffff",
+            bgImage: style?.container?.background?.image || "",
+            componentId: config?.componentId || `text-${Date.now()}`,
+            deviceView: config?.deviceView || "desktop",
+            parentId: config?.parentId || null
+          };
+          break;
+        case "image":
+          data = {
+            src: content?.src || "",
+            alt: content?.alt || "",
+            caption: content?.caption || "",
+            alignment: style?.image?.alignment || "center",
+            imageWidth: style?.image?.width || 100,
+            imageFit: style?.image?.fit || "fill",
+            aspectRatio: style?.image?.aspectRatio || "OFF",
+            paddingTop: style?.container?.padding?.top || 0,
+            paddingRight: style?.container?.padding?.right || 0,
+            paddingBottom: style?.container?.padding?.bottom || 0,
+            paddingLeft: style?.container?.padding?.left || 0,
+            backgroundType: style?.container?.background?.type || "none",
+            backgroundColor: style?.container?.background?.color || "#ffffff",
+            backgroundImage: style?.container?.background?.image || "",
+            componentId: config?.componentId || `image-${Date.now()}`,
+            device: config?.device || "mobile"
+          };
+          break;
+        case "youtube":
+        case "video":
+          data = {
+            items: (content?.items || []).map(item => ({
+              url: item.url || "",
+              embedUrl: item.embedUrl || item.url || ""
+            })),
+            alignment: style?.video?.alignment || "center",
+            videoWidth: style?.video?.width || 100,
+            paddingTop: style?.container?.padding?.top || 0,
+            paddingRight: style?.container?.padding?.right || 0,
+            paddingBottom: style?.container?.padding?.bottom || 0,
+            paddingLeft: style?.container?.padding?.left || 0,
+            componentId: config?.componentId || `video-${Date.now()}`
+          };
+          break;
+        case "testimoni":
+          data = {
+            items: (content?.items || []).map(item => ({
+              gambar: item.gambar || "",
+              nama: item.nama || "",
+              jabatan: item.jabatan || "",
+              isiTestimony: item.isiTestimony || item.deskripsi || "<p></p>",
+              deskripsi: item.isiTestimony || item.deskripsi || "<p></p>",
+              showRating: item.showRating !== false,
+              rating: item.rating || 5
+            })),
+            componentTitle: config?.componentTitle || "Testimoni Pembeli",
+            componentId: config?.componentId || `testimoni-${Date.now()}`
+          };
+          break;
+        case "list":
+          data = {
+            items: (content?.items || []).map(item => ({
+              nama: item.nama || "",
+              content: item.content || "<p></p>",
+              icon: item.icon || "CheckCircle2",
+              iconColor: item.iconColor || "#10b981"
+            })),
+            style: content?.style || "icon",
+            componentTitle: config?.componentTitle || "",
+            paddingTop: style?.container?.padding?.top || 20,
+            paddingRight: style?.container?.padding?.right || 0,
+            paddingBottom: style?.container?.padding?.bottom || 20,
+            paddingLeft: style?.container?.padding?.left || 0,
+            componentId: config?.componentId || `list-${Date.now()}`,
+            parentId: config?.parentId || null
+          };
+          break;
+        case "section":
+          data = {
+            title: content?.title || "",
+            children: content?.children || [],
+            marginBetween: style?.container?.marginBetween || 24,
+            border: {
+              width: style?.container?.border?.width || 2,
+              color: style?.container?.border?.color || "#e5e7eb",
+              radius: style?.container?.border?.radius || "16px"
+            },
+            backgroundColor: style?.container?.background?.color || "#f9fafb",
+            padding: {
+              top: style?.container?.padding?.top || 40,
+              right: style?.container?.padding?.right || 40,
+              bottom: style?.container?.padding?.bottom || 40,
+              left: style?.container?.padding?.left || 40
+            },
+            shadow: style?.container?.shadow || "0 4px 6px rgba(0,0,0,0.1)",
+            responsiveType: style?.container?.responsiveType || "vertical",
+            componentId: config?.componentId || `section-${Date.now()}`
+          };
+          break;
+        case "countdown":
+          data = {
+            hours: content?.hours !== undefined ? content.hours : 0,
+            minutes: content?.minutes !== undefined ? content.minutes : 0,
+            seconds: content?.seconds !== undefined ? content.seconds : 0,
+            promoText: content?.promoText || "Promo Berakhir Dalam:",
+            textColor: style?.text?.color || "#ffffff",
+            bgColor: style?.container?.background?.color || "#1a1a1a",
+            numberStyle: style?.numberStyle || "flip",
+            componentId: config?.componentId || `countdown-${Date.now()}`
+          };
+          break;
+        case "image-slider":
+          data = {
+            images: (content?.images || []).map(img => ({
+              src: img.src || "",
+              alt: img.alt || "",
+              caption: img.caption || "",
+              link: img.link || "",
+              postal_code: img.postal_code || ""
+            })),
+            autoslide: content?.autoplay || false,
+            autoslideDuration: content?.interval || 5000,
+            showCaption: false,
+            componentId: config?.componentId || `image-slider-${Date.now()}`
+          };
+          break;
+        case "quota-info":
+          data = {
+            totalKuota: content?.totalQuota || 60,
+            sisaKuota: content?.currentQuota || 47,
+            headline: "Sisa kuota terbatas!",
+            subtext: "Jangan tunda lagi, amankan kursi Anda sebelum kuota habis.",
+            highlightText: "Daftar sekarang sebelum kehabisan.",
+            componentId: config?.componentId || `quota-info-${Date.now()}`
+          };
+          break;
+        case "button":
+          data = {
+            text: content?.text || "Klik Disini",
+            link: content?.link || "#",
+            style: style?.button?.style || "primary",
+            componentId: config?.componentId || `button-${Date.now()}`
+          };
+          break;
+        case "html":
+          data = {
+            code: content?.code || "",
+            componentId: config?.componentId || `html-${Date.now()}`
+          };
+          break;
+        case "embed":
+          data = {
+            code: content?.code || "",
+            componentId: config?.componentId || `embed-${Date.now()}`
+          };
+          break;
+        case "divider":
+          data = {
+            style: content?.style || "solid",
+            color: content?.color || "#e5e7eb",
+            height: content?.height || 2,
+            componentId: config?.componentId || `divider-${Date.now()}`
+          };
+          break;
+        case "scroll-target":
+          data = {
+            target: content?.target || "",
+            label: content?.label || "",
+            componentId: config?.componentId || `scroll-target-${Date.now()}`
+          };
+          break;
+        case "animation":
+          data = {
+            type: content?.type || "fadeIn",
+            duration: content?.duration || 1000,
+            delay: content?.delay || 0,
+            easing: content?.easing || "ease-in-out",
+            componentId: config?.componentId || `animation-${Date.now()}`
+          };
+          break;
+        case "faq":
+          data = {
+            componentId: config?.componentId || `faq-${Date.now()}`
+          };
+          break;
+        case "form":
+          data = {
+            kategori: settings?.form?.submitConfig?.kategori || null,
+            componentId: config?.componentId || `form-${Date.now()}`
+          };
+          break;
+        default:
+          data = {
+            ...content,
+            componentId: config?.componentId || `${type}-${Date.now()}`
+          };
+      }
+
+      return {
+        id: `block-${Date.now()}-${index}`,
+        type: type,
+        data: data,
+        order: order !== undefined ? order : index + 1,
+        parentId: data.parentId || null
+      };
+    });
+
+    return { blocks: parsedBlocks, settings };
+  };
+
+  // Function untuk fetch data produk existing
+  const fetchProductData = async () => {
     if (!productId) {
-      if (setLoadingState) setLoading(false);
+      setLoading(false);
       return;
     }
 
     try {
-      if (setLoadingState) setLoading(true);
+      setLoading(true);
       const token = localStorage.getItem("token");
       const headers = { Authorization: `Bearer ${token}` };
 
       // Fetch produk berdasarkan ID
-      const produkRes = await fetch(
-        `/api/sales/produk/${productId}`,
-        { headers }
-      );
+      const produkRes = await fetch(`/api/sales/produk/${productId}`, { headers });
       const produkResponse = await produkRes.json();
-      
-      console.log("🔍 [EDIT PRODUCT] Response:", produkResponse);
-      console.log("🔍 [EDIT PRODUCT] Response.data:", produkResponse.data);
-      console.log("🔍 [EDIT PRODUCT] Is array:", Array.isArray(produkResponse.data));
       
       if (!produkRes.ok || !produkResponse.success) {
         throw new Error(produkResponse.message || "Gagal memuat data produk");
@@ -935,13 +2046,10 @@ export default function Page() {
       // Handle response yang bisa berupa array atau object
       let produkData = null;
       if (Array.isArray(produkResponse.data)) {
-        // Jika array, ambil elemen pertama
         produkData = produkResponse.data.length > 0 ? produkResponse.data[0] : null;
       } else if (produkResponse.data && typeof produkResponse.data === "object") {
-        // Jika object langsung
         produkData = produkResponse.data;
       } else {
-        // Fallback ke produkResponse jika struktur berbeda
         produkData = produkResponse;
       }
 
@@ -949,102 +2057,34 @@ export default function Page() {
         throw new Error("Data produk tidak ditemukan");
       }
 
-      console.log("✅ [EDIT PRODUCT] Produk data loaded:", produkData);
-      console.log("✅ [EDIT PRODUCT] Nama:", produkData.nama);
-      console.log("✅ [EDIT PRODUCT] Kategori:", produkData.kategori, produkData.kategori_rel);
-
-      // Helper function untuk parse JSON fields
-      const safeParseJSON = (value, fallback = []) => {
-        if (!value) return fallback;
-        if (Array.isArray(value)) return value;
-        try {
-          return JSON.parse(value);
-        } catch {
-          return fallback;
+      // Parse landingpage array
+      let landingpageArray = [];
+      if (produkData.landingpage) {
+        if (Array.isArray(produkData.landingpage)) {
+          landingpageArray = produkData.landingpage;
+        } else if (typeof produkData.landingpage === "string") {
+          try {
+            landingpageArray = JSON.parse(produkData.landingpage);
+          } catch {
+            landingpageArray = [];
+          }
         }
-      };
-
-      // Fetch kategori untuk mendapatkan kategori_id
-      const kategoriRes = await fetch(
-        "/api/sales/kategori-produk",
-        { headers }
-      );
-      const kategoriData = await kategoriRes.json();
-      const activeCategories = Array.isArray(kategoriData.data)
-        ? kategoriData.data.filter((k) => k.status === "1")
-        : [];
-
-      // Handle kategori_id
-      let kategoriId = null;
-      if (produkData.kategori_rel) {
-        kategoriId = produkData.kategori_rel.id ? Number(produkData.kategori_rel.id) : null;
-      } else if (produkData.kategori_id) {
-        kategoriId = Number(produkData.kategori_id);
-      } else if (produkData.kategori) {
-        kategoriId = Number(produkData.kategori);
       }
 
-      // SELALU generate kode dari nama dengan dash
-      const kodeGenerated = generateKode(produkData.nama || "produk-baru");
-      
-      console.log("🔧 [LOAD] Nama produk:", produkData.nama);
-      console.log("🔧 [LOAD] Kode generated (dengan dash):", kodeGenerated);
-      
-      // Parse gambar - handle existing images (type: "url")
-      const parsedGambar = safeParseJSON(produkData.gambar, []).map(g => {
-        const imagePath = typeof g === "string" ? g : (g.path || g);
-        return {
-          path: imagePath 
-            ? { type: "url", value: imagePath }
-            : { type: "file", value: null },
-          caption: g.caption || ""
-        };
-      });
+      // Parse landingpage array ke blocks dan settings
+      const { blocks: parsedBlocks, settings } = parseLandingpageArray(landingpageArray);
 
-      // Parse testimoni - handle existing images (type: "url")
-      const parsedTestimoni = safeParseJSON(produkData.testimoni, []).map(t => {
-        const imagePath = t.gambar ? (typeof t.gambar === "string" ? t.gambar : (t.gambar.path || t.gambar)) : null;
-        return {
-          gambar: imagePath
-            ? { type: "url", value: imagePath }
-            : { type: "file", value: null },
-          nama: t.nama || "",
-          deskripsi: t.deskripsi || ""
-        };
-      });
+      // Set blocks
+      setBlocks(parsedBlocks);
 
-      // Parse custom_field
-      const parsedCustomField = safeParseJSON(produkData.custom_field, []).map(f => ({
-        label: f.nama_field || f.label || "",
-        value: f.value || "",
-        required: f.required || false
-      }));
+      // Set pengaturanForm dari produkData dan settings
+      const kategoriId = produkData.kategori_rel?.id 
+        ? Number(produkData.kategori_rel.id) 
+        : (produkData.kategori_id ? Number(produkData.kategori_id) : (produkData.kategori ? Number(produkData.kategori) : null));
 
-      // Parse list_point
-      const parsedListPoint = safeParseJSON(produkData.list_point, []).map(p => ({
-        nama: p.nama || p
-      }));
-
-      // Parse video
-      const parsedVideo = produkData.video
-        ? (Array.isArray(produkData.video) 
-            ? produkData.video.join(", ")
-            : safeParseJSON(produkData.video, []).join(", "))
-        : "";
-
-      // Handle header image - existing image (type: "url")
-      const headerImage = produkData.header
-        ? (typeof produkData.header === "string"
-            ? { type: "url", value: produkData.header }
-            : (produkData.header.path
-                ? { type: "url", value: produkData.header.path }
-                : { type: "file", value: null }))
-        : { type: "file", value: null };
-
-      // Parse tanggal_event untuk PrimeReact Calendar
+      // Parse tanggal_event
       let parsedTanggalEvent = null;
       if (produkData.tanggal_event) {
-        // Backend format: "2025-11-29 13:00:00" atau ISO string
         const dateStr = produkData.tanggal_event.replace(" ", "T");
         const date = new Date(dateStr);
         if (!isNaN(date.getTime())) {
@@ -1052,234 +2092,1164 @@ export default function Page() {
         }
       }
 
-      const updatedForm = {
-        ...defaultForm, // Start with default form
-        // Override with actual data
-        nama: produkData.nama || "",
-        kode: kodeGenerated,
-        url: "/" + kodeGenerated, // Selalu generate URL dari kode (bukan dari database)
-        deskripsi: produkData.deskripsi || "",
-        harga_coret: produkData.harga_coret || "",
-        harga_asli: produkData.harga_asli || "",
-        tanggal_event: parsedTanggalEvent,
-        status: produkData.status || "1",
-        landingpage: produkData.landingpage || "1",
-        id: produkData.id || productId,
-        kategori: kategoriId,
-        assign: produkData.assign_rel 
-          ? produkData.assign_rel.map((u) => u.id) 
-          : safeParseJSON(produkData.assign, []).map(a => typeof a === "number" ? a : Number(a)).filter(a => !isNaN(a)),
-        user_input: produkData.user_input_rel?.id || produkData.user_input || null,
-        custom_field: parsedCustomField,
-        list_point: parsedListPoint,
-        testimoni: parsedTestimoni,
-        fb_pixel: safeParseJSON(produkData.fb_pixel, []),
-        // event_fb_pixel dari backend: [{event: "value"}] → convert ke ["value"]
-        event_fb_pixel: safeParseJSON(produkData.event_fb_pixel, []).map(e => 
-          typeof e === "string" ? e : (e.event || e)
-        ),
-        gtm: safeParseJSON(produkData.gtm, []),
-        gambar: parsedGambar,
-        header: headerImage,
-        video: parsedVideo,
-      };
-      
-      console.log("🔧 [EDIT] Setting form with data:", updatedForm);
-      setForm(updatedForm);
-      
-      // Set user yang membuat produk (created by)
-      if (produkData.user_input_rel) {
-        setCreatedByUser(produkData.user_input_rel);
+      // Parse bundling
+      let parsedBundling = [];
+      if (produkData.bundling) {
+        if (Array.isArray(produkData.bundling)) {
+          parsedBundling = produkData.bundling;
+        } else if (typeof produkData.bundling === "string") {
+          try {
+            parsedBundling = JSON.parse(produkData.bundling);
+          } catch {
+            parsedBundling = [];
+          }
+        }
       }
-      
-      // ============================
-      // SIMPAN DATA PRODUK ASLI KE LOCALSTORAGE
-      // Digunakan sebagai fallback saat build FormData untuk memastikan semua field dikirim
-      // ============================
-      const originalProductData = {
-        id: produkData.id || productId,
-        kategori: kategoriId,
-        nama: produkData.nama || "",
-        kode: produkData.kode || kodeGenerated,
-        url: produkData.url || "/" + kodeGenerated,
-        deskripsi: produkData.deskripsi || "",
-        harga_asli: produkData.harga_asli || "",
-        harga_coret: produkData.harga_coret || "",
-        tanggal_event: produkData.tanggal_event || "",
-        landingpage: produkData.landingpage || "1",
-        status: produkData.status || "1",
-        header: produkData.header || "",
-        gambar: safeParseJSON(produkData.gambar, []),
-        testimoni: safeParseJSON(produkData.testimoni, []),
-        custom_field: safeParseJSON(produkData.custom_field, []),
-        list_point: safeParseJSON(produkData.list_point, []),
-        assign: produkData.assign_rel 
-          ? produkData.assign_rel.map((u) => u.id) 
-          : safeParseJSON(produkData.assign, []).map(a => typeof a === "number" ? a : Number(a)).filter(a => !isNaN(a)),
-        fb_pixel: safeParseJSON(produkData.fb_pixel, []),
-        event_fb_pixel: safeParseJSON(produkData.event_fb_pixel, []),
-        gtm: safeParseJSON(produkData.gtm, []),
-        video: produkData.video 
-          ? (Array.isArray(produkData.video) 
-              ? produkData.video 
-              : safeParseJSON(produkData.video, []))
-          : [],
-      };
-      
-      // Simpan ke localStorage
-      try {
-        localStorage.setItem(`product_original_data_${productId}`, JSON.stringify(originalProductData));
-        console.log("[LOCALSTORAGE] ✅ Original product data saved:", {
-          productId: productId,
-          key: `product_original_data_${productId}`,
-          fields: Object.keys(originalProductData)
+
+      // Parse analytics dari settings
+      const analytics = settings?.analytics || {};
+      const facebookPixels = analytics?.facebook?.pixels || [];
+      const tiktokPixels = analytics?.tiktok?.pixels || [];
+      const googleGtm = analytics?.google?.gtm || "";
+
+      // Extract Facebook events
+      const facebookEvents = [];
+      const facebookEventParams = {};
+      facebookPixels.forEach((pixel, index) => {
+        if (pixel.events && Array.isArray(pixel.events)) {
+          facebookEvents[index] = pixel.events.map(e => e.name);
+          facebookEventParams[index] = pixel.events.map(e => e.params || {});
+        }
+      });
+
+      // Extract TikTok events
+      const tiktokEvents = [];
+      tiktokPixels.forEach((pixel, index) => {
+        if (pixel.events && Array.isArray(pixel.events)) {
+          tiktokEvents[index] = pixel.events.map(e => e.name);
+        }
+      });
+
+      // Parse custom scripts
+      const customScripts = settings?.customScripts || {};
+      const customHeadScript = customScripts.customCode || "";
+      const enableCustomHeadScript = customScripts.enabled || false;
+
+      // Parse form preview address
+      const formPreviewAddress = settings?.form_preview_address || {};
+      if (formPreviewAddress.provinsi || formPreviewAddress.kabupaten || formPreviewAddress.kecamatan || formPreviewAddress.kode_pos) {
+        setRegionForm({
+          provinsi: formPreviewAddress.provinsi || "",
+          kabupaten: formPreviewAddress.kabupaten || "",
+          kecamatan: formPreviewAddress.kecamatan || "",
+          kode_pos: formPreviewAddress.kode_pos || ""
         });
-      } catch (error) {
-        console.error("[LOCALSTORAGE] ❌ Failed to save original product data:", error);
       }
-      
-      console.log("✅ [EDIT] Product data loaded:", {
-        nama: produkData.nama,
-        kode_from_backend: produkData.kode,
-        kode_generated: kodeGenerated,
-        kategori: kategoriId,
+
+      // Set pengaturanForm
+      setPengaturanForm({
+        nama: produkData.nama || "",
+        kategori: kategoriId ? String(kategoriId) : null,
+        kode: produkData.kode || formatSlug(produkData.nama || ""),
+        url: produkData.url || `/${formatSlug(produkData.nama || "")}`,
+        harga: produkData.harga ? Number(produkData.harga) : null,
+        jenis_produk: produkData.jenis_produk || "fisik",
+        isBundling: produkData.isBundling || false,
+        bundling: parsedBundling,
         tanggal_event: parsedTanggalEvent,
-        list_point: parsedListPoint,
-        testimoni: parsedTestimoni.length,
-        gambar: parsedGambar.length,
-        created_by: produkData.user_input_rel,
+        assign: produkData.assign_rel 
+          ? produkData.assign_rel.map((u) => String(u.id))
+          : (Array.isArray(produkData.assign) ? produkData.assign.map(a => String(a)) : []),
+        background_color: settings?.background_color || "#ffffff",
+        page_title: settings?.page_title || "",
+        tags: settings?.tags || [],
+        seo_title: settings?.seo_title || "",
+        meta_description: settings?.meta_description || "",
+        meta_image: settings?.meta_image || "",
+        favicon: settings?.favicon || "",
+        preview_url: settings?.preview_url || "",
+        loading_logo: settings?.loading_logo || "",
+        disable_crawler: settings?.disable_crawler || false,
+        disable_rightclick: settings?.disable_rightclick || false,
+        html_language: settings?.html_language || "id",
+        disable_custom_font: settings?.disable_custom_font || false,
+        facebook_pixels: facebookPixels.map(p => p.id || ""),
+        facebook_events: facebookEvents,
+        facebook_event_params: facebookEventParams,
+        tiktok_pixels: tiktokPixels.map(p => p.id || ""),
+        tiktok_events: tiktokEvents,
+        tiktok_event_params: {},
+        google_gtm: googleGtm,
+        custom_head_script: customHeadScript,
+        enable_custom_head_script: enableCustomHeadScript
       });
-      
-      console.log("✅ [EDIT] Form state after setForm:", {
-        nama: form.nama,
-        kategori: form.kategori,
-        harga_asli: form.harga_asli,
-        harga_coret: form.harga_coret,
-      });
-    } catch (err) {
-      console.error("❌ [EDIT PRODUCT] Fetch product data error:", err);
-      console.error("❌ [EDIT PRODUCT] Error details:", {
-        message: err.message,
-        stack: err.stack,
-        productId: productId
-      });
-      if (setLoadingState) {
-        alert(`Gagal memuat data produk: ${err.message || "Unknown error"}`);
+
+      // Set productKategori untuk FAQ
+      if (kategoriId) {
+        setProductKategori(kategoriId);
       }
+
+    } catch (err) {
+      console.error("Error fetching product data:", err);
+      toast.error(`Gagal memuat data produk: ${err.message || "Unknown error"}`);
     } finally {
-      if (setLoadingState) setLoading(false);
+      setLoading(false);
     }
   };
 
+  // Fetch kategori dan user options
   useEffect(() => {
     async function fetchInitialData() {
-      if (!productId) {
-        setLoading(false);
-        return;
-      }
-
       try {
         const token = localStorage.getItem("token");
         const headers = { Authorization: `Bearer ${token}` };
 
-        // 1️⃣ Fetch kategori dan filter hanya yang aktif (status === "1")
-        const kategoriRes = await fetch(
-          "/api/sales/kategori-produk",
-          { headers }
-        );
+        // Fetch kategori
+        const kategoriRes = await fetch("/api/sales/kategori-produk", { headers });
         const kategoriData = await kategoriRes.json();
         
-        // Logging struktur JSON lengkap
-        console.log("Success:", kategoriData.success);
-        console.log("Data:", kategoriData.data);
-        console.table(kategoriData.data);
-        
-        // Filter hanya kategori yang aktif (status === "1")
         const activeCategories = Array.isArray(kategoriData.data)
           ? kategoriData.data.filter((k) => k.status === "1")
           : [];
         
-        // Create options with ID as value and name as label
         const kategoriOpts = activeCategories.map((k) => ({
           label: `${k.id} - ${k.nama}`,
-          value: k.id
+          value: String(k.id),
         }));
         setKategoriOptions(kategoriOpts);
 
-        // 2️⃣ Fetch produk berdasarkan ID - menggunakan fetchProductData
-        await fetchProductData(true);
-
-        // 3️⃣ Fetch users - filter hanya status 1
-        const usersRes = await fetch(
-          "/api/sales/users",
-          { headers }
-        );
-        const usersJson = await usersRes.json();
+        // Fetch sales list from /api/sales/lead/sales-list
+        const salesRes = await fetch("/api/sales/lead/sales-list", { headers });
+        const salesJson = await salesRes.json();
         
-        // Logging struktur JSON lengkap
-        console.log("Success:", usersJson.success);
-        console.log("Data:", usersJson.data);
-        console.table(usersJson.data);
-        
-        const userOpts = Array.isArray(usersJson.data)
-          ? usersJson.data
-              .filter((u) => u.status === "1" || u.status === 1)
-              .map((u) => ({ label: u.nama || u.name, value: u.id }))
+        const salesOpts = Array.isArray(salesJson.data)
+          ? salesJson.data.map((sales) => ({
+              label: sales.nama || sales.name || `Sales ${sales.id}`,
+              value: String(sales.id),
+            }))
           : [];
-        setUserOptions(userOpts);
+        setUserOptions(salesOpts);
       } catch (err) {
-        console.error("Fetch initial data error:", err);
-        alert("Gagal memuat data produk!");
-      } finally {
-        setLoading(false);
+        console.error("Error fetching initial data:", err);
       }
     }
-
     fetchInitialData();
-  }, [productId, refreshKey]);
+  }, []);
 
-  // ============================
-  // UI
-  // ============================
+  // Fetch product data on mount (edit mode)
+  useEffect(() => {
+    if (productId) {
+      fetchProductData();
+    } else {
+      setLoading(false);
+    }
+  }, [productId]);
+
+  // Fungsi untuk generate kode dari nama (slugify) - Single source of truth
+  const formatSlug = (text) => {
+    if (!text) return "";
+  
+    return text
+      .toLowerCase()
+      .replace(/\s+/g, "-")        // ⬅️ spasi DIUBAH dulu
+      .replace(/[^a-z0-9-]/g, "")
+      .replace(/-+/g, "-");
+  };
+  
+  
+  // Handler khusus untuk input kode produk - lebih stabil untuk ketik manual
+  const handleKodeChange = (e) => {
+    const input = e.target;
+    const rawValue = input.value;
+  
+    const cursorPos = input.selectionStart ?? 0;
+  
+    const formattedValue = formatSlug(rawValue);
+    const url = formattedValue ? `/${formattedValue}` : "";
+  
+    const beforeCursor = rawValue.slice(0, cursorPos);
+    const formattedBeforeCursor = formatSlug(beforeCursor);
+  
+    const newCursorPos = Math.min(
+      formattedBeforeCursor.length,
+      formattedValue.length
+    );
+  
+    setPengaturanForm(prev => ({
+      ...prev,
+      kode: formattedValue,
+      url
+    }));
+  };
+  
+
+  // Handler untuk update form pengaturan
+  const handlePengaturanChange = (key, value) => {
+    if (key === "nama") {
+      // Nama produk tidak auto-generate kode dan URL
+      setPengaturanForm((prev) => ({ 
+        ...prev, 
+        nama: value
+      }));
+      
+      // Update nama produk di Rincian Pemesanan
+      requestAnimationFrame(() => {
+        const namaElement = document.querySelector('.rincian-pesanan-name');
+        if (namaElement) {
+          namaElement.textContent = value || "Nama Produk";
+        }
+      });
+    } else if (key === "kode") {
+      // Auto-format kode menggunakan single source of truth
+      const formattedKode = formatSlug(value);
+      const url = formattedKode ? `/${formattedKode}` : "";
+      setPengaturanForm((prev) => ({ 
+        ...prev, 
+        kode: formattedKode,
+        url: url
+      }));
+    } else {
+      setPengaturanForm((prev) => ({ ...prev, [key]: value }));
+      
+      // Update total di Rincian Pemesanan saat harga berubah
+      if (key === "harga") {
+        requestAnimationFrame(() => {
+          const totalElement = document.getElementById('rincian-total');
+          const ongkirElement = document.getElementById('rincian-ongkir');
+          
+          if (totalElement) {
+            const harga = value || 0;
+            // Hanya hitung ongkir jika produk fisik
+            const ongkir = (pengaturanForm.jenis_produk === "fisik" && ongkirElement) 
+              ? parseInt(ongkirElement.textContent.replace(/[^0-9]/g, '')) || 0 
+              : 0;
+            const total = harga + ongkir;
+            
+            const formatHarga = (harga) => {
+              if (!harga || harga === 0) return "0";
+              return harga.toLocaleString("id-ID");
+            };
+            
+            totalElement.textContent = `Rp ${formatHarga(total)}`;
+          }
+          
+          // Update harga produk di Rincian Pemesanan
+          const hargaElement = document.querySelector('.rincian-pesanan-item .rincian-pesanan-price');
+          if (hargaElement && !hargaElement.id) {
+            const formatHarga = (harga) => {
+              if (!harga || harga === 0) return "0";
+              return harga.toLocaleString("id-ID");
+            };
+            hargaElement.textContent = `Rp ${formatHarga(value || 0)}`;
+          }
+        });
+      }
+      
+      // Reset ongkir saat jenis produk berubah
+      if (key === "jenis_produk") {
+        requestAnimationFrame(() => {
+          const ongkirElement = document.getElementById('rincian-ongkir');
+          const totalElement = document.getElementById('rincian-total');
+          
+          const formatHarga = (harga) => {
+            if (!harga || harga === 0) return "0";
+            return harga.toLocaleString("id-ID");
+          };
+          
+          // Get harga aktif (bundling atau default)
+          let activeHarga = pengaturanForm.harga || 0;
+          if (pengaturanForm.isBundling && selectedBundling !== null && pengaturanForm.bundling && pengaturanForm.bundling[selectedBundling]) {
+            activeHarga = pengaturanForm.bundling[selectedBundling].harga || 0;
+          }
+          
+          if (value === "non-fisik") {
+            // Non-fisik: reset ongkir dan total = harga saja
+            if (ongkirElement) {
+              ongkirElement.textContent = "Rp 0";
+            }
+            if (totalElement) {
+              totalElement.textContent = `Rp ${formatHarga(activeHarga)}`;
+            }
+          } else {
+            // Fisik: reset ongkir ke 0, total = harga (ongkir akan dihitung saat user pilih)
+            if (ongkirElement) {
+              ongkirElement.textContent = "Rp 0";
+            }
+            if (totalElement) {
+              totalElement.textContent = `Rp ${formatHarga(activeHarga)}`;
+            }
+          }
+        });
+      }
+    }
+  };
+
+  // ============================================
+  // FUNGSI TRANSFORMASI PAYLOAD (Struktur Baru)
+  // ============================================
+
+  // Transformasi block dari flat data ke content/style/config
+  const transformBlock = (block) => {
+    const { type, data = {}, order } = block;
+    
+    // Extract content, style, dan config berdasarkan type
+    let content = {};
+    let style = {};
+    let config = {};
+
+    switch (type) {
+      case "text":
+        content = {
+          html: data.content || "<p></p>"
+        };
+        style = {
+          text: {
+            fontFamily: data.fontFamily && data.fontFamily !== "Page Font" ? data.fontFamily : "Inter, sans-serif",
+            color: data.textColor || "#1a1a1a",
+            align: data.textAlign || "left",
+            lineHeight: data.lineHeight || 1.8,
+            fontWeight: data.fontWeight || "normal",
+            fontStyle: data.fontStyle || "normal",
+            textDecoration: data.textDecoration || "none",
+            textTransform: data.textTransform || "none",
+            letterSpacing: data.letterSpacing || 0,
+            backgroundColor: data.backgroundColor || "transparent"
+          },
+          container: {
+            padding: {
+              top: data.paddingTop || 0,
+              right: data.paddingRight || 0,
+              bottom: data.paddingBottom || 0,
+              left: data.paddingLeft || 0
+            },
+            margin: {
+              top: 0,
+              right: 0,
+              bottom: 0,
+              left: 0
+            },
+            background: {
+              type: data.bgType || "none",
+              color: data.bgColor || "#ffffff",
+              image: data.bgImage || "",
+              size: "cover",
+              position: "center",
+              repeat: "no-repeat"
+            },
+            border: {
+              width: 0,
+              style: "solid",
+              color: "#e5e7eb",
+              radius: "0px"
+            },
+            shadow: "none"
+          }
+        };
+        config = {
+          componentId: data.componentId || `text-${Date.now()}`,
+          deviceView: data.deviceView || "desktop",
+          ...(data.parentId ? { parentId: data.parentId } : {})
+        };
+        break;
+
+      case "image":
+        content = {
+          src: data.src || "",
+          alt: data.alt || "",
+          caption: data.caption || ""
+        };
+        style = {
+          image: {
+            alignment: data.alignment || "center",
+            width: data.imageWidth || 100,
+            fit: data.imageFit || "fill",
+            aspectRatio: data.aspectRatio || "OFF"
+          },
+          container: {
+            padding: {
+              top: data.paddingTop || 0,
+              right: data.paddingRight || 0,
+              bottom: data.paddingBottom || 0,
+              left: data.paddingLeft || 0
+            },
+            margin: {
+              top: 0,
+              right: 0,
+              bottom: 0,
+              left: 0
+            },
+            background: {
+              type: data.backgroundType || "none",
+              color: data.backgroundColor || "#ffffff",
+              image: data.backgroundImage || ""
+            },
+            border: {
+              width: 0,
+              style: "solid",
+              color: "#e5e7eb",
+              radius: "0px"
+            },
+            shadow: "none"
+          }
+        };
+        config = {
+          componentId: data.componentId || `image-${Date.now()}`,
+          device: data.device || "mobile"
+        };
+        break;
+
+      case "youtube":
+      case "video":
+        content = {
+          items: (data.items || []).map(item => ({
+            url: item.url || "",
+            embedUrl: item.embedUrl || item.url || ""
+          }))
+        };
+        style = {
+          video: {
+            alignment: data.alignment || "center",
+            width: data.videoWidth || 100
+          },
+          container: {
+            padding: {
+              top: data.paddingTop || 0,
+              right: data.paddingRight || 0,
+              bottom: data.paddingBottom || 0,
+              left: data.paddingLeft || 0
+            }
+          }
+        };
+        config = {
+          componentId: data.componentId || `video-${Date.now()}`
+        };
+        break;
+
+      case "testimoni":
+        content = {
+          items: (data.items || []).map(item => ({
+            gambar: item.gambar || "",
+            nama: item.nama || "",
+            jabatan: item.jabatan || "",
+            isiTestimony: item.isiTestimony || item.deskripsi || "<p></p>",
+            showRating: item.showRating !== false,
+            rating: item.rating || 5
+          }))
+        };
+        style = {
+          text: {
+            fontFamily: "Inter, sans-serif",
+            color: "#1a1a1a"
+          },
+          container: {
+            padding: {
+              top: 60,
+              right: 40,
+              bottom: 60,
+              left: 40
+            },
+            background: {
+              type: "color",
+              color: "#f8f9fa"
+            },
+            border: {
+              width: 0,
+              radius: "16px"
+            },
+            shadow: "0 2px 8px rgba(0,0,0,0.1)"
+          }
+        };
+        config = {
+          componentId: data.componentId || `testimoni-${Date.now()}`,
+          componentTitle: data.componentTitle || "Testimoni Pembeli"
+        };
+        break;
+
+      case "list":
+        content = {
+          items: (data.items || []).map(item => ({
+            nama: item.nama || "",
+            content: item.content || "<p></p>",
+            icon: item.icon || "CheckCircle2",
+            iconColor: item.iconColor || "#10b981"
+          })),
+          style: data.style || "icon"
+        };
+        style = {
+          text: {
+            fontFamily: "Inter, sans-serif",
+            color: "#1a1a1a",
+            fontSize: 18,
+            lineHeight: 1.8
+          },
+          container: {
+            padding: {
+              top: data.paddingTop || 20,
+              right: data.paddingRight || 0,
+              bottom: data.paddingBottom || 20,
+              left: data.paddingLeft || 0
+            },
+            spacing: 16,
+            alignment: "left"
+          }
+        };
+        config = {
+          componentId: data.componentId || `list-${Date.now()}`,
+          componentTitle: data.componentTitle || "",
+          ...(data.parentId ? { parentId: data.parentId } : {})
+        };
+        break;
+
+      case "section":
+        content = {
+          title: data.title || "",
+          children: data.children || []
+        };
+        style = {
+          container: {
+            margin: {
+              top: 0,
+              right: 0,
+              bottom: 0,
+              left: 0
+            },
+            marginBetween: data.marginBetween || 24,
+            border: {
+              width: data.border?.width || 2,
+              style: "solid",
+              color: data.border?.color || "#e5e7eb",
+              radius: data.border?.radius || "16px"
+            },
+            background: {
+              type: "color",
+              color: data.backgroundColor || "#f9fafb"
+            },
+            padding: {
+              top: data.padding?.top || 40,
+              right: data.padding?.right || 40,
+              bottom: data.padding?.bottom || 40,
+              left: data.padding?.left || 40
+            },
+            shadow: data.shadow || "0 4px 6px rgba(0,0,0,0.1)",
+            responsiveType: data.responsiveType || "vertical"
+          }
+        };
+        config = {
+          componentId: data.componentId || `section-${Date.now()}`
+        };
+        break;
+
+      case "countdown":
+        content = {
+          hours: data.hours !== undefined ? data.hours : 0,
+          minutes: data.minutes !== undefined ? data.minutes : 0,
+          seconds: data.seconds !== undefined ? data.seconds : 0,
+          promoText: data.promoText || "Promo Berakhir Dalam:"
+        };
+        style = {
+          text: {
+            color: data.textColor || "#ffffff",
+            fontFamily: "monospace"
+          },
+          container: {
+            background: {
+              type: "color",
+              color: data.bgColor || "#1a1a1a"
+            }
+          },
+          numberStyle: data.numberStyle || "flip"
+        };
+        config = {
+          componentId: data.componentId || `countdown-${Date.now()}`
+        };
+        break;
+
+      case "faq":
+        content = {};
+        style = {};
+        config = {
+          componentId: data.componentId || `faq-${Date.now()}`
+        };
+        break;
+
+      case "form":
+        content = {};
+        style = {};
+        config = {
+          componentId: data.componentId || `form-${Date.now()}`
+        };
+        break;
+
+      case "image-slider":
+        content = {
+          images: (data.images || []).map(img => ({
+            src: img.src || "",
+            alt: img.alt || "",
+            caption: img.caption || "",
+            link: img.link || "",
+            postal_code: img.postal_code || ""
+          })),
+          autoplay: data.autoslide || false,
+          interval: data.autoslideDuration || 5000,
+          showDots: true,
+          showArrows: true
+        };
+        style = {
+          container: {
+            height: "500px",
+            borderRadius: "12px",
+            shadow: "0 4px 12px rgba(0,0,0,0.15)"
+          }
+        };
+        config = {
+          componentId: data.componentId || `image-slider-${Date.now()}`
+        };
+        break;
+
+      case "quota-info":
+        content = {
+          totalQuota: data.totalKuota || 60,
+          currentQuota: data.sisaKuota || 47,
+          remainingQuota: (data.totalKuota || 60) - (data.sisaKuota || 47),
+          showProgress: true,
+          showNumber: true
+        };
+        style = {
+          text: {
+            fontFamily: "Inter, sans-serif",
+            color: "#1a1a1a",
+            numberColor: "#2563eb",
+            fontSize: 24,
+            fontWeight: "600"
+          },
+          container: {
+            padding: {
+              top: 30,
+              right: 30,
+              bottom: 30,
+              left: 30
+            },
+            background: {
+              type: "color",
+              color: "#f0f9ff"
+            },
+            border: {
+              width: 0,
+              radius: "12px"
+            },
+            shadow: "0 2px 8px rgba(0,0,0,0.1)"
+          }
+        };
+        config = {
+          componentId: data.componentId || `quota-info-${Date.now()}`
+        };
+        break;
+
+      case "button":
+        content = {
+          text: data.text || "Klik Disini",
+          link: data.link || "#"
+        };
+        style = {
+          button: {
+            style: data.style || "primary",
+            backgroundColor: "#ff6c00",
+            textColor: "#ffffff",
+            hoverColor: "#c85400",
+            fontSize: 18,
+            fontWeight: "600",
+            borderRadius: "8px",
+            padding: {
+              top: 16,
+              right: 32,
+              bottom: 16,
+              left: 32
+            },
+            shadow: "0 4px 12px rgba(255, 108, 0, 0.3)",
+            alignment: "center"
+          }
+        };
+        config = {
+          componentId: data.componentId || `button-${Date.now()}`
+        };
+        break;
+
+      case "html":
+        content = {
+          code: data.code || ""
+        };
+        style = {};
+        config = {
+          componentId: data.componentId || `html-${Date.now()}`
+        };
+        break;
+
+      case "embed":
+        content = {
+          code: data.code || ""
+        };
+        style = {};
+        config = {
+          componentId: data.componentId || `embed-${Date.now()}`
+        };
+        break;
+
+      case "divider":
+        content = {
+          style: data.style || "solid",
+          color: data.color || "#e5e7eb",
+          width: "100%",
+          height: data.height || 2
+        };
+        style = {
+          container: {
+            margin: {
+              top: 60,
+              right: 0,
+              bottom: 60,
+              left: 0
+            },
+            alignment: "center"
+          }
+        };
+        config = {
+          componentId: data.componentId || `divider-${Date.now()}`
+        };
+        break;
+
+      case "scroll-target":
+        content = {
+          target: data.target || "",
+          label: data.label || ""
+        };
+        style = {};
+        config = {
+          componentId: data.componentId || `scroll-target-${Date.now()}`
+        };
+        break;
+
+      case "animation":
+        content = {
+          type: data.type || "fadeIn",
+          duration: data.duration || 1000,
+          delay: data.delay || 0,
+          easing: data.easing || "ease-in-out"
+        };
+        style = {};
+        config = {
+          componentId: data.componentId || `animation-${Date.now()}`
+        };
+        break;
+
+      default:
+        // Fallback untuk komponen lain
+        content = data;
+        style = {};
+        config = {
+          componentId: data.componentId || `${type}-${Date.now()}`
+        };
+    }
+
+    return {
+      type,
+      order: order || 0,
+      content,
+      style,
+      config
+    };
+  };
+
+  // Transformasi analytics dari flat ke terstruktur dengan valueSource
+  const transformAnalytics = () => {
+    const analytics = {
+      facebook: {
+        pixels: []
+      },
+      tiktok: {
+        pixels: []
+      },
+      google: {
+        gtm: pengaturanForm.google_gtm || ""
+      }
+    };
+
+    // Transform Facebook Pixels
+    if (pengaturanForm.facebook_pixels && pengaturanForm.facebook_pixels.length > 0) {
+      pengaturanForm.facebook_pixels.forEach((pixelId, index) => {
+        if (pixelId && pixelId.trim()) {
+          const events = [];
+          
+          // Transform Facebook Events
+          if (pengaturanForm.facebook_events && pengaturanForm.facebook_events[index]) {
+            const eventNames = Array.isArray(pengaturanForm.facebook_events[index]) 
+              ? pengaturanForm.facebook_events[index] 
+              : [];
+            
+            eventNames.forEach((eventName, eventIndex) => {
+              const eventParams = pengaturanForm.facebook_event_params?.[index]?.[eventIndex] || {};
+              
+              // Convert value ke valueSource jika ada
+              const params = { ...eventParams };
+              if (params.value !== undefined) {
+                // Tentukan valueSource berdasarkan event name
+                if (eventName === "ViewContent") {
+                  params.valueSource = "product.price";
+                } else if (eventName === "AddToCart") {
+                  params.valueSource = "selectedBundle.price";
+                } else if (eventName === "Purchase") {
+                  params.valueSource = "order.total";
+                } else {
+                  params.valueSource = "product.price";
+                }
+                delete params.value; // Hapus value hard-coded
+              }
+              
+              events.push({
+                name: eventName,
+                params: {
+                  content_name: pengaturanForm.nama || "Product",
+                  content_category: "Education",
+                  currency: "IDR",
+                  ...params
+                }
+              });
+            });
+          }
+
+          analytics.facebook.pixels.push({
+            id: pixelId,
+            events: events.length > 0 ? events : [
+              {
+                name: "ViewContent",
+                params: {
+                  content_name: pengaturanForm.nama || "Product",
+                  content_category: "Education",
+                  valueSource: "product.price",
+                  currency: "IDR"
+                }
+              }
+            ]
+          });
+        }
+      });
+    }
+
+    // Transform TikTok Pixels
+    if (pengaturanForm.tiktok_pixels && pengaturanForm.tiktok_pixels.length > 0) {
+      pengaturanForm.tiktok_pixels.forEach((pixelId, index) => {
+        if (pixelId && pixelId.trim()) {
+          const events = [];
+          
+          // Transform TikTok Events
+          if (pengaturanForm.tiktok_events && pengaturanForm.tiktok_events[index]) {
+            const eventNames = Array.isArray(pengaturanForm.tiktok_events[index]) 
+              ? pengaturanForm.tiktok_events[index] 
+              : [];
+            
+            eventNames.forEach((eventName) => {
+              events.push({
+                name: eventName,
+                params: {
+                  content_name: pengaturanForm.nama || "Product",
+                  content_type: "course",
+                  valueSource: "product.price",
+                  currency: "IDR"
+                }
+              });
+            });
+          }
+
+          analytics.tiktok.pixels.push({
+            id: pixelId,
+            events: events.length > 0 ? events : [
+              {
+                name: "ViewContent",
+                params: {
+                  content_name: pengaturanForm.nama || "Product",
+                  content_type: "course",
+                  valueSource: "product.price",
+                  currency: "IDR"
+                }
+              }
+            ]
+          });
+        }
+      });
+    }
+
+    return analytics;
+  };
+
+  // Transformasi custom scripts
+  const transformCustomScripts = () => {
+    const templates = [];
+
+    // Facebook Pixel Templates
+    if (pengaturanForm.facebook_pixels && pengaturanForm.facebook_pixels.length > 0) {
+      pengaturanForm.facebook_pixels.forEach((pixelId, index) => {
+        if (pixelId && pixelId.trim()) {
+          templates.push({
+            id: `fb-pixel-${index + 1}`,
+            type: "facebook-pixel",
+            pixelId: pixelId,
+            autoEvents: true
+          });
+        }
+      });
+    }
+
+    // Google GTM Template
+    if (pengaturanForm.google_gtm && pengaturanForm.google_gtm.trim()) {
+      templates.push({
+        id: "google-gtm-1",
+        type: "google-gtm",
+        gtmId: pengaturanForm.google_gtm
+      });
+    }
+
+    return {
+      enabled: pengaturanForm.enable_custom_head_script || false,
+      templates,
+      customCode: pengaturanForm.custom_head_script || ""
+    };
+  };
+
+  // Transformasi form untuk landingpage
+  const transformForm = () => {
+    const isFisik = pengaturanForm.jenis_produk === "fisik";
+    
+    return {
+      type: pengaturanForm.jenis_produk || "non-fisik",
+      fields: [
+        {
+          name: "nama",
+          label: "Nama Lengkap",
+          type: "text",
+          required: true,
+          placeholder: "Masukkan nama lengkap"
+        },
+        {
+          name: "wa",
+          label: "Nomor WhatsApp",
+          type: "tel",
+          required: true,
+          placeholder: "6281234567890"
+        },
+        {
+          name: "email",
+          label: "Email",
+          type: "email",
+          required: false,
+          placeholder: "email@example.com"
+        }
+      ],
+      optionalFields: {
+        address: {
+          enabled: isFisik
+        }
+      },
+      submitConfig: {
+        buttonText: "Daftar Sekarang",
+        buttonColor: "#F1A124",
+        kategori: pengaturanForm.kategori ? Number(pengaturanForm.kategori) : null
+      }
+    };
+  };
+
+  // Transformasi form preview address (untuk preview/style form builder)
+  const transformFormPreviewAddress = () => {
+    // Hanya kirim jika ada data (untuk preview form builder)
+    if (regionForm.provinsi || regionForm.kabupaten || regionForm.kecamatan || regionForm.kode_pos) {
+      return {
+        provinsi: regionForm.provinsi || "",
+        kabupaten: regionForm.kabupaten || "",
+        kecamatan: regionForm.kecamatan || "",
+        kode_pos: regionForm.kode_pos || ""
+      };
+    }
+    return null;
+  };
+
+  // Handler untuk save dan publish
+  const handleSaveAndPublish = async () => {
+    // Validasi
+    if (!pengaturanForm.nama || !pengaturanForm.nama.trim()) {
+      toast.error("Nama produk wajib diisi");
+      return;
+    }
+
+    if (!pengaturanForm.kategori) {
+      toast.error("Kategori wajib dipilih");
+      return;
+    }
+
+    if (!pengaturanForm.harga) {
+      toast.error("Harga wajib diisi");
+      return;
+    }
+
+    if (!pengaturanForm.assign || pengaturanForm.assign.length === 0) {
+      toast.error("Penanggung jawab wajib dipilih");
+      return;
+    }
+
+    // Format tanggal event
+    let formattedDate = null;
+    if (pengaturanForm.tanggal_event) {
+      const date = new Date(pengaturanForm.tanggal_event);
+      formattedDate = date.toISOString();
+    }
+
+    // Transform blocks
+    const transformedBlocks = blocks.map(transformBlock);
+
+    // Transform analytics
+    const analytics = transformAnalytics();
+
+    // Transform custom scripts
+    const customScripts = transformCustomScripts();
+
+    // Transform form
+    const form = transformForm();
+
+    // Transform form preview address
+    const formPreviewAddress = transformFormPreviewAddress();
+
+    // Build settings object untuk landingpage array
+    const settingsObject = {
+      type: "settings",
+      background_color: pengaturanForm.background_color || "#ffffff",
+      page_title: pengaturanForm.page_title || "",
+      tags: pengaturanForm.tags || [],
+      seo_title: pengaturanForm.seo_title || "",
+      meta_description: pengaturanForm.meta_description || "",
+      meta_image: pengaturanForm.meta_image || "",
+      favicon: pengaturanForm.favicon || "",
+      preview_url: pengaturanForm.preview_url || "",
+      loading_logo: pengaturanForm.loading_logo || "",
+      disable_crawler: pengaturanForm.disable_crawler || false,
+      disable_rightclick: pengaturanForm.disable_rightclick || false,
+      html_language: pengaturanForm.html_language || "id",
+      disable_custom_font: pengaturanForm.disable_custom_font || false,
+      analytics,
+      customScripts,
+      form,
+      ...(formPreviewAddress ? { form_preview_address: formPreviewAddress } : {})
+    };
+
+    // Build landingpage array: [settings, ...blocks]
+    const landingpageArray = [
+      settingsObject,
+      ...transformedBlocks
+    ];
+
+    // Prepare payload dengan struktur baru
+    const payload = {
+      nama: pengaturanForm.nama.trim(),
+      kategori: String(pengaturanForm.kategori),
+      kode: pengaturanForm.kode || formatSlug(pengaturanForm.nama),
+      url: pengaturanForm.url || `/${formatSlug(pengaturanForm.nama)}`,
+      harga: String(pengaturanForm.harga || 0),
+      jenis_produk: pengaturanForm.jenis_produk || "fisik",
+      isBundling: pengaturanForm.isBundling || false,
+      bundling: pengaturanForm.bundling || [], // Array, bukan stringified
+      tanggal_event: formattedDate,
+      assign: pengaturanForm.assign,
+      status: "1",
+      landingpage: landingpageArray
+    };
+
+    try {
+      toast.loading("Menyimpan produk...", { id: "save-product" });
+      
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      
+      if (!productId) {
+        toast.error("Product ID tidak ditemukan!", { id: "save-product" });
+        return;
+      }
+
+      const response = await fetch(`/api/sales/produk/${productId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data?.success) {
+        const errorMessage = data?.message || "Gagal menyimpan produk";
+        toast.error(errorMessage, { id: "save-product" });
+        return;
+      }
+
+      toast.success("Produk berhasil diupdate dan dipublish!", { id: "save-product" });
+      
+      // Redirect ke halaman products
+      setTimeout(() => {
+        router.push("/sales/products");
+      }, 1000);
+
+    } catch (error) {
+      console.error("Error saving product:", error);
+      toast.error("Terjadi kesalahan saat menyimpan produk", { id: "save-product" });
+    }
+  };
+
+  // Render grid komponen dalam modal
+  const renderComponentGrid = () => {
+    return (
+      <div className="component-modal-content">
+        {Object.entries(COMPONENT_CATEGORIES).map(([key, category]) => (
+          <div key={key} className="component-category">
+            <h3 className="component-category-title">{category.label}</h3>
+            <div className="component-grid">
+              {category.components.map((component) => {
+                const IconComponent = component.icon;
+                return (
+                  <div
+                    key={component.id}
+                    className="component-item"
+                    onClick={() => handleAddComponent(component.id)}
+                    title={component.name}
+                  >
+                    <div 
+                      className="component-icon"
+                      style={{ backgroundColor: "#f3f4f6" }}
+                    >
+                      <IconComponent 
+                        size={24} 
+                        style={{ color: "#6b7280" }}
+                      />
+                    </div>
+                    <span className="component-name">{component.name}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // Show loading state
   if (loading) {
     return (
-      <div className="produk-container produk-builder-layout" style={{ padding: "2rem", textAlign: "center" }}>
-        <p>Loading...</p>
+      <div className="add-products3-container" style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh" }}>
+        <div>Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="produk-container produk-builder-layout">
-      <div className="produk-form" style={{ position: "relative" }}>
-      {isSubmitting && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: "rgba(255,255,255,0.95)",
-            zIndex: 10,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "16px",
-            backdropFilter: "blur(4px)",
-          }}
-        >
-          <div className="spinner" style={{ width: "48px", height: "48px", border: "4px solid #3b82f6", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
-          <div style={{ textAlign: "center" }}>
-            <p style={{ color: "#1f2937", fontWeight: 600, fontSize: "16px", marginBottom: "8px" }}>
-              {submitStatus || "Menyimpan produk, mohon tunggu..."}
-            </p>
-            <p style={{ color: "#6b7280", fontSize: "14px" }}>
-              Proses ini mungkin memakan waktu beberapa saat
-            </p>
-          </div>
-        </div>
-      )}
-      {/* Header Section */}
-      <div className="form-header-section">
+    <div className="add-products3-container">
+      {/* Header Section with Back Button and Save Button */}
+      <div className="page-header-section">
         <button
           className="back-to-products-btn"
           onClick={() => router.push("/sales/products")}
@@ -1288,889 +3258,1086 @@ export default function Page() {
           <ArrowLeft size={18} />
           <span>Back to Products</span>
         </button>
-        <div className="form-title-wrapper">
-          <h2 className="form-title">Edit Produk</h2>
-          <p className="form-subtitle">Ubah informasi produk di bawah ini</p>
-        </div>
+        <button
+          className="save-publish-btn"
+          onClick={handleSaveAndPublish}
+          aria-label="Simpan dan Publish"
+        >
+          <span>Simpan dan Publish</span>
+        </button>
       </div>
 
-        {/* SECTION 1: Informasi Dasar */}
-        <div className="form-section-card">
-          <div className="section-header">
-            <h3 className="section-title">Informasi Dasar</h3>
-            <p className="section-description">Data utama produk yang akan ditampilkan</p>
+      {/* Main Content Area */}
+      <div className="page-builder-main">
+        {/* Left Sidebar - Form Editing */}
+        <div className="page-builder-sidebar">
+          {/* Tabs */}
+          <div className="sidebar-tabs">
+            <button
+              className={`sidebar-tab ${activeTab === "konten" ? "active" : ""}`}
+              onClick={() => setActiveTab("konten")}
+            >
+              Konten
+            </button>
+            <button
+              className={`sidebar-tab ${activeTab === "pengaturan" ? "active" : ""}`}
+              onClick={() => setActiveTab("pengaturan")}
+            >
+              Pengaturan
+            </button>
           </div>
-          <div className="section-content">
-            {/* NAMA PRODUK */}
-            <div className="form-field-group">
-              <label className="form-label">
-                Nama Produk <span className="required">*</span>
-              </label>
-              <InputText
-                className="w-full form-input"
-                value={form.nama}
-                placeholder="Masukkan nama produk"
-                onChange={(e) => {
-                  const nama = e.target.value;
-                  // SELALU generate kode dari nama dengan dash
-                  const kode = generateKode(nama);
-                  setForm({ 
-                    ...form, 
-                    nama, 
-                    kode: kode,
-                    url: "/" + kode
-                  });
+
+          {/* Tab Content */}
+          <div className="sidebar-content">
+            {activeTab === "konten" ? (
+              <>
+            {/* Komponen yang sudah ditambahkan */}
+            {blocks.map((block, index) => (
+              <div 
+                key={block.id} 
+                className="sidebar-component-item"
+                ref={(el) => {
+                  if (el) {
+                    componentRefs.current[block.id] = el;
+                  }
                 }}
-              />
-            </div>
-
-            {/* KATEGORI */}
-            <div className="form-field-group">
-              <label className="form-label">
-                Kategori <span className="required">*</span>
-              </label>
-              <Dropdown
-                className="w-full form-input"
-                value={form.kategori || null}
-                options={kategoriOptions}
-                optionLabel="label"
-                optionValue="value"
-                onChange={(e) => {
-                  const selectedValue = e.value;
-                  console.log("[KATEGORI] Dropdown onChange:", {
-                    selectedValue: selectedValue,
-                    type: typeof selectedValue,
-                    isNull: selectedValue === null,
-                    isUndefined: selectedValue === undefined,
-                    isEmpty: selectedValue === ""
-                  });
-                  // Ensure value is set as string ID (PrimeReact returns value directly from optionValue)
-                  const finalValue = selectedValue !== null && selectedValue !== undefined && selectedValue !== ""
-                    ? String(selectedValue) 
-                    : null;
-                  console.log("[KATEGORI] Setting kategori to:", finalValue);
-                  handleChange("kategori", finalValue);
-                }}
-                placeholder="Pilih Kategori"
-                showClear
-                filter
-                filterPlaceholder="Cari kategori..."
-              />
-              {!form.kategori && (
-                <small className="field-hint" style={{ color: "#ef4444" }}>
-                  Kategori wajib dipilih
-                </small>
-              )}
-            </div>
-
-            {/* KODE & URL */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="form-field-group">
-                <label className="form-label">
-                  Kode Produk
-                </label>
-                <InputText
-                  className="w-full form-input"
-                  value={form.kode || generateKode(form.nama) || ""}
-                  onChange={(e) => {
-                    const kode = e.target.value;
-                    setForm({
-                      ...form,
-                      kode,
-                      url: "/" + (kode || "produk-baru"),
-                    });
-                  }}
-                  placeholder="Kode otomatis dari nama (contoh: webinar-ternak-properti)"
-                  title="Kode akan otomatis di-generate dari nama produk dengan format dash"
-                />
-              </div>
-              <div className="form-field-group">
-                <label className="form-label">
-                  URL
-                </label>
-                <InputText
-                  className="w-full form-input"
-                  value={form.url || ""}
-                  onChange={(e) => handleChange("url", e.target.value)}
-                  placeholder="/kode-produk"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* SECTION 2: Media & Konten */}
-        <div className="form-section-card">
-          <div className="section-header">
-            <h3 className="section-title">Media & Konten</h3>
-            <p className="section-description">Gambar, deskripsi, dan konten produk</p>
-          </div>
-          <div className="section-content">
-            {/* HEADER IMAGE */}
-            <div className="form-field-group">
-              <label className="form-label">
-                Header Image
-              </label>
-              <div className="file-upload-card">
-                {form.header?.type === "url" && form.header.value && (
-                  <div className="file-preview">
-                    <img 
-                      src={buildImageUrl(form.header.value)} 
-                      alt="Current header" 
-                      className="preview-thumbnail"
-                    />
-                    <p className="field-hint">Gambar saat ini</p>
-                  </div>
-                )}
-                <label className="file-upload-label">Upload File Baru</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleChange("header", { type: "file", value: e.target.files[0] })}
-                  className="file-input"
-                />
-                {form.header?.type === "file" && form.header.value && (
-                  <div className="file-preview">
-                    <img 
-                      src={URL.createObjectURL(form.header.value)} 
-                      alt="Preview" 
-                      className="preview-thumbnail"
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* DESKRIPSI */}
-            <div className="form-field-group">
-              <label className="form-label">
-                Deskripsi Produk
-              </label>
-              <InputTextarea
-                className="w-full form-input"
-                rows={5}
-                value={form.deskripsi}
-                placeholder="Masukkan deskripsi lengkap produk"
-                onChange={(e) => handleChange("deskripsi", e.target.value)}
-              />
-            </div>
-
-            {/* HARGA */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="form-field-group">
-                <label className="form-label">
-                  Harga Coret
-                </label>
-                <InputNumber
-                  className="w-full form-input"
-                  value={Number(form.harga_coret)}
-                  onValueChange={(e) => handleChange("harga_coret", e.value)}
-                  placeholder="Harga sebelum diskon"
-                  mode="currency"
-                  currency="IDR"
-                  locale="id-ID"
-                />
-              </div>
-              <div className="form-field-group">
-                <label className="form-label">
-                  Harga Asli <span className="required">*</span>
-                </label>
-                <InputNumber
-                  className="w-full form-input"
-                  value={Number(form.harga_asli)}
-                  onValueChange={(e) => handleChange("harga_asli", e.value)}
-                  placeholder="Harga setelah diskon"
-                  mode="currency"
-                  currency="IDR"
-                  locale="id-ID"
-                />
-              </div>
-            </div>
-
-            {/* TANGGAL EVENT */}
-            <div className="form-field-group">
-              <label className="form-label">
-                Tanggal Event
-              </label>
-              <Calendar
-                className="w-full form-input"
-                showTime
-                value={form.tanggal_event ? new Date(form.tanggal_event) : null}
-                onChange={(e) => handleChange("tanggal_event", e.value)}
-                placeholder="Pilih tanggal event"
-              />
-            </div>
-
-            {/* LANDING PAGE TYPE */}
-            <div className="form-field-group">
-              <label className="form-label">
-                <span className="label-icon">📄</span>
-                Tipe Landing Page <span className="required">*</span>
-              </label>
-              <Dropdown
-                className="w-full form-input"
-                value={form.landingpage}
-                onChange={(e) => handleChange("landingpage", e.value)}
-                options={[
-                  { label: "Non-Fisik (Seminar, Webinar, dll)", value: "1" },
-                  { label: "Fisik (Buku, Baju, dll)", value: "2" }
-                ]}
-                optionLabel="label"
-                optionValue="value"
-                placeholder="Pilih tipe landing page"
-              />
-              <p className="text-sm text-gray-500 mt-1">
-                Non-Fisik: tanpa ongkir | Fisik: dengan form cek ongkir
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* SECTION 3: Gallery */}
-        <div className="form-section-card">
-          <div className="section-header">
-            <h3 className="section-title">Gallery Produk</h3>
-            <p className="section-description">Tambah gambar produk dengan caption</p>
-          </div>
-          <div className="section-content">
-            {form.gambar.map((g, i) => (
-              <div key={i} className="gallery-item-card">
-                <div className="gallery-item-header">
-                  <span className="gallery-item-number">Gambar {i + 1}</span>
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    {/* Tombol hapus dari server (jika gambar sudah ada di server) */}
-                    {g.path?.type === "url" && g.path.value && (
-                      <Button
-                        icon="pi pi-server"
-                        severity="danger"
-                        className="p-button-danger p-button-sm"
-                        onClick={() => deleteGalleryImage(i)}
-                        tooltip="Hapus dari server"
-                        tooltipOptions={{ position: "top" }}
-                      />
-                    )}
-                    {/* Tombol hapus dari form (lokal) */}
-                    <Button
-                      icon="pi pi-trash"
-                      severity="danger"
-                      className="p-button-danger p-button-sm"
-                      onClick={() => removeArray("gambar", i)}
-                      tooltip="Hapus gambar"
-                    />
-                  </div>
-                </div>
-                <div className="gallery-item-content">
-                  <div className="form-field-group">
-                    <label className="form-label-small">Upload Gambar</label>
-                    {g.path?.type === "url" && g.path.value && (
-                      <div className="file-preview">
-                        <img 
-                          src={buildImageUrl(g.path.value)} 
-                          alt={`Current ${i + 1}`}
-                          className="preview-thumbnail"
-                        />
-                        <p className="field-hint">Gambar saat ini</p>
-                      </div>
-                    )}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) =>
-                        updateArrayItem("gambar", i, "path", { type: "file", value: e.target.files[0] })
-                      }
-                      className="file-input"
-                    />
-                    {g.path?.type === "file" && g.path.value && (
-                      <div className="file-preview">
-                        <img 
-                          src={URL.createObjectURL(g.path.value)} 
-                          alt={`Preview ${i + 1}`}
-                          className="preview-thumbnail"
-                        />
-                      </div>
-                    )}
-                  </div>
-                  <div className="form-field-group">
-                    <label className="form-label-small">Caption</label>
-                    <InputText
-                      className="w-full form-input"
-                      placeholder="Masukkan caption gambar"
-                      value={g.caption}
-                      onChange={(e) => updateArrayItem("gambar", i, "caption", e.target.value)}
-                    />
-                  </div>
-                </div>
+              >
+                {renderComponent(block, index)}
               </div>
             ))}
-            <Button
-              icon="pi pi-plus"
-              label="Tambah Gambar"
-              className="add-item-btn"
-              onClick={() => addArray("gambar", { path: { type: "file", value: null }, caption: "" })}
-            />
-          </div>
-        </div>
+            
+            {/* Button Tambah Komponen Baru - Selalu di bawah komponen terakhir */}
+            <button
+              className="add-component-btn"
+              onClick={() => setShowComponentModal(true)}
+            >
+              <span className="add-component-icon">+</span>
+              <span className="add-component-text">Tambah Komponen Baru</span>
+            </button>
+              </>
+            ) : (
+              <div className="pengaturan-content">
+                {/* Informasi Dasar */}
+                <div className="pengaturan-section">
+                  <h3 className="pengaturan-section-title">Informasi Dasar</h3>
+                  <p className="pengaturan-section-description">Data utama produk yang akan ditampilkan</p>
+                  
+                  <div className="pengaturan-form-group">
+                    <label className="pengaturan-label">
+                      Nama Produk <span className="required">*</span>
+                    </label>
+                    <InputText
+                      className="pengaturan-input"
+                      value={pengaturanForm.nama}
+                      onChange={(e) => handlePengaturanChange("nama", e.target.value)}
+                      placeholder="Masukkan nama produk"
+                    />
+                  </div>
 
-        {/* SECTION 4: Testimoni */}
-        <div className="form-section-card">
-          <div className="section-header">
-            <h3 className="section-title">Testimoni</h3>
-            <p className="section-description">Tambah testimoni dari pembeli</p>
-          </div>
-          <div className="section-content">
-            {form.testimoni.map((t, i) => (
-              <div key={i} className="testimoni-item-card">
-                <div className="testimoni-item-header">
-                  <span className="testimoni-item-number">Testimoni {i + 1}</span>
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    {/* Tombol hapus dari server (jika testimoni sudah ada di server) */}
-                    {t.gambar?.type === "url" && t.gambar.value && (
-                      <Button
-                        icon="pi pi-server"
-                        severity="danger"
-                        className="p-button-danger p-button-sm"
-                        onClick={() => deleteTestimoni(i)}
-                        tooltip="Hapus dari server"
-                        tooltipOptions={{ position: "top" }}
+                  <div className="form-field-group">
+                    <label className="form-label">
+                      Kategori <span className="required">*</span>
+                    </label>
+                    <Dropdown
+                      className="w-full form-input"
+                      value={pengaturanForm.kategori}
+                      options={kategoriOptions}
+                      optionLabel="label"
+                      optionValue="value"
+                      onChange={(e) => {
+                        const selectedValue = e.value;
+                        const finalValue = selectedValue !== null && selectedValue !== undefined && selectedValue !== ""
+                          ? String(selectedValue) 
+                          : null;
+                        handlePengaturanChange("kategori", finalValue);
+                        setProductKategori(finalValue ? Number(finalValue) : null);
+                      }}
+                      placeholder="Pilih Kategori"
+                      showClear
+                      filter
+                      filterPlaceholder="Cari kategori..."
+                    />
+                    {!pengaturanForm.kategori && (
+                      <small className="field-hint" style={{ color: "#ef4444" }}>
+                        Kategori wajib dipilih
+                      </small>
+                    )}
+                  </div>
+
+                  <div className="pengaturan-form-group">
+                    <label className="pengaturan-label">Kode Produk</label>
+                    <InputText
+                      className="pengaturan-input"
+                      value={pengaturanForm.kode || ""}
+                      onChange={handleKodeChange}
+                      placeholder="seminar-as-bandung"
+                    />
+                    <small className="pengaturan-hint">
+                      Spasi otomatis menjadi dash (-) dan huruf menjadi kecil saat mengetik. URL akan otomatis mengikuti.
+                    </small>
+                  </div>
+
+                  <div className="pengaturan-form-group">
+                    <label className="pengaturan-label">URL</label>
+                    <InputText
+                      className="pengaturan-input"
+                      value={pengaturanForm.url || ""}
+                      placeholder="Otomatis dari kode produk"
+                      readOnly
+                      style={{ background: "#f9fafb", cursor: "not-allowed" }}
+                    />
+                    <small className="pengaturan-hint">URL otomatis di-generate dari kode produk</small>
+                  </div>
+                </div>
+
+                {/* Jenis Produk */}
+                <div className="pengaturan-section">
+                  <h3 className="pengaturan-section-title">Jenis Produk</h3>
+                  <p className="pengaturan-section-description">Tentukan jenis produk untuk menghitung ongkos kirim</p>
+                  
+                  <div className="pengaturan-form-group">
+                    <label className="pengaturan-label">
+                      Jenis Produk <span className="required">*</span>
+                    </label>
+                    <Dropdown
+                      className="pengaturan-input"
+                      value={pengaturanForm.jenis_produk || "fisik"}
+                      options={[
+                        { label: "Fisik", value: "fisik" },
+                        { label: "Non-Fisik", value: "non-fisik" }
+                      ]}
+                      onChange={(e) => handlePengaturanChange("jenis_produk", e.value)}
+                      placeholder="Pilih jenis produk"
+                    />
+                    <small className="pengaturan-hint">
+                      Produk Fisik memerlukan ongkos kirim, Non-Fisik tidak memerlukan ongkos kirim
+                    </small>
+                  </div>
+                </div>
+
+                {/* Harga */}
+                <div className="pengaturan-section">
+                  <h3 className="pengaturan-section-title">Harga</h3>
+                  
+                  <div className="pengaturan-form-group">
+                    <label className="pengaturan-label">
+                      Harga <span className="required">*</span>
+                    </label>
+                    <InputNumber
+                      className="pengaturan-input"
+                      value={pengaturanForm.harga}
+                      onValueChange={(e) => handlePengaturanChange("harga", e.value)}
+                      placeholder="Masukkan harga"
+                      mode="currency"
+                      currency="IDR"
+                      locale="id-ID"
+                      useGrouping={true}
+                    />
+                  </div>
+
+                  {/* Checkbox Bundling */}
+                  <div className="pengaturan-form-group">
+                    <label className="pengaturan-label" style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                      <input
+                        type="checkbox"
+                        checked={pengaturanForm.isBundling || false}
+                        onChange={(e) => handlePengaturanChange("isBundling", e.target.checked)}
+                        style={{ width: "18px", height: "18px", cursor: "pointer" }}
                       />
-                    )}
-                    {/* Tombol hapus dari form (lokal) */}
-                    <Button
-                      icon="pi pi-trash"
-                      severity="danger"
-                      className="p-button-danger p-button-sm"
-                      onClick={() => removeArray("testimoni", i)}
-                      tooltip="Hapus testimoni"
-                    />
-                  </div>
-                </div>
-                <div className="testimoni-item-content">
-                  <div className="form-field-group">
-                    <label className="form-label-small">Upload Foto</label>
-                    {t.gambar?.type === "url" && t.gambar.value && (
-                      <div className="file-preview">
-                        <img 
-                          src={buildImageUrl(t.gambar.value)} 
-                          alt={`Current Testimoni ${i + 1}`}
-                          className="preview-thumbnail"
-                        />
-                        <p className="field-hint">Foto saat ini</p>
-                      </div>
-                    )}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) =>
-                        updateArrayItem("testimoni", i, "gambar", { type: "file", value: e.target.files[0] })
-                      }
-                      className="file-input"
-                    />
-                    {t.gambar?.type === "file" && t.gambar.value && (
-                      <div className="file-preview">
-                        <img 
-                          src={URL.createObjectURL(t.gambar.value)} 
-                          alt={`Testimoni ${i + 1}`}
-                          className="preview-thumbnail"
-                        />
-                      </div>
-                    )}
-                  </div>
-                  <div className="form-field-group">
-                    <label className="form-label-small">Nama</label>
-                    <InputText
-                      className="w-full form-input"
-                      placeholder="Masukkan nama testimoni"
-                      value={t.nama}
-                      onChange={(e) => updateArrayItem("testimoni", i, "nama", e.target.value)}
-                    />
-                  </div>
-                  <div className="form-field-group">
-                    <label className="form-label-small">Deskripsi</label>
-                    <InputTextarea
-                      className="w-full form-input"
-                      rows={3}
-                      placeholder="Masukkan deskripsi testimoni"
-                      value={t.deskripsi}
-                      onChange={(e) => updateArrayItem("testimoni", i, "deskripsi", e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-            <Button
-              icon="pi pi-plus"
-              label="Tambah Testimoni"
-              className="add-item-btn"
-              onClick={() =>
-                addArray("testimoni", { gambar: { type: "file", value: null }, nama: "", deskripsi: "" })
-              }
-            />
-          </div>
-        </div>
-
-        {/* SECTION 5: Konten Tambahan */}
-        <div className="form-section-card">
-          <div className="section-header">
-            <h3 className="section-title">Konten Tambahan</h3>
-            <p className="section-description">Video, list point, dan konten pendukung</p>
-          </div>
-          <div className="section-content">
-            {/* VIDEO */}
-            <div className="form-field-group">
-              <label className="form-label">
-                Video (URL, pisahkan dengan koma)
-              </label>
-              <InputTextarea
-                className="w-full form-input"
-                rows={3}
-                value={form.video}
-                placeholder="https://youtube.com/watch?v=..., https://youtube.com/watch?v=..."
-                onChange={(e) => handleChange("video", e.target.value)}
-              />
-              <p className="field-hint">Masukkan URL video YouTube, pisahkan dengan koma jika lebih dari satu</p>
-            </div>
-
-            {/* LIST POINT */}
-            <div className="form-field-group">
-              <label className="form-label">
-                List Point (Benefit)
-              </label>
-              {form.list_point.map((p, i) => (
-                <div key={i} className="list-point-item">
-                  <div className="list-point-number">{i + 1}</div>
-                  <InputText
-                    className="flex-1 form-input"
-                    value={p.nama}
-                    placeholder={`Point ${i + 1}`}
-                    onChange={(e) => updateArrayItem("list_point", i, "nama", e.target.value)}
-                  />
-                  <Button 
-                    icon="pi pi-trash" 
-                    severity="danger" 
-                    className="p-button-danger p-button-sm"
-                    onClick={() => removeArray("list_point", i)}
-                  />
-                </div>
-              ))}
-              <Button
-                icon="pi pi-plus"
-                label="Tambah List Point"
-                className="add-item-btn"
-                onClick={() => addArray("list_point", { nama: "" })}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* SECTION 6: Form Fields - Compact Style */}
-        <section className="compact-form-section-preview" aria-label="Order form">
-          <h2 className="compact-form-title-preview">Lengkapi Data:</h2>
-          
-          <div className="compact-form-card-preview">
-            {/* Nama Lengkap */}
-            <div className="compact-field-preview">
-              <label className="compact-label-preview">
-                Nama Lengkap <span className="required-preview">*</span>
-              </label>
-              <input
-                type="text"
-                placeholder="Contoh: Krisdayanti"
-                className="compact-input-preview"
-                disabled
-              />
-            </div>
-
-            {/* No. WhatsApp */}
-            <div className="compact-field-preview">
-              <label className="compact-label-preview">
-                No. WhatsApp <span className="required-preview">*</span>
-              </label>
-              <div className="wa-input-wrapper-preview">
-                <div className="wa-prefix-preview">
-                  <span className="flag">🇮🇩</span>
-                  <span className="code">+62</span>
-                </div>
-                <input
-                  type="tel"
-                  placeholder="812345678"
-                  className="compact-input-preview wa-input-preview"
-                  disabled
-                />
-              </div>
-            </div>
-
-            {/* Email */}
-            <div className="compact-field-preview">
-              <label className="compact-label-preview">
-                Email <span className="required-preview">*</span>
-              </label>
-              <input
-                type="email"
-                placeholder="email@example.com"
-                className="compact-input-preview"
-                disabled
-              />
-            </div>
-
-            {/* Alamat */}
-            <div className="compact-field-preview">
-              <label className="compact-label-preview">Alamat</label>
-              <textarea
-                placeholder="Alamat lengkap (opsional)"
-                className="compact-input-preview compact-textarea-preview"
-                rows={2}
-                disabled
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* SECTION 7: Custom Fields */}
-        <div className="form-section-card">
-          <div className="section-header">
-            <h3 className="section-title">Custom Fields</h3>
-            <p className="section-description">Tambah field tambahan untuk form pembeli</p>
-          </div>
-          <div className="section-content">
-            {form.custom_field.map((f, i) => (
-              <div key={i} className="custom-field-item-card">
-                <div className="custom-field-header">
-                  <span className="custom-field-number">Field {i + 1}</span>
-                  {!f.required && (
-                    <Button
-                      icon="pi pi-trash"
-                      severity="danger"
-                      className="p-button-danger p-button-sm"
-                      onClick={() => removeArray("custom_field", i)}
-                    />
-                  )}
-                </div>
-                <div className="custom-field-content">
-                  <div className="form-field-group">
-                    <label className="form-label-small">Nama Field</label>
-                    <InputText
-                      className="w-full form-input"
-                      value={f.label}
-                      placeholder="Contoh: Nomor HP, Instansi, dll"
-                      onChange={(e) => updateArrayItem("custom_field", i, "label", e.target.value)}
-                    />
-                  </div>
-                  <div className="form-field-group">
-                    <label className="form-label-small">Placeholder / Contoh</label>
-                    <InputText
-                      className="w-full form-input"
-                      value={f.value}
-                      placeholder={(f.label || "Contoh isian") + (f.required ? " *" : "")}
-                      onChange={(e) => updateArrayItem("custom_field", i, "value", e.target.value)}
-                    />
-                  </div>
-                  <div className="custom-field-required">
-                    <input
-                      type="checkbox"
-                      id={`required-${i}`}
-                      checked={f.required}
-                      onChange={(e) => updateArrayItem("custom_field", i, "required", e.target.checked)}
-                    />
-                    <label htmlFor={`required-${i}`} className="checkbox-label">
-                      Field wajib diisi
+                      <span>Bundling</span>
                     </label>
                   </div>
+
+                  {/* Form Bundling */}
+                  {pengaturanForm.isBundling && (
+                    <div className="pengaturan-form-group" style={{ marginTop: "16px" }}>
+                      <label className="pengaturan-label" style={{ marginBottom: "12px" }}>Daftar Bundling</label>
+                      {(pengaturanForm.bundling || []).map((item, index) => (
+                        <div key={index} style={{ marginBottom: "12px", padding: "12px", border: "1px solid #e5e7eb", borderRadius: "6px" }}>
+                          <div className="pengaturan-form-group" style={{ marginBottom: "8px" }}>
+                            <label className="pengaturan-label" style={{ fontSize: "14px" }}>Nama Bundling</label>
+                            <InputText
+                              className="pengaturan-input"
+                              value={item.nama || ""}
+                              onChange={(e) => {
+                                const newBundling = [...(pengaturanForm.bundling || [])];
+                                newBundling[index] = { ...newBundling[index], nama: e.target.value };
+                                handlePengaturanChange("bundling", newBundling);
+                              }}
+                              placeholder="Masukkan nama bundling"
+                            />
+                          </div>
+                          <div className="pengaturan-form-group">
+                            <label className="pengaturan-label" style={{ fontSize: "14px" }}>Harga</label>
+                            <InputNumber
+                              className="pengaturan-input"
+                              value={item.harga || null}
+                              onValueChange={(e) => {
+                                const newBundling = [...(pengaturanForm.bundling || [])];
+                                newBundling[index] = { ...newBundling[index], harga: e.value };
+                                handlePengaturanChange("bundling", newBundling);
+                              }}
+                              placeholder="Masukkan harga bundling"
+                              mode="currency"
+                              currency="IDR"
+                              locale="id-ID"
+                              useGrouping={true}
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newBundling = (pengaturanForm.bundling || []).filter((_, i) => i !== index);
+                              handlePengaturanChange("bundling", newBundling);
+                            }}
+                            style={{
+                              marginTop: "8px",
+                              padding: "6px 12px",
+                              backgroundColor: "#ef4444",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                              fontSize: "12px"
+                            }}
+                          >
+                            Hapus
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newBundling = [...(pengaturanForm.bundling || []), { nama: "", harga: null }];
+                          handlePengaturanChange("bundling", newBundling);
+                        }}
+                        style={{
+                          padding: "10px 16px",
+                          backgroundColor: "#F1A124",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                          fontSize: "14px",
+                          fontWeight: "500"
+                        }}
+                      >
+                        + Tambah Bundling
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="pengaturan-form-group">
+                    <label className="pengaturan-label">Tanggal Event</label>
+                    <Calendar
+                      className="pengaturan-input"
+                      value={pengaturanForm.tanggal_event}
+                      onChange={(e) => handlePengaturanChange("tanggal_event", e.value)}
+                      placeholder="Pilih tanggal dan jam event"
+                      showIcon
+                      showTime
+                      hourFormat="24"
+                      dateFormat="dd/mm/yy"
+                      timeOnly={false}
+                      showSeconds={false}
+                      showButtonBar
+                    />
+                  </div>
+                </div>
+
+                {/* Penanggung Jawab */}
+                <div className="pengaturan-section">
+                  <div className="form-field-group">
+                    <label className="form-label">
+                      Penanggung Jawab (Assign By) <span className="required">*</span>
+                    </label>
+                    <MultiSelect
+                      className="w-full form-input"
+                      value={pengaturanForm.assign}
+                      options={userOptions}
+                      onChange={(e) => handlePengaturanChange("assign", e.value || [])}
+                      placeholder="Pilih penanggung jawab produk"
+                      display="chip"
+                      showClear
+                      filter
+                      filterPlaceholder="Cari user..."
+                    />
+                    <p className="field-hint">Pilih user yang bertanggung jawab menangani produk ini</p>
+                  </div>
+                </div>
+
+                {/* Divider untuk memisahkan settingan produk dengan settingan landing page */}
+                <div style={{
+                  margin: "32px 0",
+                  borderTop: "2px solid #e5e7eb",
+                  paddingTop: "24px"
+                }}>
+                  <div style={{
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    color: "#6b7280",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    marginBottom: "16px"
+                  }}>
+                    Pengaturan Landing Page
+                  </div>
+                </div>
+
+                {/* Page Title - SEO Meta Tag */}
+                <div className="pengaturan-section">
+                  <h3 className="pengaturan-section-title">SEO & Meta</h3>
+                  <p className="pengaturan-section-description">Pengaturan untuk SEO dan meta tag halaman</p>
+                  
+                  <div className="pengaturan-form-group">
+                    <label className="pengaturan-label">
+                      Page Title (Browser Tab Title)
+                    </label>
+                    <InputText
+                      className="pengaturan-input"
+                      value={pengaturanForm.page_title || ""}
+                      onChange={(e) => handlePengaturanChange("page_title", e.target.value)}
+                      placeholder="Contoh: BANDUNG- Seminar Ternak Properti"
+                    />
+                    <small className="pengaturan-hint">Judul yang akan muncul di browser tab dan hasil pencarian Google. Jika kosong, akan menggunakan nama produk.</small>
+                  </div>
+                </div>
+
+                {/* Background Color */}
+                <div className="pengaturan-section">
+                  <h3 className="pengaturan-section-title">Tampilan</h3>
+                  <p className="pengaturan-section-description">Pengaturan tampilan halaman landing page</p>
+
+                  <div className="pengaturan-form-group">
+                    <label className="pengaturan-label">
+                      Background Color
+                    </label>
+                    
+                    {/* Modern Background Color Picker */}
+                    <div className="modern-bg-color-picker" ref={bgColorPickerRef}>
+                      {/* Current Color Preview */}
+                      <div 
+                        className="modern-bg-color-preview"
+                        style={{ backgroundColor: pengaturanForm.background_color || "#ffffff" }}
+                        onClick={() => setShowBgColorPicker(!showBgColorPicker)}
+                      >
+                        <div className="modern-bg-color-preview-inner">
+                          <span className="modern-bg-color-hex">
+                            {pengaturanForm.background_color || "#ffffff"}
+                          </span>
+                          <ChevronDown size={16} />
+                        </div>
+                      </div>
+
+                      {/* Color Picker Dropdown */}
+                      {showBgColorPicker && (
+                        <div className="modern-bg-color-picker-popup">
+                          <div className="modern-bg-color-header">
+                            <span>Pilih Warna Background</span>
+                            <button
+                              className="modern-bg-color-close"
+                              onClick={() => setShowBgColorPicker(false)}
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+
+                          {/* Preset Colors Grid */}
+                          <div className="modern-bg-color-presets">
+                            <div className="modern-bg-color-presets-label">Warna Cepat</div>
+                            <div className="modern-bg-color-presets-grid">
+                              {presetBgColors.map((color, idx) => (
+                                <button
+                                  key={idx}
+                                  className={`modern-bg-color-preset-item ${
+                                    (pengaturanForm.background_color || "#ffffff") === color.value ? "selected" : ""
+                                  }`}
+                                  style={{ backgroundColor: color.value }}
+                                  onClick={() => {
+                                    handlePengaturanChange("background_color", color.value);
+                                    setShowBgColorPicker(false);
+                                  }}
+                                  title={color.name}
+                                >
+                                  {(pengaturanForm.background_color || "#ffffff") === color.value && (
+                                    <div className="modern-bg-color-check">✓</div>
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="modern-bg-color-divider"></div>
+
+                          {/* Custom Color Picker */}
+                          <div className="modern-bg-color-custom">
+                            <div className="modern-bg-color-custom-label">Warna Kustom</div>
+                            <div className="modern-bg-color-custom-picker">
+                              <input
+                                type="color"
+                                value={pengaturanForm.background_color || "#ffffff"}
+                                onChange={(e) => handlePengaturanChange("background_color", e.target.value)}
+                                className="modern-bg-color-input"
+                              />
+                              <InputText
+                                className="pengaturan-input"
+                                value={pengaturanForm.background_color || "#ffffff"}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  if (/^#[0-9A-Fa-f]{0,6}$/.test(value) || value === "") {
+                                    handlePengaturanChange("background_color", value || "#ffffff");
+                                  }
+                                }}
+                                placeholder="#ffffff"
+                                style={{ flex: 1, fontFamily: "monospace" }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <small className="pengaturan-hint">Pilih warna background untuk halaman landing page</small>
+                  </div>
+                </div>
+
+                {/* Tags Section */}
+                <div className="pengaturan-section">
+                  <h3 className="pengaturan-section-title">Tags</h3>
+                  <div className="pengaturan-form-group">
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+                      <Tag size={16} color="#F1A124" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newTags = [...(pengaturanForm.tags || []), ""];
+                          handlePengaturanChange("tags", newTags);
+                        }}
+                        style={{
+                          color: "#F1A124",
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          fontSize: "14px",
+                          fontWeight: "500",
+                          padding: 0
+                        }}
+                      >
+                        Add Tag
+                      </button>
+                    </div>
+                    {(pengaturanForm.tags || []).map((tag, index) => (
+                      <div key={index} style={{ marginBottom: "8px", display: "flex", gap: "8px" }}>
+                        <InputText
+                          className="pengaturan-input"
+                          value={tag}
+                          onChange={(e) => {
+                            const newTags = [...(pengaturanForm.tags || [])];
+                            newTags[index] = e.target.value;
+                            handlePengaturanChange("tags", newTags);
+                          }}
+                          placeholder="Masukkan tag"
+                          style={{ flex: 1 }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newTags = (pengaturanForm.tags || []).filter((_, i) => i !== index);
+                            handlePengaturanChange("tags", newTags);
+                          }}
+                          style={{
+                            padding: "8px 12px",
+                            backgroundColor: "#ef4444",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "4px",
+                            cursor: "pointer"
+                          }}
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* SEO Metadata Section */}
+                <div className="pengaturan-section">
+                  <h3 className="pengaturan-section-title">Pengaturan SEO Metadata</h3>
+                  
+                  <div className="pengaturan-form-group">
+                    <label className="pengaturan-label">Judul Tag</label>
+                    <InputText
+                      className="pengaturan-input"
+                      value={pengaturanForm.seo_title || ""}
+                      onChange={(e) => handlePengaturanChange("seo_title", e.target.value)}
+                      placeholder="Produk Baru"
+                    />
+                  </div>
+
+                  <div className="pengaturan-form-group">
+                    <label className="pengaturan-label">Meta Description</label>
+                    <InputTextarea
+                      className="pengaturan-input"
+                      value={pengaturanForm.meta_description || ""}
+                      onChange={(e) => handlePengaturanChange("meta_description", e.target.value)}
+                      placeholder="Cth: Scalev - A comprehensive solution for your business"
+                      rows={3}
+                      style={{ resize: "vertical" }}
+                    />
+                  </div>
+
+                  <div className="pengaturan-form-group">
+                    <label className="pengaturan-label">Upload Meta Gambar</label>
+                    <input
+                      type="file"
+                      accept=".jpg,.jpeg,.png,.webp"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            handlePengaturanChange("meta_image", event.target.result);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="component-file-input"
+                      id="meta-image-upload"
+                    />
+                    <label htmlFor="meta-image-upload" className="meta-upload-label">
+                      <ImageIcon size={32} color="#F1A124" />
+                      <span>Upload Meta Gambar</span>
+                      <small>.jpg, .jpeg, .png, .webp</small>
+                    </label>
+                    {pengaturanForm.meta_image && (
+                      <div style={{ marginTop: "8px" }}>
+                        <img src={pengaturanForm.meta_image} alt="Meta preview" style={{ maxWidth: "100%", borderRadius: "6px", maxHeight: "200px" }} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Preview Sections */}
+                <div className="pengaturan-section">
+                  <h3 className="pengaturan-section-title">Pratinjau</h3>
+                  
+                  <div className="pengaturan-form-group">
+                    <label className="pengaturan-label" style={{ fontSize: "12px", color: "#6b7280", marginBottom: "8px" }}>Pratinjau di Google Search</label>
+                    <div style={{
+                      padding: "16px",
+                      backgroundColor: "#f9fafb",
+                      borderRadius: "8px",
+                      border: "1px solid #e5e7eb"
+                    }}>
+                      <div style={{ fontSize: "20px", color: "#F1A124", marginBottom: "4px", fontWeight: "400" }}>
+                        {pengaturanForm.seo_title || "Produk Baru"}
+                      </div>
+                      <div style={{ fontSize: "14px", color: "#006621" }}>
+                        {pengaturanForm.url ? `https://ternak-properti.myscalev.com${pengaturanForm.url}` : "https://ternak-properti.myscalev.com/landing-page-baru"}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pengaturan-form-group">
+                    <label className="pengaturan-label" style={{ fontSize: "12px", color: "#6b7280", marginBottom: "8px" }}>Pratinjau di Sosial Media</label>
+                    <div style={{
+                      padding: "16px",
+                      backgroundColor: "#f9fafb",
+                      borderRadius: "8px",
+                      border: "1px solid #e5e7eb"
+                    }}>
+                      <div style={{ fontSize: "16px", color: "#1f2937", marginBottom: "4px", fontWeight: "500" }}>
+                        {pengaturanForm.seo_title || "Produk Baru"}
+                      </div>
+                      <div style={{ fontSize: "12px", color: "#6b7280" }}>
+                        {pengaturanForm.url ? `https://ternak-properti.myscalev.com${pengaturanForm.url}` : "https://ternak-properti.myscalev.com/landing-page-baru"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Favicon Section */}
+                <div className="pengaturan-section">
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+                    <h3 className="pengaturan-section-title" style={{ margin: 0 }}>Favicon</h3>
+                    <Info size={16} color="#6b7280" />
+                  </div>
+                  <div className="pengaturan-form-group">
+                    <input
+                      type="file"
+                      accept=".ico,.png,.jpeg,.jpg,.webp"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            handlePengaturanChange("favicon", event.target.result);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="component-file-input"
+                      id="favicon-upload"
+                    />
+                    <label htmlFor="favicon-upload" className="meta-upload-label">
+                      <ImageIcon size={32} color="#F1A124" />
+                      <span>Upload Favicon</span>
+                      <small>.ico, .png, .jpeg, .jpg, .webp</small>
+                    </label>
+                    {pengaturanForm.favicon && (
+                      <div style={{ marginTop: "8px" }}>
+                        <img src={pengaturanForm.favicon} alt="Favicon preview" style={{ width: "32px", height: "32px", borderRadius: "4px" }} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Loading Logo Section */}
+                <div className="pengaturan-section">
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+                    <h3 className="pengaturan-section-title" style={{ margin: 0 }}>Loading Logo</h3>
+                    <Info size={16} color="#6b7280" />
+                  </div>
+                  <div className="pengaturan-form-group">
+                    <input
+                      type="file"
+                      accept=".png,.jpeg,.jpg,.webp"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            handlePengaturanChange("loading_logo", event.target.result);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="component-file-input"
+                      id="loading-logo-upload"
+                    />
+                    <label htmlFor="loading-logo-upload" className="meta-upload-label">
+                      <ImageIcon size={32} color="#F1A124" />
+                      <span>Upload Loading Logo</span>
+                      <small>.png, .jpeg, .jpg, .webp</small>
+                    </label>
+                    {pengaturanForm.loading_logo && (
+                      <div style={{ marginTop: "8px" }}>
+                        <img src={pengaturanForm.loading_logo} alt="Loading logo preview" style={{ maxWidth: "100%", borderRadius: "6px", maxHeight: "200px" }} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Settings Toggles */}
+                <div className="pengaturan-section">
+                  <h3 className="pengaturan-section-title">Pengaturan</h3>
+                  
+                  <div className="pengaturan-form-group">
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <label className="pengaturan-label" style={{ margin: 0 }}>Matikan Search Engine Crawler</label>
+                        <Info size={16} color="#6b7280" />
+                      </div>
+                      <InputSwitch
+                        checked={pengaturanForm.disable_crawler || false}
+                        onChange={(e) => handlePengaturanChange("disable_crawler", e.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pengaturan-form-group">
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <label className="pengaturan-label" style={{ margin: 0 }}>Matikan Fungsi Klik Kanan</label>
+                        <Info size={16} color="#6b7280" />
+                      </div>
+                      <InputSwitch
+                        checked={pengaturanForm.disable_rightclick || false}
+                        onChange={(e) => handlePengaturanChange("disable_rightclick", e.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pengaturan-form-group">
+                    <label className="pengaturan-label">HTML Language</label>
+                    <Dropdown
+                      className="pengaturan-input"
+                      value={pengaturanForm.html_language || "id"}
+                      options={[
+                        { label: "Indonesian", value: "id" },
+                        { label: "English", value: "en" },
+                        { label: "Arabic", value: "ar" },
+                        { label: "Chinese", value: "zh" },
+                        { label: "Japanese", value: "ja" }
+                      ]}
+                      onChange={(e) => handlePengaturanChange("html_language", e.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Speed Boost Section */}
+                <div className="pengaturan-section">
+                  <h3 className="pengaturan-section-title">Speed Boost</h3>
+                  
+                  <div className="pengaturan-form-group">
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <label className="pengaturan-label" style={{ margin: 0 }}>Matikan Custom Font</label>
+                      <InputSwitch
+                        checked={pengaturanForm.disable_custom_font || false}
+                        onChange={(e) => handlePengaturanChange("disable_custom_font", e.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Analytics - Facebook */}
+                <div className="pengaturan-section">
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+                    <h3 className="pengaturan-section-title" style={{ margin: 0 }}>Facebook</h3>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newPixels = [...(pengaturanForm.facebook_pixels || []), ""];
+                        handlePengaturanChange("facebook_pixels", newPixels);
+                      }}
+                      style={{
+                        color: "#F1A124",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        padding: 0
+                      }}
+                    >
+                      + Tambah
+                    </button>
+                  </div>
+                  
+                  {(pengaturanForm.facebook_pixels || []).map((pixel, index) => (
+                    <div key={index} className="pengaturan-form-group" style={{ marginBottom: "16px", padding: "16px", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+                        <label className="pengaturan-label" style={{ margin: 0 }}>Facebook Pixel ID</label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newPixels = (pengaturanForm.facebook_pixels || []).filter((_, i) => i !== index);
+                            handlePengaturanChange("facebook_pixels", newPixels);
+                          }}
+                          style={{
+                            padding: "4px 8px",
+                            backgroundColor: "#ef4444",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                            fontSize: "12px"
+                          }}
+                        >
+                          Hapus
+                        </button>
+                      </div>
+                      <InputText
+                        className="pengaturan-input"
+                        value={pixel}
+                        onChange={(e) => {
+                          const newPixels = [...(pengaturanForm.facebook_pixels || [])];
+                          newPixels[index] = e.target.value;
+                          handlePengaturanChange("facebook_pixels", newPixels);
+                        }}
+                        placeholder="Masukkan Facebook Pixel ID"
+                      />
+                      
+                      <div style={{ marginTop: "12px" }}>
+                        <label className="pengaturan-label" style={{ fontSize: "14px", marginBottom: "8px" }}>Events Saat Landing Page Terbuka</label>
+                        <Chips
+                          value={pengaturanForm.facebook_events?.[index] || []}
+                          onChange={(e) => {
+                            const newEvents = [...(pengaturanForm.facebook_events || [])];
+                            newEvents[index] = e.value || [];
+                            handlePengaturanChange("facebook_events", newEvents);
+                          }}
+                          placeholder="Tambahkan event (contoh: ViewContent)"
+                          className="pengaturan-input"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Analytics - TikTok */}
+                <div className="pengaturan-section">
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+                    <h3 className="pengaturan-section-title" style={{ margin: 0 }}>TikTok</h3>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newPixels = [...(pengaturanForm.tiktok_pixels || []), ""];
+                        handlePengaturanChange("tiktok_pixels", newPixels);
+                      }}
+                      style={{
+                        color: "#F1A124",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        padding: 0
+                      }}
+                    >
+                      + Tambah
+                    </button>
+                  </div>
+                  
+                  {(pengaturanForm.tiktok_pixels || []).map((pixel, index) => (
+                    <div key={index} className="pengaturan-form-group" style={{ marginBottom: "16px", padding: "16px", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+                        <label className="pengaturan-label" style={{ margin: 0 }}>TikTok Pixel ID</label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newPixels = (pengaturanForm.tiktok_pixels || []).filter((_, i) => i !== index);
+                            handlePengaturanChange("tiktok_pixels", newPixels);
+                          }}
+                          style={{
+                            padding: "4px 8px",
+                            backgroundColor: "#ef4444",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                            fontSize: "12px"
+                          }}
+                        >
+                          Hapus
+                        </button>
+                      </div>
+                      <InputText
+                        className="pengaturan-input"
+                        value={pixel}
+                        onChange={(e) => {
+                          const newPixels = [...(pengaturanForm.tiktok_pixels || [])];
+                          newPixels[index] = e.target.value;
+                          handlePengaturanChange("tiktok_pixels", newPixels);
+                        }}
+                        placeholder="Masukkan TikTok Pixel ID"
+                      />
+                      
+                      <div style={{ marginTop: "12px" }}>
+                        <label className="pengaturan-label" style={{ fontSize: "14px", marginBottom: "8px" }}>Events Saat Landing Page Terbuka</label>
+                        <Chips
+                          value={pengaturanForm.tiktok_events?.[index] || []}
+                          onChange={(e) => {
+                            const newEvents = [...(pengaturanForm.tiktok_events || [])];
+                            newEvents[index] = e.value || [];
+                            handlePengaturanChange("tiktok_events", newEvents);
+                          }}
+                          placeholder="Tambahkan event (contoh: ViewContent)"
+                          className="pengaturan-input"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Analytics - Google */}
+                <div className="pengaturan-section">
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+                    <h3 className="pengaturan-section-title" style={{ margin: 0 }}>Google</h3>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handlePengaturanChange("google_gtm", "");
+                      }}
+                      style={{
+                        color: "#F1A124",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        padding: 0
+                      }}
+                    >
+                      + Tambah
+                    </button>
+                  </div>
+                  
+                  <div className="pengaturan-form-group">
+                    <label className="pengaturan-label">Google Tag Manager</label>
+                    <Dropdown
+                      className="pengaturan-input"
+                      value={pengaturanForm.google_gtm || ""}
+                      options={[
+                        { label: "Tidak menggunakan GTM", value: "" },
+                        { label: "GTM-XXXXXXX", value: "GTM-XXXXXXX" }
+                      ]}
+                      onChange={(e) => handlePengaturanChange("google_gtm", e.value)}
+                      placeholder="Tidak menggunakan GTM"
+                    />
+                  </div>
+                </div>
+
+                {/* Share Access */}
+                <div className="pengaturan-section">
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+                    <h3 className="pengaturan-section-title" style={{ margin: 0 }}>Share Access</h3>
+                    <button
+                      type="button"
+                      style={{
+                        color: "#F1A124",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        padding: 0
+                      }}
+                    >
+                      Open
+                    </button>
+                  </div>
+                  <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "12px" }}>
+                    You can share access to this page to advertisers or store managers, allowing them to edit this page.
+                  </p>
+                  <div style={{
+                    padding: "12px",
+                    backgroundColor: "#f9fafb",
+                    borderRadius: "6px",
+                    border: "1px solid #e5e7eb",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px"
+                  }}>
+                    <AlertCircle size={16} color="#6b7280" />
+                    <span style={{ fontSize: "14px", color: "#6b7280" }}>This page hasn't been shared to anyone.</span>
+                  </div>
+                </div>
+
+                {/* Custom Head Script */}
+                <div className="pengaturan-section">
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+                    <h3 className="pengaturan-section-title" style={{ margin: 0 }}>Custom Head Script</h3>
+                    <InputSwitch
+                      checked={pengaturanForm.enable_custom_head_script || false}
+                      onChange={(e) => handlePengaturanChange("enable_custom_head_script", e.value)}
+                    />
+                  </div>
+                  {pengaturanForm.enable_custom_head_script && (
+                    <div className="pengaturan-form-group">
+                      <InputTextarea
+                        className="pengaturan-input"
+                        value={pengaturanForm.custom_head_script || ""}
+                        onChange={(e) => handlePengaturanChange("custom_head_script", e.target.value)}
+                        placeholder="Masukkan Script"
+                        rows={8}
+                        style={{ resize: "vertical", fontFamily: "monospace", fontSize: "12px" }}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
-            ))}
-            <Button
-              icon="pi pi-plus"
-              label="Tambah Custom Field"
-              className="add-item-btn"
-              onClick={() => addArray("custom_field", { key: "", label: "", value: "", required: false })}
-            />
+            )}
           </div>
         </div>
 
-        {/* SECTION 8: Pengaturan */}
-        <div className="form-section-card">
-          <div className="section-header">
-            <h3 className="section-title">Pengaturan</h3>
-            <p className="section-description">Assign user, landing page, dan status produk</p>
-          </div>
-          <div className="section-content">
-            {/* ASSIGN BY - Penanggung Jawab */}
-            <div className="form-field-group">
-              <label className="form-label">
-                Penanggung Jawab (Assign By)
-              </label>
-              <MultiSelect
-                className="w-full form-input"
-                value={form.assign}
-                options={userOptions}
-                onChange={(e) => handleChange("assign", e.value || [])}
-                placeholder="Pilih penanggung jawab produk"
-                display="chip"
-                showClear
-                filter
-                filterPlaceholder="Cari user..."
-              />
-              <p className="field-hint">Pilih user yang bertanggung jawab menangani produk ini</p>
-            </div>
-
-            {/* LANDING PAGE */}
-            <div className="form-field-group">
-              <label className="form-label">
-                Landing Page
-              </label>
-              <InputText
-                className="w-full form-input"
-                value={form.landingpage || "1"}
-                onChange={(e) => handleChange("landingpage", e.target.value)}
-                placeholder="Masukkan nama landing page atau kode"
-              />
-              <p className="field-hint">Default: 1</p>
-            </div>
-          </div>
-        </div>
-
-      {/* SUBMIT BUTTON */}
-      <div className="submit-section">
-        <div style={{ display: "flex", gap: "1rem", alignItems: "center", flexWrap: "wrap" }}>
-          <Button 
-            label="Update Produk" 
-            icon="pi pi-save"
-            className="p-button-primary submit-btn" 
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-          />
-          <Button 
-            label="Hapus Produk" 
-            icon="pi pi-trash"
-            className="p-button-danger" 
-            onClick={deleteProduct}
-            disabled={isSubmitting}
-          />
-          {/* Test button untuk POST /api/sales/produk dengan format JSON baru */}
-          <Button 
-            label="Test POST API" 
-            icon="pi pi-send"
-            className="p-button-secondary" 
-            onClick={async () => {
-              try {
-                const token = localStorage.getItem("token");
-                const testPayload = {
-                  "nama": "Workshop Digital Marketing Premium 2024",
-                  "kategori": "15",
-                  "kode": "workshop-digital-marketing-premium-2024",
-                  "url": "/workshop-digital-marketing-premium-2024",
-                  "harga": "2500000",
-                  "jenis_produk": "non-fisik",
-                  "isBundling": true,
-                  "bundling": [
-                    {
-                      "nama": "Paket Early Bird",
-                      "harga": 2000000
-                    },
-                    {
-                      "nama": "Paket Regular",
-                      "harga": 2500000
-                    },
-                    {
-                      "nama": "Paket VIP",
-                      "harga": 3500000
-                    }
-                  ],
-                  "tanggal_event": "2024-12-15T09:00:00.000Z",
-                  "assign": [1, 5, 10],
-                  "status": "1",
-                  "landingpage": [
-                    {
-                      "type": "settings",
-                      "background_color": "#f8f9fa",
-                      "page_title": "Workshop Digital Marketing Premium 2024 - Belajar Strategi Digital Marketing Terbaru",
-                      "tags": [
-                        "digital-marketing",
-                        "workshop",
-                        "premium",
-                        "belajar-online",
-                        "strategi-marketing"
-                      ],
-                      "seo_title": "Workshop Digital Marketing Premium 2024 | Belajar Strategi Digital Marketing",
-                      "meta_description": "Workshop Digital Marketing Premium 2024 dengan materi lengkap 8 modul, sertifikat resmi, akses recording seumur hidup, dan komunitas eksklusif.",
-                      "meta_image": "https://example.com/images/workshop-og-image.jpg",
-                      "favicon": "https://example.com/favicon.ico",
-                      "preview_url": "https://ternak-properti.myscalev.com/workshop-digital-marketing-premium-2024",
-                      "loading_logo": "https://example.com/loading-logo.png",
-                      "disable_crawler": false,
-                      "disable_rightclick": false,
-                      "html_language": "id",
-                      "disable_custom_font": false,
-                      "analytics": {
-                        "facebook": {
-                          "pixels": [
-                            {
-                              "id": "123456789012345",
-                              "events": [
-                                {
-                                  "name": "ViewContent",
-                                  "params": {
-                                    "content_name": "Workshop Digital Marketing Premium 2024",
-                                    "content_category": "Education",
-                                    "valueSource": "product.price",
-                                    "currency": "IDR"
-                                  }
-                                }
-                              ]
-                            }
-                          ]
-                        },
-                        "tiktok": {
-                          "pixels": [
-                            {
-                              "id": "C1234567890ABCDEF",
-                              "events": [
-                                {
-                                  "name": "ViewContent",
-                                  "params": {
-                                    "content_name": "Workshop Digital Marketing Premium 2024",
-                                    "content_type": "course",
-                                    "valueSource": "product.price",
-                                    "currency": "IDR"
-                                  }
-                                }
-                              ]
-                            }
-                          ]
-                        },
-                        "google": {
-                          "gtm": "GTM-XXXXXXX"
-                        }
-                      },
-                      "customScripts": {
-                        "enabled": true,
-                        "templates": [
-                          {
-                            "id": "fb-pixel-1",
-                            "type": "facebook-pixel",
-                            "pixelId": "123456789012345",
-                            "autoEvents": true
-                          }
-                        ],
-                        "customCode": "<script>console.log('Custom script loaded');</script>"
-                      },
-                      "form": {
-                        "type": "non-fisik",
-                        "fields": [
-                          {
-                            "name": "nama",
-                            "label": "Nama Lengkap",
-                            "type": "text",
-                            "required": true,
-                            "placeholder": "Masukkan nama lengkap"
-                          },
-                          {
-                            "name": "wa",
-                            "label": "Nomor WhatsApp",
-                            "type": "tel",
-                            "required": true,
-                            "placeholder": "6281234567890"
-                          },
-                          {
-                            "name": "email",
-                            "label": "Email",
-                            "type": "email",
-                            "required": false,
-                            "placeholder": "email@example.com"
-                          }
-                        ],
-                        "optionalFields": {
-                          "address": {
-                            "enabled": false
-                          }
-                        },
-                        "submitConfig": {
-                          "buttonText": "Daftar Sekarang",
-                          "buttonColor": "#F1A124",
-                          "kategori": 15
-                        }
-                      },
-                      "form_preview_address": {
-                        "provinsi": "Jawa Barat",
-                        "kabupaten": "Kota Bandung",
-                        "kecamatan": "Cibeunying Kidul",
-                        "kode_pos": "40121"
-                      }
-                    },
-                    {
-                      "type": "text",
-                      "order": 1,
-                      "content": {
-                        "html": "<h1>Selamat Datang di Workshop Digital Marketing Premium</h1><p>Pelajari strategi digital marketing terbaru dari para ahli dengan materi lengkap dan praktis yang bisa langsung diterapkan.</p>"
-                      },
-                      "style": {
-                        "text": {
-                          "fontFamily": "Inter, sans-serif",
-                          "color": "#1a1a1a",
-                          "align": "center",
-                          "lineHeight": 1.8
-                        },
-                        "container": {
-                          "padding": {
-                            "top": 60,
-                            "right": 40,
-                            "bottom": 60,
-                            "left": 40
-                          },
-                          "background": {
-                            "type": "color",
-                            "color": "#ffffff"
-                          }
-                        }
-                      },
-                      "config": {
-                        "componentId": "text-header-1725123456789",
-                        "deviceView": "desktop"
-                      }
-                    }
-                  ]
-                };
-
-                console.log("[TEST API] Sending POST request to /api/sales/produk");
-                console.log("[TEST API] Payload:", JSON.stringify(testPayload, null, 2));
-
-                const res = await fetch("/api/sales/produk", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    Accept: "application/json",
-                    Authorization: `Bearer ${token}`,
-                  },
-                  body: JSON.stringify(testPayload),
-                });
-
-                const data = await res.json();
-                console.log("[TEST API] Response:", data);
-
-                if (res.ok && data.success) {
-                  alert(`✅ Success! ${data.message || "Produk berhasil dibuat"}`);
-                } else {
-                  alert(`❌ Error: ${data.message || "Gagal membuat produk"}\n\nDetail: ${JSON.stringify(data.errors || {}, null, 2)}`);
-                }
-              } catch (error) {
-                console.error("[TEST API] Error:", error);
-                alert(`❌ Error: ${error.message}`);
-              }
+        {/* Right Canvas - Preview */}
+        <div className="page-builder-canvas">
+          <div 
+            className="canvas-wrapper"
+            style={{ 
+              backgroundColor: pengaturanForm.background_color || "#ffffff"
             }}
-            disabled={isSubmitting}
-          />
+          >
+            {/* Logo - Hardcode di bagian atas center */}
+            <div className="canvas-logo-wrapper">
+              <img 
+                src="/assets/logo.png" 
+                alt="Logo" 
+                className="canvas-logo"
+              />
+            </div>
+            
+            {/* Content Area */}
+            <div className="canvas-content-area">
+              {/* Placeholder jika belum ada komponen */}
+              {blocks.length === 0 && !pengaturanForm.nama && (
+                <div className="canvas-empty">
+                  <p>Klik "Tambah Komponen Baru" untuk memulai</p>
+                </div>
+              )}
+              
+              {/* Preview komponen - hanya render blocks tanpa parentId (bukan child dari section) */}
+              {blocks
+                .filter(block => !block.parentId) // Hanya render blocks yang bukan child dari section
+                .map((block) => (
+                  <div 
+                    key={block.id} 
+                    className="canvas-preview-block"
+                    onClick={() => {
+                      // Scroll ke komponen di sidebar
+                      const componentElement = componentRefs.current[block.id];
+                      if (componentElement) {
+                        componentElement.scrollIntoView({ behavior: "smooth", block: "center" });
+                        // Expand komponen jika collapsed
+                        if (collapsedBlockIds.has(block.id)) {
+                          handleToggleExpand(block.id);
+                        }
+                      }
+                    }}
+                    style={{ cursor: "pointer" }}
+                    title="Klik untuk scroll ke komponen di sidebar"
+                  >
+                    {renderPreview(block)}
+                  </div>
+                ))}
+            </div>
+
+            {/* Footer */}
+            <footer className="canvas-footer">
+              <div className="canvas-footer-content">
+                <p className="canvas-footer-brand">Ternak Properti</p>
+                <p className="canvas-footer-copyright">Copyright 2018-2025, All Rights Reserved</p>
+              </div>
+            </footer>
+          </div>
         </div>
-        <p className="submit-hint">
-          {isSubmitting 
-            ? (submitStatus || "Sedang mengunggah data ke server...") 
-            : "Pastikan semua data sudah lengkap sebelum menyimpan"}
-        </p>
       </div>
-      </div>
-      {/* ================= RIGHT: PREVIEW ================= */}
-      <div className="builder-preview-card">
-        <LandingTemplate form={form} />
-      </div>
+
+      {/* Component Selection Modal - Simple */}
+      {showComponentModal && (
+        <div className="simple-modal-overlay" onClick={() => setShowComponentModal(false)}>
+          <div className="simple-modal" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="simple-modal-header">
+              <h2 className="simple-modal-title">Pilih Komponen</h2>
+              <button 
+                className="simple-modal-close"
+                onClick={() => setShowComponentModal(false)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            {/* Content */}
+            <div className="simple-modal-content">
+              {renderComponentGrid()}
+            </div>
+            
+            {/* Footer */}
+            <div className="simple-modal-footer">
+              <button 
+                className="simple-modal-cancel"
+                onClick={() => setShowComponentModal(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
