@@ -3,6 +3,16 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
+import { 
+  CheckCircle2, Circle, Minus, ArrowRight, ArrowRightCircle,
+  ArrowLeft as ArrowLeftIcon, ArrowLeftRight, ChevronRight, CheckSquare, ShieldCheck,
+  Lock, Dot, Target, Link as LinkIcon, PlusCircle, MinusCircle,
+  Check, Star, Heart, ThumbsUp, Award, Zap, Flame, Sparkles,
+  ArrowUp, ArrowDown, ArrowUpCircle, ArrowDownCircle, PlayCircle,
+  PauseCircle, StopCircle, Radio, Square, Hexagon, Triangle,
+  AlertCircle, Info, HelpCircle as HelpCircleIcon, Ban, Shield, Key, Unlock,
+  MapPin, Calendar as CalendarIcon, Clock
+} from "lucide-react";
 import OngkirCalculator from "@/components/OngkirCalculator";
 import "@/styles/sales/add-products3.css"; // Canvas style
 import "@/styles/ongkir.css";
@@ -176,127 +186,290 @@ export default function ProductPage() {
     return url;
   };
 
-  // Render Block berdasarkan struktur content/style/config
+  // Render Block berdasarkan struktur content/style/config - SAMA PERSIS dengan renderPreview di addProducts3
   const renderBlock = (block) => {
     if (!block || !block.type) return null;
 
+    // Adaptasi dari format content/style/config ke format block.data (untuk kompatibilitas dengan renderPreview)
+    // Di addProducts3, renderPreview menggunakan block.data, tapi di product page kita punya content/style/config
+    // Jadi kita perlu mengadaptasi data untuk match dengan renderPreview logic
+    
     const { type, content, style, config } = block;
-    const blockStyle = style?.container || {};
-    const textStyle = style?.text || {};
-    // Container style - jangan override display dan justify-content dari CSS
-    const containerStyle = {
-      paddingTop: blockStyle.padding?.top || blockStyle.paddingTop || 0,
-      paddingRight: blockStyle.padding?.right || blockStyle.paddingRight || 0,
-      paddingBottom: blockStyle.padding?.bottom || blockStyle.paddingBottom || 0,
-      paddingLeft: blockStyle.padding?.left || blockStyle.paddingLeft || 0,
-      marginTop: blockStyle.margin?.top || blockStyle.marginTop || 0,
-      marginRight: blockStyle.margin?.right || blockStyle.marginRight || 0,
-      marginBottom: blockStyle.margin?.bottom || blockStyle.marginBottom || 0,
-      marginLeft: blockStyle.margin?.left || blockStyle.marginLeft || 0,
-      backgroundColor: blockStyle.backgroundColor || blockStyle.bgColor || 'transparent',
-      backgroundImage: blockStyle.backgroundImage ? `url(${blockStyle.backgroundImage})` : 'none',
-      border: blockStyle.border || 'none',
-      borderRadius: blockStyle.borderRadius || 0,
-      boxShadow: blockStyle.boxShadow || 'none',
-      // Jangan override display dan justify-content - biarkan CSS yang handle
-    };
-
-    const textContentStyle = {
-      color: textStyle.color || textStyle.textColor || '#000',
-      fontFamily: textStyle.fontFamily || 'inherit',
-      fontSize: textStyle.fontSize ? `${textStyle.fontSize}px` : 'inherit',
-      fontWeight: textStyle.fontWeight || 'normal',
-      lineHeight: textStyle.lineHeight || 1.5,
-      // Text align: gunakan dari style, atau default center jika tidak ada
-      textAlign: textStyle.textAlign || textStyle.alignment || 'center',
+    
+    // Simulasi block.data dari content/style/config untuk kompatibilitas dengan renderPreview logic
+    const blockData = {
+      // Text data
+      content: content?.html || content || "",
+      textColor: style?.text?.color || style?.text?.textColor || "#000000",
+      fontFamily: style?.text?.fontFamily || "inherit",
+      lineHeight: style?.text?.lineHeight || 1.5,
+      textAlign: style?.text?.textAlign || style?.text?.alignment || "left",
+      fontWeight: style?.text?.fontWeight || "normal",
+      fontStyle: style?.text?.fontStyle || "normal",
+      textDecoration: style?.text?.textDecoration || "none",
+      textTransform: style?.text?.textTransform || "none",
+      letterSpacing: style?.text?.letterSpacing || 0,
+      backgroundColor: style?.text?.backgroundColor || "transparent",
+      paragraphStyle: config?.paragraphStyle || "div",
+      bgType: style?.text?.bgType || "none",
+      bgColor: style?.text?.bgColor || "#ffffff",
+      bgImage: style?.text?.bgImage || "",
+      paddingTop: style?.text?.paddingTop || style?.container?.paddingTop || 0,
+      paddingRight: style?.text?.paddingRight || style?.container?.paddingRight || 0,
+      paddingBottom: style?.text?.paddingBottom || style?.container?.paddingBottom || 0,
+      paddingLeft: style?.text?.paddingLeft || style?.container?.paddingLeft || 0,
+      
+      // Image data
+      src: content?.src || content?.url || "",
+      alt: content?.alt || "",
+      caption: content?.caption || "",
+      alignment: style?.container?.alignment || "center",
+      imageWidth: style?.container?.imageWidth || 100,
+      imageFit: style?.container?.imageFit || "fill",
+      aspectRatio: style?.container?.aspectRatio || "OFF",
+      backgroundType: style?.container?.backgroundType || "none",
+      backgroundColor: style?.container?.backgroundColor || "#ffffff",
+      backgroundImage: style?.container?.backgroundImage || "",
+      
+      // Video data
+      items: content?.items || [],
+      videoWidth: style?.container?.videoWidth || 100,
+      
+      // Testimoni data
+      componentTitle: content?.componentTitle || config?.title || "Testimoni Pembeli",
+      
+      // List data
+      icon: content?.icon || "CheckCircle2",
+      iconColor: content?.iconColor || "#000000",
     };
 
     switch (type) {
       case "text": {
-        const htmlContent = content?.html || content || "";
+        const textData = blockData;
+        const textStyles = {
+          lineHeight: textData.lineHeight || 1.5,
+          fontFamily: textData.fontFamily && textData.fontFamily !== "Page Font" 
+            ? textData.fontFamily 
+            : "inherit",
+          color: textData.textColor || "#000000",
+          backgroundColor: textData.backgroundColor && textData.backgroundColor !== "transparent"
+            ? textData.backgroundColor
+            : "transparent",
+          textAlign: textData.textAlign || "left",
+          fontWeight: textData.fontWeight || "normal",
+          fontStyle: textData.fontStyle || "normal",
+          textDecoration: textData.textDecoration || "none",
+          textTransform: textData.textTransform || "none",
+          letterSpacing: textData.letterSpacing ? `${textData.letterSpacing}px` : "0px",
+          padding: textData.backgroundColor && textData.backgroundColor !== "transparent" ? "8px 12px" : "0",
+          borderRadius: textData.backgroundColor && textData.backgroundColor !== "transparent" ? "4px" : "0",
+        };
+
+        // Determine tag based on paragraph style
+        const Tag = textData.paragraphStyle === "h1" ? "h1" :
+                    textData.paragraphStyle === "h2" ? "h2" :
+                    textData.paragraphStyle === "h3" ? "h3" : "div";
+
+        // Background dari advance settings
+        let textBackgroundStyle = {};
+        if (textData.bgType === "color") {
+          textBackgroundStyle.backgroundColor = textData.bgColor || "#ffffff";
+        } else if (textData.bgType === "image" && textData.bgImage) {
+          textBackgroundStyle.backgroundImage = `url(${textData.bgImage})`;
+          textBackgroundStyle.backgroundSize = "cover";
+          textBackgroundStyle.backgroundPosition = "center";
+        }
+        
+        // Padding dari advance settings
+        const textPaddingStyle = {
+          paddingTop: `${textData.paddingTop || 0}px`,
+          paddingRight: `${textData.paddingRight || 0}px`,
+          paddingBottom: `${textData.paddingBottom || 0}px`,
+          paddingLeft: `${textData.paddingLeft || 0}px`,
+        };
+        
+        // Rich text content (HTML)
+        const richContent = textData.content || "<p>Teks...</p>";
+        
         return (
-          <div key={block.order} className="canvas-preview-block" style={containerStyle}>
-            <div 
-              className="preview-text" 
-              style={textContentStyle}
-              dangerouslySetInnerHTML={{ __html: htmlContent }}
-            />
-          </div>
+          <Tag 
+            className="preview-text" 
+            style={{
+              ...textStyles,
+              ...textBackgroundStyle,
+              ...textPaddingStyle,
+              display: "block",
+              width: "100%"
+            }}
+            dangerouslySetInnerHTML={{ __html: richContent }}
+          />
         );
       }
 
       case "image": {
-        const src = content?.src || content?.url || "";
-        const alt = content?.alt || "";
-        const caption = content?.caption || "";
-        const alignment = style?.container?.alignment || "center";
-        const imageWidth = style?.container?.imageWidth || "100%";
-        const imageFit = style?.container?.imageFit || "contain";
-        
+        const imageData = blockData;
+        if (!imageData.src) {
+          return <div className="preview-placeholder">Gambar belum diupload</div>;
+        }
+
+        // Advanced settings
+        const alignment = imageData.alignment || "center";
+        const imageWidth = imageData.imageWidth || 100;
+        const imageFit = imageData.imageFit || "fill";
+        const aspectRatio = imageData.aspectRatio || "OFF";
+        const backgroundType = imageData.backgroundType || "none";
+        const backgroundColor = imageData.backgroundColor || "#ffffff";
+        const backgroundImage = imageData.backgroundImage || "";
+        const paddingTop = style?.container?.paddingTop || 0;
+        const paddingRight = style?.container?.paddingRight || 0;
+        const paddingBottom = style?.container?.paddingBottom || 0;
+        const paddingLeft = style?.container?.paddingLeft || 0;
+
+        // Calculate aspect ratio - ketika dipilih, gambar akan di-crop sesuai ratio
+        let aspectRatioStyle = {};
+        if (aspectRatio !== "OFF") {
+          const [width, height] = aspectRatio.split(":").map(Number);
+          if (width && height) {
+            aspectRatioStyle.aspectRatio = `${width} / ${height}`;
+          }
+        }
+
+        // Background style
+        let imageBackgroundStyle = {};
+        if (backgroundType === "color") {
+          imageBackgroundStyle.backgroundColor = backgroundColor;
+        } else if (backgroundType === "image" && backgroundImage) {
+          imageBackgroundStyle.backgroundImage = `url(${backgroundImage})`;
+          imageBackgroundStyle.backgroundSize = "cover";
+          imageBackgroundStyle.backgroundPosition = "center";
+        }
+
+        // Image fit style
+        let objectFitValue;
+        if (aspectRatio !== "OFF") {
+          objectFitValue = "cover";
+        } else {
+          objectFitValue = imageFit === "fill" ? "fill" : imageFit === "fit" ? "contain" : "fill";
+        }
+
+        // Padding style
+        const imagePaddingStyle = {
+          paddingTop: `${paddingTop}px`,
+          paddingRight: `${paddingRight}px`,
+          paddingBottom: `${paddingBottom}px`,
+          paddingLeft: `${paddingLeft}px`,
+        };
+
+        // Container style with alignment
+        const containerStyle = {
+          display: "flex",
+          justifyContent: alignment === "left" ? "flex-start" : alignment === "right" ? "flex-end" : "center",
+          width: "100%",
+          ...imagePaddingStyle,
+        };
+
+        // Image wrapper style
+        const imageWrapperStyle = {
+          width: `${imageWidth}%`,
+          ...aspectRatioStyle,
+          ...imageBackgroundStyle,
+          overflow: "hidden",
+          borderRadius: "4px",
+          position: "relative",
+        };
+
         return (
-          <div key={block.order} className="canvas-preview-block" style={containerStyle}>
-            {src ? (
-              <div className="preview-image-wrapper" style={{ textAlign: alignment }}>
-                <img 
-                  src={src} 
-                  alt={alt} 
-                  className="preview-image-full preview-image-auto-aspect"
-                  style={{ width: imageWidth, objectFit: imageFit }}
-                  loading="lazy"
-                />
-                {caption && <p className="preview-caption">{caption}</p>}
-              </div>
-            ) : (
-              <div className="preview-placeholder">Gambar belum diupload</div>
-            )}
+          <div style={containerStyle}>
+            <div style={imageWrapperStyle}>
+              <img 
+                src={imageData.src} 
+                alt={imageData.alt || ""} 
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: objectFitValue,
+                  objectPosition: "center",
+                  display: "block",
+                }}
+              />
+            </div>
+            {imageData.caption && <p className="preview-caption">{imageData.caption}</p>}
           </div>
         );
       }
 
       case "youtube":
       case "video": {
-        const items = content?.items || [];
-        if (items.length === 0) {
-          return (
-            <div key={block.order} className="canvas-preview-block" style={containerStyle}>
-              <div className="preview-placeholder">Belum ada video</div>
-            </div>
-          );
+        const videoItems = content?.items || [];
+        if (videoItems.length === 0) {
+          return <div className="preview-placeholder">Belum ada video</div>;
         }
         
+        // Advanced settings untuk video
+        const videoAlignment = style?.container?.alignment || "center";
+        const videoWidth = style?.container?.videoWidth !== undefined ? style?.container?.videoWidth : 100;
+        const videoPaddingTop = style?.container?.paddingTop || 0;
+        const videoPaddingRight = style?.container?.paddingRight || 0;
+        const videoPaddingBottom = style?.container?.paddingBottom || 0;
+        const videoPaddingLeft = style?.container?.paddingLeft || 0;
+        
+        // Container style dengan alignment dan padding
+        const videoContainerStyle = {
+          display: "flex",
+          flexDirection: "column",
+          gap: "24px",
+          alignItems: "center",
+          width: "100%",
+          paddingTop: `${videoPaddingTop}px`,
+          paddingRight: `${videoPaddingRight}px`,
+          paddingBottom: `${videoPaddingBottom}px`,
+          paddingLeft: `${videoPaddingLeft}px`,
+        };
+        
+        // Video wrapper style dengan width dan aspect ratio 16:9
+        const videoWrapperStyle = {
+          width: `${videoWidth}%`,
+          maxWidth: "100%",
+          aspectRatio: "16 / 9",
+          position: "relative",
+          overflow: "hidden",
+          borderRadius: "8px",
+          display: "flex",
+          justifyContent: videoAlignment === "left" ? "flex-start" : videoAlignment === "right" ? "flex-end" : "center",
+        };
+        
         return (
-          <div key={block.order} className="canvas-preview-block" style={containerStyle}>
-            <div className="preview-videos">
-              {items.map((item) => {
-                const embedUrl = item.embedUrl || (item.url ? convertToEmbedUrl(item.url) : null);
-                return embedUrl ? (
-                  <div key={item.url || item.embedUrl} className="preview-video-wrapper preview-video-thumbnail">
-                    <iframe 
-                      src={embedUrl} 
-                      title="Video" 
-                      className="preview-video-iframe" 
-                      allowFullScreen 
-                    />
-                  </div>
-                ) : null;
-              })}
-            </div>
+          <div className="preview-videos" style={videoContainerStyle}>
+            {videoItems.map((item, i) => (
+              item.embedUrl || (item.url ? convertToEmbedUrl(item.url) : null) ? (
+                <div key={i} className="preview-video-wrapper" style={videoWrapperStyle}>
+                  <iframe 
+                    src={item.embedUrl || convertToEmbedUrl(item.url)} 
+                    title={`Video ${i + 1}`} 
+                    className="preview-video-iframe" 
+                    allowFullScreen
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      border: "none",
+                      borderRadius: "8px"
+                    }}
+                  />
+                </div>
+              ) : null
+            ))}
           </div>
         );
       }
 
       case "testimoni": {
-        const items = content?.items || [];
-        if (items.length === 0) {
-          return (
-            <div key={block.order} className="canvas-preview-block" style={containerStyle}>
-              <div className="preview-placeholder">Belum ada testimoni</div>
-            </div>
-          );
+        const testimoniItems = content?.items || [];
+        if (testimoniItems.length === 0) {
+          return <div className="preview-placeholder">Belum ada testimoni</div>;
         }
         
         const currentIndex = testimoniIndices[block.order] || 0;
-        const maxIndex = Math.max(0, items.length - 3);
+        const maxIndex = Math.max(0, testimoniItems.length - 3);
         
         const handlePrev = () => {
           setTestimoniIndices(prev => ({
@@ -312,28 +485,34 @@ export default function ProductPage() {
           }));
         };
         
-        const componentTitle = content?.componentTitle || config?.title || "Testimoni Pembeli";
+        const testimoniTitle = content?.componentTitle || config?.title || "Testimoni Pembeli";
         
         return (
-          <div key={block.order} className="canvas-preview-block" style={containerStyle}>
-            <section className="preview-testimonials" aria-label="Customer testimonials">
-              <h2>{componentTitle}</h2>
-              <div className="testimonials-carousel-wrapper-new">
-                {currentIndex > 0 && (
-                  <button 
-                    className="testimoni-nav-btn-new testimoni-nav-prev-new"
-                    onClick={handlePrev}
-                    aria-label="Previous testimonials"
-                  >
-                    ‹
-                  </button>
-                )}
-                <div className="testimonials-carousel-new" itemScope itemType="https://schema.org/Review">
-                  <div 
-                    className="testimonials-track-new"
-                    style={{ transform: `translateX(-${currentIndex * 28}%)` }}
-                  >
-                    {items.map((item, i) => (
+          <section className="preview-testimonials" aria-label="Customer testimonials">
+            <h2 style={{
+              fontSize: "18px",
+              fontWeight: "600",
+              color: "#000000",
+              marginBottom: "20px",
+              textAlign: "left"
+            }}>{testimoniTitle}</h2>
+            <div className="testimonials-carousel-wrapper-new">
+              {currentIndex > 0 && (
+                <button 
+                  className="testimoni-nav-btn-new testimoni-nav-prev-new"
+                  onClick={handlePrev}
+                  aria-label="Previous testimonials"
+                >
+                  ‹
+                </button>
+              )}
+              <div className="testimonials-carousel-new" itemScope itemType="https://schema.org/Review">
+                <div 
+                  className="testimonials-track-new"
+                  style={{ transform: `translateX(-${currentIndex * 32}%)` }}
+                >
+                  {testimoniItems.map((item, i) => {
+                    return (
                       <article key={i} className="testi-card-new" itemScope itemType="https://schema.org/Review">
                         <div className="testi-header-new">
                           {item.gambar ? (
@@ -356,63 +535,142 @@ export default function ProductPage() {
                           <div className="testi-info-new">
                             <div className="testi-name-new" itemProp="author" itemScope itemType="https://schema.org/Person">
                               <span itemProp="name">{item.nama || "Nama"}</span>
+                              {item.jabatan && (
+                                <div className="testi-job-new" style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
+                                  {item.jabatan}
+                                </div>
+                              )}
                             </div>
-                            {item.jabatan && (
-                              <div className="testi-job-new">{item.jabatan}</div>
-                            )}
                             {item.showRating !== false && (
                               <div className="testi-stars-new">
-                                {[...Array(item.rating || 5)].map((_, idx) => (
-                                  <span key={idx} className="star-new">★</span>
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <span 
+                                    key={star} 
+                                    className="star-new"
+                                    style={{ 
+                                      color: star <= (item.rating || 5) ? "#fbbf24" : "#d1d5db" 
+                                    }}
+                                  >
+                                    ★
+                                  </span>
                                 ))}
                               </div>
                             )}
                           </div>
                         </div>
-                        <div className="testi-desc-new" itemProp="reviewBody">
-                          {item.isiTestimony || item.deskripsi || "Deskripsi testimoni"}
-                        </div>
+                        <div 
+                          className="testi-desc-new" 
+                          itemProp="reviewBody"
+                          dangerouslySetInnerHTML={{ 
+                            __html: item.isiTestimony || item.deskripsi || "<p>Deskripsi testimoni</p>" 
+                          }}
+                        />
                       </article>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
-                {currentIndex < maxIndex && items.length > 3 && (
-                  <button 
-                    className="testimoni-nav-btn-new testimoni-nav-next-new"
-                    onClick={handleNext}
-                    aria-label="Next testimonials"
-                  >
-                    ›
-                  </button>
-                )}
               </div>
-            </section>
-          </div>
+              {currentIndex < maxIndex && testimoniItems.length > 3 && (
+                <button 
+                  className="testimoni-nav-btn-new testimoni-nav-next-new"
+                  onClick={handleNext}
+                  aria-label="Next testimonials"
+                >
+                  ›
+                </button>
+              )}
+            </div>
+          </section>
         );
       }
 
       case "list": {
-        const items = content?.items || [];
-        const componentTitle = content?.componentTitle || config?.title || "";
+        const listItems = content?.items || [];
+        
+        // Icon mapping
+        const iconMap = {
+          CheckCircle2, Circle, Minus, ArrowRight, ArrowRightCircle,
+          ArrowLeft: ArrowLeftIcon, ArrowLeftRight, ChevronRight, CheckSquare, ShieldCheck,
+          Lock, Dot, Target, Link: LinkIcon, PlusCircle, MinusCircle,
+          Check, Star, Heart, ThumbsUp, Award, Zap, Flame, Sparkles,
+          ArrowUp, ArrowDown, ArrowUpCircle, ArrowDownCircle, PlayCircle,
+          PauseCircle, StopCircle, Radio, Square, Hexagon, Triangle,
+          AlertCircle, Info, HelpCircle: HelpCircleIcon, Ban, Shield, Key, Unlock,
+          MapPin, Calendar: CalendarIcon, Clock
+        };
+        
+        const listTitle = content?.componentTitle || config?.title || "";
+        const listData = {
+          paddingTop: style?.container?.paddingTop || 0,
+          paddingRight: style?.container?.paddingRight || 0,
+          paddingBottom: style?.container?.paddingBottom || 0,
+          paddingLeft: style?.container?.paddingLeft || 0,
+          bgType: style?.container?.bgType || "none",
+          bgColor: style?.container?.bgColor || "#ffffff",
+          bgImage: style?.container?.bgImage || "",
+        };
+        
+        // Build styles from advance settings
+        const listStyles = {
+          paddingTop: `${listData.paddingTop || 0}px`,
+          paddingRight: `${listData.paddingRight || 0}px`,
+          paddingBottom: `${listData.paddingBottom || 0}px`,
+          paddingLeft: `${listData.paddingLeft || 0}px`,
+        };
+        
+        // Background dari advance settings
+        let listBackgroundStyle = {};
+        if (listData.bgType === "color") {
+          listBackgroundStyle.backgroundColor = listData.bgColor || "#ffffff";
+        } else if (listData.bgType === "image" && listData.bgImage) {
+          listBackgroundStyle.backgroundImage = `url(${listData.bgImage})`;
+          listBackgroundStyle.backgroundSize = "cover";
+          listBackgroundStyle.backgroundPosition = "center";
+        }
         
         return (
-          <div key={block.order} className="canvas-preview-block" style={containerStyle}>
-            {componentTitle && <h2>{componentTitle}</h2>}
-            <ul className="preview-list" style={textContentStyle}>
-              {items.map((item, i) => (
-                <li key={i}>
-                  {item.icon && (
-                    <span style={{ color: item.iconColor || 'inherit', marginRight: '8px' }}>
-                      {item.icon}
-                    </span>
-                  )}
-                  <span dangerouslySetInnerHTML={{ __html: item.content || item.nama || `Point ${i + 1}` }} />
+          <div 
+            className="preview-list-wrapper"
+            style={{
+              ...listStyles,
+              ...listBackgroundStyle,
+            }}
+          >
+            {listTitle && (
+              <div className="preview-list-header">
+                <h3 className="preview-list-title" style={{
+                  fontSize: "18px",
+                  fontWeight: "600",
+                  color: "#000000",
+                  margin: "0 0 8px 0"
+                }}>{listTitle}</h3>
+                <div className="preview-list-header-line"></div>
+              </div>
+            )}
+            {listItems.length === 0 ? (
+              <div className="preview-placeholder">Belum ada list point</div>
+            ) : (
+              <ul className="preview-list">
+                {listItems.map((item, i) => {
+                  const iconName = item.icon || "CheckCircle2";
+                  const iconColor = item.iconColor || "#000000";
+                  const content = item.content || item.nama || `Point ${i + 1}`;
+                  const IconComponent = iconMap[iconName] || CheckCircle2;
+                  
+                  return (
+                    <li key={i} className="preview-list-item">
+                      <span className="preview-list-icon" style={{ color: iconColor }}>
+                        <IconComponent size={20} strokeWidth={2} />
+                      </span>
+                      <div className="preview-list-content" dangerouslySetInnerHTML={{ __html: content || `<p>Point ${i + 1}</p>` }} />
+                    </li>
+                  );
+                })}
+                <li className="preview-list-add-indicator">
+                  <span>»</span>
                 </li>
-              ))}
-              {items.length === 0 && (
-                <div className="preview-placeholder">Belum ada list point</div>
-              )}
-            </ul>
+              </ul>
+            )}
           </div>
         );
       }
@@ -444,7 +702,7 @@ export default function ProductPage() {
         const isFormBuku = kategoriId === 4; // Kategori Buku (4)
         
         return (
-          <div key={block.order} className="canvas-preview-block" style={containerStyle}>
+          <div style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
             <section className="preview-form-section compact-form-section" aria-label="Order form">
               <h2 className="compact-form-title">Lengkapi Data:</h2>
               <div className="compact-form-card">
@@ -642,7 +900,7 @@ export default function ProductPage() {
         const hargaAsli = productData?.harga_asli || productData?.harga_coret || 0;
         
         return (
-          <div key={block.order} className="canvas-preview-block" style={containerStyle}>
+          <div>
             <section className="preview-price-section special-offer-card" aria-label="Special offer" itemScope itemType="https://schema.org/Offer">
               <h2 className="special-offer-title">Special Offer!</h2>
               <div className="special-offer-price">
@@ -664,9 +922,7 @@ export default function ProductPage() {
 
       default:
         return (
-          <div key={block.order} className="canvas-preview-block" style={containerStyle}>
-            <div className="preview-placeholder">{type}</div>
-          </div>
+          <div className="preview-placeholder">{type}</div>
         );
     }
   };
@@ -888,8 +1144,20 @@ export default function ProductPage() {
     ? landingpage.filter((item, index) => index > 0 && item.type !== 'settings')
     : [];
 
-  // Sort blocks by order
-  const sortedBlocks = [...blocks].sort((a, b) => (a.order || 0) - (b.order || 0));
+  // Sort blocks by order - ensure numeric comparison and stable sort
+  const sortedBlocks = [...blocks].sort((a, b) => {
+    const orderA = typeof a.order === 'number' ? a.order : (typeof a.order === 'string' ? parseInt(a.order, 10) : Infinity);
+    const orderB = typeof b.order === 'number' ? b.order : (typeof b.order === 'string' ? parseInt(b.order, 10) : Infinity);
+    
+    // If both orders are invalid, maintain original order
+    if (isNaN(orderA) && isNaN(orderB)) {
+      return 0;
+    }
+    if (isNaN(orderA)) return 1;
+    if (isNaN(orderB)) return -1;
+    
+    return orderA - orderB;
+  });
 
   // Ambil logo dari settings (jika ada)
   const settings = landingpage && Array.isArray(landingpage) && landingpage.length > 0 && landingpage[0].type === 'settings'
@@ -913,7 +1181,11 @@ export default function ProductPage() {
           {/* Content Area - Center dengan padding */}
           <div className="canvas-content-area">
             {/* Render Blocks dari landingpage */}
-            {sortedBlocks.map((block) => renderBlock(block))}
+            {sortedBlocks.map((block) => (
+              <div key={block.order} className="canvas-preview-block">
+                {renderBlock(block)}
+              </div>
+            ))}
           </div>
         </div>
       </div>
