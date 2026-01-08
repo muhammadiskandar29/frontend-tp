@@ -232,7 +232,7 @@ export default function AdminProductsPage() {
                                 }
                                 
                                 if (kodeProduk) {
-                                  window.open(`/landing/${kodeProduk}`, '_blank');
+                                  window.open(`/product/${kodeProduk}`, '_blank');
                                 } else {
                                   alert('Kode produk tidak tersedia');
                                 }

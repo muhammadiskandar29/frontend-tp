@@ -183,6 +183,7 @@ export default function ProductPage() {
     const { type, content, style, config } = block;
     const blockStyle = style?.container || {};
     const textStyle = style?.text || {};
+    // Container style - jangan override display dan justify-content dari CSS
     const containerStyle = {
       paddingTop: blockStyle.padding?.top || blockStyle.paddingTop || 0,
       paddingRight: blockStyle.padding?.right || blockStyle.paddingRight || 0,
@@ -197,6 +198,7 @@ export default function ProductPage() {
       border: blockStyle.border || 'none',
       borderRadius: blockStyle.borderRadius || 0,
       boxShadow: blockStyle.boxShadow || 'none',
+      // Jangan override display dan justify-content - biarkan CSS yang handle
     };
 
     const textContentStyle = {
@@ -205,7 +207,8 @@ export default function ProductPage() {
       fontSize: textStyle.fontSize ? `${textStyle.fontSize}px` : 'inherit',
       fontWeight: textStyle.fontWeight || 'normal',
       lineHeight: textStyle.lineHeight || 1.5,
-      textAlign: textStyle.textAlign || textStyle.alignment || 'left',
+      // Text align: gunakan dari style, atau default center jika tidak ada
+      textAlign: textStyle.textAlign || textStyle.alignment || 'center',
     };
 
     switch (type) {
@@ -888,19 +891,37 @@ export default function ProductPage() {
   // Sort blocks by order
   const sortedBlocks = [...blocks].sort((a, b) => (a.order || 0) - (b.order || 0));
 
+  // Ambil logo dari settings (jika ada)
+  const settings = landingpage && Array.isArray(landingpage) && landingpage.length > 0 && landingpage[0].type === 'settings'
+    ? landingpage[0]
+    : null;
+  const logoUrl = settings?.logo || '/assets/logo.png';
+
   return (
     <div className="add-products3-container" itemScope itemType="https://schema.org/Product">
       <div className="page-builder-canvas">
         <div className="canvas-wrapper">
-          {/* Nama Produk - Selalu muncul di paling atas */}
-          {productData.nama && (
-            <div className="canvas-preview-block canvas-product-title-block">
-              <h1 className="preview-product-title" itemProp="name">{productData.nama}</h1>
-            </div>
-          )}
-          
-          {/* Render Blocks dari landingpage */}
-          {sortedBlocks.map((block) => renderBlock(block))}
+          {/* Logo Section - Top */}
+          <div className="canvas-logo-wrapper">
+            <img 
+              src={logoUrl} 
+              alt="Logo" 
+              className="canvas-logo"
+            />
+          </div>
+
+          {/* Content Area - Center dengan padding */}
+          <div className="canvas-content-area">
+            {/* Nama Produk - Selalu muncul di paling atas */}
+            {productData.nama && (
+              <div className="canvas-preview-block canvas-product-title-block">
+                <h1 className="preview-product-title" itemProp="name">{productData.nama}</h1>
+              </div>
+            )}
+            
+            {/* Render Blocks dari landingpage */}
+            {sortedBlocks.map((block) => renderBlock(block))}
+          </div>
         </div>
       </div>
 
