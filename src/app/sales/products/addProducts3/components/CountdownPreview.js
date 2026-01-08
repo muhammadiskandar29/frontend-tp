@@ -6,7 +6,6 @@ export default function CountdownPreview({ data = {}, index }) {
   const hours = data.hours !== undefined ? data.hours : 0;
   const minutes = data.minutes !== undefined ? data.minutes : 0;
   const seconds = data.seconds !== undefined ? data.seconds : 0;
-  const promoText = data.promoText || "Promo Berakhir Dalam:";
   const textColor = data.textColor || "#e5e7eb";
   const bgColor = data.bgColor || "#1f2937";
   const numberStyle = data.numberStyle || "flip";
@@ -217,14 +216,6 @@ export default function CountdownPreview({ data = {}, index }) {
       borderRadius: "12px",
       textAlign: "center"
     }}>
-      <div style={{ 
-        color: "#374151", 
-        fontSize: "18px", 
-        marginBottom: "20px", 
-        fontWeight: "600" 
-      }}>
-        {promoText}
-      </div>
       <div style={{ 
         display: "flex", 
         gap: "16px", 
