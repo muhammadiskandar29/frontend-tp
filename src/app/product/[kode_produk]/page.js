@@ -191,7 +191,10 @@ export default function ProductPage() {
       paddingLeft: blockStyle.padding?.left || blockStyle.paddingLeft || 0,
       marginTop: blockStyle.margin?.top || blockStyle.marginTop || 0,
       marginRight: blockStyle.margin?.right || blockStyle.marginRight || 0,
-      marginBottom: blockStyle.margin?.bottom || blockStyle.marginBottom || 0,
+      // Margin bottom antar blocks: 25px (default, bisa di-override dari style block)
+      marginBottom: blockStyle.margin?.bottom !== undefined 
+        ? blockStyle.margin?.bottom 
+        : (blockStyle.marginBottom !== undefined ? blockStyle.marginBottom : 25),
       marginLeft: blockStyle.margin?.left || blockStyle.marginLeft || 0,
       backgroundColor: blockStyle.backgroundColor || blockStyle.bgColor || 'transparent',
       backgroundImage: blockStyle.backgroundImage ? `url(${blockStyle.backgroundImage})` : 'none',
@@ -912,13 +915,6 @@ export default function ProductPage() {
 
           {/* Content Area - Center dengan padding */}
           <div className="canvas-content-area">
-            {/* Nama Produk - Selalu muncul di paling atas */}
-            {productData.nama && (
-              <div className="canvas-preview-block canvas-product-title-block">
-                <h1 className="preview-product-title" itemProp="name">{productData.nama}</h1>
-              </div>
-            )}
-            
             {/* Render Blocks dari landingpage */}
             {sortedBlocks.map((block) => renderBlock(block))}
           </div>
