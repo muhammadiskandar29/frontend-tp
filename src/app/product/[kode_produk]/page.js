@@ -3,6 +3,8 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
+import Script from "next/script";
+import Head from "next/head";
 import { 
   CheckCircle2, Circle, Minus, ArrowRight, ArrowRightCircle,
   ArrowLeft as ArrowLeftIcon, ArrowLeftRight, ChevronRight, CheckSquare, ShieldCheck,
@@ -374,7 +376,12 @@ export default function ProductPage() {
     const textStyles = {};
     
     // Font properties
-    if (styleText.fontFamily) textStyles.fontFamily = styleText.fontFamily !== "Page Font" ? styleText.fontFamily : "inherit";
+    // ✅ SAMA dengan addProducts3: "Page Font" = "Inter, sans-serif", bukan "inherit"
+    if (styleText.fontFamily) {
+      textStyles.fontFamily = styleText.fontFamily !== "Page Font" 
+        ? styleText.fontFamily 
+        : "Inter, sans-serif"; // ✅ Default font sama dengan addProducts3
+    }
     if (styleText.color !== undefined) textStyles.color = styleText.color;
     if (styleText.lineHeight !== undefined) textStyles.lineHeight = styleText.lineHeight;
     if (styleText.fontWeight !== undefined) textStyles.fontWeight = styleText.fontWeight;
@@ -478,7 +485,7 @@ export default function ProductPage() {
       // Text data - menggunakan textStylesFromBackend yang sudah di-generate otomatis
       content: content?.html || content || "",
       textColor: style?.text?.color || "#000000",
-      fontFamily: textStylesFromBackend.fontFamily || "inherit",
+      fontFamily: textStylesFromBackend.fontFamily || "Inter, sans-serif", // ✅ Default "Inter, sans-serif" sama dengan addProducts3
       lineHeight: style?.text?.lineHeight || 1.5,
       textAlign: textStylesFromBackend.textAlign || "left",
       fontWeight: style?.text?.fontWeight || "normal",
@@ -539,7 +546,7 @@ export default function ProductPage() {
         const textStyles = {
           // fontSize removed - now handled by inline styles in HTML content (sama dengan addProducts3)
           lineHeight: textStylesFromBackend.lineHeight ?? textData.lineHeight ?? 1.5,
-          fontFamily: textStylesFromBackend.fontFamily ?? (textData.fontFamily && textData.fontFamily !== "Page Font" ? textData.fontFamily : "inherit"),
+          fontFamily: textStylesFromBackend.fontFamily ?? (textData.fontFamily && textData.fontFamily !== "Page Font" ? textData.fontFamily : "Inter, sans-serif"), // ✅ Default "Inter, sans-serif" sama dengan addProducts3
           color: textStylesFromBackend.color ?? textData.textColor ?? "#000000",
           backgroundColor: textStylesFromBackend.backgroundColor ?? (textData.backgroundColor && textData.backgroundColor !== "transparent" ? textData.backgroundColor : "transparent"),
           textAlign: textStylesFromBackend.textAlign ?? textData.textAlign ?? "left", // ✅ PRIORITAS: dari backend (align) > fallback
@@ -664,8 +671,10 @@ export default function ProductPage() {
 
         // ✅ Image wrapper style - ukuran akan berubah sesuai aspect ratio yang dipilih
         // Wrapper ini yang diatur width-nya (50%, 100%, dll) - gambar di dalam tetap 100% dari wrapper
+        // ✅ GENERAL: Tambahkan max-width untuk membatasi ukuran maksimal gambar agar tidak terlalu besar
         const imageWrapperStyle = {
           width: `${imageWidth}%`, // ✅ Width setting (50%) = width dari wrapper, bukan gambar
+          maxWidth: "900px", // ✅ Batasi ukuran maksimal (900px) agar tidak terlalu besar
           ...aspectRatioStyle,
           ...imageBackgroundStyle,
           overflow: "hidden",
@@ -1650,9 +1659,14 @@ export default function ProductPage() {
   const logoUrl = settings?.logo || '/assets/logo.png';
 
   return (
-    <div className="add-products3-container" itemScope itemType="https://schema.org/Product">
-      <div className="page-builder-canvas">
-        <div className="canvas-wrapper">
+    <>
+      {/* ✅ Import Google Fonts Inter - SAMA dengan addProducts3 */}
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+      <div className="add-products3-container" itemScope itemType="https://schema.org/Product">
+        <div className="page-builder-canvas">
+          <div className="canvas-wrapper">
           {/* Logo Section - Top */}
           <div className="canvas-logo-wrapper">
             <img 
@@ -1699,6 +1713,7 @@ export default function ProductPage() {
               <div className="preview-placeholder">Belum ada konten</div>
             )}
           </div>
+          </div>
         </div>
       </div>
 
@@ -1732,6 +1747,6 @@ export default function ProductPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
