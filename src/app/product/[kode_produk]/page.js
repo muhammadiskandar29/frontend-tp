@@ -1116,6 +1116,17 @@ export default function ProductPage() {
         if (!Array.isArray(landingpageData)) {
           console.warn("[PRODUCT] landingpage is not an array:", landingpageData);
           landingpageData = null;
+        } else {
+          // Log struktur landingpage untuk debugging
+          console.log("[PRODUCT] Landingpage array length:", landingpageData.length);
+          console.log("[PRODUCT] Landingpage structure:", landingpageData.map((item, idx) => ({
+            index: idx,
+            type: item?.type,
+            order: item?.order,
+            hasContent: !!item?.content,
+            hasStyle: !!item?.style,
+            hasConfig: !!item?.config
+          })));
         }
 
         setLandingpage(landingpageData);
@@ -1175,22 +1186,39 @@ export default function ProductPage() {
   }
 
   // Parse blocks dari landingpage array
-  // Index 0 adalah settings, index 1+ adalah blocks
+  // Filter: ambil semua item yang bukan settings (type !== 'settings')
   const blocks = landingpage && Array.isArray(landingpage) 
-    ? landingpage.filter((item, index) => index > 0 && item.type !== 'settings')
+    ? landingpage.filter((item) => {
+        // Pastikan item valid dan bukan settings
+        if (!item || !item.type) return false;
+        if (item.type === 'settings') return false;
+        return true;
+      })
     : [];
 
-  // Sort blocks by order - ensure numeric comparison and stable sort
+  // Sort blocks by order - ascending (1, 2, 3, ...)
   const sortedBlocks = [...blocks].sort((a, b) => {
     // Extract order value - handle number, string, or undefined
     const getOrderValue = (block) => {
-      if (block === null || block === undefined) return Infinity;
-      if (typeof block.order === 'number') return block.order;
-      if (typeof block.order === 'string') {
-        const parsed = parseInt(block.order.trim(), 10);
+      if (!block) return Infinity;
+      
+      // Check order property directly
+      const order = block.order;
+      
+      // Handle number
+      if (typeof order === 'number') {
+        return isNaN(order) ? Infinity : order;
+      }
+      
+      // Handle string
+      if (typeof order === 'string') {
+        const trimmed = order.trim();
+        if (trimmed === '') return Infinity;
+        const parsed = parseInt(trimmed, 10);
         return isNaN(parsed) ? Infinity : parsed;
       }
-      // If order is missing, try to use array index as fallback (not ideal, but better than Infinity)
+      
+      // If order is missing, return Infinity (will be placed at end)
       return Infinity;
     };
     
@@ -1201,20 +1229,38 @@ export default function ProductPage() {
     if (orderA === Infinity && orderB === Infinity) {
       return 0;
     }
-    if (orderA === Infinity) return 1; // Blocks without order go to end
-    if (orderB === Infinity) return -1; // Blocks without order go to end
     
-    // Numeric comparison - if equal, maintain original order (stable sort)
-    if (orderA === orderB) {
+    // Blocks without order go to end
+    if (orderA === Infinity) return 1;
+    if (orderB === Infinity) return -1;
+    
+    // Numeric comparison - ascending order (1, 2, 3, ...)
+    const diff = orderA - orderB;
+    
+    // If orders are equal, maintain original order (stable sort)
+    if (diff === 0) {
       return 0;
     }
     
-    return orderA - orderB;
+    return diff;
   });
   
-  // Debug logging (can be removed in production)
-  if (process.env.NODE_ENV === 'development' && sortedBlocks.length > 0) {
-    console.log('[PRODUCT] Blocks order:', sortedBlocks.map(b => ({ type: b.type, order: b.order })));
+  // Debug logging untuk memastikan urutan benar
+  if (blocks.length > 0) {
+    console.log('[PRODUCT] Total blocks before sort:', blocks.length);
+    console.log('[PRODUCT] Blocks before sort:', blocks.map((b, idx) => ({ 
+      originalIndex: idx, 
+      type: b.type, 
+      order: b.order,
+      orderType: typeof b.order 
+    })));
+    console.log('[PRODUCT] Total blocks after sort:', sortedBlocks.length);
+    console.log('[PRODUCT] Blocks after sort:', sortedBlocks.map((b, idx) => ({ 
+      sortedIndex: idx, 
+      type: b.type, 
+      order: b.order,
+      orderType: typeof b.order 
+    })));
   }
 
   // Ambil logo dari settings (jika ada)
@@ -1238,16 +1284,20 @@ export default function ProductPage() {
 
           {/* Content Area - Center dengan padding */}
           <div className="canvas-content-area">
-            {/* Render Blocks dari landingpage */}
-            {sortedBlocks.map((block, index) => {
-              // Use componentId if available, otherwise use order + type + index for uniqueness
-              const uniqueKey = block.config?.componentId || `${block.type}-${block.order}-${index}`;
-              return (
-                <div key={uniqueKey} className="canvas-preview-block">
-                  {renderBlock(block)}
-                </div>
-              );
-            })}
+            {/* Render Blocks dari landingpage - sudah diurutkan berdasarkan order */}
+            {sortedBlocks.length > 0 ? (
+              sortedBlocks.map((block, index) => {
+                // Use componentId if available, otherwise use order + type + index for uniqueness
+                const uniqueKey = block.config?.componentId || `block-${block.order || index}-${block.type}-${index}`;
+                return (
+                  <div key={uniqueKey} className="canvas-preview-block">
+                    {renderBlock(block)}
+                  </div>
+                );
+              })
+            ) : (
+              <div className="preview-placeholder">Belum ada konten</div>
+            )}
           </div>
         </div>
       </div>
