@@ -880,9 +880,41 @@ export default function AddProducts3Page() {
                       className="pengaturan-input"
                       value={pengaturanForm.kode || ""}
                       onChange={(e) => {
-                        // Format real-time saat mengetik: spasi jadi dash, auto lowercase
-                        const inputValue = e.target.value;
-                        handlePengaturanChange("kode", inputValue);
+                        // Format real-time saat mengetik: spasi langsung jadi dash, auto lowercase
+                        let inputValue = e.target.value;
+                        // Langsung ganti spasi dengan dash saat mengetik
+                        inputValue = inputValue.replace(/\s/g, '-');
+                        // Langsung lowercase
+                        inputValue = inputValue.toLowerCase();
+                        // Hapus karakter khusus selain huruf, angka, dan dash
+                        inputValue = inputValue.replace(/[^a-z0-9-]/g, '');
+                        // Hapus multiple dash menjadi single dash
+                        inputValue = inputValue.replace(/-+/g, '-');
+                        // Hapus dash di awal dan akhir
+                        inputValue = inputValue.replace(/^-+|-+$/g, '');
+                        
+                        // Update langsung dengan format yang sudah benar
+                        const url = inputValue ? `/${inputValue}` : "";
+                        setPengaturanForm((prev) => ({ 
+                          ...prev, 
+                          kode: inputValue,
+                          url: url
+                        }));
+                      }}
+                      onKeyDown={(e) => {
+                        // Prevent spacebar dari mengetik spasi, langsung ganti dengan dash
+                        if (e.key === ' ') {
+                          e.preventDefault();
+                          const currentValue = pengaturanForm.kode || '';
+                          const newValue = currentValue + '-';
+                          const formattedValue = generateKode(newValue);
+                          const url = formattedValue ? `/${formattedValue}` : "";
+                          setPengaturanForm((prev) => ({ 
+                            ...prev, 
+                            kode: formattedValue,
+                            url: url
+                          }));
+                        }
                       }}
                       placeholder="seminar-as-bandung"
                     />
