@@ -434,30 +434,39 @@ export default function ProductPage() {
       textTransform: style?.text?.textTransform || "none",
       letterSpacing: style?.text?.letterSpacing || 0,
       backgroundColor: style?.text?.backgroundColor || "transparent",
-      paragraphStyle: config?.paragraphStyle || "div",
-      bgType: style?.text?.bgType || "none",
-      bgColor: style?.text?.bgColor || "#ffffff",
-      bgImage: style?.text?.bgImage || "",
-      paddingTop: style?.text?.paddingTop || style?.container?.paddingTop || 0,
-      paddingRight: style?.text?.paddingRight || style?.container?.paddingRight || 0,
-      paddingBottom: style?.text?.paddingBottom || style?.container?.paddingBottom || 0,
-      paddingLeft: style?.text?.paddingLeft || style?.container?.paddingLeft || 0,
+      paragraphStyle: config?.tag || config?.paragraphStyle || "div", // ✅ Gunakan config.tag jika ada (sama dengan addProducts3)
+      bgType: style?.text?.background?.type || style?.text?.bgType || "none", // ✅ Ambil dari style.text.background.type atau fallback ke style.text.bgType
+      bgColor: style?.text?.background?.color || style?.text?.bgColor || "#ffffff", // ✅ Ambil dari style.text.background.color atau fallback ke style.text.bgColor
+      bgImage: style?.text?.background?.image || style?.text?.bgImage || "", // ✅ Ambil dari style.text.background.image atau fallback ke style.text.bgImage
+      paddingTop: style?.text?.padding?.top || style?.text?.paddingTop || style?.container?.padding?.top || style?.container?.paddingTop || 0,
+      paddingRight: style?.text?.padding?.right || style?.text?.paddingRight || style?.container?.padding?.right || style?.container?.paddingRight || 0,
+      paddingBottom: style?.text?.padding?.bottom || style?.text?.paddingBottom || style?.container?.padding?.bottom || style?.container?.paddingBottom || 0,
+      paddingLeft: style?.text?.padding?.left || style?.text?.paddingLeft || style?.container?.padding?.left || style?.container?.paddingLeft || 0,
       
       // Image data
       src: content?.src || content?.url || "",
       alt: content?.alt || "",
       caption: content?.caption || "",
-      alignment: style?.container?.alignment || "center",
-      imageWidth: style?.container?.imageWidth || 100,
-      imageFit: style?.container?.imageFit || "fill",
-      aspectRatio: style?.container?.aspectRatio || "OFF",
-      backgroundType: style?.container?.backgroundType || "none",
-      backgroundColor: style?.container?.backgroundColor || "#ffffff",
-      backgroundImage: style?.container?.backgroundImage || "",
+      alignment: style?.image?.alignment || style?.container?.alignment || "center", // ✅ Ambil dari style.image.alignment atau fallback
+      imageWidth: style?.image?.width || style?.container?.imageWidth || 100, // ✅ Ambil dari style.image.width atau fallback
+      imageFit: style?.image?.fit || style?.container?.imageFit || "fill", // ✅ Ambil dari style.image.fit atau fallback
+      aspectRatio: style?.image?.aspectRatio || style?.container?.aspectRatio || "OFF", // ✅ Ambil dari style.image.aspectRatio atau fallback
+      backgroundType: style?.container?.background?.type || style?.container?.backgroundType || "none", // ✅ Ambil dari style.container.background.type atau fallback
+      backgroundColor: style?.container?.background?.color || style?.container?.backgroundColor || "#ffffff", // ✅ Ambil dari style.container.background.color atau fallback
+      backgroundImage: style?.container?.background?.image || style?.container?.backgroundImage || "", // ✅ Ambil dari style.container.background.image atau fallback
+      paddingTop: style?.image?.padding?.top || style?.container?.padding?.top || style?.image?.paddingTop || style?.container?.paddingTop || 0, // ✅ Untuk image padding
+      paddingRight: style?.image?.padding?.right || style?.container?.padding?.right || style?.image?.paddingRight || style?.container?.paddingRight || 0,
+      paddingBottom: style?.image?.padding?.bottom || style?.container?.padding?.bottom || style?.image?.paddingBottom || style?.container?.paddingBottom || 0,
+      paddingLeft: style?.image?.padding?.left || style?.container?.padding?.left || style?.image?.paddingLeft || style?.container?.paddingLeft || 0,
       
       // Video data
       items: content?.items || [],
-      videoWidth: style?.container?.videoWidth || 100,
+      videoWidth: style?.video?.width || style?.container?.videoWidth || 100, // ✅ Ambil dari style.video.width atau fallback
+      alignment: style?.video?.alignment || style?.container?.alignment || "center", // ✅ Ambil dari style.video.alignment atau fallback
+      paddingTop: style?.container?.padding?.top || style?.container?.paddingTop || 0, // ✅ Untuk video padding
+      paddingRight: style?.container?.padding?.right || style?.container?.paddingRight || 0,
+      paddingBottom: style?.container?.padding?.bottom || style?.container?.paddingBottom || 0,
+      paddingLeft: style?.container?.padding?.left || style?.container?.paddingLeft || 0,
       
       // Testimoni data
       componentTitle: content?.componentTitle || config?.title || "Testimoni Pembeli",
@@ -470,14 +479,14 @@ export default function ProductPage() {
     switch (type) {
       case "text": {
         const textData = blockData;
-        // ✅ SAMA PERSIS dengan canvas: font-size: 16px, line-height: 1.2
+        // ✅ SAMA PERSIS dengan renderPreview di addProducts3
         const textStyles = {
-          fontSize: "16px", // ✅ Default font size dari CSS .preview-text
-          lineHeight: textData.lineHeight || 1.2, // ✅ Default line-height dari CSS .preview-text (1.2, bukan 1.5)
+          // fontSize removed - now handled by inline styles in HTML content (sama dengan addProducts3)
+          lineHeight: textData.lineHeight || 1.5, // ✅ SAMA dengan addProducts3 (default 1.5, CSS akan override ke 1.2)
           fontFamily: textData.fontFamily && textData.fontFamily !== "Page Font" 
             ? textData.fontFamily 
             : "inherit",
-          color: textData.textColor || "#1f2937", // ✅ Default color dari CSS .preview-text
+          color: textData.textColor || "#000000", // ✅ SAMA dengan addProducts3
           backgroundColor: textData.backgroundColor && textData.backgroundColor !== "transparent"
             ? textData.backgroundColor
             : "transparent",
@@ -538,7 +547,7 @@ export default function ProductPage() {
           return <div className="preview-placeholder">Gambar belum diupload</div>;
         }
 
-        // Advanced settings
+        // ✅ Advanced settings - SAMA PERSIS dengan renderPreview di addProducts3
         const alignment = imageData.alignment || "center";
         const imageWidth = imageData.imageWidth || 100;
         const imageFit = imageData.imageFit || "fill";
@@ -546,10 +555,10 @@ export default function ProductPage() {
         const backgroundType = imageData.backgroundType || "none";
         const backgroundColor = imageData.backgroundColor || "#ffffff";
         const backgroundImage = imageData.backgroundImage || "";
-        const paddingTop = style?.container?.paddingTop || 0;
-        const paddingRight = style?.container?.paddingRight || 0;
-        const paddingBottom = style?.container?.paddingBottom || 0;
-        const paddingLeft = style?.container?.paddingLeft || 0;
+        const paddingTop = imageData.paddingTop || 0; // ✅ Gunakan dari imageData (sudah diambil dari style di blockData)
+        const paddingRight = imageData.paddingRight || 0;
+        const paddingBottom = imageData.paddingBottom || 0;
+        const paddingLeft = imageData.paddingLeft || 0;
 
         // Calculate aspect ratio - ketika dipilih, gambar akan di-crop sesuai ratio
         let aspectRatioStyle = {};
@@ -570,11 +579,16 @@ export default function ProductPage() {
           imageBackgroundStyle.backgroundPosition = "center";
         }
 
-        // Image fit style
+        // ✅ Image fit style - SAMA PERSIS dengan renderPreview di addProducts3
+        // Image fit style - jika aspect ratio dipilih, gunakan cover untuk crop
+        // Jika aspect ratio OFF, gunakan fill atau contain sesuai pilihan
         let objectFitValue;
         if (aspectRatio !== "OFF") {
+          // Ketika aspect ratio dipilih, gunakan cover untuk crop gambar
+          // Cover akan memotong gambar agar mengisi frame sesuai aspect ratio
           objectFitValue = "cover";
         } else {
+          // Ketika aspect ratio OFF, gunakan fill atau contain sesuai pilihan
           objectFitValue = imageFit === "fill" ? "fill" : imageFit === "fit" ? "contain" : "fill";
         }
 
@@ -586,7 +600,7 @@ export default function ProductPage() {
           paddingLeft: `${paddingLeft}px`,
         };
 
-        // Container style with alignment
+        // ✅ Container style with alignment - SAMA PERSIS dengan renderPreview di addProducts3
         const containerStyle = {
           display: "flex",
           justifyContent: alignment === "left" ? "flex-start" : alignment === "right" ? "flex-end" : "center",
@@ -594,15 +608,19 @@ export default function ProductPage() {
           ...imagePaddingStyle,
         };
 
-        // ✅ Image wrapper style - SAMA PERSIS dengan canvas: border-radius: 4px
+        // ✅ Image wrapper style - SAMA PERSIS dengan renderPreview di addProducts3
+        // Image wrapper style - ukuran akan berubah sesuai aspect ratio yang dipilih
         const imageWrapperStyle = {
           width: `${imageWidth}%`,
           ...aspectRatioStyle,
           ...imageBackgroundStyle,
           overflow: "hidden",
-          borderRadius: "4px", // ✅ SAMA dengan canvas
+          borderRadius: "4px", // ✅ SAMA dengan addProducts3
           position: "relative",
         };
+        
+        // Ketika aspect ratio dipilih, wrapper akan otomatis memiliki tinggi sesuai ratio
+        // CSS aspect-ratio akan menghitung tinggi berdasarkan lebar dan ratio
 
         return (
           <div style={containerStyle}>
@@ -631,13 +649,14 @@ export default function ProductPage() {
           return <div className="preview-placeholder">Belum ada video</div>;
         }
         
-        // Advanced settings untuk video
-        const videoAlignment = style?.container?.alignment || "center";
-        const videoWidth = style?.container?.videoWidth !== undefined ? style?.container?.videoWidth : 100;
-        const videoPaddingTop = style?.container?.paddingTop || 0;
-        const videoPaddingRight = style?.container?.paddingRight || 0;
-        const videoPaddingBottom = style?.container?.paddingBottom || 0;
-        const videoPaddingLeft = style?.container?.paddingLeft || 0;
+        // ✅ Advanced settings untuk video - SAMA PERSIS dengan renderPreview di addProducts3
+        const videoData = blockData || {};
+        const videoAlignment = videoData.alignment || "center"; // ✅ Gunakan dari blockData
+        const videoWidth = videoData.videoWidth !== undefined ? videoData.videoWidth : 100; // Default 100% jika belum di-set
+        const videoPaddingTop = videoData.paddingTop || 0;
+        const videoPaddingRight = videoData.paddingRight || 0;
+        const videoPaddingBottom = videoData.paddingBottom || 0;
+        const videoPaddingLeft = videoData.paddingLeft || 0;
         
         // Container style dengan alignment dan padding
         const videoContainerStyle = {
@@ -652,14 +671,14 @@ export default function ProductPage() {
           paddingLeft: `${videoPaddingLeft}px`,
         };
         
-        // ✅ Video wrapper style - SAMA PERSIS dengan canvas: border-radius: 10px (bukan 8px)
+        // ✅ Video wrapper style - SAMA PERSIS dengan renderPreview di addProducts3
         const videoWrapperStyle = {
           width: `${videoWidth}%`,
           maxWidth: "100%", // ✅ Pastikan tidak melebihi container
           aspectRatio: "16 / 9",
           position: "relative",
           overflow: "hidden",
-          borderRadius: "10px", // ✅ SAMA dengan CSS .preview-video-wrapper (10px, bukan 8px)
+          borderRadius: "8px", // ✅ SAMA dengan addProducts3 (8px)
           display: "flex",
           justifyContent: videoAlignment === "left" ? "flex-start" : videoAlignment === "right" ? "flex-end" : "center",
         };
@@ -678,7 +697,7 @@ export default function ProductPage() {
                       width: "100%",
                       height: "100%",
                       border: "none",
-                      borderRadius: "8px" // ✅ SAMA dengan CSS .preview-video-wrapper iframe (8px)
+                      borderRadius: "8px" // ✅ SAMA dengan addProducts3
                     }}
                   />
                 </div>
@@ -689,25 +708,28 @@ export default function ProductPage() {
       }
 
       case "testimoni": {
+        // ✅ SAMA PERSIS dengan renderPreview di addProducts3
         const testimoniItems = content?.items || [];
         if (testimoniItems.length === 0) {
           return <div className="preview-placeholder">Belum ada testimoni</div>;
         }
         
-        const currentIndex = testimoniIndices[block.order] || 0;
+        // ✅ Gunakan config.componentId atau block.order untuk key testimoniIndices
+        const testimoniKey = config?.componentId || block.order;
+        const currentIndex = testimoniIndices[testimoniKey] || 0;
         const maxIndex = Math.max(0, testimoniItems.length - 3);
         
         const handlePrev = () => {
           setTestimoniIndices(prev => ({
             ...prev,
-            [block.order]: Math.max(0, currentIndex - 1)
+            [testimoniKey]: Math.max(0, currentIndex - 1)
           }));
         };
         
         const handleNext = () => {
           setTestimoniIndices(prev => ({
             ...prev,
-            [block.order]: Math.min(maxIndex, currentIndex + 1)
+            [testimoniKey]: Math.min(maxIndex, currentIndex + 1)
           }));
         };
         
@@ -811,6 +833,7 @@ export default function ProductPage() {
       }
 
       case "list": {
+        // ✅ SAMA PERSIS dengan renderPreview di addProducts3
         const listItems = content?.items || [];
         
         // Icon mapping
@@ -827,16 +850,16 @@ export default function ProductPage() {
         
         const listTitle = content?.componentTitle || config?.title || "";
         const listData = {
-          paddingTop: style?.container?.paddingTop || 0,
-          paddingRight: style?.container?.paddingRight || 0,
-          paddingBottom: style?.container?.paddingBottom || 0,
-          paddingLeft: style?.container?.paddingLeft || 0,
-          bgType: style?.container?.bgType || "none",
-          bgColor: style?.container?.bgColor || "#ffffff",
-          bgImage: style?.container?.bgImage || "",
+          paddingTop: style?.container?.padding?.top || style?.container?.paddingTop || 0,
+          paddingRight: style?.container?.padding?.right || style?.container?.paddingRight || 0,
+          paddingBottom: style?.container?.padding?.bottom || style?.container?.paddingBottom || 0,
+          paddingLeft: style?.container?.padding?.left || style?.container?.paddingLeft || 0,
+          bgType: style?.container?.background?.type || style?.container?.bgType || "none",
+          bgColor: style?.container?.background?.color || style?.container?.bgColor || "#ffffff",
+          bgImage: style?.container?.background?.image || style?.container?.bgImage || "",
         };
         
-        // Build styles from advance settings
+        // ✅ Build styles from advance settings - SAMA dengan addProducts3
         const listStyles = {
           paddingTop: `${listData.paddingTop || 0}px`,
           paddingRight: `${listData.paddingRight || 0}px`,
@@ -844,7 +867,7 @@ export default function ProductPage() {
           paddingLeft: `${listData.paddingLeft || 0}px`,
         };
         
-        // Background dari advance settings
+        // ✅ Background dari advance settings - SAMA dengan addProducts3
         let listBackgroundStyle = {};
         if (listData.bgType === "color") {
           listBackgroundStyle.backgroundColor = listData.bgColor || "#ffffff";
