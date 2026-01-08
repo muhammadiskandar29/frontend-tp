@@ -192,9 +192,14 @@ export default function ProductPage() {
       marginTop: blockStyle.margin?.top || blockStyle.marginTop || 0,
       marginRight: blockStyle.margin?.right || blockStyle.marginRight || 0,
       // Margin bottom antar blocks: 25px (default, bisa di-override dari style block)
-      marginBottom: blockStyle.margin?.bottom !== undefined 
-        ? blockStyle.margin?.bottom 
-        : (blockStyle.marginBottom !== undefined ? blockStyle.marginBottom : 25),
+      // Pastikan selalu di-set sebagai string "25px" untuk override CSS default
+      marginBottom: (() => {
+        const marginBottom = blockStyle.margin?.bottom ?? blockStyle.marginBottom;
+        if (marginBottom !== undefined && marginBottom !== null) {
+          return typeof marginBottom === 'number' ? `${marginBottom}px` : marginBottom;
+        }
+        return '25px'; // Default 25px
+      })(),
       marginLeft: blockStyle.margin?.left || blockStyle.marginLeft || 0,
       backgroundColor: blockStyle.backgroundColor || blockStyle.bgColor || 'transparent',
       backgroundImage: blockStyle.backgroundImage ? `url(${blockStyle.backgroundImage})` : 'none',
