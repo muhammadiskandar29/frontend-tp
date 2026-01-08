@@ -679,6 +679,24 @@ export default function ProductPage() {
         const kategoriId = getKategoriId();
         const faqItems = getFAQByKategori(kategoriId);
         
+        // Build container style from block.style.container
+        const blockStyle = style?.container || {};
+        const containerStyle = {
+          paddingTop: blockStyle.padding?.top || blockStyle.paddingTop || 0,
+          paddingRight: blockStyle.padding?.right || blockStyle.paddingRight || 0,
+          paddingBottom: blockStyle.padding?.bottom || blockStyle.paddingBottom || 0,
+          paddingLeft: blockStyle.padding?.left || blockStyle.paddingLeft || 0,
+          marginTop: blockStyle.margin?.top || blockStyle.marginTop || 0,
+          marginRight: blockStyle.margin?.right || blockStyle.marginRight || 0,
+          marginBottom: blockStyle.margin?.bottom || blockStyle.marginBottom || 0,
+          marginLeft: blockStyle.margin?.left || blockStyle.marginLeft || 0,
+          backgroundColor: blockStyle.backgroundColor || blockStyle.bgColor || 'transparent',
+          backgroundImage: blockStyle.backgroundImage ? `url(${blockStyle.backgroundImage})` : 'none',
+          border: blockStyle.border || 'none',
+          borderRadius: blockStyle.borderRadius || 0,
+          boxShadow: blockStyle.boxShadow || 'none',
+        };
+        
         return (
           <div key={block.order} className="canvas-preview-block" style={containerStyle}>
             <section className="preview-faq-section" aria-label="Frequently Asked Questions">
