@@ -1817,7 +1817,7 @@ export default function AddProducts3Page() {
     return text
       .toLowerCase()
       .trim()
-      // Ganti spasi dengan dash
+      // Ganti spasi dengan dash (ini akan membuat spasi langsung jadi dash di UI)
       .replace(/\s+/g, "-")
       // Hapus karakter khusus, hanya simpan huruf, angka, dan dash
       .replace(/[^a-z0-9-]/g, "")
@@ -2901,8 +2901,14 @@ export default function AddProducts3Page() {
                       value={pengaturanForm.kode || ""}
                       onChange={(e) => {
                         const input = e.target;
-                        const inputValue = e.target.value;
+                        let inputValue = e.target.value;
                         const cursorPos = input.selectionStart || 0;
+                        
+                        // Langsung ganti spasi dengan dash SEBELUM format (agar dash terlihat di UI)
+                        // Ini memastikan spasi langsung menjadi dash, bukan hilang
+                        if (inputValue.includes(' ')) {
+                          inputValue = inputValue.replace(/\s/g, '-');
+                        }
                         
                         // Format menggunakan single source of truth
                         const formattedValue = formatSlug(inputValue);
@@ -2913,7 +2919,7 @@ export default function AddProducts3Page() {
                         const formattedBeforeCursor = formatSlug(textBeforeCursor);
                         const newCursorPos = Math.min(formattedBeforeCursor.length, formattedValue.length);
                         
-                        // Update state
+                        // Update state - ini akan trigger re-render dengan value yang sudah diformat (dengan dash)
                         setPengaturanForm((prev) => ({ 
                           ...prev, 
                           kode: formattedValue,
