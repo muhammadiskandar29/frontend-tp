@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { 
@@ -36,6 +36,212 @@ function FAQItem({ question, answer }) {
           <p>{answer}</p>
         </div>
       )}
+    </div>
+  );
+}
+
+// ✅ Countdown Component - SAMA PERSIS dengan CountdownPreview di addProducts3
+function CountdownComponent({ data = {}, componentId, containerStyle = {} }) {
+  const hours = data.hours !== undefined ? data.hours : 0;
+  const minutes = data.minutes !== undefined ? data.minutes : 0;
+  const seconds = data.seconds !== undefined ? data.seconds : 0;
+  const promoText = data.promoText || "Promo Berakhir Dalam:";
+  const textColor = data.textColor || "#e5e7eb";
+  const bgColor = data.bgColor || "#1f2937";
+  const numberStyle = data.numberStyle || "flip";
+  
+  const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
+  const intervalRef = useRef(null);
+
+  const getTotalSeconds = () => (hours * 3600) + (minutes * 60) + seconds;
+
+  useEffect(() => {
+    const totalSeconds = getTotalSeconds();
+    if (totalSeconds <= 0) return;
+
+    const storageKey = `countdown_${componentId || 'default'}`;
+    const savedEndTime = localStorage.getItem(storageKey);
+    const now = Date.now();
+    
+    let endTime;
+    if (savedEndTime) {
+      const savedTime = parseInt(savedEndTime);
+      const elapsed = now - savedTime;
+      const remaining = (totalSeconds * 1000) - elapsed;
+      if (remaining > 0) {
+        endTime = savedTime + (totalSeconds * 1000);
+      } else {
+        endTime = now + (totalSeconds * 1000);
+        localStorage.setItem(storageKey, now.toString());
+      }
+    } else {
+      endTime = now + (totalSeconds * 1000);
+      localStorage.setItem(storageKey, now.toString());
+    }
+    
+    const updateTimeLeft = (endTime) => {
+      const now = Date.now();
+      const remaining = Math.max(0, endTime - now);
+      if (remaining <= 0) {
+        const newEndTime = Date.now() + (totalSeconds * 1000);
+        localStorage.setItem(storageKey, Date.now().toString());
+        updateTimeLeft(newEndTime);
+        return;
+      }
+      const hrs = Math.floor((remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const mins = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+      const secs = Math.floor((remaining % (1000 * 60)) / 1000);
+      setTimeLeft({ hours: hrs, minutes: mins, seconds: secs });
+    };
+    
+    updateTimeLeft(endTime);
+    
+    intervalRef.current = setInterval(() => {
+      const savedEndTime = localStorage.getItem(storageKey);
+      if (!savedEndTime) {
+        const newEndTime = Date.now() + (totalSeconds * 1000);
+        localStorage.setItem(storageKey, Date.now().toString());
+        updateTimeLeft(newEndTime);
+        return;
+      }
+      const startTime = parseInt(savedEndTime);
+      const endTime = startTime + (totalSeconds * 1000);
+      updateTimeLeft(endTime);
+    }, 1000);
+    
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [hours, minutes, seconds, componentId]);
+
+  const formatTime = (time) => ({
+    hours: String(time.hours).padStart(2, '0'),
+    minutes: String(time.minutes).padStart(2, '0'),
+    seconds: String(time.seconds).padStart(2, '0')
+  });
+
+  const formattedTime = formatTime(timeLeft);
+
+  const renderNumber = (value, bgColor) => {
+    if (numberStyle === "flip") {
+      return (
+        <div style={{
+          backgroundColor: bgColor,
+          borderRadius: "8px",
+          padding: "20px 32px",
+          position: "relative",
+          boxShadow: "inset 0 2px 4px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2)",
+          minWidth: "100px",
+          textAlign: "center"
+        }}>
+          <div style={{
+            fontSize: "64px",
+            fontWeight: "bold",
+            color: textColor,
+            fontFamily: "monospace",
+            lineHeight: "1",
+            position: "relative",
+            textShadow: "0 1px 2px rgba(0, 0, 0, 0.5)"
+          }}>
+            {value}
+            <div style={{
+              position: "absolute",
+              top: "50%",
+              left: 0,
+              right: 0,
+              height: "1px",
+              backgroundColor: "rgba(255, 255, 255, 0.1)",
+              transform: "translateY(-50%)"
+            }} />
+          </div>
+        </div>
+      );
+    } else if (numberStyle === "modern") {
+      return (
+        <div style={{
+          backgroundColor: bgColor,
+          borderRadius: "12px",
+          padding: "24px 36px",
+          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+          minWidth: "100px",
+          textAlign: "center"
+        }}>
+          <div style={{
+            fontSize: "64px",
+            fontWeight: "bold",
+            color: textColor,
+            fontFamily: "monospace",
+            lineHeight: "1"
+          }}>
+            {value}
+          </div>
+        </div>
+      );
+    } else {
+      return (
+        <div style={{
+          backgroundColor: bgColor,
+          borderRadius: "8px",
+          padding: "20px 32px",
+          minWidth: "100px",
+          textAlign: "center"
+        }}>
+          <div style={{
+            fontSize: "64px",
+            fontWeight: "bold",
+            color: textColor,
+            fontFamily: "monospace",
+            lineHeight: "1"
+          }}>
+            {value}
+          </div>
+        </div>
+      );
+    }
+  };
+
+  return (
+    <div style={{ 
+      padding: "24px", 
+      backgroundColor: "transparent",
+      borderRadius: "12px",
+      textAlign: "center",
+      ...containerStyle
+    }}>
+      <div style={{ 
+        color: "#374151", 
+        fontSize: "18px", 
+        marginBottom: "20px", 
+        fontWeight: "600" 
+      }}>
+        {promoText}
+      </div>
+      <div style={{ 
+        display: "flex", 
+        gap: "16px", 
+        justifyContent: "center",
+        alignItems: "center",
+        flexWrap: "wrap"
+      }}>
+        {renderNumber(formattedTime.hours, bgColor)}
+        <span style={{ fontSize: "40px", color: "#6b7280", fontWeight: "bold" }}>:</span>
+        {renderNumber(formattedTime.minutes, bgColor)}
+        <span style={{ fontSize: "40px", color: "#6b7280", fontWeight: "bold" }}>:</span>
+        {renderNumber(formattedTime.seconds, bgColor)}
+      </div>
+      <div style={{ 
+        display: "flex", 
+        gap: "120px", 
+        justifyContent: "center",
+        marginTop: "16px",
+        fontSize: "14px",
+        color: "#6b7280",
+        fontWeight: "500"
+      }}>
+        <span>Jam</span>
+        <span>Menit</span>
+        <span>Detik</span>
+      </div>
     </div>
   );
 }
@@ -264,12 +470,14 @@ export default function ProductPage() {
     switch (type) {
       case "text": {
         const textData = blockData;
+        // ✅ SAMA PERSIS dengan canvas: font-size: 16px, line-height: 1.2
         const textStyles = {
-          lineHeight: textData.lineHeight || 1.5,
+          fontSize: "16px", // ✅ Default font size dari CSS .preview-text
+          lineHeight: textData.lineHeight || 1.2, // ✅ Default line-height dari CSS .preview-text (1.2, bukan 1.5)
           fontFamily: textData.fontFamily && textData.fontFamily !== "Page Font" 
             ? textData.fontFamily 
             : "inherit",
-          color: textData.textColor || "#000000",
+          color: textData.textColor || "#1f2937", // ✅ Default color dari CSS .preview-text
           backgroundColor: textData.backgroundColor && textData.backgroundColor !== "transparent"
             ? textData.backgroundColor
             : "transparent",
@@ -386,13 +594,13 @@ export default function ProductPage() {
           ...imagePaddingStyle,
         };
 
-        // Image wrapper style
+        // ✅ Image wrapper style - SAMA PERSIS dengan canvas: border-radius: 4px
         const imageWrapperStyle = {
           width: `${imageWidth}%`,
           ...aspectRatioStyle,
           ...imageBackgroundStyle,
           overflow: "hidden",
-          borderRadius: "4px",
+          borderRadius: "4px", // ✅ SAMA dengan canvas
           position: "relative",
         };
 
@@ -444,14 +652,14 @@ export default function ProductPage() {
           paddingLeft: `${videoPaddingLeft}px`,
         };
         
-        // Video wrapper style dengan width dan aspect ratio 16:9
+        // ✅ Video wrapper style - SAMA PERSIS dengan canvas: border-radius: 10px (bukan 8px)
         const videoWrapperStyle = {
           width: `${videoWidth}%`,
-          maxWidth: "100%",
+          maxWidth: "100%", // ✅ Pastikan tidak melebihi container
           aspectRatio: "16 / 9",
           position: "relative",
           overflow: "hidden",
-          borderRadius: "8px",
+          borderRadius: "10px", // ✅ SAMA dengan CSS .preview-video-wrapper (10px, bukan 8px)
           display: "flex",
           justifyContent: videoAlignment === "left" ? "flex-start" : videoAlignment === "right" ? "flex-end" : "center",
         };
@@ -470,7 +678,7 @@ export default function ProductPage() {
                       width: "100%",
                       height: "100%",
                       border: "none",
-                      borderRadius: "8px"
+                      borderRadius: "8px" // ✅ SAMA dengan CSS .preview-video-wrapper iframe (8px)
                     }}
                   />
                 </div>
@@ -684,9 +892,6 @@ export default function ProductPage() {
                     </li>
                   );
                 })}
-                <li className="preview-list-add-indicator">
-                  <span>»</span>
-                </li>
               </ul>
             )}
           </div>
@@ -953,6 +1158,27 @@ export default function ProductPage() {
               <meta itemProp="availability" content="https://schema.org/InStock" />
             </section>
           </div>
+        );
+      }
+
+      case "countdown": {
+        // ✅ SAMA PERSIS dengan CountdownPreview di addProducts3
+        const countdownData = content || {};
+        const countdownStyle = {
+          textColor: style?.text?.color || countdownData.textColor || "#e5e7eb",
+          bgColor: style?.container?.background?.color || countdownData.bgColor || "#1f2937",
+        };
+        
+        return (
+          <CountdownComponent 
+            data={{
+              ...countdownData,
+              textColor: countdownStyle.textColor,
+              bgColor: countdownStyle.bgColor
+            }}
+            componentId={config?.componentId}
+            containerStyle={containerStyle}
+          />
         );
       }
 

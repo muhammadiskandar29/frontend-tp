@@ -891,9 +891,6 @@ export default function EditProductsPage() {
                     </li>
                   );
                 })}
-                <li className="preview-list-add-indicator">
-                  <span>»</span>
-                </li>
               </ul>
             )}
           </div>
