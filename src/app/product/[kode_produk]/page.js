@@ -1187,7 +1187,7 @@ export default function ProductPage() {
 
   // Parse blocks dari landingpage array
   // Filter: ambil semua item yang bukan settings (type !== 'settings')
-  const blocks = landingpage && Array.isArray(landingpage) 
+  const rawBlocks = landingpage && Array.isArray(landingpage) 
     ? landingpage.filter((item) => {
         // Pastikan item valid dan bukan settings
         if (!item || !item.type) return false;
@@ -1196,71 +1196,72 @@ export default function ProductPage() {
       })
     : [];
 
-  // Sort blocks by order - ascending (1, 2, 3, ...)
-  const sortedBlocks = [...blocks].sort((a, b) => {
-    // Extract order value - handle number, string, or undefined
-    const getOrderValue = (block) => {
-      if (!block) return Infinity;
-      
-      // Check order property directly
-      const order = block.order;
-      
-      // Handle number
-      if (typeof order === 'number') {
-        return isNaN(order) ? Infinity : order;
-      }
-      
-      // Handle string
-      if (typeof order === 'string') {
-        const trimmed = order.trim();
-        if (trimmed === '') return Infinity;
-        const parsed = parseInt(trimmed, 10);
-        return isNaN(parsed) ? Infinity : parsed;
-      }
-      
-      // If order is missing, return Infinity (will be placed at end)
-      return Infinity;
-    };
+  // ✅ NORMALISASI ORDER: Deterministik, tidak ada Infinity, tidak ada tabrakan
+  // Setiap block mendapat __order yang unik dan valid
+  const normalizedBlocks = rawBlocks.map((block, originalIndex) => {
+    // Extract order value - convert to number
+    let normalizedOrder;
     
-    const orderA = getOrderValue(a);
-    const orderB = getOrderValue(b);
+    const order = block.order;
     
-    // If both orders are invalid, maintain original order (stable sort)
-    if (orderA === Infinity && orderB === Infinity) {
-      return 0;
+    // Try to convert to number
+    if (typeof order === 'number' && Number.isFinite(order)) {
+      normalizedOrder = order;
+    } else if (typeof order === 'string') {
+      const trimmed = order.trim();
+      if (trimmed !== '') {
+        const parsed = Number(trimmed);
+        normalizedOrder = Number.isFinite(parsed) ? parsed : null;
+      } else {
+        normalizedOrder = null;
+      }
+    } else {
+      normalizedOrder = null;
     }
     
-    // Blocks without order go to end
-    if (orderA === Infinity) return 1;
-    if (orderB === Infinity) return -1;
+    // Jika order tidak valid, gunakan offset besar + originalIndex untuk deterministik
+    // Ini memastikan blocks tanpa order tetap punya urutan yang konsisten
+    const finalOrder = normalizedOrder !== null 
+      ? normalizedOrder 
+      : 9999 + originalIndex;
     
-    // Numeric comparison - ascending order (1, 2, 3, ...)
-    const diff = orderA - orderB;
+    return {
+      ...block,
+      __order: finalOrder,
+      __originalIndex: originalIndex, // Untuk tie-breaker jika order sama
+    };
+  });
+
+  // ✅ SORT: Urutkan berdasarkan __order, jika sama gunakan __originalIndex
+  const sortedBlocks = [...normalizedBlocks].sort((a, b) => {
+    const diff = a.__order - b.__order;
     
-    // If orders are equal, maintain original order (stable sort)
+    // Jika order sama, gunakan originalIndex untuk deterministik
     if (diff === 0) {
-      return 0;
+      return a.__originalIndex - b.__originalIndex;
     }
     
     return diff;
   });
   
   // Debug logging untuk memastikan urutan benar
-  if (blocks.length > 0) {
-    console.log('[PRODUCT] Total blocks before sort:', blocks.length);
-    console.log('[PRODUCT] Blocks before sort:', blocks.map((b, idx) => ({ 
-      originalIndex: idx, 
+  if (rawBlocks.length > 0) {
+    console.log('[PRODUCT] Total blocks:', rawBlocks.length);
+    console.log('[PRODUCT] Normalized blocks:', sortedBlocks.map((b, idx) => ({ 
+      renderIndex: idx,
       type: b.type, 
-      order: b.order,
-      orderType: typeof b.order 
+      originalOrder: b.order,
+      normalizedOrder: b.__order,
+      componentId: b.config?.componentId || 'MISSING',
+      originalIndex: b.__originalIndex
     })));
-    console.log('[PRODUCT] Total blocks after sort:', sortedBlocks.length);
-    console.log('[PRODUCT] Blocks after sort:', sortedBlocks.map((b, idx) => ({ 
-      sortedIndex: idx, 
-      type: b.type, 
-      order: b.order,
-      orderType: typeof b.order 
-    })));
+    
+    // Warning jika ada componentId yang missing
+    const missingComponentIds = sortedBlocks.filter(b => !b.config?.componentId);
+    if (missingComponentIds.length > 0) {
+      console.warn('[PRODUCT] ⚠️ Blocks tanpa componentId:', missingComponentIds.length);
+      console.warn('[PRODUCT] Ini bisa menyebabkan React key collision!');
+    }
   }
 
   // Ambil logo dari settings (jika ada)
@@ -1286,11 +1287,32 @@ export default function ProductPage() {
           <div className="canvas-content-area">
             {/* Render Blocks dari landingpage - sudah diurutkan berdasarkan order */}
             {sortedBlocks.length > 0 ? (
-              sortedBlocks.map((block, index) => {
-                // Use componentId if available, otherwise use order + type + index for uniqueness
-                const uniqueKey = block.config?.componentId || `block-${block.order || index}-${block.type}-${index}`;
+              sortedBlocks.map((block) => {
+                // ✅ KEY HARUS DARI componentId (WAJIB dari backend)
+                // Jika componentId tidak ada, ini adalah bug backend/builder, bukan frontend
+                // Fallback: gunakan kombinasi yang deterministik berdasarkan data block
+                const componentId = block.config?.componentId;
+                
+                if (!componentId) {
+                  // ⚠️ WARNING: componentId missing - ini seharusnya tidak terjadi
+                  // Fallback menggunakan kombinasi yang deterministik
+                  const fallbackKey = `block-${block.type}-${block.__order}-${block.__originalIndex}`;
+                  console.warn(`[PRODUCT] ⚠️ Block tanpa componentId, menggunakan fallback key: ${fallbackKey}`, {
+                    type: block.type,
+                    order: block.order,
+                    normalizedOrder: block.__order
+                  });
+                  
+                  return (
+                    <div key={fallbackKey} className="canvas-preview-block">
+                      {renderBlock(block)}
+                    </div>
+                  );
+                }
+                
+                // ✅ Key dari componentId (unik dan permanen)
                 return (
-                  <div key={uniqueKey} className="canvas-preview-block">
+                  <div key={componentId} className="canvas-preview-block">
                     {renderBlock(block)}
                   </div>
                 );
