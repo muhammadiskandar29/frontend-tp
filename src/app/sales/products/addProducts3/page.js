@@ -1813,19 +1813,14 @@ export default function AddProducts3Page() {
   // Fungsi untuk generate kode dari nama (slugify) - Single source of truth
   const formatSlug = (text) => {
     if (!text) return "";
-    
+  
     return text
       .toLowerCase()
-      .trim()
-      // Ganti spasi dengan dash (ini akan membuat spasi langsung jadi dash di UI)
-      .replace(/\s+/g, "-")
-      // Hapus karakter khusus, hanya simpan huruf, angka, dan dash
+      .replace(/\s+/g, "-")        // ⬅️ spasi DIUBAH dulu
       .replace(/[^a-z0-9-]/g, "")
-      // Hapus multiple dash menjadi single dash
-      .replace(/-+/g, "-")
-      // Hapus dash di awal dan akhir
-      .replace(/^-+|-+$/g, "");
+      .replace(/-+/g, "-");
   };
+  
   
   // Handler khusus untuk input kode produk - lebih stabil untuk ketik manual
   const handleKodeChange = (e) => {
