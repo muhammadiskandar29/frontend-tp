@@ -1810,19 +1810,17 @@ export default function AddProducts3Page() {
     fetchInitialData();
   }, []);
 
-  // Fungsi untuk generate kode dari nama (slugify)
-  const generateKode = (text) => {
+  // Fungsi untuk generate kode dari nama (slugify) - Single source of truth
+  const formatSlug = (text) => {
     if (!text) return "";
     
     return text
       .toLowerCase()
       .trim()
-      // Hapus karakter khusus, hanya simpan huruf, angka, spasi, dan dash
-      .replace(/[^a-z0-9\s-]/g, "")
-      // Ganti multiple spaces dengan single space
-      .replace(/\s+/g, " ")
       // Ganti spasi dengan dash
-      .replace(/\s/g, "-")
+      .replace(/\s+/g, "-")
+      // Hapus karakter khusus, hanya simpan huruf, angka, dan dash
+      .replace(/[^a-z0-9-]/g, "")
       // Hapus multiple dash menjadi single dash
       .replace(/-+/g, "-")
       // Hapus dash di awal dan akhir
@@ -1846,9 +1844,8 @@ export default function AddProducts3Page() {
         }
       });
     } else if (key === "kode") {
-      // Auto-format kode secara real-time: spasi jadi dash, lowercase, hapus karakter khusus
-      // Format langsung saat user mengetik
-      const formattedKode = generateKode(value);
+      // Auto-format kode menggunakan single source of truth
+      const formattedKode = formatSlug(value);
       const url = formattedKode ? `/${formattedKode}` : "";
       setPengaturanForm((prev) => ({ 
         ...prev, 
@@ -2694,8 +2691,8 @@ export default function AddProducts3Page() {
     const payload = {
       nama: pengaturanForm.nama.trim(),
       kategori: String(pengaturanForm.kategori),
-      kode: pengaturanForm.kode || generateKode(pengaturanForm.nama),
-      url: pengaturanForm.url || `/${generateKode(pengaturanForm.nama)}`,
+      kode: pengaturanForm.kode || formatSlug(pengaturanForm.nama),
+      url: pengaturanForm.url || `/${formatSlug(pengaturanForm.nama)}`,
       harga: String(pengaturanForm.harga || 0),
       jenis_produk: pengaturanForm.jenis_produk || "fisik",
       isBundling: pengaturanForm.isBundling || false,
@@ -2902,75 +2899,33 @@ export default function AddProducts3Page() {
                     <InputText
                       className="pengaturan-input"
                       value={pengaturanForm.kode || ""}
-                      onKeyDown={(e) => {
-                        // Prevent spacebar dari mengetik spasi, langsung ganti dengan dash
-                        if (e.key === ' ' || e.key === 'Space') {
-                          e.preventDefault();
-                          const input = e.target;
-                          const currentValue = pengaturanForm.kode || '';
-                          const cursorPos = input.selectionStart || currentValue.length;
-                          const newValue = currentValue.slice(0, cursorPos) + '-' + currentValue.slice(cursorPos);
-                          const formattedValue = generateKode(newValue);
-                          const url = formattedValue ? `/${formattedValue}` : "";
-                          setPengaturanForm((prev) => ({ 
-                            ...prev, 
-                            kode: formattedValue,
-                            url: url
-                          }));
-                          // Set cursor position setelah update
-                          setTimeout(() => {
-                            const newCursorPos = Math.min(cursorPos + 1, formattedValue.length);
-                            input.setSelectionRange(newCursorPos, newCursorPos);
-                          }, 0);
-                        }
-                      }}
-                      onInput={(e) => {
-                        // Format real-time saat mengetik: spasi langsung jadi dash, auto lowercase
-                        let inputValue = e.target.value;
-                        // Langsung ganti spasi dengan dash saat mengetik
-                        if (inputValue.includes(' ')) {
-                          inputValue = inputValue.replace(/\s/g, '-');
-                        }
-                        // Langsung lowercase
-                        inputValue = inputValue.toLowerCase();
-                        // Hapus karakter khusus selain huruf, angka, dan dash
-                        inputValue = inputValue.replace(/[^a-z0-9-]/g, '');
-                        // Hapus multiple dash menjadi single dash
-                        inputValue = inputValue.replace(/-+/g, '-');
-                        // Hapus dash di awal dan akhir
-                        inputValue = inputValue.replace(/^-+|-+$/g, '');
-                        
-                        // Update langsung dengan format yang sudah benar
-                        const url = inputValue ? `/${inputValue}` : "";
-                        setPengaturanForm((prev) => ({ 
-                          ...prev, 
-                          kode: inputValue,
-                          url: url
-                        }));
-                      }}
                       onChange={(e) => {
-                        // Format real-time saat mengetik: spasi langsung jadi dash, auto lowercase
-                        let inputValue = e.target.value;
-                        // Langsung ganti spasi dengan dash saat mengetik
-                        if (inputValue.includes(' ')) {
-                          inputValue = inputValue.replace(/\s/g, '-');
-                        }
-                        // Langsung lowercase
-                        inputValue = inputValue.toLowerCase();
-                        // Hapus karakter khusus selain huruf, angka, dan dash
-                        inputValue = inputValue.replace(/[^a-z0-9-]/g, '');
-                        // Hapus multiple dash menjadi single dash
-                        inputValue = inputValue.replace(/-+/g, '-');
-                        // Hapus dash di awal dan akhir
-                        inputValue = inputValue.replace(/^-+|-+$/g, '');
+                        const input = e.target;
+                        const inputValue = e.target.value;
+                        const cursorPos = input.selectionStart || 0;
                         
-                        // Update langsung dengan format yang sudah benar
-                        const url = inputValue ? `/${inputValue}` : "";
+                        // Format menggunakan single source of truth
+                        const formattedValue = formatSlug(inputValue);
+                        const url = formattedValue ? `/${formattedValue}` : "";
+                        
+                        // Hitung posisi cursor baru: format bagian sebelum cursor
+                        const textBeforeCursor = inputValue.slice(0, cursorPos);
+                        const formattedBeforeCursor = formatSlug(textBeforeCursor);
+                        const newCursorPos = Math.min(formattedBeforeCursor.length, formattedValue.length);
+                        
+                        // Update state
                         setPengaturanForm((prev) => ({ 
                           ...prev, 
-                          kode: inputValue,
+                          kode: formattedValue,
                           url: url
                         }));
+                        
+                        // Preserve cursor position - gunakan requestAnimationFrame untuk sync dengan render
+                        requestAnimationFrame(() => {
+                          if (input && document.activeElement === input) {
+                            input.setSelectionRange(newCursorPos, newCursorPos);
+                          }
+                        });
                       }}
                       placeholder="seminar-as-bandung"
                     />
