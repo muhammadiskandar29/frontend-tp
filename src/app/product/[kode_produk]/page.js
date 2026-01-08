@@ -419,7 +419,7 @@ export default function ProductPage() {
       border: style?.container?.border?.width ? `${style.container.border.width}px ${style.container.border.style || 'solid'} ${style.container.border.color || '#e5e7eb'}` : 'none',
       borderRadius: style?.container?.border?.radius || 0,
       boxShadow: style?.container?.shadow || 'none',
-      textAlign: style?.container?.alignment || 'left', // Default alignment for container
+      // textAlign untuk container dihapus - biar text block yang handle sendiri via style.text.align
     };
     
     // Simulasi block.data dari content/style/config untuk kompatibilitas dengan renderPreview logic
@@ -429,7 +429,8 @@ export default function ProductPage() {
       textColor: style?.text?.color || style?.text?.textColor || "#000000",
       fontFamily: style?.text?.fontFamily || "inherit",
       lineHeight: style?.text?.lineHeight || 1.5,
-      textAlign: style?.text?.textAlign || style?.text?.alignment || "left",
+      // ✅ PRIORITAS: align (dari backend) > alignment > textAlign > default "left"
+      textAlign: style?.text?.align || style?.text?.alignment || style?.text?.textAlign || "left",
       fontWeight: style?.text?.fontWeight || "normal",
       fontStyle: style?.text?.fontStyle || "normal",
       textDecoration: style?.text?.textDecoration || "none",
