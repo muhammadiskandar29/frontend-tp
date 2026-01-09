@@ -74,7 +74,7 @@ export default function AdminProductsPage() {
         const token = localStorage.getItem("token");
         const headers = { Authorization: `Bearer ${token}` };
         
-        const usersRes = await fetch("/api/sales/users", { headers });
+        const usersRes = await fetch("/api/admin/users", { headers });
         const usersJson = await usersRes.json();
         
         if (usersJson.success && Array.isArray(usersJson.data)) {

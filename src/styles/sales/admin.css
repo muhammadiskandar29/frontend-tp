@@ -1561,22 +1561,8 @@ ADMIN USERS PAGE (Scoped Styles)
 /* === PRODUCTS TABLE (Similar to Orders Table) === */
 .products-table__wrapper {
   width: 100%;
-  overflow-x: auto;
+  overflow-x: hidden;
   padding-bottom: 0.5rem;
-}
-
-.products-table__wrapper::-webkit-scrollbar {
-  height: 8px;
-}
-
-.products-table__wrapper::-webkit-scrollbar-thumb {
-  background: var(--dash-border);
-  border-radius: 999px;
-}
-
-.products-table__wrapper::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 999px;
 }
 
 .products-table {
@@ -1584,7 +1570,6 @@ ADMIN USERS PAGE (Scoped Styles)
   flex-direction: column;
   gap: 0.5rem;
   width: 100%;
-  min-width: 1200px;
 }
 
 .products-table__head,
@@ -1592,15 +1577,16 @@ ADMIN USERS PAGE (Scoped Styles)
   display: grid;
   /* 7 kolom: Product, Category, Status, Event Date, Created By, Assign By, Created At */
   grid-template-columns: 
-    minmax(250px, 2fr)  /* Product + Actions */
-    minmax(150px, 1.2fr)  /* Category */
-    minmax(100px, 1fr)  /* Status */
-    minmax(120px, 1.2fr)  /* Event Date */
-    minmax(150px, 1.2fr)  /* Created By */
-    minmax(150px, 1.2fr)  /* Assign By */
-    minmax(120px, 1.2fr);  /* Created At */
-  gap: 2rem;
+    minmax(200px, 2fr)  /* Product + Actions */
+    minmax(120px, 1fr)  /* Category */
+    minmax(80px, 0.8fr)  /* Status */
+    minmax(100px, 1fr)  /* Event Date */
+    minmax(120px, 1fr)  /* Created By */
+    minmax(120px, 1fr)  /* Assign By */
+    minmax(100px, 1fr);  /* Created At */
+  gap: 1.5rem;
   align-items: center;
+  width: 100%;
 }
 
 .products-table__head {
@@ -1616,6 +1602,7 @@ ADMIN USERS PAGE (Scoped Styles)
   position: sticky;
   top: 0;
   z-index: 1;
+  width: 100%;
 }
 
 .products-table__body {
@@ -1624,8 +1611,9 @@ ADMIN USERS PAGE (Scoped Styles)
   gap: 0.5rem;
   max-height: 600px;
   overflow-y: auto;
-  overflow-x: visible;
+  overflow-x: hidden;
   padding-right: 0.25rem;
+  width: 100%;
 }
 
 .products-table__body::-webkit-scrollbar {
