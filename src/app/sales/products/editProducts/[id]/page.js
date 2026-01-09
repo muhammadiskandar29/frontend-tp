@@ -2315,7 +2315,7 @@ export default function EditProductsPage() {
           : [];
         
         const kategoriOpts = activeCategories.map((k) => ({
-          label: `${k.id} - ${k.nama}`,
+          label: k.nama,
           value: String(k.id),
         }));
         setKategoriOptions(kategoriOpts);
@@ -3760,19 +3760,46 @@ export default function EditProductsPage() {
                 {/* Page Title - SEO Meta Tag */}
                 <div className="pengaturan-section">
                   <h3 className="pengaturan-section-title">SEO & Meta</h3>
-                  <p className="pengaturan-section-description">Pengaturan untuk SEO dan meta tag halaman</p>
+                  <p className="pengaturan-section-description">Pengaturan untuk SEO dan meta tag halaman - Optimalkan untuk Google, DuckDuckGo, dan semua search engine</p>
                   
                   <div className="pengaturan-form-group">
-                    <label className="pengaturan-label">
-                      Page Title (Browser Tab Title)
-                    </label>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                      <label className="pengaturan-label">
+                        Page Title (Browser Tab Title) <span style={{ color: "#F1A124", fontSize: "12px" }}>⭐ SEO Critical</span>
+                      </label>
+                      <span style={{ 
+                        fontSize: "12px", 
+                        color: (pengaturanForm.page_title || "").length > 60 ? "#ef4444" : (pengaturanForm.page_title || "").length >= 50 ? "#10b981" : "#6b7280",
+                        fontWeight: "500"
+                      }}>
+                        {(pengaturanForm.page_title || "").length}/60 karakter
+                      </span>
+                    </div>
                     <InputText
                       className="pengaturan-input"
                       value={pengaturanForm.page_title || ""}
-                      onChange={(e) => handlePengaturanChange("page_title", e.target.value)}
-                      placeholder="Contoh: BANDUNG- Seminar Ternak Properti"
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value.length <= 60) {
+                          handlePengaturanChange("page_title", value);
+                        }
+                      }}
+                      placeholder="Contoh: BANDUNG - Seminar Ternak Properti | Daftar Sekarang"
+                      maxLength={60}
                     />
-                    <small className="pengaturan-hint">Judul yang akan muncul di browser tab dan hasil pencarian Google. Jika kosong, akan menggunakan nama produk.</small>
+                    <small className="pengaturan-hint" style={{ 
+                      color: (pengaturanForm.page_title || "").length > 60 ? "#ef4444" : "#6b7280",
+                      display: "block",
+                      marginTop: "4px"
+                    }}>
+                      {pengaturanForm.page_title && pengaturanForm.page_title.length > 60 ? (
+                        <span style={{ color: "#ef4444" }}>⚠️ Terlalu panjang! Google akan memotong di 60 karakter. Optimal: 50-60 karakter.</span>
+                      ) : pengaturanForm.page_title && pengaturanForm.page_title.length < 50 ? (
+                        <span>💡 Tips: Panjang optimal 50-60 karakter untuk tampil sempurna di Google Search Results. Judul ini akan muncul di browser tab dan hasil pencarian Google, DuckDuckGo, dan semua search engine.</span>
+                      ) : (
+                        <span>✅ Panjang optimal! Judul ini akan muncul di browser tab dan hasil pencarian Google, DuckDuckGo, dan semua search engine. Jika kosong, akan menggunakan nama produk.</span>
+                      )}
+                    </small>
                   </div>
                 </div>
 
@@ -3937,27 +3964,90 @@ export default function EditProductsPage() {
                 {/* SEO Metadata Section */}
                 <div className="pengaturan-section">
                   <h3 className="pengaturan-section-title">Pengaturan SEO Metadata</h3>
+                  <p className="pengaturan-section-description" style={{ fontSize: "13px", color: "#6b7280", marginBottom: "16px" }}>
+                    Optimalkan untuk Google, DuckDuckGo, Bing, dan semua search engine. Field ini akan digunakan sebagai meta tags di HTML untuk meningkatkan ranking di hasil pencarian.
+                  </p>
                   
                   <div className="pengaturan-form-group">
-                    <label className="pengaturan-label">Judul Tag</label>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                      <label className="pengaturan-label">
+                        Judul Tag (SEO Title) <span style={{ color: "#F1A124", fontSize: "12px" }}>⭐ SEO Critical</span>
+                      </label>
+                      <span style={{ 
+                        fontSize: "12px", 
+                        color: (pengaturanForm.seo_title || "").length > 60 ? "#ef4444" : (pengaturanForm.seo_title || "").length >= 50 ? "#10b981" : "#6b7280",
+                        fontWeight: "500"
+                      }}>
+                        {(pengaturanForm.seo_title || "").length}/60 karakter
+                      </span>
+                    </div>
                     <InputText
                       className="pengaturan-input"
                       value={pengaturanForm.seo_title || ""}
-                      onChange={(e) => handlePengaturanChange("seo_title", e.target.value)}
-                      placeholder="Produk Baru"
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value.length <= 60) {
+                          handlePengaturanChange("seo_title", value);
+                        }
+                      }}
+                      placeholder="Contoh: Seminar Ternak Properti Bandung 2024 - Daftar Sekarang"
+                      maxLength={60}
                     />
+                    <small className="pengaturan-hint" style={{ 
+                      color: (pengaturanForm.seo_title || "").length > 60 ? "#ef4444" : "#6b7280",
+                      display: "block",
+                      marginTop: "4px"
+                    }}>
+                      {pengaturanForm.seo_title && pengaturanForm.seo_title.length > 60 ? (
+                        <span style={{ color: "#ef4444" }}>⚠️ Terlalu panjang! Google akan memotong di 60 karakter. Optimal: 50-60 karakter.</span>
+                      ) : pengaturanForm.seo_title && pengaturanForm.seo_title.length < 50 ? (
+                        <span>💡 Tips: Panjang optimal 50-60 karakter. Gunakan kata kunci utama di awal. Judul ini akan muncul sebagai &lt;title&gt; tag di HTML dan digunakan oleh semua search engine untuk indexing.</span>
+                      ) : (
+                        <span>✅ Panjang optimal! Judul ini akan muncul sebagai &lt;title&gt; tag di HTML dan digunakan oleh Google, DuckDuckGo, Bing, dan semua search engine untuk indexing dan ranking.</span>
+                      )}
+                    </small>
                   </div>
 
                   <div className="pengaturan-form-group">
-                    <label className="pengaturan-label">Meta Description</label>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                      <label className="pengaturan-label">
+                        Meta Description <span style={{ color: "#F1A124", fontSize: "12px" }}>⭐ SEO Critical</span>
+                      </label>
+                      <span style={{ 
+                        fontSize: "12px", 
+                        color: (pengaturanForm.meta_description || "").length > 160 ? "#ef4444" : (pengaturanForm.meta_description || "").length >= 150 ? "#10b981" : "#6b7280",
+                        fontWeight: "500"
+                      }}>
+                        {(pengaturanForm.meta_description || "").length}/160 karakter
+                      </span>
+                    </div>
                     <InputTextarea
                       className="pengaturan-input"
                       value={pengaturanForm.meta_description || ""}
-                      onChange={(e) => handlePengaturanChange("meta_description", e.target.value)}
-                      placeholder="Cth: Scalev - A comprehensive solution for your business"
-                      rows={3}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value.length <= 160) {
+                          handlePengaturanChange("meta_description", value);
+                        }
+                      }}
+                      placeholder="Contoh: Daftar Seminar Ternak Properti di Bandung 2024. Pelajari strategi investasi properti terbaik dari para ahli. Harga spesial, tempat terbatas!"
+                      rows={4}
                       style={{ resize: "vertical" }}
+                      maxLength={160}
                     />
+                    <small className="pengaturan-hint" style={{ 
+                      color: (pengaturanForm.meta_description || "").length > 160 ? "#ef4444" : "#6b7280",
+                      display: "block",
+                      marginTop: "4px"
+                    }}>
+                      {pengaturanForm.meta_description && pengaturanForm.meta_description.length > 160 ? (
+                        <span style={{ color: "#ef4444" }}>⚠️ Terlalu panjang! Google akan memotong di 160 karakter. Optimal: 150-160 karakter.</span>
+                      ) : pengaturanForm.meta_description && pengaturanForm.meta_description.length < 150 ? (
+                        <span>💡 Tips: Panjang optimal 150-160 karakter. Gunakan kalimat yang menarik dengan call-to-action. Deskripsi ini akan muncul di hasil pencarian Google, DuckDuckGo, dan semua search engine sebagai snippet.</span>
+                      ) : (
+                        <span>✅ Panjang optimal! Deskripsi ini akan muncul di hasil pencarian Google, DuckDuckGo, Bing, dan semua search engine sebagai snippet. Buat deskripsi yang menarik dan informatif untuk meningkatkan click-through rate.</span>
+                      )}
+                    </small>
                   </div>
 
                   <div className="pengaturan-form-group">

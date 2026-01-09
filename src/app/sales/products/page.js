@@ -30,6 +30,9 @@ export default function AdminProductsPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
 
+  // State untuk user map (untuk Assign By)
+  const [userMap, setUserMap] = useState(new Map());
+
   // Handler untuk buka modal hapus
   const openDeleteModal = (product) => {
     setProductToDelete(product);
@@ -64,6 +67,35 @@ export default function AdminProductsPage() {
     setCurrentPage(1);
   }, [debouncedSearch]);
 
+  // Fetch users untuk Assign By mapping
+  useEffect(() => {
+    async function fetchUsers() {
+      try {
+        const token = localStorage.getItem("token");
+        const headers = { Authorization: `Bearer ${token}` };
+        
+        const usersRes = await fetch("/api/sales/users", { headers });
+        const usersJson = await usersRes.json();
+        
+        if (usersJson.success && Array.isArray(usersJson.data)) {
+          const map = new Map();
+          usersJson.data.forEach((u) => {
+            const userId = u.user_rel?.id || u.sales_rel?.id || u.user?.id || u.sales?.id || u.id;
+            const nama = u.user_rel?.nama || u.sales_rel?.nama || u.user?.nama || u.sales?.nama || u.nama || u.name || `User #${userId}`;
+            if (userId) {
+              map.set(String(userId), nama);
+            }
+          });
+          setUserMap(map);
+        }
+      } catch (err) {
+        console.error("Error fetching users for Assign By:", err);
+      }
+    }
+    
+    fetchUsers();
+  }, []);
+
   const formatPrice = useCallback((price) => {
     if (!price) return "Rp 0";
     return `Rp ${parseInt(price).toLocaleString("id-ID")}`;
@@ -89,6 +121,40 @@ export default function AdminProductsPage() {
     }
     return <span className="customers-verif-tag is-unverified">Inactive</span>;
   }, []);
+
+  // Parse assign field dan ambil nama user
+  const getAssignNames = useCallback((assign) => {
+    if (!assign) return "-";
+    
+    try {
+      // Parse JSON string jika berupa string
+      let assignIds = [];
+      if (typeof assign === "string") {
+        assignIds = JSON.parse(assign);
+      } else if (Array.isArray(assign)) {
+        assignIds = assign;
+      } else {
+        return "-";
+      }
+
+      if (!Array.isArray(assignIds) || assignIds.length === 0) {
+        return "-";
+      }
+
+      // Map IDs ke nama
+      const names = assignIds
+        .map((id) => {
+          const userId = String(id);
+          return userMap.get(userId) || null;
+        })
+        .filter((name) => name !== null);
+
+      return names.length > 0 ? names.join(", ") : "-";
+    } catch (err) {
+      console.error("Error parsing assign:", err);
+      return "-";
+    }
+  }, [userMap]);
 
   return (
     <Layout title="Manage Products">
@@ -165,9 +231,7 @@ export default function AdminProductsPage() {
           <div className="products-table__wrapper">
             <div className="products-table">
               <div className="products-table__head">
-                <span>Image</span>
                 <span>Product</span>
-                <span>Price</span>
                 <span>Category</span>
                 <span>Status</span>
                 <span>Event Date</span>
@@ -181,27 +245,6 @@ export default function AdminProductsPage() {
                 ) : paginatedData.length > 0 ? (
                   paginatedData.map((p, i) => (
                     <div className="products-table__row" key={p.id}>
-                      <div className="products-table__cell" data-label="Image">
-                        <div className="product-table__image">
-                          {p.header ? (
-                            <img
-                              src={`/api/image?path=${encodeURIComponent(p.header)}`}
-                              alt={p.nama}
-                              onError={(e) => {
-                                e.target.style.display = "none";
-                                e.target.nextElementSibling.style.display = "flex";
-                              }}
-                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                            />
-                          ) : null}
-                          <div
-                            className="product-table__image-placeholder"
-                            style={{ display: p.header ? "none" : "flex" }}
-                          >
-                            <i className="pi pi-box" />
-                          </div>
-                        </div>
-                      </div>
                       <div className="products-table__cell products-table__cell--strong" data-label="Product">
                         <div className="product-table__info">
                           <span
@@ -257,9 +300,6 @@ export default function AdminProductsPage() {
                           </div>
                         </div>
                       </div>
-                      <div className="products-table__cell" data-label="Price">
-                        {formatPrice(p.harga_asli)}
-                      </div>
                       <div className="products-table__cell" data-label="Category">
                         {p.kategori_rel?.nama || "-"}
                       </div>
@@ -273,9 +313,7 @@ export default function AdminProductsPage() {
                         {p.user_rel?.nama || "-"}
                       </div>
                       <div className="products-table__cell" data-label="Assign By">
-                        {p.assign_rel && p.assign_rel.length > 0
-                          ? p.assign_rel.map((u) => u.nama).join(", ")
-                          : "-"}
+                        {getAssignNames(p.assign)}
                       </div>
                       <div className="products-table__cell" data-label="Created At">
                         {formatDate(p.create_at)}

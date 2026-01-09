@@ -1590,18 +1590,16 @@ ADMIN USERS PAGE (Scoped Styles)
 .products-table__head,
 .products-table__row {
   display: grid;
-  /* 9 kolom: Image, Product, Price, Category, Status, Event Date, Created By, Assign By, Created At */
+  /* 7 kolom: Product, Category, Status, Event Date, Created By, Assign By, Created At */
   grid-template-columns: 
-    60px              /* Image */
-    minmax(200px, 1.5fr)  /* Product + Actions */
-    100px             /* Price */
-    100px             /* Category */
-    85px              /* Status */
-    95px              /* Event Date */
-    120px             /* Created By */
-    120px             /* Assign By */
-    95px;             /* Created At */
-  gap: 1rem;
+    minmax(250px, 2fr)  /* Product + Actions */
+    minmax(150px, 1.2fr)  /* Category */
+    minmax(100px, 1fr)  /* Status */
+    minmax(120px, 1.2fr)  /* Event Date */
+    minmax(150px, 1.2fr)  /* Created By */
+    minmax(150px, 1.2fr)  /* Assign By */
+    minmax(120px, 1.2fr);  /* Created At */
+  gap: 2rem;
   align-items: center;
 }
 
