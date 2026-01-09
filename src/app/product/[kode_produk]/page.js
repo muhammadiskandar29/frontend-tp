@@ -1865,7 +1865,7 @@ export default function ProductPage() {
         const sectionContainerStyle = blockToRender.style?.container || style?.container || {};
         // ✅ FIX: Padding section diperkecil agar lebih dekat dengan isi konten
         // Default padding lebih kecil: 4px top/bottom, 8px left/right
-        let sectionPadding = "4px 8px";
+        let sectionPadding = "4px 12px";
         if (sectionContainerStyle.padding) {
           const top = sectionContainerStyle.padding.top || 0;
           const right = sectionContainerStyle.padding.right || 0;
