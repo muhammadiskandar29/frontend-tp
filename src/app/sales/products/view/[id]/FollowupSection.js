@@ -500,23 +500,48 @@ export default function FollowupSection() {
 
         .followup-tabs {
           display: flex;
-          gap: 8px;
-          margin-bottom: 15px;
+          gap: 0.75rem;
+          margin-bottom: 2rem;
+          background: #f9fafb;
+          padding: 0.5rem;
+          border-radius: 12px;
+          border: 1px solid #e5e7eb;
           flex-wrap: wrap;
         }
 
         .tab {
-          padding: 8px 16px;
-          border: 1px solid #ddd;
-          background: #f7f7f7;
+          padding: 0.75rem 1.5rem;
           border-radius: 8px;
+          background: transparent;
+          border: none;
           cursor: pointer;
+          transition: all 0.2s ease;
+          font-weight: 500;
+          font-size: 0.9rem;
+          color: #6b7280;
+          position: relative;
+        }
+
+        .tab:hover {
+          background: #f3f4f6;
+          color: #111827;
         }
 
         .tab.active {
-          background: #2563EB;
-          color: white;
-          border-color: #2563EB;
+          background: #ffffff;
+          color: #F1A124;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .tab.active::after {
+          content: "";
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 2px;
+          background: #F1A124;
+          border-radius: 2px 2px 0 0;
         }
 
         .label {

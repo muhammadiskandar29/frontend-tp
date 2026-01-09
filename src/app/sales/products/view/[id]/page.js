@@ -5,6 +5,7 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import { getProductById } from "@/lib/sales/products";
+import { getUsers } from "@/lib/users";
 import FollowupSection from "./FollowupSection";
 import LinkZoomSection from "./LinkZoomSection";
 import TrainerSection from "./TrainerSection";
@@ -12,7 +13,7 @@ import {
   ArrowLeft, Package, Tag, DollarSign, Calendar, 
   Globe, User, CheckCircle2, XCircle, FileText,
   Image as ImageIcon, Video, MessageSquare, List,
-  Edit, ExternalLink, Copy, Eye
+  Edit, ExternalLink, Copy, Eye, Users
 } from "lucide-react";
 import "@/styles/sales/product-detail.css";
 
@@ -63,6 +64,8 @@ export default function DetailProdukPage({ params }) {
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [assignUsers, setAssignUsers] = useState([]);
+  const [loadingAssign, setLoadingAssign] = useState(false);
 
   // TAB STATE
   const [activeTab, setActiveTab] = useState("detail");
@@ -92,6 +95,43 @@ export default function DetailProdukPage({ params }) {
     fetchData();
   }, [id]);
 
+  // Fetch assign users
+  useEffect(() => {
+    async function fetchAssignUsers() {
+      if (!product || !product.assign) return;
+      
+      try {
+        setLoadingAssign(true);
+        const users = await getUsers();
+        
+        // Parse assign - bisa array atau JSON string
+        let assignIds = [];
+        if (Array.isArray(product.assign)) {
+          assignIds = product.assign;
+        } else if (typeof product.assign === 'string') {
+          try {
+            assignIds = JSON.parse(product.assign);
+          } catch {
+            assignIds = [];
+          }
+        }
+        
+        // Filter users berdasarkan assign IDs
+        const assigned = users.filter(user => 
+          assignIds.includes(user.id) || assignIds.includes(String(user.id))
+        );
+        
+        setAssignUsers(assigned);
+      } catch (err) {
+        console.error("❌ Error fetching assign users:", err);
+      } finally {
+        setLoadingAssign(false);
+      }
+    }
+    
+    fetchAssignUsers();
+  }, [product]);
+
   if (loading) return <Layout>Memuat detail produk...</Layout>;
   if (!product) return <Layout>Produk tidak ditemukan.</Layout>;
 
@@ -101,6 +141,7 @@ export default function DetailProdukPage({ params }) {
   const listPoint = safeParse(product.list_point, []);
   const video = safeParse(product.video, []);
   const customField = safeParse(product.custom_field, []);
+  const bundling = safeParse(product.bundling, []);
 
   // Format date helper
   const formatDate = (dateString) => {
@@ -238,21 +279,6 @@ export default function DetailProdukPage({ params }) {
                         </>
                       )}
                     </span>
-                    {product.landingpage && (
-                      <span className={`meta-tag landing ${product.landingpage === "1" ? "active" : "inactive"}`}>
-                        {product.landingpage === "1" ? (
-                          <>
-                            <Eye size={14} />
-                            Landing Page Aktif
-                          </>
-                        ) : (
-                          <>
-                            <Eye size={14} />
-                            Landing Page Nonaktif
-                          </>
-                        )}
-                      </span>
-                    )}
                   </div>
                 </div>
                 
@@ -335,6 +361,9 @@ export default function DetailProdukPage({ params }) {
                 <div className="info-card-header">
                   <DollarSign size={20} />
                   <h2>Harga</h2>
+                  {product.isBundling && bundling.length > 0 && (
+                    <span className="badge-count bundling-badge">Bundling</span>
+                  )}
                 </div>
                 <div className="info-card-body">
                   <div className="info-item">
@@ -357,6 +386,47 @@ export default function DetailProdukPage({ params }) {
                       </div>
                     </div>
                   )}
+                  
+                  {/* Bundling Information */}
+                  {product.isBundling && bundling.length > 0 && (
+                    <div className="info-item full-width" style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #f3f4f6' }}>
+                      <div className="info-label">
+                        <Package size={16} />
+                        <span>Harga Bundling</span>
+                      </div>
+                      <div className="bundling-list">
+                        {bundling.map((item, index) => (
+                          <div key={index} className="bundling-item">
+                            <div className="bundling-item-header">
+                              <span className="bundling-item-name">
+                                {item.nama || item.name || `Paket ${index + 1}`}
+                              </span>
+                              <span className="bundling-item-price">
+                                Rp {formatCurrency(item.harga || 0)}
+                              </span>
+                            </div>
+                            {item.deskripsi && (
+                              <div className="bundling-item-desc">
+                                {item.deskripsi}
+                              </div>
+                            )}
+                            {item.produk && Array.isArray(item.produk) && item.produk.length > 0 && (
+                              <div className="bundling-item-products">
+                                <span className="bundling-products-label">Produk dalam paket:</span>
+                                <div className="bundling-products-list">
+                                  {item.produk.map((prod, prodIdx) => (
+                                    <span key={prodIdx} className="bundling-product-tag">
+                                      {prod.nama || prod.name || `Produk ${prodIdx + 1}`}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -376,7 +446,7 @@ export default function DetailProdukPage({ params }) {
                       <div className="info-value">{formatDate(product.tanggal_event)}</div>
                     </div>
                   )}
-                  {product.url && (
+                  {product.kode && (
                     <div className="info-item">
                       <div className="info-label">
                         <Globe size={16} />
@@ -384,17 +454,17 @@ export default function DetailProdukPage({ params }) {
                       </div>
                       <div className="info-value">
                         <a 
-                          href={product.url} 
+                          href={`/product/${product.kode}`}
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="url-link"
                         >
-                          {product.url}
+                          /product/{product.kode}
                           <ExternalLink size={14} />
                         </a>
                         <button 
                           className="copy-btn"
-                          onClick={() => copyToClipboard(product.url)}
+                          onClick={() => copyToClipboard(`/product/${product.kode}`)}
                           title="Copy URL"
                         >
                           <Copy size={14} />
@@ -432,60 +502,73 @@ export default function DetailProdukPage({ params }) {
                       </span>
                     </div>
                   </div>
-                  {product.landingpage && (
-                    <div className="info-item">
-                      <div className="info-label">
-                        <Eye size={16} />
-                        <span>Status Landing Page</span>
-                      </div>
-                      <div className="info-value">
-                        <span className={`status-badge ${product.landingpage === "1" ? "active" : "inactive"}`}>
-                          {product.landingpage === "1" ? "Aktif" : "Nonaktif"}
-                        </span>
-                      </div>
+                  <div className="info-item">
+                    <div className="info-label">
+                      <Users size={16} />
+                      <span>Assign</span>
                     </div>
-                  )}
+                    <div className="info-value">
+                      {loadingAssign ? (
+                        <span style={{ color: '#6b7280', fontSize: '0.9rem' }}>Memuat...</span>
+                      ) : assignUsers.length > 0 ? (
+                        <div className="assign-list">
+                          {assignUsers.map((user, idx) => (
+                            <span key={user.id} className="assign-badge">
+                              {user.nama}
+                              {idx < assignUsers.length - 1 && ', '}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span style={{ color: '#9ca3af' }}>Tidak ada assign</span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Gallery Card */}
+            {/* Media & Content Card */}
             <div className="info-card full-width">
               <div className="info-card-header">
                 <ImageIcon size={20} />
-                <h2>Gallery Produk</h2>
-                <span className="badge-count">{gallery.length} gambar</span>
+                <h2>Media & Konten</h2>
               </div>
               <div className="info-card-body">
-                {gallery.length === 0 ? (
+                <div className="media-stats-grid">
+                  <div className="media-stat-item">
+                    <ImageIcon size={24} />
+                    <div>
+                      <div className="media-stat-value">{gallery.length}</div>
+                      <div className="media-stat-label">Gambar Gallery</div>
+                    </div>
+                  </div>
+                  <div className="media-stat-item">
+                    <Video size={24} />
+                    <div>
+                      <div className="media-stat-value">{video.length}</div>
+                      <div className="media-stat-label">Video</div>
+                    </div>
+                  </div>
+                  <div className="media-stat-item">
+                    <MessageSquare size={24} />
+                    <div>
+                      <div className="media-stat-value">{testimoni.length}</div>
+                      <div className="media-stat-label">Testimoni</div>
+                    </div>
+                  </div>
+                  <div className="media-stat-item">
+                    <List size={24} />
+                    <div>
+                      <div className="media-stat-value">{listPoint.length}</div>
+                      <div className="media-stat-label">List Point</div>
+                    </div>
+                  </div>
+                </div>
+                {gallery.length === 0 && video.length === 0 && testimoni.length === 0 && listPoint.length === 0 && (
                   <div className="empty-state">
                     <ImageIcon size={48} />
-                    <p>Tidak ada gambar gallery</p>
-                  </div>
-                ) : (
-                  <div className="gallery-grid">
-                    {gallery.map((g, i) => {
-                      const imageUrl = buildImageUrl(g.path);
-                      return (
-                        <div key={i} className="gallery-card">
-                          {imageUrl ? (
-                            <img
-                              src={imageUrl}
-                              alt={g.caption || `Gallery ${i + 1}`}
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                e.target.nextElementSibling.style.display = 'flex';
-                              }}
-                            />
-                          ) : null}
-                          <div className="gallery-placeholder" style={{ display: imageUrl ? 'none' : 'flex' }}>
-                            <ImageIcon size={24} />
-                            <span>No Image</span>
-                          </div>
-                          {g.caption && <p className="gallery-caption">{g.caption}</p>}
-                        </div>
-                      );
-                    })}
+                    <p>Tidak ada media atau konten tersedia</p>
                   </div>
                 )}
               </div>

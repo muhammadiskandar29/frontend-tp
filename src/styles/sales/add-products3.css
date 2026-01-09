@@ -5869,14 +5869,16 @@ html:has(.add-products3-container) {
     box-sizing: border-box;
   }
 
-  /* Logo - smaller (50%) */
+  /* Logo - lebih besar dan flexible */
   .canvas-logo-wrapper {
     padding: 20px 10px 10px 10px;
   }
 
   .canvas-logo {
-    max-width: 60px;
-    max-height: 30px;
+    max-width: 100px;
+    max-height: 50px;
+    width: auto;
+    height: auto;
   }
 
   /* Preview blocks - full width, smaller margins */
@@ -5960,8 +5962,8 @@ html:has(.add-products3-container) {
   }
 
   .preview-caption {
-    font-size: 7px !important;
-    margin-top: 4px !important;
+    font-size: 0.7em !important;
+    margin-top: 6px !important;
   }
 
   /* Sections - proporsional dengan overflow fix */
@@ -5980,9 +5982,54 @@ html:has(.add-products3-container) {
     box-sizing: border-box !important;
   }
 
-  /* Lists - proporsional (70%) */
+  .preview-section-child {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Font di dalam section - lebih besar */
+  .preview-section .preview-text {
+    font-size: 0.9em !important;
+  }
+
+  .preview-section .preview-text h1 {
+    font-size: 1.8em !important;
+  }
+
+  .preview-section .preview-text h2 {
+    font-size: 1.5em !important;
+  }
+
+  .preview-section .preview-text h3 {
+    font-size: 1.3em !important;
+  }
+
+  .preview-section .preview-text p {
+    font-size: 0.9em !important;
+  }
+
+  /* Pastikan semua elemen di section tidak terpotong */
+  .preview-section .preview-list-wrapper,
+  .preview-section .preview-testimonials,
+  .preview-section .preview-faq-section,
+  .preview-section .countdown-container,
+  .preview-section .preview-form,
+  .preview-section .preview-image-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Lists - proporsional (80% untuk lebih besar) */
+  .preview-list-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
   .preview-list {
-    font-size: 0.7em !important;
+    font-size: 0.8em !important;
     padding: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
@@ -5990,7 +6037,7 @@ html:has(.add-products3-container) {
   }
 
   .preview-list-item {
-    padding: 8px 0 !important;
+    padding: 10px 0 !important;
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
@@ -5998,25 +6045,25 @@ html:has(.add-products3-container) {
   }
 
   .preview-list-icon {
-    width: 16px !important;
-    height: 16px !important;
+    width: 18px !important;
+    height: 18px !important;
     flex-shrink: 0 !important;
   }
 
   .preview-list-icon svg {
-    width: 16px !important;
-    height: 16px !important;
+    width: 18px !important;
+    height: 18px !important;
   }
 
   .preview-list-title {
-    font-size: 0.9em !important;
-    margin-bottom: 8px !important;
+    font-size: 1em !important;
+    margin-bottom: 10px !important;
     word-wrap: break-word !important;
   }
 
-  /* Testimonials - proporsional (70%) */
+  /* Testimonials - proporsional (80% untuk lebih besar) */
   .preview-testimonials {
-    padding: 16px 12px !important;
+    padding: 18px 14px !important;
     margin: 12px 0 !important;
     width: 100% !important;
     max-width: 100% !important;
@@ -6024,27 +6071,27 @@ html:has(.add-products3-container) {
   }
 
   .preview-testimonials h2 {
-    font-size: 1.1em !important;
-    margin-bottom: 12px !important;
+    font-size: 1.2em !important;
+    margin-bottom: 14px !important;
     word-wrap: break-word !important;
   }
 
   .testi-card-new {
-    padding: 12px !important;
-    font-size: 0.7em !important;
+    padding: 14px !important;
+    font-size: 0.8em !important;
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
   }
 
   .testi-desc-new {
-    font-size: 0.7em !important;
+    font-size: 0.8em !important;
     word-wrap: break-word !important;
   }
 
-  /* FAQ - proporsional (70%) */
+  /* FAQ - proporsional (80% untuk lebih besar) */
   .preview-faq-section {
-    padding: 16px 12px !important;
+    padding: 18px 14px !important;
     margin: 12px 0 !important;
     width: 100% !important;
     max-width: 100% !important;
@@ -6052,50 +6099,50 @@ html:has(.add-products3-container) {
   }
 
   .faq-title {
-    font-size: 1.1em !important;
-    margin-bottom: 12px !important;
+    font-size: 1.2em !important;
+    margin-bottom: 14px !important;
     word-wrap: break-word !important;
   }
 
   .faq-item {
-    font-size: 0.7em !important;
+    font-size: 0.8em !important;
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
   }
 
   .faq-question {
-    padding: 10px 12px !important;
-    font-size: 0.7em !important;
+    padding: 12px 14px !important;
+    font-size: 0.8em !important;
     word-wrap: break-word !important;
   }
 
   .faq-answer {
-    padding: 8px 12px 12px 12px !important;
-    font-size: 0.7em !important;
+    padding: 10px 14px 14px 14px !important;
+    font-size: 0.8em !important;
     word-wrap: break-word !important;
   }
 
-  /* Countdown - proporsional (70%) */
+  /* Countdown - proporsional (80% untuk lebih besar) */
   .countdown-container {
-    padding: 12px !important;
+    padding: 14px !important;
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
   }
 
   .countdown-box {
-    padding: 10px 8px !important;
-    min-width: 50px !important;
+    padding: 12px 10px !important;
+    min-width: 55px !important;
     box-sizing: border-box !important;
   }
 
   .countdown-number {
-    font-size: 1.2em !important;
+    font-size: 1.4em !important;
   }
 
   .countdown-label {
-    font-size: 0.6em !important;
+    font-size: 0.7em !important;
   }
 
   /* Form - proporsional (70%) */
@@ -6141,11 +6188,16 @@ html:has(.add-products3-container) {
     box-sizing: border-box !important;
   }
 
-  /* Button wrapper - tambah margin bottom untuk browser bar */
+  /* Button wrapper - normal tapi tetap terlihat */
   .preview-form-submit-wrapper {
     margin-top: 24px !important;
-    margin-bottom: 80px !important; /* Space untuk browser bar */
-    padding-bottom: 20px !important;
+    margin-bottom: 60px !important; /* Space cukup untuk browser bar */
+    padding-bottom: 10px !important;
+  }
+
+  .preview-form-submit-btn {
+    padding: 14px 24px !important;
+    font-size: 0.95em !important;
   }
 
   /* Rincian Pesanan - proporsional */
@@ -6284,14 +6336,16 @@ html:has(.add-products3-container) {
     box-sizing: border-box;
   }
 
-  /* Logo - smaller for mobile (50%) */
+  /* Logo - lebih besar dan flexible untuk mobile */
   .canvas-logo-wrapper {
     padding: 15px 8px 8px 8px;
   }
 
   .canvas-logo {
-    max-width: 50px;
-    max-height: 25px;
+    max-width: 90px;
+    max-height: 45px;
+    width: auto;
+    height: auto;
   }
 
   /* Preview blocks - full width, minimal margins */
@@ -6385,8 +6439,8 @@ html:has(.add-products3-container) {
   }
 
   .preview-caption {
-    font-size: 6px !important;
-    margin-top: 2px !important;
+    font-size: 0.65em !important;
+    margin-top: 6px !important;
   }
 
   /* Sections - proporsional untuk mobile dengan overflow fix */
@@ -6406,9 +6460,54 @@ html:has(.add-products3-container) {
     box-sizing: border-box !important;
   }
 
-  /* Lists - proporsional untuk mobile (60%) */
+  .preview-section-child {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Font di dalam section - lebih besar untuk mobile */
+  .preview-section .preview-text {
+    font-size: 0.8em !important;
+  }
+
+  .preview-section .preview-text h1 {
+    font-size: 1.5em !important;
+  }
+
+  .preview-section .preview-text h2 {
+    font-size: 1.4em !important;
+  }
+
+  .preview-section .preview-text h3 {
+    font-size: 1.2em !important;
+  }
+
+  .preview-section .preview-text p {
+    font-size: 0.8em !important;
+  }
+
+  /* Pastikan semua elemen di section tidak terpotong */
+  .preview-section .preview-list-wrapper,
+  .preview-section .preview-testimonials,
+  .preview-section .preview-faq-section,
+  .preview-section .countdown-container,
+  .preview-section .preview-form,
+  .preview-section .preview-image-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Lists - proporsional untuk mobile (70% untuk lebih besar) */
+  .preview-list-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
   .preview-list {
-    font-size: 0.6em !important;
+    font-size: 0.7em !important;
     padding: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
@@ -6416,8 +6515,8 @@ html:has(.add-products3-container) {
   }
 
   .preview-list-item {
-    padding: 6px 0 !important;
-    margin-bottom: 6px !important;
+    padding: 8px 0 !important;
+    margin-bottom: 8px !important;
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
@@ -6425,47 +6524,47 @@ html:has(.add-products3-container) {
   }
 
   .preview-list-icon {
-    width: 14px !important;
-    height: 14px !important;
-    margin-right: 6px !important;
+    width: 16px !important;
+    height: 16px !important;
+    margin-right: 8px !important;
     flex-shrink: 0 !important;
   }
 
   .preview-list-icon svg {
-    width: 14px !important;
-    height: 14px !important;
+    width: 16px !important;
+    height: 16px !important;
   }
 
   .preview-list-title {
-    font-size: 0.85em !important;
-    margin-bottom: 6px !important;
+    font-size: 0.95em !important;
+    margin-bottom: 8px !important;
     word-wrap: break-word !important;
   }
 
-  /* Testimonials - proporsional untuk mobile (60%) */
+  /* Testimonials - proporsional untuk mobile (70% untuk lebih besar) */
   .preview-testimonials {
-    padding: 12px 10px !important;
-    margin: 8px 0 !important;
+    padding: 14px 12px !important;
+    margin: 10px 0 !important;
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
   }
 
   .preview-testimonials h2 {
-    font-size: 1em !important;
-    margin-bottom: 10px !important;
+    font-size: 1.1em !important;
+    margin-bottom: 12px !important;
     word-wrap: break-word !important;
   }
 
   .testimonials-carousel-new {
-    gap: 8px !important;
+    gap: 10px !important;
     width: 100% !important;
     max-width: 100% !important;
   }
 
   .testi-card-new {
-    padding: 10px !important;
-    font-size: 0.6em !important;
+    padding: 12px !important;
+    font-size: 0.7em !important;
     min-width: 200px !important;
     width: 100% !important;
     max-width: 100% !important;
@@ -6473,19 +6572,19 @@ html:has(.add-products3-container) {
   }
 
   .testi-avatar-new {
-    width: 32px !important;
-    height: 32px !important;
+    width: 36px !important;
+    height: 36px !important;
   }
 
   .testi-desc-new {
-    font-size: 0.6em !important;
+    font-size: 0.7em !important;
     word-wrap: break-word !important;
   }
 
-  /* FAQ - proporsional untuk mobile (60%) */
+  /* FAQ - proporsional untuk mobile (70% untuk lebih besar) */
   .preview-faq-section {
-    padding: 12px 10px !important;
-    margin: 8px 0 !important;
+    padding: 14px 12px !important;
+    margin: 10px 0 !important;
     border-radius: 6px !important;
     width: 100% !important;
     max-width: 100% !important;
@@ -6493,52 +6592,52 @@ html:has(.add-products3-container) {
   }
 
   .preview-faq-section .faq-title {
-    font-size: 1em !important;
-    margin-bottom: 10px !important;
+    font-size: 1.1em !important;
+    margin-bottom: 12px !important;
     word-wrap: break-word !important;
   }
 
   .faq-item {
-    font-size: 0.6em !important;
-    margin-bottom: 6px !important;
+    font-size: 0.7em !important;
+    margin-bottom: 8px !important;
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
   }
 
   .faq-question {
-    padding: 8px 10px !important;
-    font-size: 0.6em !important;
+    padding: 10px 12px !important;
+    font-size: 0.7em !important;
     word-wrap: break-word !important;
   }
 
   .faq-answer {
-    padding: 6px 10px 10px 10px !important;
-    font-size: 0.6em !important;
+    padding: 8px 12px 12px 12px !important;
+    font-size: 0.7em !important;
     word-wrap: break-word !important;
   }
 
-  /* Countdown - proporsional untuk mobile (60%) */
+  /* Countdown - proporsional untuk mobile (70% untuk lebih besar) */
   .countdown-container {
-    padding: 10px !important;
-    gap: 6px !important;
+    padding: 12px !important;
+    gap: 8px !important;
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
   }
 
   .countdown-box {
-    padding: 8px 6px !important;
-    min-width: 45px !important;
+    padding: 10px 8px !important;
+    min-width: 50px !important;
     box-sizing: border-box !important;
   }
 
   .countdown-number {
-    font-size: 1.1em !important;
+    font-size: 1.3em !important;
   }
 
   .countdown-label {
-    font-size: 0.55em !important;
+    font-size: 0.65em !important;
   }
 
   /* Form - proporsional untuk mobile (60%) */
@@ -6591,14 +6690,19 @@ html:has(.add-products3-container) {
     box-sizing: border-box !important;
   }
 
-  /* Button wrapper - tambah margin bottom lebih besar untuk browser bar iPhone */
+  /* Button wrapper - normal tapi tetap terlihat di iPhone */
   .preview-form-submit-wrapper {
     margin-top: 20px !important;
-    margin-bottom: 100px !important; /* Space lebih besar untuk browser bar iPhone Safari */
-    padding-bottom: 30px !important;
+    margin-bottom: 70px !important; /* Space cukup untuk browser bar iPhone Safari */
+    padding-bottom: 15px !important;
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
+  }
+
+  .preview-form-submit-btn {
+    padding: 14px 20px !important;
+    font-size: 0.9em !important;
   }
 
   /* Rincian Pesanan - proporsional untuk mobile */

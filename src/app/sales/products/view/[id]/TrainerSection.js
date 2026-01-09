@@ -1,11 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { getUsers } from "@/lib/users";
+import dynamic from "next/dynamic";
 
 const BASE_URL = "/api";
+
+const EmojiPicker = dynamic(() => import("emoji-picker-react"), {
+  ssr: false,
+});
+
+const AUTOTEXT_OPTIONS = [
+  { label: "Pilih Autotext", value: "" },
+  { label: "{{customer_name}}", value: "{{customer_name}}" },
+  { label: "{{product_name}}", value: "{{product_name}}" },
+  { label: "{{order_date}}", value: "{{order_date}}" },
+  { label: "{{order_total}}", value: "{{order_total}}" },
+];
 
 export default function TrainerSection({ productId, product, onProductUpdate }) {
   const params = useParams();
@@ -16,6 +29,18 @@ export default function TrainerSection({ productId, product, onProductUpdate }) 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [currentTrainer, setCurrentTrainer] = useState(null);
+  
+  // Followup state for Trainer (type 11)
+  const [followupText, setFollowupText] = useState("");
+  const [followupEvent, setFollowupEvent] = useState("1d-09:00");
+  const [scheduleDay, setScheduleDay] = useState(1);
+  const [scheduleTime, setScheduleTime] = useState("09:00");
+  const [autoSend, setAutoSend] = useState(false);
+  const [loadingFollowup, setLoadingFollowup] = useState(false);
+  const [savingFollowup, setSavingFollowup] = useState(false);
+  const [selectedAutotext, setSelectedAutotext] = useState("");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const textareaRef = useRef(null);
 
   // Fetch trainers (users with division 11)
   useEffect(() => {
@@ -41,6 +66,150 @@ export default function TrainerSection({ productId, product, onProductUpdate }) 
 
     fetchTrainers();
   }, []);
+
+  // Fetch followup template for Trainer (type 11)
+  useEffect(() => {
+    if (!id) return;
+    
+    setLoadingFollowup(true);
+    const token = localStorage.getItem("token");
+    
+    fetch(`${BASE_URL}/sales/template-follup`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ produk_id: id }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          // Find template with type 11 or nama "Reminder Trainer"
+          const trainerTemplate = (data.data || []).find(
+            (tpl) => tpl.type === "11" || tpl.nama === "Reminder Trainer"
+          );
+          
+          if (trainerTemplate) {
+            setFollowupText(trainerTemplate.text || "");
+            const eventVal = trainerTemplate.event || "1d-09:00";
+            setFollowupEvent(eventVal);
+            const [dayPart = "1d", timePart = "09:00"] = eventVal.split("-");
+            const dayNumber = Number(dayPart.replace(/[^0-9]/g, "")) || 0;
+            setScheduleDay(dayNumber);
+            setScheduleTime(timePart?.trim() ? timePart : "09:00");
+            setAutoSend(trainerTemplate.status === "1");
+          }
+        }
+      })
+      .catch((err) => {
+        console.error("❌ [TRAINER FOLLOWUP] Error fetching template:", err);
+      })
+      .finally(() => {
+        setLoadingFollowup(false);
+      });
+  }, [id]);
+
+  // Helper functions for followup
+  const parseEventValue = (value = "1d-09:00") => {
+    const [dayPart = "1d", timePart = "09:00"] = value.split("-");
+    const dayNumber = Number(dayPart.replace(/[^0-9]/g, "")) || 0;
+    const time = timePart?.trim() ? timePart : "09:00";
+    return { days: dayNumber, time };
+  };
+
+  const formatEventValue = (days, time) => {
+    const safeDay = Math.max(0, Number.isNaN(days) ? 0 : days);
+    const safeTime = time || "09:00";
+    return `${safeDay}d-${safeTime}`;
+  };
+
+  const insertAtCursor = (value) => {
+    if (!value) return;
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      setFollowupText((prev) => (prev || "") + value);
+      return;
+    }
+    const start = textarea.selectionStart ?? textarea.value.length;
+    const end = textarea.selectionEnd ?? textarea.value.length;
+    const before = followupText.slice(0, start);
+    const after = followupText.slice(end);
+    const newValue = `${before}${value}${after}`;
+    setFollowupText(newValue);
+    requestAnimationFrame(() => {
+      const newPos = start + value.length;
+      textarea.focus();
+      textarea.setSelectionRange(newPos, newPos);
+    });
+  };
+
+  const handleInsertAutotext = () => {
+    if (!selectedAutotext) {
+      toast.error("Pilih autotext terlebih dahulu");
+      return;
+    }
+    insertAtCursor(selectedAutotext);
+  };
+
+  const handleEmojiClick = (emojiData) => {
+    const emoji = emojiData?.emoji;
+    if (emoji) {
+      insertAtCursor(emoji);
+    }
+  };
+
+  // Auto-save followup (no button, auto-save on change)
+  useEffect(() => {
+    if (!id || loadingFollowup) return;
+    
+    const timeoutId = setTimeout(() => {
+      if (followupText.trim()) {
+        handleSaveFollowup();
+      }
+    }, 2000); // Auto-save after 2 seconds of no typing
+    
+    return () => clearTimeout(timeoutId);
+  }, [followupText, followupEvent, autoSend]);
+
+  const handleSaveFollowup = async () => {
+    if (!id || !followupText.trim()) return;
+    
+    setSavingFollowup(true);
+    const token = localStorage.getItem("token");
+    
+    const payload = {
+      nama: "Reminder Trainer",
+      produk: id,
+      text: followupText.trim(),
+      type: "11",
+      event: followupEvent,
+      status: autoSend ? "1" : "2",
+    };
+
+    try {
+      const res = await fetch(`${BASE_URL}/sales/template-follup/store`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(payload),
+      });
+      
+      const data = await res.json();
+      
+      if (data.success) {
+        console.log("✅ [TRAINER FOLLOWUP] Auto-saved");
+      }
+    } catch (err) {
+      console.error("❌ [TRAINER FOLLOWUP] Error saving:", err);
+    } finally {
+      setSavingFollowup(false);
+    }
+  };
 
   // Set current trainer from product data
   useEffect(() => {
@@ -289,6 +458,139 @@ export default function TrainerSection({ productId, product, onProductUpdate }) 
         </>
       )}
 
+      {/* Followup Section for Trainer */}
+      <div className="trainer-followup-section">
+        <div className="trainer-followup-header">
+          <h3>Followup Text untuk Trainer</h3>
+          <p className="trainer-followup-subtitle">
+            Template pesan yang akan dikirim otomatis ke trainer (type 11: Reminder Trainer)
+          </p>
+        </div>
+
+        {loadingFollowup ? (
+          <div className="trainer-followup-loading">
+            <p>Memuat template followup...</p>
+          </div>
+        ) : (
+          <>
+            <label className="followup-label">Pengaturan Text</label>
+            <textarea
+              ref={textareaRef}
+              className="followup-textarea"
+              rows={10}
+              value={followupText}
+              onChange={(e) => setFollowupText(e.target.value)}
+              placeholder="Tulis template followup disini..."
+            />
+
+            <div className="control-row">
+              <div className="autotext-group">
+                <select
+                  className="select-auto"
+                  value={selectedAutotext}
+                  onChange={(e) => setSelectedAutotext(e.target.value)}
+                >
+                  {AUTOTEXT_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="insert-btn"
+                  onClick={handleInsertAutotext}
+                  disabled={!selectedAutotext}
+                >
+                  Insert
+                </button>
+              </div>
+
+              <div className="emoji-wrapper">
+                <button
+                  type="button"
+                  className={`btn-emoji ${showEmojiPicker ? "active" : ""}`}
+                  onClick={() => setShowEmojiPicker((prev) => !prev)}
+                >
+                  😊
+                  <span>Emoticon</span>
+                </button>
+                {showEmojiPicker && (
+                  <div className="emoji-popover">
+                    <EmojiPicker
+                      onEmojiClick={handleEmojiClick}
+                      height={320}
+                      width={280}
+                      searchDisabled={false}
+                      previewConfig={{ showPreview: false }}
+                      skinTonesDisabled
+                    />
+                  </div>
+                )}
+              </div>
+
+              <button 
+                className="reset-text" 
+                onClick={() => {
+                  setFollowupText("");
+                  setFollowupEvent("1d-09:00");
+                  setScheduleDay(1);
+                  setScheduleTime("09:00");
+                }}
+              >
+                Reset Text
+              </button>
+            </div>
+
+            <div className="schedule-box">
+              <label className="schedule-row">
+                <input
+                  type="checkbox"
+                  checked={autoSend}
+                  onChange={() => setAutoSend(!autoSend)}
+                />
+                Enable Auto Send
+              </label>
+              
+              <div className="schedule-grid">
+                <div className="schedule-card">
+                  <label>Delay (Hari)</label>
+                  <div className="schedule-input">
+                    <input
+                      type="number"
+                      min="0"
+                      value={scheduleDay}
+                      onChange={(e) => {
+                        const newDay = Math.max(0, Number(e.target.value) || 0);
+                        setScheduleDay(newDay);
+                        setFollowupEvent(formatEventValue(newDay, scheduleTime));
+                      }}
+                    />
+                    <span>hari</span>
+                  </div>
+                </div>
+                <div className="schedule-card">
+                  <label>Jam Kirim</label>
+                  <input
+                    type="time"
+                    value={scheduleTime}
+                    onChange={(e) => {
+                      const newTime = e.target.value || "09:00";
+                      setScheduleTime(newTime);
+                      setFollowupEvent(formatEventValue(scheduleDay, newTime));
+                    }}
+                  />
+                </div>
+              </div>
+              <p className="schedule-hint">
+                Format terkirim ke backend: <strong>{followupEvent}</strong>
+                {savingFollowup && <span style={{ marginLeft: '8px', color: '#10b981' }}>• Menyimpan...</span>}
+              </p>
+            </div>
+          </>
+        )}
+      </div>
+
       <style>{`
         .trainer-card {
           background: white;
@@ -432,6 +734,184 @@ export default function TrainerSection({ productId, product, onProductUpdate }) 
         .trainer-remove-btn:disabled {
           background: #fca5a5;
           cursor: not-allowed;
+        }
+
+        .trainer-followup-section {
+          margin-top: 32px;
+          padding-top: 24px;
+          border-top: 2px solid #e5e7eb;
+        }
+
+        .trainer-followup-header h3 {
+          margin: 0;
+          font-size: 18px;
+          color: #111827;
+        }
+
+        .trainer-followup-subtitle {
+          color: #6b7280;
+          margin-top: 6px;
+          margin-bottom: 20px;
+          font-size: 14px;
+        }
+
+        .trainer-followup-loading {
+          padding: 20px;
+          text-align: center;
+          color: #6b7280;
+        }
+
+        .followup-label {
+          display: block;
+          margin-bottom: 6px;
+          font-weight: 600;
+          color: #111827;
+        }
+
+        .followup-textarea {
+          width: 100%;
+          border-radius: 12px;
+          border: 1px solid #ddd;
+          padding: 10px;
+          font-size: 14px;
+          font-family: inherit;
+        }
+
+        .control-row {
+          display: flex;
+          gap: 10px;
+          margin-top: 10px;
+          flex-wrap: wrap;
+          align-items: flex-start;
+          position: relative;
+        }
+
+        .autotext-group {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+          align-items: center;
+        }
+
+        .select-auto {
+          border: 1px solid #ddd;
+          padding: 6px 10px;
+          border-radius: 8px;
+          font-size: 14px;
+        }
+
+        .btn-emoji,
+        .insert-btn {
+          padding: 8px 14px;
+          border-radius: 8px;
+          border: 1px solid #ddd;
+          background: white;
+          cursor: pointer;
+          font-weight: 500;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 14px;
+        }
+
+        .btn-emoji.active {
+          border-color: #2563EB;
+          background: #EEF4FF;
+          color: #2563EB;
+        }
+
+        .emoji-wrapper {
+          position: relative;
+        }
+
+        .emoji-popover {
+          position: absolute;
+          top: 50px;
+          right: 0;
+          z-index: 30;
+          background: white;
+          border: 1px solid #e5e7eb;
+          border-radius: 12px;
+          box-shadow: 0 20px 45px rgba(15, 23, 42, 0.15);
+          padding: 6px;
+        }
+
+        .reset-text {
+          margin-left: auto;
+          background: none;
+          color: #2563EB;
+          cursor: pointer;
+          border: none;
+          font-weight: 600;
+          font-size: 14px;
+        }
+
+        .schedule-box {
+          margin-top: 24px;
+          border-top: 1px solid #eef2ff;
+          padding-top: 18px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+
+        .schedule-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 12px;
+        }
+
+        .schedule-card {
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 14px;
+          padding: 14px;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+        }
+
+        .schedule-card label {
+          font-size: 14px;
+          font-weight: 600;
+          color: #0f172a;
+        }
+
+        .schedule-card input {
+          border: 1px solid #d1d5db;
+          border-radius: 10px;
+          padding: 8px 10px;
+          font-size: 14px;
+          width: 100%;
+        }
+
+        .schedule-input {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .schedule-input span {
+          font-size: 13px;
+          color: #6b7280;
+        }
+
+        .schedule-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-weight: 600;
+          color: #111827;
+        }
+
+        .schedule-hint {
+          font-size: 13px;
+          color: #6b7280;
+        }
+
+        .schedule-hint strong {
+          color: #111827;
         }
       `}</style>
     </div>
