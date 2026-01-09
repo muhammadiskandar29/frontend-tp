@@ -472,10 +472,26 @@ export default function AddProducts3Page() {
   };
 
   // Render preview di canvas
+  // ✅ renderPreview menggunakan blocks dari closure, jadi selalu menggunakan data terbaru
   const renderPreview = (block) => {
-    switch (block.type) {
+    // ✅ Pastikan block memiliki data terbaru dari blocks array
+    // Jika block adalah child dari section, pastikan data-nya ter-update
+    const latestBlock = blocks.find(b => b.id === block.id) || block;
+    const blockToRender = latestBlock.id === block.id ? latestBlock : block;
+    
+    // Debug log untuk melihat data yang digunakan
+    if (blockToRender.type === 'list') {
+      console.log(`[RENDER] Rendering list block:`, {
+        id: blockToRender.id,
+        hasData: !!blockToRender.data,
+        items: blockToRender.data?.items || [],
+        componentTitle: blockToRender.data?.componentTitle
+      });
+    }
+    
+    switch (blockToRender.type) {
       case "text":
-        const textData = block.data || {};
+        const textData = blockToRender.data || {};
         const textStyles = {
           // fontSize removed - now handled by inline styles in HTML content
           lineHeight: textData.lineHeight || 1.5,
@@ -536,7 +552,7 @@ export default function AddProducts3Page() {
           />
         );
       case "image":
-        const imageData = block.data;
+        const imageData = blockToRender.data;
         if (!imageData.src) {
           return <div className="preview-placeholder">Gambar belum diupload</div>;
         }
@@ -636,13 +652,13 @@ export default function AddProducts3Page() {
         );
       case "youtube":
       case "video":
-        const videoItems = block.data.items || [];
+        const videoItems = blockToRender.data?.items || [];
         if (videoItems.length === 0) {
           return <div className="preview-placeholder">Belum ada video</div>;
         }
         
         // Advanced settings untuk video
-        const videoData = block.data || {};
+        const videoData = blockToRender.data || {};
         const videoAlignment = videoData.alignment || "center";
         const videoWidth = videoData.videoWidth !== undefined ? videoData.videoWidth : 100; // Default 100% jika belum di-set
         const videoPaddingTop = videoData.paddingTop || 0;
@@ -698,12 +714,12 @@ export default function AddProducts3Page() {
           </div>
         );
       case "testimoni":
-        const testimoniItems = block.data.items || [];
+        const testimoniItems = blockToRender.data?.items || [];
         if (testimoniItems.length === 0) {
           return <div className="preview-placeholder">Belum ada testimoni</div>;
         }
         
-        const currentIndex = testimoniIndices[block.id] || 0;
+        const currentIndex = testimoniIndices[blockToRender.id] || 0;
         const maxIndex = Math.max(0, testimoniItems.length - 3);
         
         const handlePrev = () => {
@@ -720,7 +736,7 @@ export default function AddProducts3Page() {
           }));
         };
         
-        const testimoniTitle = block.data.componentTitle || "Testimoni Pembeli";
+        const testimoniTitle = blockToRender.data?.componentTitle || "Testimoni Pembeli";
         
         return (
           <section className="preview-testimonials" aria-label="Customer testimonials">
@@ -818,7 +834,7 @@ export default function AddProducts3Page() {
           </section>
         );
       case "list":
-        const listItems = block.data.items || [];
+        const listItems = blockToRender.data?.items || [];
         
         // Icon mapping
         const iconMap = {
@@ -832,8 +848,8 @@ export default function AddProducts3Page() {
           MapPin, Calendar: CalendarIcon, Clock
         };
         
-        const listTitle = block.data.componentTitle || "";
-        const listData = block.data || {};
+        const listTitle = blockToRender.data?.componentTitle || "";
+        const listData = blockToRender.data || {};
         
         // Build styles from advance settings
         const listStyles = {
@@ -1394,8 +1410,8 @@ export default function AddProducts3Page() {
         );
       case "button":
         return (
-          <button className={`preview-button preview-button-${block.data.style || 'primary'}`}>
-            {block.data.text || "Klik Disini"}
+          <button className={`preview-button preview-button-${blockToRender.data?.style || 'primary'}`}>
+            {blockToRender.data?.text || "Klik Disini"}
           </button>
         );
       case "html":
@@ -1428,11 +1444,42 @@ export default function AddProducts3Page() {
             childComponents = sectionChildren;
           } else {
             // ✅ children adalah array of IDs - cari dari blocks
-            childComponents = blocks.filter(b => 
-              b.parentId === sectionComponentId || sectionChildren.includes(b.id)
-            );
+            // Pastikan urutan sesuai dengan sectionChildren array dan gunakan data terbaru dari blocks
+            childComponents = sectionChildren
+              .map(childId => {
+                // Cari block dengan ID yang sesuai dari blocks array (data terbaru)
+                const foundBlock = blocks.find(b => 
+                  b.id === childId || 
+                  b.data?.componentId === childId ||
+                  (b.parentId === sectionComponentId && b.id === childId)
+                );
+                
+                if (foundBlock) {
+                  // ✅ Pastikan menggunakan data terbaru dari blocks
+                  return {
+                    ...foundBlock,
+                    // Pastikan data terbaru digunakan
+                    data: foundBlock.data || {},
+                    type: foundBlock.type,
+                    id: foundBlock.id
+                  };
+                }
+                return null;
+              })
+              .filter(Boolean); // Hapus null/undefined
           }
         }
+        
+        // Debug log untuk melihat child components
+        console.log(`[SECTION] Section "${sectionComponentId}" memiliki ${childComponents.length} child components:`, {
+          sectionChildren,
+          childComponents: childComponents.map(c => ({
+            id: c.id,
+            type: c.type,
+            hasData: !!c.data,
+            dataKeys: c.data ? Object.keys(c.data) : []
+          }))
+        });
         
         // Build section styles from advance settings
         const sectionStyles = {
@@ -1485,14 +1532,23 @@ export default function AddProducts3Page() {
                 const normalizedChildBlock = {
                   ...childBlock,
                   type: childBlock.type,
-                  data: childBlock.data ? { ...childBlock.data } : {},
+                  // ✅ Pastikan data di-copy dengan benar, termasuk nested objects
+                  data: childBlock.data ? JSON.parse(JSON.stringify(childBlock.data)) : {},
                   id: childBlock.id || `section-child-${childBlock.type}-${childIndex}`,
                   // Pastikan semua property penting ada
-                  style: childBlock.style || {},
-                  config: childBlock.config || {}
+                  style: childBlock.style ? JSON.parse(JSON.stringify(childBlock.style)) : {},
+                  config: childBlock.config ? JSON.parse(JSON.stringify(childBlock.config)) : {}
                 };
                 
                 // Debug log untuk melihat struktur data
+                console.log(`[SECTION] Rendering child block:`, {
+                  id: normalizedChildBlock.id,
+                  type: normalizedChildBlock.type,
+                  hasData: !!normalizedChildBlock.data,
+                  dataKeys: normalizedChildBlock.data ? Object.keys(normalizedChildBlock.data) : [],
+                  data: normalizedChildBlock.data
+                });
+                
                 if (!normalizedChildBlock.data || Object.keys(normalizedChildBlock.data).length === 0) {
                   console.warn(`[SECTION] Child block "${normalizedChildBlock.type}" tidak memiliki data:`, normalizedChildBlock);
                 }
