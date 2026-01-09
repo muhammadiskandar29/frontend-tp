@@ -2144,20 +2144,45 @@ export default function EditProductsPage() {
         });
       }
 
+      // Parse assign - check multiple possible field names from backend
+      let parsedAssign = [];
+      if (produkData.assign_rel && Array.isArray(produkData.assign_rel)) {
+        parsedAssign = produkData.assign_rel.map((u) => String(u.id));
+      } else if (produkData.assign_users && Array.isArray(produkData.assign_users)) {
+        parsedAssign = produkData.assign_users.map((u) => String(u.id));
+      } else if (Array.isArray(produkData.assign)) {
+        parsedAssign = produkData.assign.map(a => String(a));
+      } else if (typeof produkData.assign === "string") {
+        try {
+          const assignArray = JSON.parse(produkData.assign);
+          if (Array.isArray(assignArray)) {
+            parsedAssign = assignArray.map(a => String(a));
+          }
+        } catch {
+          parsedAssign = [];
+        }
+      }
+
+      // Parse harga - check both harga and harga_asli
+      let parsedHarga = null;
+      if (produkData.harga !== null && produkData.harga !== undefined && produkData.harga !== "") {
+        parsedHarga = Number(produkData.harga);
+      } else if (produkData.harga_asli !== null && produkData.harga_asli !== undefined && produkData.harga_asli !== "") {
+        parsedHarga = Number(produkData.harga_asli);
+      }
+
       // Set pengaturanForm - struktur sama dengan addProducts3
       setPengaturanForm({
         nama: produkData.nama || "",
         kategori: kategoriId ? String(kategoriId) : null,
         kode: produkData.kode || formatSlug(produkData.nama || ""),
         url: produkData.url || `/${formatSlug(produkData.nama || "")}`,
-        harga: produkData.harga ? Number(produkData.harga) : null,
+        harga: parsedHarga,
         jenis_produk: produkData.jenis_produk || "fisik",
         isBundling: produkData.isBundling || false,
         bundling: parsedBundling,
         tanggal_event: parsedTanggalEvent,
-        assign: produkData.assign_rel 
-          ? produkData.assign_rel.map((u) => String(u.id))
-          : (Array.isArray(produkData.assign) ? produkData.assign.map(a => String(a)) : []),
+        assign: parsedAssign,
         background_color: settings?.background_color || "#ffffff",
         page_title: settings?.page_title || "",
         tags: settings?.tags || [],

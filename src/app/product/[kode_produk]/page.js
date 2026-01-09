@@ -1676,32 +1676,70 @@ export default function ProductPage() {
         const sectionData = content || {};
         
         // ✅ FALLBACK: Untuk kompatibilitas data lama, generate componentId jika tidak ada
-        let sectionComponentId = config?.componentId;
+        // ✅ Check multiple sources: config.componentId (primary), block.config.componentId (direct), content.componentId, data.componentId
+        let sectionComponentId = config?.componentId 
+          || block?.config?.componentId 
+          || content?.componentId 
+          || sectionData.componentId 
+          || block?.data?.componentId;
         
         if (!sectionComponentId) {
           // ✅ FALLBACK: Generate componentId untuk data lama
-          sectionComponentId = sectionData.componentId || `section-${block.order || 'default'}`;
-          console.warn(`[SECTION FALLBACK] Section tidak memiliki config.componentId, menggunakan fallback: "${sectionComponentId}"`);
+          sectionComponentId = `section-${block.order || block?.order || Date.now()}`;
+          console.warn(`[SECTION FALLBACK] Section tidak memiliki config.componentId, menggunakan fallback: "${sectionComponentId}"`, {
+            blockConfig: block?.config,
+            config,
+            sectionData,
+            blockOrder: block?.order,
+            content
+          });
         }
+        
+        // ✅ VALIDATION: Ensure sectionComponentId exists (should never happen after fallback, but just in case)
+        if (!sectionComponentId) {
+          console.error(`[SECTION ERROR] Section block tidak memiliki componentId!`, {
+            block,
+            config,
+            content,
+            style,
+            sectionData
+          });
+          return (
+            <div className="preview-section" style={containerStyle}>
+              <div className="preview-placeholder" style={{ color: 'red', padding: '16px' }}>
+                Section Error: Missing componentId
+              </div>
+            </div>
+          );
+        }
+        
+        // ✅ DEBUG: Log sectionComponentId untuk tracking
+        console.log(`[SECTION RENDER] Rendering section with componentId: "${sectionComponentId}"`, {
+          sectionComponentId,
+          blockConfig: block?.config,
+          config,
+          content,
+          blockOrder: block?.order
+        });
         
         // ✅ GENERAL: Build section styles dari style.container (sama dengan addProducts3)
         const sectionContainerStyle = style?.container || {};
         const sectionStyles = {
-          marginTop: `${sectionContainerStyle.margin?.top || sectionContainerStyle.marginTop || 0}px`,
-          marginRight: `${sectionContainerStyle.margin?.right || sectionContainerStyle.marginRight || 0}px`,
-          marginBottom: `${sectionContainerStyle.margin?.bottom || sectionContainerStyle.marginBottom || sectionContainerStyle.marginBetween || 16}px`,
-          marginLeft: `${sectionContainerStyle.margin?.left || sectionContainerStyle.marginLeft || 0}px`,
+          marginTop: `${sectionContainerStyle.margin?.top || sectionContainerStyle.marginTop || sectionData.marginTop || 0}px`,
+          marginRight: `${sectionContainerStyle.margin?.right || sectionContainerStyle.marginRight || sectionData.marginRight || 0}px`,
+          marginBottom: `${sectionContainerStyle.margin?.bottom || sectionContainerStyle.marginBottom || sectionContainerStyle.marginBetween || sectionData.marginBottom || sectionData.marginBetween || 16}px`,
+          marginLeft: `${sectionContainerStyle.margin?.left || sectionContainerStyle.marginLeft || sectionData.marginLeft || 0}px`,
           border: sectionContainerStyle.border?.width 
             ? `${sectionContainerStyle.border.width}px ${sectionContainerStyle.border.style || 'solid'} ${sectionContainerStyle.border.color || "#000000"}` 
-            : "none",
-          backgroundColor: sectionContainerStyle.background?.color || sectionContainerStyle.backgroundColor || "#ffffff",
-          borderRadius: sectionContainerStyle.border?.radius || "0",
-          boxShadow: sectionContainerStyle.shadow || "none",
+            : (sectionData.border ? `${sectionData.border}px solid ${sectionData.borderColor || "#000000"}` : "none"),
+          backgroundColor: sectionContainerStyle.background?.color || sectionContainerStyle.backgroundColor || sectionData.backgroundColor || "#ffffff",
+          borderRadius: sectionContainerStyle.border?.radius || (sectionData.borderRadius === "none" ? "0" : sectionData.borderRadius || "0"),
+          boxShadow: sectionContainerStyle.shadow || (sectionData.boxShadow === "none" ? "none" : sectionData.boxShadow || "none"),
           display: "block",
           width: "100%",
           padding: sectionContainerStyle.padding 
             ? `${sectionContainerStyle.padding.top || 0}px ${sectionContainerStyle.padding.right || 0}px ${sectionContainerStyle.padding.bottom || 0}px ${sectionContainerStyle.padding.left || 0}px` 
-            : "16px",
+            : (sectionData.padding || "16px"),
         };
         
         // ✅ ARSITEKTUR BENAR: Cari child berdasarkan parentId saja (sama dengan addProducts3)
@@ -1719,12 +1757,17 @@ export default function ProductPage() {
         // ✅ DEBUG: Log untuk tracking child components
         console.log(`[SECTION RENDER] Section ID: "${sectionComponentId}"`, {
           sectionComponentId,
+          blockConfig: block?.config,
+          config,
           allBlocksCount: allBlocks.length,
           childCount: childComponents.length,
           allBlocksWithParentId: allBlocks
             .filter(b => b.parentId || b.config?.parentId)
             .map(b => ({
               type: b.type,
+              id: b.id,
+              order: b.order,
+              componentId: b.config?.componentId,
               parentId: b.parentId,
               configParentId: b.config?.parentId,
               match: (b.parentId === sectionComponentId || b.config?.parentId === sectionComponentId) ? "✅ MATCH" : "❌ NO MATCH"
@@ -2171,8 +2214,18 @@ export default function ProductPage() {
   if (landingpage && Array.isArray(landingpage)) {
     landingpage.forEach(item => {
       if (item && item.type === 'section') {
-        const sectionId = item.config?.componentId || item.content?.componentId || `section-${item.order || 'default'}`;
+        // ✅ Check multiple sources for componentId
+        const sectionId = item.config?.componentId 
+          || item.data?.componentId 
+          || item.content?.componentId 
+          || `section-${item.order || 'default'}`;
         sectionComponentIds.add(sectionId);
+        console.log(`[SECTION FILTER] Found section with componentId: "${sectionId}"`, {
+          itemConfig: item.config,
+          itemData: item.data,
+          itemContent: item.content,
+          itemOrder: item.order
+        });
       }
     });
   }
