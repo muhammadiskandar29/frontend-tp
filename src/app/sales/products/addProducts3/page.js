@@ -1466,7 +1466,8 @@ export default function AddProducts3Page() {
         return <QuotaInfoPreview data={block.data || {}} />;
       case "section":
         const sectionData = block.data || {};
-        const sectionComponentId = sectionData.componentId || `section-${block.id}`;
+        // ✅ FIX #1: componentId ada di block.config, BUKAN di block.data
+        const sectionComponentId = block.config?.componentId || blockToRender.config?.componentId || `section-${blockToRender.id}`;
         const sectionChildren = sectionData.children || [];
         
         // ✅ Ambil child components dari section.children
@@ -1536,18 +1537,23 @@ export default function AddProducts3Page() {
           }))
         });
         
-        // Build section styles from advance settings
+        // ✅ FIX #3: Build section styles from block.style.container, bukan block.data
+        const sectionContainerStyle = blockToRender.style?.container || {};
         const sectionStyles = {
-          marginRight: `${sectionData.marginRight || 0}px`,
-          marginLeft: `${sectionData.marginLeft || 0}px`,
-          marginBottom: `${sectionData.marginBetween || 16}px`,
-          border: sectionData.border ? `${sectionData.border}px solid ${sectionData.borderColor || "#000000"}` : "none",
-          backgroundColor: sectionData.backgroundColor || "#ffffff",
-          borderRadius: sectionData.borderRadius === "none" ? "0" : sectionData.borderRadius || "0",
-          boxShadow: sectionData.boxShadow === "none" ? "none" : sectionData.boxShadow || "none",
+          marginRight: `${sectionContainerStyle.margin?.right || sectionContainerStyle.marginRight || sectionData.marginRight || 0}px`,
+          marginLeft: `${sectionContainerStyle.margin?.left || sectionContainerStyle.marginLeft || sectionData.marginLeft || 0}px`,
+          marginBottom: `${sectionContainerStyle.margin?.bottom || sectionContainerStyle.marginBottom || sectionContainerStyle.marginBetween || sectionData.marginBetween || 16}px`,
+          border: sectionContainerStyle.border?.width 
+            ? `${sectionContainerStyle.border.width}px ${sectionContainerStyle.border.style || 'solid'} ${sectionContainerStyle.border.color || "#000000"}` 
+            : (sectionData.border ? `${sectionData.border}px solid ${sectionData.borderColor || "#000000"}` : "none"),
+          backgroundColor: sectionContainerStyle.background?.color || sectionContainerStyle.backgroundColor || sectionData.backgroundColor || "#ffffff",
+          borderRadius: sectionContainerStyle.border?.radius || (sectionData.borderRadius === "none" ? "0" : sectionData.borderRadius || "0"),
+          boxShadow: sectionContainerStyle.shadow || (sectionData.boxShadow === "none" ? "none" : sectionData.boxShadow || "none"),
           display: "block",
           width: "100%",
-          padding: "16px",
+          padding: sectionContainerStyle.padding 
+            ? `${sectionContainerStyle.padding.top || 0}px ${sectionContainerStyle.padding.right || 0}px ${sectionContainerStyle.padding.bottom || 0}px ${sectionContainerStyle.padding.left || 0}px` 
+            : (sectionData.padding || "16px"),
         };
         
         return (
@@ -2949,7 +2955,8 @@ export default function AddProducts3Page() {
     
     // For each section, get all its children
     sectionBlocks.forEach(sectionBlock => {
-      const sectionComponentId = sectionBlock.data?.componentId || sectionBlock.id;
+      // ✅ FIX #1: componentId ada di config, bukan data
+      const sectionComponentId = sectionBlock.config?.componentId || sectionBlock.id;
       const sectionChildren = sectionBlock.data?.children || [];
       
       // ✅ Handle children yang bisa berupa array of objects atau array of IDs
