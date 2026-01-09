@@ -2857,7 +2857,7 @@ export default function AddProducts3Page() {
       {/* Loading Overlay */}
       <LoadingOverlay 
         isLoading={isSaving} 
-        message="Sedang menyimpan produk ke backend..." 
+        message="Sabar yah, data produk sedang diproses :)" 
       />
       
       {/* Header Section with Back Button and Save Button */}
