@@ -1863,24 +1863,30 @@ export default function ProductPage() {
         // ✅ FIX #3: Build section styles from block.style.container, bukan block.data (sama dengan addProducts3)
         const sectionData = blockToRender.data || blockToRender.content || {};
         const sectionContainerStyle = blockToRender.style?.container || style?.container || {};
-        // ✅ FIX: Padding section diperkecil agar lebih dekat dengan isi konten
-        // Default padding lebih kecil: 4px top/bottom, 8px left/right
-        let sectionPadding = "4px 12px";
+        // ✅ FIX: Padding section - kiri/kanan lebih jauh dari komponen umum
+        // Section harus punya padding kiri-kanan yang lebih besar untuk memberikan ruang lebih
+        // Default: 4px top/bottom, 24px left/right (lebih jauh dari komponen umum yang biasanya 8-16px)
+        let sectionPadding = "4px 24px";
         if (sectionContainerStyle.padding) {
-          const top = sectionContainerStyle.padding.top || 0;
-          const right = sectionContainerStyle.padding.right || 0;
-          const bottom = sectionContainerStyle.padding.bottom || 0;
-          const left = sectionContainerStyle.padding.left || 0;
-          // ✅ Jika padding dari backend terlalu besar (> 16px), kurangi menjadi maksimal 12px
-          const maxPadding = 12;
-          sectionPadding = `${Math.min(top, maxPadding)}px ${Math.min(right, maxPadding)}px ${Math.min(bottom, maxPadding)}px ${Math.min(left, maxPadding)}px`;
+          const top = sectionContainerStyle.padding.top || 4;
+          const right = sectionContainerStyle.padding.right || 24;
+          const bottom = sectionContainerStyle.padding.bottom || 4;
+          const left = sectionContainerStyle.padding.left || 24;
+          // ✅ Untuk section, padding kiri-kanan minimal 20px, maksimal 40px
+          // Top/bottom tetap kecil (4-12px) agar konten tidak terlalu jauh
+          const minHorizontalPadding = 20;
+          const maxHorizontalPadding = 40;
+          const minVerticalPadding = 4;
+          const maxVerticalPadding = 12;
+          sectionPadding = `${Math.min(Math.max(top, minVerticalPadding), maxVerticalPadding)}px ${Math.min(Math.max(right, minHorizontalPadding), maxHorizontalPadding)}px ${Math.min(Math.max(bottom, minVerticalPadding), maxVerticalPadding)}px ${Math.min(Math.max(left, minHorizontalPadding), maxHorizontalPadding)}px`;
         } else if (sectionData.padding) {
-          // ✅ Jika sectionData.padding adalah string seperti "40px", parse dan kurangi
+          // ✅ Jika sectionData.padding adalah string seperti "40px", gunakan untuk semua sisi
+          // Tapi pastikan kiri-kanan minimal 20px
           const paddingValue = typeof sectionData.padding === 'string' 
-            ? parseInt(sectionData.padding) || 8
-            : sectionData.padding || 8;
-          const finalPadding = Math.min(paddingValue, 12);
-          sectionPadding = `${finalPadding}px`;
+            ? parseInt(sectionData.padding) || 24
+            : sectionData.padding || 24;
+          const horizontalPadding = Math.max(paddingValue, 20);
+          sectionPadding = `4px ${horizontalPadding}px`;
         }
         
         const sectionStyles = {
