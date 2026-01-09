@@ -1684,18 +1684,24 @@ export default function ProductPage() {
           console.warn(`[SECTION FALLBACK] Section tidak memiliki config.componentId, menggunakan fallback: "${sectionComponentId}"`);
         }
         
-        // Build section styles from advance settings
+        // ✅ GENERAL: Build section styles dari style.container (sama dengan addProducts3)
+        const sectionContainerStyle = style?.container || {};
         const sectionStyles = {
-          marginRight: `${style?.container?.margin?.right || style?.container?.marginRight || sectionData.marginRight || 0}px`,
-          marginLeft: `${style?.container?.margin?.left || style?.container?.marginLeft || sectionData.marginLeft || 0}px`,
-          marginBottom: `${style?.container?.margin?.bottom || style?.container?.marginBottom || sectionData.marginBetween || 16}px`,
-          border: style?.container?.border?.width ? `${style.container.border.width}px ${style.container.border.style || 'solid'} ${style.container.border.color || "#000000"}` : (sectionData.border ? `${sectionData.border}px solid ${sectionData.borderColor || "#000000"}` : "none"),
-          backgroundColor: style?.container?.background?.color || style?.container?.backgroundColor || sectionData.backgroundColor || "#ffffff",
-          borderRadius: style?.container?.border?.radius || (sectionData.borderRadius === "none" ? "0" : sectionData.borderRadius || "0"),
-          boxShadow: style?.container?.shadow || (sectionData.boxShadow === "none" ? "none" : sectionData.boxShadow || "none"),
+          marginTop: `${sectionContainerStyle.margin?.top || sectionContainerStyle.marginTop || 0}px`,
+          marginRight: `${sectionContainerStyle.margin?.right || sectionContainerStyle.marginRight || 0}px`,
+          marginBottom: `${sectionContainerStyle.margin?.bottom || sectionContainerStyle.marginBottom || sectionContainerStyle.marginBetween || 16}px`,
+          marginLeft: `${sectionContainerStyle.margin?.left || sectionContainerStyle.marginLeft || 0}px`,
+          border: sectionContainerStyle.border?.width 
+            ? `${sectionContainerStyle.border.width}px ${sectionContainerStyle.border.style || 'solid'} ${sectionContainerStyle.border.color || "#000000"}` 
+            : "none",
+          backgroundColor: sectionContainerStyle.background?.color || sectionContainerStyle.backgroundColor || "#ffffff",
+          borderRadius: sectionContainerStyle.border?.radius || "0",
+          boxShadow: sectionContainerStyle.shadow || "none",
           display: "block",
           width: "100%",
-          padding: style?.container?.padding ? `${style.container.padding.top || 0}px ${style.container.padding.right || 0}px ${style.container.padding.bottom || 0}px ${style.container.padding.left || 0}px` : (sectionData.padding || "16px"),
+          padding: sectionContainerStyle.padding 
+            ? `${sectionContainerStyle.padding.top || 0}px ${sectionContainerStyle.padding.right || 0}px ${sectionContainerStyle.padding.bottom || 0}px ${sectionContainerStyle.padding.left || 0}px` 
+            : "16px",
         };
         
         // ✅ ARSITEKTUR BENAR: Cari child berdasarkan parentId saja (sama dengan addProducts3)
@@ -1710,14 +1716,35 @@ export default function ProductPage() {
           return false;
         });
         
+        // ✅ DEBUG: Log untuk tracking child components
+        console.log(`[SECTION RENDER] Section ID: "${sectionComponentId}"`, {
+          sectionComponentId,
+          allBlocksCount: allBlocks.length,
+          childCount: childComponents.length,
+          allBlocksWithParentId: allBlocks
+            .filter(b => b.parentId || b.config?.parentId)
+            .map(b => ({
+              type: b.type,
+              parentId: b.parentId,
+              configParentId: b.config?.parentId,
+              match: (b.parentId === sectionComponentId || b.config?.parentId === sectionComponentId) ? "✅ MATCH" : "❌ NO MATCH"
+            }))
+        });
+        
         // ✅ FALLBACK: Jika tidak ada child dengan parentId, coba cari dari sectionChildren (untuk data lama)
         if (childComponents.length === 0) {
           const sectionChildren = sectionData.children || config?.children || [];
+          console.log(`[SECTION FALLBACK] Mencari child dari sectionChildren:`, {
+            sectionChildren,
+            sectionChildrenLength: sectionChildren.length
+          });
+          
           if (Array.isArray(sectionChildren) && sectionChildren.length > 0) {
             const firstChild = sectionChildren[0];
             if (typeof firstChild === 'object' && firstChild !== null && firstChild.type) {
               // children adalah array of component data objects - gunakan langsung
               childComponents = sectionChildren;
+              console.log(`[SECTION FALLBACK] Menggunakan sectionChildren sebagai array of objects:`, childComponents.length);
             } else {
               // children adalah array of IDs - cari dari allBlocks
               childComponents = allBlocks.filter(b => {
@@ -1725,6 +1752,7 @@ export default function ProductPage() {
                 const childId = b.config?.componentId || b.order;
                 return sectionChildren.includes(childId);
               });
+              console.log(`[SECTION FALLBACK] Mencari child dari allBlocks berdasarkan IDs:`, childComponents.length);
             }
           }
         }
@@ -2210,6 +2238,7 @@ export default function ProductPage() {
           {/* Content Area - Center dengan padding */}
           <div className="canvas-content-area">
             {/* ✅ Render Blocks sesuai urutan array dari backend (sumber kebenaran) */}
+            {/* ✅ IMPORTANT: Pass landingpage sebagai allBlocks agar section bisa menemukan child-nya */}
             {blocks.length > 0 ? (
               blocks.map((block, index) => {
                 // ✅ KEY HARUS DARI componentId (WAJIB dari backend)
@@ -2228,15 +2257,16 @@ export default function ProductPage() {
                   
                   return (
                     <div key={fallbackKey} className="canvas-preview-block">
-                      {renderBlock(block, blocks)}
+                      {renderBlock(block, landingpage || [])}
                     </div>
                   );
                 }
                 
                 // ✅ Key dari componentId (unik dan permanen)
+                // ✅ Pass landingpage sebagai allBlocks (bukan blocks) agar section bisa menemukan child
                 return (
                   <div key={componentId} className="canvas-preview-block">
-                    {renderBlock(block, blocks)}
+                    {renderBlock(block, landingpage || [])}
                   </div>
                 );
               })

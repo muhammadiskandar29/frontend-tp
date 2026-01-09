@@ -48,11 +48,13 @@ import {
 import CountdownPreview from '../../addProducts3/components/CountdownPreview';
 import ImageSliderPreview from '../../addProducts3/components/ImageSliderPreview';
 import QuotaInfoPreview from '../../addProducts3/components/QuotaInfoPreview';
+import { LoadingOverlay } from "@/app/loading";
 // PrimeReact Theme & Core
 import "primereact/resources/themes/lara-light-amber/theme.css";
 import "primereact/resources/primereact.min.css";
 import "@/styles/sales/add-products3.css";
 import "@/styles/ongkir.css";
+import "@/styles/loading.css";
 
 // Komponen yang tersedia
 const COMPONENT_CATEGORIES = {
@@ -1771,6 +1773,7 @@ export default function EditProductsPage() {
 
   // Loading state untuk edit mode
   const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Function untuk parse landingpage array dari backend ke blocks dan pengaturanForm
   const parseLandingpageArray = (landingpageArray) => {
@@ -1877,7 +1880,7 @@ export default function EditProductsPage() {
               iconColor: item.iconColor || "#10b981"
             })),
             style: content?.style || "icon",
-            componentTitle: config?.componentTitle || "",
+            componentTitle: config?.componentTitle || content?.title || "",
             paddingTop: style?.container?.padding?.top || 20,
             paddingRight: style?.container?.padding?.right || 0,
             paddingBottom: style?.container?.padding?.bottom || 20,
@@ -2141,7 +2144,7 @@ export default function EditProductsPage() {
         });
       }
 
-      // Set pengaturanForm
+      // Set pengaturanForm - struktur sama dengan addProducts3
       setPengaturanForm({
         nama: produkData.nama || "",
         kategori: kategoriId ? String(kategoriId) : null,
@@ -3066,6 +3069,11 @@ export default function EditProductsPage() {
 
   // Handler untuk save dan publish
   const handleSaveAndPublish = async () => {
+    // Prevent double click
+    if (isSaving) {
+      return;
+    }
+
     // Validasi
     if (!pengaturanForm.nama || !pengaturanForm.nama.trim()) {
       toast.error("Nama produk wajib diisi");
@@ -3086,6 +3094,9 @@ export default function EditProductsPage() {
       toast.error("Penanggung jawab wajib dipilih");
       return;
     }
+
+    // Set loading state
+    setIsSaving(true);
 
     // Format tanggal event
     let formattedDate = null;
@@ -3178,6 +3189,7 @@ export default function EditProductsPage() {
       if (!response.ok || !data?.success) {
         const errorMessage = data?.message || "Gagal menyimpan produk";
         toast.error(errorMessage, { id: "save-product" });
+        setIsSaving(false);
         return;
       }
 
@@ -3191,6 +3203,7 @@ export default function EditProductsPage() {
     } catch (error) {
       console.error("Error saving product:", error);
       toast.error("Terjadi kesalahan saat menyimpan produk", { id: "save-product" });
+      setIsSaving(false);
     }
   };
 
@@ -3283,6 +3296,12 @@ export default function EditProductsPage() {
 
   return (
     <div className="add-products3-container">
+      {/* Loading Overlay */}
+      <LoadingOverlay 
+        isLoading={isSaving} 
+        message="Sebentar ya, sedang disiapkan datanya..." 
+      />
+      
       {/* Header Section with Back Button and Save Button */}
       <div className="page-header-section">
         <button
@@ -3294,11 +3313,12 @@ export default function EditProductsPage() {
           <span>Back to Products</span>
         </button>
         <button
-          className="save-publish-btn"
+          className={`save-publish-btn ${isSaving ? 'btn-loading' : ''}`}
           onClick={handleSaveAndPublish}
           aria-label="Simpan dan Publish"
+          disabled={isSaving}
         >
-          <span>Simpan dan Publish</span>
+          <span>{isSaving ? "Menyimpan..." : "Simpan dan Publish"}</span>
         </button>
       </div>
 
