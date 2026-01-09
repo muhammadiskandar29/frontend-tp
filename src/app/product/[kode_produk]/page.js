@@ -49,7 +49,6 @@ function CountdownComponent({ data = {}, componentId, containerStyle = {} }) {
   const hours = data.hours !== undefined ? data.hours : 0;
   const minutes = data.minutes !== undefined ? data.minutes : 0;
   const seconds = data.seconds !== undefined ? data.seconds : 0;
-  const promoText = data.promoText || "Promo Berakhir Dalam:";
   // ✅ GENERAL: Warna tetap dark grey dan white untuk konsistensi dengan gambar
   const bgColor = data.bgColor || "#374151"; // Dark grey default
   const textColor = data.textColor || "#ffffff"; // White text default
@@ -175,17 +174,6 @@ function CountdownComponent({ data = {}, componentId, containerStyle = {} }) {
       textAlign: "center",
       ...containerStyle
     }}>
-      {/* ✅ Teks "Promo Berakhir Dalam:" - centered di atas */}
-      <div style={{ 
-        color: "#374151", 
-        fontSize: "16px", 
-        marginBottom: "24px", 
-        fontWeight: "500",
-        textAlign: "center"
-      }}>
-        {promoText}
-      </div>
-      
       {/* ✅ Container untuk countdown boxes dengan colon separator */}
       <div style={{ 
         display: "flex", 
