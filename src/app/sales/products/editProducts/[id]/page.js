@@ -3464,20 +3464,46 @@ export default function EditProductsPage() {
           <div className="sidebar-content">
             {activeTab === "konten" ? (
               <>
-            {/* Komponen yang sudah ditambahkan */}
-            {blocks.map((block, index) => (
-              <div 
-                key={block.id} 
-                className="sidebar-component-item"
-                ref={(el) => {
-                  if (el) {
-                    componentRefs.current[block.id] = el;
-                  }
-                }}
-              >
-                {renderComponent(block, index)}
-              </div>
-            ))}
+            {/* ✅ Filter: Jangan tampilkan komponen yang adalah child dari section */}
+            {(() => {
+              // ✅ ARSITEKTUR BENAR: Cari semua section componentIds untuk filter child blocks
+              // Hanya pakai config.componentId, TIDAK ADA fallback
+              const sectionComponentIds = new Set();
+              blocks.forEach(block => {
+                if (block && block.type === 'section' && block.config?.componentId) {
+                  sectionComponentIds.add(block.config.componentId);
+                }
+              });
+              
+              // Filter blocks: jangan tampilkan block yang adalah child dari section
+              const filteredBlocks = blocks.filter(block => {
+                if (!block || !block.type) return false;
+                
+                // ✅ Jangan tampilkan block yang adalah child dari section
+                // Check by parentId
+                if (block.parentId && sectionComponentIds.has(block.parentId)) {
+                  return false; // Ini adalah child dari section, jangan tampilkan di sidebar
+                }
+                
+                // ✅ ARSITEKTUR BENAR: Check by parentId sudah dilakukan di atas, tidak perlu check data.children
+                
+                return true;
+              });
+              
+              return filteredBlocks.map((block, index) => (
+                <div 
+                  key={block.id} 
+                  className="sidebar-component-item"
+                  ref={(el) => {
+                    if (el) {
+                      componentRefs.current[block.id] = el;
+                    }
+                  }}
+                >
+                  {renderComponent(block, index)}
+                </div>
+              ));
+            })()}
             
             {/* Button Tambah Komponen Baru - Selalu di bawah komponen terakhir */}
             <button
