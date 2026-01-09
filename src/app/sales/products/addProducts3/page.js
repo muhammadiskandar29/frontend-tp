@@ -322,28 +322,44 @@ export default function AddProducts3Page() {
 
   // Handler untuk move child block
   const handleMoveChildBlock = (childId, direction) => {
-    // Find the block and its parent section
+    // ✅ ARSITEKTUR BENAR: Move child block berdasarkan order, tidak perlu data.children
     const childBlock = blocks.find(b => b.id === childId);
     if (!childBlock || !childBlock.parentId) return;
     
     // Find parent section by componentId
+    const sectionComponentId = childBlock.parentId;
     const parentSection = blocks.find(b => 
       b.type === "section" && 
-      (b.data.componentId === childBlock.parentId || b.id === childBlock.parentId)
+      (b.config?.componentId === sectionComponentId || b.id === sectionComponentId)
     );
-    if (!parentSection || !parentSection.data.children) return;
+    if (!parentSection) return;
     
-    const children = parentSection.data.children;
-    const currentIndex = children.indexOf(childId);
+    // Get all child blocks dari section ini, sorted by order
+    const childBlocks = blocks
+      .filter(b => b.parentId === sectionComponentId)
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
+    
+    const currentIndex = childBlocks.findIndex(b => b.id === childId);
     if (currentIndex === -1) return;
     
     const newIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
-    if (newIndex < 0 || newIndex >= children.length) return;
+    if (newIndex < 0 || newIndex >= childBlocks.length) return;
     
-    const newChildren = [...children];
-    [newChildren[currentIndex], newChildren[newIndex]] = [newChildren[newIndex], newChildren[currentIndex]];
+    // Swap order
+    const tempOrder = childBlocks[currentIndex].order;
+    childBlocks[currentIndex].order = childBlocks[newIndex].order;
+    childBlocks[newIndex].order = tempOrder;
     
-    handleUpdateBlock(parentSection.id, { ...parentSection.data, children: newChildren });
+    // Update blocks dengan order baru
+    setBlocks(blocks.map(b => {
+      if (b.id === childBlocks[currentIndex].id) {
+        return { ...b, order: childBlocks[currentIndex].order };
+      }
+      if (b.id === childBlocks[newIndex].id) {
+        return { ...b, order: childBlocks[newIndex].order };
+      }
+      return b;
+    }));
   };
 
   // Handler untuk reorder blocks
@@ -493,46 +509,8 @@ export default function AddProducts3Page() {
       }
     }
     
-    // Check 2: Apakah block ada di section.children array?
-    const isInSectionChildren = blocks.some(sectionBlock => {
-      if (!sectionBlock || sectionBlock.type !== 'section') return false;
-      
-      // ✅ FIX: Gunakan componentId dari config, bukan data
-      const sectionComponentId = sectionBlock.config?.componentId || sectionBlock.id;
-      
-      // Check by parentId dulu (lebih cepat)
-      if (block.parentId === sectionComponentId) {
-        console.log(`[isChildBlock] Block "${blockId}" adalah child (parentId match: ${sectionComponentId})`);
-        return true;
-      }
-      
-      const sectionChildren = sectionBlock.data?.children || [];
-      
-      if (!Array.isArray(sectionChildren) || sectionChildren.length === 0) return false;
-      
-      // Cek apakah children adalah array of IDs atau array of objects
-      const firstChild = sectionChildren[0];
-      if (typeof firstChild === 'object' && firstChild !== null && firstChild.type) {
-        // children adalah array of objects - cek apakah ada yang match dengan blockId
-        const found = sectionChildren.some(child => {
-          const childId = child.config?.componentId || child.componentId || child.id;
-          return childId === blockId;
-        });
-        if (found) {
-          console.log(`[isChildBlock] Block "${blockId}" adalah child (ada di section.children objects)`);
-        }
-        return found;
-      } else {
-        // children adalah array of IDs - cek apakah blockId ada di array
-        const found = sectionChildren.includes(blockId);
-        if (found) {
-          console.log(`[isChildBlock] Block "${blockId}" adalah child (ada di section.children IDs)`);
-        }
-        return found;
-      }
-    });
-    
-    return isInSectionChildren;
+    // ✅ ARSITEKTUR BENAR: Tidak perlu check data.children, cukup parentId saja
+    return false;
   };
 
   // Render preview di canvas
@@ -2884,51 +2862,28 @@ export default function AddProducts3Page() {
   // Render grid komponen dalam modal
   // ✅ Helper function: Get all component types that are used inside sections
   // GENERAL: Filter komponen yang sudah digunakan di dalam section agar tidak ditampilkan di sidebar
+  // ✅ ARSITEKTUR BENAR: Pakai parentId saja, TIDAK pakai data.children
   const getComponentsUsedInSections = () => {
     const usedTypes = new Set();
     
     // Find all section blocks
     const sectionBlocks = blocks.filter(block => block.type === "section");
     
-    // For each section, get all its children
+    // For each section, get all its children berdasarkan parentId
     sectionBlocks.forEach(sectionBlock => {
-      // ✅ FIX #1: componentId ada di config, bukan data
+      // ✅ ARSITEKTUR BENAR: componentId ada di config
       const sectionComponentId = sectionBlock.config?.componentId || sectionBlock.id;
-      const sectionChildren = sectionBlock.data?.children || [];
       
-      // ✅ Handle children yang bisa berupa array of objects atau array of IDs
-      if (Array.isArray(sectionChildren) && sectionChildren.length > 0) {
-        const firstChild = sectionChildren[0];
-        
-        if (typeof firstChild === 'object' && firstChild !== null && firstChild.type) {
-          // ✅ children adalah array of component data objects
-          sectionChildren.forEach(childData => {
-            if (childData && childData.type && childData.type !== "section") {
-              usedTypes.add(childData.type);
-            }
-          });
-        } else {
-          // ✅ children adalah array of IDs - cari dari blocks
-          sectionChildren.forEach(childId => {
-            // Cari block dengan ID yang sesuai
-            const childBlock = blocks.find(block => {
-              if (!block || !block.type) return false;
-              // Check by block.id
-              if (block.id === childId) return true;
-              // Check by block.data.componentId
-              if (block.data?.componentId === childId) return true;
-              // Check by parentId (jika block adalah child dari section ini)
-              if (block.parentId === sectionComponentId) return true;
-              return false;
-            });
-            
-            if (childBlock && childBlock.type && childBlock.type !== "section") {
-              // Jangan include "section" karena section bisa nested
-              usedTypes.add(childBlock.type);
-            }
-          });
+      // ✅ ARSITEKTUR BENAR: Cari child blocks berdasarkan parentId saja
+      const childBlocks = blocks.filter(b => b.parentId === sectionComponentId);
+      
+      // Add types dari child blocks
+      childBlocks.forEach(b => {
+        if (b.type && b.type !== "section") {
+          // Jangan include "section" karena section bisa nested
+          usedTypes.add(b.type);
         }
-      }
+      });
     });
     
     return usedTypes;
@@ -3050,32 +3005,7 @@ export default function AddProducts3Page() {
                   return false; // Ini adalah child dari section, jangan tampilkan di sidebar
                 }
                 
-                // Check by children array - jika block ini ada di children array section manapun, jangan tampilkan
-                const blockId = block.data?.componentId || block.id;
-                const isChildOfSection = blocks.some(sectionBlock => {
-                  if (!sectionBlock || sectionBlock.type !== 'section') return false;
-                  const sectionChildren = sectionBlock.data?.children || [];
-                  
-                  // Cek apakah children adalah array of IDs atau array of objects
-                  if (Array.isArray(sectionChildren) && sectionChildren.length > 0) {
-                    const firstChild = sectionChildren[0];
-                    if (typeof firstChild === 'object' && firstChild !== null && firstChild.type) {
-                      // children adalah array of objects - cek apakah ada yang match dengan blockId
-                      return sectionChildren.some(child => {
-                        const childId = child.config?.componentId || child.componentId || child.id;
-                        return childId === blockId;
-                      });
-                    } else {
-                      // children adalah array of IDs
-                      return sectionChildren.includes(blockId);
-                    }
-                  }
-                  return false;
-                });
-                
-                if (isChildOfSection) {
-                  return false; // Ini adalah child dari section, jangan tampilkan di sidebar
-                }
+                // ✅ ARSITEKTUR BENAR: Check by parentId sudah dilakukan di atas, tidak perlu check data.children
                 
                 return true;
               });
@@ -4065,13 +3995,13 @@ export default function AddProducts3Page() {
                 .filter(block => {
                   if (!block || !block.type) return false;
                   
-                  // ✅ FIX UTAMA: Jika block punya parentId, langsung skip (tidak render di root)
-                  if (block.parentId) {
+                  // ✅ ARSITEKTUR BENAR: Hanya child yang di-skip (bukan section)
+                  // Section boleh punya parentId jika nested, tapi child tidak boleh dirender di root
+                  if (block.parentId && block.type !== 'section') {
                     return false;
                   }
                   
-                  // ✅ Gunakan helper function isChildBlock untuk konsistensi (fallback check)
-                  return !isChildBlock(block);
+                  return true;
                 })
                 .map((block) => (
                     <div 

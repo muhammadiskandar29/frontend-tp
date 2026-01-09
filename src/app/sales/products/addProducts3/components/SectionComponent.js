@@ -82,56 +82,16 @@ export default function SectionComponent({
   const boxShadow = data.boxShadow || "none";
   const responsiveType = data.responsiveType || "vertical";
   
-  // ✅ FIX: Gunakan logic yang sama seperti renderPreview
-  // componentId ada di config, BUKAN di data
+  // ✅ ARSITEKTUR BENAR: componentId ada di config
   const sectionComponentId = block?.config?.componentId || data.componentId || `section-${Date.now()}`;
   
-  // ✅ FIX WAJIB #1: children ada di content.children, BUKAN di data.children
-  const sectionContent = block?.content || block?.data?.content || {};
-  const sectionChildren = sectionContent.children || data.children || [];
-  
-  // ✅ FIX WAJIB #2: Resolve child blocks dengan logic yang sama seperti renderPreview
-  let childBlocks = [];
-  
-  if (Array.isArray(sectionChildren) && sectionChildren.length > 0) {
-    const firstChild = sectionChildren[0];
-    
-    if (typeof firstChild === 'object' && firstChild !== null && firstChild.type) {
-      // children adalah array of component data objects - gunakan langsung
-      childBlocks = sectionChildren;
-    } else {
-      // children adalah array of IDs - cari dari allBlocks
-      // ✅ Urutan pencarian yang benar (componentId dulu, baru id)
-      childBlocks = sectionChildren
-        .map(childId => {
-          let foundBlock = 
-            allBlocks.find(b => b.config?.componentId === childId) ||
-            allBlocks.find(b => b.id === childId) ||
-            allBlocks.find(b => b.parentId === sectionComponentId);
-          
-          // ✅ Fallback terakhir jika masih tidak ketemu
-          if (!foundBlock) {
-            foundBlock = allBlocks.find(b => b.parentId === sectionComponentId);
-          }
-          
-          return foundBlock;
-        })
-        .filter(Boolean); // Hapus null/undefined
-    }
-  }
-  
-  // ✅ Fallback: Cari juga dengan parentId (untuk safety)
-  if (childBlocks.length === 0) {
-    childBlocks = allBlocks.filter(b => b.parentId === sectionComponentId);
-  }
+  // ✅ ARSITEKTUR BENAR: Resolve child blocks berdasarkan parentId saja
+  // TIDAK ADA data.children, hanya parentId
+  const childBlocks = allBlocks.filter(b => b.parentId === sectionComponentId);
   
   const handleChange = (field, value) => {
-    // ✅ FIX: Jika field adalah "content", update content.children
-    if (field === "content") {
-      onUpdate?.({ ...data, content: value });
-    } else {
-      onUpdate?.({ ...data, [field]: value });
-    }
+    // ✅ ARSITEKTUR BENAR: Tidak ada data.children, hanya update field biasa
+    onUpdate?.({ ...data, [field]: value });
   };
 
   // Get default data for child component
@@ -161,7 +121,7 @@ export default function SectionComponent({
   const handleAddChildComponent = (componentId) => {
     if (!onAddChildBlock) return;
     
-    // ✅ FIX: Gunakan sectionComponentId yang sudah benar (dari config)
+    // ✅ ARSITEKTUR BENAR: Child hanya perlu parentId, TIDAK perlu data.children
     const newBlock = {
       id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       type: componentId,
@@ -170,19 +130,10 @@ export default function SectionComponent({
         componentId: `${componentId}-${Date.now()}`
       },
       order: childBlocks.length + 1,
-      parentId: sectionComponentId, // Store section componentId as parent reference
+      parentId: sectionComponentId, // ✅ ARSITEKTUR BENAR: parentId mengacu ke sectionComponentId
     };
     
-    // ✅ FIX: Update children di content.children (bukan data.children)
-    const currentContent = block?.content || block?.data?.content || {};
-    const updatedContent = {
-      ...currentContent,
-      children: [...(currentContent.children || sectionChildren || []), newBlock.config.componentId]
-    };
-    
-    // Update data dengan content yang baru
-    handleChange("content", updatedContent);
-    
+    // ✅ ARSITEKTUR BENAR: Tidak perlu update data.children, cukup tambahkan block dengan parentId
     // Call parent handler to add block
     onAddChildBlock(newBlock);
     
@@ -198,8 +149,7 @@ export default function SectionComponent({
   // Handler untuk delete child block
   const handleDeleteChildBlock = (childId) => {
     if (!onDeleteChildBlock) return;
-    const updatedChildren = children.filter(id => id !== childId);
-    handleChange("children", updatedChildren);
+    // ✅ ARSITEKTUR BENAR: Tidak perlu update data.children, cukup hapus block
     onDeleteChildBlock(childId);
   };
 
