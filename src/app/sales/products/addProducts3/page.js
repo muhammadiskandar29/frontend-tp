@@ -1455,16 +1455,43 @@ export default function AddProducts3Page() {
             ) : (
               childComponents.map((childData, childIndex) => {
                 // ✅ Jika childData adalah object dengan type, gunakan langsung
-                // Jika childData adalah block dari blocks, gunakan block tersebut
-                const childBlock = typeof childData === 'object' && childData.type 
-                  ? childData 
-                  : childData;
+                // Jika childData adalah ID (string), cari dari blocks
+                let childBlock;
                 
-                const childId = childBlock.id || `section-child-${childBlock.type}-${childIndex}`;
+                if (typeof childData === 'object' && childData !== null && childData.type) {
+                  // ✅ childData adalah object dengan type - gunakan langsung
+                  childBlock = childData;
+                } else if (typeof childData === 'string') {
+                  // ✅ childData adalah ID - cari dari blocks
+                  childBlock = blocks.find(b => b.id === childData || b.data?.componentId === childData);
+                  if (!childBlock) {
+                    console.warn(`[SECTION] Child block dengan ID "${childData}" tidak ditemukan`);
+                    return null;
+                  }
+                } else {
+                  // ✅ childData adalah block dari blocks (sudah object)
+                  childBlock = childData;
+                }
+                
+                // Pastikan childBlock memiliki struktur yang benar untuk renderPreview
+                if (!childBlock || !childBlock.type) {
+                  console.warn(`[SECTION] Child block tidak valid:`, childBlock);
+                  return null;
+                }
+                
+                // ✅ Pastikan childBlock memiliki struktur yang benar: { type, data, id, ... }
+                // Jika childBlock tidak memiliki data, tambahkan data kosong
+                const normalizedChildBlock = {
+                  ...childBlock,
+                  data: childBlock.data || {},
+                  id: childBlock.id || `section-child-${childBlock.type}-${childIndex}`
+                };
+                
+                const childId = normalizedChildBlock.id;
                 
                 return (
                   <div key={childId} className="preview-section-child">
-                    {renderPreview(childBlock)}
+                    {renderPreview(normalizedChildBlock)}
                   </div>
                 );
               })
@@ -2825,18 +2852,20 @@ export default function AddProducts3Page() {
           });
         } else {
           // ✅ children adalah array of IDs - cari dari blocks
-          const childBlocks = blocks.filter(block => {
-            if (!block || !block.type) return false;
-            // Check by parentId (from block.parentId)
-            if (block.parentId === sectionComponentId) return true;
-            // Check by children array (using componentId or block.id)
-            const childId = block.data?.componentId || block.id;
-            return sectionChildren.includes(childId);
-          });
-          
-          // Add all child block types to usedTypes
-          childBlocks.forEach(childBlock => {
-            if (childBlock.type && childBlock.type !== "section") {
+          sectionChildren.forEach(childId => {
+            // Cari block dengan ID yang sesuai
+            const childBlock = blocks.find(block => {
+              if (!block || !block.type) return false;
+              // Check by block.id
+              if (block.id === childId) return true;
+              // Check by block.data.componentId
+              if (block.data?.componentId === childId) return true;
+              // Check by parentId (jika block adalah child dari section ini)
+              if (block.parentId === sectionComponentId) return true;
+              return false;
+            });
+            
+            if (childBlock && childBlock.type && childBlock.type !== "section") {
               // Jangan include "section" karena section bisa nested
               usedTypes.add(childBlock.type);
             }
