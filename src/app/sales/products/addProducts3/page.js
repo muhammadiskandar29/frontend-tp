@@ -1535,37 +1535,25 @@ export default function AddProducts3Page() {
         return (
           <div className="preview-section" style={sectionStyles}>
             {childComponents.length === 0 ? (
-              <div className="preview-placeholder">Section kosong - tambahkan komponen</div>
+              <div className="preview-placeholder">
+                Section kosong - tambahkan komponen
+              </div>
             ) : (
               childComponents.map((childBlock) => {
-                // ✅ FIX WAJIB #2 & #3: Pastikan childBlock punya id dan menggunakan data (bukan content)
-                // childBlock sudah dari blocks array, jadi sudah punya struktur yang benar
                 if (!childBlock || !childBlock.type || !childBlock.id) {
-                  console.warn(`[SECTION] Child block tidak valid:`, childBlock);
+                  console.warn("[SECTION] Child block tidak valid:", childBlock);
                   return null;
                 }
-                
-                // ✅ Pastikan childBlock memiliki struktur yang benar untuk renderPreview
-                // renderPreview expect: { id, type, data, style, config }
-                // ✅ FIX WAJIB #2: WAJIB ada id
-                // ✅ FIX WAJIB #3: pakai data, bukan content
-                const normalizedChildBlock = {
-                  id: childBlock.id, // ✅ FIX WAJIB #2: WAJIB ada id
-                  type: childBlock.type,
-                  data: childBlock.data || {}, // ✅ FIX WAJIB #3: pakai data, bukan content
-                  style: childBlock.style || {},
-                  config: childBlock.config || {}
-                };
-                
+        
                 return (
-                  <div key={normalizedChildBlock.id} className="preview-section-child">
-                    {renderPreview(normalizedChildBlock)}
+                  <div key={childBlock.id} className="preview-section-child">
+                    {renderPreview(childBlock)}
                   </div>
                 );
               })
             )}
           </div>
-        );
+        );        
       default:
         return <div className="preview-placeholder">{block.type}</div>;
     }
