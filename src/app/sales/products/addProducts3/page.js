@@ -1413,10 +1413,26 @@ export default function AddProducts3Page() {
         const sectionComponentId = sectionData.componentId || `section-${block.id}`;
         const sectionChildren = sectionData.children || [];
         
-        // Find child blocks by both parentId and children array
-        const sectionChildBlocks = blocks.filter(b => 
-          b.parentId === sectionComponentId || sectionChildren.includes(b.id)
-        );
+        // ✅ Ambil child components dari section.children
+        // section.children bisa berisi:
+        // 1. Array of component data objects (dengan type, data, style, config)
+        // 2. Array of component IDs (fallback ke blocks)
+        let childComponents = [];
+        
+        if (Array.isArray(sectionChildren) && sectionChildren.length > 0) {
+          // Cek apakah children adalah array of objects (data lengkap) atau array of IDs
+          const firstChild = sectionChildren[0];
+          
+          if (typeof firstChild === 'object' && firstChild !== null && firstChild.type) {
+            // ✅ children adalah array of component data objects - gunakan langsung
+            childComponents = sectionChildren;
+          } else {
+            // ✅ children adalah array of IDs - cari dari blocks
+            childComponents = blocks.filter(b => 
+              b.parentId === sectionComponentId || sectionChildren.includes(b.id)
+            );
+          }
+        }
         
         // Build section styles from advance settings
         const sectionStyles = {
@@ -1434,14 +1450,24 @@ export default function AddProducts3Page() {
         
         return (
           <div className="preview-section" style={sectionStyles}>
-            {sectionChildBlocks.length === 0 ? (
+            {childComponents.length === 0 ? (
               <div className="preview-placeholder">Section kosong - tambahkan komponen</div>
             ) : (
-              sectionChildBlocks.map((childBlock) => (
-                <div key={childBlock.id} className="preview-section-child">
-                  {renderPreview(childBlock)}
-                </div>
-              ))
+              childComponents.map((childData, childIndex) => {
+                // ✅ Jika childData adalah object dengan type, gunakan langsung
+                // Jika childData adalah block dari blocks, gunakan block tersebut
+                const childBlock = typeof childData === 'object' && childData.type 
+                  ? childData 
+                  : childData;
+                
+                const childId = childBlock.id || `section-child-${childBlock.type}-${childIndex}`;
+                
+                return (
+                  <div key={childId} className="preview-section-child">
+                    {renderPreview(childBlock)}
+                  </div>
+                );
+              })
             )}
           </div>
         );
@@ -2762,10 +2788,8 @@ export default function AddProducts3Page() {
 
       toast.success("Produk berhasil disimpan dan dipublish!", { id: "save-product" });
       
-      // Redirect ke halaman products
-      setTimeout(() => {
-        router.push("/sales/products");
-      }, 1000);
+      // Redirect langsung ke halaman products
+      router.push("/sales/products");
 
     } catch (error) {
       console.error("Error saving product:", error);
@@ -2788,23 +2812,37 @@ export default function AddProducts3Page() {
       const sectionComponentId = sectionBlock.data?.componentId || sectionBlock.id;
       const sectionChildren = sectionBlock.data?.children || [];
       
-      // Find child blocks by both parentId and children array (sama dengan renderPreview)
-      const childBlocks = blocks.filter(block => {
-        if (!block || !block.type) return false;
-        // Check by parentId (from block.parentId)
-        if (block.parentId === sectionComponentId) return true;
-        // Check by children array (using componentId or block.id)
-        const childId = block.data?.componentId || block.id;
-        return sectionChildren.includes(childId);
-      });
-      
-      // Add all child block types to usedTypes
-      childBlocks.forEach(childBlock => {
-        if (childBlock.type && childBlock.type !== "section") {
-          // Jangan include "section" karena section bisa nested
-          usedTypes.add(childBlock.type);
+      // ✅ Handle children yang bisa berupa array of objects atau array of IDs
+      if (Array.isArray(sectionChildren) && sectionChildren.length > 0) {
+        const firstChild = sectionChildren[0];
+        
+        if (typeof firstChild === 'object' && firstChild !== null && firstChild.type) {
+          // ✅ children adalah array of component data objects
+          sectionChildren.forEach(childData => {
+            if (childData && childData.type && childData.type !== "section") {
+              usedTypes.add(childData.type);
+            }
+          });
+        } else {
+          // ✅ children adalah array of IDs - cari dari blocks
+          const childBlocks = blocks.filter(block => {
+            if (!block || !block.type) return false;
+            // Check by parentId (from block.parentId)
+            if (block.parentId === sectionComponentId) return true;
+            // Check by children array (using componentId or block.id)
+            const childId = block.data?.componentId || block.id;
+            return sectionChildren.includes(childId);
+          });
+          
+          // Add all child block types to usedTypes
+          childBlocks.forEach(childBlock => {
+            if (childBlock.type && childBlock.type !== "section") {
+              // Jangan include "section" karena section bisa nested
+              usedTypes.add(childBlock.type);
+            }
+          });
         }
-      });
+      }
     });
     
     return usedTypes;
@@ -2837,7 +2875,7 @@ export default function AddProducts3Page() {
                         style={{ backgroundColor: "#f3f4f6" }}
                       >
                         <IconComponent 
-                          size={24} 
+                          size={20} 
                           style={{ color: "#6b7280" }}
                         />
                       </div>
@@ -3882,29 +3920,79 @@ export default function AddProducts3Page() {
               )}
               
               {/* Preview komponen - hanya render blocks tanpa parentId (bukan child dari section) */}
-              {blocks
-                .filter(block => !block.parentId) // Hanya render blocks yang bukan child dari section
-                .map((block) => (
-                  <div 
-                    key={block.id} 
-                    className="canvas-preview-block"
-                    onClick={() => {
-                      // Scroll ke komponen di sidebar
-                      const componentElement = componentRefs.current[block.id];
-                      if (componentElement) {
-                        componentElement.scrollIntoView({ behavior: "smooth", block: "center" });
-                        // Expand komponen jika collapsed
-                        if (collapsedBlockIds.has(block.id)) {
-                          handleToggleExpand(block.id);
+              {/* ✅ Filter: Jangan render block yang adalah child dari section */}
+              {(() => {
+                // Cari semua section componentIds untuk filter child blocks
+                const sectionComponentIds = new Set();
+                blocks.forEach(block => {
+                  if (block && block.type === 'section') {
+                    const sectionId = block.data?.componentId || block.id;
+                    sectionComponentIds.add(sectionId);
+                  }
+                });
+                
+                // Filter blocks: jangan render block yang adalah child dari section
+                return blocks
+                  .filter(block => {
+                    if (!block || !block.type) return false;
+                    
+                    // ✅ Jangan render block yang adalah child dari section
+                    // Check by parentId
+                    if (block.parentId && sectionComponentIds.has(block.parentId)) {
+                      return false; // Ini adalah child dari section, jangan render di luar section
+                    }
+                    
+                    // Check by children array - jika block ini ada di children array section manapun, jangan render
+                    const blockId = block.data?.componentId || block.id;
+                    const isChildOfSection = blocks.some(sectionBlock => {
+                      if (!sectionBlock || sectionBlock.type !== 'section') return false;
+                      const sectionChildren = sectionBlock.data?.children || [];
+                      
+                      // Cek apakah children adalah array of IDs atau array of objects
+                      if (Array.isArray(sectionChildren) && sectionChildren.length > 0) {
+                        const firstChild = sectionChildren[0];
+                        if (typeof firstChild === 'object' && firstChild !== null && firstChild.type) {
+                          // children adalah array of objects - cek apakah ada yang match dengan blockId
+                          return sectionChildren.some(child => {
+                            const childId = child.config?.componentId || child.componentId || child.id;
+                            return childId === blockId;
+                          });
+                        } else {
+                          // children adalah array of IDs
+                          return sectionChildren.includes(blockId);
                         }
                       }
-                    }}
-                    style={{ cursor: "pointer" }}
-                    title="Klik untuk scroll ke komponen di sidebar"
-                  >
-                    {renderPreview(block)}
-                  </div>
-                ))}
+                      return false;
+                    });
+                    
+                    if (isChildOfSection) {
+                      return false; // Ini adalah child dari section, jangan render di luar section
+                    }
+                    
+                    return true;
+                  })
+                  .map((block) => (
+                    <div 
+                      key={block.id} 
+                      className="canvas-preview-block"
+                      onClick={() => {
+                        // Scroll ke komponen di sidebar
+                        const componentElement = componentRefs.current[block.id];
+                        if (componentElement) {
+                          componentElement.scrollIntoView({ behavior: "smooth", block: "center" });
+                          // Expand komponen jika collapsed
+                          if (collapsedBlockIds.has(block.id)) {
+                            handleToggleExpand(block.id);
+                          }
+                        }
+                      }}
+                      style={{ cursor: "pointer" }}
+                      title="Klik untuk scroll ke komponen di sidebar"
+                    >
+                      {renderPreview(block)}
+                    </div>
+                  ));
+              })()}
             </div>
 
             {/* Footer */}

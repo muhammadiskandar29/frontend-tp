@@ -716,7 +716,7 @@ export default function ProductPage() {
         // ✅ GENERAL: Tambahkan max-width untuk membatasi ukuran maksimal gambar agar tidak terlalu besar
         const imageWrapperStyle = {
           width: `${imageWidth}%`, // ✅ Width setting (50%) = width dari wrapper, bukan gambar
-          maxWidth: "500px", // ✅ Batasi ukuran maksimal (900px) agar tidak terlalu besar
+          maxWidth: "625px", // ✅ Batasi ukuran maksimal (900px) agar tidak terlalu besar
           ...aspectRatioStyle,
           ...imageBackgroundStyle,
           overflow: "hidden",
@@ -953,7 +953,7 @@ export default function ProductPage() {
           MapPin, Calendar: CalendarIcon, Clock
         };
         
-        const listTitle = content?.componentTitle || config?.title || "";
+        const listTitle = content?.title || content?.componentTitle || config?.title || "";
         const listData = {
           paddingTop: style?.container?.padding?.top || style?.container?.paddingTop || 0,
           paddingRight: style?.container?.padding?.right || style?.container?.paddingRight || 0,
@@ -1602,8 +1602,16 @@ export default function ProductPage() {
         // ✅ SAMA PERSIS dengan renderPreview di addProducts3
         const embedCode = content?.code || content || "";
         
+        // ✅ Tambahkan maxWidth 625px untuk embed youtube agar tidak terlalu lebar
+        const embedContainerStyle = {
+          ...containerStyle,
+          maxWidth: "625px",
+          width: "100%",
+          margin: "0 auto"
+        };
+        
         return (
-          <div style={containerStyle} dangerouslySetInnerHTML={{ __html: embedCode }} />
+          <div style={embedContainerStyle} dangerouslySetInnerHTML={{ __html: embedCode }} />
         );
       }
 
@@ -1612,12 +1620,15 @@ export default function ProductPage() {
         const sliderData = content || {};
         
         // Adaptasi dari content/style/config ke format yang diharapkan ImageSliderPreview
+        // ✅ Mapping autoplay dan interval dari backend ke autoslide dan autoslideDuration
         const adaptedData = {
           images: sliderData.images || sliderData.items || [],
           sliderType: sliderData.sliderType || "gallery",
-          autoslide: sliderData.autoslide || false,
-          autoslideDuration: sliderData.autoslideDuration || 5,
+          autoslide: sliderData.autoplay !== undefined ? sliderData.autoplay : (sliderData.autoslide || false),
+          autoslideDuration: sliderData.interval !== undefined ? sliderData.interval : (sliderData.autoslideDuration || 5),
           showCaption: sliderData.showCaption || false,
+          showDots: sliderData.showDots !== undefined ? sliderData.showDots : true,
+          showArrows: sliderData.showArrows !== undefined ? sliderData.showArrows : true,
           alignment: style?.image?.alignment || style?.container?.alignment || "center",
           imageWidth: style?.image?.width || style?.container?.imageWidth || 100,
           imageFit: style?.image?.fit || style?.container?.imageFit || "fill",
@@ -1631,8 +1642,16 @@ export default function ProductPage() {
           paddingLeft: style?.container?.padding?.left || style?.container?.paddingLeft || 0,
         };
         
+        // ✅ Container style dengan maxwidth 625px untuk wrapper (sama seperti image)
+        const sliderContainerStyle = {
+          ...containerStyle,
+          maxWidth: "625px",
+          width: "100%",
+          margin: "0 auto"
+        };
+        
         return (
-          <div style={containerStyle}>
+          <div style={sliderContainerStyle}>
             <ImageSliderPreview data={adaptedData} />
           </div>
         );
@@ -1669,28 +1688,69 @@ export default function ProductPage() {
           padding: style?.container?.padding ? `${style.container.padding.top || 0}px ${style.container.padding.right || 0}px ${style.container.padding.bottom || 0}px ${style.container.padding.left || 0}px` : (sectionData.padding || "16px"),
         };
         
-        // Find child blocks by both parentId and children array (sama dengan addProducts3)
-        const sectionChildBlocks = allBlocks.filter(b => {
-          if (!b || !b.type) return false;
-          // Check by parentId (from config.parentId)
-          if (b.config?.parentId === sectionComponentId) return true;
-          // Check by children array (using componentId or order)
-          const childId = b.config?.componentId || b.order;
-          return sectionChildren.includes(childId);
-        });
+        // ✅ Ambil child components dari section.children
+        // section.children bisa berisi:
+        // 1. Array of component data objects (dengan type, content, style, config)
+        // 2. Array of component IDs (fallback ke allBlocks)
+        let childComponents = [];
+        
+        if (Array.isArray(sectionChildren) && sectionChildren.length > 0) {
+          // Cek apakah children adalah array of objects (data lengkap) atau array of IDs
+          const firstChild = sectionChildren[0];
+          
+          if (typeof firstChild === 'object' && firstChild !== null && firstChild.type) {
+            // ✅ children adalah array of component data objects - gunakan langsung
+            childComponents = sectionChildren;
+          } else {
+            // ✅ children adalah array of IDs - cari dari allBlocks
+            childComponents = allBlocks.filter(b => {
+              if (!b || !b.type) return false;
+              // Check by parentId (from config.parentId)
+              if (b.config?.parentId === sectionComponentId) return true;
+              // Check by children array (using componentId or order)
+              const childId = b.config?.componentId || b.order;
+              return sectionChildren.includes(childId);
+            });
+          }
+        }
         
         return (
           <div className="preview-section" style={{...containerStyle, ...sectionStyles}}>
-            {sectionChildBlocks.length === 0 ? (
+            {childComponents.length === 0 ? (
               <div className="preview-placeholder">Section kosong - tambahkan komponen</div>
             ) : (
-              sectionChildBlocks.map((childBlock) => {
-                const childComponentId = childBlock.config?.componentId;
-                const childUniqueKey = childComponentId || `section-child-${childBlock.type}-${childBlock.order || 'default'}`;
+              childComponents.map((childData, childIndex) => {
+                // ✅ Jika childData adalah object dengan type, gunakan langsung
+                // Jika childData adalah block dari allBlocks, gunakan block tersebut
+                const childBlock = typeof childData === 'object' && childData.type 
+                  ? childData 
+                  : childData;
+                
+                const childType = childBlock.type;
+                const childContent = childBlock.content || childBlock.data || {};
+                const childStyle = childBlock.style || {};
+                const childConfig = childBlock.config || {};
+                const childComponentId = childConfig.componentId || childBlock.componentId || `section-child-${childType}-${childIndex}`;
+                const childOrder = childBlock.order || childIndex;
+                
+                // ✅ Buat block object untuk renderBlock
+                const childBlockForRender = {
+                  type: childType,
+                  content: childContent,
+                  style: childStyle,
+                  config: {
+                    ...childConfig,
+                    componentId: childComponentId,
+                    parentId: sectionComponentId
+                  },
+                  order: childOrder
+                };
+                
+                const childUniqueKey = childComponentId || `section-child-${childType}-${childIndex}`;
                 
                 return (
                   <div key={childUniqueKey} className="preview-section-child">
-                    {renderBlock(childBlock, allBlocks)}
+                    {renderBlock(childBlockForRender, allBlocks)}
                   </div>
                 );
               })
@@ -2060,12 +2120,44 @@ export default function ProductPage() {
   // ✅ ABAIKAN ORDER DARI BACKEND
   // ✅ PAKAI URUTAN ARRAY SAJA: Backend sudah kirim urutan → itu sumber kebenaran
   // Filter: ambil semua item yang bukan settings (type !== 'settings')
+  // ✅ Filter: Jangan render block yang adalah child dari section (akan dirender di dalam section)
   // Urutan array dari backend adalah sumber kebenaran, tidak perlu sorting
+  
+  // Pertama, cari semua section componentIds untuk filter child blocks
+  const sectionComponentIds = new Set();
+  if (landingpage && Array.isArray(landingpage)) {
+    landingpage.forEach(item => {
+      if (item && item.type === 'section') {
+        const sectionId = item.config?.componentId || item.content?.componentId || `section-${item.order || 'default'}`;
+        sectionComponentIds.add(sectionId);
+      }
+    });
+  }
+  
   const blocks = landingpage && Array.isArray(landingpage) 
     ? landingpage.filter((item) => {
         // Pastikan item valid dan bukan settings
         if (!item || !item.type) return false;
         if (item.type === 'settings') return false;
+        
+        // ✅ Jangan render block yang adalah child dari section
+        // Check by parentId
+        if (item.config?.parentId && sectionComponentIds.has(item.config.parentId)) {
+          return false; // Ini adalah child dari section, jangan render di luar section
+        }
+        
+        // Check by children array - jika block ini ada di children array section manapun, jangan render
+        const blockId = item.config?.componentId || item.order;
+        const isChildOfSection = landingpage.some(sectionItem => {
+          if (!sectionItem || sectionItem.type !== 'section') return false;
+          const sectionChildren = sectionItem.content?.children || sectionItem.config?.children || [];
+          return sectionChildren.includes(blockId);
+        });
+        
+        if (isChildOfSection) {
+          return false; // Ini adalah child dari section, jangan render di luar section
+        }
+        
         return true;
       })
     : [];

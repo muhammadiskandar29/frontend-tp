@@ -8,6 +8,8 @@ export default function ImageSliderPreview({ data = {} }) {
   const autoslide = data.autoslide || false;
   const autoslideDuration = data.autoslideDuration || 5;
   const showCaption = data.showCaption || false;
+  const showDots = data.showDots !== undefined ? data.showDots : true;
+  const showArrows = data.showArrows !== undefined ? data.showArrows : true;
   
   // Advanced settings
   const alignment = data.alignment || "center";
@@ -89,8 +91,10 @@ export default function ImageSliderPreview({ data = {} }) {
   };
 
   // Image wrapper style
+  // ✅ Tambahkan maxWidth 625px untuk membatasi ukuran maksimal (sama seperti image component)
   const imageWrapperStyle = {
     width: `${imageWidth}%`,
+    maxWidth: "625px",
     ...aspectRatioStyle,
     ...imageBackgroundStyle,
     overflow: "hidden",
@@ -161,7 +165,7 @@ export default function ImageSliderPreview({ data = {} }) {
       </div>
 
       {/* Slider Dots */}
-      {images.length > 1 && (
+      {images.length > 1 && showDots && (
         <div style={{
           position: "absolute",
           bottom: "16px",
@@ -189,6 +193,66 @@ export default function ImageSliderPreview({ data = {} }) {
             />
           ))}
         </div>
+      )}
+      
+      {/* Slider Arrows */}
+      {images.length > 1 && showArrows && (
+        <>
+          <button
+            onClick={() => goToSlide((currentIndex - 1 + images.length) % images.length)}
+            style={{
+              position: "absolute",
+              left: "16px",
+              top: "50%",
+              transform: "translateY(-50%)",
+              background: "rgba(0, 0, 0, 0.5)",
+              border: "none",
+              borderRadius: "50%",
+              width: "40px",
+              height: "40px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              zIndex: 10,
+              color: "#ffffff",
+              fontSize: "20px",
+              transition: "all 0.3s ease"
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = "rgba(0, 0, 0, 0.7)"}
+            onMouseLeave={(e) => e.currentTarget.style.background = "rgba(0, 0, 0, 0.5)"}
+            aria-label="Previous slide"
+          >
+            ‹
+          </button>
+          <button
+            onClick={() => goToSlide((currentIndex + 1) % images.length)}
+            style={{
+              position: "absolute",
+              right: "16px",
+              top: "50%",
+              transform: "translateY(-50%)",
+              background: "rgba(0, 0, 0, 0.5)",
+              border: "none",
+              borderRadius: "50%",
+              width: "40px",
+              height: "40px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              zIndex: 10,
+              color: "#ffffff",
+              fontSize: "20px",
+              transition: "all 0.3s ease"
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = "rgba(0, 0, 0, 0.7)"}
+            onMouseLeave={(e) => e.currentTarget.style.background = "rgba(0, 0, 0, 0.5)"}
+            aria-label="Next slide"
+          >
+            ›
+          </button>
+        </>
       )}
     </div>
   );
