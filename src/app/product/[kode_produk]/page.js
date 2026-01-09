@@ -1672,63 +1672,60 @@ export default function ProductPage() {
       }
 
       case "section": {
-        // ✅ ARSITEKTUR BENAR: Sama dengan addProducts3 - pakai parentId saja
-        const sectionData = content || {};
+        // ✅ SAMA DENGAN addProducts3: Pastikan block memiliki data terbaru dari allBlocks array
+        // Di product page, block mungkin tidak punya id, jadi cek berdasarkan config.componentId atau order
+        const blockIdentifier = block.config?.componentId || block.id || block.order;
+        const latestBlock = allBlocks.find(b => {
+          if (b.type !== 'section') return false;
+          const bIdentifier = b.config?.componentId || b.id || b.order;
+          return bIdentifier === blockIdentifier;
+        }) || block;
+        const blockToRender = latestBlock;
         
+        // ✅ ARSITEKTUR BENAR: config.componentId adalah SATU-SATUNYA sumber kebenaran (sama dengan addProducts3)
         // ✅ FALLBACK: Untuk kompatibilitas data lama, generate componentId jika tidak ada
-        // ✅ Check multiple sources: config.componentId (primary), block.config.componentId (direct), content.componentId, data.componentId
-        let sectionComponentId = config?.componentId 
-          || block?.config?.componentId 
-          || content?.componentId 
-          || sectionData.componentId 
-          || block?.data?.componentId;
+        let sectionComponentId = blockToRender.config?.componentId;
         
         if (!sectionComponentId) {
-          // ✅ FALLBACK: Generate componentId untuk data lama
-          sectionComponentId = `section-${block.order || block?.order || Date.now()}`;
-          console.warn(`[SECTION FALLBACK] Section tidak memiliki config.componentId, menggunakan fallback: "${sectionComponentId}"`, {
-            blockConfig: block?.config,
-            config,
-            sectionData,
-            blockOrder: block?.order,
-            content
+          // ✅ FALLBACK: Generate componentId untuk data lama yang tidak punya config.componentId
+          sectionComponentId = blockToRender.data?.componentId || blockToRender.content?.componentId || `section-${blockToRender.id || blockToRender.order || Date.now()}`;
+          
+          console.warn(`[SECTION FALLBACK] Section block tidak memiliki config.componentId, menggunakan fallback: "${sectionComponentId}"`, {
+            blockToRenderId: blockToRender.id,
+            blockToRenderConfig: blockToRender.config,
+            blockToRenderData: blockToRender.data,
+            blockToRenderContent: blockToRender.content
           });
         }
         
-        // ✅ VALIDATION: Ensure sectionComponentId exists (should never happen after fallback, but just in case)
-        if (!sectionComponentId) {
-          console.error(`[SECTION ERROR] Section block tidak memiliki componentId!`, {
-            block,
-            config,
-            content,
-            style,
-            sectionData
-          });
-          return (
-            <div className="preview-section" style={containerStyle}>
-              <div className="preview-placeholder" style={{ color: 'red', padding: '16px' }}>
-                Section Error: Missing componentId
-              </div>
-            </div>
-          );
-        }
-        
-        // ✅ DEBUG: Log sectionComponentId untuk tracking
-        console.log(`[SECTION RENDER] Rendering section with componentId: "${sectionComponentId}"`, {
-          sectionComponentId,
-          blockConfig: block?.config,
-          config,
-          content,
-          blockOrder: block?.order
+        // ✅ ARSITEKTUR BENAR: Filter child berdasarkan parentId === sectionComponentId (sama dengan addProducts3)
+        const childComponents = allBlocks.filter(b => {
+          if (!b || !b.type) return false;
+          return b.parentId === sectionComponentId;
         });
         
-        // ✅ GENERAL: Build section styles dari style.container (sama dengan addProducts3)
-        const sectionContainerStyle = style?.container || {};
+        // ✅ DEBUG: Log untuk tracking identifier (sama dengan addProducts3)
+        console.log(`[SECTION RENDER] Section ID: "${sectionComponentId}"`, {
+          sectionBlockId: blockToRender.id,
+          sectionConfigComponentId: blockToRender.config?.componentId,
+          childCount: childComponents.length,
+          allBlocksWithParentId: allBlocks
+            .filter(b => b.parentId)
+            .map(b => ({
+              id: b.id,
+              type: b.type,
+              parentId: b.parentId,
+              match: b.parentId === sectionComponentId ? "✅ MATCH" : "❌ NO MATCH"
+            }))
+        });
+        
+        // ✅ FIX #3: Build section styles from block.style.container, bukan block.data (sama dengan addProducts3)
+        const sectionData = blockToRender.data || blockToRender.content || {};
+        const sectionContainerStyle = blockToRender.style?.container || style?.container || {};
         const sectionStyles = {
-          marginTop: `${sectionContainerStyle.margin?.top || sectionContainerStyle.marginTop || sectionData.marginTop || 0}px`,
           marginRight: `${sectionContainerStyle.margin?.right || sectionContainerStyle.marginRight || sectionData.marginRight || 0}px`,
-          marginBottom: `${sectionContainerStyle.margin?.bottom || sectionContainerStyle.marginBottom || sectionContainerStyle.marginBetween || sectionData.marginBottom || sectionData.marginBetween || 16}px`,
           marginLeft: `${sectionContainerStyle.margin?.left || sectionContainerStyle.marginLeft || sectionData.marginLeft || 0}px`,
+          marginBottom: `${sectionContainerStyle.margin?.bottom || sectionContainerStyle.marginBottom || sectionContainerStyle.marginBetween || sectionData.marginBetween || 16}px`,
           border: sectionContainerStyle.border?.width 
             ? `${sectionContainerStyle.border.width}px ${sectionContainerStyle.border.style || 'solid'} ${sectionContainerStyle.border.color || "#000000"}` 
             : (sectionData.border ? `${sectionData.border}px solid ${sectionData.borderColor || "#000000"}` : "none"),
@@ -1742,101 +1739,25 @@ export default function ProductPage() {
             : (sectionData.padding || "16px"),
         };
         
-        // ✅ ARSITEKTUR BENAR: Cari child berdasarkan parentId saja (sama dengan addProducts3)
-        // TIDAK pakai data.children, hanya parentId
-        // ✅ Check by parentId (bisa di root block atau di config)
-        let childComponents = allBlocks.filter(b => {
-          if (!b || !b.type) return false;
-          // ✅ Check parentId di root level dulu (arsitektur baru)
-          if (b.parentId === sectionComponentId) return true;
-          // ✅ Fallback: Check parentId di config (untuk data lama)
-          if (b.config?.parentId === sectionComponentId) return true;
-          return false;
-        });
-        
-        // ✅ DEBUG: Log untuk tracking child components
-        console.log(`[SECTION RENDER] Section ID: "${sectionComponentId}"`, {
-          sectionComponentId,
-          blockConfig: block?.config,
-          config,
-          allBlocksCount: allBlocks.length,
-          childCount: childComponents.length,
-          allBlocksWithParentId: allBlocks
-            .filter(b => b.parentId || b.config?.parentId)
-            .map(b => ({
-              type: b.type,
-              id: b.id,
-              order: b.order,
-              componentId: b.config?.componentId,
-              parentId: b.parentId,
-              configParentId: b.config?.parentId,
-              match: (b.parentId === sectionComponentId || b.config?.parentId === sectionComponentId) ? "✅ MATCH" : "❌ NO MATCH"
-            }))
-        });
-        
-        // ✅ FALLBACK: Jika tidak ada child dengan parentId, coba cari dari sectionChildren (untuk data lama)
-        if (childComponents.length === 0) {
-          const sectionChildren = sectionData.children || config?.children || [];
-          console.log(`[SECTION FALLBACK] Mencari child dari sectionChildren:`, {
-            sectionChildren,
-            sectionChildrenLength: sectionChildren.length
-          });
-          
-          if (Array.isArray(sectionChildren) && sectionChildren.length > 0) {
-            const firstChild = sectionChildren[0];
-            if (typeof firstChild === 'object' && firstChild !== null && firstChild.type) {
-              // children adalah array of component data objects - gunakan langsung
-              childComponents = sectionChildren;
-              console.log(`[SECTION FALLBACK] Menggunakan sectionChildren sebagai array of objects:`, childComponents.length);
-            } else {
-              // children adalah array of IDs - cari dari allBlocks
-              childComponents = allBlocks.filter(b => {
-                if (!b || !b.type) return false;
-                const childId = b.config?.componentId || b.order;
-                return sectionChildren.includes(childId);
-              });
-              console.log(`[SECTION FALLBACK] Mencari child dari allBlocks berdasarkan IDs:`, childComponents.length);
-            }
-          }
-        }
-        
         return (
-          <div className="preview-section" style={{...containerStyle, ...sectionStyles}}>
+          <div className="preview-section" style={sectionStyles}>
             {childComponents.length === 0 ? (
-              <div className="preview-placeholder">Section kosong - tambahkan komponen</div>
+              <div className="preview-placeholder">
+                Section kosong - tambahkan komponen
+              </div>
             ) : (
-              childComponents.map((childData, childIndex) => {
-                // ✅ Jika childData adalah object dengan type, gunakan langsung
-                // Jika childData adalah block dari allBlocks, gunakan block tersebut
-                const childBlock = typeof childData === 'object' && childData.type 
-                  ? childData 
-                  : childData;
-                
-                const childType = childBlock.type;
-                const childContent = childBlock.content || childBlock.data || {};
-                const childStyle = childBlock.style || {};
-                const childConfig = childBlock.config || {};
-                const childComponentId = childConfig.componentId || childBlock.componentId || `section-child-${childType}-${childIndex}`;
-                const childOrder = childBlock.order || childIndex;
-                
-                // ✅ Buat block object untuk renderBlock
-                const childBlockForRender = {
-                  type: childType,
-                  content: childContent,
-                  style: childStyle,
-                  config: {
-                    ...childConfig,
-                    componentId: childComponentId,
-                    parentId: sectionComponentId
-                  },
-                  order: childOrder
-                };
-                
-                const childUniqueKey = childComponentId || `section-child-${childType}-${childIndex}`;
-                
+              childComponents.map((childBlock) => {
+                if (!childBlock || !childBlock.type) {
+                  console.warn("[SECTION] Child block tidak valid:", childBlock);
+                  return null;
+                }
+        
+                // ✅ Key dari componentId atau id atau order (sama dengan addProducts3 tapi dengan fallback untuk product page)
+                const childKey = childBlock.config?.componentId || childBlock.id || childBlock.order || `section-child-${childBlock.type}-${Date.now()}`;
+        
                 return (
-                  <div key={childUniqueKey} className="preview-section-child">
-                    {renderBlock(childBlockForRender, allBlocks)}
+                  <div key={childKey} className="preview-section-child">
+                    {renderBlock(childBlock, allBlocks)}
                   </div>
                 );
               })
