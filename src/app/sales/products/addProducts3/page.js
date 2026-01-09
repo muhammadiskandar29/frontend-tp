@@ -471,6 +471,46 @@ export default function AddProducts3Page() {
     }
   };
 
+  // ✅ Helper function: Tentukan apakah block adalah child dari section
+  // RULE: Child component TIDAK BOLEH dirender oleh root renderer
+  const isChildBlock = (block) => {
+    if (!block || !block.id) return false;
+    
+    // Check 1: Apakah block punya parentId?
+    if (block.parentId) {
+      // Cek apakah parentId merujuk ke section
+      const parentBlock = blocks.find(b => 
+        (b.data?.componentId === block.parentId || b.id === block.parentId) && 
+        b.type === 'section'
+      );
+      if (parentBlock) return true;
+    }
+    
+    // Check 2: Apakah block ada di section.children array?
+    const blockId = block.data?.componentId || block.id;
+    const isInSectionChildren = blocks.some(sectionBlock => {
+      if (!sectionBlock || sectionBlock.type !== 'section') return false;
+      const sectionChildren = sectionBlock.data?.children || [];
+      
+      if (!Array.isArray(sectionChildren) || sectionChildren.length === 0) return false;
+      
+      // Cek apakah children adalah array of IDs atau array of objects
+      const firstChild = sectionChildren[0];
+      if (typeof firstChild === 'object' && firstChild !== null && firstChild.type) {
+        // children adalah array of objects - cek apakah ada yang match dengan blockId
+        return sectionChildren.some(child => {
+          const childId = child.config?.componentId || child.componentId || child.id;
+          return childId === blockId;
+        });
+      } else {
+        // children adalah array of IDs
+        return sectionChildren.includes(blockId);
+      }
+    });
+    
+    return isInSectionChildren;
+  };
+
   // Render preview di canvas
   // ✅ renderPreview menggunakan blocks dari closure, jadi selalu menggunakan data terbaru
   const renderPreview = (block) => {
@@ -4073,59 +4113,16 @@ export default function AddProducts3Page() {
                 </div>
               )}
               
-              {/* Preview komponen - hanya render blocks tanpa parentId (bukan child dari section) */}
-              {/* ✅ Filter: Jangan render block yang adalah child dari section */}
-              {(() => {
-                // Cari semua section componentIds untuk filter child blocks
-                const sectionComponentIds = new Set();
-                blocks.forEach(block => {
-                  if (block && block.type === 'section') {
-                    const sectionId = block.data?.componentId || block.id;
-                    sectionComponentIds.add(sectionId);
-                  }
-                });
-                
-                // Filter blocks: jangan render block yang adalah child dari section
-                return blocks
-                  .filter(block => {
-                    if (!block || !block.type) return false;
-                    
-                    // ✅ Jangan render block yang adalah child dari section
-                    // Check by parentId
-                    if (block.parentId && sectionComponentIds.has(block.parentId)) {
-                      return false; // Ini adalah child dari section, jangan render di luar section
-                    }
-                    
-                    // Check by children array - jika block ini ada di children array section manapun, jangan render
-                    const blockId = block.data?.componentId || block.id;
-                    const isChildOfSection = blocks.some(sectionBlock => {
-                      if (!sectionBlock || sectionBlock.type !== 'section') return false;
-                      const sectionChildren = sectionBlock.data?.children || [];
-                      
-                      // Cek apakah children adalah array of IDs atau array of objects
-                      if (Array.isArray(sectionChildren) && sectionChildren.length > 0) {
-                        const firstChild = sectionChildren[0];
-                        if (typeof firstChild === 'object' && firstChild !== null && firstChild.type) {
-                          // children adalah array of objects - cek apakah ada yang match dengan blockId
-                          return sectionChildren.some(child => {
-                            const childId = child.config?.componentId || child.componentId || child.id;
-                            return childId === blockId;
-                          });
-                        } else {
-                          // children adalah array of IDs
-                          return sectionChildren.includes(blockId);
-                        }
-                      }
-                      return false;
-                    });
-                    
-                    if (isChildOfSection) {
-                      return false; // Ini adalah child dari section, jangan render di luar section
-                    }
-                    
-                    return true;
-                  })
-                  .map((block) => (
+              {/* Preview komponen - hanya render blocks NON-CHILD */}
+              {/* ✅ RULE: Child component TIDAK BOLEH dirender oleh root renderer */}
+              {/* ✅ Hanya section yang boleh render child blocks */}
+              {blocks
+                .filter(block => {
+                  // ✅ Filter: Hanya render block yang BUKAN child
+                  // Gunakan helper function isChildBlock untuk konsistensi
+                  return !isChildBlock(block);
+                })
+                .map((block) => (
                     <div 
                       key={block.id} 
                       className="canvas-preview-block"
@@ -4145,8 +4142,7 @@ export default function AddProducts3Page() {
                     >
                       {renderPreview(block)}
                     </div>
-                  ));
-              })()}
+                  ))}
             </div>
 
             {/* Footer */}
