@@ -18,6 +18,7 @@ import {
 import OngkirCalculator from "@/components/OngkirCalculator";
 import ImageSliderPreview from "@/app/sales/products/addProducts3/components/ImageSliderPreview";
 import QuotaInfoPreview from "@/app/sales/products/addProducts3/components/QuotaInfoPreview";
+import { getProvinces, getCities, getDistricts, calculateDomesticCost } from "@/utils/shippingService";
 import "@/styles/sales/add-products3.css"; // Canvas style
 import "@/styles/ongkir.css";
 
@@ -223,6 +224,7 @@ export default function ProductPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [testimoniIndices, setTestimoniIndices] = useState({});
+  const [selectedBundling, setSelectedBundling] = useState(null); // State untuk bundling yang dipilih
 
   const sumber = searchParams.get("utm_sumber") || "website";
 
@@ -237,12 +239,64 @@ export default function ProductPage() {
   const [ongkir, setOngkir] = useState(0);
   const [ongkirInfo, setOngkirInfo] = useState({ courier: '', service: '' });
   const [ongkirAddress, setOngkirAddress] = useState({
+    provinsi: "",
     kota: "",
+    kabupaten: "",
     kecamatan: "",
     kelurahan: "",
     kode_pos: "",
   });
   const [alamatLengkap, setAlamatLengkap] = useState("");
+  
+  // State untuk form wilayah (untuk produk fisik)
+  const [formWilayah, setFormWilayah] = useState({
+    provinsi: "",
+    kabupaten: "",
+    kecamatan: "",
+    kode_pos: "",
+  });
+  
+  // State untuk dropdown wilayah (cascading)
+  const [wilayahData, setWilayahData] = useState({
+    provinces: [],
+    cities: [],
+    districts: []
+  });
+  
+  const [selectedWilayahIds, setSelectedWilayahIds] = useState({
+    provinceId: "",
+    cityId: "",
+    districtId: ""
+  });
+  
+  const [loadingWilayah, setLoadingWilayah] = useState({
+    provinces: false,
+    cities: false,
+    districts: false
+  });
+  
+  const [selectedCourier, setSelectedCourier] = useState("jne");
+  const [costResults, setCostResults] = useState([]);
+  const [loadingCost, setLoadingCost] = useState(false);
+  
+  // Courier options
+  const couriers = [
+    { value: "jne", label: "JNE" },
+    { value: "sicepat", label: "SiCepat" },
+    { value: "jnt", label: "JNT" },
+    { value: "ninja", label: "Ninja Express" },
+    { value: "anteraja", label: "AnterAja" },
+    { value: "tiki", label: "TIKI" },
+    { value: "pos", label: "POS Indonesia" },
+    { value: "lion", label: "Lion Parcel" },
+    { value: "wahana", label: "Wahana" },
+    { value: "ide", label: "IDE" },
+    { value: "sap", label: "SAP Express" },
+    { value: "ncs", label: "NCS" },
+  ];
+  
+  const ORIGIN_DISTRICT_ID = 6204; // Kelapa Dua, Kabupaten Tangerang
+  const DEFAULT_WEIGHT = 1000; // 1kg dalam gram
 
   const formatPrice = (price) => {
     if (!price) return "0";
@@ -1016,195 +1070,419 @@ export default function ProductPage() {
         const kategoriId = getKategoriId();
         const isFormBuku = kategoriId === 4; // Kategori Buku (4)
         
+        // Helper untuk mendapatkan nama dari ID
+        const getProvinceName = (id) => {
+          const province = wilayahData.provinces.find(p => p.id === Number(id));
+          return province?.name || "";
+        };
+        
+        const getCityName = (id) => {
+          const city = wilayahData.cities.find(c => c.id === Number(id));
+          return city?.name || "";
+        };
+        
+        const getDistrictName = (id) => {
+          const district = wilayahData.districts.find(d => d.district_id === Number(id) || d.id === Number(id));
+          return district?.name || "";
+        };
+        
+        // Parse bundling dari productData (bundling disimpan di productData, bukan di settings)
+        const bundlingData = productData?.bundling && Array.isArray(productData.bundling) ? productData.bundling : [];
+        const isBundling = productData?.isBundling || false;
+        
         return (
           <div style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
-            <section className="preview-form-section compact-form-section" aria-label="Order form">
-              <h2 className="compact-form-title">Lengkapi Data:</h2>
-              <div className="compact-form-card">
-                <div className="compact-field">
-                  <label className="compact-label">Nama Lengkap <span className="required">*</span></label>
-                  <input 
-                    type="text" 
-                    placeholder="Contoh: Krisdayanti" 
-                    className="compact-input"
-                    value={customerForm.nama}
-                    onChange={(e) => setCustomerForm({ ...customerForm, nama: e.target.value })}
-                  />
-                </div>
-                <div className="compact-field">
-                  <label className="compact-label">No. WhatsApp <span className="required">*</span></label>
-                  <div className="wa-input-wrapper">
-                    <div className="wa-prefix">
-                      <span className="flag">🇮🇩</span>
-                      <span className="code">+62</span>
-                    </div>
-                    <input 
-                      type="tel" 
-                      placeholder="812345678" 
-                      className="compact-input wa-input"
-                      value={customerForm.wa.replace(/^(\+62|62|0)/, '')}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/\D/g, '');
-                        setCustomerForm({ ...customerForm, wa: '62' + val });
-                      }}
-                    />
+            {/* ✅ Card besar yang merangkum semua form */}
+            <div style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "12px",
+              padding: "24px",
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+              border: "1px solid #e5e7eb"
+            }}>
+              {/* ✅ Section: Bundling/Pilihan Paket (jika ada) */}
+              {isBundling && bundlingData && bundlingData.length > 0 && (
+                <section style={{ marginBottom: "24px" }}>
+                  <h2 style={{
+                    fontSize: "18px",
+                    fontWeight: "600",
+                    color: "#000000",
+                    marginBottom: "8px",
+                    lineHeight: "1.4"
+                  }}>
+                    {productData?.nama || "Produk"}
+                  </h2>
+                  <p style={{
+                    fontSize: "18px",
+                    color: "#000000",
+                    marginBottom: "20px",
+                    fontWeight: "600"
+                  }}>
+                    Pilihan Paket
+                  </p>
+                  <div style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: "12px"
+                  }}>
+                    {bundlingData.map((item, index) => {
+                      const isSelected = selectedBundling === index;
+                      const formatHarga = (harga) => {
+                        if (!harga || harga === 0) return "0";
+                        return harga.toLocaleString("id-ID");
+                      };
+                      
+                      return (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => {
+                            setSelectedBundling(index);
+                            // Update harga produk berdasarkan bundling yang dipilih
+                            if (productData) {
+                              setProductData(prev => ({
+                                ...prev,
+                                harga: item.harga || prev.harga
+                              }));
+                            }
+                          }}
+                          style={{
+                            flex: "1 1 calc(33.333% - 8px)",
+                            minWidth: "200px",
+                            padding: "16px 20px",
+                            borderRadius: "10px",
+                            border: isSelected ? "2px solid #F1A124" : "1px solid #e5e7eb",
+                            backgroundColor: isSelected ? "#F1A124" : "#ffffff",
+                            color: isSelected ? "#ffffff" : "#374151",
+                            fontSize: "15px",
+                            fontWeight: "500",
+                            cursor: "pointer",
+                            transition: "all 0.2s ease",
+                            textAlign: "center",
+                            boxShadow: isSelected ? "0 4px 12px rgba(241, 161, 36, 0.3)" : "0 1px 3px rgba(0, 0, 0, 0.1)",
+                            outline: "none"
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isSelected) {
+                              e.currentTarget.style.backgroundColor = "#f9fafb";
+                              e.currentTarget.style.borderColor = "#d1d5db";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isSelected) {
+                              e.currentTarget.style.backgroundColor = "#ffffff";
+                              e.currentTarget.style.borderColor = "#e5e7eb";
+                            }
+                          }}
+                        >
+                          {item.nama || `Paket ${index + 1}`}
+                          {item.harga && (
+                            <span style={{
+                              display: "block",
+                              marginTop: "4px",
+                              fontSize: "14px",
+                              fontWeight: "600",
+                              opacity: isSelected ? "1" : "0.8"
+                            }}>
+                              Rp {formatHarga(item.harga)}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
-                </div>
-                <div className="compact-field">
-                  <label className="compact-label">Email <span className="required">*</span></label>
-                  <input 
-                    type="email" 
-                    placeholder="email@example.com" 
-                    className="compact-input"
-                    value={customerForm.email}
-                    onChange={(e) => setCustomerForm({ ...customerForm, email: e.target.value })}
-                  />
-                </div>
-                <div className="compact-field">
-                  <label className="compact-label">Alamat <span className="required">*</span></label>
-                  <textarea 
-                    placeholder="Contoh: Jl. Peta Utara 1, No 62 RT 01/07" 
-                    className="compact-input compact-textarea" 
-                    rows={3}
-                    value={customerForm.alamat}
-                    onChange={(e) => {
-                      setCustomerForm({ ...customerForm, alamat: e.target.value });
-                      generateAlamatLengkap(e.target.value, ongkirAddress);
-                    }}
-                  />
-                </div>
-                
-                {isFormBuku && (
+                </section>
+              )}
+              
+              {/* Section: Lengkapi Data */}
+              <section className="preview-form-section compact-form-section" aria-label="Order form" style={{ marginBottom: "24px" }}>
+                <h2 className="compact-form-title" style={{ fontSize: "18px", fontWeight: "600", color: "#000000", marginBottom: "16px" }}>
+                  Lengkapi Data:
+                </h2>
+                <div className="compact-form-card">
                   <div className="compact-field">
-                    <OngkirCalculator
-                      onSelectOngkir={(info) => {
-                        if (typeof info === 'object' && info.cost !== undefined) {
-                          setOngkir(info.cost);
-                          setOngkirInfo({ courier: info.courier || '', service: info.service || '' });
-                        } else {
-                          setOngkir(info);
-                        }
-                      }}
-                      onAddressChange={(address) => {
-                        setOngkirAddress(address);
-                        generateAlamatLengkap(customerForm.alamat, address);
-                      }}
-                      defaultCourier="jne"
-                      compact={true}
+                    <label className="compact-label">Nama Lengkap <span className="required">*</span></label>
+                    <input 
+                      type="text" 
+                      placeholder="Contoh: Krisdayanti" 
+                      className="compact-input"
+                      value={customerForm.nama}
+                      onChange={(e) => setCustomerForm({ ...customerForm, nama: e.target.value })}
                     />
                   </div>
-                )}
-              </div>
-            </section>
-
-            <section className="preview-form-section rincian-pesanan-section" aria-label="Rincian Pesanan">
-              <div className="rincian-pesanan-card">
-                <h3 className="rincian-pesanan-title">RINCIAN PESANAN:</h3>
-                <div className="rincian-pesanan-item">
-                  <div className="rincian-pesanan-detail">
-                    <div className="rincian-pesanan-name">{productData?.nama || "Nama Produk"}</div>
+                  <div className="compact-field">
+                    <label className="compact-label">No. WhatsApp <span className="required">*</span></label>
+                    <div className="wa-input-wrapper">
+                      <div className="wa-prefix">
+                        <span className="flag">🇮🇩</span>
+                        <span className="code">+62</span>
+                      </div>
+                      <input 
+                        type="tel" 
+                        placeholder="812345678" 
+                        className="compact-input wa-input"
+                        value={customerForm.wa.replace(/^(\+62|62|0)/, '')}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '');
+                          setCustomerForm({ ...customerForm, wa: '62' + val });
+                        }}
+                      />
+                    </div>
                   </div>
-                  <div className="rincian-pesanan-price">
-                    Rp {formatPrice(productData?.harga || 0)}
+                  <div className="compact-field">
+                    <label className="compact-label">Email <span className="required">*</span></label>
+                    <input 
+                      type="email" 
+                      placeholder="email@example.com" 
+                      className="compact-input"
+                      value={customerForm.email}
+                      onChange={(e) => setCustomerForm({ ...customerForm, email: e.target.value })}
+                    />
                   </div>
+                  
+                  {/* ✅ Field Provinsi, Kabupaten/Kota, Kecamatan, Kode Pos (untuk produk fisik) */}
+                  {isFormBuku && (
+                    <>
+                      <div className="compact-field">
+                        <label className="compact-label">Provinsi <span className="required">*</span></label>
+                        <select
+                          className="compact-input"
+                          value={selectedWilayahIds.provinceId}
+                          onChange={(e) => {
+                            const provinceId = e.target.value;
+                            setSelectedWilayahIds({ provinceId, cityId: "", districtId: "" });
+                            const provinceName = getProvinceName(provinceId);
+                            setFormWilayah(prev => ({ ...prev, provinsi: provinceName, kabupaten: "", kecamatan: "", kode_pos: "" }));
+                          }}
+                          disabled={loadingWilayah.provinces}
+                        >
+                          <option value="">Pilih Provinsi</option>
+                          {wilayahData.provinces.map((province) => (
+                            <option key={province.id} value={province.id}>
+                              {province.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      
+                      <div className="compact-field">
+                        <label className="compact-label">Kabupaten/Kota <span className="required">*</span></label>
+                        <select
+                          className="compact-input"
+                          value={selectedWilayahIds.cityId}
+                          onChange={(e) => {
+                            const cityId = e.target.value;
+                            setSelectedWilayahIds(prev => ({ ...prev, cityId, districtId: "" }));
+                            const cityName = getCityName(cityId);
+                            setFormWilayah(prev => ({ ...prev, kabupaten: cityName, kecamatan: "", kode_pos: "" }));
+                          }}
+                          disabled={!selectedWilayahIds.provinceId || loadingWilayah.cities}
+                        >
+                          <option value="">Pilih Kabupaten/Kota</option>
+                          {wilayahData.cities.map((city) => (
+                            <option key={city.id} value={city.id}>
+                              {city.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      
+                      <div className="compact-field">
+                        <label className="compact-label">Kecamatan <span className="required">*</span></label>
+                        <select
+                          className="compact-input"
+                          value={selectedWilayahIds.districtId}
+                          onChange={(e) => {
+                            const districtId = e.target.value;
+                            setSelectedWilayahIds(prev => ({ ...prev, districtId }));
+                            const districtName = getDistrictName(districtId);
+                            setFormWilayah(prev => ({ ...prev, kecamatan: districtName }));
+                          }}
+                          disabled={!selectedWilayahIds.cityId || loadingWilayah.districts}
+                        >
+                          <option value="">Pilih Kecamatan</option>
+                          {wilayahData.districts.map((district) => (
+                            <option key={district.district_id || district.id} value={district.district_id || district.id}>
+                              {district.name}
+                            </option>
+                          ))}
+                        </select>
+                        {!selectedWilayahIds.cityId && (
+                          <p style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
+                            Pilih kabupaten/kota terlebih dahulu
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div className="compact-field">
+                        <label className="compact-label">Kode Pos <span className="required">*</span></label>
+                        <input
+                          type="text"
+                          placeholder="Contoh: 12120"
+                          className="compact-input"
+                          value={formWilayah.kode_pos}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, '');
+                            setFormWilayah(prev => ({ ...prev, kode_pos: val }));
+                          }}
+                          disabled={!selectedWilayahIds.districtId}
+                        />
+                        {!selectedWilayahIds.districtId && (
+                          <p style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
+                            Pilih kecamatan terlebih dahulu
+                          </p>
+                        )}
+                      </div>
+                      
+                      {/* ✅ Bagian Ongkir dengan Kurir */}
+                      <div className="compact-field">
+                        <label className="compact-label">Kurir <span className="required">*</span></label>
+                        <select
+                          className="compact-input"
+                          value={selectedCourier}
+                          onChange={(e) => setSelectedCourier(e.target.value)}
+                          disabled={!selectedWilayahIds.districtId || loadingCost}
+                        >
+                          {couriers.map((courier) => (
+                            <option key={courier.value} value={courier.value}>
+                              {courier.label}
+                            </option>
+                          ))}
+                        </select>
+                        {loadingCost && (
+                          <p style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
+                            Menghitung ongkir...
+                          </p>
+                        )}
+                        {costResults.length > 0 && !loadingCost && (
+                          <div style={{ marginTop: "8px" }}>
+                            {costResults.map((result, idx) => (
+                              <div key={idx} style={{ fontSize: "14px", color: "#374151", marginTop: "4px" }}>
+                                {result.service}: Rp {formatPrice(result.cost)} ({result.etd || "Estimasi"})
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
-                {isFormBuku && ongkir > 0 && (
+              </section>
+
+              {/* Section: Rincian Pesanan */}
+              <section className="preview-form-section rincian-pesanan-section" aria-label="Rincian Pesanan" style={{ marginBottom: "24px" }}>
+                <div className="rincian-pesanan-card">
+                  <h3 className="rincian-pesanan-title">RINCIAN PESANAN:</h3>
                   <div className="rincian-pesanan-item">
                     <div className="rincian-pesanan-detail">
-                      <div className="rincian-pesanan-name">Ongkir</div>
+                      <div className="rincian-pesanan-name">{productData?.nama || "Nama Produk"}</div>
                     </div>
-                    <div className="rincian-pesanan-price">Rp {formatPrice(ongkir)}</div>
+                    <div className="rincian-pesanan-price">
+                      Rp {formatPrice(productData?.harga || 0)}
+                    </div>
                   </div>
-                )}
-                <div className="rincian-pesanan-divider"></div>
-                <div className="rincian-pesanan-total">
-                  <span className="rincian-pesanan-total-label">Total</span>
-                  <span className="rincian-pesanan-total-price">
-                    Rp {formatPrice(
-                      isFormBuku 
-                        ? (parseInt(productData?.harga || 0) + ongkir) 
-                        : parseInt(productData?.harga || 0)
-                    )}
-                  </span>
+                  {isFormBuku && ongkir > 0 && (
+                    <div className="rincian-pesanan-item">
+                      <div className="rincian-pesanan-detail">
+                        <div className="rincian-pesanan-name">Ongkos Kirim</div>
+                      </div>
+                      <div className="rincian-pesanan-price">Rp {formatPrice(ongkir)}</div>
+                    </div>
+                  )}
+                  <div className="rincian-pesanan-divider"></div>
+                  <div className="rincian-pesanan-total">
+                    <span className="rincian-pesanan-total-label">Total</span>
+                    <span className="rincian-pesanan-total-price">
+                      Rp {formatPrice(
+                        isFormBuku 
+                          ? (parseInt(productData?.harga || 0) + ongkir) 
+                          : parseInt(productData?.harga || 0)
+                      )}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </section>
+              </section>
 
-            <section className="preview-payment-section payment-section" aria-label="Payment methods">
-              <h2 className="payment-title">Metode Pembayaran</h2>
-              <div className="payment-options-vertical">
-                <label className="payment-option-row">
-                  <input 
-                    type="radio" 
-                    name="payment" 
-                    value="manual"
-                    checked={paymentMethod === "manual"}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                  />
-                  <span className="payment-label">Bank Transfer (Manual)</span>
-                  <div className="payment-icons-inline">
-                    <img className="pay-icon" src="/assets/bca.png" alt="BCA" />
-                  </div>
-                </label>
-                <label className="payment-option-row">
-                  <input 
-                    type="radio" 
-                    name="payment" 
-                    value="ewallet"
-                    checked={paymentMethod === "ewallet"}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                  />
-                  <span className="payment-label">E-Payment</span>
-                  <div className="payment-icons-inline">
-                    <img className="pay-icon" src="/assets/qris.svg" alt="QRIS" />
-                    <img className="pay-icon" src="/assets/dana.png" alt="DANA" />
-                    <img className="pay-icon" src="/assets/ovo.png" alt="OVO" />
-                    <img className="pay-icon" src="/assets/link.png" alt="LinkAja" />
-                  </div>
-                </label>
-                <label className="payment-option-row">
-                  <input 
-                    type="radio" 
-                    name="payment" 
-                    value="cc"
-                    checked={paymentMethod === "cc"}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                  />
-                  <span className="payment-label">Credit / Debit Card</span>
-                  <div className="payment-icons-inline">
-                    <img className="pay-icon" src="/assets/visa.svg" alt="Visa" />
-                    <img className="pay-icon" src="/assets/master.png" alt="Mastercard" />
-                    <img className="pay-icon" src="/assets/jcb.png" alt="JCB" />
-                  </div>
-                </label>
-                <label className="payment-option-row">
-                  <input 
-                    type="radio" 
-                    name="payment" 
-                    value="va"
-                    checked={paymentMethod === "va"}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                  />
-                  <span className="payment-label">Virtual Account</span>
-                  <div className="payment-icons-inline">
-                    <img className="pay-icon" src="/assets/bca.png" alt="BCA" />
-                    <img className="pay-icon" src="/assets/mandiri.png" alt="Mandiri" />
-                    <img className="pay-icon" src="/assets/bni.png" alt="BNI" />
-                    <img className="pay-icon" src="/assets/permata.svg" alt="Permata" />
-                  </div>
-                </label>
-              </div>
-            </section>
+              {/* Section: Metode Pembayaran */}
+              <section className="preview-payment-section payment-section" aria-label="Payment methods" style={{ marginBottom: "24px" }}>
+                <h2 className="payment-title" style={{ fontSize: "18px", fontWeight: "600", color: "#000000", marginBottom: "16px" }}>
+                  Metode Pembayaran
+                </h2>
+                <div className="payment-options-vertical">
+                  <label className="payment-option-row" style={{ border: "1px solid #000000", borderRadius: "8px", padding: "12px" }}>
+                    <input 
+                      type="radio" 
+                      name="payment" 
+                      value="manual"
+                      checked={paymentMethod === "manual"}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                    />
+                    <span className="payment-label">Bank Transfer (Manual)</span>
+                    <div className="payment-icons-inline">
+                      <img className="pay-icon" src="/assets/bca.png" alt="BCA" />
+                    </div>
+                  </label>
+                  <label className="payment-option-row" style={{ border: "1px solid #000000", borderRadius: "8px", padding: "12px" }}>
+                    <input 
+                      type="radio" 
+                      name="payment" 
+                      value="ewallet"
+                      checked={paymentMethod === "ewallet"}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                    />
+                    <span className="payment-label">E-Payment</span>
+                    <div className="payment-icons-inline">
+                      <img className="pay-icon" src="/assets/qris.svg" alt="QRIS" />
+                      <img className="pay-icon" src="/assets/dana.png" alt="DANA" />
+                      <img className="pay-icon" src="/assets/ovo.png" alt="OVO" />
+                      <img className="pay-icon" src="/assets/link.png" alt="LinkAja" />
+                    </div>
+                  </label>
+                  <label className="payment-option-row" style={{ border: "1px solid #000000", borderRadius: "8px", padding: "12px" }}>
+                    <input 
+                      type="radio" 
+                      name="payment" 
+                      value="cc"
+                      checked={paymentMethod === "cc"}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                    />
+                    <span className="payment-label">Credit / Debit Card</span>
+                    <div className="payment-icons-inline">
+                      <img className="pay-icon" src="/assets/visa.svg" alt="Visa" />
+                      <img className="pay-icon" src="/assets/master.png" alt="Mastercard" />
+                      <img className="pay-icon" src="/assets/jcb.png" alt="JCB" />
+                    </div>
+                  </label>
+                  <label className="payment-option-row" style={{ border: "1px solid #000000", borderRadius: "8px", padding: "12px" }}>
+                    <input 
+                      type="radio" 
+                      name="payment" 
+                      value="va"
+                      checked={paymentMethod === "va"}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                    />
+                    <span className="payment-label">Virtual Account</span>
+                    <div className="payment-icons-inline">
+                      <img className="pay-icon" src="/assets/bca.png" alt="BCA" />
+                      <img className="pay-icon" src="/assets/mandiri.png" alt="Mandiri" />
+                      <img className="pay-icon" src="/assets/bni.png" alt="BNI" />
+                      <img className="pay-icon" src="/assets/permata.svg" alt="Permata" />
+                    </div>
+                  </label>
+                </div>
+              </section>
 
-            <div className="preview-form-submit-wrapper">
-              <button 
-                type="button" 
-                className="preview-form-submit-btn"
-                onClick={handleSubmit}
-                disabled={submitting}
-              >
-                {submitting ? "Memproses..." : "Pesan Sekarang"}
-              </button>
+              {/* Submit Button */}
+              <div className="preview-form-submit-wrapper">
+                <button 
+                  type="button" 
+                  className="preview-form-submit-btn"
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                >
+                  {submitting ? "Memproses..." : "Pesan Sekarang"}
+                </button>
+              </div>
             </div>
           </div>
         );
@@ -1236,11 +1514,14 @@ export default function ProductPage() {
       }
 
       case "countdown": {
-        // ✅ SAMA PERSIS dengan CountdownPreview di addProducts3
+        // ✅ GENERAL: Styling sesuai gambar pertama - dark grey boxes dengan white numbers
+        // Background kotak dan warna angka bisa di-setting dari form (style.container.background.color dan style.text.color)
         const countdownData = content || {};
         const countdownStyle = {
-          textColor: style?.text?.color || countdownData.textColor || "#e5e7eb",
-          bgColor: style?.container?.background?.color || countdownData.bgColor || "#1f2937",
+          // ✅ Warna angka: dari style.text.color atau countdownData.textColor, default white (#ffffff)
+          textColor: style?.text?.color || countdownData.textColor || "#ffffff",
+          // ✅ Background kotak: dari style.container.background.color atau countdownData.bgColor, default dark grey (#374151)
+          bgColor: style?.container?.background?.color || countdownData.bgColor || "#374151",
         };
         
         return (
@@ -1490,6 +1771,129 @@ export default function ProductPage() {
     }
   };
 
+  // Load provinces when product data loaded (untuk produk fisik)
+  useEffect(() => {
+    if (!productData) return;
+    const kategoriId = getKategoriId();
+    const isBuku = kategoriId === 4;
+    
+    if (!isBuku) return; // Hanya untuk produk fisik
+    
+    async function loadProvincesData() {
+      setLoadingWilayah(prev => ({ ...prev, provinces: true }));
+      try {
+        const data = await getProvinces();
+        setWilayahData(prev => ({ ...prev, provinces: data }));
+      } catch (err) {
+        console.error("Load provinces error:", err);
+      } finally {
+        setLoadingWilayah(prev => ({ ...prev, provinces: false }));
+      }
+    }
+    loadProvincesData();
+  }, [productData]);
+  
+  // Load cities when province selected
+  useEffect(() => {
+    if (!productData) return;
+    const kategoriId = getKategoriId();
+    const isBuku = kategoriId === 4;
+    if (!isBuku) return;
+    
+    if (!selectedWilayahIds.provinceId) {
+      setWilayahData(prev => ({ ...prev, cities: [], districts: [] }));
+      setSelectedWilayahIds(prev => ({ ...prev, cityId: "", districtId: "" }));
+      return;
+    }
+    
+    async function loadCitiesData() {
+      setLoadingWilayah(prev => ({ ...prev, cities: true }));
+      try {
+        const data = await getCities(selectedWilayahIds.provinceId);
+        setWilayahData(prev => ({ ...prev, cities: data, districts: [] }));
+        setSelectedWilayahIds(prev => ({ ...prev, cityId: "", districtId: "" }));
+      } catch (err) {
+        console.error("Load cities error:", err);
+      } finally {
+        setLoadingWilayah(prev => ({ ...prev, cities: false }));
+      }
+    }
+    loadCitiesData();
+  }, [selectedWilayahIds.provinceId, productData]);
+  
+  // Load districts when city selected
+  useEffect(() => {
+    if (!productData) return;
+    const kategoriId = getKategoriId();
+    const isBuku = kategoriId === 4;
+    if (!isBuku) return;
+    
+    if (!selectedWilayahIds.cityId) {
+      setWilayahData(prev => ({ ...prev, districts: [] }));
+      setSelectedWilayahIds(prev => ({ ...prev, districtId: "" }));
+      return;
+    }
+    
+    async function loadDistrictsData() {
+      setLoadingWilayah(prev => ({ ...prev, districts: true }));
+      try {
+        const data = await getDistricts(selectedWilayahIds.cityId);
+        setWilayahData(prev => ({ ...prev, districts: data }));
+        setSelectedWilayahIds(prev => ({ ...prev, districtId: "" }));
+      } catch (err) {
+        console.error("Load districts error:", err);
+      } finally {
+        setLoadingWilayah(prev => ({ ...prev, districts: false }));
+      }
+    }
+    loadDistrictsData();
+  }, [selectedWilayahIds.cityId, productData]);
+  
+  // Calculate cost when district and courier selected
+  useEffect(() => {
+    if (!productData) return;
+    const kategoriId = getKategoriId();
+    const isBuku = kategoriId === 4;
+    if (!isBuku) return;
+    
+    if (!selectedWilayahIds.districtId || !selectedCourier) {
+      setCostResults([]);
+      setOngkir(0);
+      return;
+    }
+    
+    async function calculateShippingCost() {
+      setLoadingCost(true);
+      try {
+        const results = await calculateDomesticCost({
+          origin: ORIGIN_DISTRICT_ID,
+          destination: Number(selectedWilayahIds.districtId),
+          weight: DEFAULT_WEIGHT,
+          courier: selectedCourier
+        });
+        
+        setCostResults(results);
+        
+        // Auto select first result
+        if (results && results.length > 0) {
+          const firstResult = results[0];
+          setOngkir(firstResult.cost || 0);
+          setOngkirInfo({
+            courier: firstResult.courier || selectedCourier,
+            service: firstResult.service || ""
+          });
+        }
+      } catch (err) {
+        console.error("Calculate cost error:", err);
+        setCostResults([]);
+        setOngkir(0);
+      } finally {
+        setLoadingCost(false);
+      }
+    }
+    calculateShippingCost();
+  }, [selectedWilayahIds.districtId, selectedCourier, productData]);
+
   // Fetch Data dari Backend
   useEffect(() => {
     async function fetchProduct() {
@@ -1512,6 +1916,20 @@ export default function ProductPage() {
 
         const data = json.data;
         
+        // Parse bundling jika berupa string JSON
+        let bundlingData = data.bundling || [];
+        if (typeof bundlingData === 'string') {
+          try {
+            bundlingData = JSON.parse(bundlingData);
+          } catch (e) {
+            console.warn("[PRODUCT] Failed to parse bundling string:", e);
+            bundlingData = [];
+          }
+        }
+        if (!Array.isArray(bundlingData)) {
+          bundlingData = [];
+        }
+        
         // Set product data
         setProductData({
           id: data.id,
@@ -1522,6 +1940,8 @@ export default function ProductPage() {
           kategori: data.kategori,
           kategori_id: data.kategori_id,
           kategori_rel: data.kategori_rel,
+          isBundling: data.isBundling || false,
+          bundling: bundlingData,
         });
 
         // Parse landingpage array

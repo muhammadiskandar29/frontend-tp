@@ -3195,35 +3195,76 @@ export default function EditProductsPage() {
   };
 
   // Render grid komponen dalam modal
+  // ✅ Helper function: Get all component types that are used inside sections
+  // GENERAL: Filter komponen yang sudah digunakan di dalam section agar tidak ditampilkan di sidebar
+  const getComponentsUsedInSections = () => {
+    const usedTypes = new Set();
+    
+    // Find all section blocks
+    const sectionBlocks = blocks.filter(block => block.type === "section");
+    
+    // For each section, get all its children
+    sectionBlocks.forEach(sectionBlock => {
+      const sectionComponentId = sectionBlock.data?.componentId || sectionBlock.id;
+      const sectionChildren = sectionBlock.data?.children || [];
+      
+      // Find child blocks by both parentId and children array (sama dengan renderPreview)
+      const childBlocks = blocks.filter(block => {
+        if (!block || !block.type) return false;
+        // Check by parentId (from block.parentId)
+        if (block.parentId === sectionComponentId) return true;
+        // Check by children array (using componentId or block.id)
+        const childId = block.data?.componentId || block.id;
+        return sectionChildren.includes(childId);
+      });
+      
+      // Add all child block types to usedTypes
+      childBlocks.forEach(childBlock => {
+        if (childBlock.type && childBlock.type !== "section") {
+          // Jangan include "section" karena section bisa nested
+          usedTypes.add(childBlock.type);
+        }
+      });
+    });
+    
+    return usedTypes;
+  };
+
   const renderComponentGrid = () => {
+    // ✅ Get components that are already used inside sections
+    const usedInSections = getComponentsUsedInSections();
+    
     return (
       <div className="component-modal-content">
         {Object.entries(COMPONENT_CATEGORIES).map(([key, category]) => (
           <div key={key} className="component-category">
             <h3 className="component-category-title">{category.label}</h3>
             <div className="component-grid">
-              {category.components.map((component) => {
-                const IconComponent = component.icon;
-                return (
-                  <div
-                    key={component.id}
-                    className="component-item"
-                    onClick={() => handleAddComponent(component.id)}
-                    title={component.name}
-                  >
-                    <div 
-                      className="component-icon"
-                      style={{ backgroundColor: "#f3f4f6" }}
+              {category.components
+                // ✅ Filter: Jangan tampilkan komponen yang sudah digunakan di dalam section
+                .filter(component => !usedInSections.has(component.id))
+                .map((component) => {
+                  const IconComponent = component.icon;
+                  return (
+                    <div
+                      key={component.id}
+                      className="component-item"
+                      onClick={() => handleAddComponent(component.id)}
+                      title={component.name}
                     >
-                      <IconComponent 
-                        size={24} 
-                        style={{ color: "#6b7280" }}
-                      />
+                      <div 
+                        className="component-icon"
+                        style={{ backgroundColor: "#f3f4f6" }}
+                      >
+                        <IconComponent 
+                          size={24} 
+                          style={{ color: "#6b7280" }}
+                        />
+                      </div>
+                      <span className="component-name">{component.name}</span>
                     </div>
-                    <span className="component-name">{component.name}</span>
-                  </div>
-                );
-              })}
+                  );
+                })}
             </div>
           </div>
         ))}

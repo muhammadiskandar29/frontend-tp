@@ -48,11 +48,13 @@ import {
 import CountdownPreview from './components/CountdownPreview';
 import ImageSliderPreview from './components/ImageSliderPreview';
 import QuotaInfoPreview from './components/QuotaInfoPreview';
+import { LoadingOverlay } from "@/app/loading";
 // PrimeReact Theme & Core
 import "primereact/resources/themes/lara-light-amber/theme.css";
 import "primereact/resources/primereact.min.css";
 import "@/styles/sales/add-products3.css";
 import "@/styles/ongkir.css";
+import "@/styles/loading.css";
 
 // Komponen yang tersedia
 const COMPONENT_CATEGORIES = {
@@ -119,6 +121,7 @@ export default function AddProducts3Page() {
     cities: false,
     districts: false
   });
+  const [isSaving, setIsSaving] = useState(false);
   
   // State untuk form pengaturan
   const [pengaturanForm, setPengaturanForm] = useState({
@@ -257,7 +260,6 @@ export default function AddProducts3Page() {
         hours: 0, 
         minutes: 0, 
         seconds: 0, 
-        promoText: "Promo Berakhir Dalam:",
         textColor: "#e5e7eb",
         bgColor: "#1f2937",
         numberStyle: "flip"
@@ -2129,6 +2131,7 @@ export default function AddProducts3Page() {
 
       case "list":
         content = {
+          title: data.componentTitle || "",
           items: (data.items || []).map(item => ({
             nama: item.nama || "",
             content: item.content || "<p></p>",
@@ -2206,7 +2209,6 @@ export default function AddProducts3Page() {
           hours: data.hours !== undefined ? data.hours : 0,
           minutes: data.minutes !== undefined ? data.minutes : 0,
           seconds: data.seconds !== undefined ? data.seconds : 0,
-          promoText: data.promoText || "Promo Berakhir Dalam:"
         };
         style = {
           text: {
@@ -2634,6 +2636,11 @@ export default function AddProducts3Page() {
 
   // Handler untuk save dan publish
   const handleSaveAndPublish = async () => {
+    // Prevent double click
+    if (isSaving) {
+      return;
+    }
+
     // Validasi
     if (!pengaturanForm.nama || !pengaturanForm.nama.trim()) {
       toast.error("Nama produk wajib diisi");
@@ -2654,6 +2661,9 @@ export default function AddProducts3Page() {
       toast.error("Penanggung jawab wajib dipilih");
       return;
     }
+
+    // Set loading state
+    setIsSaving(true);
 
     // Format tanggal event
     let formattedDate = null;
@@ -2741,6 +2751,7 @@ export default function AddProducts3Page() {
       if (!response.ok || !data?.success) {
         const errorMessage = data?.message || "Gagal menyimpan produk";
         toast.error(errorMessage, { id: "save-product" });
+        setIsSaving(false);
         return;
       }
 
@@ -2754,39 +2765,81 @@ export default function AddProducts3Page() {
     } catch (error) {
       console.error("Error saving product:", error);
       toast.error("Terjadi kesalahan saat menyimpan produk", { id: "save-product" });
+      setIsSaving(false);
     }
   };
 
   // Render grid komponen dalam modal
+  // ✅ Helper function: Get all component types that are used inside sections
+  // GENERAL: Filter komponen yang sudah digunakan di dalam section agar tidak ditampilkan di sidebar
+  const getComponentsUsedInSections = () => {
+    const usedTypes = new Set();
+    
+    // Find all section blocks
+    const sectionBlocks = blocks.filter(block => block.type === "section");
+    
+    // For each section, get all its children
+    sectionBlocks.forEach(sectionBlock => {
+      const sectionComponentId = sectionBlock.data?.componentId || sectionBlock.id;
+      const sectionChildren = sectionBlock.data?.children || [];
+      
+      // Find child blocks by both parentId and children array (sama dengan renderPreview)
+      const childBlocks = blocks.filter(block => {
+        if (!block || !block.type) return false;
+        // Check by parentId (from block.parentId)
+        if (block.parentId === sectionComponentId) return true;
+        // Check by children array (using componentId or block.id)
+        const childId = block.data?.componentId || block.id;
+        return sectionChildren.includes(childId);
+      });
+      
+      // Add all child block types to usedTypes
+      childBlocks.forEach(childBlock => {
+        if (childBlock.type && childBlock.type !== "section") {
+          // Jangan include "section" karena section bisa nested
+          usedTypes.add(childBlock.type);
+        }
+      });
+    });
+    
+    return usedTypes;
+  };
+
   const renderComponentGrid = () => {
+    // ✅ Get components that are already used inside sections
+    const usedInSections = getComponentsUsedInSections();
+    
     return (
       <div className="component-modal-content">
         {Object.entries(COMPONENT_CATEGORIES).map(([key, category]) => (
           <div key={key} className="component-category">
             <h3 className="component-category-title">{category.label}</h3>
             <div className="component-grid">
-              {category.components.map((component) => {
-                const IconComponent = component.icon;
-                return (
-                  <div
-                    key={component.id}
-                    className="component-item"
-                    onClick={() => handleAddComponent(component.id)}
-                    title={component.name}
-                  >
-                    <div 
-                      className="component-icon"
-                      style={{ backgroundColor: "#f3f4f6" }}
+              {category.components
+                // ✅ Filter: Jangan tampilkan komponen yang sudah digunakan di dalam section
+                .filter(component => !usedInSections.has(component.id))
+                .map((component) => {
+                  const IconComponent = component.icon;
+                  return (
+                    <div
+                      key={component.id}
+                      className="component-item"
+                      onClick={() => handleAddComponent(component.id)}
+                      title={component.name}
                     >
-                      <IconComponent 
-                        size={24} 
-                        style={{ color: "#6b7280" }}
-                      />
+                      <div 
+                        className="component-icon"
+                        style={{ backgroundColor: "#f3f4f6" }}
+                      >
+                        <IconComponent 
+                          size={24} 
+                          style={{ color: "#6b7280" }}
+                        />
+                      </div>
+                      <span className="component-name">{component.name}</span>
                     </div>
-                    <span className="component-name">{component.name}</span>
-                  </div>
-                );
-              })}
+                  );
+                })}
             </div>
           </div>
         ))}
@@ -2796,6 +2849,12 @@ export default function AddProducts3Page() {
 
   return (
     <div className="add-products3-container">
+      {/* Loading Overlay */}
+      <LoadingOverlay 
+        isLoading={isSaving} 
+        message="Sedang menyimpan produk ke backend..." 
+      />
+      
       {/* Header Section with Back Button and Save Button */}
       <div className="page-header-section">
         <button
@@ -2807,11 +2866,12 @@ export default function AddProducts3Page() {
           <span>Back to Products</span>
         </button>
         <button
-          className="save-publish-btn"
+          className={`save-publish-btn ${isSaving ? 'btn-loading' : ''}`}
           onClick={handleSaveAndPublish}
           aria-label="Simpan dan Publish"
+          disabled={isSaving}
         >
-          <span>Simpan dan Publish</span>
+          <span>{isSaving ? "Menyimpan..." : "Simpan dan Publish"}</span>
         </button>
       </div>
 
