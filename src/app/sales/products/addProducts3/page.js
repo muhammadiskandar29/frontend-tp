@@ -473,26 +473,28 @@ export default function AddProducts3Page() {
 
   // ✅ Helper function: Tentukan apakah block adalah child dari section
   // RULE: Child component TIDAK BOLEH dirender oleh root renderer
+  // ✅ FIX: Sederhanakan - jika block punya parentId, langsung return true
   const isChildBlock = (block) => {
     if (!block || !block.id) return false;
     
-    const blockId = block.id; // ✅ Gunakan block.id sebagai primary identifier
-    
-    // Check 1: Apakah block punya parentId?
+    // ✅ FIX UTAMA: Jika block punya parentId, langsung return true
+    // Karena parentId berarti block adalah child dari section/komponen lain
     if (block.parentId) {
-      // ✅ FIX: Cek apakah parentId merujuk ke section (gunakan config.componentId)
+      // Verifikasi bahwa parentId merujuk ke section (untuk safety)
       const parentBlock = blocks.find(b => {
         if (b.type !== 'section') return false;
         const sectionComponentId = b.config?.componentId || b.id;
         return sectionComponentId === block.parentId;
       });
       if (parentBlock) {
-        console.log(`[isChildBlock] Block "${blockId}" adalah child (parentId: ${block.parentId})`);
-        return true;
+        return true; // ✅ Block adalah child dari section
       }
     }
     
-    // Check 2: Apakah block ada di section.children array?
+    // Check 2: Apakah block ada di section.children array? (fallback)
+    const blockId = block.id;
+    const blockComponentId = block.config?.componentId;
+    
     const isInSectionChildren = blocks.some(sectionBlock => {
       if (!sectionBlock || sectionBlock.type !== 'section') return false;
       
@@ -501,33 +503,26 @@ export default function AddProducts3Page() {
       
       // Check by parentId dulu (lebih cepat)
       if (block.parentId === sectionComponentId) {
-        console.log(`[isChildBlock] Block "${blockId}" adalah child (parentId match: ${sectionComponentId})`);
         return true;
       }
       
-      const sectionChildren = sectionBlock.data?.children || [];
+      // Check by content.children (FIX WAJIB #1)
+      const sectionContent = sectionBlock.content || sectionBlock.data?.content || {};
+      const sectionChildren = sectionContent.children || sectionBlock.data?.children || [];
       
       if (!Array.isArray(sectionChildren) || sectionChildren.length === 0) return false;
       
       // Cek apakah children adalah array of IDs atau array of objects
       const firstChild = sectionChildren[0];
       if (typeof firstChild === 'object' && firstChild !== null && firstChild.type) {
-        // children adalah array of objects - cek apakah ada yang match dengan blockId
-        const found = sectionChildren.some(child => {
+        // children adalah array of objects - cek apakah ada yang match
+        return sectionChildren.some(child => {
           const childId = child.config?.componentId || child.componentId || child.id;
-          return childId === blockId;
+          return childId === blockId || childId === blockComponentId;
         });
-        if (found) {
-          console.log(`[isChildBlock] Block "${blockId}" adalah child (ada di section.children objects)`);
-        }
-        return found;
       } else {
-        // children adalah array of IDs - cek apakah blockId ada di array
-        const found = sectionChildren.includes(blockId);
-        if (found) {
-          console.log(`[isChildBlock] Block "${blockId}" adalah child (ada di section.children IDs)`);
-        }
-        return found;
+        // children adalah array of IDs - cek apakah blockId atau blockComponentId ada di array
+        return sectionChildren.includes(blockId) || sectionChildren.includes(blockComponentId);
       }
     });
     
@@ -4162,13 +4157,30 @@ export default function AddProducts3Page() {
               {/* Preview komponen - hanya render blocks NON-CHILD */}
               {/* ✅ RULE: Child component TIDAK BOLEH dirender oleh root renderer */}
               {/* ✅ Hanya section yang boleh render child blocks */}
-              {blocks
-                .filter(block => {
-                  // ✅ Filter: Hanya render block yang BUKAN child
-                  // Gunakan helper function isChildBlock untuk konsistensi
-                  return !isChildBlock(block);
-                })
-                .map((block) => (
+              {/* ✅ FIX UTAMA: Filter blocks yang punya parentId - TIDAK BOLEH dirender di root */}
+              {(() => {
+                const filteredBlocks = blocks.filter(block => {
+                  if (!block || !block.type) return false;
+                  
+                  // ✅ FIX UTAMA: Jika block punya parentId, langsung skip (tidak render di root)
+                  if (block.parentId) {
+                    console.log(`[ROOT CANVAS] Skip block "${block.id}" karena punya parentId: ${block.parentId}`);
+                    return false;
+                  }
+                  
+                  // ✅ Gunakan helper function isChildBlock untuk konsistensi (fallback check)
+                  const isChild = isChildBlock(block);
+                  if (isChild) {
+                    console.log(`[ROOT CANVAS] Skip block "${block.id}" karena isChildBlock = true`);
+                    return false;
+                  }
+                  
+                  return true;
+                });
+                
+                console.log(`[ROOT CANVAS] Rendering ${filteredBlocks.length} blocks (total: ${blocks.length}, filtered: ${blocks.length - filteredBlocks.length})`);
+                
+                return filteredBlocks.map((block) => (
                     <div 
                       key={block.id} 
                       className="canvas-preview-block"
@@ -4188,7 +4200,8 @@ export default function AddProducts3Page() {
                     >
                       {renderPreview(block)}
                     </div>
-                  ))}
+                  ));
+              })()}
             </div>
 
             {/* Footer */}
