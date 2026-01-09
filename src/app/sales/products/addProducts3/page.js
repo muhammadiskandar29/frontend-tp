@@ -1481,11 +1481,21 @@ export default function AddProducts3Page() {
                 
                 // ✅ Pastikan childBlock memiliki struktur yang benar: { type, data, id, ... }
                 // Jika childBlock tidak memiliki data, tambahkan data kosong
+                // Deep copy data untuk memastikan tidak ada masalah reference
                 const normalizedChildBlock = {
                   ...childBlock,
-                  data: childBlock.data || {},
-                  id: childBlock.id || `section-child-${childBlock.type}-${childIndex}`
+                  type: childBlock.type,
+                  data: childBlock.data ? { ...childBlock.data } : {},
+                  id: childBlock.id || `section-child-${childBlock.type}-${childIndex}`,
+                  // Pastikan semua property penting ada
+                  style: childBlock.style || {},
+                  config: childBlock.config || {}
                 };
+                
+                // Debug log untuk melihat struktur data
+                if (!normalizedChildBlock.data || Object.keys(normalizedChildBlock.data).length === 0) {
+                  console.warn(`[SECTION] Child block "${normalizedChildBlock.type}" tidak memiliki data:`, normalizedChildBlock);
+                }
                 
                 const childId = normalizedChildBlock.id;
                 
@@ -2972,19 +2982,71 @@ export default function AddProducts3Page() {
             {activeTab === "konten" ? (
               <>
             {/* Komponen yang sudah ditambahkan */}
-            {blocks.map((block, index) => (
-              <div 
-                key={block.id} 
-                className="sidebar-component-item"
-                ref={(el) => {
-                  if (el) {
-                    componentRefs.current[block.id] = el;
+            {/* ✅ Filter: Jangan tampilkan komponen yang adalah child dari section */}
+            {(() => {
+              // Cari semua section componentIds untuk filter child blocks
+              const sectionComponentIds = new Set();
+              blocks.forEach(block => {
+                if (block && block.type === 'section') {
+                  const sectionId = block.data?.componentId || block.id;
+                  sectionComponentIds.add(sectionId);
+                }
+              });
+              
+              // Filter blocks: jangan tampilkan block yang adalah child dari section
+              const filteredBlocks = blocks.filter(block => {
+                if (!block || !block.type) return false;
+                
+                // ✅ Jangan tampilkan block yang adalah child dari section
+                // Check by parentId
+                if (block.parentId && sectionComponentIds.has(block.parentId)) {
+                  return false; // Ini adalah child dari section, jangan tampilkan di sidebar
+                }
+                
+                // Check by children array - jika block ini ada di children array section manapun, jangan tampilkan
+                const blockId = block.data?.componentId || block.id;
+                const isChildOfSection = blocks.some(sectionBlock => {
+                  if (!sectionBlock || sectionBlock.type !== 'section') return false;
+                  const sectionChildren = sectionBlock.data?.children || [];
+                  
+                  // Cek apakah children adalah array of IDs atau array of objects
+                  if (Array.isArray(sectionChildren) && sectionChildren.length > 0) {
+                    const firstChild = sectionChildren[0];
+                    if (typeof firstChild === 'object' && firstChild !== null && firstChild.type) {
+                      // children adalah array of objects - cek apakah ada yang match dengan blockId
+                      return sectionChildren.some(child => {
+                        const childId = child.config?.componentId || child.componentId || child.id;
+                        return childId === blockId;
+                      });
+                    } else {
+                      // children adalah array of IDs
+                      return sectionChildren.includes(blockId);
+                    }
                   }
-                }}
-              >
-                {renderComponent(block, index)}
-              </div>
-            ))}
+                  return false;
+                });
+                
+                if (isChildOfSection) {
+                  return false; // Ini adalah child dari section, jangan tampilkan di sidebar
+                }
+                
+                return true;
+              });
+              
+              return filteredBlocks.map((block, index) => (
+                <div 
+                  key={block.id} 
+                  className="sidebar-component-item"
+                  ref={(el) => {
+                    if (el) {
+                      componentRefs.current[block.id] = el;
+                    }
+                  }}
+                >
+                  {renderComponent(block, index)}
+                </div>
+              ));
+            })()}
             
             {/* Button Tambah Komponen Baru - Selalu di bawah komponen terakhir */}
             <button

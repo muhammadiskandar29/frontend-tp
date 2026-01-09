@@ -167,13 +167,16 @@ function CountdownComponent({ data = {}, componentId, containerStyle = {} }) {
     );
   };
 
+  // Extract only padding and margin from containerStyle, exclude background
+  const { backgroundColor, backgroundImage, ...safeContainerStyle } = containerStyle || {};
+  
   return (
     <div style={{ 
       padding: "24px", 
       backgroundColor: "transparent",
       borderRadius: "12px",
       textAlign: "center",
-      ...containerStyle
+      ...safeContainerStyle // Only use padding, margin, etc. - no background
     }}>
       {/* ✅ Container untuk countdown boxes dengan colon separator */}
       <div style={{ 
@@ -183,7 +186,7 @@ function CountdownComponent({ data = {}, componentId, containerStyle = {} }) {
         alignItems: "flex-start", // Align ke atas agar label sejajar
         flexWrap: "wrap"
       }}>
-        {/* Hours box dengan label */}
+        {/* Hours box dengan label - setiap card punya card sendiri */}
         {renderNumber(formattedTime.hours, "Jam")}
         
         {/* Colon separator */}
@@ -195,7 +198,7 @@ function CountdownComponent({ data = {}, componentId, containerStyle = {} }) {
           lineHeight: "48px" // Match dengan tinggi angka
         }}>:</span>
         
-        {/* Minutes box dengan label */}
+        {/* Minutes box dengan label - setiap card punya card sendiri */}
         {renderNumber(formattedTime.minutes, "Menit")}
         
         {/* Colon separator */}
@@ -207,7 +210,7 @@ function CountdownComponent({ data = {}, componentId, containerStyle = {} }) {
           lineHeight: "48px"
         }}>:</span>
         
-        {/* Seconds box dengan label */}
+        {/* Seconds box dengan label - setiap card punya card sendiri */}
         {renderNumber(formattedTime.seconds, "Detik")}
       </div>
     </div>
