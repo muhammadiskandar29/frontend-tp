@@ -2066,7 +2066,8 @@ export default function AddProducts3Page() {
 
   // Transformasi block dari flat data ke content/style/config
   const transformBlock = (block) => {
-    const { type, data = {}, order } = block;
+    // ✅ FIX: Ambil parentId dari root level block, bukan dari data.parentId
+    const { type, data = {}, order, parentId } = block;
     
     // Extract content, style, dan config berdasarkan type
     let content = {};
@@ -2122,9 +2123,9 @@ export default function AddProducts3Page() {
           }
         };
         config = {
-          componentId: data.componentId || `text-${Date.now()}`,
+          componentId: data.componentId || block.config?.componentId || `text-${Date.now()}`,
           deviceView: data.deviceView || "desktop",
-          ...(data.parentId ? { parentId: data.parentId } : {})
+          ...(parentId ? { parentId } : {}) // ✅ Gunakan parentId dari root level
         };
         break;
 
@@ -2169,8 +2170,9 @@ export default function AddProducts3Page() {
           }
         };
         config = {
-          componentId: data.componentId || `image-${Date.now()}`,
-          device: data.device || "mobile"
+          componentId: data.componentId || block.config?.componentId || `image-${Date.now()}`,
+          device: data.device || "mobile",
+          ...(parentId ? { parentId } : {}) // ✅ TAMBAHKAN parentId untuk image
         };
         break;
 
@@ -2197,7 +2199,8 @@ export default function AddProducts3Page() {
           }
         };
         config = {
-          componentId: data.componentId || `video-${Date.now()}`
+          componentId: data.componentId || block.config?.componentId || `video-${Date.now()}`,
+          ...(parentId ? { parentId } : {}) // ✅ TAMBAHKAN parentId untuk video
         };
         break;
 
@@ -2236,8 +2239,9 @@ export default function AddProducts3Page() {
           }
         };
         config = {
-          componentId: data.componentId || `testimoni-${Date.now()}`,
-          componentTitle: data.componentTitle || ""
+          componentId: data.componentId || block.config?.componentId || `testimoni-${Date.now()}`,
+          componentTitle: data.componentTitle || "",
+          ...(parentId ? { parentId } : {}) // ✅ TAMBAHKAN parentId untuk testimoni
         };
         break;
 
@@ -2271,9 +2275,9 @@ export default function AddProducts3Page() {
           }
         };
         config = {
-          componentId: data.componentId || `list-${Date.now()}`,
+          componentId: data.componentId || block.config?.componentId || `list-${Date.now()}`,
           componentTitle: data.componentTitle || "",
-          ...(data.parentId ? { parentId: data.parentId } : {})
+          ...(parentId ? { parentId } : {}) // ✅ Gunakan parentId dari root level
         };
         break;
 
@@ -2312,7 +2316,8 @@ export default function AddProducts3Page() {
           }
         };
         config = {
-          componentId: data.componentId || `section-${Date.now()}`
+          componentId: data.componentId || block.config?.componentId || `section-${Date.now()}`,
+          ...(parentId ? { parentId } : {}) // ✅ Untuk nested section
         };
         break;
 
@@ -2336,7 +2341,8 @@ export default function AddProducts3Page() {
           numberStyle: data.numberStyle || "flip"
         };
         config = {
-          componentId: data.componentId || `countdown-${Date.now()}`
+          componentId: data.componentId || block.config?.componentId || `countdown-${Date.now()}`,
+          ...(parentId ? { parentId } : {}) // ✅ TAMBAHKAN parentId untuk countdown
         };
         break;
 
@@ -2344,7 +2350,8 @@ export default function AddProducts3Page() {
         content = {};
         style = {};
         config = {
-          componentId: data.componentId || `faq-${Date.now()}`
+          componentId: data.componentId || block.config?.componentId || `faq-${Date.now()}`,
+          ...(parentId ? { parentId } : {}) // ✅ TAMBAHKAN parentId untuk faq
         };
         break;
 
@@ -2352,7 +2359,8 @@ export default function AddProducts3Page() {
         content = {};
         style = {};
         config = {
-          componentId: data.componentId || `form-${Date.now()}`
+          componentId: data.componentId || block.config?.componentId || `form-${Date.now()}`,
+          ...(parentId ? { parentId } : {}) // ✅ TAMBAHKAN parentId untuk form
         };
         break;
 
@@ -2378,7 +2386,8 @@ export default function AddProducts3Page() {
           }
         };
         config = {
-          componentId: data.componentId || `image-slider-${Date.now()}`
+          componentId: data.componentId || block.config?.componentId || `image-slider-${Date.now()}`,
+          ...(parentId ? { parentId } : {}) // ✅ TAMBAHKAN parentId untuk image-slider
         };
         break;
 
@@ -2417,7 +2426,8 @@ export default function AddProducts3Page() {
           }
         };
         config = {
-          componentId: data.componentId || `quota-info-${Date.now()}`
+          componentId: data.componentId || block.config?.componentId || `quota-info-${Date.now()}`,
+          ...(parentId ? { parentId } : {}) // ✅ TAMBAHKAN parentId untuk quota-info
         };
         break;
 
@@ -2446,7 +2456,8 @@ export default function AddProducts3Page() {
           }
         };
         config = {
-          componentId: data.componentId || `button-${Date.now()}`
+          componentId: data.componentId || block.config?.componentId || `button-${Date.now()}`,
+          ...(parentId ? { parentId } : {}) // ✅ TAMBAHKAN parentId untuk button
         };
         break;
 
@@ -2456,7 +2467,8 @@ export default function AddProducts3Page() {
         };
         style = {};
         config = {
-          componentId: data.componentId || `html-${Date.now()}`
+          componentId: data.componentId || block.config?.componentId || `html-${Date.now()}`,
+          ...(parentId ? { parentId } : {}) // ✅ TAMBAHKAN parentId untuk html
         };
         break;
 
@@ -2466,7 +2478,8 @@ export default function AddProducts3Page() {
         };
         style = {};
         config = {
-          componentId: data.componentId || `embed-${Date.now()}`
+          componentId: data.componentId || block.config?.componentId || `embed-${Date.now()}`,
+          ...(parentId ? { parentId } : {}) // ✅ TAMBAHKAN parentId untuk embed
         };
         break;
 
@@ -2489,7 +2502,8 @@ export default function AddProducts3Page() {
           }
         };
         config = {
-          componentId: data.componentId || `divider-${Date.now()}`
+          componentId: data.componentId || block.config?.componentId || `divider-${Date.now()}`,
+          ...(parentId ? { parentId } : {}) // ✅ TAMBAHKAN parentId untuk divider
         };
         break;
 
@@ -2500,7 +2514,8 @@ export default function AddProducts3Page() {
         };
         style = {};
         config = {
-          componentId: data.componentId || `scroll-target-${Date.now()}`
+          componentId: data.componentId || block.config?.componentId || `scroll-target-${Date.now()}`,
+          ...(parentId ? { parentId } : {}) // ✅ TAMBAHKAN parentId untuk scroll-target
         };
         break;
 
@@ -2513,7 +2528,8 @@ export default function AddProducts3Page() {
         };
         style = {};
         config = {
-          componentId: data.componentId || `animation-${Date.now()}`
+          componentId: data.componentId || block.config?.componentId || `animation-${Date.now()}`,
+          ...(parentId ? { parentId } : {}) // ✅ TAMBAHKAN parentId untuk animation
         };
         break;
 
@@ -2531,7 +2547,8 @@ export default function AddProducts3Page() {
       order: order || 0,
       content,
       style,
-      config
+      config,
+      ...(parentId ? { parentId } : {}) // ✅ TAMBAHKAN parentId di root level block object
     };
   };
 
