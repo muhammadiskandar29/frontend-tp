@@ -424,9 +424,6 @@ export default function FollowupSection() {
                 />
               </div>
             </div>
-            <p className="schedule-hint">
-              Format terkirim ke backend: <strong>{eventValue}</strong>
-            </p>
           </>
         )}
 

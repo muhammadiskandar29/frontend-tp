@@ -463,7 +463,7 @@ export default function TrainerSection({ productId, product, onProductUpdate }) 
         <div className="trainer-followup-header">
           <h3>Followup Text untuk Trainer</h3>
           <p className="trainer-followup-subtitle">
-            Template pesan yang akan dikirim otomatis ke trainer (type 11: Reminder Trainer)
+            Template pesan yang akan dikirim otomatis ke trainer
           </p>
         </div>
 
@@ -583,7 +583,6 @@ export default function TrainerSection({ productId, product, onProductUpdate }) 
                 </div>
               </div>
               <p className="schedule-hint">
-                Format terkirim ke backend: <strong>{followupEvent}</strong>
                 {savingFollowup && <span style={{ marginLeft: '8px', color: '#10b981' }}>• Menyimpan...</span>}
               </p>
             </div>
