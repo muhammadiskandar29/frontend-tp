@@ -217,6 +217,122 @@ function CountdownComponent({ data = {}, componentId, containerStyle = {} }) {
   );
 }
 
+/**
+ * ✅ NORMALISASI DATA BACKEND → FRONTEND
+ * 
+ * ARSITEKTUR FINAL:
+ * - Section = relasi data, bukan container visual
+ * - Child component WAJIB punya parentId di root level
+ * - parentId harus sama dengan section.config.componentId
+ * - TIDAK ada content.children di section (dihapus setelah normalisasi)
+ * 
+ * FUNGSI INI:
+ * 1. Membaca semua section dari landingpage
+ * 2. Untuk setiap section, ambil content.children (jika ada - backward compatibility)
+ * 3. Untuk setiap child, cari block yang sesuai di landingpage
+ * 4. Tambahkan parentId ke child block (di root level)
+ * 5. Hapus content.children dari section (cleanup)
+ */
+function normalizeLandingpageData(landingpageData) {
+  if (!Array.isArray(landingpageData)) {
+    return landingpageData;
+  }
+
+  // ✅ Deep clone untuk menghindari mutasi
+  const normalized = JSON.parse(JSON.stringify(landingpageData));
+
+  // ✅ Step 1: Cari semua section dan ambil componentId-nya
+  const sections = normalized.filter(item => item && item.type === 'section');
+  
+  console.log(`[NORMALIZER] Found ${sections.length} sections`);
+
+  sections.forEach(section => {
+    const sectionComponentId = section.config?.componentId;
+    
+    if (!sectionComponentId) {
+      console.warn(`[NORMALIZER] Section tanpa config.componentId, skip:`, section);
+      return;
+    }
+
+    // ✅ Step 2: Ambil content.children (jika ada - backward compatibility)
+    const sectionChildren = section.content?.children || [];
+    
+    if (!Array.isArray(sectionChildren) || sectionChildren.length === 0) {
+      console.log(`[NORMALIZER] Section "${sectionComponentId}" tidak punya children`);
+      // ✅ Cleanup: Hapus content.children yang kosong
+      if (section.content) {
+        delete section.content.children;
+      }
+      return;
+    }
+
+    console.log(`[NORMALIZER] Section "${sectionComponentId}" punya ${sectionChildren.length} children`);
+
+    // ✅ Step 3: Untuk setiap child, cari block yang sesuai dan tambahkan parentId
+    sectionChildren.forEach((childRef, childIndex) => {
+      let childBlock = null;
+
+      // ✅ Case 1: childRef adalah object lengkap dengan type
+      if (typeof childRef === 'object' && childRef !== null && childRef.type) {
+        // Cari block yang sesuai berdasarkan componentId atau order
+        const childComponentId = childRef.config?.componentId || childRef.componentId;
+        const childOrder = childRef.order;
+        
+        childBlock = normalized.find(b => {
+          if (!b || b.type === 'section' || b.type === 'settings') return false;
+          if (childComponentId && b.config?.componentId === childComponentId) return true;
+          if (childOrder && b.order === childOrder) return true;
+          return false;
+        });
+
+        // ✅ Jika tidak ditemukan, mungkin childRef adalah block baru yang perlu ditambahkan
+        if (!childBlock && childRef.type) {
+          console.warn(`[NORMALIZER] Child block tidak ditemukan di landingpage, mungkin perlu ditambahkan:`, childRef);
+        }
+      }
+      // ✅ Case 2: childRef adalah ID (string atau number)
+      else if (typeof childRef === 'string' || typeof childRef === 'number') {
+        const childId = String(childRef);
+        childBlock = normalized.find(b => {
+          if (!b || b.type === 'section' || b.type === 'settings') return false;
+          return b.config?.componentId === childId || String(b.order) === childId;
+        });
+      }
+
+      // ✅ Step 4: Tambahkan parentId ke child block (di root level)
+      if (childBlock) {
+        // ✅ Pastikan parentId belum ada atau sama dengan sectionComponentId
+        if (childBlock.parentId && childBlock.parentId !== sectionComponentId) {
+          console.warn(`[NORMALIZER] Child block sudah punya parentId berbeda:`, {
+            childBlockId: childBlock.config?.componentId || childBlock.order,
+            existingParentId: childBlock.parentId,
+            newParentId: sectionComponentId
+          });
+        } else {
+          childBlock.parentId = sectionComponentId;
+          console.log(`[NORMALIZER] ✅ Added parentId "${sectionComponentId}" to child:`, {
+            childType: childBlock.type,
+            childComponentId: childBlock.config?.componentId || childBlock.order
+          });
+        }
+      } else {
+        console.warn(`[NORMALIZER] ⚠️ Child tidak ditemukan di landingpage:`, childRef);
+      }
+    });
+
+    // ✅ Step 5: Cleanup - Hapus content.children dari section (tidak digunakan lagi)
+    if (section.content) {
+      delete section.content.children;
+    }
+  });
+
+  console.log(`[NORMALIZER] ✅ Normalization complete. Blocks with parentId:`, 
+    normalized.filter(b => b && b.parentId).length
+  );
+
+  return normalized;
+}
+
 export default function ProductPage() {
   const { kode_produk } = useParams();
   const searchParams = useSearchParams();
@@ -2056,6 +2172,9 @@ export default function ProductPage() {
           console.warn("[PRODUCT] landingpage is not an array:", landingpageData);
           landingpageData = null;
         } else {
+          // ✅ NORMALISASI DATA: Tambahkan parentId ke child blocks
+          landingpageData = normalizeLandingpageData(landingpageData);
+          
           // Log struktur landingpage untuk debugging
           console.log("[PRODUCT] Landingpage array length:", landingpageData.length);
           console.log("[PRODUCT] Landingpage structure:", landingpageData.map((item, idx) => ({
@@ -2064,7 +2183,8 @@ export default function ProductPage() {
             order: item?.order,
             hasContent: !!item?.content,
             hasStyle: !!item?.style,
-            hasConfig: !!item?.config
+            hasConfig: !!item?.config,
+            hasParentId: !!item?.parentId
           })));
         }
 
@@ -2124,32 +2244,9 @@ export default function ProductPage() {
     );
   }
 
-  // ✅ ABAIKAN ORDER DARI BACKEND
-  // ✅ PAKAI URUTAN ARRAY SAJA: Backend sudah kirim urutan → itu sumber kebenaran
-  // Filter: ambil semua item yang bukan settings (type !== 'settings')
-  // ✅ Filter: Jangan render block yang adalah child dari section (akan dirender di dalam section)
-  // Urutan array dari backend adalah sumber kebenaran, tidak perlu sorting
-  
-  // Pertama, cari semua section componentIds untuk filter child blocks
-  const sectionComponentIds = new Set();
-  if (landingpage && Array.isArray(landingpage)) {
-    landingpage.forEach(item => {
-      if (item && item.type === 'section') {
-        // ✅ Check multiple sources for componentId
-        const sectionId = item.config?.componentId 
-          || item.data?.componentId 
-          || item.content?.componentId 
-          || `section-${item.order || 'default'}`;
-        sectionComponentIds.add(sectionId);
-        console.log(`[SECTION FILTER] Found section with componentId: "${sectionId}"`, {
-          itemConfig: item.config,
-          itemData: item.data,
-          itemContent: item.content,
-          itemOrder: item.order
-        });
-      }
-    });
-  }
+  // ✅ ARSITEKTUR FINAL: Root render hanya block TANPA parentId
+  // ✅ Section render hanya block dengan parentId === section.config.componentId
+  // ✅ Child TIDAK BOLEH dirender di root
   
   const blocks = landingpage && Array.isArray(landingpage) 
     ? landingpage.filter((item) => {
@@ -2157,11 +2254,10 @@ export default function ProductPage() {
         if (!item || !item.type) return false;
         if (item.type === 'settings') return false;
         
-        // ✅ ARSITEKTUR BENAR: Jangan render block yang adalah child dari section
-        // Check by parentId (bisa di root level atau di config)
-        const itemParentId = item.parentId || item.config?.parentId;
-        if (itemParentId && sectionComponentIds.has(itemParentId)) {
-          return false; // Ini adalah child dari section, jangan render di luar section
+        // ✅ ARSITEKTUR FINAL: Root skip block dengan parentId
+        // parentId HANYA ada di root level (bukan di config)
+        if (item.parentId) {
+          return false; // Ini adalah child dari section, jangan render di root
         }
         
         return true;
