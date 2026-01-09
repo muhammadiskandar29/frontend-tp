@@ -1488,10 +1488,12 @@ export default function AddProducts3Page() {
       case "quota-info":
         return <QuotaInfoPreview data={block.data || {}} />;
       case "section":
-        const sectionData = block.data || {};
+        const sectionData = blockToRender.data || {};
         // ✅ FIX #1: componentId ada di block.config, BUKAN di block.data
-        const sectionComponentId = block.config?.componentId || blockToRender.config?.componentId || `section-${blockToRender.id}`;
-        const sectionChildren = sectionData.children || [];
+        const sectionComponentId = blockToRender.config?.componentId || `section-${blockToRender.id}`;
+        // ✅ FIX WAJIB #1: children ada di content.children, BUKAN di data.children
+        const sectionContent = blockToRender.content || blockToRender.data?.content || {};
+        const sectionChildren = sectionContent.children || sectionData.children || [];
         
         // ✅ Ambil child components dari section.children
         // section.children bisa berisi:
@@ -1508,24 +1510,24 @@ export default function AddProducts3Page() {
             childComponents = sectionChildren;
           } else {
             // ✅ children adalah array of IDs - cari dari blocks
+            // ✅ FIX WAJIB #2: Urutan pencarian yang benar (componentId dulu, baru id)
             // Pastikan urutan sesuai dengan sectionChildren array dan gunakan data terbaru dari blocks
             childComponents = sectionChildren
               .map(childId => {
-                // Cari block dengan ID yang sesuai dari blocks array (data terbaru)
-                // Coba beberapa cara pencarian untuk memastikan ditemukan
-                let foundBlock = blocks.find(b => b.id === childId);
+                // ✅ FIX WAJIB #2: Cari dengan urutan yang benar
+                // 1. Cari dengan config.componentId (PRIMARY - karena children berisi componentId)
+                // 2. Cari dengan id (FALLBACK)
+                // 3. Cari dengan parentId (FALLBACK TERAKHIR - untuk safety)
+                let foundBlock = 
+                  blocks.find(b => b.config?.componentId === childId) ||
+                  blocks.find(b => b.id === childId) ||
+                  blocks.find(b => b.parentId === sectionComponentId);
                 
+                // ✅ FIX #3: Fallback terakhir jika masih tidak ketemu
                 if (!foundBlock) {
-                  // Coba cari dengan parentId
-                  foundBlock = blocks.find(b => 
-                    b.parentId === sectionComponentId && 
-                    (b.id === childId || b.data?.componentId === childId)
-                  );
-                }
-                
-                if (!foundBlock) {
-                  // Coba cari dengan componentId
-                  foundBlock = blocks.find(b => b.data?.componentId === childId);
+                  // Cari semua block yang parentId-nya match dengan sectionComponentId
+                  // (untuk handle case dimana children array error tapi parentId benar)
+                  foundBlock = blocks.find(b => b.parentId === sectionComponentId);
                 }
                 
                 if (foundBlock) {
@@ -1536,7 +1538,13 @@ export default function AddProducts3Page() {
                 console.warn(`[SECTION] Child block dengan ID "${childId}" tidak ditemukan di blocks array`, {
                   childId,
                   sectionComponentId,
-                  availableBlocks: blocks.map(b => ({ id: b.id, type: b.type, parentId: b.parentId }))
+                  sectionChildren,
+                  availableBlocks: blocks.map(b => ({ 
+                    id: b.id, 
+                    type: b.type, 
+                    parentId: b.parentId,
+                    configComponentId: b.config?.componentId
+                  }))
                 });
                 
                 return null;
