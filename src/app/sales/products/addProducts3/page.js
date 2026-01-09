@@ -476,20 +476,35 @@ export default function AddProducts3Page() {
   const isChildBlock = (block) => {
     if (!block || !block.id) return false;
     
+    const blockId = block.id; // ✅ Gunakan block.id sebagai primary identifier
+    
     // Check 1: Apakah block punya parentId?
     if (block.parentId) {
-      // Cek apakah parentId merujuk ke section
-      const parentBlock = blocks.find(b => 
-        (b.data?.componentId === block.parentId || b.id === block.parentId) && 
-        b.type === 'section'
-      );
-      if (parentBlock) return true;
+      // ✅ FIX: Cek apakah parentId merujuk ke section (gunakan config.componentId)
+      const parentBlock = blocks.find(b => {
+        if (b.type !== 'section') return false;
+        const sectionComponentId = b.config?.componentId || b.id;
+        return sectionComponentId === block.parentId;
+      });
+      if (parentBlock) {
+        console.log(`[isChildBlock] Block "${blockId}" adalah child (parentId: ${block.parentId})`);
+        return true;
+      }
     }
     
     // Check 2: Apakah block ada di section.children array?
-    const blockId = block.data?.componentId || block.id;
     const isInSectionChildren = blocks.some(sectionBlock => {
       if (!sectionBlock || sectionBlock.type !== 'section') return false;
+      
+      // ✅ FIX: Gunakan componentId dari config, bukan data
+      const sectionComponentId = sectionBlock.config?.componentId || sectionBlock.id;
+      
+      // Check by parentId dulu (lebih cepat)
+      if (block.parentId === sectionComponentId) {
+        console.log(`[isChildBlock] Block "${blockId}" adalah child (parentId match: ${sectionComponentId})`);
+        return true;
+      }
+      
       const sectionChildren = sectionBlock.data?.children || [];
       
       if (!Array.isArray(sectionChildren) || sectionChildren.length === 0) return false;
@@ -498,13 +513,21 @@ export default function AddProducts3Page() {
       const firstChild = sectionChildren[0];
       if (typeof firstChild === 'object' && firstChild !== null && firstChild.type) {
         // children adalah array of objects - cek apakah ada yang match dengan blockId
-        return sectionChildren.some(child => {
+        const found = sectionChildren.some(child => {
           const childId = child.config?.componentId || child.componentId || child.id;
           return childId === blockId;
         });
+        if (found) {
+          console.log(`[isChildBlock] Block "${blockId}" adalah child (ada di section.children objects)`);
+        }
+        return found;
       } else {
-        // children adalah array of IDs
-        return sectionChildren.includes(blockId);
+        // children adalah array of IDs - cek apakah blockId ada di array
+        const found = sectionChildren.includes(blockId);
+        if (found) {
+          console.log(`[isChildBlock] Block "${blockId}" adalah child (ada di section.children IDs)`);
+        }
+        return found;
       }
     });
     
@@ -1526,10 +1549,18 @@ export default function AddProducts3Page() {
         console.log(`[SECTION] Section "${sectionComponentId}" memiliki ${childComponents.length} child components:`, {
           sectionComponentId,
           sectionChildren,
-          allBlocksIds: blocks.map(b => ({ id: b.id, type: b.type, parentId: b.parentId })),
+          blockConfig: blockToRender.config,
+          blockData: blockToRender.data,
+          allBlocksIds: blocks.map(b => ({ 
+            id: b.id, 
+            type: b.type, 
+            parentId: b.parentId,
+            configComponentId: b.config?.componentId
+          })),
           childComponents: childComponents.map(c => ({
             id: c?.id,
             type: c?.type,
+            parentId: c?.parentId,
             hasData: !!c?.data,
             dataKeys: c?.data ? Object.keys(c.data) : [],
             items: c?.data?.items || [],
