@@ -144,10 +144,10 @@ function CountdownComponent({ data = {}, componentId, containerStyle = {} }) {
 
     const numberStyle = {
       fontSize: "48px",
-      fontWeight: "bold",
+            fontWeight: "bold",
       color: textColor, // White (#ffffff) atau dari props
-      fontFamily: "monospace",
-      lineHeight: "1",
+            fontFamily: "monospace",
+            lineHeight: "1",
       margin: 0,
     };
 
@@ -159,17 +159,17 @@ function CountdownComponent({ data = {}, componentId, containerStyle = {} }) {
       textAlign: "center",
     };
 
-    return (
+      return (
       <div style={boxStyle}>
         <div style={numberStyle}>{value}</div>
         {label && <div style={labelStyle}>{label}</div>}
-      </div>
-    );
+        </div>
+      );
   };
 
   // Extract only padding and margin from containerStyle, exclude background
   const { backgroundColor, backgroundImage, ...safeContainerStyle } = containerStyle || {};
-  
+
   return (
     <div style={{ 
       padding: "24px", 
@@ -206,7 +206,7 @@ function CountdownComponent({ data = {}, componentId, containerStyle = {} }) {
           fontSize: "32px", 
           color: "#374151", 
           fontWeight: "bold",
-          marginTop: "16px",
+        marginTop: "16px",
           lineHeight: "48px"
         }}>:</span>
         
@@ -1335,54 +1335,54 @@ export default function ProductPage() {
                 <h2 className="compact-form-title" style={{ fontSize: "18px", fontWeight: "600", color: "#000000", marginBottom: "16px" }}>
                   Lengkapi Data:
                 </h2>
-                <div className="compact-form-card">
-                  <div className="compact-field">
-                    <label className="compact-label">Nama Lengkap <span className="required">*</span></label>
-                    <input 
-                      type="text" 
-                      placeholder="Contoh: Krisdayanti" 
-                      className="compact-input"
-                      value={customerForm.nama}
-                      onChange={(e) => setCustomerForm({ ...customerForm, nama: e.target.value })}
-                    />
-                  </div>
-                  <div className="compact-field">
-                    <label className="compact-label">No. WhatsApp <span className="required">*</span></label>
-                    <div className="wa-input-wrapper">
-                      <div className="wa-prefix">
-                        <span className="flag">🇮🇩</span>
-                        <span className="code">+62</span>
-                      </div>
-                      <input 
-                        type="tel" 
-                        placeholder="812345678" 
-                        className="compact-input wa-input"
-                        value={customerForm.wa.replace(/^(\+62|62|0)/, '')}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/\D/g, '');
-                          setCustomerForm({ ...customerForm, wa: '62' + val });
-                        }}
-                      />
+              <div className="compact-form-card">
+                <div className="compact-field">
+                  <label className="compact-label">Nama Lengkap <span className="required">*</span></label>
+                  <input 
+                    type="text" 
+                    placeholder="Contoh: Krisdayanti" 
+                    className="compact-input"
+                    value={customerForm.nama}
+                    onChange={(e) => setCustomerForm({ ...customerForm, nama: e.target.value })}
+                  />
+                </div>
+                <div className="compact-field">
+                  <label className="compact-label">No. WhatsApp <span className="required">*</span></label>
+                  <div className="wa-input-wrapper">
+                    <div className="wa-prefix">
+                      <span className="flag">🇮🇩</span>
+                      <span className="code">+62</span>
                     </div>
-                  </div>
-                  <div className="compact-field">
-                    <label className="compact-label">Email <span className="required">*</span></label>
                     <input 
-                      type="email" 
-                      placeholder="email@example.com" 
-                      className="compact-input"
-                      value={customerForm.email}
-                      onChange={(e) => setCustomerForm({ ...customerForm, email: e.target.value })}
+                      type="tel" 
+                      placeholder="812345678" 
+                      className="compact-input wa-input"
+                      value={customerForm.wa.replace(/^(\+62|62|0)/, '')}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '');
+                        setCustomerForm({ ...customerForm, wa: '62' + val });
+                      }}
                     />
                   </div>
+                </div>
+                <div className="compact-field">
+                  <label className="compact-label">Email <span className="required">*</span></label>
+                  <input 
+                    type="email" 
+                    placeholder="email@example.com" 
+                    className="compact-input"
+                    value={customerForm.email}
+                    onChange={(e) => setCustomerForm({ ...customerForm, email: e.target.value })}
+                  />
+                </div>
                   
                   {/* ✅ Field Provinsi, Kabupaten/Kota, Kecamatan, Kode Pos (selalu tampil) */}
-                  <div className="compact-field">
+                <div className="compact-field">
                     <label className="compact-label">Provinsi <span className="required">*</span></label>
                     <select
                       className="compact-input"
                       value={selectedWilayahIds.provinceId}
-                      onChange={(e) => {
+                    onChange={(e) => {
                         const provinceId = e.target.value;
                         setSelectedWilayahIds({ provinceId, cityId: "", districtId: "" });
                         const provinceName = getProvinceName(provinceId);
@@ -1407,8 +1407,8 @@ export default function ProductPage() {
                         Memuat provinsi...
                       </small>
                     )}
-                  </div>
-                  
+                </div>
+                
                   <div className="compact-field">
                     <label className="compact-label">Kabupaten/Kota <span className="required">*</span></label>
                     <select
@@ -1538,123 +1538,123 @@ export default function ProductPage() {
                         </div>
                       )}
                     </div>
-                  )}
-                </div>
-              </section>
+                )}
+              </div>
+            </section>
 
               {/* Section: Rincian Pesanan */}
               <section className="preview-form-section rincian-pesanan-section" aria-label="Rincian Pesanan" style={{ marginBottom: "24px" }}>
-                <div className="rincian-pesanan-card">
-                  <h3 className="rincian-pesanan-title">RINCIAN PESANAN:</h3>
-                  <div className="rincian-pesanan-item">
-                    <div className="rincian-pesanan-detail">
-                      <div className="rincian-pesanan-name">{productData?.nama || "Nama Produk"}</div>
-                    </div>
-                    <div className="rincian-pesanan-price">
-                      Rp {formatPrice(productData?.harga || 0)}
-                    </div>
+              <div className="rincian-pesanan-card">
+                <h3 className="rincian-pesanan-title">RINCIAN PESANAN:</h3>
+                <div className="rincian-pesanan-item">
+                  <div className="rincian-pesanan-detail">
+                    <div className="rincian-pesanan-name">{productData?.nama || "Nama Produk"}</div>
                   </div>
-                  {isFormBuku && ongkir > 0 && (
-                    <div className="rincian-pesanan-item">
-                      <div className="rincian-pesanan-detail">
-                        <div className="rincian-pesanan-name">Ongkos Kirim</div>
-                      </div>
-                      <div className="rincian-pesanan-price">Rp {formatPrice(ongkir)}</div>
-                    </div>
-                  )}
-                  <div className="rincian-pesanan-divider"></div>
-                  <div className="rincian-pesanan-total">
-                    <span className="rincian-pesanan-total-label">Total</span>
-                    <span className="rincian-pesanan-total-price">
-                      Rp {formatPrice(
-                        isFormBuku 
-                          ? (parseInt(productData?.harga || 0) + ongkir) 
-                          : parseInt(productData?.harga || 0)
-                      )}
-                    </span>
+                  <div className="rincian-pesanan-price">
+                    Rp {formatPrice(productData?.harga || 0)}
                   </div>
                 </div>
-              </section>
+                {isFormBuku && ongkir > 0 && (
+                  <div className="rincian-pesanan-item">
+                    <div className="rincian-pesanan-detail">
+                        <div className="rincian-pesanan-name">Ongkos Kirim</div>
+                    </div>
+                    <div className="rincian-pesanan-price">Rp {formatPrice(ongkir)}</div>
+                  </div>
+                )}
+                <div className="rincian-pesanan-divider"></div>
+                <div className="rincian-pesanan-total">
+                  <span className="rincian-pesanan-total-label">Total</span>
+                  <span className="rincian-pesanan-total-price">
+                    Rp {formatPrice(
+                      isFormBuku 
+                        ? (parseInt(productData?.harga || 0) + ongkir) 
+                        : parseInt(productData?.harga || 0)
+                    )}
+                  </span>
+                </div>
+              </div>
+            </section>
 
               {/* Section: Metode Pembayaran */}
               <section className="preview-payment-section payment-section" aria-label="Payment methods" style={{ marginBottom: "24px" }}>
                 <h2 className="payment-title" style={{ fontSize: "18px", fontWeight: "600", color: "#000000", marginBottom: "16px" }}>
                   Metode Pembayaran
                 </h2>
-                <div className="payment-options-vertical">
-                  <label className="payment-option-row">
-                    <input 
-                      type="radio" 
-                      name="payment" 
-                      value="manual"
-                      checked={paymentMethod === "manual"}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                    />
-                    <span className="payment-label">Bank Transfer (Manual)</span>
-                    <div className="payment-icons-inline">
-                      <img className="pay-icon" src="/assets/bca.png" alt="BCA" />
-                    </div>
-                  </label>
-                  <label className="payment-option-row">
-                    <input 
-                      type="radio" 
-                      name="payment" 
-                      value="ewallet"
-                      checked={paymentMethod === "ewallet"}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                    />
-                    <span className="payment-label">E-Payment</span>
-                    <div className="payment-icons-inline">
-                      <img className="pay-icon" src="/assets/qris.svg" alt="QRIS" />
-                      <img className="pay-icon" src="/assets/dana.png" alt="DANA" />
-                      <img className="pay-icon" src="/assets/ovo.png" alt="OVO" />
-                      <img className="pay-icon" src="/assets/link.png" alt="LinkAja" />
-                    </div>
-                  </label>
-                  <label className="payment-option-row">
-                    <input 
-                      type="radio" 
-                      name="payment" 
-                      value="cc"
-                      checked={paymentMethod === "cc"}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                    />
-                    <span className="payment-label">Credit / Debit Card</span>
-                    <div className="payment-icons-inline">
-                      <img className="pay-icon" src="/assets/visa.svg" alt="Visa" />
-                      <img className="pay-icon" src="/assets/master.png" alt="Mastercard" />
-                      <img className="pay-icon" src="/assets/jcb.png" alt="JCB" />
-                    </div>
-                  </label>
-                  <label className="payment-option-row">
-                    <input 
-                      type="radio" 
-                      name="payment" 
-                      value="va"
-                      checked={paymentMethod === "va"}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                    />
-                    <span className="payment-label">Virtual Account</span>
-                    <div className="payment-icons-inline">
-                      <img className="pay-icon" src="/assets/bca.png" alt="BCA" />
-                      <img className="pay-icon" src="/assets/mandiri.png" alt="Mandiri" />
-                      <img className="pay-icon" src="/assets/bni.png" alt="BNI" />
-                      <img className="pay-icon" src="/assets/permata.svg" alt="Permata" />
-                    </div>
-                  </label>
-                </div>
-              </section>
+              <div className="payment-options-vertical">
+                <label className="payment-option-row">
+                  <input 
+                    type="radio" 
+                    name="payment" 
+                    value="manual"
+                    checked={paymentMethod === "manual"}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  />
+                  <span className="payment-label">Bank Transfer (Manual)</span>
+                  <div className="payment-icons-inline">
+                    <img className="pay-icon" src="/assets/bca.png" alt="BCA" />
+                  </div>
+                </label>
+                <label className="payment-option-row">
+                  <input 
+                    type="radio" 
+                    name="payment" 
+                    value="ewallet"
+                    checked={paymentMethod === "ewallet"}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  />
+                  <span className="payment-label">E-Payment</span>
+                  <div className="payment-icons-inline">
+                    <img className="pay-icon" src="/assets/qris.svg" alt="QRIS" />
+                    <img className="pay-icon" src="/assets/dana.png" alt="DANA" />
+                    <img className="pay-icon" src="/assets/ovo.png" alt="OVO" />
+                    <img className="pay-icon" src="/assets/link.png" alt="LinkAja" />
+                  </div>
+                </label>
+                <label className="payment-option-row">
+                  <input 
+                    type="radio" 
+                    name="payment" 
+                    value="cc"
+                    checked={paymentMethod === "cc"}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  />
+                  <span className="payment-label">Credit / Debit Card</span>
+                  <div className="payment-icons-inline">
+                    <img className="pay-icon" src="/assets/visa.svg" alt="Visa" />
+                    <img className="pay-icon" src="/assets/master.png" alt="Mastercard" />
+                    <img className="pay-icon" src="/assets/jcb.png" alt="JCB" />
+                  </div>
+                </label>
+                <label className="payment-option-row">
+                  <input 
+                    type="radio" 
+                    name="payment" 
+                    value="va"
+                    checked={paymentMethod === "va"}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  />
+                  <span className="payment-label">Virtual Account</span>
+                  <div className="payment-icons-inline">
+                    <img className="pay-icon" src="/assets/bca.png" alt="BCA" />
+                    <img className="pay-icon" src="/assets/mandiri.png" alt="Mandiri" />
+                    <img className="pay-icon" src="/assets/bni.png" alt="BNI" />
+                    <img className="pay-icon" src="/assets/permata.svg" alt="Permata" />
+                  </div>
+                </label>
+              </div>
+            </section>
 
               {/* Submit Button */}
-              <div className="preview-form-submit-wrapper">
-                <button 
-                  type="button" 
-                  className="preview-form-submit-btn"
-                  onClick={handleSubmit}
-                  disabled={submitting}
-                >
-                  {submitting ? "Memproses..." : "Pesan Sekarang"}
-                </button>
+            <div className="preview-form-submit-wrapper">
+              <button 
+                type="button" 
+                className="preview-form-submit-btn"
+                onClick={handleSubmit}
+                disabled={submitting}
+              >
+                {submitting ? "Memproses..." : "Pesan Sekarang"}
+              </button>
               </div>
             </div>
           </div>
@@ -1863,6 +1863,26 @@ export default function ProductPage() {
         // ✅ FIX #3: Build section styles from block.style.container, bukan block.data (sama dengan addProducts3)
         const sectionData = blockToRender.data || blockToRender.content || {};
         const sectionContainerStyle = blockToRender.style?.container || style?.container || {};
+        // ✅ FIX: Padding section diperkecil agar lebih dekat dengan isi konten
+        // Default padding lebih kecil: 4px top/bottom, 8px left/right
+        let sectionPadding = "4px 8px";
+        if (sectionContainerStyle.padding) {
+          const top = sectionContainerStyle.padding.top || 0;
+          const right = sectionContainerStyle.padding.right || 0;
+          const bottom = sectionContainerStyle.padding.bottom || 0;
+          const left = sectionContainerStyle.padding.left || 0;
+          // ✅ Jika padding dari backend terlalu besar (> 16px), kurangi menjadi maksimal 12px
+          const maxPadding = 12;
+          sectionPadding = `${Math.min(top, maxPadding)}px ${Math.min(right, maxPadding)}px ${Math.min(bottom, maxPadding)}px ${Math.min(left, maxPadding)}px`;
+        } else if (sectionData.padding) {
+          // ✅ Jika sectionData.padding adalah string seperti "40px", parse dan kurangi
+          const paddingValue = typeof sectionData.padding === 'string' 
+            ? parseInt(sectionData.padding) || 8
+            : sectionData.padding || 8;
+          const finalPadding = Math.min(paddingValue, 12);
+          sectionPadding = `${finalPadding}px`;
+        }
+        
         const sectionStyles = {
           marginRight: `${sectionContainerStyle.margin?.right || sectionContainerStyle.marginRight || sectionData.marginRight || 0}px`,
           marginLeft: `${sectionContainerStyle.margin?.left || sectionContainerStyle.marginLeft || sectionData.marginLeft || 0}px`,
@@ -1875,9 +1895,7 @@ export default function ProductPage() {
           boxShadow: sectionContainerStyle.shadow || (sectionData.boxShadow === "none" ? "none" : sectionData.boxShadow || "none"),
           display: "block",
           width: "100%",
-          padding: sectionContainerStyle.padding 
-            ? `${sectionContainerStyle.padding.top || 0}px ${sectionContainerStyle.padding.right || 0}px ${sectionContainerStyle.padding.bottom || 0}px ${sectionContainerStyle.padding.left || 0}px` 
-            : (sectionData.padding || "16px"),
+          padding: sectionPadding, // ✅ Gunakan padding yang sudah di-adjust
         };
         
         return (
@@ -1895,7 +1913,7 @@ export default function ProductPage() {
         
                 // ✅ Key dari componentId atau id atau order (sama dengan addProducts3 tapi dengan fallback untuk product page)
                 const childKey = childBlock.config?.componentId || childBlock.id || childBlock.order || `section-child-${childBlock.type}-${Date.now()}`;
-        
+                
                 return (
                   <div key={childKey} className="preview-section-child">
                     {renderBlock(childBlock, allBlocks)}
@@ -2318,9 +2336,9 @@ export default function ProductPage() {
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
-      <div className="add-products3-container" itemScope itemType="https://schema.org/Product">
-        <div className="page-builder-canvas">
-          <div className="canvas-wrapper">
+    <div className="add-products3-container" itemScope itemType="https://schema.org/Product">
+      <div className="page-builder-canvas">
+        <div className="canvas-wrapper">
           {/* Logo Section - Top */}
           <div className="canvas-logo-wrapper">
             <img 
