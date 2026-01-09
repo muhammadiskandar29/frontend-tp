@@ -2872,44 +2872,10 @@ export default function AddProducts3Page() {
   };
 
   // Render grid komponen dalam modal
-  // ✅ Helper function: Get all component types that are used inside sections
-  // GENERAL: Filter komponen yang sudah digunakan di dalam section agar tidak ditampilkan di sidebar
-  // ✅ ARSITEKTUR BENAR: Pakai parentId saja, TIDAK pakai data.children
-  const getComponentsUsedInSections = () => {
-    const usedTypes = new Set();
-    
-    // Find all section blocks
-    const sectionBlocks = blocks.filter(block => block.type === "section");
-    
-    // For each section, get all its children berdasarkan parentId
-    sectionBlocks.forEach(sectionBlock => {
-      // ✅ ARSITEKTUR BENAR: config.componentId adalah SATU-SATUNYA sumber kebenaran
-      // TIDAK ADA fallback ke sectionBlock.id
-      const sectionComponentId = sectionBlock.config?.componentId;
-      
-      if (!sectionComponentId) {
-        console.warn(`[getComponentsUsedInSections] Section block "${sectionBlock.id}" tidak memiliki config.componentId!`);
-        return;
-      }
-      
-      // ✅ ARSITEKTUR BENAR: Cari child blocks berdasarkan parentId saja
-      const childBlocks = blocks.filter(b => b.parentId === sectionComponentId);
-      
-      // Add types dari child blocks
-      childBlocks.forEach(b => {
-        if (b.type && b.type !== "section") {
-          // Jangan include "section" karena section bisa nested
-          usedTypes.add(b.type);
-        }
-      });
-    });
-    
-    return usedTypes;
-  };
-
   const renderComponentGrid = () => {
-    // ✅ Get components that are already used inside sections
-    const usedInSections = getComponentsUsedInSections();
+    // ✅ FIX: Komponen bisa digunakan berkali-kali, baik di dalam section maupun di luar section
+    // TIDAK perlu filter komponen yang sudah digunakan di section
+    // User bebas menambahkan komponen yang sama berkali-kali
     
     return (
       <div className="component-modal-content">
@@ -2918,8 +2884,7 @@ export default function AddProducts3Page() {
             <h3 className="component-category-title">{category.label}</h3>
             <div className="component-grid">
               {category.components
-                // ✅ Filter: Jangan tampilkan komponen yang sudah digunakan di dalam section
-                .filter(component => !usedInSections.has(component.id))
+                // ✅ FIX: Tampilkan semua komponen, tidak ada filter
                 .map((component) => {
                   const IconComponent = component.icon;
                   return (
