@@ -285,6 +285,12 @@ export default function AddProducts3Page() {
       type: componentId,
       data: getDefaultData(componentId),
       order: blocks.length + 1,
+      // ✅ ARSITEKTUR BENAR: Section HARUS punya config.componentId
+      ...(componentId === "section" ? {
+        config: {
+          componentId: `section-${Date.now()}`
+        }
+      } : {})
     };
     
     setBlocks([...blocks, newBlock]);
@@ -326,13 +332,15 @@ export default function AddProducts3Page() {
     const childBlock = blocks.find(b => b.id === childId);
     if (!childBlock || !childBlock.parentId) return;
     
-    // Find parent section by componentId
+    // ✅ ARSITEKTUR BENAR: Find parent section HANYA berdasarkan config.componentId
     const sectionComponentId = childBlock.parentId;
     const parentSection = blocks.find(b => 
-      b.type === "section" && 
-      (b.config?.componentId === sectionComponentId || b.id === sectionComponentId)
+      b.type === "section" && b.config?.componentId === sectionComponentId
     );
-    if (!parentSection) return;
+    if (!parentSection) {
+      console.error(`[MOVE CHILD ERROR] Section dengan componentId "${sectionComponentId}" tidak ditemukan!`);
+      return;
+    }
     
     // Get all child blocks dari section ini, sorted by order
     const childBlocks = blocks
@@ -490,26 +498,23 @@ export default function AddProducts3Page() {
 
   // ✅ Helper function: Tentukan apakah block adalah child dari section
   // RULE: Child component TIDAK BOLEH dirender oleh root renderer
+  // ✅ ARSITEKTUR BENAR: isChildBlock hanya cek parentId saja
   const isChildBlock = (block) => {
     if (!block || !block.id) return false;
     
-    const blockId = block.id; // ✅ Gunakan block.id sebagai primary identifier
-    
-    // Check 1: Apakah block punya parentId?
+    // ✅ ARSITEKTUR BENAR: Hanya cek parentId, TIDAK ada data.children
     if (block.parentId) {
-      // ✅ FIX: Cek apakah parentId merujuk ke section (gunakan config.componentId)
+      // ✅ ARSITEKTUR BENAR: Cek apakah parentId merujuk ke section.config.componentId
+      // TIDAK ADA fallback ke block.id
       const parentBlock = blocks.find(b => {
         if (b.type !== 'section') return false;
-        const sectionComponentId = b.config?.componentId || b.id;
-        return sectionComponentId === block.parentId;
+        return b.config?.componentId === block.parentId;
       });
       if (parentBlock) {
-        console.log(`[isChildBlock] Block "${blockId}" adalah child (parentId: ${block.parentId})`);
         return true;
       }
     }
     
-    // ✅ ARSITEKTUR BENAR: Tidak perlu check data.children, cukup parentId saja
     return false;
   };
 
@@ -1467,27 +1472,34 @@ export default function AddProducts3Page() {
       case "quota-info":
         return <QuotaInfoPreview data={block.data || {}} />;
       case "section":
-        // ✅ FIX #1: componentId ada di block.config, BUKAN di block.data
-        const sectionComponentId = blockToRender.config?.componentId || `section-${blockToRender.id}`;
+        // ✅ ARSITEKTUR BENAR: config.componentId adalah SATU-SATUNYA sumber kebenaran
+        // TIDAK ADA fallback ke block.id atau data.componentId
+        const sectionComponentId = blockToRender.config?.componentId;
         
-        // ✅ FIX UTAMA: Sederhanakan - cukup filter dengan parentId saja
-        // Logic yang benar: cari semua block yang parentId-nya match dengan sectionComponentId
-        // ✅ FIX WAJIB #1: parentId ada di ROOT block (b.parentId), BUKAN di config (b.config.parentId)
+        if (!sectionComponentId) {
+          console.error(`[SECTION ERROR] Section block "${blockToRender.id}" tidak memiliki config.componentId!`, blockToRender);
+          return <div className="preview-placeholder">Section Error: Missing componentId</div>;
+        }
+        
+        // ✅ ARSITEKTUR BENAR: Filter child berdasarkan parentId === sectionComponentId
         const childComponents = blocks.filter(b => {
           if (!b || !b.type) return false;
           return b.parentId === sectionComponentId;
         });
         
-        // Debug log untuk melihat child components
-        console.log(`[SECTION] Section "${sectionComponentId}" memiliki ${childComponents.length} child components:`, {
-          sectionComponentId,
-          childComponents: childComponents.map(c => ({
-            id: c?.id,
-            type: c?.type,
-            parentId: c?.parentId,
-            hasData: !!c?.data,
-            dataKeys: c?.data ? Object.keys(c.data) : []
-          }))
+        // ✅ DEBUG: Log untuk tracking identifier
+        console.log(`[SECTION RENDER] Section ID: "${sectionComponentId}"`, {
+          sectionBlockId: blockToRender.id,
+          sectionConfigComponentId: blockToRender.config?.componentId,
+          childCount: childComponents.length,
+          allBlocksWithParentId: blocks
+            .filter(b => b.parentId)
+            .map(b => ({
+              id: b.id,
+              type: b.type,
+              parentId: b.parentId,
+              match: b.parentId === sectionComponentId ? "✅ MATCH" : "❌ NO MATCH"
+            }))
         });
         
         // ✅ FIX #3: Build section styles from block.style.container, bukan block.data
@@ -2871,8 +2883,14 @@ export default function AddProducts3Page() {
     
     // For each section, get all its children berdasarkan parentId
     sectionBlocks.forEach(sectionBlock => {
-      // ✅ ARSITEKTUR BENAR: componentId ada di config
-      const sectionComponentId = sectionBlock.config?.componentId || sectionBlock.id;
+      // ✅ ARSITEKTUR BENAR: config.componentId adalah SATU-SATUNYA sumber kebenaran
+      // TIDAK ADA fallback ke sectionBlock.id
+      const sectionComponentId = sectionBlock.config?.componentId;
+      
+      if (!sectionComponentId) {
+        console.warn(`[getComponentsUsedInSections] Section block "${sectionBlock.id}" tidak memiliki config.componentId!`);
+        return;
+      }
       
       // ✅ ARSITEKTUR BENAR: Cari child blocks berdasarkan parentId saja
       const childBlocks = blocks.filter(b => b.parentId === sectionComponentId);
@@ -2986,12 +3004,12 @@ export default function AddProducts3Page() {
             {/* Komponen yang sudah ditambahkan */}
             {/* ✅ Filter: Jangan tampilkan komponen yang adalah child dari section */}
             {(() => {
-              // Cari semua section componentIds untuk filter child blocks
+              // ✅ ARSITEKTUR BENAR: Cari semua section componentIds untuk filter child blocks
+              // Hanya pakai config.componentId, TIDAK ADA fallback
               const sectionComponentIds = new Set();
               blocks.forEach(block => {
-                if (block && block.type === 'section') {
-                  const sectionId = block.data?.componentId || block.id;
-                  sectionComponentIds.add(sectionId);
+                if (block && block.type === 'section' && block.config?.componentId) {
+                  sectionComponentIds.add(block.config.componentId);
                 }
               });
               

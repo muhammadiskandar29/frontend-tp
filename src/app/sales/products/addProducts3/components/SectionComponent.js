@@ -82,12 +82,33 @@ export default function SectionComponent({
   const boxShadow = data.boxShadow || "none";
   const responsiveType = data.responsiveType || "vertical";
   
-  // ✅ ARSITEKTUR BENAR: componentId ada di config
-  const sectionComponentId = block?.config?.componentId || data.componentId || `section-${Date.now()}`;
+  // ✅ ARSITEKTUR BENAR: config.componentId adalah SATU-SATUNYA sumber kebenaran
+  // TIDAK ADA fallback ke data.componentId atau Date.now()
+  const sectionComponentId = block?.config?.componentId;
+  
+  if (!sectionComponentId) {
+    console.error(`[SECTION ERROR] Section block tidak memiliki config.componentId!`, { block, data });
+    return <div>Section Error: Missing componentId</div>;
+  }
   
   // ✅ ARSITEKTUR BENAR: Resolve child blocks berdasarkan parentId saja
   // TIDAK ADA data.children, hanya parentId
   const childBlocks = allBlocks.filter(b => b.parentId === sectionComponentId);
+  
+  // ✅ DEBUG: Log untuk tracking identifier
+  console.log(`[SECTION EDITOR] Section ID: "${sectionComponentId}"`, {
+    sectionBlockId: block?.id,
+    sectionConfigComponentId: block?.config?.componentId,
+    childCount: childBlocks.length,
+    allBlocksWithParentId: allBlocks
+      .filter(b => b.parentId)
+      .map(b => ({
+        id: b.id,
+        type: b.type,
+        parentId: b.parentId,
+        match: b.parentId === sectionComponentId ? "✅ MATCH" : "❌ NO MATCH"
+      }))
+  });
   
   const handleChange = (field, value) => {
     // ✅ ARSITEKTUR BENAR: Tidak ada data.children, hanya update field biasa
