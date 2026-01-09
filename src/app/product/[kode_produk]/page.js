@@ -1892,7 +1892,9 @@ export default function ProductPage() {
         // ✅ FIX: Section harus lebih jauh dari tepi kiri-kanan website dibanding komponen umum
         // Komponen umum berada dalam canvas-content-area dengan padding 150px kiri-kanan
         // Section harus lebih masuk lagi dengan menambahkan margin kiri-kanan ekstra
-        const extraHorizontalMargin = 40; // ✅ Tambahan margin kiri-kanan untuk section (lebih jauh dari komponen umum)
+        // ✅ RESPONSIVE: Di mobile/tablet, tidak perlu extra margin
+        const isMobile = typeof window !== 'undefined' && window.innerWidth <= 1024;
+        const extraHorizontalMargin = isMobile ? 0 : 40; // 0 untuk mobile/tablet, 40 untuk desktop
         const sectionMarginLeft = (sectionContainerStyle.margin?.left || sectionContainerStyle.marginLeft || sectionData.marginLeft || 0) + extraHorizontalMargin;
         const sectionMarginRight = (sectionContainerStyle.margin?.right || sectionContainerStyle.marginRight || sectionData.marginRight || 0) + extraHorizontalMargin;
         

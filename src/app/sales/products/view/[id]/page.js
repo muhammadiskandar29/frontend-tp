@@ -8,6 +8,12 @@ import { getProductById } from "@/lib/sales/products";
 import FollowupSection from "./FollowupSection";
 import LinkZoomSection from "./LinkZoomSection";
 import TrainerSection from "./TrainerSection";
+import { 
+  ArrowLeft, Package, Tag, DollarSign, Calendar, 
+  Globe, User, CheckCircle2, XCircle, FileText,
+  Image as ImageIcon, Video, MessageSquare, List,
+  Edit, ExternalLink, Copy, Eye
+} from "lucide-react";
 import "@/styles/sales/product-detail.css";
 
 // Helper function untuk build image URL via proxy
@@ -96,18 +102,60 @@ export default function DetailProdukPage({ params }) {
   const video = safeParse(product.video, []);
   const customField = safeParse(product.custom_field, []);
 
+  // Format date helper
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    try {
+      return new Date(dateString).toLocaleString("id-ID", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
+  // Copy to clipboard helper
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    // You can add toast notification here if needed
+  };
+
   return (
     <Layout title={`Detail Produk - ${product.nama}`}>
       <div className="product-detail-container">
-        {/* Back Button */}
+        {/* Header with Back Button and Actions */}
         <div className="product-detail-header">
           <button
             className="back-to-list-btn"
             onClick={() => router.push("/sales/products")}
           >
-            <i className="pi pi-arrow-left" />
-            <span>Back to Product List</span>
+            <ArrowLeft size={18} />
+            <span>Kembali ke Daftar Produk</span>
           </button>
+          
+          <div className="header-actions">
+            <button
+              className="action-btn secondary"
+              onClick={() => router.push(`/sales/products/editProducts/${id}`)}
+            >
+              <Edit size={16} />
+              <span>Edit Produk</span>
+            </button>
+            {product.url && (
+              <button
+                className="action-btn primary"
+                onClick={() => window.open(product.url, '_blank')}
+              >
+                <ExternalLink size={16} />
+                <span>Lihat Landing Page</span>
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="analytics-box">
@@ -159,142 +207,282 @@ export default function DetailProdukPage({ params }) {
         {/* === TAB DETAIL === */}
         {activeTab === "detail" && (
           <>
-            {/* HEADER IMAGE */}
-            <div className="header-section">
-              {product.header ? (
-                <img
-                  src={buildImageUrl(product.header)}
-                  className="header-image"
-                  alt={product.nama || "Product header"}
-                  onError={(e) => {
-                    e.target.src = "/placeholder-image.png";
-                  }}
-                />
-              ) : (
-                <div className="header-image-placeholder">
-                  <span>No Image</span>
+            {/* Product Hero Section */}
+            <div className="product-hero-section">
+              <div className="product-hero-content">
+                <div className="product-title-section">
+                  <h1 className="product-title">{product.nama || "-"}</h1>
+                  <div className="product-meta-tags">
+                    {product.kategori_rel?.nama && (
+                      <span className="meta-tag category">
+                        <Package size={14} />
+                        {product.kategori_rel.nama}
+                      </span>
+                    )}
+                    {product.kode && (
+                      <span className="meta-tag code">
+                        <Tag size={14} />
+                        {product.kode}
+                      </span>
+                    )}
+                    <span className={`meta-tag status ${product.status === "1" ? "active" : "inactive"}`}>
+                      {product.status === "1" ? (
+                        <>
+                          <CheckCircle2 size={14} />
+                          Aktif
+                        </>
+                      ) : (
+                        <>
+                          <XCircle size={14} />
+                          Nonaktif
+                        </>
+                      )}
+                    </span>
+                    {product.landingpage && (
+                      <span className={`meta-tag landing ${product.landingpage === "1" ? "active" : "inactive"}`}>
+                        {product.landingpage === "1" ? (
+                          <>
+                            <Eye size={14} />
+                            Landing Page Aktif
+                          </>
+                        ) : (
+                          <>
+                            <Eye size={14} />
+                            Landing Page Nonaktif
+                          </>
+                        )}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="product-price-section">
+                  {product.harga_coret && (
+                    <div className="price-old">
+                      Rp {formatCurrency(product.harga_coret)}
+                    </div>
+                  )}
+                  <div className="price-current">
+                    Rp {formatCurrency(product.harga_asli || product.harga || 0)}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Optional Header Image */}
+              {product.header && (
+                <div className="product-hero-image">
+                  <img
+                    src={buildImageUrl(product.header)}
+                    alt={product.nama || "Product header"}
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
                 </div>
               )}
+            </div>
 
-              <div className="header-info">
-                <h1>{product.nama || "-"}</h1>
-                <p className="category-tag">{product.kategori_rel?.nama || product.kategori || "-"}</p>
-                <div className="price-group">
-                  {product.harga_coret && (
-                    <p className="price-coret">Rp {formatCurrency(product.harga_coret)}</p>
-                  )}
-                  <p className="price">Rp {formatCurrency(product.harga_asli)}</p>
+            {/* Information Cards Grid */}
+            <div className="info-cards-grid">
+              {/* Basic Information Card */}
+              <div className="info-card">
+                <div className="info-card-header">
+                  <Package size={20} />
+                  <h2>Informasi Dasar</h2>
                 </div>
-                {product.kode && (
-                  <p className="product-code">Kode: {product.kode}</p>
-                )}
+                <div className="info-card-body">
+                  <div className="info-item">
+                    <div className="info-label">
+                      <FileText size={16} />
+                      <span>Nama Produk</span>
+                    </div>
+                    <div className="info-value">{product.nama || "-"}</div>
+                  </div>
+
+                  {product.kode && (
+                    <div className="info-item">
+                      <div className="info-label">
+                        <Tag size={16} />
+                        <span>Kode Produk</span>
+                      </div>
+                      <div className="info-value">
+                        <span className="code-value">{product.kode}</span>
+                        <button 
+                          className="copy-btn"
+                          onClick={() => copyToClipboard(product.kode)}
+                          title="Copy kode"
+                        >
+                          <Copy size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {product.deskripsi && (
+                    <div className="info-item full-width">
+                      <div className="info-label">
+                        <FileText size={16} />
+                        <span>Deskripsi</span>
+                      </div>
+                      <div className="info-value">{product.deskripsi}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Pricing Information Card */}
+              <div className="info-card">
+                <div className="info-card-header">
+                  <DollarSign size={20} />
+                  <h2>Harga</h2>
+                </div>
+                <div className="info-card-body">
+                  <div className="info-item">
+                    <div className="info-label">
+                      <DollarSign size={16} />
+                      <span>Harga</span>
+                    </div>
+                    <div className="info-value price-value">
+                      Rp {formatCurrency(product.harga_asli || product.harga || 0)}
+                    </div>
+                  </div>
+                  {product.harga_coret && (
+                    <div className="info-item">
+                      <div className="info-label">
+                        <DollarSign size={16} />
+                        <span>Harga Coret</span>
+                      </div>
+                      <div className="info-value price-old-value">
+                        Rp {formatCurrency(product.harga_coret)}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Event & URL Information Card */}
+              <div className="info-card">
+                <div className="info-card-header">
+                  <Calendar size={20} />
+                  <h2>Event & URL</h2>
+                </div>
+                <div className="info-card-body">
+                  {product.tanggal_event && (
+                    <div className="info-item">
+                      <div className="info-label">
+                        <Calendar size={16} />
+                        <span>Tanggal Event</span>
+                      </div>
+                      <div className="info-value">{formatDate(product.tanggal_event)}</div>
+                    </div>
+                  )}
+                  {product.url && (
+                    <div className="info-item">
+                      <div className="info-label">
+                        <Globe size={16} />
+                        <span>URL</span>
+                      </div>
+                      <div className="info-value">
+                        <a 
+                          href={product.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="url-link"
+                        >
+                          {product.url}
+                          <ExternalLink size={14} />
+                        </a>
+                        <button 
+                          className="copy-btn"
+                          onClick={() => copyToClipboard(product.url)}
+                          title="Copy URL"
+                        >
+                          <Copy size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* User & Status Information Card */}
+              <div className="info-card">
+                <div className="info-card-header">
+                  <User size={20} />
+                  <h2>Pengelola & Status</h2>
+                </div>
+                <div className="info-card-body">
+                  {product.user_rel?.nama && (
+                    <div className="info-item">
+                      <div className="info-label">
+                        <User size={16} />
+                        <span>Dibuat Oleh</span>
+                      </div>
+                      <div className="info-value">{product.user_rel.nama}</div>
+                    </div>
+                  )}
+                  <div className="info-item">
+                    <div className="info-label">
+                      <CheckCircle2 size={16} />
+                      <span>Status Produk</span>
+                    </div>
+                    <div className="info-value">
+                      <span className={`status-badge ${product.status === "1" ? "active" : "inactive"}`}>
+                        {product.status === "1" ? "Aktif" : "Nonaktif"}
+                      </span>
+                    </div>
+                  </div>
+                  {product.landingpage && (
+                    <div className="info-item">
+                      <div className="info-label">
+                        <Eye size={16} />
+                        <span>Status Landing Page</span>
+                      </div>
+                      <div className="info-value">
+                        <span className={`status-badge ${product.landingpage === "1" ? "active" : "inactive"}`}>
+                          {product.landingpage === "1" ? "Aktif" : "Nonaktif"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* GRID */}
-            <div className="detail-grid">
-              {/* LEFT */}
-              <div className="detail-card">
-                <h2>Informasi Produk</h2>
-
-                <div className="info-row">
-                  <span>Nama Produk:</span>
-                  <p>{product.nama || "-"}</p>
-                </div>
-
-                {product.kode && (
-                  <div className="info-row">
-                    <span>Kode Produk:</span>
-                    <p>{product.kode}</p>
-                  </div>
-                )}
-
-                <div className="info-row">
-                  <span>Harga Asli:</span>
-                  <p>Rp {formatCurrency(product.harga_asli)}</p>
-                </div>
-
-                {product.harga_coret && (
-                  <div className="info-row">
-                    <span>Harga Coret:</span>
-                    <p>Rp {formatCurrency(product.harga_coret)}</p>
-                  </div>
-                )}
-
-                <div className="info-row">
-                  <span>Deskripsi:</span>
-                  <p>{product.deskripsi || "-"}</p>
-                </div>
-
-                {product.tanggal_event && (
-                  <div className="info-row">
-                    <span>Tanggal Event:</span>
-                    <p>
-                      {new Date(product.tanggal_event).toLocaleString("id-ID", {
-                        weekday: "long",
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit"
-                      })}
-                    </p>
-                  </div>
-                )}
-
-                {product.url && (
-                  <div className="info-row">
-                    <span>URL:</span>
-                    <p>{product.url}</p>
-                  </div>
-                )}
-
-                {product.user_rel?.nama && (
-                  <div className="info-row">
-                    <span>User Input:</span>
-                    <p>{product.user_rel.nama}</p>
-                  </div>
-                )}
-
-                <div className="info-row">
-                  <span>Status:</span>
-                  <p>{product.status === "1" ? "Aktif" : "Nonaktif"}</p>
-                </div>
-
-                {product.landingpage && (
-                  <div className="info-row">
-                    <span>Landing Page:</span>
-                    <p>{product.landingpage === "1" ? "Aktif" : "Nonaktif"}</p>
-                  </div>
-                )}
-              </div>
-
-              {/* GALLERY */}
-              <div className="detail-card">
+            {/* Gallery Card */}
+            <div className="info-card full-width">
+              <div className="info-card-header">
+                <ImageIcon size={20} />
                 <h2>Gallery Produk</h2>
-
+                <span className="badge-count">{gallery.length} gambar</span>
+              </div>
+              <div className="info-card-body">
                 {gallery.length === 0 ? (
-                  <p>Tidak ada gambar gallery</p>
+                  <div className="empty-state">
+                    <ImageIcon size={48} />
+                    <p>Tidak ada gambar gallery</p>
+                  </div>
                 ) : (
-                  <div className="gallery-list">
+                  <div className="gallery-grid">
                     {gallery.map((g, i) => {
                       const imageUrl = buildImageUrl(g.path);
                       return (
-                        <div key={i} className="gallery-item">
+                        <div key={i} className="gallery-card">
                           {imageUrl ? (
                             <img
                               src={imageUrl}
                               alt={g.caption || `Gallery ${i + 1}`}
                               onError={(e) => {
-                                e.target.src = "/placeholder-image.png";
+                                e.target.style.display = 'none';
+                                e.target.nextElementSibling.style.display = 'flex';
                               }}
                             />
-                          ) : (
-                            <div className="gallery-placeholder">
-                              <span>No Image</span>
-                            </div>
-                          )}
-                          {g.caption && <p>{g.caption}</p>}
+                          ) : null}
+                          <div className="gallery-placeholder" style={{ display: imageUrl ? 'none' : 'flex' }}>
+                            <ImageIcon size={24} />
+                            <span>No Image</span>
+                          </div>
+                          {g.caption && <p className="gallery-caption">{g.caption}</p>}
                         </div>
                       );
                     })}
@@ -303,79 +491,117 @@ export default function DetailProdukPage({ params }) {
               </div>
             </div>
 
-            {/* LIST POINT */}
+            {/* List Point Card */}
             {listPoint.length > 0 && (
-              <div className="detail-card">
-                <h2>List Point</h2>
-                <ul className="list-point-list">
-                  {listPoint.map((point, i) => (
-                    <li key={i}>{point.nama || point}</li>
-                  ))}
-                </ul>
+              <div className="info-card full-width">
+                <div className="info-card-header">
+                  <List size={20} />
+                  <h2>List Point</h2>
+                  <span className="badge-count">{listPoint.length} item</span>
+                </div>
+                <div className="info-card-body">
+                  <ul className="list-point-grid">
+                    {listPoint.map((point, i) => (
+                      <li key={i} className="list-point-item">
+                        <CheckCircle2 size={18} />
+                        <span>{point.nama || point}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             )}
 
-            {/* TESTIMONI */}
+            {/* Testimoni Card */}
             {testimoni.length > 0 && (
-              <div className="detail-card">
-                <h2>Testimoni</h2>
-                <div className="testimoni-list">
-                  {testimoni.map((testi, i) => {
-                    const imageUrl = buildImageUrl(testi.gambar);
-                    return (
-                      <div key={i} className="testimoni-item">
-                        {imageUrl ? (
-                          <img
-                            src={imageUrl}
-                            alt={testi.nama || `Testimoni ${i + 1}`}
-                            className="testimoni-image"
-                            onError={(e) => {
-                              e.target.src = "/placeholder-image.png";
-                            }}
-                          />
-                        ) : (
-                          <div className="testimoni-image-placeholder">
-                            <span>No Image</span>
+              <div className="info-card full-width">
+                <div className="info-card-header">
+                  <MessageSquare size={20} />
+                  <h2>Testimoni</h2>
+                  <span className="badge-count">{testimoni.length} testimoni</span>
+                </div>
+                <div className="info-card-body">
+                  <div className="testimoni-grid">
+                    {testimoni.map((testi, i) => {
+                      const imageUrl = buildImageUrl(testi.gambar);
+                      return (
+                        <div key={i} className="testimoni-card">
+                          <div className="testimoni-avatar">
+                            {imageUrl ? (
+                              <img
+                                src={imageUrl}
+                                alt={testi.nama || `Testimoni ${i + 1}`}
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextElementSibling.style.display = 'flex';
+                                }}
+                              />
+                            ) : null}
+                            <div className="testimoni-avatar-placeholder" style={{ display: imageUrl ? 'none' : 'flex' }}>
+                              <User size={24} />
+                            </div>
                           </div>
-                        )}
-                        <div className="testimoni-content">
-                          {testi.nama && <h4>{testi.nama}</h4>}
-                          {testi.deskripsi && <p>{testi.deskripsi}</p>}
+                          <div className="testimoni-content">
+                            {testi.nama && <h4>{testi.nama}</h4>}
+                            {testi.deskripsi && <p>{testi.deskripsi}</p>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Video Card */}
+            {video.length > 0 && (
+              <div className="info-card full-width">
+                <div className="info-card-header">
+                  <Video size={20} />
+                  <h2>Video</h2>
+                  <span className="badge-count">{video.length} video</span>
+                </div>
+                <div className="info-card-body">
+                  <div className="video-grid">
+                    {video.map((url, i) => (
+                      <a 
+                        key={i} 
+                        href={url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="video-card"
+                      >
+                        <Video size={20} />
+                        <span>{url}</span>
+                        <ExternalLink size={16} />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Custom Field Card */}
+            {customField.length > 0 && (
+              <div className="info-card full-width">
+                <div className="info-card-header">
+                  <FileText size={20} />
+                  <h2>Custom Field</h2>
+                  <span className="badge-count">{customField.length} field</span>
+                </div>
+                <div className="info-card-body">
+                  <div className="custom-field-grid">
+                    {customField.map((field, i) => (
+                      <div key={i} className="custom-field-card">
+                        <div className="custom-field-label">
+                          {field.nama_field || field.label || `Field ${i + 1}`}
+                        </div>
+                        <div className="custom-field-value">
+                          {field.value || "-"}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* VIDEO */}
-            {video.length > 0 && (
-              <div className="detail-card">
-                <h2>Video</h2>
-                <div className="video-list">
-                  {video.map((url, i) => (
-                    <div key={i} className="video-item">
-                      <a href={url} target="_blank" rel="noopener noreferrer">
-                        {url}
-                      </a>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* CUSTOM FIELD */}
-            {customField.length > 0 && (
-              <div className="detail-card">
-                <h2>Custom Field</h2>
-                <div className="custom-field-list">
-                  {customField.map((field, i) => (
-                    <div key={i} className="custom-field-item">
-                      <span className="field-label">{field.nama_field || field.label}:</span>
-                      <span className="field-value">{field.value || "-"}</span>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
