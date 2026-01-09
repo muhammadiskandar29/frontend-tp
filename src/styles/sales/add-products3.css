@@ -5846,120 +5846,208 @@ html:has(.add-products3-container) {
   .canvas-content-area {
     width: 100%;
     max-width: 100%;
-    padding: 20px 40px 40px 40px;
+    padding: 15px 20px 30px 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
   }
 
-  /* Logo - smaller */
+  /* Logo - smaller (50%) */
+  .canvas-logo-wrapper {
+    padding: 20px 10px 10px 10px;
+  }
+
   .canvas-logo {
-    max-width: 80px;
-    max-height: 40px;
+    max-width: 60px;
+    max-height: 30px;
   }
 
   /* Preview blocks - full width, smaller margins */
   .canvas-preview-block {
     width: 100%;
     max-width: 100%;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
   }
 
-  /* Text elements - smaller font sizes */
+  /* Product Title - Perkecil 50% */
+  .preview-product-title {
+    font-size: 16px !important;
+    margin-bottom: 12px !important;
+    padding-bottom: 12px !important;
+  }
+
+  .canvas-product-title-block {
+    margin-bottom: 16px !important;
+    padding-bottom: 12px !important;
+  }
+
+  /* Text elements - smaller font sizes (50%) */
   .preview-text {
-    font-size: 0.9em !important;
-    line-height: 1.6 !important;
+    font-size: 0.5em !important;
+    line-height: 1.5 !important;
+    padding: 4px 6px !important;
   }
 
   .preview-text h1 {
-    font-size: 1.8em !important;
+    font-size: 0.9em !important;
   }
 
   .preview-text h2 {
-    font-size: 1.5em !important;
+    font-size: 0.75em !important;
   }
 
   .preview-text h3 {
-    font-size: 1.3em !important;
+    font-size: 0.65em !important;
   }
 
-  /* Images - responsive */
-  .preview-image img {
-    max-width: 100%;
+  .preview-text p {
+    font-size: 0.5em !important;
+  }
+
+  /* Images - responsive (50%) */
+  .preview-image img,
+  .preview-image-full {
+    max-width: 50%;
     height: auto;
+    margin: 0 auto;
+    display: block;
   }
 
-  /* Sections - reduced padding */
+  .preview-image-wrapper {
+    margin-bottom: 8px;
+  }
+
+  .preview-caption {
+    font-size: 7px !important;
+    margin-top: 4px !important;
+  }
+
+  /* Sections - reduced padding (50%) */
   .preview-section {
-    padding: 24px 20px !important;
-    margin: 16px 0 !important;
+    padding: 12px 10px !important;
+    margin: 8px 0 !important;
   }
 
-  /* Lists - smaller */
+  /* Lists - smaller (50%) */
   .preview-list {
-    font-size: 0.9em !important;
+    font-size: 0.5em !important;
   }
 
   .preview-list-item {
-    padding: 8px 0 !important;
+    padding: 4px 0 !important;
   }
 
-  /* Testimonials - smaller */
+  .preview-list-icon {
+    width: 10px !important;
+    height: 10px !important;
+  }
+
+  .preview-list-icon svg {
+    width: 10px !important;
+    height: 10px !important;
+  }
+
+  .preview-list-title {
+    font-size: 9px !important;
+    margin-bottom: 4px !important;
+  }
+
+  /* Testimonials - smaller (50%) */
   .preview-testimonials {
-    padding: 20px 16px !important;
+    padding: 10px 8px !important;
+    margin: 8px 0 !important;
+  }
+
+  .preview-testimonials h2 {
+    font-size: 8px !important;
+    margin-bottom: 10px !important;
   }
 
   .testi-card-new {
-    padding: 16px !important;
-    font-size: 0.9em !important;
+    padding: 8px !important;
+    font-size: 0.5em !important;
   }
 
-  /* FAQ - smaller */
+  .testi-desc-new {
+    font-size: 0.5em !important;
+  }
+
+  /* FAQ - smaller (50%) */
   .preview-faq-section {
-    padding: 20px 16px !important;
-    margin: 16px 0 !important;
+    padding: 10px 8px !important;
+    margin: 8px 0 !important;
+  }
+
+  .faq-title {
+    font-size: 8px !important;
+    margin-bottom: 8px !important;
   }
 
   .faq-item {
-    font-size: 0.9em !important;
+    font-size: 0.5em !important;
   }
 
-  /* Countdown - smaller */
+  .faq-question {
+    padding: 6px 8px !important;
+    font-size: 0.5em !important;
+  }
+
+  .faq-answer {
+    padding: 4px 8px 8px 8px !important;
+    font-size: 0.5em !important;
+  }
+
+  /* Countdown - smaller (50%) */
   .countdown-container {
-    padding: 16px !important;
+    padding: 8px !important;
   }
 
   .countdown-box {
-    padding: 12px 8px !important;
-    min-width: 60px !important;
+    padding: 6px 4px !important;
+    min-width: 30px !important;
   }
 
   .countdown-number {
-    font-size: 1.5em !important;
+    font-size: 0.75em !important;
   }
 
   .countdown-label {
-    font-size: 0.7em !important;
+    font-size: 0.35em !important;
   }
 
-  /* Form - smaller */
+  /* Form - smaller (50%) */
   .preview-form {
-    padding: 20px 16px !important;
+    padding: 10px 8px !important;
   }
 
   .form-field {
-    margin-bottom: 12px !important;
+    margin-bottom: 6px !important;
   }
 
   .form-input {
-    font-size: 0.9em !important;
-    padding: 10px 12px !important;
+    font-size: 0.5em !important;
+    padding: 5px 6px !important;
   }
 
   .form-button {
-    font-size: 0.9em !important;
-    padding: 12px 24px !important;
+    font-size: 0.5em !important;
+    padding: 6px 12px !important;
+  }
+
+  /* Footer - smaller */
+  .canvas-footer {
+    padding-top: 20px !important;
+    padding-bottom: 20px !important;
+  }
+
+  .canvas-footer-brand {
+    font-size: 9px !important;
+    margin-bottom: 4px !important;
+  }
+
+  .canvas-footer-copyright {
+    font-size: 7px !important;
   }
 }
 
@@ -6000,215 +6088,268 @@ html:has(.add-products3-container) {
   .canvas-content-area {
     width: 100%;
     max-width: 100%;
-    padding: 16px 20px 32px 20px;
+    padding: 12px 15px 24px 15px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
   }
 
-  /* Logo - smaller for mobile */
+  /* Logo - smaller for mobile (50%) */
   .canvas-logo-wrapper {
-    padding: 12px 0;
+    padding: 15px 8px 8px 8px;
   }
 
   .canvas-logo {
-    max-width: 60px;
-    max-height: 30px;
+    max-width: 50px;
+    max-height: 25px;
   }
 
   /* Preview blocks - full width, minimal margins */
   .canvas-preview-block {
     width: 100%;
     max-width: 100%;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
 
-  /* Text elements - smaller font sizes for mobile */
+  /* Product Title - Perkecil 50% */
+  .preview-product-title {
+    font-size: 14px !important;
+    margin-bottom: 10px !important;
+    padding-bottom: 10px !important;
+  }
+
+  .canvas-product-title-block {
+    margin-bottom: 12px !important;
+    padding-bottom: 10px !important;
+  }
+
+  /* Text elements - smaller font sizes for mobile (50%) */
   .preview-text {
-    font-size: 0.85em !important;
-    line-height: 1.5 !important;
-    padding: 8px 12px !important;
+    font-size: 0.45em !important;
+    line-height: 1.4 !important;
+    padding: 4px 6px !important;
   }
 
   .preview-text h1 {
-    font-size: 1.5em !important;
-    margin-bottom: 8px !important;
-  }
-
-  .preview-text h2 {
-    font-size: 1.3em !important;
-    margin-bottom: 8px !important;
-  }
-
-  .preview-text h3 {
-    font-size: 1.1em !important;
-    margin-bottom: 8px !important;
-  }
-
-  .preview-text p {
-    font-size: 0.9em !important;
-    margin-bottom: 8px !important;
-  }
-
-  /* Images - full width, responsive */
-  .preview-image {
-    width: 100% !important;
-    max-width: 100% !important;
-    padding: 8px 0 !important;
-  }
-
-  .preview-image img {
-    width: 100% !important;
-    max-width: 100% !important;
-    height: auto !important;
-  }
-
-  /* Sections - reduced padding for mobile */
-  .preview-section {
-    padding: 16px 12px !important;
-    margin: 12px 0 !important;
-    border-radius: 8px !important;
-  }
-
-  /* Lists - smaller for mobile */
-  .preview-list {
-    font-size: 0.85em !important;
-    padding: 12px 0 !important;
-  }
-
-  .preview-list-item {
-    padding: 6px 0 !important;
-    margin-bottom: 8px !important;
-  }
-
-  .preview-list-item-icon {
-    width: 18px !important;
-    height: 18px !important;
-    margin-right: 8px !important;
-  }
-
-  /* Testimonials - smaller for mobile */
-  .preview-testimonials {
-    padding: 16px 12px !important;
-    margin: 12px 0 !important;
-  }
-
-  .preview-testimonials h2 {
-    font-size: 1.2em !important;
-    margin-bottom: 12px !important;
-  }
-
-  .testimonials-carousel-new {
-    gap: 12px !important;
-  }
-
-  .testi-card-new {
-    padding: 12px !important;
-    font-size: 0.85em !important;
-    min-width: 280px !important;
-  }
-
-  .testi-avatar-new {
-    width: 40px !important;
-    height: 40px !important;
-  }
-
-  /* FAQ - smaller for mobile */
-  .preview-faq-section {
-    padding: 16px 12px !important;
-    margin: 12px 0 !important;
-    border-radius: 8px !important;
-  }
-
-  .preview-faq-section .faq-title {
-    font-size: 1.2em !important;
-    margin-bottom: 16px !important;
-  }
-
-  .faq-item {
-    font-size: 0.85em !important;
-    margin-bottom: 8px !important;
-  }
-
-  .faq-question {
-    padding: 12px !important;
-    font-size: 0.9em !important;
-  }
-
-  .faq-answer {
-    padding: 12px !important;
-    font-size: 0.85em !important;
-  }
-
-  /* Countdown - smaller for mobile */
-  .countdown-container {
-    padding: 12px !important;
-    gap: 8px !important;
-  }
-
-  .countdown-box {
-    padding: 10px 6px !important;
-    min-width: 50px !important;
-  }
-
-  .countdown-number {
-    font-size: 1.3em !important;
-  }
-
-  .countdown-label {
-    font-size: 0.65em !important;
-  }
-
-  /* Form - smaller for mobile */
-  .preview-form {
-    padding: 16px 12px !important;
-    margin: 12px 0 !important;
-  }
-
-  .form-field {
-    margin-bottom: 10px !important;
-  }
-
-  .form-label {
-    font-size: 0.85em !important;
+    font-size: 0.8em !important;
     margin-bottom: 6px !important;
   }
 
+  .preview-text h2 {
+    font-size: 0.7em !important;
+    margin-bottom: 6px !important;
+  }
+
+  .preview-text h3 {
+    font-size: 0.6em !important;
+    margin-bottom: 6px !important;
+  }
+
+  .preview-text p {
+    font-size: 0.45em !important;
+    margin-bottom: 4px !important;
+  }
+
+  /* Images - full width, responsive (50%) */
+  .preview-image {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 4px 0 !important;
+  }
+
+  .preview-image img,
+  .preview-image-full {
+    width: 50% !important;
+    max-width: 50% !important;
+    height: auto !important;
+    margin: 0 auto !important;
+    display: block !important;
+  }
+
+  .preview-image-wrapper {
+    margin-bottom: 4px !important;
+  }
+
+  .preview-caption {
+    font-size: 6px !important;
+    margin-top: 2px !important;
+  }
+
+  /* Sections - reduced padding for mobile (50%) */
+  .preview-section {
+    padding: 8px 6px !important;
+    margin: 6px 0 !important;
+    border-radius: 4px !important;
+  }
+
+  /* Lists - smaller for mobile (50%) */
+  .preview-list {
+    font-size: 0.45em !important;
+    padding: 6px 0 !important;
+  }
+
+  .preview-list-item {
+    padding: 3px 0 !important;
+    margin-bottom: 4px !important;
+  }
+
+  .preview-list-icon {
+    width: 8px !important;
+    height: 8px !important;
+    margin-right: 4px !important;
+  }
+
+  .preview-list-icon svg {
+    width: 8px !important;
+    height: 8px !important;
+  }
+
+  .preview-list-title {
+    font-size: 8px !important;
+    margin-bottom: 3px !important;
+  }
+
+  /* Testimonials - smaller for mobile (50%) */
+  .preview-testimonials {
+    padding: 8px 6px !important;
+    margin: 6px 0 !important;
+  }
+
+  .preview-testimonials h2 {
+    font-size: 6px !important;
+    margin-bottom: 6px !important;
+  }
+
+  .testimonials-carousel-new {
+    gap: 6px !important;
+  }
+
+  .testi-card-new {
+    padding: 6px !important;
+    font-size: 0.45em !important;
+    min-width: 140px !important;
+  }
+
+  .testi-avatar-new {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  .testi-desc-new {
+    font-size: 0.45em !important;
+  }
+
+  /* FAQ - smaller for mobile (50%) */
+  .preview-faq-section {
+    padding: 8px 6px !important;
+    margin: 6px 0 !important;
+    border-radius: 4px !important;
+  }
+
+  .preview-faq-section .faq-title {
+    font-size: 6px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .faq-item {
+    font-size: 0.45em !important;
+    margin-bottom: 4px !important;
+  }
+
+  .faq-question {
+    padding: 6px !important;
+    font-size: 0.45em !important;
+  }
+
+  .faq-answer {
+    padding: 4px 6px 6px 6px !important;
+    font-size: 0.45em !important;
+  }
+
+  /* Countdown - smaller for mobile (50%) */
+  .countdown-container {
+    padding: 6px !important;
+    gap: 4px !important;
+  }
+
+  .countdown-box {
+    padding: 5px 3px !important;
+    min-width: 25px !important;
+  }
+
+  .countdown-number {
+    font-size: 0.65em !important;
+  }
+
+  .countdown-label {
+    font-size: 0.325em !important;
+  }
+
+  /* Form - smaller for mobile (50%) */
+  .preview-form {
+    padding: 8px 6px !important;
+    margin: 6px 0 !important;
+  }
+
+  .form-field {
+    margin-bottom: 5px !important;
+  }
+
+  .form-label {
+    font-size: 0.45em !important;
+    margin-bottom: 3px !important;
+  }
+
   .form-input {
-    font-size: 0.85em !important;
-    padding: 10px 12px !important;
+    font-size: 0.45em !important;
+    padding: 5px 6px !important;
   }
 
   .form-button {
-    font-size: 0.85em !important;
-    padding: 12px 20px !important;
+    font-size: 0.45em !important;
+    padding: 6px 10px !important;
     width: 100% !important;
   }
 
-  /* Videos - responsive */
+  /* Videos - responsive (50%) */
   .preview-videos {
-    padding: 12px 0 !important;
+    padding: 6px 0 !important;
   }
 
   .preview-video-wrapper {
-    margin-bottom: 12px !important;
+    margin-bottom: 6px !important;
   }
 
   .preview-video-iframe {
     width: 100% !important;
-    height: 200px !important;
+    height: 100px !important;
   }
 
-  /* Image Slider - responsive */
+  /* Image Slider - responsive (50%) */
   .image-slider-container {
-    padding: 12px 0 !important;
+    padding: 6px 0 !important;
   }
 
-  /* Quota Info - responsive */
+  /* Quota Info - responsive (50%) */
   .quota-info-container {
-    padding: 12px !important;
-    font-size: 0.85em !important;
+    padding: 6px !important;
+    font-size: 0.45em !important;
+  }
+
+  /* Footer - smaller (50%) */
+  .canvas-footer {
+    padding-top: 15px !important;
+    padding-bottom: 15px !important;
+  }
+
+  .canvas-footer-brand {
+    font-size: 8px !important;
+    margin-bottom: 3px !important;
+  }
+
+  .canvas-footer-copyright {
+    font-size: 6px !important;
   }
 }
 
