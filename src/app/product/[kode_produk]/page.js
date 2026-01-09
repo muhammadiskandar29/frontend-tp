@@ -1889,9 +1889,16 @@ export default function ProductPage() {
           sectionPadding = `4px ${horizontalPadding}px`;
         }
         
+        // ✅ FIX: Section harus lebih jauh dari tepi kiri-kanan website dibanding komponen umum
+        // Komponen umum berada dalam canvas-content-area dengan padding 150px kiri-kanan
+        // Section harus lebih masuk lagi dengan menambahkan margin kiri-kanan ekstra
+        const extraHorizontalMargin = 40; // ✅ Tambahan margin kiri-kanan untuk section (lebih jauh dari komponen umum)
+        const sectionMarginLeft = (sectionContainerStyle.margin?.left || sectionContainerStyle.marginLeft || sectionData.marginLeft || 0) + extraHorizontalMargin;
+        const sectionMarginRight = (sectionContainerStyle.margin?.right || sectionContainerStyle.marginRight || sectionData.marginRight || 0) + extraHorizontalMargin;
+        
         const sectionStyles = {
-          marginRight: `${sectionContainerStyle.margin?.right || sectionContainerStyle.marginRight || sectionData.marginRight || 0}px`,
-          marginLeft: `${sectionContainerStyle.margin?.left || sectionContainerStyle.marginLeft || sectionData.marginLeft || 0}px`,
+          marginRight: `${sectionMarginRight}px`,
+          marginLeft: `${sectionMarginLeft}px`,
           marginBottom: `${sectionContainerStyle.margin?.bottom || sectionContainerStyle.marginBottom || sectionContainerStyle.marginBetween || sectionData.marginBetween || 16}px`,
           border: sectionContainerStyle.border?.width 
             ? `${sectionContainerStyle.border.width}px ${sectionContainerStyle.border.style || 'solid'} ${sectionContainerStyle.border.color || "#000000"}` 
