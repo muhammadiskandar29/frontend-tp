@@ -1489,95 +1489,31 @@ export default function AddProducts3Page() {
       case "quota-info":
         return <QuotaInfoPreview data={block.data || {}} />;
       case "section":
-        const sectionData = blockToRender.data || {};
         // ✅ FIX #1: componentId ada di block.config, BUKAN di block.data
         const sectionComponentId = blockToRender.config?.componentId || `section-${blockToRender.id}`;
-        // ✅ FIX WAJIB #1: children ada di content.children, BUKAN di data.children
-        const sectionContent = blockToRender.content || blockToRender.data?.content || {};
-        const sectionChildren = sectionContent.children || sectionData.children || [];
         
-        // ✅ Ambil child components dari section.children
-        // section.children bisa berisi:
-        // 1. Array of component data objects (dengan type, data, style, config)
-        // 2. Array of component IDs (fallback ke blocks)
-        let childComponents = [];
-        
-        if (Array.isArray(sectionChildren) && sectionChildren.length > 0) {
-          // Cek apakah children adalah array of objects (data lengkap) atau array of IDs
-          const firstChild = sectionChildren[0];
-          
-          if (typeof firstChild === 'object' && firstChild !== null && firstChild.type) {
-            // ✅ children adalah array of component data objects - gunakan langsung
-            childComponents = sectionChildren;
-          } else {
-            // ✅ children adalah array of IDs - cari dari blocks
-            // ✅ FIX WAJIB #2: Urutan pencarian yang benar (componentId dulu, baru id)
-            // Pastikan urutan sesuai dengan sectionChildren array dan gunakan data terbaru dari blocks
-            childComponents = sectionChildren
-              .map(childId => {
-                // ✅ FIX WAJIB #2: Cari dengan urutan yang benar
-                // 1. Cari dengan config.componentId (PRIMARY - karena children berisi componentId)
-                // 2. Cari dengan id (FALLBACK)
-                // 3. Cari dengan parentId (FALLBACK TERAKHIR - untuk safety)
-                let foundBlock = 
-                  blocks.find(b => b.config?.componentId === childId) ||
-                  blocks.find(b => b.id === childId) ||
-                  blocks.find(b => b.parentId === sectionComponentId);
-                
-                // ✅ FIX #3: Fallback terakhir jika masih tidak ketemu
-                if (!foundBlock) {
-                  // Cari semua block yang parentId-nya match dengan sectionComponentId
-                  // (untuk handle case dimana children array error tapi parentId benar)
-                  foundBlock = blocks.find(b => b.parentId === sectionComponentId);
-                }
-                
-                if (foundBlock) {
-                  // ✅ Pastikan menggunakan data terbaru dari blocks (langsung return foundBlock, tidak perlu copy)
-                  return foundBlock;
-                }
-                
-                console.warn(`[SECTION] Child block dengan ID "${childId}" tidak ditemukan di blocks array`, {
-                  childId,
-                  sectionComponentId,
-                  sectionChildren,
-                  availableBlocks: blocks.map(b => ({ 
-                    id: b.id, 
-                    type: b.type, 
-                    parentId: b.parentId,
-                    configComponentId: b.config?.componentId
-                  }))
-                });
-                
-                return null;
-              })
-              .filter(Boolean); // Hapus null/undefined
-          }
-        }
+        // ✅ FIX UTAMA: Sederhanakan - cukup filter dengan parentId saja
+        // Logic yang benar: cari semua block yang parentId-nya match dengan sectionComponentId
+        // ✅ FIX WAJIB #1: parentId ada di ROOT block (b.parentId), BUKAN di config (b.config.parentId)
+        const childComponents = blocks.filter(b => {
+          if (!b || !b.type) return false;
+          return b.parentId === sectionComponentId;
+        });
         
         // Debug log untuk melihat child components
         console.log(`[SECTION] Section "${sectionComponentId}" memiliki ${childComponents.length} child components:`, {
           sectionComponentId,
-          sectionChildren,
-          blockConfig: blockToRender.config,
-          blockData: blockToRender.data,
-          allBlocksIds: blocks.map(b => ({ 
-            id: b.id, 
-            type: b.type, 
-            parentId: b.parentId,
-            configComponentId: b.config?.componentId
-          })),
           childComponents: childComponents.map(c => ({
             id: c?.id,
             type: c?.type,
             parentId: c?.parentId,
             hasData: !!c?.data,
-            dataKeys: c?.data ? Object.keys(c.data) : [],
-            items: c?.data?.items || [],
-            componentTitle: c?.data?.componentTitle
+            dataKeys: c?.data ? Object.keys(c.data) : []
           }))
         });
         
         // ✅ FIX #3: Build section styles from block.style.container, bukan block.data
+        const sectionData = blockToRender.data || {};
         const sectionContainerStyle = blockToRender.style?.container || {};
         const sectionStyles = {
           marginRight: `${sectionContainerStyle.margin?.right || sectionContainerStyle.marginRight || sectionData.marginRight || 0}px`,
@@ -1601,55 +1537,28 @@ export default function AddProducts3Page() {
             {childComponents.length === 0 ? (
               <div className="preview-placeholder">Section kosong - tambahkan komponen</div>
             ) : (
-              childComponents.map((childData, childIndex) => {
-                // ✅ childData sudah adalah block dari blocks (sudah object dengan data terbaru)
-                // Tapi pastikan kita menggunakan data terbaru dari blocks array
-                let childBlock = childData;
-                
-                // ✅ Pastikan menggunakan data terbaru dari blocks array
-                // Cari block terbaru berdasarkan ID
-                if (childBlock && childBlock.id) {
-                  const latestChildBlock = blocks.find(b => b.id === childBlock.id);
-                  if (latestChildBlock) {
-                    childBlock = latestChildBlock; // Gunakan data terbaru
-                  }
-                }
-                
-                // Pastikan childBlock memiliki struktur yang benar untuk renderPreview
-                if (!childBlock || !childBlock.type) {
+              childComponents.map((childBlock) => {
+                // ✅ FIX WAJIB #2 & #3: Pastikan childBlock punya id dan menggunakan data (bukan content)
+                // childBlock sudah dari blocks array, jadi sudah punya struktur yang benar
+                if (!childBlock || !childBlock.type || !childBlock.id) {
                   console.warn(`[SECTION] Child block tidak valid:`, childBlock);
                   return null;
                 }
                 
-                // ✅ Pastikan childBlock memiliki struktur yang benar: { type, data, id, ... }
-                // Jangan deep copy, biarkan renderPreview menggunakan data langsung dari blocks
+                // ✅ Pastikan childBlock memiliki struktur yang benar untuk renderPreview
+                // renderPreview expect: { id, type, data, style, config }
+                // ✅ FIX WAJIB #2: WAJIB ada id
+                // ✅ FIX WAJIB #3: pakai data, bukan content
                 const normalizedChildBlock = {
-                  ...childBlock,
+                  id: childBlock.id, // ✅ FIX WAJIB #2: WAJIB ada id
                   type: childBlock.type,
-                  data: childBlock.data || {},
-                  id: childBlock.id || `section-child-${childBlock.type}-${childIndex}`,
+                  data: childBlock.data || {}, // ✅ FIX WAJIB #3: pakai data, bukan content
                   style: childBlock.style || {},
                   config: childBlock.config || {}
                 };
                 
-                // Debug log untuk melihat struktur data
-                console.log(`[SECTION] Rendering child block:`, {
-                  id: normalizedChildBlock.id,
-                  type: normalizedChildBlock.type,
-                  hasData: !!normalizedChildBlock.data,
-                  dataKeys: normalizedChildBlock.data ? Object.keys(normalizedChildBlock.data) : [],
-                  items: normalizedChildBlock.data?.items || [],
-                  componentTitle: normalizedChildBlock.data?.componentTitle
-                });
-                
-                if (!normalizedChildBlock.data || Object.keys(normalizedChildBlock.data).length === 0) {
-                  console.warn(`[SECTION] Child block "${normalizedChildBlock.type}" tidak memiliki data:`, normalizedChildBlock);
-                }
-                
-                const childId = normalizedChildBlock.id;
-                
                 return (
-                  <div key={childId} className="preview-section-child">
+                  <div key={normalizedChildBlock.id} className="preview-section-child">
                     {renderPreview(normalizedChildBlock)}
                   </div>
                 );
