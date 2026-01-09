@@ -1240,131 +1240,168 @@ export default function ProductPage() {
                     />
                   </div>
                   
-                  {/* ✅ Field Provinsi, Kabupaten/Kota, Kecamatan, Kode Pos (untuk produk fisik) */}
+                  {/* ✅ Field Provinsi, Kabupaten/Kota, Kecamatan, Kode Pos (selalu tampil) */}
+                  <div className="compact-field">
+                    <label className="compact-label">Provinsi <span className="required">*</span></label>
+                    <select
+                      className="compact-input"
+                      value={selectedWilayahIds.provinceId}
+                      onChange={(e) => {
+                        const provinceId = e.target.value;
+                        setSelectedWilayahIds({ provinceId, cityId: "", districtId: "" });
+                        const provinceName = getProvinceName(provinceId);
+                        setFormWilayah(prev => ({ ...prev, provinsi: provinceName, kabupaten: "", kecamatan: "", kode_pos: "" }));
+                      }}
+                      disabled={loadingWilayah.provinces}
+                      style={{ 
+                        appearance: 'auto', 
+                        cursor: loadingWilayah.provinces ? 'not-allowed' : 'pointer',
+                        backgroundColor: loadingWilayah.provinces ? '#f9fafb' : 'white'
+                      }}
+                    >
+                      <option value="">Pilih Provinsi</option>
+                      {wilayahData.provinces.map((province) => (
+                        <option key={province.id} value={province.id}>
+                          {province.name}
+                        </option>
+                      ))}
+                    </select>
+                    {loadingWilayah.provinces && (
+                      <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                        Memuat provinsi...
+                      </small>
+                    )}
+                  </div>
+                  
+                  <div className="compact-field">
+                    <label className="compact-label">Kabupaten/Kota <span className="required">*</span></label>
+                    <select
+                      className="compact-input"
+                      value={selectedWilayahIds.cityId}
+                      onChange={(e) => {
+                        const cityId = e.target.value;
+                        setSelectedWilayahIds(prev => ({ ...prev, cityId, districtId: "" }));
+                        const cityName = getCityName(cityId);
+                        setFormWilayah(prev => ({ ...prev, kabupaten: cityName, kecamatan: "", kode_pos: "" }));
+                      }}
+                      disabled={!selectedWilayahIds.provinceId || loadingWilayah.cities}
+                      style={{ 
+                        appearance: 'auto', 
+                        cursor: (!selectedWilayahIds.provinceId || loadingWilayah.cities) ? 'not-allowed' : 'pointer',
+                        backgroundColor: (!selectedWilayahIds.provinceId || loadingWilayah.cities) ? '#f9fafb' : 'white'
+                      }}
+                    >
+                      <option value="">Pilih Kabupaten/Kota</option>
+                      {wilayahData.cities.map((city) => (
+                        <option key={city.id} value={city.id}>
+                          {city.name}
+                        </option>
+                      ))}
+                    </select>
+                    {loadingWilayah.cities && (
+                      <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                        Memuat kabupaten/kota...
+                      </small>
+                    )}
+                  </div>
+                  
+                  <div className="compact-field">
+                    <label className="compact-label">Kecamatan <span className="required">*</span></label>
+                    <select
+                      className="compact-input"
+                      value={selectedWilayahIds.districtId}
+                      onChange={(e) => {
+                        const districtId = e.target.value;
+                        setSelectedWilayahIds(prev => ({ ...prev, districtId }));
+                        const districtName = getDistrictName(districtId);
+                        setFormWilayah(prev => ({ ...prev, kecamatan: districtName }));
+                      }}
+                      disabled={!selectedWilayahIds.cityId || loadingWilayah.districts}
+                      style={{ 
+                        appearance: 'auto', 
+                        cursor: (!selectedWilayahIds.cityId || loadingWilayah.districts) ? 'not-allowed' : 'pointer',
+                        backgroundColor: (!selectedWilayahIds.cityId || loadingWilayah.districts) ? '#f9fafb' : 'white'
+                      }}
+                    >
+                      <option value="">Pilih Kecamatan</option>
+                      {wilayahData.districts.map((district) => (
+                        <option key={district.district_id || district.id} value={district.district_id || district.id}>
+                          {district.name}
+                        </option>
+                      ))}
+                    </select>
+                    {!selectedWilayahIds.cityId && (
+                      <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                        Pilih kabupaten/kota terlebih dahulu
+                      </small>
+                    )}
+                    {loadingWilayah.districts && (
+                      <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                        Memuat kecamatan...
+                      </small>
+                    )}
+                  </div>
+                  
+                  <div className="compact-field">
+                    <label className="compact-label">Kode Pos <span className="required">*</span></label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: 12120"
+                      className="compact-input"
+                      value={formWilayah.kode_pos}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '');
+                        setFormWilayah(prev => ({ ...prev, kode_pos: val }));
+                      }}
+                      disabled={!selectedWilayahIds.districtId}
+                      style={{ 
+                        cursor: !selectedWilayahIds.districtId ? 'not-allowed' : 'text',
+                        backgroundColor: !selectedWilayahIds.districtId ? '#f9fafb' : 'white'
+                      }}
+                    />
+                    {!selectedWilayahIds.districtId && (
+                      <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                        Pilih kecamatan terlebih dahulu
+                      </small>
+                    )}
+                  </div>
+                  
+                  {/* ✅ Bagian Ongkir dengan Kurir (hanya untuk produk fisik) */}
                   {isFormBuku && (
-                    <>
-                      <div className="compact-field">
-                        <label className="compact-label">Provinsi <span className="required">*</span></label>
-                        <select
-                          className="compact-input"
-                          value={selectedWilayahIds.provinceId}
-                          onChange={(e) => {
-                            const provinceId = e.target.value;
-                            setSelectedWilayahIds({ provinceId, cityId: "", districtId: "" });
-                            const provinceName = getProvinceName(provinceId);
-                            setFormWilayah(prev => ({ ...prev, provinsi: provinceName, kabupaten: "", kecamatan: "", kode_pos: "" }));
-                          }}
-                          disabled={loadingWilayah.provinces}
-                        >
-                          <option value="">Pilih Provinsi</option>
-                          {wilayahData.provinces.map((province) => (
-                            <option key={province.id} value={province.id}>
-                              {province.name}
-                            </option>
+                    <div className="compact-field">
+                      <label className="compact-label">Kurir <span className="required">*</span></label>
+                      <select
+                        className="compact-input"
+                        value={selectedCourier}
+                        onChange={(e) => setSelectedCourier(e.target.value)}
+                        disabled={!selectedWilayahIds.districtId || loadingCost}
+                        style={{ 
+                          appearance: 'auto', 
+                          cursor: (!selectedWilayahIds.districtId || loadingCost) ? 'not-allowed' : 'pointer',
+                          backgroundColor: (!selectedWilayahIds.districtId || loadingCost) ? '#f9fafb' : 'white'
+                        }}
+                      >
+                        {couriers.map((courier) => (
+                          <option key={courier.value} value={courier.value}>
+                            {courier.label}
+                          </option>
+                        ))}
+                      </select>
+                      {loadingCost && (
+                        <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                          Menghitung ongkir...
+                        </small>
+                      )}
+                      {costResults.length > 0 && !loadingCost && (
+                        <div style={{ marginTop: "8px" }}>
+                          {costResults.map((result, idx) => (
+                            <div key={idx} style={{ fontSize: "14px", color: "#374151", marginTop: "4px" }}>
+                              {result.service}: Rp {formatPrice(result.cost)} ({result.etd || "Estimasi"})
+                            </div>
                           ))}
-                        </select>
-                      </div>
-                      
-                      <div className="compact-field">
-                        <label className="compact-label">Kabupaten/Kota <span className="required">*</span></label>
-                        <select
-                          className="compact-input"
-                          value={selectedWilayahIds.cityId}
-                          onChange={(e) => {
-                            const cityId = e.target.value;
-                            setSelectedWilayahIds(prev => ({ ...prev, cityId, districtId: "" }));
-                            const cityName = getCityName(cityId);
-                            setFormWilayah(prev => ({ ...prev, kabupaten: cityName, kecamatan: "", kode_pos: "" }));
-                          }}
-                          disabled={!selectedWilayahIds.provinceId || loadingWilayah.cities}
-                        >
-                          <option value="">Pilih Kabupaten/Kota</option>
-                          {wilayahData.cities.map((city) => (
-                            <option key={city.id} value={city.id}>
-                              {city.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      
-                      <div className="compact-field">
-                        <label className="compact-label">Kecamatan <span className="required">*</span></label>
-                        <select
-                          className="compact-input"
-                          value={selectedWilayahIds.districtId}
-                          onChange={(e) => {
-                            const districtId = e.target.value;
-                            setSelectedWilayahIds(prev => ({ ...prev, districtId }));
-                            const districtName = getDistrictName(districtId);
-                            setFormWilayah(prev => ({ ...prev, kecamatan: districtName }));
-                          }}
-                          disabled={!selectedWilayahIds.cityId || loadingWilayah.districts}
-                        >
-                          <option value="">Pilih Kecamatan</option>
-                          {wilayahData.districts.map((district) => (
-                            <option key={district.district_id || district.id} value={district.district_id || district.id}>
-                              {district.name}
-                            </option>
-                          ))}
-                        </select>
-                        {!selectedWilayahIds.cityId && (
-                          <p style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
-                            Pilih kabupaten/kota terlebih dahulu
-                          </p>
-                        )}
-                      </div>
-                      
-                      <div className="compact-field">
-                        <label className="compact-label">Kode Pos <span className="required">*</span></label>
-                        <input
-                          type="text"
-                          placeholder="Contoh: 12120"
-                          className="compact-input"
-                          value={formWilayah.kode_pos}
-                          onChange={(e) => {
-                            const val = e.target.value.replace(/\D/g, '');
-                            setFormWilayah(prev => ({ ...prev, kode_pos: val }));
-                          }}
-                          disabled={!selectedWilayahIds.districtId}
-                        />
-                        {!selectedWilayahIds.districtId && (
-                          <p style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
-                            Pilih kecamatan terlebih dahulu
-                          </p>
-                        )}
-                      </div>
-                      
-                      {/* ✅ Bagian Ongkir dengan Kurir */}
-                      <div className="compact-field">
-                        <label className="compact-label">Kurir <span className="required">*</span></label>
-                        <select
-                          className="compact-input"
-                          value={selectedCourier}
-                          onChange={(e) => setSelectedCourier(e.target.value)}
-                          disabled={!selectedWilayahIds.districtId || loadingCost}
-                        >
-                          {couriers.map((courier) => (
-                            <option key={courier.value} value={courier.value}>
-                              {courier.label}
-                            </option>
-                          ))}
-                        </select>
-                        {loadingCost && (
-                          <p style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
-                            Menghitung ongkir...
-                          </p>
-                        )}
-                        {costResults.length > 0 && !loadingCost && (
-                          <div style={{ marginTop: "8px" }}>
-                            {costResults.map((result, idx) => (
-                              <div key={idx} style={{ fontSize: "14px", color: "#374151", marginTop: "4px" }}>
-                                {result.service}: Rp {formatPrice(result.cost)} ({result.etd || "Estimasi"})
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               </section>
@@ -1409,7 +1446,7 @@ export default function ProductPage() {
                   Metode Pembayaran
                 </h2>
                 <div className="payment-options-vertical">
-                  <label className="payment-option-row" style={{ border: "1px solid #000000", borderRadius: "8px", padding: "12px" }}>
+                  <label className="payment-option-row">
                     <input 
                       type="radio" 
                       name="payment" 
@@ -1422,7 +1459,7 @@ export default function ProductPage() {
                       <img className="pay-icon" src="/assets/bca.png" alt="BCA" />
                     </div>
                   </label>
-                  <label className="payment-option-row" style={{ border: "1px solid #000000", borderRadius: "8px", padding: "12px" }}>
+                  <label className="payment-option-row">
                     <input 
                       type="radio" 
                       name="payment" 
@@ -1438,7 +1475,7 @@ export default function ProductPage() {
                       <img className="pay-icon" src="/assets/link.png" alt="LinkAja" />
                     </div>
                   </label>
-                  <label className="payment-option-row" style={{ border: "1px solid #000000", borderRadius: "8px", padding: "12px" }}>
+                  <label className="payment-option-row">
                     <input 
                       type="radio" 
                       name="payment" 
@@ -1453,7 +1490,7 @@ export default function ProductPage() {
                       <img className="pay-icon" src="/assets/jcb.png" alt="JCB" />
                     </div>
                   </label>
-                  <label className="payment-option-row" style={{ border: "1px solid #000000", borderRadius: "8px", padding: "12px" }}>
+                  <label className="payment-option-row">
                     <input 
                       type="radio" 
                       name="payment" 
@@ -1771,13 +1808,9 @@ export default function ProductPage() {
     }
   };
 
-  // Load provinces when product data loaded (untuk produk fisik)
+  // Load provinces when product data loaded (selalu load untuk semua produk)
   useEffect(() => {
     if (!productData) return;
-    const kategoriId = getKategoriId();
-    const isBuku = kategoriId === 4;
-    
-    if (!isBuku) return; // Hanya untuk produk fisik
     
     async function loadProvincesData() {
       setLoadingWilayah(prev => ({ ...prev, provinces: true }));
@@ -1796,9 +1829,6 @@ export default function ProductPage() {
   // Load cities when province selected
   useEffect(() => {
     if (!productData) return;
-    const kategoriId = getKategoriId();
-    const isBuku = kategoriId === 4;
-    if (!isBuku) return;
     
     if (!selectedWilayahIds.provinceId) {
       setWilayahData(prev => ({ ...prev, cities: [], districts: [] }));
@@ -1824,9 +1854,6 @@ export default function ProductPage() {
   // Load districts when city selected
   useEffect(() => {
     if (!productData) return;
-    const kategoriId = getKategoriId();
-    const isBuku = kategoriId === 4;
-    if (!isBuku) return;
     
     if (!selectedWilayahIds.cityId) {
       setWilayahData(prev => ({ ...prev, districts: [] }));
@@ -1849,12 +1876,12 @@ export default function ProductPage() {
     loadDistrictsData();
   }, [selectedWilayahIds.cityId, productData]);
   
-  // Calculate cost when district and courier selected
+  // Calculate cost when district and courier selected (hanya untuk produk fisik)
   useEffect(() => {
     if (!productData) return;
     const kategoriId = getKategoriId();
     const isBuku = kategoriId === 4;
-    if (!isBuku) return;
+    if (!isBuku) return; // Hanya untuk produk fisik
     
     if (!selectedWilayahIds.districtId || !selectedCourier) {
       setCostResults([]);

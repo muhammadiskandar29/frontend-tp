@@ -957,15 +957,17 @@ export default function AddProducts3Page() {
         
         return (
           <div style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
-            {/* Bundling Section - Tampilkan jika ada bundling */}
-            {pengaturanForm.isBundling && pengaturanForm.bundling && pengaturanForm.bundling.length > 0 && (
-              <section className="preview-form-section bundling-section" aria-label="Package Selection" style={{
-                marginBottom: "24px",
-                padding: "24px",
-                backgroundColor: "#ffffff",
-                borderRadius: "12px",
-                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)"
-              }}>
+            {/* ✅ Card besar yang merangkum semua form */}
+            <div style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "12px",
+              padding: "24px",
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+              border: "1px solid #e5e7eb"
+            }}>
+              {/* Bundling Section - Tampilkan jika ada bundling */}
+              {pengaturanForm.isBundling && pengaturanForm.bundling && pengaturanForm.bundling.length > 0 && (
+                <section style={{ marginBottom: "24px" }}>
                 <h2 style={{
                   fontSize: "18px",
                   fontWeight: "600",
@@ -1069,16 +1071,16 @@ export default function AddProducts3Page() {
                   })}
                 </div>
               </section>
-            )}
+              )}
 
-            {/* Form Pemesanan */}
-            <section className="preview-form-section compact-form-section" aria-label="Order form">
-              <h2 className="compact-form-title" style={{
-                fontSize: "18px",
-                fontWeight: "600",
-                color: "#000000",
-                marginBottom: "12px"
-              }}>Lengkapi Data:</h2>
+              {/* Form Pemesanan */}
+              <section className="preview-form-section compact-form-section" aria-label="Order form" style={{ marginBottom: "24px" }}>
+                <h2 className="compact-form-title" style={{
+                  fontSize: "18px",
+                  fontWeight: "600",
+                  color: "#000000",
+                  marginBottom: "16px"
+                }}>Lengkapi Data:</h2>
               <div className="compact-form-card">
                 <div className="compact-field">
                   <label className="compact-label">Nama Lengkap <span className="required">*</span></label>
@@ -1336,9 +1338,11 @@ export default function AddProducts3Page() {
               </div>
             </section>
 
-            {/* Payment Section - Selalu muncul */}
-            <section className="preview-payment-section payment-section" aria-label="Payment methods">
-              <h2 className="payment-title">Metode Pembayaran</h2>
+              {/* Payment Section - Selalu muncul */}
+              <section className="preview-payment-section payment-section" aria-label="Payment methods" style={{ marginBottom: "24px" }}>
+                <h2 className="payment-title" style={{ fontSize: "18px", fontWeight: "600", color: "#000000", marginBottom: "16px" }}>
+                  Metode Pembayaran
+                </h2>
               <div className="payment-options-vertical">
                 <label className="payment-option-row">
                   <input type="radio" name="payment" value="manual" />
@@ -1377,13 +1381,14 @@ export default function AddProducts3Page() {
                   </div>
                 </label>
               </div>
-            </section>
+              </section>
 
-            {/* Button Pesan Sekarang */}
-            <div className="preview-form-submit-wrapper">
-              <button type="button" className="preview-form-submit-btn">
-                Pesan Sekarang
-              </button>
+              {/* Button Pesan Sekarang */}
+              <div className="preview-form-submit-wrapper">
+                <button type="button" className="preview-form-submit-btn">
+                  Pesan Sekarang
+                </button>
+              </div>
             </div>
           </div>
         );
