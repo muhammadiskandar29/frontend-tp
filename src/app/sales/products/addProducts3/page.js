@@ -1448,22 +1448,33 @@ export default function AddProducts3Page() {
             childComponents = sectionChildren
               .map(childId => {
                 // Cari block dengan ID yang sesuai dari blocks array (data terbaru)
-                const foundBlock = blocks.find(b => 
-                  b.id === childId || 
-                  b.data?.componentId === childId ||
-                  (b.parentId === sectionComponentId && b.id === childId)
-                );
+                // Coba beberapa cara pencarian untuk memastikan ditemukan
+                let foundBlock = blocks.find(b => b.id === childId);
+                
+                if (!foundBlock) {
+                  // Coba cari dengan parentId
+                  foundBlock = blocks.find(b => 
+                    b.parentId === sectionComponentId && 
+                    (b.id === childId || b.data?.componentId === childId)
+                  );
+                }
+                
+                if (!foundBlock) {
+                  // Coba cari dengan componentId
+                  foundBlock = blocks.find(b => b.data?.componentId === childId);
+                }
                 
                 if (foundBlock) {
-                  // ✅ Pastikan menggunakan data terbaru dari blocks
-                  return {
-                    ...foundBlock,
-                    // Pastikan data terbaru digunakan
-                    data: foundBlock.data || {},
-                    type: foundBlock.type,
-                    id: foundBlock.id
-                  };
+                  // ✅ Pastikan menggunakan data terbaru dari blocks (langsung return foundBlock, tidak perlu copy)
+                  return foundBlock;
                 }
+                
+                console.warn(`[SECTION] Child block dengan ID "${childId}" tidak ditemukan di blocks array`, {
+                  childId,
+                  sectionComponentId,
+                  availableBlocks: blocks.map(b => ({ id: b.id, type: b.type, parentId: b.parentId }))
+                });
+                
                 return null;
               })
               .filter(Boolean); // Hapus null/undefined
@@ -1472,12 +1483,16 @@ export default function AddProducts3Page() {
         
         // Debug log untuk melihat child components
         console.log(`[SECTION] Section "${sectionComponentId}" memiliki ${childComponents.length} child components:`, {
+          sectionComponentId,
           sectionChildren,
+          allBlocksIds: blocks.map(b => ({ id: b.id, type: b.type, parentId: b.parentId })),
           childComponents: childComponents.map(c => ({
-            id: c.id,
-            type: c.type,
-            hasData: !!c.data,
-            dataKeys: c.data ? Object.keys(c.data) : []
+            id: c?.id,
+            type: c?.type,
+            hasData: !!c?.data,
+            dataKeys: c?.data ? Object.keys(c.data) : [],
+            items: c?.data?.items || [],
+            componentTitle: c?.data?.componentTitle
           }))
         });
         
@@ -1501,23 +1516,17 @@ export default function AddProducts3Page() {
               <div className="preview-placeholder">Section kosong - tambahkan komponen</div>
             ) : (
               childComponents.map((childData, childIndex) => {
-                // ✅ Jika childData adalah object dengan type, gunakan langsung
-                // Jika childData adalah ID (string), cari dari blocks
-                let childBlock;
+                // ✅ childData sudah adalah block dari blocks (sudah object dengan data terbaru)
+                // Tapi pastikan kita menggunakan data terbaru dari blocks array
+                let childBlock = childData;
                 
-                if (typeof childData === 'object' && childData !== null && childData.type) {
-                  // ✅ childData adalah object dengan type - gunakan langsung
-                  childBlock = childData;
-                } else if (typeof childData === 'string') {
-                  // ✅ childData adalah ID - cari dari blocks
-                  childBlock = blocks.find(b => b.id === childData || b.data?.componentId === childData);
-                  if (!childBlock) {
-                    console.warn(`[SECTION] Child block dengan ID "${childData}" tidak ditemukan`);
-                    return null;
+                // ✅ Pastikan menggunakan data terbaru dari blocks array
+                // Cari block terbaru berdasarkan ID
+                if (childBlock && childBlock.id) {
+                  const latestChildBlock = blocks.find(b => b.id === childBlock.id);
+                  if (latestChildBlock) {
+                    childBlock = latestChildBlock; // Gunakan data terbaru
                   }
-                } else {
-                  // ✅ childData adalah block dari blocks (sudah object)
-                  childBlock = childData;
                 }
                 
                 // Pastikan childBlock memiliki struktur yang benar untuk renderPreview
@@ -1527,17 +1536,14 @@ export default function AddProducts3Page() {
                 }
                 
                 // ✅ Pastikan childBlock memiliki struktur yang benar: { type, data, id, ... }
-                // Jika childBlock tidak memiliki data, tambahkan data kosong
-                // Deep copy data untuk memastikan tidak ada masalah reference
+                // Jangan deep copy, biarkan renderPreview menggunakan data langsung dari blocks
                 const normalizedChildBlock = {
                   ...childBlock,
                   type: childBlock.type,
-                  // ✅ Pastikan data di-copy dengan benar, termasuk nested objects
-                  data: childBlock.data ? JSON.parse(JSON.stringify(childBlock.data)) : {},
+                  data: childBlock.data || {},
                   id: childBlock.id || `section-child-${childBlock.type}-${childIndex}`,
-                  // Pastikan semua property penting ada
-                  style: childBlock.style ? JSON.parse(JSON.stringify(childBlock.style)) : {},
-                  config: childBlock.config ? JSON.parse(JSON.stringify(childBlock.config)) : {}
+                  style: childBlock.style || {},
+                  config: childBlock.config || {}
                 };
                 
                 // Debug log untuk melihat struktur data
@@ -1546,7 +1552,8 @@ export default function AddProducts3Page() {
                   type: normalizedChildBlock.type,
                   hasData: !!normalizedChildBlock.data,
                   dataKeys: normalizedChildBlock.data ? Object.keys(normalizedChildBlock.data) : [],
-                  data: normalizedChildBlock.data
+                  items: normalizedChildBlock.data?.items || [],
+                  componentTitle: normalizedChildBlock.data?.componentTitle
                 });
                 
                 if (!normalizedChildBlock.data || Object.keys(normalizedChildBlock.data).length === 0) {
