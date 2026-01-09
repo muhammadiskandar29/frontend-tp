@@ -445,6 +445,7 @@ export default function AddProducts3Page() {
         return (
           <SectionComponent 
             {...commonProps}
+            block={block} // ✅ FIX: Pass block lengkap, bukan hanya data
             allBlocks={blocks}
             onAddChildBlock={handleAddChildBlock}
             onUpdateChildBlock={handleUpdateChildBlock}
@@ -4162,10 +4163,17 @@ export default function AddProducts3Page() {
               {/* Preview komponen - hanya render blocks NON-CHILD */}
               {/* ✅ RULE: Child component TIDAK BOLEH dirender oleh root renderer */}
               {/* ✅ Hanya section yang boleh render child blocks */}
+              {/* ✅ FIX UTAMA: Filter blocks yang punya parentId - TIDAK BOLEH dirender di root */}
               {blocks
                 .filter(block => {
-                  // ✅ Filter: Hanya render block yang BUKAN child
-                  // Gunakan helper function isChildBlock untuk konsistensi
+                  if (!block || !block.type) return false;
+                  
+                  // ✅ FIX UTAMA: Jika block punya parentId, langsung skip (tidak render di root)
+                  if (block.parentId) {
+                    return false;
+                  }
+                  
+                  // ✅ Gunakan helper function isChildBlock untuk konsistensi (fallback check)
                   return !isChildBlock(block);
                 })
                 .map((block) => (

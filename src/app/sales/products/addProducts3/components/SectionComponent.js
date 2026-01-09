@@ -53,6 +53,7 @@ const COMPONENT_CATEGORIES = {
 
 export default function SectionComponent({ 
   data = {}, 
+  block = null, // ✅ FIX: Terima block lengkap, bukan hanya data
   onUpdate, 
   onMoveUp, 
   onMoveDown, 
@@ -80,20 +81,57 @@ export default function SectionComponent({
   const borderRadius = data.borderRadius || "none";
   const boxShadow = data.boxShadow || "none";
   const responsiveType = data.responsiveType || "vertical";
-  const componentId = data.componentId || `section-${Date.now()}`;
-  const title = data.title || "Section";
   
-  // Children blocks - find blocks that have this section's componentId as parentId
-  const sectionComponentId = data.componentId || componentId;
-  const children = data.children || [];
+  // ✅ FIX: Gunakan logic yang sama seperti renderPreview
+  // componentId ada di config, BUKAN di data
+  const sectionComponentId = block?.config?.componentId || data.componentId || `section-${Date.now()}`;
   
-  // Find child blocks by both parentId and children array
-  const childBlocks = allBlocks.filter(block => 
-    block.parentId === sectionComponentId || children.includes(block.id)
-  );
+  // ✅ FIX WAJIB #1: children ada di content.children, BUKAN di data.children
+  const sectionContent = block?.content || block?.data?.content || {};
+  const sectionChildren = sectionContent.children || data.children || [];
+  
+  // ✅ FIX WAJIB #2: Resolve child blocks dengan logic yang sama seperti renderPreview
+  let childBlocks = [];
+  
+  if (Array.isArray(sectionChildren) && sectionChildren.length > 0) {
+    const firstChild = sectionChildren[0];
+    
+    if (typeof firstChild === 'object' && firstChild !== null && firstChild.type) {
+      // children adalah array of component data objects - gunakan langsung
+      childBlocks = sectionChildren;
+    } else {
+      // children adalah array of IDs - cari dari allBlocks
+      // ✅ Urutan pencarian yang benar (componentId dulu, baru id)
+      childBlocks = sectionChildren
+        .map(childId => {
+          let foundBlock = 
+            allBlocks.find(b => b.config?.componentId === childId) ||
+            allBlocks.find(b => b.id === childId) ||
+            allBlocks.find(b => b.parentId === sectionComponentId);
+          
+          // ✅ Fallback terakhir jika masih tidak ketemu
+          if (!foundBlock) {
+            foundBlock = allBlocks.find(b => b.parentId === sectionComponentId);
+          }
+          
+          return foundBlock;
+        })
+        .filter(Boolean); // Hapus null/undefined
+    }
+  }
+  
+  // ✅ Fallback: Cari juga dengan parentId (untuk safety)
+  if (childBlocks.length === 0) {
+    childBlocks = allBlocks.filter(b => b.parentId === sectionComponentId);
+  }
   
   const handleChange = (field, value) => {
-    onUpdate?.({ ...data, [field]: value });
+    // ✅ FIX: Jika field adalah "content", update content.children
+    if (field === "content") {
+      onUpdate?.({ ...data, content: value });
+    } else {
+      onUpdate?.({ ...data, [field]: value });
+    }
   };
 
   // Get default data for child component
@@ -123,18 +161,27 @@ export default function SectionComponent({
   const handleAddChildComponent = (componentId) => {
     if (!onAddChildBlock) return;
     
-    const sectionComponentId = data.componentId || componentId;
+    // ✅ FIX: Gunakan sectionComponentId yang sudah benar (dari config)
     const newBlock = {
       id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       type: componentId,
       data: getDefaultData(componentId),
+      config: {
+        componentId: `${componentId}-${Date.now()}`
+      },
       order: childBlocks.length + 1,
       parentId: sectionComponentId, // Store section componentId as parent reference
     };
     
-    // Add to children array
-    const updatedChildren = [...(data.children || []), newBlock.id];
-    handleChange("children", updatedChildren);
+    // ✅ FIX: Update children di content.children (bukan data.children)
+    const currentContent = block?.content || block?.data?.content || {};
+    const updatedContent = {
+      ...currentContent,
+      children: [...(currentContent.children || sectionChildren || []), newBlock.config.componentId]
+    };
+    
+    // Update data dengan content yang baru
+    handleChange("content", updatedContent);
     
     // Call parent handler to add block
     onAddChildBlock(newBlock);
