@@ -1405,39 +1405,87 @@ export default function EditProductsPage() {
       case "quota-info":
         return <QuotaInfoPreview data={block.data || {}} />;
       case "section":
-        const sectionData = block.data || {};
-        const sectionComponentId = sectionData.componentId || `section-${block.id}`;
-        const sectionChildren = sectionData.children || [];
+        // ✅ SAMA DENGAN addProducts3: Pastikan block memiliki data terbaru dari blocks array
+        const latestBlock = blocks.find(b => b.id === block.id) || block;
+        const blockToRender = latestBlock.id === block.id ? latestBlock : block;
         
-        // Find child blocks by both parentId and children array
-        const sectionChildBlocks = blocks.filter(b => 
-          b.parentId === sectionComponentId || sectionChildren.includes(b.id)
-        );
+        // ✅ ARSITEKTUR BENAR: config.componentId adalah SATU-SATUNYA sumber kebenaran (sama dengan addProducts3)
+        // ✅ FALLBACK: Untuk kompatibilitas data lama, generate componentId jika tidak ada
+        let sectionComponentId = blockToRender.config?.componentId;
         
-        // Build section styles from advance settings
+        if (!sectionComponentId) {
+          // ✅ FALLBACK: Generate componentId untuk data lama yang tidak punya config.componentId
+          sectionComponentId = blockToRender.data?.componentId || `section-${blockToRender.id}`;
+          
+          // ✅ Auto-fix: Update block dengan config.componentId untuk data lama
+          if (!blockToRender.config) {
+            blockToRender.config = {};
+          }
+          blockToRender.config.componentId = sectionComponentId;
+          
+          console.warn(`[SECTION FALLBACK] Section block "${blockToRender.id}" tidak memiliki config.componentId, menggunakan fallback: "${sectionComponentId}"`);
+        }
+        
+        // ✅ ARSITEKTUR BENAR: Filter child berdasarkan parentId === sectionComponentId (sama dengan addProducts3)
+        const childComponents = blocks.filter(b => {
+          if (!b || !b.type) return false;
+          return b.parentId === sectionComponentId;
+        });
+        
+        // ✅ DEBUG: Log untuk tracking identifier
+        console.log(`[SECTION RENDER] Section ID: "${sectionComponentId}"`, {
+          sectionBlockId: blockToRender.id,
+          sectionConfigComponentId: blockToRender.config?.componentId,
+          childCount: childComponents.length,
+          allBlocksWithParentId: blocks
+            .filter(b => b.parentId)
+            .map(b => ({
+              id: b.id,
+              type: b.type,
+              parentId: b.parentId,
+              match: b.parentId === sectionComponentId ? "✅ MATCH" : "❌ NO MATCH"
+            }))
+        });
+        
+        // ✅ FIX #3: Build section styles from block.style.container, bukan block.data (sama dengan addProducts3)
+        const sectionData = blockToRender.data || {};
+        const sectionContainerStyle = blockToRender.style?.container || {};
         const sectionStyles = {
-          marginRight: `${sectionData.marginRight || 0}px`,
-          marginLeft: `${sectionData.marginLeft || 0}px`,
-          marginBottom: `${sectionData.marginBetween || 16}px`,
-          border: sectionData.border ? `${sectionData.border}px solid ${sectionData.borderColor || "#000000"}` : "none",
-          backgroundColor: sectionData.backgroundColor || "#ffffff",
-          borderRadius: sectionData.borderRadius === "none" ? "0" : sectionData.borderRadius || "0",
-          boxShadow: sectionData.boxShadow === "none" ? "none" : sectionData.boxShadow || "none",
+          marginRight: `${sectionContainerStyle.margin?.right || sectionContainerStyle.marginRight || sectionData.marginRight || 0}px`,
+          marginLeft: `${sectionContainerStyle.margin?.left || sectionContainerStyle.marginLeft || sectionData.marginLeft || 0}px`,
+          marginBottom: `${sectionContainerStyle.margin?.bottom || sectionContainerStyle.marginBottom || sectionContainerStyle.marginBetween || sectionData.marginBetween || 16}px`,
+          border: sectionContainerStyle.border?.width 
+            ? `${sectionContainerStyle.border.width}px ${sectionContainerStyle.border.style || 'solid'} ${sectionContainerStyle.border.color || "#000000"}` 
+            : (sectionData.border ? `${sectionData.border}px solid ${sectionData.borderColor || "#000000"}` : "none"),
+          backgroundColor: sectionContainerStyle.background?.color || sectionContainerStyle.backgroundColor || sectionData.backgroundColor || "#ffffff",
+          borderRadius: sectionContainerStyle.border?.radius || (sectionData.borderRadius === "none" ? "0" : sectionData.borderRadius || "0"),
+          boxShadow: sectionContainerStyle.shadow || (sectionData.boxShadow === "none" ? "none" : sectionData.boxShadow || "none"),
           display: "block",
           width: "100%",
-          padding: "16px",
+          padding: sectionContainerStyle.padding 
+            ? `${sectionContainerStyle.padding.top || 0}px ${sectionContainerStyle.padding.right || 0}px ${sectionContainerStyle.padding.bottom || 0}px ${sectionContainerStyle.padding.left || 0}px` 
+            : (sectionData.padding || "16px"),
         };
         
         return (
           <div className="preview-section" style={sectionStyles}>
-            {sectionChildBlocks.length === 0 ? (
-              <div className="preview-placeholder">Section kosong - tambahkan komponen</div>
+            {childComponents.length === 0 ? (
+              <div className="preview-placeholder">
+                Section kosong - tambahkan komponen
+              </div>
             ) : (
-              sectionChildBlocks.map((childBlock) => (
-                <div key={childBlock.id} className="preview-section-child">
-                  {renderPreview(childBlock)}
-                </div>
-              ))
+              childComponents.map((childBlock) => {
+                if (!childBlock || !childBlock.type || !childBlock.id) {
+                  console.warn("[SECTION] Child block tidak valid:", childBlock);
+                  return null;
+                }
+        
+                return (
+                  <div key={childBlock.id} className="preview-section-child">
+                    {renderPreview(childBlock)}
+                  </div>
+                );
+              })
             )}
           </div>
         );
@@ -1788,8 +1836,9 @@ export default function EditProductsPage() {
     const blocksData = landingpageArray.slice(1) || [];
 
     // Transform blocks dari struktur baru (content/style/config) ke struktur editor (data)
+    // ✅ FIX: Ambil parentId dari root level block (bukan hanya dari config.parentId)
     const parsedBlocks = blocksData.map((block, index) => {
-      const { type, content, style, config, order } = block;
+      const { type, content, style, config, order, parentId: blockParentId } = block;
       
       // Transform kembali ke struktur editor
       let data = {};
@@ -1817,7 +1866,7 @@ export default function EditProductsPage() {
             bgImage: style?.container?.background?.image || "",
             componentId: config?.componentId || `text-${Date.now()}`,
             deviceView: config?.deviceView || "desktop",
-            parentId: config?.parentId || null
+            parentId: blockParentId || config?.parentId || null // ✅ Gunakan parentId dari root level dulu
           };
           break;
         case "image":
@@ -1837,7 +1886,8 @@ export default function EditProductsPage() {
             backgroundColor: style?.container?.background?.color || "#ffffff",
             backgroundImage: style?.container?.background?.image || "",
             componentId: config?.componentId || `image-${Date.now()}`,
-            device: config?.device || "mobile"
+            device: config?.device || "mobile",
+            parentId: blockParentId || config?.parentId || null // ✅ TAMBAHKAN parentId untuk image
           };
           break;
         case "youtube":
@@ -1853,7 +1903,8 @@ export default function EditProductsPage() {
             paddingRight: style?.container?.padding?.right || 0,
             paddingBottom: style?.container?.padding?.bottom || 0,
             paddingLeft: style?.container?.padding?.left || 0,
-            componentId: config?.componentId || `video-${Date.now()}`
+            componentId: config?.componentId || `video-${Date.now()}`,
+            parentId: blockParentId || config?.parentId || null // ✅ TAMBAHKAN parentId untuk video
           };
           break;
         case "testimoni":
@@ -1868,7 +1919,8 @@ export default function EditProductsPage() {
               rating: item.rating || 5
             })),
             componentTitle: config?.componentTitle || "",
-            componentId: config?.componentId || `testimoni-${Date.now()}`
+            componentId: config?.componentId || `testimoni-${Date.now()}`,
+            parentId: blockParentId || config?.parentId || null // ✅ TAMBAHKAN parentId untuk testimoni
           };
           break;
         case "list":
@@ -1886,7 +1938,7 @@ export default function EditProductsPage() {
             paddingBottom: style?.container?.padding?.bottom || 20,
             paddingLeft: style?.container?.padding?.left || 0,
             componentId: config?.componentId || `list-${Date.now()}`,
-            parentId: config?.parentId || null
+            parentId: blockParentId || config?.parentId || data.parentId || null // ✅ Gunakan parentId dari root level dulu
           };
           break;
         case "section":
@@ -1919,7 +1971,8 @@ export default function EditProductsPage() {
             textColor: style?.text?.color || "#ffffff",
             bgColor: style?.container?.background?.color || "#1a1a1a",
             numberStyle: style?.numberStyle || "flip",
-            componentId: config?.componentId || `countdown-${Date.now()}`
+            componentId: config?.componentId || `countdown-${Date.now()}`,
+            parentId: blockParentId || config?.parentId || null // ✅ TAMBAHKAN parentId untuk countdown
           };
           break;
         case "image-slider":
@@ -1934,7 +1987,8 @@ export default function EditProductsPage() {
             autoslide: content?.autoplay || false,
             autoslideDuration: content?.interval || 5000,
             showCaption: false,
-            componentId: config?.componentId || `image-slider-${Date.now()}`
+            componentId: config?.componentId || `image-slider-${Date.now()}`,
+            parentId: blockParentId || config?.parentId || null // ✅ TAMBAHKAN parentId untuk image-slider
           };
           break;
         case "quota-info":
@@ -1944,7 +1998,8 @@ export default function EditProductsPage() {
             headline: "Sisa kuota terbatas!",
             subtext: "Jangan tunda lagi, amankan kursi Anda sebelum kuota habis.",
             highlightText: "Daftar sekarang sebelum kehabisan.",
-            componentId: config?.componentId || `quota-info-${Date.now()}`
+            componentId: config?.componentId || `quota-info-${Date.now()}`,
+            parentId: blockParentId || config?.parentId || null // ✅ TAMBAHKAN parentId untuk quota-info
           };
           break;
         case "button":
@@ -1952,19 +2007,22 @@ export default function EditProductsPage() {
             text: content?.text || "Klik Disini",
             link: content?.link || "#",
             style: style?.button?.style || "primary",
-            componentId: config?.componentId || `button-${Date.now()}`
+            componentId: config?.componentId || `button-${Date.now()}`,
+            parentId: blockParentId || config?.parentId || null // ✅ TAMBAHKAN parentId untuk button
           };
           break;
         case "html":
           data = {
             code: content?.code || "",
-            componentId: config?.componentId || `html-${Date.now()}`
+            componentId: config?.componentId || `html-${Date.now()}`,
+            parentId: blockParentId || config?.parentId || null // ✅ TAMBAHKAN parentId untuk html
           };
           break;
         case "embed":
           data = {
             code: content?.code || "",
-            componentId: config?.componentId || `embed-${Date.now()}`
+            componentId: config?.componentId || `embed-${Date.now()}`,
+            parentId: blockParentId || config?.parentId || null // ✅ TAMBAHKAN parentId untuk embed
           };
           break;
         case "divider":
@@ -1972,14 +2030,16 @@ export default function EditProductsPage() {
             style: content?.style || "solid",
             color: content?.color || "#e5e7eb",
             height: content?.height || 2,
-            componentId: config?.componentId || `divider-${Date.now()}`
+            componentId: config?.componentId || `divider-${Date.now()}`,
+            parentId: blockParentId || config?.parentId || null // ✅ TAMBAHKAN parentId untuk divider
           };
           break;
         case "scroll-target":
           data = {
             target: content?.target || "",
             label: content?.label || "",
-            componentId: config?.componentId || `scroll-target-${Date.now()}`
+            componentId: config?.componentId || `scroll-target-${Date.now()}`,
+            parentId: blockParentId || config?.parentId || null // ✅ TAMBAHKAN parentId untuk scroll-target
           };
           break;
         case "animation":
@@ -1988,18 +2048,21 @@ export default function EditProductsPage() {
             duration: content?.duration || 1000,
             delay: content?.delay || 0,
             easing: content?.easing || "ease-in-out",
-            componentId: config?.componentId || `animation-${Date.now()}`
+            componentId: config?.componentId || `animation-${Date.now()}`,
+            parentId: blockParentId || config?.parentId || null // ✅ TAMBAHKAN parentId untuk animation
           };
           break;
         case "faq":
           data = {
-            componentId: config?.componentId || `faq-${Date.now()}`
+            componentId: config?.componentId || `faq-${Date.now()}`,
+            parentId: blockParentId || config?.parentId || null // ✅ TAMBAHKAN parentId untuk faq
           };
           break;
         case "form":
           data = {
             kategori: settings?.form?.submitConfig?.kategori || null,
-            componentId: config?.componentId || `form-${Date.now()}`
+            componentId: config?.componentId || `form-${Date.now()}`,
+            parentId: blockParentId || config?.parentId || null // ✅ TAMBAHKAN parentId untuk form
           };
           break;
         default:
@@ -2009,12 +2072,28 @@ export default function EditProductsPage() {
           };
       }
 
+      // ✅ FIX: parentId harus di root level block, bukan hanya di data
+      // Prioritas: blockParentId (root level) > config.parentId > data.parentId
+      const finalParentId = blockParentId || config?.parentId || data.parentId || null;
+      
+      // ✅ FIX: componentId harus di config, bukan hanya di data
+      // Prioritas: config.componentId > data.componentId > generate baru
+      const finalComponentId = config?.componentId || data.componentId || `${type}-${Date.now()}-${index}`;
+      
+      // ✅ FIX: Pastikan data.componentId juga di-set untuk kompatibilitas
+      if (!data.componentId && finalComponentId) {
+        data.componentId = finalComponentId;
+      }
+      
       return {
         id: `block-${Date.now()}-${index}`,
         type: type,
         data: data,
         order: order !== undefined ? order : index + 1,
-        parentId: data.parentId || null
+        parentId: finalParentId, // ✅ Gunakan parentId dari root level
+        config: {
+          componentId: finalComponentId // ✅ Gunakan componentId yang sudah di-normalize
+        }
       };
     });
 
@@ -3196,6 +3275,7 @@ export default function EditProductsPage() {
       
       if (!productId) {
         toast.error("Product ID tidak ditemukan!", { id: "save-product" });
+        setIsSaving(false); // ✅ FIX: Set loading state ke false
         return;
       }
 
@@ -3209,10 +3289,22 @@ export default function EditProductsPage() {
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json().catch(() => ({}));
+      // ✅ FIX: Better error handling untuk response
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        console.error("Error parsing response:", parseError);
+        const responseText = await response.text().catch(() => "Unknown error");
+        console.error("Response text:", responseText);
+        toast.error("Gagal memparse response dari server", { id: "save-product" });
+        setIsSaving(false);
+        return;
+      }
 
       if (!response.ok || !data?.success) {
-        const errorMessage = data?.message || "Gagal menyimpan produk";
+        const errorMessage = data?.message || data?.error || "Gagal menyimpan produk";
+        console.error("Save error:", { status: response.status, data });
         toast.error(errorMessage, { id: "save-product" });
         setIsSaving(false);
         return;
@@ -3220,14 +3312,15 @@ export default function EditProductsPage() {
 
       toast.success("Produk berhasil diupdate dan dipublish!", { id: "save-product" });
       
-      // Redirect ke halaman products
-      setTimeout(() => {
-        router.push("/sales/products");
-      }, 1000);
+      // ✅ FIX: Set loading state ke false sebelum redirect
+      setIsSaving(false);
+      
+      // Redirect ke halaman products (langsung, tanpa setTimeout)
+      router.push("/sales/products");
 
     } catch (error) {
       console.error("Error saving product:", error);
-      toast.error("Terjadi kesalahan saat menyimpan produk", { id: "save-product" });
+      toast.error(error?.message || "Terjadi kesalahan saat menyimpan produk", { id: "save-product" });
       setIsSaving(false);
     }
   };

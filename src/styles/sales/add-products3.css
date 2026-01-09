@@ -5805,3 +5805,497 @@ html:has(.add-products3-container) {
   background: #f0fdf4;
   box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
 }
+
+/* ============================================
+   RESPONSIVE STYLES FOR PRODUCT PAGE
+   Mobile & Tablet - Full Screen, Centered Content
+   ============================================ */
+
+/* Tablet (max-width: 1024px) */
+@media (max-width: 1024px) {
+  /* Full screen container */
+  .add-products3-container {
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Canvas full screen */
+  .page-builder-canvas {
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  /* Canvas wrapper - full width, centered */
+  .canvas-wrapper {
+    width: 100%;
+    max-width: 100%;
+    min-height: 100vh;
+    padding: 0;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Content area - centered, reduced padding */
+  .canvas-content-area {
+    width: 100%;
+    max-width: 100%;
+    padding: 20px 40px 40px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Logo - smaller */
+  .canvas-logo {
+    max-width: 80px;
+    max-height: 40px;
+  }
+
+  /* Preview blocks - full width, smaller margins */
+  .canvas-preview-block {
+    width: 100%;
+    max-width: 100%;
+    margin-bottom: 16px;
+  }
+
+  /* Text elements - smaller font sizes */
+  .preview-text {
+    font-size: 0.9em !important;
+    line-height: 1.6 !important;
+  }
+
+  .preview-text h1 {
+    font-size: 1.8em !important;
+  }
+
+  .preview-text h2 {
+    font-size: 1.5em !important;
+  }
+
+  .preview-text h3 {
+    font-size: 1.3em !important;
+  }
+
+  /* Images - responsive */
+  .preview-image img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Sections - reduced padding */
+  .preview-section {
+    padding: 24px 20px !important;
+    margin: 16px 0 !important;
+  }
+
+  /* Lists - smaller */
+  .preview-list {
+    font-size: 0.9em !important;
+  }
+
+  .preview-list-item {
+    padding: 8px 0 !important;
+  }
+
+  /* Testimonials - smaller */
+  .preview-testimonials {
+    padding: 20px 16px !important;
+  }
+
+  .testi-card-new {
+    padding: 16px !important;
+    font-size: 0.9em !important;
+  }
+
+  /* FAQ - smaller */
+  .preview-faq-section {
+    padding: 20px 16px !important;
+    margin: 16px 0 !important;
+  }
+
+  .faq-item {
+    font-size: 0.9em !important;
+  }
+
+  /* Countdown - smaller */
+  .countdown-container {
+    padding: 16px !important;
+  }
+
+  .countdown-box {
+    padding: 12px 8px !important;
+    min-width: 60px !important;
+  }
+
+  .countdown-number {
+    font-size: 1.5em !important;
+  }
+
+  .countdown-label {
+    font-size: 0.7em !important;
+  }
+
+  /* Form - smaller */
+  .preview-form {
+    padding: 20px 16px !important;
+  }
+
+  .form-field {
+    margin-bottom: 12px !important;
+  }
+
+  .form-input {
+    font-size: 0.9em !important;
+    padding: 10px 12px !important;
+  }
+
+  .form-button {
+    font-size: 0.9em !important;
+    padding: 12px 24px !important;
+  }
+}
+
+/* Mobile (max-width: 768px) */
+@media (max-width: 768px) {
+  /* Full screen container */
+  .add-products3-container {
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Canvas full screen */
+  .page-builder-canvas {
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Canvas wrapper - full width, centered */
+  .canvas-wrapper {
+    width: 100%;
+    max-width: 100%;
+    min-height: 100vh;
+    padding: 0;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  /* Content area - centered, minimal padding */
+  .canvas-content-area {
+    width: 100%;
+    max-width: 100%;
+    padding: 16px 20px 32px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Logo - smaller for mobile */
+  .canvas-logo-wrapper {
+    padding: 12px 0;
+  }
+
+  .canvas-logo {
+    max-width: 60px;
+    max-height: 30px;
+  }
+
+  /* Preview blocks - full width, minimal margins */
+  .canvas-preview-block {
+    width: 100%;
+    max-width: 100%;
+    margin-bottom: 12px;
+  }
+
+  /* Text elements - smaller font sizes for mobile */
+  .preview-text {
+    font-size: 0.85em !important;
+    line-height: 1.5 !important;
+    padding: 8px 12px !important;
+  }
+
+  .preview-text h1 {
+    font-size: 1.5em !important;
+    margin-bottom: 8px !important;
+  }
+
+  .preview-text h2 {
+    font-size: 1.3em !important;
+    margin-bottom: 8px !important;
+  }
+
+  .preview-text h3 {
+    font-size: 1.1em !important;
+    margin-bottom: 8px !important;
+  }
+
+  .preview-text p {
+    font-size: 0.9em !important;
+    margin-bottom: 8px !important;
+  }
+
+  /* Images - full width, responsive */
+  .preview-image {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 8px 0 !important;
+  }
+
+  .preview-image img {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Sections - reduced padding for mobile */
+  .preview-section {
+    padding: 16px 12px !important;
+    margin: 12px 0 !important;
+    border-radius: 8px !important;
+  }
+
+  /* Lists - smaller for mobile */
+  .preview-list {
+    font-size: 0.85em !important;
+    padding: 12px 0 !important;
+  }
+
+  .preview-list-item {
+    padding: 6px 0 !important;
+    margin-bottom: 8px !important;
+  }
+
+  .preview-list-item-icon {
+    width: 18px !important;
+    height: 18px !important;
+    margin-right: 8px !important;
+  }
+
+  /* Testimonials - smaller for mobile */
+  .preview-testimonials {
+    padding: 16px 12px !important;
+    margin: 12px 0 !important;
+  }
+
+  .preview-testimonials h2 {
+    font-size: 1.2em !important;
+    margin-bottom: 12px !important;
+  }
+
+  .testimonials-carousel-new {
+    gap: 12px !important;
+  }
+
+  .testi-card-new {
+    padding: 12px !important;
+    font-size: 0.85em !important;
+    min-width: 280px !important;
+  }
+
+  .testi-avatar-new {
+    width: 40px !important;
+    height: 40px !important;
+  }
+
+  /* FAQ - smaller for mobile */
+  .preview-faq-section {
+    padding: 16px 12px !important;
+    margin: 12px 0 !important;
+    border-radius: 8px !important;
+  }
+
+  .preview-faq-section .faq-title {
+    font-size: 1.2em !important;
+    margin-bottom: 16px !important;
+  }
+
+  .faq-item {
+    font-size: 0.85em !important;
+    margin-bottom: 8px !important;
+  }
+
+  .faq-question {
+    padding: 12px !important;
+    font-size: 0.9em !important;
+  }
+
+  .faq-answer {
+    padding: 12px !important;
+    font-size: 0.85em !important;
+  }
+
+  /* Countdown - smaller for mobile */
+  .countdown-container {
+    padding: 12px !important;
+    gap: 8px !important;
+  }
+
+  .countdown-box {
+    padding: 10px 6px !important;
+    min-width: 50px !important;
+  }
+
+  .countdown-number {
+    font-size: 1.3em !important;
+  }
+
+  .countdown-label {
+    font-size: 0.65em !important;
+  }
+
+  /* Form - smaller for mobile */
+  .preview-form {
+    padding: 16px 12px !important;
+    margin: 12px 0 !important;
+  }
+
+  .form-field {
+    margin-bottom: 10px !important;
+  }
+
+  .form-label {
+    font-size: 0.85em !important;
+    margin-bottom: 6px !important;
+  }
+
+  .form-input {
+    font-size: 0.85em !important;
+    padding: 10px 12px !important;
+  }
+
+  .form-button {
+    font-size: 0.85em !important;
+    padding: 12px 20px !important;
+    width: 100% !important;
+  }
+
+  /* Videos - responsive */
+  .preview-videos {
+    padding: 12px 0 !important;
+  }
+
+  .preview-video-wrapper {
+    margin-bottom: 12px !important;
+  }
+
+  .preview-video-iframe {
+    width: 100% !important;
+    height: 200px !important;
+  }
+
+  /* Image Slider - responsive */
+  .image-slider-container {
+    padding: 12px 0 !important;
+  }
+
+  /* Quota Info - responsive */
+  .quota-info-container {
+    padding: 12px !important;
+    font-size: 0.85em !important;
+  }
+}
+
+/* Small Mobile (max-width: 480px) */
+@media (max-width: 480px) {
+  /* Content area - minimal padding for small screens */
+  .canvas-content-area {
+    padding: 12px 16px 24px 16px;
+  }
+
+  /* Logo - even smaller */
+  .canvas-logo {
+    max-width: 50px;
+    max-height: 25px;
+  }
+
+  /* Text - even smaller */
+  .preview-text {
+    font-size: 0.8em !important;
+  }
+
+  .preview-text h1 {
+    font-size: 1.3em !important;
+  }
+
+  .preview-text h2 {
+    font-size: 1.1em !important;
+  }
+
+  .preview-text h3 {
+    font-size: 1em !important;
+  }
+
+  /* Sections - minimal padding */
+  .preview-section {
+    padding: 12px 10px !important;
+    margin: 10px 0 !important;
+  }
+
+  /* Lists - minimal spacing */
+  .preview-list {
+    padding: 10px 0 !important;
+  }
+
+  .preview-list-item {
+    padding: 5px 0 !important;
+  }
+
+  /* Testimonials - minimal padding */
+  .testi-card-new {
+    padding: 10px !important;
+    min-width: 260px !important;
+  }
+
+  /* FAQ - minimal padding */
+  .preview-faq-section {
+    padding: 12px 10px !important;
+  }
+
+  .faq-question {
+    padding: 10px !important;
+  }
+
+  .faq-answer {
+    padding: 10px !important;
+  }
+
+  /* Countdown - minimal size */
+  .countdown-box {
+    padding: 8px 5px !important;
+    min-width: 45px !important;
+  }
+
+  .countdown-number {
+    font-size: 1.2em !important;
+  }
+
+  /* Form - minimal padding */
+  .preview-form {
+    padding: 12px 10px !important;
+  }
+
+  .form-input {
+    padding: 8px 10px !important;
+  }
+
+  .form-button {
+    padding: 10px 16px !important;
+  }
+}
