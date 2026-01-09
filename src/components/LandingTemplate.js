@@ -194,7 +194,6 @@ export default function LandingTemplate({ form }) {
         {/* Testimoni - Google Review Style */}
         {form.testimoni?.length > 0 && (
           <section className="preview-testimonials" aria-label="Customer testimonials">
-            <h2>Testimoni Pembeli</h2>
             <div className="testimonials-carousel-wrapper-new">
               <div className="testimonials-carousel-new" itemScope itemType="https://schema.org/Review">
                 <div className="testimonials-track-new">

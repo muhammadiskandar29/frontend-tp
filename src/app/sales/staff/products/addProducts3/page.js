@@ -281,7 +281,6 @@ export default function AddProducts3Page() {
         
         return (
           <section className="preview-testimonials" aria-label="Customer testimonials">
-            <h2>Testimoni Pembeli</h2>
             <div className="testimonials-carousel-wrapper-new">
               {currentIndex > 0 && (
                 <button 

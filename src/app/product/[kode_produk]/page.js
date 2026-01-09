@@ -575,7 +575,7 @@ export default function ProductPage() {
       paddingLeft: style?.container?.padding?.left || style?.container?.paddingLeft || 0,
       
       // Testimoni data
-      componentTitle: content?.componentTitle || config?.title || "Testimoni Pembeli",
+      componentTitle: content?.componentTitle || config?.title || "",
       
       // List data
       icon: content?.icon || "CheckCircle2",
@@ -841,7 +841,7 @@ export default function ProductPage() {
           }));
         };
         
-        const testimoniTitle = content?.componentTitle || config?.title || "Testimoni Pembeli";
+        const testimoniTitle = content?.componentTitle || config?.title || "";
         
         return (
           <section className="preview-testimonials" aria-label="Customer testimonials">
@@ -1672,10 +1672,17 @@ export default function ProductPage() {
       }
 
       case "section": {
-        // ✅ SAMA PERSIS dengan renderPreview di addProducts3
+        // ✅ ARSITEKTUR BENAR: Sama dengan addProducts3 - pakai parentId saja
         const sectionData = content || {};
-        const sectionComponentId = config?.componentId || sectionData.componentId || `section-${block.order || 'default'}`;
-        const sectionChildren = sectionData.children || config?.children || [];
+        
+        // ✅ FALLBACK: Untuk kompatibilitas data lama, generate componentId jika tidak ada
+        let sectionComponentId = config?.componentId;
+        
+        if (!sectionComponentId) {
+          // ✅ FALLBACK: Generate componentId untuk data lama
+          sectionComponentId = sectionData.componentId || `section-${block.order || 'default'}`;
+          console.warn(`[SECTION FALLBACK] Section tidak memiliki config.componentId, menggunakan fallback: "${sectionComponentId}"`);
+        }
         
         // Build section styles from advance settings
         const sectionStyles = {
@@ -1691,29 +1698,34 @@ export default function ProductPage() {
           padding: style?.container?.padding ? `${style.container.padding.top || 0}px ${style.container.padding.right || 0}px ${style.container.padding.bottom || 0}px ${style.container.padding.left || 0}px` : (sectionData.padding || "16px"),
         };
         
-        // ✅ Ambil child components dari section.children
-        // section.children bisa berisi:
-        // 1. Array of component data objects (dengan type, content, style, config)
-        // 2. Array of component IDs (fallback ke allBlocks)
-        let childComponents = [];
+        // ✅ ARSITEKTUR BENAR: Cari child berdasarkan parentId saja (sama dengan addProducts3)
+        // TIDAK pakai data.children, hanya parentId
+        // ✅ Check by parentId (bisa di root block atau di config)
+        let childComponents = allBlocks.filter(b => {
+          if (!b || !b.type) return false;
+          // ✅ Check parentId di root level dulu (arsitektur baru)
+          if (b.parentId === sectionComponentId) return true;
+          // ✅ Fallback: Check parentId di config (untuk data lama)
+          if (b.config?.parentId === sectionComponentId) return true;
+          return false;
+        });
         
-        if (Array.isArray(sectionChildren) && sectionChildren.length > 0) {
-          // Cek apakah children adalah array of objects (data lengkap) atau array of IDs
-          const firstChild = sectionChildren[0];
-          
-          if (typeof firstChild === 'object' && firstChild !== null && firstChild.type) {
-            // ✅ children adalah array of component data objects - gunakan langsung
-            childComponents = sectionChildren;
-          } else {
-            // ✅ children adalah array of IDs - cari dari allBlocks
-            childComponents = allBlocks.filter(b => {
-              if (!b || !b.type) return false;
-              // Check by parentId (from config.parentId)
-              if (b.config?.parentId === sectionComponentId) return true;
-              // Check by children array (using componentId or order)
-              const childId = b.config?.componentId || b.order;
-              return sectionChildren.includes(childId);
-            });
+        // ✅ FALLBACK: Jika tidak ada child dengan parentId, coba cari dari sectionChildren (untuk data lama)
+        if (childComponents.length === 0) {
+          const sectionChildren = sectionData.children || config?.children || [];
+          if (Array.isArray(sectionChildren) && sectionChildren.length > 0) {
+            const firstChild = sectionChildren[0];
+            if (typeof firstChild === 'object' && firstChild !== null && firstChild.type) {
+              // children adalah array of component data objects - gunakan langsung
+              childComponents = sectionChildren;
+            } else {
+              // children adalah array of IDs - cari dari allBlocks
+              childComponents = allBlocks.filter(b => {
+                if (!b || !b.type) return false;
+                const childId = b.config?.componentId || b.order;
+                return sectionChildren.includes(childId);
+              });
+            }
           }
         }
         
@@ -2143,21 +2155,10 @@ export default function ProductPage() {
         if (!item || !item.type) return false;
         if (item.type === 'settings') return false;
         
-        // ✅ Jangan render block yang adalah child dari section
-        // Check by parentId
-        if (item.config?.parentId && sectionComponentIds.has(item.config.parentId)) {
-          return false; // Ini adalah child dari section, jangan render di luar section
-        }
-        
-        // Check by children array - jika block ini ada di children array section manapun, jangan render
-        const blockId = item.config?.componentId || item.order;
-        const isChildOfSection = landingpage.some(sectionItem => {
-          if (!sectionItem || sectionItem.type !== 'section') return false;
-          const sectionChildren = sectionItem.content?.children || sectionItem.config?.children || [];
-          return sectionChildren.includes(blockId);
-        });
-        
-        if (isChildOfSection) {
+        // ✅ ARSITEKTUR BENAR: Jangan render block yang adalah child dari section
+        // Check by parentId (bisa di root level atau di config)
+        const itemParentId = item.parentId || item.config?.parentId;
+        if (itemParentId && sectionComponentIds.has(itemParentId)) {
           return false; // Ini adalah child dari section, jangan render di luar section
         }
         

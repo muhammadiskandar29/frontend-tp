@@ -719,7 +719,7 @@ export default function EditProductsPage() {
           }));
         };
         
-        const testimoniTitle = block.data.componentTitle || "Testimoni Pembeli";
+        const testimoniTitle = block.data.componentTitle || "";
         
         return (
           <section className="preview-testimonials" aria-label="Customer testimonials">
@@ -1864,7 +1864,7 @@ export default function EditProductsPage() {
               showRating: item.showRating !== false,
               rating: item.rating || 5
             })),
-            componentTitle: config?.componentTitle || "Testimoni Pembeli",
+            componentTitle: config?.componentTitle || "",
             componentId: config?.componentId || `testimoni-${Date.now()}`
           };
           break;
@@ -2556,9 +2556,9 @@ export default function EditProductsPage() {
         };
         config = {
           componentId: data.componentId || `testimoni-${Date.now()}`,
-          componentTitle: data.componentTitle || "Testimoni Pembeli"
+          componentTitle: data.componentTitle || ""
         };
-        break;
+        brea
 
       case "list":
         content = {

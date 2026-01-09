@@ -783,7 +783,7 @@ export default function AddProducts3Page() {
           }));
         };
         
-        const testimoniTitle = blockToRender.data?.componentTitle || "Testimoni Pembeli";
+        const testimoniTitle = blockToRender.data?.componentTitle || "";
         
         return (
           <section className="preview-testimonials" aria-label="Customer testimonials">
@@ -1473,12 +1473,20 @@ export default function AddProducts3Page() {
         return <QuotaInfoPreview data={block.data || {}} />;
       case "section":
         // ✅ ARSITEKTUR BENAR: config.componentId adalah SATU-SATUNYA sumber kebenaran
-        // TIDAK ADA fallback ke block.id atau data.componentId
-        const sectionComponentId = blockToRender.config?.componentId;
+        // ✅ FALLBACK: Untuk kompatibilitas data lama, generate componentId jika tidak ada
+        let sectionComponentId = blockToRender.config?.componentId;
         
         if (!sectionComponentId) {
-          console.error(`[SECTION ERROR] Section block "${blockToRender.id}" tidak memiliki config.componentId!`, blockToRender);
-          return <div className="preview-placeholder">Section Error: Missing componentId</div>;
+          // ✅ FALLBACK: Generate componentId untuk data lama yang tidak punya config.componentId
+          sectionComponentId = blockToRender.data?.componentId || `section-${blockToRender.id}`;
+          
+          // ✅ Auto-fix: Update block dengan config.componentId untuk data lama
+          if (!blockToRender.config) {
+            blockToRender.config = {};
+          }
+          blockToRender.config.componentId = sectionComponentId;
+          
+          console.warn(`[SECTION FALLBACK] Section block "${blockToRender.id}" tidak memiliki config.componentId, menggunakan fallback: "${sectionComponentId}"`);
         }
         
         // ✅ ARSITEKTUR BENAR: Filter child berdasarkan parentId === sectionComponentId
@@ -2229,7 +2237,7 @@ export default function AddProducts3Page() {
         };
         config = {
           componentId: data.componentId || `testimoni-${Date.now()}`,
-          componentTitle: data.componentTitle || "Testimoni Pembeli"
+          componentTitle: data.componentTitle || ""
         };
         break;
 

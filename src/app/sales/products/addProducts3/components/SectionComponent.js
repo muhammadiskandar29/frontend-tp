@@ -83,12 +83,22 @@ export default function SectionComponent({
   const responsiveType = data.responsiveType || "vertical";
   
   // ✅ ARSITEKTUR BENAR: config.componentId adalah SATU-SATUNYA sumber kebenaran
-  // TIDAK ADA fallback ke data.componentId atau Date.now()
-  const sectionComponentId = block?.config?.componentId;
+  // ✅ FALLBACK: Untuk kompatibilitas data lama, generate componentId jika tidak ada
+  let sectionComponentId = block?.config?.componentId;
   
   if (!sectionComponentId) {
-    console.error(`[SECTION ERROR] Section block tidak memiliki config.componentId!`, { block, data });
-    return <div>Section Error: Missing componentId</div>;
+    // ✅ FALLBACK: Generate componentId untuk data lama yang tidak punya config.componentId
+    sectionComponentId = data.componentId || `section-${block?.id || Date.now()}`;
+    
+    // ✅ Auto-fix: Update block dengan config.componentId untuk data lama
+    if (block && !block.config) {
+      block.config = {};
+    }
+    if (block?.config) {
+      block.config.componentId = sectionComponentId;
+    }
+    
+    console.warn(`[SECTION FALLBACK] Section block tidak memiliki config.componentId, menggunakan fallback: "${sectionComponentId}"`);
   }
   
   // ✅ ARSITEKTUR BENAR: Resolve child blocks berdasarkan parentId saja

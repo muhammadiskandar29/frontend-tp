@@ -440,7 +440,6 @@ export default function LandingPage() {
           return (
             <div key={block.id} className="canvas-preview-block">
               <section className="preview-testimonials" aria-label="Customer testimonials">
-                <h2>Testimoni Pembeli</h2>
                 <div className="testimonials-carousel-wrapper-new">
                   {currentIndex > 0 && (
                     <button 
@@ -1906,7 +1905,6 @@ export default function LandingPage() {
 {/* Testimoni - Google Review Style with Horizontal Scroll */}
 {form.testimoni?.length > 0 && (
           <section className="preview-testimonials" aria-label="Customer testimonials">
-            <h2>Testimoni Pembeli</h2>
             <div className="testimonials-carousel-wrapper-new">
               {testimoniIndex > 0 && (
                 <button 
