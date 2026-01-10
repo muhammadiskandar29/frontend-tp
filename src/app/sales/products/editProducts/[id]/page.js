@@ -1822,6 +1822,9 @@ export default function EditProductsPage() {
   // Loading state untuk edit mode
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // State untuk modal konfirmasi exit
+  const [showExitModal, setShowExitModal] = useState(false);
 
   // Function untuk parse landingpage array dari backend ke blocks dan pengaturanForm
   const parseLandingpageArray = (landingpageArray) => {
@@ -3424,7 +3427,7 @@ export default function EditProductsPage() {
       <div className="page-header-section">
         <button
           className="back-to-products-btn"
-          onClick={() => router.push("/sales/products")}
+          onClick={handleBackClick}
           aria-label="Back to products list"
         >
           <ArrowLeft size={18} />
@@ -4621,6 +4624,155 @@ export default function EditProductsPage() {
                 onClick={() => setShowComponentModal(false)}
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Konfirmasi Exit */}
+      {showExitModal && (
+        <div 
+          className="exit-confirm-modal-overlay"
+          onClick={(e) => {
+            // Tutup modal jika klik di overlay (bukan di modal content)
+            if (e.target === e.currentTarget) {
+              setShowExitModal(false);
+            }
+          }}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10000,
+          }}
+        >
+          <div 
+            className="exit-confirm-modal"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "12px",
+              padding: "24px",
+              maxWidth: "400px",
+              width: "90%",
+              boxShadow: "0 10px 25px rgba(0, 0, 0, 0.2)",
+              position: "relative",
+            }}
+          >
+            {/* Header dengan X button */}
+            <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "16px",
+            }}>
+              <h3 style={{
+                margin: 0,
+                fontSize: "18px",
+                fontWeight: 600,
+                color: "#111827",
+              }}>
+                Yakin Exit?
+              </h3>
+              <button
+                onClick={() => setShowExitModal(false)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: "4px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#6b7280",
+                  transition: "color 0.2s",
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = "#111827"}
+                onMouseLeave={(e) => e.currentTarget.style.color = "#6b7280"}
+                aria-label="Close modal"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Text "Save dulu lah!" */}
+            <p style={{
+              margin: "0 0 24px 0",
+              fontSize: "14px",
+              color: "#6b7280",
+              lineHeight: 1.5,
+            }}>
+              Save dulu lah!
+            </p>
+
+            {/* Button Actions */}
+            <div style={{
+              display: "flex",
+              gap: "12px",
+              justifyContent: "flex-end",
+            }}>
+              <button
+                onClick={handleExitWithoutSave}
+                disabled={isSaving}
+                style={{
+                  padding: "10px 20px",
+                  backgroundColor: "#f3f4f6",
+                  color: "#374151",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  cursor: isSaving ? "not-allowed" : "pointer",
+                  transition: "all 0.2s",
+                  opacity: isSaving ? 0.6 : 1,
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSaving) {
+                    e.currentTarget.style.backgroundColor = "#e5e7eb";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSaving) {
+                    e.currentTarget.style.backgroundColor = "#f3f4f6";
+                  }
+                }}
+              >
+                Exit
+              </button>
+              <button
+                onClick={handleSaveDraft}
+                disabled={isSaving}
+                style={{
+                  padding: "10px 20px",
+                  backgroundColor: "#F1A124",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  cursor: isSaving ? "not-allowed" : "pointer",
+                  transition: "all 0.2s",
+                  opacity: isSaving ? 0.6 : 1,
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSaving) {
+                    e.currentTarget.style.backgroundColor = "#d68910";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSaving) {
+                    e.currentTarget.style.backgroundColor = "#F1A124";
+                  }
+                }}
+              >
+                {isSaving ? "Menyimpan..." : "Save"}
               </button>
             </div>
           </div>

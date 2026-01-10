@@ -187,10 +187,21 @@ export default function DetailProdukPage({ params }) {
               <Edit size={16} />
               <span>Edit Produk</span>
             </button>
-            {product.url && (
+            {product.url && product.kode && (
               <button
                 className="action-btn primary"
-                onClick={() => window.open(product.url, '_blank')}
+                onClick={() => {
+                  // ✅ FIX: Tambahkan /product/[kode_produk] sebelum product.url
+                  let landingPageUrl = product.url;
+                  
+                  // Jika product.url sudah dimulai dengan /product/, gunakan langsung
+                  if (!landingPageUrl.startsWith('/product/')) {
+                    // Tambahkan /product/[kode_produk] di depan
+                    landingPageUrl = `/product/${product.kode}${landingPageUrl.startsWith('/') ? '' : '/'}${landingPageUrl}`;
+                  }
+                  
+                  window.open(landingPageUrl, '_blank');
+                }}
               >
                 <ExternalLink size={16} />
                 <span>Lihat Landing Page</span>

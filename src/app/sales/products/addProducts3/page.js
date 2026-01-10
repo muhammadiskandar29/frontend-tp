@@ -123,6 +123,9 @@ export default function AddProducts3Page() {
   });
   const [isSaving, setIsSaving] = useState(false);
   
+  // State untuk modal konfirmasi exit
+  const [showExitModal, setShowExitModal] = useState(false);
+  
   // State untuk form pengaturan
   const [pengaturanForm, setPengaturanForm] = useState({
     nama: "",
@@ -2896,6 +2899,147 @@ export default function AddProducts3Page() {
     }
   };
 
+  // Handler untuk save draft (tanpa publish) - UNTUK ADD MODE
+  const handleSaveDraft = async () => {
+    // Prevent double click
+    if (isSaving) {
+      return;
+    }
+
+    // Validasi minimal (hanya nama wajib untuk draft)
+    if (!pengaturanForm.nama || !pengaturanForm.nama.trim()) {
+      toast.error("Nama produk wajib diisi");
+      return;
+    }
+
+    // Set loading state
+    setIsSaving(true);
+
+    // Format tanggal event
+    let formattedDate = null;
+    if (pengaturanForm.tanggal_event) {
+      const date = new Date(pengaturanForm.tanggal_event);
+      formattedDate = date.toISOString();
+    }
+
+    // Transform blocks
+    const transformedBlocks = blocks.map(transformBlock);
+
+    // Transform analytics
+    const analytics = transformAnalytics();
+
+    // Transform custom scripts
+    const customScripts = transformCustomScripts();
+
+    // Transform form
+    const form = transformForm();
+
+    // Transform form preview address
+    const formPreviewAddress = transformFormPreviewAddress();
+
+    // Build settings object untuk landingpage array
+    const settingsObject = {
+      type: "settings",
+      background_color: pengaturanForm.background_color || "#ffffff",
+      page_title: pengaturanForm.page_title || "",
+      tags: pengaturanForm.tags || [],
+      seo_title: pengaturanForm.seo_title || "",
+      meta_description: pengaturanForm.meta_description || "",
+      meta_image: pengaturanForm.meta_image || "",
+      favicon: pengaturanForm.favicon || "",
+      preview_url: pengaturanForm.preview_url || "",
+      loading_logo: pengaturanForm.loading_logo || "",
+      disable_crawler: pengaturanForm.disable_crawler || false,
+      disable_rightclick: pengaturanForm.disable_rightclick || false,
+      html_language: pengaturanForm.html_language || "id",
+      disable_custom_font: pengaturanForm.disable_custom_font || false,
+      analytics,
+      customScripts,
+      form,
+      ...(formPreviewAddress ? { form_preview_address: formPreviewAddress } : {})
+    };
+
+    // Build landingpage array: [settings, ...blocks]
+    const landingpageArray = [
+      settingsObject,
+      ...transformedBlocks
+    ];
+
+    // Prepare payload dengan status draft (status: "0")
+    const payload = {
+      nama: pengaturanForm.nama.trim(),
+      kategori: pengaturanForm.kategori ? String(pengaturanForm.kategori) : null,
+      kode: pengaturanForm.kode || formatSlug(pengaturanForm.nama),
+      url: pengaturanForm.url || `/${formatSlug(pengaturanForm.nama)}`,
+      harga: pengaturanForm.harga ? String(pengaturanForm.harga) : "0",
+      jenis_produk: pengaturanForm.jenis_produk || "fisik",
+      isBundling: pengaturanForm.isBundling || false,
+      bundling: pengaturanForm.bundling || [],
+      tanggal_event: formattedDate,
+      assign: pengaturanForm.assign || [],
+      status: "0", // ✅ DRAFT STATUS (bukan "1" untuk publish)
+      landingpage: landingpageArray
+    };
+
+    try {
+      toast.loading("Menyimpan draft...", { id: "save-draft" });
+      
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      
+      // ✅ UNTUK ADD MODE: Gunakan POST (create baru)
+      const response = await fetch("/api/sales/produk", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(payload),
+      });
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        console.error("Error parsing response:", parseError);
+        toast.error("Gagal memparse response dari server", { id: "save-draft" });
+        setIsSaving(false);
+        return;
+      }
+
+      if (!response.ok || !data?.success) {
+        const errorMessage = data?.message || data?.error || "Gagal menyimpan draft";
+        console.error("Save draft error:", { status: response.status, data });
+        toast.error(errorMessage, { id: "save-draft" });
+        setIsSaving(false);
+        return;
+      }
+
+      toast.success("Draft berhasil disimpan!", { id: "save-draft" });
+      
+      // Tutup modal dan redirect
+      setIsSaving(false);
+      setShowExitModal(false);
+      router.push("/sales/products");
+
+    } catch (error) {
+      console.error("Error saving draft:", error);
+      toast.error(error?.message || "Terjadi kesalahan saat menyimpan draft", { id: "save-draft" });
+      setIsSaving(false);
+    }
+  };
+
+  // Handler untuk back button dengan konfirmasi
+  const handleBackClick = () => {
+    setShowExitModal(true);
+  };
+
+  // Handler untuk exit tanpa save
+  const handleExitWithoutSave = () => {
+    setShowExitModal(false);
+    router.push("/sales/products");
+  };
+
   // Render grid komponen dalam modal
   const renderComponentGrid = () => {
     // ✅ FIX: Komponen bisa digunakan berkali-kali, baik di dalam section maupun di luar section
@@ -2951,7 +3095,7 @@ export default function AddProducts3Page() {
       <div className="page-header-section">
         <button
           className="back-to-products-btn"
-          onClick={() => router.push("/sales/products")}
+          onClick={handleBackClick}
           aria-label="Back to products list"
         >
           <ArrowLeft size={18} />
@@ -4162,6 +4306,155 @@ export default function AddProducts3Page() {
                 onClick={() => setShowComponentModal(false)}
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Konfirmasi Exit */}
+      {showExitModal && (
+        <div 
+          className="exit-confirm-modal-overlay"
+          onClick={(e) => {
+            // Tutup modal jika klik di overlay (bukan di modal content)
+            if (e.target === e.currentTarget) {
+              setShowExitModal(false);
+            }
+          }}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10000,
+          }}
+        >
+          <div 
+            className="exit-confirm-modal"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "12px",
+              padding: "24px",
+              maxWidth: "400px",
+              width: "90%",
+              boxShadow: "0 10px 25px rgba(0, 0, 0, 0.2)",
+              position: "relative",
+            }}
+          >
+            {/* Header dengan X button */}
+            <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "16px",
+            }}>
+              <h3 style={{
+                margin: 0,
+                fontSize: "18px",
+                fontWeight: 600,
+                color: "#111827",
+              }}>
+                Yakin Exit?
+              </h3>
+              <button
+                onClick={() => setShowExitModal(false)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: "4px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#6b7280",
+                  transition: "color 0.2s",
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = "#111827"}
+                onMouseLeave={(e) => e.currentTarget.style.color = "#6b7280"}
+                aria-label="Close modal"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Text "Save dulu lah!" */}
+            <p style={{
+              margin: "0 0 24px 0",
+              fontSize: "14px",
+              color: "#6b7280",
+              lineHeight: 1.5,
+            }}>
+              Save dulu lah!
+            </p>
+
+            {/* Button Actions */}
+            <div style={{
+              display: "flex",
+              gap: "12px",
+              justifyContent: "flex-end",
+            }}>
+              <button
+                onClick={handleExitWithoutSave}
+                disabled={isSaving}
+                style={{
+                  padding: "10px 20px",
+                  backgroundColor: "#f3f4f6",
+                  color: "#374151",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  cursor: isSaving ? "not-allowed" : "pointer",
+                  transition: "all 0.2s",
+                  opacity: isSaving ? 0.6 : 1,
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSaving) {
+                    e.currentTarget.style.backgroundColor = "#e5e7eb";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSaving) {
+                    e.currentTarget.style.backgroundColor = "#f3f4f6";
+                  }
+                }}
+              >
+                Exit
+              </button>
+              <button
+                onClick={handleSaveDraft}
+                disabled={isSaving}
+                style={{
+                  padding: "10px 20px",
+                  backgroundColor: "#F1A124",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  cursor: isSaving ? "not-allowed" : "pointer",
+                  transition: "all 0.2s",
+                  opacity: isSaving ? 0.6 : 1,
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSaving) {
+                    e.currentTarget.style.backgroundColor = "#d68910";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSaving) {
+                    e.currentTarget.style.backgroundColor = "#F1A124";
+                  }
+                }}
+              >
+                {isSaving ? "Menyimpan..." : "Save"}
               </button>
             </div>
           </div>

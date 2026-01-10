@@ -29,7 +29,55 @@ export default function LoginPage() {
     const loginTime = localStorage.getItem('login_time');
 
     if (token && loginTime && !isTokenExpired()) {
-      router.replace('/admin'); // langsung replace biar gak flicker
+      // ✅ FIX: Gunakan getDivisionHome berdasarkan user data, bukan hardcode /admin
+      const userData = localStorage.getItem('user');
+      let targetRoute = null;
+      
+      if (userData) {
+        try {
+          const parsedUser = JSON.parse(userData);
+          const userDivisi = parsedUser?.divisi;
+          const userLevel = parsedUser?.level ? Number(parsedUser.level) : null;
+          
+          // ✅ Gunakan getDivisionHome untuk mendapatkan route yang benar
+          // Sales level 1 → /sales
+          // Sales level 2 → /sales/staff
+          // Finance level 1 → /finance
+          // Finance level 2 → /finance/staff
+          // Admin → /admin
+          // dll
+          targetRoute = getDivisionHome(userDivisi, userLevel);
+          
+          console.log('[Login] User sudah login, redirect ke:', {
+            divisi: userDivisi,
+            level: userLevel,
+            targetRoute
+          });
+        } catch (error) {
+          console.error('[Login] Error parsing user data:', error);
+          // Fallback ke division_home jika ada
+          const divisionHome = localStorage.getItem('division_home');
+          if (divisionHome) {
+            targetRoute = divisionHome;
+          }
+        }
+      } else {
+        // Jika user data tidak ada, coba gunakan division_home yang sudah disimpan
+        const divisionHome = localStorage.getItem('division_home');
+        if (divisionHome) {
+          targetRoute = divisionHome;
+        }
+      }
+      
+      // ✅ FIX: Jika fallback gagal (tidak ada targetRoute), clear dan redirect ke login
+      if (!targetRoute) {
+        console.warn('[Login] Tidak dapat menentukan route, clear session dan redirect ke login');
+        localStorage.clear();
+        // Tidak perlu redirect karena sudah di halaman login
+        return;
+      }
+      
+      router.replace(targetRoute);
     }
   }, [router]);
 

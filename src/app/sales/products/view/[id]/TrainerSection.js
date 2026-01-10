@@ -583,9 +583,17 @@ export default function TrainerSection({ productId, product, onProductUpdate }) 
                 </div>
               </div>
               <p className="schedule-hint">
-                {savingFollowup && <span style={{ marginLeft: '8px', color: '#10b981' }}>• Menyimpan...</span>}
+                Format terkirim ke backend: <strong>{followupEvent}</strong>
               </p>
             </div>
+
+            <button 
+              className="save-btn" 
+              onClick={handleSaveFollowup}
+              disabled={savingFollowup || !followupText.trim()}
+            >
+              {savingFollowup ? "Menyimpan..." : "Simpan Followup"}
+            </button>
           </>
         )}
       </div>
@@ -911,6 +919,32 @@ export default function TrainerSection({ productId, product, onProductUpdate }) 
 
         .schedule-hint strong {
           color: #111827;
+        }
+
+        .save-btn {
+          margin-top: 20px;
+          background: #2563EB;
+          color: white;
+          padding: 12px 24px;
+          border: none;
+          border-radius: 10px;
+          cursor: pointer;
+          font-weight: 600;
+          font-size: 14px;
+          transition: all 0.2s ease;
+          width: 100%;
+        }
+
+        .save-btn:hover:not(:disabled) {
+          background: #1d4ed8;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+        }
+
+        .save-btn:disabled {
+          background: #93c5fd;
+          cursor: not-allowed;
+          opacity: 0.7;
         }
       `}</style>
     </div>
