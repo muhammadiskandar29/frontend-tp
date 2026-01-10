@@ -434,23 +434,14 @@ export default function AdminCustomerPage() {
                     
                     {/* Nama - Klikable */}
                     <div className="customers-table__cell customers-table__cell--strong" data-label="Nama">
-                      <a
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handleView(cust);
-                        }}
-                        style={{
-                          color: "#2563eb",
-                          textDecoration: "none",
-                          cursor: "pointer",
-                          fontWeight: 600
-                        }}
-                        onMouseEnter={(e) => e.target.style.textDecoration = "underline"}
-                        onMouseLeave={(e) => e.target.style.textDecoration = "none"}
-                      >
-                        {cust.nama || "-"}
-                      </a>
+                      <div className="customer-table__info">
+                        <span
+                          className="customer-table__name"
+                          onClick={() => handleView(cust)}
+                        >
+                          {cust.nama || "-"}
+                        </span>
+                      </div>
                     </div>
                     
                     {/* Email */}
