@@ -916,16 +916,38 @@ ADMIN USERS PAGE (Scoped Styles)
   }
 
   .users-tables__head,
-  .users-table__head,
-  .customers-table__head {
+  .users-table__head {
     display: none;
   }
 
   .users-tables__row,
-  .users-table__row,
-  .customers-table__row {
+  .users-table__row {
     grid-template-columns: 1fr;
     gap: 0.75rem;
+  }
+
+  /* Customers table tetap horizontal dengan scroll di mobile */
+  .customers-table__wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    position: relative;
+  }
+
+  .customers-table {
+    min-width: 800px;
+  }
+
+  .customers-table__head {
+    display: grid !important;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #f8fafc;
+  }
+
+  .customers-table__row {
+    display: grid !important;
   }
 
   /* Kategori table tetap 3 kolom di tablet */
@@ -938,8 +960,7 @@ ADMIN USERS PAGE (Scoped Styles)
   }
 
   .users-tables__cell,
-  .users-table__cell,
-  .customers-table__cell {
+  .users-table__cell {
     display: flex;
     justify-content: space-between;
     gap: 1rem;
@@ -948,9 +969,21 @@ ADMIN USERS PAGE (Scoped Styles)
     overflow: visible;
   }
 
-  .users-tables__cell::before,
-  .users-table__cell::before,
+  /* Customers table cell tetap horizontal di mobile */
+  .customers-table__cell {
+    display: block;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   .customers-table__cell::before {
+    display: none;
+  }
+
+  .users-tables__cell::before,
+  .users-table__cell::before {
     content: attr(data-label);
     font-size: 0.85rem;
     font-weight: 500;
@@ -960,16 +993,20 @@ ADMIN USERS PAGE (Scoped Styles)
   }
 
   .users-tables__cell[data-label="#"]::before,
-  .users-table__cell[data-label="#"]::before,
-  .customers-table__cell[data-label="#"]::before {
+  .users-table__cell[data-label="#"]::before {
     content: "#";
   }
 
   .users-tables__cell--actions,
-  .users-table__cell--actions,
-  .customers-table__cell--actions {
+  .users-table__cell--actions {
     justify-content: flex-start;
     gap: 0.5rem;
+  }
+
+  .customers-table__cell--actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.3rem;
   }
 
   .users-table__cell--profile {
@@ -2452,8 +2489,10 @@ margin-left: 0px;
 /* === CUSTOMERS TABLE (Same format as Products Table) === */
 .customers-table__wrapper {
   width: 100%;
-  overflow-x: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   padding-bottom: 0.5rem;
+  -webkit-overflow-scrolling: touch;
 }
 
 .customers-table {
@@ -2461,6 +2500,7 @@ margin-left: 0px;
   flex-direction: column;
   gap: 0.5rem;
   width: 100%;
+  min-width: 800px;
 }
 
 .customers-table__head,
@@ -2468,14 +2508,14 @@ margin-left: 0px;
   display: grid;
   /* 7 kolom: Id Member, Nama, Email, No WA, Verifikasi, Pesanan Sukses, Total Net Revenue */
   grid-template-columns: 
-    minmax(100px, 0.8fr)  /* Id Member */
-    minmax(180px, 1.5fr)  /* Nama */
-    minmax(180px, 1.5fr)  /* Email */
-    minmax(140px, 1.2fr)  /* No WA */
-    minmax(100px, 0.9fr)  /* Verifikasi */
-    minmax(120px, 1fr)    /* Pesanan Sukses */
-    minmax(140px, 1.2fr);  /* Total Net Revenue */
-  gap: 1.5rem;
+    minmax(80px, 0.7fr)   /* Id Member */
+    minmax(140px, 1.2fr)  /* Nama */
+    minmax(150px, 1.3fr)  /* Email */
+    minmax(110px, 1fr)    /* No WA */
+    minmax(90px, 0.8fr)   /* Verifikasi */
+    minmax(100px, 0.9fr)  /* Pesanan Sukses */
+    minmax(120px, 1.1fr); /* Total Net Revenue */
+  gap: 1rem;
   align-items: center;
   width: 100%;
 }
@@ -2494,6 +2534,26 @@ margin-left: 0px;
   top: 0;
   z-index: 1;
   width: 100%;
+  align-items: center;
+}
+
+.customers-table__head-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  line-height: 1.2;
+  min-height: 2.5rem;
+}
+
+.customers-table__head-line1 {
+  display: block;
+}
+
+.customers-table__head-line2 {
+  display: block;
+  font-size: 0.65rem;
 }
 
 .customers-table__body {

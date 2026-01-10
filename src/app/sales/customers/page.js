@@ -34,13 +34,13 @@ function useDebouncedValue(value, delay = 500) {
 }
 
 const CUSTOMERS_COLUMNS = [
-  "Id Member",
-  "Nama",
-  "Email",
-  "No WA",
-  "Verifikasi",
-  "Pesanan Sukses",
-  "Total Net Revenue",
+  { line1: "Id", line2: "Member" },
+  { line1: "Nama", line2: "" },
+  { line1: "Email", line2: "" },
+  { line1: "No WA", line2: "" },
+  { line1: "Verifikasi", line2: "" },
+  { line1: "Pesanan", line2: "Sukses" },
+  { line1: "Total Net", line2: "Revenue" },
 ];
 
 export default function AdminCustomerPage() {
@@ -417,8 +417,11 @@ export default function AdminCustomerPage() {
           <div className="customers-table__wrapper">
             <div className="customers-table">
               <div className="customers-table__head">
-                {CUSTOMERS_COLUMNS.map((column) => (
-                  <span key={column}>{column}</span>
+                {CUSTOMERS_COLUMNS.map((column, idx) => (
+                  <span key={idx} className="customers-table__head-cell">
+                    <span className="customers-table__head-line1">{column.line1}</span>
+                    {column.line2 && <span className="customers-table__head-line2">{column.line2}</span>}
+                  </span>
                 ))}
               </div>
               <div className="customers-table__body">
