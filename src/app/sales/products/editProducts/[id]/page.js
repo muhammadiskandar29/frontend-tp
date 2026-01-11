@@ -1427,24 +1427,48 @@ export default function EditProductsPage() {
         }
         
         // ✅ ARSITEKTUR BENAR: Filter child berdasarkan parentId === sectionComponentId (sama dengan addProducts3)
+        // ✅ FIX: Check parentId di multiple locations karena saat parsing dari backend, parentId bisa di config.parentId
         const childComponents = blocks.filter(b => {
           if (!b || !b.type) return false;
-          return b.parentId === sectionComponentId;
+          
+          // ✅ FIX: Check parentId di multiple locations (root level, config, data)
+          // Karena saat parsing dari backend, parentId bisa di config.parentId
+          const blockParentId = b.parentId || b.config?.parentId || b.data?.parentId;
+          
+          // ✅ FIX: Ensure sectionComponentId juga check dari data.componentId sebagai fallback
+          const actualSectionComponentId = sectionComponentId || blockToRender.data?.componentId;
+          
+          if (!blockParentId || !actualSectionComponentId) {
+            return false;
+          }
+          
+          return blockParentId === actualSectionComponentId;
         });
         
         // ✅ DEBUG: Log untuk tracking identifier
         console.log(`[SECTION RENDER] Section ID: "${sectionComponentId}"`, {
           sectionBlockId: blockToRender.id,
           sectionConfigComponentId: blockToRender.config?.componentId,
+          sectionDataComponentId: blockToRender.data?.componentId,
           childCount: childComponents.length,
           allBlocksWithParentId: blocks
-            .filter(b => b.parentId)
-            .map(b => ({
-              id: b.id,
-              type: b.type,
-              parentId: b.parentId,
-              match: b.parentId === sectionComponentId ? "✅ MATCH" : "❌ NO MATCH"
-            }))
+            .filter(b => {
+              const bpId = b.parentId || b.config?.parentId || b.data?.parentId;
+              return !!bpId;
+            })
+            .map(b => {
+              const bpId = b.parentId || b.config?.parentId || b.data?.parentId;
+              const actualSectionComponentId = sectionComponentId || blockToRender.data?.componentId;
+              return {
+                id: b.id,
+                type: b.type,
+                parentId_root: b.parentId,
+                parentId_config: b.config?.parentId,
+                parentId_data: b.data?.parentId,
+                parentId_final: bpId,
+                match: bpId === actualSectionComponentId ? "✅ MATCH" : "❌ NO MATCH"
+              };
+            })
         });
         
         // ✅ FIX #3: Build section styles from block.style.container, bukan block.data (sama dengan addProducts3)
@@ -2095,7 +2119,9 @@ export default function EditProductsPage() {
         order: order !== undefined ? order : index + 1,
         parentId: finalParentId, // ✅ Gunakan parentId dari root level
         config: {
-          componentId: finalComponentId // ✅ Gunakan componentId yang sudah di-normalize
+          componentId: finalComponentId, // ✅ Gunakan componentId yang sudah di-normalize
+          // ✅ FIX: Preserve parentId in config for compatibility (non-section blocks only)
+          ...(finalParentId && type !== 'section' ? { parentId: finalParentId } : {})
         }
       };
     });
