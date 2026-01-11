@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useMemo, useCallback, memo } from "react";
 import Layout from "@/components/Layout";
 import dynamic from "next/dynamic";
-import { ShoppingCart, Clock, CheckCircle, PartyPopper, XCircle, Filter } from "lucide-react";
+import { ShoppingCart, Clock, CheckCircle, PartyPopper, XCircle, Filter, ExternalLink } from "lucide-react";
 import { Calendar } from "primereact/calendar";
 import "primereact/resources/themes/lara-light-cyan/theme.css";
 import "primereact/resources/primereact.min.css";
@@ -502,6 +502,26 @@ export default function DaftarPesanan() {
     }
   };
 
+  // Format tanggal untuk Order ID: "11 Jan 2026, 22.40"
+  const formatOrderDate = useCallback((dateString) => {
+    if (!dateString) return "-";
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "-";
+      
+      const day = date.getDate();
+      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const month = monthNames[date.getMonth()];
+      const year = date.getFullYear();
+      const hours = String(date.getHours()).padStart(2, "0");
+      const minutes = String(date.getMinutes()).padStart(2, "0");
+      
+      return `${day} ${month} ${year}, ${hours}.${minutes}`;
+    } catch {
+      return "-";
+    }
+  }, []);
+
   // Format tanggal hanya menampilkan tanggal tanpa jam (YYYY-MM-DD)
   const formatDateOnly = useCallback((dateString) => {
     if (!dateString) return "-";
@@ -949,22 +969,27 @@ export default function DaftarPesanan() {
                       <div className="orders-table__row" key={order.id || `${order.id}-${i}`}>
                         {/* Order ID */}
                         <div className="orders-table__cell" data-label="Order ID">
-                          <span style={{ 
-                            fontSize: "0.9rem",
-                            color: "#2563eb",
-                            fontWeight: 500
-                          }}>
-                            {order.id || "-"}
-                          </span>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
+                              <span style={{ 
+                                fontSize: "0.9rem",
+                                color: "#2563eb",
+                                fontWeight: 500
+                              }}>
+                                {order.id || "-"}
+                              </span>
+                              <ExternalLink size={14} style={{ color: "#6b7280" }} />
+                            </div>
+                            <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>
+                              {formatOrderDate(order.tanggal || order.create_at)}
+                            </span>
+                          </div>
                         </div>
                         
                         {/* Customer */}
                         <div className="orders-table__cell orders-table__cell--strong" data-label="Customer">
                           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
                             <span style={{ fontSize: "0.875rem", color: "#111827" }}>{customerNama}</span>
-                            <span style={{ fontSize: "0.875rem", color: "#111827" }}>
-                              {order.customer_rel?.email || "-"}
-                            </span>
                             <span style={{ fontSize: "0.875rem", color: "#111827" }}>
                               {order.customer_rel?.wa || "-"}
                             </span>

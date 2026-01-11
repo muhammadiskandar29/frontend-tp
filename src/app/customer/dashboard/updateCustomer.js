@@ -35,6 +35,55 @@ async function updateCustomer(payload) {
 }
 import { getCustomerSession } from "@/lib/customerAuth";
 
+// Function to parse alamat string into separate fields
+const parseAlamat = (alamatString) => {
+  if (!alamatString || typeof alamatString !== 'string') {
+    return { provinsi: "", kabupaten: "", kecamatan: "", kode_pos: "" };
+  }
+
+  // Pattern: "PROVINSI, KABUPATEN, kec. KECAMATAN, kode pos KODE_POS"
+  // atau variasi lainnya
+  let provinsi = "";
+  let kabupaten = "";
+  let kecamatan = "";
+  let kode_pos = "";
+
+  // Extract kode pos (format: "kode pos 231" atau "kode pos: 231")
+  const kodePosMatch = alamatString.match(/kode\s*pos[:\s]+(\d+)/i);
+  if (kodePosMatch) {
+    kode_pos = kodePosMatch[1];
+  }
+
+  // Extract kecamatan (format: "kec. ASAKOTA" atau "kecamatan ASAKOTA")
+  const kecamatanMatch = alamatString.match(/kec\.?\s*([^,]+)/i);
+  if (kecamatanMatch) {
+    kecamatan = kecamatanMatch[1].trim();
+  }
+
+  // Split by comma untuk mendapatkan provinsi dan kabupaten
+  const parts = alamatString.split(',').map(p => p.trim());
+  
+  if (parts.length >= 1) {
+    // Bagian pertama biasanya provinsi (bisa ada (NTB) di dalamnya)
+    provinsi = parts[0].replace(/\s*\([^)]+\)\s*/, '').trim(); // Hapus (NTB)
+  }
+  
+  if (parts.length >= 2) {
+    // Bagian kedua biasanya kabupaten
+    kabupaten = parts[1].trim();
+  }
+
+  return { provinsi, kabupaten, kecamatan, kode_pos };
+};
+
+// Function to check if value is an email (invalid for industri_pekerjaan)
+const isValidIndustriPekerjaan = (value) => {
+  if (!value || typeof value !== 'string') return false;
+  // Check if it's an email pattern
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return !emailPattern.test(value.trim());
+};
+
 // Function to fetch customer data from API
 async function fetchCustomerData() {
   const token = localStorage.getItem("customer_token");
@@ -394,6 +443,31 @@ export default function UpdateCustomerModal({
         const customerData = await fetchCustomerData();
         console.log("📥 [UPDATE_CUSTOMER] Fetched customer data:", customerData);
 
+        // Parse alamat jika ada field alamat (bukan provinsi/kabupaten/kecamatan terpisah)
+        let parsedAlamat = {
+          provinsi: customerData.provinsi || "",
+          kabupaten: customerData.kabupaten || "",
+          kecamatan: customerData.kecamatan || "",
+          kode_pos: customerData.kode_pos || ""
+        };
+
+        // Jika ada field alamat (string gabungan), parse dulu
+        if (customerData.alamat && typeof customerData.alamat === 'string') {
+          const parsed = parseAlamat(customerData.alamat);
+          // Gunakan parsed data jika field individual kosong
+          if (!parsedAlamat.provinsi && parsed.provinsi) parsedAlamat.provinsi = parsed.provinsi;
+          if (!parsedAlamat.kabupaten && parsed.kabupaten) parsedAlamat.kabupaten = parsed.kabupaten;
+          if (!parsedAlamat.kecamatan && parsed.kecamatan) parsedAlamat.kecamatan = parsed.kecamatan;
+          if (!parsedAlamat.kode_pos && parsed.kode_pos) parsedAlamat.kode_pos = parsed.kode_pos;
+        }
+
+        // Validasi industri_pekerjaan - jangan isi jika nilainya email
+        let industriPekerjaanValue = customerData.industri_pekerjaan || "";
+        if (industriPekerjaanValue && !isValidIndustriPekerjaan(industriPekerjaanValue)) {
+          console.warn("⚠️ [UPDATE_CUSTOMER] industri_pekerjaan contains email, clearing it:", industriPekerjaanValue);
+          industriPekerjaanValue = "";
+        }
+
         // Pre-fill form dengan data yang sudah ada
         setFormData((prev) => ({
           ...prev,
@@ -401,7 +475,7 @@ export default function UpdateCustomerModal({
           instagram: customerData.instagram || prev.instagram || "",
           profesi: customerData.profesi || prev.profesi || "",
           pendapatan_bln: customerData.pendapatan_bln || prev.pendapatan_bln || "",
-          industri_pekerjaan: customerData.industri_pekerjaan || prev.industri_pekerjaan || "",
+          industri_pekerjaan: industriPekerjaanValue || "", // ✅ Gunakan value yang sudah divalidasi
           jenis_kelamin: customerData.jenis_kelamin || prev.jenis_kelamin || "l",
           tanggal_lahir: customerData.tanggal_lahir
             ? customerData.tanggal_lahir.slice(0, 10)
@@ -409,15 +483,18 @@ export default function UpdateCustomerModal({
           password: "", // Password selalu kosong untuk keamanan
         }));
 
-        // Initialize region form dari customer data
+        // Initialize region form dari customer data (dengan parsed alamat)
         setRegionForm({
-          provinsi: customerData.provinsi || "",
-          kabupaten: customerData.kabupaten || "",
-          kecamatan: customerData.kecamatan || "",
-          kode_pos: customerData.kode_pos || ""
+          provinsi: parsedAlamat.provinsi || "",
+          kabupaten: parsedAlamat.kabupaten || "",
+          kecamatan: parsedAlamat.kecamatan || "",
+          kode_pos: parsedAlamat.kode_pos || ""
         });
 
-        console.log("✅ [UPDATE_CUSTOMER] Form pre-filled with existing data");
+        console.log("✅ [UPDATE_CUSTOMER] Form pre-filled with existing data", {
+          parsedAlamat,
+          industri_pekerjaan: industriPekerjaanValue
+        });
       } catch (error) {
         console.error("❌ [UPDATE_CUSTOMER] Failed to load customer data:", error);
         // Fallback ke session data jika API gagal
@@ -425,13 +502,36 @@ export default function UpdateCustomerModal({
           const session = getCustomerSession();
           const user = session.user || {};
 
+          // Parse alamat dari session juga
+          let parsedAlamatSession = {
+            provinsi: user.provinsi || "",
+            kabupaten: user.kabupaten || "",
+            kecamatan: user.kecamatan || "",
+            kode_pos: user.kode_pos || ""
+          };
+
+          if (user.alamat && typeof user.alamat === 'string') {
+            const parsed = parseAlamat(user.alamat);
+            if (!parsedAlamatSession.provinsi && parsed.provinsi) parsedAlamatSession.provinsi = parsed.provinsi;
+            if (!parsedAlamatSession.kabupaten && parsed.kabupaten) parsedAlamatSession.kabupaten = parsed.kabupaten;
+            if (!parsedAlamatSession.kecamatan && parsed.kecamatan) parsedAlamatSession.kecamatan = parsed.kecamatan;
+            if (!parsedAlamatSession.kode_pos && parsed.kode_pos) parsedAlamatSession.kode_pos = parsed.kode_pos;
+          }
+
+          // Validasi industri_pekerjaan dari session juga
+          let industriPekerjaanSession = user.industri_pekerjaan || "";
+          if (industriPekerjaanSession && !isValidIndustriPekerjaan(industriPekerjaanSession)) {
+            console.warn("⚠️ [UPDATE_CUSTOMER] Session industri_pekerjaan contains email, clearing it:", industriPekerjaanSession);
+            industriPekerjaanSession = "";
+          }
+
           setFormData((prev) => ({
             ...prev,
             nama_panggilan: user.nama_panggilan || user.nama || prev.nama_panggilan || "",
             instagram: user.instagram || prev.instagram || "",
             profesi: user.profesi || prev.profesi || "",
             pendapatan_bln: user.pendapatan_bln || prev.pendapatan_bln || "",
-            industri_pekerjaan: user.industri_pekerjaan || prev.industri_pekerjaan || "",
+            industri_pekerjaan: industriPekerjaanSession || "", // ✅ Gunakan value yang sudah divalidasi
             jenis_kelamin: user.jenis_kelamin || prev.jenis_kelamin || "l",
             tanggal_lahir: user.tanggal_lahir
               ? user.tanggal_lahir.slice(0, 10)
@@ -440,10 +540,10 @@ export default function UpdateCustomerModal({
           }));
 
           setRegionForm({
-            provinsi: user.provinsi || "",
-            kabupaten: user.kabupaten || "",
-            kecamatan: user.kecamatan || "",
-            kode_pos: user.kode_pos || ""
+            provinsi: parsedAlamatSession.provinsi || "",
+            kabupaten: parsedAlamatSession.kabupaten || "",
+            kecamatan: parsedAlamatSession.kecamatan || "",
+            kode_pos: parsedAlamatSession.kode_pos || ""
           });
         } catch (sessionError) {
           console.error("[UPDATE_CUSTOMER] Failed to load session:", sessionError);
