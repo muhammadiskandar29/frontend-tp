@@ -3328,6 +3328,17 @@ export default function EditProductsPage() {
     }
   };
 
+  // Handler untuk back button dengan konfirmasi
+  const handleBackClick = () => {
+    setShowExitModal(true);
+  };
+
+  // Handler untuk exit tanpa save
+  const handleExitWithoutSave = () => {
+    setShowExitModal(false);
+    router.push("/sales/products");
+  };
+
   // Render grid komponen dalam modal
   // ✅ Helper function: Get all component types that are used inside sections
   // GENERAL: Filter komponen yang sudah digunakan di dalam section agar tidak ditampilkan di sidebar

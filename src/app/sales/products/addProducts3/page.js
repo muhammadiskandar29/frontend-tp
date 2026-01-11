@@ -2766,6 +2766,11 @@ export default function AddProducts3Page() {
     return null;
   };
 
+  // Handler untuk back button dengan konfirmasi
+  const handleBackClick = () => {
+    setShowExitModal(true);
+  };
+
   // Handler untuk save dan publish
   const handleSaveAndPublish = async () => {
     // Prevent double click
@@ -3027,11 +3032,6 @@ export default function AddProducts3Page() {
       toast.error(error?.message || "Terjadi kesalahan saat menyimpan draft", { id: "save-draft" });
       setIsSaving(false);
     }
-  };
-
-  // Handler untuk back button dengan konfirmasi
-  const handleBackClick = () => {
-    setShowExitModal(true);
   };
 
   // Handler untuk exit tanpa save
