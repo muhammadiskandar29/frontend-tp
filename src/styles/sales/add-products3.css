@@ -4,6 +4,53 @@
    ============================================ */
 
 /* ============================================
+   GLOBAL FONT RESET - NO TIMES NEW ROMAN!
+   Memastikan SEMUA elemen menggunakan Inter, bukan Times New Roman
+   ============================================ */
+* {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+}
+
+body,
+html {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+}
+
+/* Semua input, select, textarea, button, label */
+input,
+select,
+textarea,
+button,
+label {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+}
+
+/* Semua heading dan text elements */
+h1, h2, h3, h4, h5, h6,
+p, span, div, a, li, ul, ol,
+article, section, aside, header, footer, main {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+}
+
+/* PrimeReact components */
+.p-component,
+.p-inputtext,
+.p-inputtextarea,
+.p-dropdown,
+.p-multiselect,
+.p-calendar,
+.p-inputnumber,
+.p-button,
+.p-chips {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+}
+
+/* ============================================
    CUSTOM DROPDOWN - LARA LIGHT ORANGE THEME
    ============================================ */
 .pengaturan-content .p-dropdown,
@@ -1002,7 +1049,7 @@ html:has(.add-products3-container) {
   font-size: 14px !important;
   color: #1f2937 !important;
   transition: all 0.2s ease !important;
-  font-family: inherit !important;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 
 .pengaturan-input.p-inputtext::placeholder,
@@ -1068,7 +1115,7 @@ html:has(.add-products3-container) {
   padding: 10px 14px !important;
   font-size: 14px !important;
   color: #1f2937 !important;
-  font-family: inherit !important;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
   font-weight: 400 !important;
   background: transparent !important;
   background-color: transparent !important;
@@ -1204,7 +1251,7 @@ html:has(.add-products3-container) {
   padding: 0 !important;
   font-size: 14px !important;
   color: #1f2937 !important;
-  font-family: inherit !important;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
   font-weight: 400 !important;
   background: transparent !important;
   background-color: transparent !important;
@@ -2319,6 +2366,7 @@ html:has(.add-products3-container) {
   color: white;
   text-align: center;
   margin-bottom: 24px;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 
 .preview-faq-section .faq-container {
@@ -2348,6 +2396,7 @@ html:has(.add-products3-container) {
   font-weight: 600;
   color: #111827;
   transition: background 0.2s;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 
 .preview-faq-section .faq-question:hover {
@@ -2367,6 +2416,7 @@ html:has(.add-products3-container) {
   color: #6b7280;
   font-size: 14px;
   line-height: 1.6;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 
 .preview-faq-section .faq-answer p {
@@ -3606,7 +3656,7 @@ html:has(.add-products3-container) {
   border: none;
   border-radius: 8px;
   font-size: 14px;
-  font-family: inherit;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   resize: vertical;
   min-height: 150px;
   line-height: 1.6;
@@ -3628,7 +3678,7 @@ html:has(.add-products3-container) {
   min-height: 200px;
   border: none;
   outline: none;
-  font-family: inherit;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   resize: vertical;
   color: #1f2937;
   background: #e5e7eb; /* Abu-abu lebih gelap */
@@ -3789,7 +3839,7 @@ html:has(.add-products3-container) {
   font-size: 14px;
   color: #1f2937;
   transition: all 0.2s ease;
-  font-family: inherit;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   box-sizing: border-box;
 }
 
@@ -3828,7 +3878,7 @@ html:has(.add-products3-container) {
   font-size: 14px !important;
   color: #1f2937 !important;
   transition: all 0.2s ease !important;
-  font-family: inherit !important;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
   box-sizing: border-box !important;
 }
 
@@ -3867,7 +3917,7 @@ html:has(.add-products3-container) {
   font-size: 14px !important;
   color: #1f2937 !important;
   transition: all 0.2s ease !important;
-  font-family: inherit !important;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
   box-sizing: border-box !important;
   resize: vertical !important;
   line-height: 1.5 !important;
@@ -3919,7 +3969,7 @@ html:has(.add-products3-container) {
   padding: 10px 14px !important;
   font-size: 14px !important;
   color: #1f2937 !important;
-  font-family: inherit !important;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 
 .p-dropdown .p-dropdown-trigger {
@@ -3966,7 +4016,7 @@ html:has(.add-products3-container) {
   font-size: 14px !important;
   color: #1f2937 !important;
   transition: all 0.2s ease !important;
-  font-family: inherit !important;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 
 .p-inputnumber .p-inputtext:hover:not(:disabled) {
@@ -4039,7 +4089,7 @@ html:has(.add-products3-container) {
   transition: all 0.2s ease;
   font-size: 14px;
   color: #1f2937;
-  font-family: inherit;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   box-sizing: border-box;
 }
 
@@ -4376,9 +4426,24 @@ html:has(.add-products3-container) {
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important; /* ✅ Ganti dari inherit ke font Inter secara eksplisit */
 }
 
-.preview-text * {
+.preview-text *,
+.testi-desc-new *,
+.testi-name-new *,
+.payment-option-row *,
+.payment-label *,
+.preview-faq-section .faq-question *,
+.preview-faq-section .faq-answer *,
+.preview-faq-section .faq-title *,
+.preview-list-content *,
+.preview-list-title *,
+.compact-label *,
+.rincian-pesanan-name *,
+.rincian-pesanan-price *,
+.rincian-pesanan-total-label *,
+.rincian-pesanan-total-price *,
+.compact-form-title * {
   transition: none !important; /* No transition for immediate updates */
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important; /* ✅ Ganti dari inherit ke font Inter secara eksplisit, bukan inherit */
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important; /* ✅ Pastikan semua child elements menggunakan Inter */
 }
 
 .preview-text p:last-child {
@@ -4532,6 +4597,7 @@ html:has(.add-products3-container) {
   color: #1f2937;
   line-height: 1.3;
   margin: 0;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 
 .testi-stars-new {
@@ -4551,6 +4617,7 @@ html:has(.add-products3-container) {
   line-height: 1.6;
   font-size: 14px;
   margin-top: 8px;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 
 /* Canvas Preview - Flexible Testimonial Cards */
@@ -4639,6 +4706,7 @@ html:has(.add-products3-container) {
   font-weight: 600;
   color: #374151;
   margin-bottom: 12px;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 
 /* Button Pesan Sekarang */
@@ -4661,6 +4729,7 @@ html:has(.add-products3-container) {
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 2px 4px rgba(241, 161, 36, 0.2);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 
 .preview-form-submit-btn:hover {
@@ -4700,6 +4769,7 @@ html:has(.add-products3-container) {
   font-size: 13px;
   font-weight: 500;
   color: #6b7280;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 
 .compact-label .required {
@@ -4716,10 +4786,12 @@ html:has(.add-products3-container) {
   background: #fff;
   transition: all 0.2s ease;
   box-sizing: border-box;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 
 .compact-input::placeholder {
   color: #9ca3af;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 
 .compact-input:focus {
@@ -4767,6 +4839,7 @@ html:has(.add-products3-container) {
   font-size: 14px;
   color: #374151;
   font-weight: 500;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 
 .wa-input {
@@ -4802,6 +4875,7 @@ html:has(.add-products3-container) {
   font-weight: 600;
   margin-bottom: 12px;
   color: #374151;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 
 .payment-options-vertical {
@@ -4824,6 +4898,7 @@ html:has(.add-products3-container) {
   width: 100%;
   box-sizing: border-box;
   max-width: 100%;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 
 .payment-option-row:hover {
@@ -4847,6 +4922,7 @@ html:has(.add-products3-container) {
   text-align: left;
   min-width: 0;
   margin-right: auto;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 
 .payment-icons-inline {
@@ -5123,6 +5199,7 @@ html:has(.add-products3-container) {
   color: #1f2937;
   margin: 0 0 12px 0;
   text-decoration: underline;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 
 .rincian-pesanan-item {
@@ -5142,6 +5219,7 @@ html:has(.add-products3-container) {
   font-size: 14px;
   color: #374151;
   line-height: 1.5;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 
 .rincian-pesanan-price {
@@ -5150,6 +5228,7 @@ html:has(.add-products3-container) {
   color: #374151;
   white-space: nowrap;
   flex-shrink: 0;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 
 .rincian-pesanan-divider {
@@ -5169,12 +5248,14 @@ html:has(.add-products3-container) {
   font-size: 16px;
   font-weight: 700;
   color: #111827;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 
 .rincian-pesanan-total-price {
   font-size: 16px;
   font-weight: 700;
   color: #111827;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 
 .preview-list-wrapper {
@@ -5190,6 +5271,7 @@ html:has(.add-products3-container) {
   font-weight: 700;
   color: #111827;
   margin: 0 0 8px 0;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 
 .preview-list-header-line {
@@ -5239,6 +5321,7 @@ html:has(.add-products3-container) {
   color: #374151;
   font-size: 14px;
   transition: none !important; /* No transition for immediate updates */
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 
 .preview-list-content * {
