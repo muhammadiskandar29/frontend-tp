@@ -564,7 +564,7 @@ ADMIN USERS PAGE (Scoped Styles)
     minmax(130px, 1fr) minmax(85px, 0.7fr) minmax(100px, 0.8fr);
   gap: 0.3rem;
   align-items: center;
-  min-width: 1000px;
+  min-width: 900px;
 }
 
 
