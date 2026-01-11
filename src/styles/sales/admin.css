@@ -954,6 +954,7 @@ ADMIN USERS PAGE (Scoped Styles)
     background: #f8fafc;
     padding: 0.75rem 0 !important;
     border-radius: 0.5rem;
+    min-width: 900px;
   }
 
   .customers-table__head-cell {
@@ -977,6 +978,7 @@ ADMIN USERS PAGE (Scoped Styles)
     display: grid !important;
     padding: 0.75rem 0 !important;
     align-items: stretch !important;
+    min-width: 900px;
   }
 
   /* Kategori table tetap 3 kolom di tablet */
