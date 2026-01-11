@@ -1276,7 +1276,8 @@ export default function ProductPage() {
         
         // Parse bundling dari productData (bundling disimpan di productData, bukan di settings)
         const bundlingData = productData?.bundling && Array.isArray(productData.bundling) ? productData.bundling : [];
-        const isBundling = productData?.isBundling || false;
+        // ✅ FIX: Cek bundling array, bukan hanya isBundling flag
+        const isBundling = bundlingData && bundlingData.length > 0;
         
         return (
           <div style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
@@ -2318,7 +2319,8 @@ export default function ProductPage() {
           kategori: data.kategori,
           kategori_id: data.kategori_id,
           kategori_rel: data.kategori_rel,
-          isBundling: data.isBundling || false,
+          // ✅ FIX: Cek jika bundling array ada dan tidak kosong
+          isBundling: (bundlingData && Array.isArray(bundlingData) && bundlingData.length > 0) || false,
           bundling: bundlingData,
         });
 
@@ -2454,6 +2456,9 @@ export default function ProductPage() {
     ? landingpage[0]
     : null;
   const logoUrl = settings?.logo || '/assets/logo.png';
+  
+  // ✅ FIX: Ambil background_color dari settings
+  const backgroundColor = settings?.background_color || '#ffffff';
 
   return (
     <>
@@ -2464,9 +2469,9 @@ export default function ProductPage() {
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <div className="add-products3-container" itemScope itemType="https://schema.org/Product">
-      <div className="page-builder-canvas">
-        <div className="canvas-wrapper">
+    <div className="add-products3-container" itemScope itemType="https://schema.org/Product" style={{ backgroundColor }}>
+      <div className="page-builder-canvas" style={{ backgroundColor }}>
+        <div className="canvas-wrapper" style={{ backgroundColor }}>
           {/* Logo Section - Top */}
           <div className="canvas-logo-wrapper">
             <img 

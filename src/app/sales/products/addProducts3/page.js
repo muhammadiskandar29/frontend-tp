@@ -4267,14 +4267,6 @@ export default function AddProducts3Page() {
                     </div>
                   ))}
             </div>
-
-            {/* Footer */}
-            <footer className="canvas-footer">
-              <div className="canvas-footer-content">
-                <p className="canvas-footer-brand">Ternak Properti</p>
-                <p className="canvas-footer-copyright">Copyright 2018-2025, All Rights Reserved</p>
-              </div>
-            </footer>
           </div>
         </div>
       </div>
