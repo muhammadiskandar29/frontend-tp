@@ -35,6 +35,37 @@ async function updateCustomer(payload) {
 }
 import { getCustomerSession } from "@/lib/customerAuth";
 
+// Function to fetch customer data from API
+async function fetchCustomerData() {
+  const token = localStorage.getItem("customer_token");
+
+  if (!token) {
+    throw new Error("Token tidak ditemukan. Silakan login kembali.");
+  }
+
+  try {
+    const response = await fetch("/api/customer/customer", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || data?.success !== true) {
+      throw new Error(data?.message || "Gagal mengambil data customer");
+    }
+
+    return data.data;
+  } catch (error) {
+    console.error("❌ [FETCH_CUSTOMER] Error:", error);
+    throw error;
+  }
+}
+
 const initialFormState = {
   nama_panggilan: "",
   instagram: "",
@@ -183,6 +214,7 @@ export default function UpdateCustomerModal({
   const [formData, setFormData] = useState(initialFormState);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [loadingData, setLoadingData] = useState(false);
 
   // State untuk form wilayah (cascading dropdown)
   const [regionForm, setRegionForm] = useState({
@@ -349,78 +381,124 @@ export default function UpdateCustomerModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRegionIds.cityId]);
 
-  // Initialize data dari session saat modal dibuka
+  // Fetch customer data dari API saat modal dibuka
   useEffect(() => {
     if (!isOpen) return;
 
-    try {
-      const session = getCustomerSession();
-      const user = session.user || {};
+    const loadCustomerData = async () => {
+      setLoadingData(true);
+      setError("");
 
-      setFormData((prev) => ({
-        ...prev,
-        nama_panggilan: user.nama_panggilan || user.nama || prev.nama_panggilan,
-        instagram: user.instagram || prev.instagram,
-        profesi: user.profesi || prev.profesi,
-        pendapatan_bln: user.pendapatan_bln || prev.pendapatan_bln,
-        industri_pekerjaan:
-          user.industri_pekerjaan || prev.industri_pekerjaan,
-        jenis_kelamin: user.jenis_kelamin || prev.jenis_kelamin || "l",
-        tanggal_lahir: user.tanggal_lahir
-          ? user.tanggal_lahir.slice(0, 10)
-          : prev.tanggal_lahir,
-        password: "",
-      }));
+      try {
+        // Fetch data terbaru dari API
+        const customerData = await fetchCustomerData();
+        console.log("📥 [UPDATE_CUSTOMER] Fetched customer data:", customerData);
 
-      // Initialize region form dari user data
-      setRegionForm({
-        provinsi: user.provinsi || "",
-        kabupaten: user.kabupaten || "",
-        kecamatan: user.kecamatan || "",
-        kode_pos: user.kode_pos || ""
-      });
-    } catch (error) {
-      console.error("[UPDATE_CUSTOMER] Failed to load session:", error);
-    }
+        // Pre-fill form dengan data yang sudah ada
+        setFormData((prev) => ({
+          ...prev,
+          nama_panggilan: customerData.nama_panggilan || customerData.nama || prev.nama_panggilan || "",
+          instagram: customerData.instagram || prev.instagram || "",
+          profesi: customerData.profesi || prev.profesi || "",
+          pendapatan_bln: customerData.pendapatan_bln || prev.pendapatan_bln || "",
+          industri_pekerjaan: customerData.industri_pekerjaan || prev.industri_pekerjaan || "",
+          jenis_kelamin: customerData.jenis_kelamin || prev.jenis_kelamin || "l",
+          tanggal_lahir: customerData.tanggal_lahir
+            ? customerData.tanggal_lahir.slice(0, 10)
+            : prev.tanggal_lahir || "",
+          password: "", // Password selalu kosong untuk keamanan
+        }));
+
+        // Initialize region form dari customer data
+        setRegionForm({
+          provinsi: customerData.provinsi || "",
+          kabupaten: customerData.kabupaten || "",
+          kecamatan: customerData.kecamatan || "",
+          kode_pos: customerData.kode_pos || ""
+        });
+
+        console.log("✅ [UPDATE_CUSTOMER] Form pre-filled with existing data");
+      } catch (error) {
+        console.error("❌ [UPDATE_CUSTOMER] Failed to load customer data:", error);
+        // Fallback ke session data jika API gagal
+        try {
+          const session = getCustomerSession();
+          const user = session.user || {};
+
+          setFormData((prev) => ({
+            ...prev,
+            nama_panggilan: user.nama_panggilan || user.nama || prev.nama_panggilan || "",
+            instagram: user.instagram || prev.instagram || "",
+            profesi: user.profesi || prev.profesi || "",
+            pendapatan_bln: user.pendapatan_bln || prev.pendapatan_bln || "",
+            industri_pekerjaan: user.industri_pekerjaan || prev.industri_pekerjaan || "",
+            jenis_kelamin: user.jenis_kelamin || prev.jenis_kelamin || "l",
+            tanggal_lahir: user.tanggal_lahir
+              ? user.tanggal_lahir.slice(0, 10)
+              : prev.tanggal_lahir || "",
+            password: "",
+          }));
+
+          setRegionForm({
+            provinsi: user.provinsi || "",
+            kabupaten: user.kabupaten || "",
+            kecamatan: user.kecamatan || "",
+            kode_pos: user.kode_pos || ""
+          });
+        } catch (sessionError) {
+          console.error("[UPDATE_CUSTOMER] Failed to load session:", sessionError);
+        }
+      } finally {
+        setLoadingData(false);
+      }
+    };
+
+    loadCustomerData();
   }, [isOpen]);
 
   // Initialize province ID dari user data setelah provinces loaded
   useEffect(() => {
-    if (regionData.provinces.length > 0 && regionForm.provinsi && !selectedRegionIds.provinceId) {
+    if (regionData.provinces.length > 0 && regionForm.provinsi) {
       // Cari province dengan case-insensitive dan trim untuk menghindari masalah whitespace
       const province = regionData.provinces.find(p => 
         p.name?.trim().toLowerCase() === regionForm.provinsi?.trim().toLowerCase()
       );
-      if (province) {
+      if (province && selectedRegionIds.provinceId !== province.id) {
+        console.log("🔵 [UPDATE_CUSTOMER] Setting province ID:", province.id, "for province:", province.name);
         setSelectedRegionIds(prev => ({ ...prev, provinceId: province.id }));
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [regionData.provinces.length, regionForm.provinsi]);
+  }, [regionData.provinces, regionForm.provinsi]);
   
   // Initialize city ID dari user data setelah cities loaded
   useEffect(() => {
-    if (regionData.cities.length > 0 && regionForm.kabupaten && !selectedRegionIds.cityId) {
+    if (regionData.cities.length > 0 && regionForm.kabupaten && selectedRegionIds.provinceId) {
       // Cari city dengan case-insensitive dan trim untuk menghindari masalah whitespace
       const city = regionData.cities.find(c => 
         c.name?.trim().toLowerCase() === regionForm.kabupaten?.trim().toLowerCase()
       );
-      if (city) {
+      if (city && selectedRegionIds.cityId !== city.id) {
+        console.log("🔵 [UPDATE_CUSTOMER] Setting city ID:", city.id, "for city:", city.name);
         setSelectedRegionIds(prev => ({ ...prev, cityId: city.id }));
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [regionData.cities.length, regionForm.kabupaten]);
+  }, [regionData.cities, regionForm.kabupaten, selectedRegionIds.provinceId]);
   
   // Initialize district ID dari user data setelah districts loaded
   useEffect(() => {
-    if (regionData.districts.length > 0 && regionForm.kecamatan && !selectedRegionIds.districtId) {
+    if (regionData.districts.length > 0 && regionForm.kecamatan && selectedRegionIds.cityId) {
       // Cari district dengan case-insensitive dan trim untuk menghindari masalah whitespace
       const district = regionData.districts.find(d => 
         d.name?.trim().toLowerCase() === regionForm.kecamatan?.trim().toLowerCase()
       );
       if (district) {
-        setSelectedRegionIds(prev => ({ ...prev, districtId: district.id || district.district_id }));
+        const districtId = district.id || district.district_id;
+        if (selectedRegionIds.districtId !== districtId) {
+          console.log("🔵 [UPDATE_CUSTOMER] Setting district ID:", districtId, "for district:", district.name);
+          setSelectedRegionIds(prev => ({ ...prev, districtId: districtId }));
+        }
         // Pastikan kode_pos terisi jika ada di district atau pertahankan yang sudah ada
         if (district.postal_code && !regionForm.kode_pos) {
           setRegionForm(prev => ({ ...prev, kode_pos: district.postal_code }));
@@ -428,7 +506,7 @@ export default function UpdateCustomerModal({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [regionData.districts.length, regionForm.kecamatan]);
+  }, [regionData.districts, regionForm.kecamatan, selectedRegionIds.cityId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -637,6 +715,13 @@ export default function UpdateCustomerModal({
           </div>
         </div>
 
+        {/* Loading indicator saat fetch data */}
+        {loadingData && (
+          <div className="loading-banner">
+            <span>⏳</span> Memuat data customer...
+          </div>
+        )}
+
         {/* Error message */}
         {error && (
           <div className="error-banner">
@@ -839,10 +924,10 @@ export default function UpdateCustomerModal({
             <button
               type="submit"
               className="customer-btn customer-btn--primary"
-              disabled={loading}
+              disabled={loading || loadingData}
               style={{ width: "100%" }}
             >
-              {loading ? "Menyimpan..." : "Simpan Data"}
+              {loading ? "Menyimpan..." : loadingData ? "Memuat data..." : "Simpan Data"}
             </button>
           </div>
         </form>
@@ -1114,6 +1199,18 @@ export default function UpdateCustomerModal({
           border-bottom: 1px solid #fecaca;
           font-size: 14px;
           color: #dc2626;
+          font-weight: 500;
+        }
+
+        .loading-banner {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 12px 24px;
+          background: #eff6ff;
+          border-bottom: 1px solid #bfdbfe;
+          font-size: 14px;
+          color: #1e40af;
           font-weight: 500;
         }
 

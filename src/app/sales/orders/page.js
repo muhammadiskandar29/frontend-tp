@@ -55,15 +55,15 @@ const STATUS_ORDER_MAP = {
 
 const ORDERS_COLUMNS = [
   "#",
+  "Order ID",
   "Customer",
+  "Sales",
   "Produk",
   "Total Harga",
-  "Status Order",
   "Status Pembayaran",
-  "Tanggal",
+  "Status Order",
+  "Tanggal Order",
   "Sumber",
-  "Waktu Pembayaran",
-  "Metode Bayar",
   "Actions",
 ];
 
@@ -943,30 +943,65 @@ export default function DaftarPesanan() {
                     }
                     const statusPembayaranInfo = STATUS_PEMBAYARAN_MAP[statusPembayaranValue] || STATUS_PEMBAYARAN_MAP[0];
 
+                    // Handle sales name - dari customer_rel
+                    const salesNama = order.customer_rel?.sales_nama || order.customer_rel?.sales_rel?.nama || "-";
+
                     return (
                       <div className="orders-table__row" key={order.id || `${order.id}-${i}`}>
+                        {/* # - Sequential Number */}
                         <div className="orders-table__cell" data-label="#">
                           {(page - 1) * perPage + i + 1}
                         </div>
+                        
+                        {/* Order ID */}
+                        <div className="orders-table__cell" data-label="Order ID">
+                          <span style={{ 
+                            fontFamily: "monospace", 
+                            fontSize: "0.8rem",
+                            color: "#6b7280",
+                            fontWeight: 500
+                          }}>
+                            #{order.id || "-"}
+                          </span>
+                        </div>
+                        
+                        {/* Customer */}
                         <div className="orders-table__cell orders-table__cell--strong" data-label="Customer">
-                          {customerNama}
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                            <span style={{ fontWeight: 600, color: "#111827" }}>{customerNama}</span>
+                            {order.customer_rel?.wa && (
+                              <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>
+                                {order.customer_rel.wa}
+                              </span>
+                            )}
+                          </div>
                         </div>
+                        
+                        {/* Sales */}
+                        <div className="orders-table__cell" data-label="Sales">
+                          <span style={{ 
+                            fontSize: "0.85rem",
+                            color: "#374151",
+                            fontWeight: 500
+                          }}>
+                            {salesNama}
+                          </span>
+                        </div>
+                        
+                        {/* Produk */}
                         <div className="orders-table__cell" data-label="Produk">
-                          {produkNama}
+                          <span style={{ fontSize: "0.85rem", color: "#111827" }}>
+                            {produkNama}
+                          </span>
                         </div>
+                        
+                        {/* Total Harga */}
                         <div className="orders-table__cell" data-label="Total Harga">
                           <div className="payment-details">
                             <div className="payment-main">
                               <strong>Rp {Number(order.total_harga || 0).toLocaleString("id-ID")}</strong>
                             </div>
-                            
-                            
-                            {/* Total Paid & Remaining
-                                NOTE:
-                                - Hanya tampil untuk order dengan status pembayaran DP (4)
-                                - Untuk pembayaran full (bukan DP), meskipun total_paid > 0,
-                                  tidak menampilkan breakdown agar hanya terlihat total harga saja
-                            */}
+                            {/* Total Paid & Remaining - Hanya tampil untuk DP (status 4) */}
                             {statusPembayaranValue === 4 && (
                               <div className="payment-breakdown">
                                 <div className="payment-item">
@@ -996,28 +1031,56 @@ export default function DaftarPesanan() {
                             )}
                           </div>
                         </div>
-                        <div className="orders-table__cell" data-label="Status Order">
-                          <span className={`orders-status-badge orders-status-badge--${statusOrderInfo.class}`}>
-                            {statusOrderInfo.label}
-                          </span>
-                        </div>
+                        
+                        {/* Status Pembayaran */}
                         <div className="orders-table__cell" data-label="Status Pembayaran">
                           <span className={`orders-status-badge orders-status-badge--${statusPembayaranInfo.class}`}>
                             {statusPembayaranInfo.label}
                           </span>
                         </div>
-                        <div className="orders-table__cell" data-label="Tanggal">
-                          {formatDateOnly(order.tanggal)}
+                        
+                        {/* Status Order */}
+                        <div className="orders-table__cell" data-label="Status Order">
+                          <span className={`orders-status-badge orders-status-badge--${statusOrderInfo.class}`}>
+                            {statusOrderInfo.label}
+                          </span>
                         </div>
+                        
+                        {/* Tanggal Order */}
+                        <div className="orders-table__cell" data-label="Tanggal Order">
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
+                            <span style={{ fontSize: "0.85rem", color: "#111827" }}>
+                              {formatDateOnly(order.tanggal)}
+                            </span>
+                            {order.tanggal && order.tanggal.includes(" ") && (
+                              <span style={{ fontSize: "0.7rem", color: "#9ca3af" }}>
+                                {order.tanggal.split(" ")[1]?.substring(0, 5) || ""}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Sumber */}
                         <div className="orders-table__cell" data-label="Sumber">
-                          {order.sumber ? `#${order.sumber}` : "-"}
+                          {order.sumber ? (
+                            <span style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              padding: "0.25rem 0.5rem",
+                              background: "#f3f4f6",
+                              borderRadius: "0.375rem",
+                              fontSize: "0.75rem",
+                              fontWeight: 500,
+                              color: "#374151"
+                            }}>
+                              {order.sumber}
+                            </span>
+                          ) : (
+                            <span style={{ color: "#9ca3af" }}>-</span>
+                          )}
                         </div>
-                        <div className="orders-table__cell" data-label="Waktu Pembayaran">
-                          {formatDateOnly(order.waktu_pembayaran)}
-                        </div>
-                        <div className="orders-table__cell" data-label="Metode Bayar">
-                          {order.metode_bayar || "-"}
-                        </div>
+                        
+                        {/* Actions */}
                         <div className="orders-table__cell orders-table__cell--actions" data-label="Actions">
                           <button
                             className="orders-action-btn"
