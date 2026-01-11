@@ -943,6 +943,7 @@ ADMIN USERS PAGE (Scoped Styles)
   .customers-table__head,
   .customers-table__row {
     gap: 0.5rem !important;
+    min-width: 900px;
   }
 
   .customers-table__head {
