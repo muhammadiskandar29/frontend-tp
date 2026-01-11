@@ -2555,13 +2555,13 @@ margin-left: 0px;
   display: grid;
   /* 7 kolom: Id Member, Nama, Email, No WA, Verifikasi, Pesanan Sukses, Total Net Revenue */
   grid-template-columns: 
-    minmax(90px, 0.8fr)   /* Id Member */
-    minmax(150px, 1.3fr)  /* Nama */
-    minmax(160px, 1.4fr)  /* Email */
-    minmax(120px, 1.1fr)  /* No WA */
-    minmax(100px, 0.9fr)  /* Verifikasi */
-    minmax(110px, 1fr)    /* Pesanan Sukses */
-    minmax(130px, 1.2fr); /* Total Net Revenue */
+    minmax(100px, 1fr)    /* Id Member */
+    minmax(160px, 1.5fr)  /* Nama */
+    minmax(180px, 1.6fr)  /* Email */
+    minmax(130px, 1.2fr)  /* No WA */
+    minmax(110px, 1fr)    /* Verifikasi */
+    minmax(120px, 1.1fr)  /* Pesanan Sukses */
+    minmax(150px, 1.4fr); /* Total Net Revenue */
   gap: 0.75rem;
   align-items: stretch;
   width: 100%;

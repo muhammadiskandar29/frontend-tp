@@ -4373,10 +4373,12 @@ html:has(.add-products3-container) {
   /* Removed default font-size and font-weight to allow inline styles from HTML content */
   line-height: 1.2; /* Tighter line height */
   transition: none !important; /* No transition for immediate updates */
+  font-family: inherit !important; /* ✅ Pastikan paragraph inherit font */
 }
 
 .preview-text * {
   transition: none !important; /* No transition for immediate updates */
+  font-family: inherit !important; /* ✅ Pastikan semua child element inherit font dari parent */
 }
 
 .preview-text p:last-child {
