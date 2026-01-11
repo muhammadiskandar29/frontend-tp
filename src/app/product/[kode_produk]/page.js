@@ -2023,6 +2023,11 @@ export default function ProductPage() {
       if (!/^\d+$/.test(formWilayah.kode_pos)) {
         return toast.error("Kode Pos harus berupa angka!");
       }
+    } else {
+      // ✅ Validasi minimal untuk produk non-fisik: minimal provinsi dan kabupaten harus terisi
+      if (!formWilayah.provinsi || !formWilayah.kabupaten) {
+        return toast.error("Silakan lengkapi alamat (minimal Provinsi dan Kabupaten/Kota)");
+      }
     }
 
     setSubmitting(true);
@@ -2048,8 +2053,22 @@ export default function ProductPage() {
       if (formWilayah.kecamatan) parts.push(`kec. ${formWilayah.kecamatan}`);
       if (formWilayah.kode_pos) parts.push(`kode pos ${formWilayah.kode_pos}`);
       alamatFinal = parts.join(', ');
+    } else if (!isFisik) {
+      // ✅ Untuk produk non-fisik, gunakan formWilayah jika ada, atau customerForm.alamat
+      if (formWilayah.provinsi || formWilayah.kabupaten || formWilayah.kecamatan) {
+        // Jika formWilayah sudah terisi sebagian, buat alamat dari yang ada
+        const parts = [];
+        if (formWilayah.provinsi) parts.push(formWilayah.provinsi);
+        if (formWilayah.kabupaten) parts.push(formWilayah.kabupaten);
+        if (formWilayah.kecamatan) parts.push(`kec. ${formWilayah.kecamatan}`);
+        if (formWilayah.kode_pos) parts.push(`kode pos ${formWilayah.kode_pos}`);
+        alamatFinal = parts.join(', ');
+      } else {
+        // Fallback ke customerForm.alamat atau alamatLengkap
+        alamatFinal = alamatLengkap || customerForm.alamat || '';
+      }
     } else {
-      // Untuk produk non-fisik atau jika formWilayah tidak lengkap, gunakan alamat dari customerForm
+      // Untuk produk fisik tapi formWilayah tidak lengkap, gunakan customerForm.alamat
       alamatFinal = alamatLengkap || customerForm.alamat || '';
     }
 
@@ -2059,7 +2078,8 @@ export default function ProductPage() {
       if (isFisik) {
         return toast.error("Silakan lengkapi alamat lengkap (Provinsi, Kabupaten/Kota, Kecamatan, Kode Pos)");
       } else {
-        return toast.error("Silakan lengkapi alamat");
+        // ✅ Untuk produk non-fisik, minta lengkapi formWilayah minimal provinsi dan kabupaten
+        return toast.error("Silakan lengkapi alamat (minimal Provinsi dan Kabupaten/Kota)");
       }
     }
 
