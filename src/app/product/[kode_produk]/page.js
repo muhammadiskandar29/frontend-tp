@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import Script from "next/script";
@@ -452,6 +452,16 @@ export default function ProductPage() {
     const kategoriId = getKategoriId();
     return kategoriId === 4; // Kategori Buku (4)
   };
+
+  // ✅ Hitung total secara reactive dengan useMemo - auto update jika ada bundling atau tidak
+  const calculateTotal = useMemo(() => {
+    const basePrice = parseInt(productData?.harga || 0);
+    const kategoriId = getKategoriId();
+    const isFormBuku = kategoriId === 4; // Kategori Buku (4)
+    const shippingCost = isFormBuku ? ongkir : 0;
+    const total = basePrice + shippingCost;
+    return total;
+  }, [productData?.harga, ongkir, productData?.kategori_id, productData?.kategori, productData?.kategori_rel]);
 
   // FAQ Mapping
   const getFAQByKategori = (kategoriId) => {
@@ -1593,11 +1603,7 @@ export default function ProductPage() {
                 <div className="rincian-pesanan-total">
                   <span className="rincian-pesanan-total-label">Total</span>
                   <span className="rincian-pesanan-total-price">
-                    Rp {formatPrice(
-                      isFormBuku 
-                        ? (parseInt(productData?.harga || 0) + ongkir) 
-                        : parseInt(productData?.harga || 0)
-                    )}
+                    Rp {formatPrice(calculateTotal)}
                   </span>
                 </div>
               </div>
