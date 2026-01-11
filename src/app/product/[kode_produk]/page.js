@@ -1888,28 +1888,55 @@ export default function ProductPage() {
         
         // ✅ ARSITEKTUR FINAL: Filter child HANYA berdasarkan parentId === sectionComponentId
         // ✅ RULE: Frontend TIDAK BOLEH menebak relasi. Jika parentId tidak ada → section memang kosong.
+        // ✅ FIX: Check parentId di multiple locations karena saat data dari backend, parentId bisa di config.parentId
         const childComponents = allBlocks.filter(b => {
           if (!b || !b.type) return false;
-          // ✅ parentId HANYA ada di root level (bukan di config)
-          return b.parentId === sectionComponentId;
+          
+          // ✅ FIX: Check parentId di multiple locations (root level, config, data)
+          // Karena saat data dari backend, parentId bisa di config.parentId
+          const blockParentId = b.parentId || b.config?.parentId || b.data?.parentId;
+          
+          // ✅ FIX: Ensure sectionComponentId juga check dari multiple locations
+          const actualSectionComponentId = sectionComponentId || blockToRender.data?.componentId || blockToRender.content?.componentId;
+          
+          if (!blockParentId || !actualSectionComponentId) {
+            return false;
+          }
+          
+          return blockParentId === actualSectionComponentId;
         });
         
         // ✅ DEBUG: Log untuk tracking identifier
         console.log(`[SECTION RENDER] Section ID: "${sectionComponentId}"`, {
           sectionBlockId: blockToRender.id,
           sectionConfigComponentId: blockToRender.config?.componentId,
+          sectionDataComponentId: blockToRender.data?.componentId,
+          sectionContentComponentId: blockToRender.content?.componentId,
           childCount: childComponents.length,
           allBlocksCount: allBlocks.length,
           allBlocksWithParentId: allBlocks
-            .filter(b => b && b.parentId)
-            .map(b => ({
-              type: b.type,
-              componentId: b.config?.componentId || b.order,
-              parentId: b.parentId,
-              match: b.parentId === sectionComponentId ? "✅ MATCH" : "❌ NO MATCH"
-            })),
+            .filter(b => {
+              const bpId = b.parentId || b.config?.parentId || b.data?.parentId;
+              return !!bpId;
+            })
+            .map(b => {
+              const bpId = b.parentId || b.config?.parentId || b.data?.parentId;
+              const actualSectionComponentId = sectionComponentId || blockToRender.data?.componentId || blockToRender.content?.componentId;
+              return {
+                type: b.type,
+                componentId: b.config?.componentId || b.order,
+                parentId_root: b.parentId,
+                parentId_config: b.config?.parentId,
+                parentId_data: b.data?.parentId,
+                parentId_final: bpId,
+                match: bpId === actualSectionComponentId ? "✅ MATCH" : "❌ NO MATCH"
+              };
+            }),
           // ✅ Validasi: Jika childCount === 0, cek apakah ada blocks dengan parentId
-          hasAnyParentId: allBlocks.some(b => b && b.parentId),
+          hasAnyParentId: allBlocks.some(b => {
+            const bpId = b.parentId || b.config?.parentId || b.data?.parentId;
+            return !!bpId;
+          }),
           warning: childComponents.length === 0 
             ? "⚠️ Section kosong - tidak ada child dengan parentId yang sesuai. Pastikan backend mengirim parentId di child blocks." 
             : null

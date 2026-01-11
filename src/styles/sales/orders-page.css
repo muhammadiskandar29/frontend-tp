@@ -482,7 +482,7 @@ ORDERS TABLE
   display: grid;
   grid-template-columns: 
     minmax(180px, 1.5fr)                    /* Order ID */
-    auto                                    /* ExternalLink (no header) */
+    24px                                    /* ExternalLink (no header, lebih dekat) */
     minmax(130px, 1.2fr)                    /* Customer */
     minmax(140px, 1.2fr)                    /* Produk */
     minmax(110px, 1fr)                      /* Status Pembayaran */

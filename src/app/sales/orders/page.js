@@ -65,8 +65,145 @@ const ORDERS_COLUMNS = [
 ];
 
 
-// Helper component untuk WA Bubble Chat (chat bubble shape)
-const WABubbleChat = ({ followUpCount = 0 }) => {
+// Helper component untuk WA Bubble Chat dengan deteksi status
+const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran }) => {
+  const [followupLogs, setFollowupLogs] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!customerId) return;
+    fetchFollowupLogs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customerId]);
+
+  const fetchFollowupLogs = async () => {
+    if (!customerId) return;
+    setLoading(true);
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const res = await fetch("/api/sales/logs-follup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ customer: Number(customerId) }),
+      });
+      const data = await res.json();
+      if (res.ok && Array.isArray(data.data)) {
+        // Filter by order id jika ada field order di log
+        let filtered = data.data;
+        if (orderId) {
+          filtered = data.data.filter(log => {
+            const logOrderId = log.order || log.order_id || log.orderId;
+            return logOrderId && Number(logOrderId) === Number(orderId);
+          });
+        }
+        setFollowupLogs(filtered);
+      }
+    } catch (err) {
+      console.error("Error fetching followup logs:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Helper untuk cek apakah event sudah terkirim (status === "1" atau 1)
+  const isSent = (eventType) => {
+    const log = followupLogs.find(l => {
+      const logEvent = l.follup || l.type || l.follup_rel?.id || l.event;
+      return Number(logEvent) === Number(eventType);
+    });
+    return log && (log.status === "1" || log.status === 1);
+  };
+
+  // Helper untuk membuat bubble
+  const createBubble = (content, eventType, isGray = false) => {
+    const sent = isSent(eventType);
+    const bgColor = sent ? "#25D366" : "#E5E7EB";
+    const textColor = sent ? "white" : "#6B7280";
+    
+    return (
+      <div key={`bubble-${eventType}`} style={{
+        position: "relative",
+        background: bgColor,
+        borderRadius: "7px 7px 7px 0",
+        width: "24px",
+        height: "20px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: "12px",
+        color: textColor,
+        fontWeight: "bold"
+      }}>
+        {content}
+      </div>
+    );
+  };
+
+  const bubbles = [];
+  
+  // WA icon bubble (selalu abu-abu default)
+  bubbles.push(
+    <div key="wa-logo" style={{
+      position: "relative",
+      background: "#E5E7EB",
+      borderRadius: "7px 7px 7px 0",
+      width: "24px",
+      height: "20px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "2px 4px"
+    }}>
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="#6B7280">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+      </svg>
+    </div>
+  );
+  
+  // W bubble (event 5 = Register)
+  bubbles.push(createBubble("W", 5));
+  
+  // Bubble 1-4 (Followup 1-4)
+  for (let i = 1; i <= 4; i++) {
+    bubbles.push(createBubble(i.toString(), i));
+  }
+  
+  // P bubble (event 6 = Proses/Pembayaran Diterima) - hanya tampil jika status pembayaran sudah diterima
+  if (statusPembayaran === 2 || statusPembayaran === "2") {
+    bubbles.push(createBubble("P", 6));
+  }
+  
+  // 7 bubble (Selesai) - hanya tampil jika status order sukses
+  if (orderStatus === "2" || orderStatus === 2) {
+    bubbles.push(createBubble("7", 7));
+  }
+  
+  // 8 bubble (Upselling) - hanya tampil jika status order upselling
+  if (orderStatus === "4" || orderStatus === 4) {
+    bubbles.push(createBubble("8", 8));
+  }
+  
+  return (
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      gap: "3px",
+      padding: "4px 8px",
+      background: "#FEF3C7",
+      borderRadius: "8px",
+      flexWrap: "wrap"
+    }}>
+      {bubbles}
+    </div>
+  );
+};
+
+// Helper component untuk WA Bubble Chat (chat bubble shape) - OLD VERSION
+const WABubbleChatOld = ({ followUpCount = 0 }) => {
   const bubbles = [];
   
   // WhatsApp icon bubble (hijau) - menggunakan SVG
@@ -1226,7 +1363,12 @@ export default function DaftarPesanan() {
                         {/* Follow Up Text */}
                         <div className="orders-table__cell" data-label="Follow Up Text">
                           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                            <WABubbleChat followUpCount={order.follow_up_count || (order.follow_up_text ? 1 : 0)} />
+                            <WABubbleChat 
+                              customerId={order.customer_rel?.id || order.customer}
+                              orderId={order.id}
+                              orderStatus={statusOrderValue}
+                              statusPembayaran={statusPembayaranValue}
+                            />
                             <span style={{ fontSize: "0.875rem", color: "#111827" }}></span>
                           </div>
                         </div>
