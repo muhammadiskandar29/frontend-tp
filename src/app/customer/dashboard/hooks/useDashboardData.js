@@ -146,13 +146,33 @@ export function useDashboardData() {
         ...(data?.orders_pending || []),
         ...(data?.order_proses || []),
         ...(data?.orders_proses || []),
+        // Tambahkan juga dari field lain yang mungkin ada
+        ...(data?.orders || []),
       ];
+
+      console.log("📦 [DASHBOARD] Raw orders data:", {
+        orders_aktif: data?.orders_aktif?.length || 0,
+        orders_pending: data?.orders_pending?.length || 0,
+        order_proses: data?.order_proses?.length || 0,
+        orders_proses: data?.orders_proses?.length || 0,
+        orders: data?.orders?.length || 0,
+        total_before_dedup: allOrders.length
+      });
 
       // Order Aktif: semua order (tidak peduli status pembayaran)
       // Filter untuk menghindari duplikat berdasarkan ID
       const uniqueOrders = allOrders.filter((order, index, self) =>
         index === self.findIndex((o) => o.id === order.id)
       );
+      
+      console.log("📦 [DASHBOARD] Unique orders:", uniqueOrders.length);
+      console.log("📦 [DASHBOARD] Sample orders:", uniqueOrders.slice(0, 3).map(o => ({
+        id: o.id,
+        produk_nama: o.produk_nama,
+        status_pembayaran: o.status_pembayaran || o.status_pembayaran_id,
+        total_harga: o.total_harga
+      })));
+
       const activeOrders = uniqueOrders;
 
       // Get unpaid orders for count (status_pembayaran belum 2)

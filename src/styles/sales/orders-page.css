@@ -483,17 +483,15 @@ ORDERS TABLE
   grid-template-columns: 
     minmax(180px, 1.5fr)                    /* Order ID */
     minmax(130px, 1.2fr)                    /* Customer */
-    minmax(100px, 1fr)                      /* Sales */
     minmax(140px, 1.2fr)                    /* Produk */
-    minmax(160px, 1.3fr)                    /* Total Harga */
     minmax(110px, 1fr)                      /* Status Pembayaran */
     minmax(100px, 0.9fr)                    /* Status Order */
-    minmax(110px, 1fr)                      /* Tanggal Order */
-    minmax(90px, 0.8fr)                     /* Sumber */
-    minmax(100px, 0.9fr);                   /* Actions */
+    minmax(140px, 1.2fr)                    /* Follow Up Text */
+    minmax(100px, 0.9fr)                    /* Bukti Pembayaran */
+    minmax(140px, 1.2fr);                   /* Gross Revenue */
   gap: 0.3rem;
   align-items: center;
-  min-width: 1400px;
+  min-width: 1200px;
 }
 
 .orders-table__head {

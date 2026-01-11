@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useMemo, useCallback, memo } from "react";
 import Layout from "@/components/Layout";
 import dynamic from "next/dynamic";
-import { ShoppingCart, Clock, CheckCircle, PartyPopper, XCircle, Filter, ExternalLink } from "lucide-react";
+import { ShoppingCart, Clock, CheckCircle, PartyPopper, XCircle, Filter, ExternalLink, Image as ImageIcon } from "lucide-react";
 import { Calendar } from "primereact/calendar";
 import "primereact/resources/themes/lara-light-cyan/theme.css";
 import "primereact/resources/primereact.min.css";
@@ -54,16 +54,14 @@ const STATUS_ORDER_MAP = {
 };
 
 const ORDERS_COLUMNS = [
-  "Order ID",
-  "Customer",
-  "Sales",
-  "Produk",
-  "Total Harga",
-  "Status Pembayaran",
-  "Status Order",
-  "Tanggal Order",
-  "Sumber",
-  "Actions",
+  { line1: "Order", line2: "Id" },
+  { line1: "Customer", line2: "" },
+  { line1: "Produk", line2: "" },
+  { line1: "Status", line2: "Pembayaran" },
+  { line1: "Status", line2: "Order" },
+  { line1: "Follow Up", line2: "Text" },
+  { line1: "Bukti", line2: "Pembayaran", icon: "image" },
+  { line1: "Gross", line2: "Revenue" },
 ];
 
 
@@ -502,6 +500,35 @@ export default function DaftarPesanan() {
     }
   };
 
+  // Helper untuk build URL gambar via proxy
+  const buildImageUrl = useCallback((path) => {
+    if (!path) return null;
+    const cleanPath = path.replace(/^\/?(storage\/)?/, "");
+    return `/api/image?path=${encodeURIComponent(cleanPath)}`;
+  }, []);
+
+  // Helper untuk mengambil bukti_pembayaran dari order_payment_rel
+  const getBuktiPembayaran = useCallback((order) => {
+    if (order.bukti_pembayaran) {
+      return order.bukti_pembayaran;
+    }
+    if (order.order_payment_rel && Array.isArray(order.order_payment_rel) && order.order_payment_rel.length > 0) {
+      const approvedPayment = order.order_payment_rel.find(p => String(p.status).trim() === "2");
+      if (approvedPayment && approvedPayment.bukti_pembayaran) {
+        return approvedPayment.bukti_pembayaran;
+      }
+      const latestPayment = order.order_payment_rel.sort((a, b) => {
+        const dateA = new Date(a.create_at || 0);
+        const dateB = new Date(b.create_at || 0);
+        return dateB - dateA;
+      })[0];
+      if (latestPayment && latestPayment.bukti_pembayaran) {
+        return latestPayment.bukti_pembayaran;
+      }
+    }
+    return null;
+  }, []);
+
   // Format tanggal untuk Order ID: "11 Jan 2026, 22.40"
   const formatOrderDate = useCallback((dateString) => {
     if (!dateString) return "-";
@@ -928,8 +955,18 @@ export default function DaftarPesanan() {
           <div className="orders-table__wrapper">
             <div className="orders-table">
               <div className="orders-table__head">
-                {ORDERS_COLUMNS.map((column) => (
-                  <span key={column}>{column}</span>
+                {ORDERS_COLUMNS.map((column, idx) => (
+                  <span key={idx} style={{ display: "flex", flexDirection: "column", gap: "0.1rem", alignItems: "flex-start" }}>
+                    {column.icon === "image" ? (
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                        <ImageIcon size={14} style={{ color: "#6b7280" }} />
+                        <span>{column.line1}</span>
+                      </div>
+                    ) : (
+                      <span>{column.line1}</span>
+                    )}
+                    {column.line2 && <span>{column.line2}</span>}
+                  </span>
                 ))}
               </div>
               <div className="orders-table__body">
@@ -962,24 +999,25 @@ export default function DaftarPesanan() {
                     }
                     const statusPembayaranInfo = STATUS_PEMBAYARAN_MAP[statusPembayaranValue] || STATUS_PEMBAYARAN_MAP[0];
 
-                    // Handle sales name - dari customer_rel
-                    const salesNama = order.customer_rel?.sales_nama || order.customer_rel?.sales_rel?.nama || "-";
+                    // Get bukti pembayaran
+                    const buktiPembayaranPath = getBuktiPembayaran(order);
+                    const buktiUrl = buildImageUrl(buktiPembayaranPath);
 
                     return (
                       <div className="orders-table__row" key={order.id || `${order.id}-${i}`}>
                         {/* Order ID */}
                         <div className="orders-table__cell" data-label="Order ID">
                           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                            <span style={{ 
+                              fontSize: "0.9rem",
+                              color: "#2563eb",
+                              fontWeight: 500
+                            }}>
+                              {order.id || "-"}
+                            </span>
                             <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
-                              <span style={{ 
-                                fontSize: "0.9rem",
-                                color: "#2563eb",
-                                fontWeight: 500
-                              }}>
-                                {order.id || "-"}
-                              </span>
                               <ExternalLink 
-                                size={14} 
+                                size={18} 
                                 style={{ 
                                   color: "#6b7280", 
                                   cursor: "pointer",
@@ -996,10 +1034,10 @@ export default function DaftarPesanan() {
                                   e.target.style.color = "#6b7280";
                                 }}
                               />
+                              <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>
+                                {formatOrderDate(order.tanggal || order.create_at)}
+                              </span>
                             </div>
-                            <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>
-                              {formatOrderDate(order.tanggal || order.create_at)}
-                            </span>
                           </div>
                         </div>
                         
@@ -1007,124 +1045,70 @@ export default function DaftarPesanan() {
                         <div className="orders-table__cell orders-table__cell--strong" data-label="Customer">
                           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
                             <span style={{ fontSize: "0.875rem", color: "#111827" }}>{customerNama}</span>
-                            <span style={{ fontSize: "0.875rem", color: "#111827" }}>
-                              {order.customer_rel?.wa || "-"}
+                            <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>
+                              {order.customer_rel?.wa ? `+${order.customer_rel.wa}` : "-"}
                             </span>
                           </div>
                         </div>
                         
-                        {/* Sales */}
-                        <div className="orders-table__cell" data-label="Sales">
-                          <span style={{ 
-                            fontSize: "0.85rem",
-                            color: "#374151",
-                            fontWeight: 500
-                          }}>
-                            {salesNama}
-                          </span>
-                        </div>
-                        
                         {/* Produk */}
                         <div className="orders-table__cell" data-label="Produk">
-                          <span style={{ fontSize: "0.85rem", color: "#111827" }}>
-                            {produkNama}
-                          </span>
-                        </div>
-                        
-                        {/* Total Harga */}
-                        <div className="orders-table__cell" data-label="Total Harga">
-                          <div className="payment-details">
-                            <div className="payment-main">
-                              <strong>Rp {Number(order.total_harga || 0).toLocaleString("id-ID")}</strong>
-                            </div>
-                            {/* Total Paid & Remaining - Hanya tampil untuk DP (status 4) */}
-                            {statusPembayaranValue === 4 && (
-                              <div className="payment-breakdown">
-                                <div className="payment-item">
-                                  <span 
-                                    className="payment-label payment-clickable" 
-                                    onClick={() => handleShowPaymentHistory(order)}
-                                    style={{ cursor: "pointer", textDecoration: "underline" }}
-                                    title="Klik untuk melihat riwayat pembayaran"
-                                  >
-                                    Total Paid:
-                                  </span>
-                                  <span className="payment-value paid">
-                                    Rp {Number(order.total_paid || 0).toLocaleString("id-ID")}
-                                  </span>
-                                </div>
-                                <div className="payment-item">
-                                  <span className="payment-label">Remaining:</span>
-                                  <span className="payment-value remaining">
-                                    Rp {Number(
-                                      order.remaining !== undefined 
-                                        ? order.remaining 
-                                        : (Number(order.total_harga || 0) - Number(order.total_paid || 0))
-                                    ).toLocaleString("id-ID")}
-                                  </span>
-                                </div>
-                              </div>
-                            )}
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                            <span style={{ fontSize: "0.875rem", color: "#111827" }}>{produkNama}</span>
+                            <span style={{ fontSize: "0.875rem", color: "#111827" }}></span>
                           </div>
                         </div>
                         
                         {/* Status Pembayaran */}
                         <div className="orders-table__cell" data-label="Status Pembayaran">
-                          <span className={`orders-status-badge orders-status-badge--${statusPembayaranInfo.class}`}>
-                            {statusPembayaranInfo.label}
-                          </span>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                            <span className={`orders-status-badge orders-status-badge--${statusPembayaranInfo.class}`}>
+                              {statusPembayaranInfo.label}
+                            </span>
+                            <span style={{ fontSize: "0.875rem", color: "#111827" }}></span>
+                          </div>
                         </div>
                         
                         {/* Status Order */}
                         <div className="orders-table__cell" data-label="Status Order">
-                          <span className={`orders-status-badge orders-status-badge--${statusOrderInfo.class}`}>
-                            {statusOrderInfo.label}
-                          </span>
-                        </div>
-                        
-                        {/* Tanggal Order */}
-                        <div className="orders-table__cell" data-label="Tanggal Order">
-                          <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
-                            <span style={{ fontSize: "0.85rem", color: "#111827" }}>
-                              {formatDateOnly(order.tanggal)}
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                            <span className={`orders-status-badge orders-status-badge--${statusOrderInfo.class}`}>
+                              {statusOrderInfo.label}
                             </span>
-                            {order.tanggal && order.tanggal.includes(" ") && (
-                              <span style={{ fontSize: "0.7rem", color: "#9ca3af" }}>
-                                {order.tanggal.split(" ")[1]?.substring(0, 5) || ""}
-                              </span>
-                            )}
+                            <span style={{ fontSize: "0.875rem", color: "#111827" }}></span>
                           </div>
                         </div>
                         
-                        {/* Sumber */}
-                        <div className="orders-table__cell" data-label="Sumber">
-                          {order.sumber ? (
-                            <span style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              padding: "0.25rem 0.5rem",
-                              background: "#f3f4f6",
-                              borderRadius: "0.375rem",
-                              fontSize: "0.75rem",
-                              fontWeight: 500,
-                              color: "#374151"
-                            }}>
-                              {order.sumber}
+                        {/* Follow Up Text */}
+                        <div className="orders-table__cell" data-label="Follow Up Text">
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                            <span style={{ fontSize: "0.875rem", color: "#111827" }}>
+                              {order.follow_up_text || order.follow_up || "-"}
                             </span>
-                          ) : (
-                            <span style={{ color: "#9ca3af" }}>-</span>
-                          )}
+                            <span style={{ fontSize: "0.875rem", color: "#111827" }}></span>
+                          </div>
                         </div>
                         
-                        {/* Actions */}
-                        <div className="orders-table__cell orders-table__cell--actions" data-label="Actions">
-                          <button
-                            className="orders-action-btn orders-action-btn--ghost"
-                            title="Edit"
-                            onClick={() => handleEdit(order)}
-                          >
-                            <i className="pi pi-pencil" />
-                          </button>
+                        {/* Bukti Pembayaran */}
+                        <div className="orders-table__cell" data-label="Bukti Pembayaran">
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                            {buktiUrl ? (
+                              <ImageIcon size={16} style={{ color: "#6b7280" }} />
+                            ) : (
+                              <span style={{ fontSize: "0.875rem", color: "#111827" }}>-</span>
+                            )}
+                            <span style={{ fontSize: "0.875rem", color: "#111827" }}></span>
+                          </div>
+                        </div>
+                        
+                        {/* Gross Revenue */}
+                        <div className="orders-table__cell" data-label="Gross Revenue">
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                            <span style={{ fontSize: "0.875rem", color: "#111827", fontWeight: 600 }}>
+                              Rp {Number(order.total_harga || 0).toLocaleString("id-ID")}
+                            </span>
+                            <span style={{ fontSize: "0.875rem", color: "#111827" }}></span>
+                          </div>
                         </div>
                       </div>
                     );

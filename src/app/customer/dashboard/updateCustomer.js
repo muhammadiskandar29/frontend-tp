@@ -35,6 +35,12 @@ async function updateCustomer(payload) {
 }
 import { getCustomerSession } from "@/lib/customerAuth";
 
+// Function to normalize region name for matching (case-insensitive, remove extra spaces)
+const normalizeRegionName = (name) => {
+  if (!name || typeof name !== 'string') return "";
+  return name.trim().toLowerCase().replace(/\s+/g, ' ');
+};
+
 // Function to parse alamat string into separate fields
 const parseAlamat = (alamatString) => {
   if (!alamatString || typeof alamatString !== 'string') {
@@ -55,9 +61,12 @@ const parseAlamat = (alamatString) => {
   }
 
   // Extract kecamatan (format: "kec. ASAKOTA" atau "kecamatan ASAKOTA")
+  // Hapus "kec." atau "kecamatan" dari hasil
   const kecamatanMatch = alamatString.match(/kec\.?\s*([^,]+)/i);
   if (kecamatanMatch) {
     kecamatan = kecamatanMatch[1].trim();
+    // Hapus "kecamatan" jika masih ada di hasil
+    kecamatan = kecamatan.replace(/^kecamatan\s+/i, '').trim();
   }
 
   // Split by comma untuk mendapatkan provinsi dan kabupaten
@@ -69,8 +78,12 @@ const parseAlamat = (alamatString) => {
   }
   
   if (parts.length >= 2) {
-    // Bagian kedua biasanya kabupaten
-    kabupaten = parts[1].trim();
+    // Bagian kedua biasanya kabupaten (tapi bisa juga kecamatan jika format berbeda)
+    const part2 = parts[1].trim();
+    // Jika part2 tidak mengandung "kec." dan kecamatan belum terisi, maka ini kabupaten
+    if (!part2.match(/kec\.?/i) && !kecamatan) {
+      kabupaten = part2;
+    }
   }
 
   return { provinsi, kabupaten, kecamatan, kode_pos };
@@ -559,13 +572,17 @@ export default function UpdateCustomerModal({
   // Initialize province ID dari user data setelah provinces loaded
   useEffect(() => {
     if (regionData.provinces.length > 0 && regionForm.provinsi) {
+      const normalizedProvinsi = normalizeRegionName(regionForm.provinsi);
       // Cari province dengan case-insensitive dan trim untuk menghindari masalah whitespace
-      const province = regionData.provinces.find(p => 
-        p.name?.trim().toLowerCase() === regionForm.provinsi?.trim().toLowerCase()
-      );
+      const province = regionData.provinces.find(p => {
+        const normalizedProvinceName = normalizeRegionName(p.name);
+        return normalizedProvinceName === normalizedProvinsi;
+      });
       if (province && selectedRegionIds.provinceId !== province.id) {
-        console.log("🔵 [UPDATE_CUSTOMER] Setting province ID:", province.id, "for province:", province.name);
+        console.log("🔵 [UPDATE_CUSTOMER] Setting province ID:", province.id, "for province:", province.name, "matched with:", regionForm.provinsi);
         setSelectedRegionIds(prev => ({ ...prev, provinceId: province.id }));
+      } else if (!province && regionForm.provinsi) {
+        console.warn("⚠️ [UPDATE_CUSTOMER] Province not found:", regionForm.provinsi, "Available provinces:", regionData.provinces.map(p => p.name).slice(0, 5));
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -574,13 +591,17 @@ export default function UpdateCustomerModal({
   // Initialize city ID dari user data setelah cities loaded
   useEffect(() => {
     if (regionData.cities.length > 0 && regionForm.kabupaten && selectedRegionIds.provinceId) {
+      const normalizedKabupaten = normalizeRegionName(regionForm.kabupaten);
       // Cari city dengan case-insensitive dan trim untuk menghindari masalah whitespace
-      const city = regionData.cities.find(c => 
-        c.name?.trim().toLowerCase() === regionForm.kabupaten?.trim().toLowerCase()
-      );
+      const city = regionData.cities.find(c => {
+        const normalizedCityName = normalizeRegionName(c.name);
+        return normalizedCityName === normalizedKabupaten;
+      });
       if (city && selectedRegionIds.cityId !== city.id) {
-        console.log("🔵 [UPDATE_CUSTOMER] Setting city ID:", city.id, "for city:", city.name);
+        console.log("🔵 [UPDATE_CUSTOMER] Setting city ID:", city.id, "for city:", city.name, "matched with:", regionForm.kabupaten);
         setSelectedRegionIds(prev => ({ ...prev, cityId: city.id }));
+      } else if (!city && regionForm.kabupaten) {
+        console.warn("⚠️ [UPDATE_CUSTOMER] City not found:", regionForm.kabupaten, "Available cities:", regionData.cities.map(c => c.name).slice(0, 5));
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -589,20 +610,24 @@ export default function UpdateCustomerModal({
   // Initialize district ID dari user data setelah districts loaded
   useEffect(() => {
     if (regionData.districts.length > 0 && regionForm.kecamatan && selectedRegionIds.cityId) {
+      const normalizedKecamatan = normalizeRegionName(regionForm.kecamatan);
       // Cari district dengan case-insensitive dan trim untuk menghindari masalah whitespace
-      const district = regionData.districts.find(d => 
-        d.name?.trim().toLowerCase() === regionForm.kecamatan?.trim().toLowerCase()
-      );
+      const district = regionData.districts.find(d => {
+        const normalizedDistrictName = normalizeRegionName(d.name);
+        return normalizedDistrictName === normalizedKecamatan;
+      });
       if (district) {
         const districtId = district.id || district.district_id;
         if (selectedRegionIds.districtId !== districtId) {
-          console.log("🔵 [UPDATE_CUSTOMER] Setting district ID:", districtId, "for district:", district.name);
+          console.log("🔵 [UPDATE_CUSTOMER] Setting district ID:", districtId, "for district:", district.name, "matched with:", regionForm.kecamatan);
           setSelectedRegionIds(prev => ({ ...prev, districtId: districtId }));
         }
         // Pastikan kode_pos terisi jika ada di district atau pertahankan yang sudah ada
         if (district.postal_code && !regionForm.kode_pos) {
           setRegionForm(prev => ({ ...prev, kode_pos: district.postal_code }));
         }
+      } else if (!district && regionForm.kecamatan) {
+        console.warn("⚠️ [UPDATE_CUSTOMER] District not found:", regionForm.kecamatan, "Available districts:", regionData.districts.map(d => d.name).slice(0, 5));
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
