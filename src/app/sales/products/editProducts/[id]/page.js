@@ -2261,7 +2261,8 @@ export default function EditProductsPage() {
         url: produkData.url || `/${formatSlug(produkData.nama || "")}`,
         harga: parsedHarga,
         jenis_produk: produkData.jenis_produk || "fisik",
-        isBundling: produkData.isBundling || false,
+        // ✅ FIX: Cek bundling array, bukan hanya isBundling flag
+        isBundling: (parsedBundling && Array.isArray(parsedBundling) && parsedBundling.length > 0) || false,
         bundling: parsedBundling,
         tanggal_event: parsedTanggalEvent,
         assign: parsedAssign,
@@ -2495,7 +2496,8 @@ export default function EditProductsPage() {
 
   // Transformasi block dari flat data ke content/style/config
   const transformBlock = (block) => {
-    const { type, data = {}, order } = block;
+    // ✅ FIX: Ambil parentId dari root level block, bukan dari data.parentId
+    const { type, data = {}, order, parentId } = block;
     
     // Extract content, style, dan config berdasarkan type
     let content = {};
@@ -2551,9 +2553,9 @@ export default function EditProductsPage() {
           }
         };
         config = {
-          componentId: data.componentId || `text-${Date.now()}`,
+          componentId: data.componentId || block.config?.componentId || `text-${Date.now()}`,
           deviceView: data.deviceView || "desktop",
-          ...(data.parentId ? { parentId: data.parentId } : {})
+          ...(parentId ? { parentId } : {}) // ✅ Gunakan parentId dari root level
         };
         break;
 
@@ -2598,8 +2600,9 @@ export default function EditProductsPage() {
           }
         };
         config = {
-          componentId: data.componentId || `image-${Date.now()}`,
-          device: data.device || "mobile"
+          componentId: data.componentId || block.config?.componentId || `image-${Date.now()}`,
+          device: data.device || "mobile",
+          ...(parentId ? { parentId } : {}) // ✅ TAMBAHKAN parentId untuk image
         };
         break;
 
@@ -2626,7 +2629,8 @@ export default function EditProductsPage() {
           }
         };
         config = {
-          componentId: data.componentId || `video-${Date.now()}`
+          componentId: data.componentId || block.config?.componentId || `video-${Date.now()}`,
+          ...(parentId ? { parentId } : {}) // ✅ TAMBAHKAN parentId untuk video
         };
         break;
 
@@ -2665,13 +2669,15 @@ export default function EditProductsPage() {
           }
         };
         config = {
-          componentId: data.componentId || `testimoni-${Date.now()}`,
-          componentTitle: data.componentTitle || ""
+          componentId: data.componentId || block.config?.componentId || `testimoni-${Date.now()}`,
+          componentTitle: data.componentTitle || "",
+          ...(parentId ? { parentId } : {}) // ✅ TAMBAHKAN parentId untuk testimoni
         };
-        brea
+        break;
 
       case "list":
         content = {
+          title: data.componentTitle || "",
           items: (data.items || []).map(item => ({
             nama: item.nama || "",
             content: item.content || "<p></p>",
@@ -2699,9 +2705,9 @@ export default function EditProductsPage() {
           }
         };
         config = {
-          componentId: data.componentId || `list-${Date.now()}`,
+          componentId: data.componentId || block.config?.componentId || `list-${Date.now()}`,
           componentTitle: data.componentTitle || "",
-          ...(data.parentId ? { parentId: data.parentId } : {})
+          ...(parentId ? { parentId } : {}) // ✅ Gunakan parentId dari root level
         };
         break;
 
@@ -2740,7 +2746,8 @@ export default function EditProductsPage() {
           }
         };
         config = {
-          componentId: data.componentId || `section-${Date.now()}`
+          componentId: data.componentId || block.config?.componentId || `section-${Date.now()}`,
+          ...(parentId ? { parentId } : {}) // ✅ Untuk nested section
         };
         break;
 
@@ -2764,7 +2771,8 @@ export default function EditProductsPage() {
           numberStyle: data.numberStyle || "flip"
         };
         config = {
-          componentId: data.componentId || `countdown-${Date.now()}`
+          componentId: data.componentId || block.config?.componentId || `countdown-${Date.now()}`,
+          ...(parentId ? { parentId } : {}) // ✅ TAMBAHKAN parentId untuk countdown
         };
         break;
 
@@ -2772,7 +2780,8 @@ export default function EditProductsPage() {
         content = {};
         style = {};
         config = {
-          componentId: data.componentId || `faq-${Date.now()}`
+          componentId: data.componentId || block.config?.componentId || `faq-${Date.now()}`,
+          ...(parentId ? { parentId } : {}) // ✅ TAMBAHKAN parentId untuk faq
         };
         break;
 
@@ -2780,7 +2789,8 @@ export default function EditProductsPage() {
         content = {};
         style = {};
         config = {
-          componentId: data.componentId || `form-${Date.now()}`
+          componentId: data.componentId || block.config?.componentId || `form-${Date.now()}`,
+          ...(parentId ? { parentId } : {}) // ✅ TAMBAHKAN parentId untuk form
         };
         break;
 
@@ -2806,7 +2816,8 @@ export default function EditProductsPage() {
           }
         };
         config = {
-          componentId: data.componentId || `image-slider-${Date.now()}`
+          componentId: data.componentId || block.config?.componentId || `image-slider-${Date.now()}`,
+          ...(parentId ? { parentId } : {}) // ✅ TAMBAHKAN parentId untuk image-slider
         };
         break;
 
@@ -2845,7 +2856,8 @@ export default function EditProductsPage() {
           }
         };
         config = {
-          componentId: data.componentId || `quota-info-${Date.now()}`
+          componentId: data.componentId || block.config?.componentId || `quota-info-${Date.now()}`,
+          ...(parentId ? { parentId } : {}) // ✅ TAMBAHKAN parentId untuk quota-info
         };
         break;
 
@@ -2874,7 +2886,8 @@ export default function EditProductsPage() {
           }
         };
         config = {
-          componentId: data.componentId || `button-${Date.now()}`
+          componentId: data.componentId || block.config?.componentId || `button-${Date.now()}`,
+          ...(parentId ? { parentId } : {}) // ✅ TAMBAHKAN parentId untuk button
         };
         break;
 
@@ -2884,7 +2897,8 @@ export default function EditProductsPage() {
         };
         style = {};
         config = {
-          componentId: data.componentId || `html-${Date.now()}`
+          componentId: data.componentId || block.config?.componentId || `html-${Date.now()}`,
+          ...(parentId ? { parentId } : {}) // ✅ TAMBAHKAN parentId untuk html
         };
         break;
 
@@ -2894,7 +2908,8 @@ export default function EditProductsPage() {
         };
         style = {};
         config = {
-          componentId: data.componentId || `embed-${Date.now()}`
+          componentId: data.componentId || block.config?.componentId || `embed-${Date.now()}`,
+          ...(parentId ? { parentId } : {}) // ✅ TAMBAHKAN parentId untuk embed
         };
         break;
 
@@ -2917,7 +2932,8 @@ export default function EditProductsPage() {
           }
         };
         config = {
-          componentId: data.componentId || `divider-${Date.now()}`
+          componentId: data.componentId || block.config?.componentId || `divider-${Date.now()}`,
+          ...(parentId ? { parentId } : {}) // ✅ TAMBAHKAN parentId untuk divider
         };
         break;
 
@@ -2928,7 +2944,8 @@ export default function EditProductsPage() {
         };
         style = {};
         config = {
-          componentId: data.componentId || `scroll-target-${Date.now()}`
+          componentId: data.componentId || block.config?.componentId || `scroll-target-${Date.now()}`,
+          ...(parentId ? { parentId } : {}) // ✅ TAMBAHKAN parentId untuk scroll-target
         };
         break;
 
@@ -2941,7 +2958,8 @@ export default function EditProductsPage() {
         };
         style = {};
         config = {
-          componentId: data.componentId || `animation-${Date.now()}`
+          componentId: data.componentId || block.config?.componentId || `animation-${Date.now()}`,
+          ...(parentId ? { parentId } : {}) // ✅ TAMBAHKAN parentId untuk animation
         };
         break;
 
@@ -2950,7 +2968,8 @@ export default function EditProductsPage() {
         content = data;
         style = {};
         config = {
-          componentId: data.componentId || `${type}-${Date.now()}`
+          componentId: data.componentId || block.config?.componentId || `${type}-${Date.now()}`,
+          ...(parentId ? { parentId } : {}) // ✅ TAMBAHKAN parentId untuk default case
         };
     }
 
@@ -3417,17 +3436,39 @@ export default function EditProductsPage() {
     );
   };
 
-  // Show loading state
-  if (loading) {
-    return (
-      <div className="add-products3-container" style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh" }}>
-        <div>Loading...</div>
-      </div>
-    );
-  }
-
   return (
     <div className="add-products3-container">
+      {/* Overlay Loading - NON-BLOCKING */}
+      {loading && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "rgba(0, 0, 0, 0.7)",
+          backdropFilter: "blur(4px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 99999
+        }}>
+          <div style={{
+            background: "white",
+            padding: "32px 48px",
+            borderRadius: "16px",
+            boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)"
+          }}>
+            <p style={{
+              margin: 0,
+              fontSize: "16px",
+              color: "#374151"
+            }}>
+              Sebentar ya, sedang disiapkan datanya...
+            </p>
+          </div>
+        </div>
+      )}
       {/* Loading Overlay */}
       <LoadingOverlay 
         isLoading={isSaving} 

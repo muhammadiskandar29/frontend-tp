@@ -54,7 +54,6 @@ const STATUS_ORDER_MAP = {
 };
 
 const ORDERS_COLUMNS = [
-  "#",
   "Order ID",
   "Customer",
   "Sales",
@@ -948,32 +947,27 @@ export default function DaftarPesanan() {
 
                     return (
                       <div className="orders-table__row" key={order.id || `${order.id}-${i}`}>
-                        {/* # - Sequential Number */}
-                        <div className="orders-table__cell" data-label="#">
-                          {(page - 1) * perPage + i + 1}
-                        </div>
-                        
                         {/* Order ID */}
                         <div className="orders-table__cell" data-label="Order ID">
                           <span style={{ 
-                            fontFamily: "monospace", 
-                            fontSize: "0.8rem",
-                            color: "#6b7280",
+                            fontSize: "0.9rem",
+                            color: "#2563eb",
                             fontWeight: 500
                           }}>
-                            #{order.id || "-"}
+                            {order.id || "-"}
                           </span>
                         </div>
                         
                         {/* Customer */}
                         <div className="orders-table__cell orders-table__cell--strong" data-label="Customer">
                           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                            <span style={{ fontWeight: 600, color: "#111827" }}>{customerNama}</span>
-                            {order.customer_rel?.wa && (
-                              <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>
-                                {order.customer_rel.wa}
-                              </span>
-                            )}
+                            <span style={{ fontSize: "0.875rem", color: "#111827" }}>{customerNama}</span>
+                            <span style={{ fontSize: "0.875rem", color: "#111827" }}>
+                              {order.customer_rel?.email || "-"}
+                            </span>
+                            <span style={{ fontSize: "0.875rem", color: "#111827" }}>
+                              {order.customer_rel?.wa || "-"}
+                            </span>
                           </div>
                         </div>
                         
