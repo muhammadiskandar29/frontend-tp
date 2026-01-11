@@ -455,13 +455,28 @@ export default function ProductPage() {
 
   // ✅ Hitung total secara reactive dengan useMemo - auto update jika ada bundling atau tidak
   const calculateTotal = useMemo(() => {
-    const basePrice = parseInt(productData?.harga || 0);
-    const kategoriId = getKategoriId();
+    if (!productData) return 0;
+    
+    // ✅ Parse harga dengan benar (handle string dan number)
+    let basePrice = 0;
+    if (productData.harga) {
+      if (typeof productData.harga === 'string') {
+        basePrice = parseInt(productData.harga.replace(/[^\d]/g, "")) || 0;
+      } else {
+        basePrice = parseInt(productData.harga) || 0;
+      }
+    }
+    
+    // ✅ Hitung kategori ID langsung (tidak memanggil fungsi)
+    const kategoriId = productData.kategori_id 
+      || (productData.kategori_rel?.id ? Number(productData.kategori_rel.id) : null)
+      || (productData.kategori ? Number(productData.kategori) : null);
     const isFormBuku = kategoriId === 4; // Kategori Buku (4)
     const shippingCost = isFormBuku ? ongkir : 0;
     const total = basePrice + shippingCost;
+    
     return total;
-  }, [productData?.harga, ongkir, productData?.kategori_id, productData?.kategori, productData?.kategori_rel]);
+  }, [productData, ongkir]); // ✅ Gunakan productData sebagai dependency untuk memastikan reactive
 
   // FAQ Mapping
   const getFAQByKategori = (kategoriId) => {
@@ -1999,6 +2014,17 @@ export default function ProductPage() {
       return toast.error("Silakan hitung ongkir terlebih dahulu");
     }
 
+    // ✅ Validasi formWilayah untuk produk fisik
+    if (isFisik) {
+      if (!formWilayah.provinsi || !formWilayah.kabupaten || !formWilayah.kecamatan || !formWilayah.kode_pos) {
+        return toast.error("Silakan lengkapi alamat lengkap (Provinsi, Kabupaten/Kota, Kecamatan, Kode Pos)");
+      }
+      // Validasi kode pos harus angka
+      if (!/^\d+$/.test(formWilayah.kode_pos)) {
+        return toast.error("Kode Pos harus berupa angka!");
+      }
+    }
+
     setSubmitting(true);
 
     if (!productData) {
@@ -2012,11 +2038,36 @@ export default function ProductPage() {
       ? hargaProduk + ongkirValue 
       : hargaProduk;
 
+    // ✅ Generate alamat dari formWilayah (sesuai struktur addCustomer.js)
+    let alamatFinal = '';
+    if (isFisik && formWilayah.provinsi && formWilayah.kabupaten && formWilayah.kecamatan) {
+      // Untuk produk fisik, buat alamat dari formWilayah
+      const parts = [];
+      if (formWilayah.provinsi) parts.push(formWilayah.provinsi);
+      if (formWilayah.kabupaten) parts.push(formWilayah.kabupaten);
+      if (formWilayah.kecamatan) parts.push(`kec. ${formWilayah.kecamatan}`);
+      if (formWilayah.kode_pos) parts.push(`kode pos ${formWilayah.kode_pos}`);
+      alamatFinal = parts.join(', ');
+    } else {
+      // Untuk produk non-fisik atau jika formWilayah tidak lengkap, gunakan alamat dari customerForm
+      alamatFinal = alamatLengkap || customerForm.alamat || '';
+    }
+
+    // Validasi alamat tidak boleh kosong
+    if (!alamatFinal || !alamatFinal.trim()) {
+      setSubmitting(false);
+      if (isFisik) {
+        return toast.error("Silakan lengkapi alamat lengkap (Provinsi, Kabupaten/Kota, Kecamatan, Kode Pos)");
+      } else {
+        return toast.error("Silakan lengkapi alamat");
+      }
+    }
+
     const payload = {
       nama: customerForm.nama,
       wa: customerForm.wa,
       email: customerForm.email,
-      alamat: alamatLengkap || customerForm.alamat || '',
+      alamat: alamatFinal.trim(),
       produk: parseInt(productData.id, 10),
       harga: String(hargaProduk),
       ongkir: String(ongkirValue),
