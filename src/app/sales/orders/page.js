@@ -65,6 +65,140 @@ const ORDERS_COLUMNS = [
 ];
 
 
+// Helper component untuk WA Bubble Chat
+const WABubbleChat = ({ followUpCount = 0 }) => {
+  const bubbles = [];
+  
+  // WA logo (selalu hijau) - WhatsApp icon
+  bubbles.push(
+    <div key="wa-logo" style={{
+      width: "20px",
+      height: "20px",
+      borderRadius: "50%",
+      background: "#25D366",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: "10px",
+      color: "white",
+      fontWeight: "bold"
+    }}>
+      WA
+    </div>
+  );
+  
+  // W bubble (hijau)
+  bubbles.push(
+    <div key="w" style={{
+      width: "20px",
+      height: "20px",
+      borderRadius: "50%",
+      background: "#25D366",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: "11px",
+      color: "white",
+      fontWeight: "bold"
+    }}>
+      W
+    </div>
+  );
+  
+  // Number bubbles: 1 (gray), 2-4 (green jika ada), ... (gray jika > 4)
+  if (followUpCount > 0) {
+    // Bubble 1 (selalu gray)
+    bubbles.push(
+      <div key="bubble-1" style={{
+        width: "20px",
+        height: "20px",
+        borderRadius: "50%",
+        background: "#E5E7EB",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: "11px",
+        color: "#6B7280",
+        fontWeight: "bold"
+      }}>
+        1
+      </div>
+    );
+    
+    // Bubbles 2-4 (green jika followUpCount >= 2)
+    for (let i = 2; i <= Math.min(followUpCount, 4); i++) {
+      bubbles.push(
+        <div key={`bubble-${i}`} style={{
+          width: "20px",
+          height: "20px",
+          borderRadius: "50%",
+          background: "#25D366",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "11px",
+          color: "white",
+          fontWeight: "bold"
+        }}>
+          {i}
+        </div>
+      );
+    }
+    
+    // Jika lebih dari 4, tambahkan gray bubble dengan ...
+    if (followUpCount > 4) {
+      bubbles.push(
+        <div key="more" style={{
+          width: "20px",
+          height: "20px",
+          borderRadius: "50%",
+          background: "#E5E7EB",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "10px",
+          color: "#6B7280",
+          fontWeight: "bold"
+        }}>
+          ...
+        </div>
+      );
+    }
+  } else {
+    // Jika tidak ada follow up, tambahkan gray bubble dengan 1
+    bubbles.push(
+      <div key="no-followup" style={{
+        width: "20px",
+        height: "20px",
+        borderRadius: "50%",
+        background: "#E5E7EB",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: "11px",
+        color: "#6B7280",
+        fontWeight: "bold"
+      }}>
+        1
+      </div>
+    );
+  }
+  
+  return (
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      gap: "4px",
+      padding: "4px 8px",
+      background: "#FEF3C7",
+      borderRadius: "8px",
+      flexWrap: "wrap"
+    }}>
+      {bubbles}
+    </div>
+  );
+};
+
 export default function DaftarPesanan() {
   // Pagination state dengan fallback pagination
   const [page, setPage] = useState(1);
@@ -1008,14 +1142,14 @@ export default function DaftarPesanan() {
                         {/* Order ID */}
                         <div className="orders-table__cell" data-label="Order ID">
                           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                            <span style={{ 
-                              fontSize: "0.9rem",
-                              color: "#2563eb",
-                              fontWeight: 500
-                            }}>
-                              {order.id || "-"}
-                            </span>
                             <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
+                              <span style={{ 
+                                fontSize: "0.9rem",
+                                color: "#2563eb",
+                                fontWeight: 500
+                              }}>
+                                {order.id || "-"}
+                              </span>
                               <ExternalLink 
                                 size={18} 
                                 style={{ 
@@ -1034,10 +1168,10 @@ export default function DaftarPesanan() {
                                   e.target.style.color = "#6b7280";
                                 }}
                               />
-                              <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>
-                                {formatOrderDate(order.tanggal || order.create_at)}
-                              </span>
                             </div>
+                            <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>
+                              {formatOrderDate(order.tanggal || order.create_at)}
+                            </span>
                           </div>
                         </div>
                         
@@ -1082,9 +1216,7 @@ export default function DaftarPesanan() {
                         {/* Follow Up Text */}
                         <div className="orders-table__cell" data-label="Follow Up Text">
                           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                            <span style={{ fontSize: "0.875rem", color: "#111827" }}>
-                              {order.follow_up_text || order.follow_up || "-"}
-                            </span>
+                            <WABubbleChat followUpCount={order.follow_up_count || (order.follow_up_text ? 1 : 0)} />
                             <span style={{ fontSize: "0.875rem", color: "#111827" }}></span>
                           </div>
                         </div>
