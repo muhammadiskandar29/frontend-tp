@@ -944,6 +944,15 @@ ADMIN USERS PAGE (Scoped Styles)
   .customers-table__row {
     gap: 0.5rem !important;
     min-width: 900px;
+    /* Override grid columns untuk melebar di tablet/handphone */
+    grid-template-columns: 
+      minmax(140px, 1.2fr)   /* Id Member */
+      minmax(200px, 2fr)     /* Nama */
+      minmax(220px, 2.2fr)   /* Email */
+      minmax(160px, 1.5fr)   /* No WA */
+      minmax(150px, 1.3fr)   /* Verifikasi */
+      minmax(170px, 1.6fr)   /* Pesanan Sukses */
+      minmax(180px, 1.7fr) !important; /* Total Net Revenue */
   }
 
   .customers-table__head {
