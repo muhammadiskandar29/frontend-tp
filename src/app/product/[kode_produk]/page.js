@@ -549,6 +549,30 @@ export default function ProductPage() {
     return url;
   };
 
+  // ✅ FUNGSI HELPER: Clean HTML content - remove inline font-family styles using regex
+  const cleanHTMLContent = (html) => {
+    if (!html) return html;
+    
+    // Remove font-family from inline style attributes using regex
+    return html.replace(
+      /style\s*=\s*["']([^"']*)["']/gi,
+      (match, styleContent) => {
+        // Remove font-family declarations from style content
+        const cleanedStyle = styleContent
+          .replace(/font-family\s*:\s*[^;'"]+(?:['"][^'"]*['"])?;?/gi, '')
+          .replace(/;\s*;/g, ';')
+          .replace(/^\s*;\s*|\s*;\s*$/g, '')
+          .trim();
+        
+        if (cleanedStyle) {
+          return `style="${cleanedStyle}"`;
+        } else {
+          return '';
+        }
+      }
+    );
+  };
+
   // ✅ FUNGSI HELPER: Convert style.text dari backend ke CSS text properties (GENERAL - otomatis baca semua field)
   const getTextStyles = (styleText = {}) => {
     const textStyles = {};
@@ -763,6 +787,9 @@ export default function ProductPage() {
         // Rich text content (HTML)
         const richContent = textData.content || "<p>Teks...</p>";
         
+        // ✅ Clean HTML content - remove inline font-family
+        const cleanedContent = cleanHTMLContent(richContent);
+        
         return (
           <Tag 
             className="preview-text" 
@@ -773,7 +800,7 @@ export default function ProductPage() {
               display: "block",
               width: "100%"
             }}
-            dangerouslySetInnerHTML={{ __html: richContent }}
+            dangerouslySetInnerHTML={{ __html: cleanedContent }}
           />
         );
       }
@@ -1051,7 +1078,7 @@ export default function ProductPage() {
                           className="testi-desc-new" 
                           itemProp="reviewBody"
                           dangerouslySetInnerHTML={{ 
-                            __html: item.isiTestimony || item.deskripsi || "<p>Deskripsi testimoni</p>" 
+                            __html: cleanHTMLContent(item.isiTestimony || item.deskripsi || "<p>Deskripsi testimoni</p>")
                           }}
                         />
                       </article>
@@ -1152,7 +1179,7 @@ export default function ProductPage() {
                       <span className="preview-list-icon" style={{ color: iconColor }}>
                         <IconComponent size={20} strokeWidth={2} />
                       </span>
-                      <div className="preview-list-content" dangerouslySetInnerHTML={{ __html: content || `<p>Point ${i + 1}</p>` }} />
+                      <div className="preview-list-content" dangerouslySetInnerHTML={{ __html: cleanHTMLContent(content || `<p>Point ${i + 1}</p>`) }} />
                     </li>
                   );
                 })}
@@ -1729,14 +1756,20 @@ export default function ProductPage() {
         // ✅ SAMA PERSIS dengan renderPreview di addProducts3
         const htmlCode = content?.code || content || "";
         
+        // ✅ Clean HTML content - remove inline font-family
+        const cleanedHtmlCode = cleanHTMLContent(htmlCode);
+        
         return (
-          <div style={containerStyle} dangerouslySetInnerHTML={{ __html: htmlCode }} />
+          <div style={containerStyle} dangerouslySetInnerHTML={{ __html: cleanedHtmlCode }} />
         );
       }
 
       case "embed": {
         // ✅ SAMA PERSIS dengan renderPreview di addProducts3
         const embedCode = content?.code || content || "";
+        
+        // ✅ Clean HTML content - remove inline font-family
+        const cleanedEmbedCode = cleanHTMLContent(embedCode);
         
         // ✅ Tambahkan maxWidth 625px untuk embed youtube agar tidak terlalu lebar
         const embedContainerStyle = {
@@ -1747,7 +1780,7 @@ export default function ProductPage() {
         };
         
         return (
-          <div style={embedContainerStyle} dangerouslySetInnerHTML={{ __html: embedCode }} />
+          <div style={embedContainerStyle} dangerouslySetInnerHTML={{ __html: cleanedEmbedCode }} />
         );
       }
 

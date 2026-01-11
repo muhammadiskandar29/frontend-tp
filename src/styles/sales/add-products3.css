@@ -4347,7 +4347,7 @@ html:has(.add-products3-container) {
 
 /* ===== PREVIEW STYLES ===== */
 .preview-text {
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; /* ✅ SAMA dengan addProducts3 - Inter font */
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important; /* ✅ Tambahkan !important untuk override */
   font-size: 16px;
   line-height: 1.2; /* Tighter line height */
   color: #1f2937;
@@ -4373,12 +4373,12 @@ html:has(.add-products3-container) {
   /* Removed default font-size and font-weight to allow inline styles from HTML content */
   line-height: 1.2; /* Tighter line height */
   transition: none !important; /* No transition for immediate updates */
-  font-family: inherit !important; /* ✅ Pastikan paragraph inherit font */
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important; /* ✅ Ganti dari inherit ke font Inter secara eksplisit */
 }
 
 .preview-text * {
   transition: none !important; /* No transition for immediate updates */
-  font-family: inherit !important; /* ✅ Pastikan semua child element inherit font dari parent */
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important; /* ✅ Ganti dari inherit ke font Inter secara eksplisit, bukan inherit */
 }
 
 .preview-text p:last-child {
