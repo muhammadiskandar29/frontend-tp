@@ -481,8 +481,7 @@ ORDERS TABLE
 .orders-table__row {
   display: grid;
   grid-template-columns: 
-    45px                                    /* # */
-    minmax(80px, 0.9fr)                     /* Order ID */
+    minmax(180px, 1.5fr)                    /* Order ID */
     minmax(130px, 1.2fr)                    /* Customer */
     minmax(100px, 1fr)                      /* Sales */
     minmax(140px, 1.2fr)                    /* Produk */

@@ -978,7 +978,24 @@ export default function DaftarPesanan() {
                               }}>
                                 {order.id || "-"}
                               </span>
-                              <ExternalLink size={14} style={{ color: "#6b7280" }} />
+                              <ExternalLink 
+                                size={14} 
+                                style={{ 
+                                  color: "#6b7280", 
+                                  cursor: "pointer",
+                                  transition: "color 0.2s ease"
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleView(order);
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.target.style.color = "#2563eb";
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.target.style.color = "#6b7280";
+                                }}
+                              />
                             </div>
                             <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>
                               {formatOrderDate(order.tanggal || order.create_at)}
@@ -1101,13 +1118,6 @@ export default function DaftarPesanan() {
                         
                         {/* Actions */}
                         <div className="orders-table__cell orders-table__cell--actions" data-label="Actions">
-                          <button
-                            className="orders-action-btn"
-                            title="View"
-                            onClick={() => handleView(order)}
-                          >
-                            <i className="pi pi-eye" />
-                          </button>
                           <button
                             className="orders-action-btn orders-action-btn--ghost"
                             title="Edit"
