@@ -217,7 +217,7 @@ export default function ViewCustomerModal({ customer, onClose, onEdit, onDelete 
                 fontWeight: 500,
                 color: "#374151"
               }}>
-                [{customer.keanggotaan.charAt(0).toUpperCase() + customer.keanggotaan.slice(1)}]
+                {customer.keanggotaan.charAt(0).toUpperCase() + customer.keanggotaan.slice(1)}
               </div>
             )}
             <div className="detail-list">
