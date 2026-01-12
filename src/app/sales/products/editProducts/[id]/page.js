@@ -3004,7 +3004,8 @@ export default function EditProductsPage() {
       order: order || 0,
       content,
       style,
-      config
+      config,
+      ...(parentId ? { parentId } : {}) // ✅ FIX: Tambahkan parentId di root level block object (sama dengan addProducts3)
     };
   };
 
