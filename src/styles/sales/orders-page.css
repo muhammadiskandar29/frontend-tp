@@ -180,8 +180,9 @@ ORDERS BUTTONS
 }
 
 .orders-button:focus-visible {
-  outline: 2px solid rgba(255, 108, 0, 0.45);
-  outline-offset: 2px;
+  /* Gunakan box-shadow sebagai outline untuk menghindari perubahan layout */
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 108, 0, 0.45);
 }
 
 .orders-button--primary {
@@ -228,8 +229,9 @@ ORDERS BUTTONS
   background: rgba(255, 108, 0, 0.08) !important;
   border-color: rgba(255, 108, 0, 0.65) !important;
   color: var(--orders-primary) !important;
-  outline: 2px solid rgba(255, 108, 0, 0.2) !important;
-  outline-offset: 2px;
+  /* Gunakan box-shadow sebagai outline untuk menghindari perubahan layout */
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(255, 108, 0, 0.2) !important;
 }
 
 /* ===========================
@@ -257,8 +259,9 @@ CUSTOMERS BUTTONS (used in orders page)
 }
 
 .customers-button:focus-visible {
-  outline: 2px solid rgba(255, 108, 0, 0.45);
-  outline-offset: 2px;
+  /* Gunakan box-shadow sebagai outline untuk menghindari perubahan layout */
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 108, 0, 0.45);
 }
 
 .orders-shell .customers-button--primary {
@@ -279,10 +282,10 @@ CUSTOMERS BUTTONS (used in orders page)
 .orders-shell .customers-button--primary:focus-visible {
   background: #c85400 !important;
   color: #fff !important;
-  outline: 2px solid rgba(255, 108, 0, 0.3) !important;
-  outline-offset: 2px !important;
+  /* Gunakan box-shadow sebagai outline untuk menghindari perubahan layout */
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(255, 108, 0, 0.3) !important;
   border-color: transparent !important;
-  box-shadow: 0 0 0 2px rgba(255, 108, 0, 0.2) !important;
 }
 
 .orders-shell .customers-button--primary:visited {
@@ -493,12 +496,17 @@ ORDERS TABLE
   gap: 0.3rem;
   align-items: center;
   min-width: 1200px;
+  /* Pastikan grid layout tetap stabil */
+  contain: layout;
 }
 
 .orders-table__head > span:nth-child(2),
 .orders-table__row > div:nth-child(2) {
   padding: 0;
   margin-left: -0.15rem;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
 }
 
 .orders-table__head {
@@ -538,6 +546,23 @@ ORDERS TABLE
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.4;
+  position: relative;
+}
+
+.orders-table__cell > * {
+  /* Pastikan outline tidak mempengaruhi layout */
+  outline-offset: 0 !important;
+}
+
+.orders-table__cell svg,
+.orders-table__cell [role="button"] {
+  outline: none !important;
+}
+
+.orders-table__cell svg:focus-visible,
+.orders-table__cell [role="button"]:focus-visible {
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3) !important;
+  outline: none !important;
 }
 
 .orders-table__cell--strong {
@@ -743,8 +768,9 @@ ORDERS ACTION BUTTONS
   background: rgba(255, 108, 0, 0.2) !important;
   border-color: rgba(255, 108, 0, 0.5) !important;
   color: #c85400 !important;
-  outline: 2px solid rgba(255, 108, 0, 0.3) !important;
-  outline-offset: 2px;
+  /* Gunakan box-shadow sebagai outline untuk menghindari perubahan layout */
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(255, 108, 0, 0.3) !important;
 }
 
 .orders-action-btn--ghost {

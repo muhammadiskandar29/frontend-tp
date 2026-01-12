@@ -431,8 +431,8 @@ export default function AdminCustomerPage() {
                   customers.map((cust, i) => (
                   <div className="customers-table__row" key={cust.id || `${cust.email}-${i}`}>
                     {/* Id Member */}
-                    <div className="customers-table__cell" data-label="Id Member">
-                      {cust.id_member || "-"}
+                    <div className="customers-table__cell" data-label="Member Id">
+                      {cust.memberID || "-"}
                     </div>
                     
                     {/* Nama - Klikable */}

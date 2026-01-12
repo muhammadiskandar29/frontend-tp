@@ -1700,7 +1700,13 @@ export default function ProductPage() {
                 type="button" 
                 className="preview-form-submit-btn"
                 onClick={handleSubmit}
-                disabled={submitting}
+                disabled={submitting || !isFormValid()}
+                style={{
+                  opacity: (submitting || !isFormValid()) ? 0.6 : 1,
+                  cursor: (submitting || !isFormValid()) ? 'not-allowed' : 'pointer',
+                  transition: 'opacity 0.2s ease'
+                }}
+                title={!isFormValid() ? (getValidationError() || "Lengkapi semua data terlebih dahulu") : ""}
               >
                 {submitting ? "Memproses..." : "Pesan Sekarang"}
               </button>
@@ -2029,33 +2035,103 @@ export default function ProductPage() {
     }
   };
 
+  // ✅ Fungsi untuk cek apakah form sudah valid (bisa submit)
+  const isFormValid = () => {
+    // ✅ Validasi bundling: jika ada bundling, harus dipilih dulu
+    const bundlingData = productData?.bundling && Array.isArray(productData.bundling) ? productData.bundling : [];
+    const isBundling = bundlingData && bundlingData.length > 0;
+    
+    if (isBundling && selectedBundling === null) {
+      return false; // Bundling belum dipilih
+    }
+    
+    // ✅ Validasi form data: nama, email, wa wajib
+    if (!customerForm.nama || !customerForm.email || !customerForm.wa) {
+      return false; // Form data belum lengkap
+    }
+    
+    // ✅ Validasi metode pembayaran
+    if (!paymentMethod) {
+      return false; // Metode pembayaran belum dipilih
+    }
+    
+    const isFisik = isKategoriBuku();
+    
+    // ✅ Validasi ongkir untuk produk fisik
+    if (isFisik && (!ongkir || ongkir === 0)) {
+      return false; // Ongkir belum dihitung
+    }
+    
+    // ✅ Validasi formWilayah
+    if (isFisik) {
+      // Produk fisik: wajib lengkap (provinsi, kabupaten, kecamatan, kode_pos)
+      if (!formWilayah.provinsi || !formWilayah.kabupaten || !formWilayah.kecamatan || !formWilayah.kode_pos) {
+        return false; // Alamat belum lengkap
+      }
+      // Validasi kode pos harus angka
+      if (!/^\d+$/.test(formWilayah.kode_pos)) {
+        return false; // Kode pos tidak valid
+      }
+    } else {
+      // Produk non-fisik: minimal provinsi dan kabupaten
+      if (!formWilayah.provinsi || !formWilayah.kabupaten) {
+        return false; // Alamat belum lengkap
+      }
+    }
+    
+    return true; // Semua valid
+  };
+
+  // ✅ Fungsi untuk mendapatkan pesan error validasi
+  const getValidationError = () => {
+    const bundlingData = productData?.bundling && Array.isArray(productData.bundling) ? productData.bundling : [];
+    const isBundling = bundlingData && bundlingData.length > 0;
+    
+    if (isBundling && selectedBundling === null) {
+      return "Silakan pilih paket terlebih dahulu";
+    }
+    
+    if (!customerForm.nama || !customerForm.email || !customerForm.wa) {
+      return "Silakan lengkapi data yang diperlukan (Nama, Email, WhatsApp)";
+    }
+    
+    if (!paymentMethod) {
+      return "Silakan pilih metode pembayaran";
+    }
+    
+    const isFisik = isKategoriBuku();
+    
+    if (isFisik && (!ongkir || ongkir === 0)) {
+      return "Silakan hitung ongkir terlebih dahulu";
+    }
+    
+    if (isFisik) {
+      if (!formWilayah.provinsi || !formWilayah.kabupaten || !formWilayah.kecamatan || !formWilayah.kode_pos) {
+        return "Silakan lengkapi alamat lengkap (Provinsi, Kabupaten/Kota, Kecamatan, Kode Pos)";
+      }
+      if (!/^\d+$/.test(formWilayah.kode_pos)) {
+        return "Kode Pos harus berupa angka!";
+      }
+    } else {
+      if (!formWilayah.provinsi || !formWilayah.kabupaten) {
+        return "Silakan lengkapi alamat (minimal Provinsi dan Kabupaten/Kota)";
+      }
+    }
+    
+    return null;
+  };
+
   // Handle Submit
   const handleSubmit = async () => {
     if (submitting) return;
     
-    if (!paymentMethod) return toast.error("Silakan pilih metode pembayaran");
-    if (!customerForm.nama || !customerForm.email || !customerForm.wa)
-      return toast.error("Silakan lengkapi data yang diperlukan");
-    
-    const isFisik = isKategoriBuku();
-    if (isFisik && (!ongkir || ongkir === 0)) {
-      return toast.error("Silakan hitung ongkir terlebih dahulu");
-    }
-
-    // ✅ Validasi formWilayah untuk produk fisik
-    if (isFisik) {
-      if (!formWilayah.provinsi || !formWilayah.kabupaten || !formWilayah.kecamatan || !formWilayah.kode_pos) {
-        return toast.error("Silakan lengkapi alamat lengkap (Provinsi, Kabupaten/Kota, Kecamatan, Kode Pos)");
+    // ✅ Validasi menggunakan fungsi helper
+    if (!isFormValid()) {
+      const errorMessage = getValidationError();
+      if (errorMessage) {
+        return toast.error(errorMessage);
       }
-      // Validasi kode pos harus angka
-      if (!/^\d+$/.test(formWilayah.kode_pos)) {
-        return toast.error("Kode Pos harus berupa angka!");
-      }
-    } else {
-      // ✅ Validasi minimal untuk produk non-fisik: minimal provinsi dan kabupaten harus terisi
-      if (!formWilayah.provinsi || !formWilayah.kabupaten) {
-        return toast.error("Silakan lengkapi alamat (minimal Provinsi dan Kabupaten/Kota)");
-      }
+      return toast.error("Silakan lengkapi semua data yang diperlukan");
     }
 
     setSubmitting(true);
@@ -2086,12 +2162,11 @@ export default function ProductPage() {
       }
     }
 
-    // ✅ Format request baru: alamat null, gunakan field terpisah
+    // ✅ Format request: sama seperti addCustomer.js - tanpa alamat, gunakan field terpisah
     const payload = {
       nama: customerForm.nama,
       wa: customerForm.wa,
       email: customerForm.email,
-      alamat: null, // ✅ Alamat dijadikan null
       provinsi: formWilayah.provinsi || null,
       kabupaten: formWilayah.kabupaten || null,
       kecamatan: formWilayah.kecamatan || null,

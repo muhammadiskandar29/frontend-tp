@@ -182,7 +182,7 @@ export default function ViewCustomerModal({ customer, onClose, onEdit, onDelete 
   }, 0);
 
   return (
-    <div className="modal-overlay">
+    <div className="modal-overlay" style={{ zIndex: 1000 }}>
       <div className="modal-card" style={{ maxWidth: "900px" }}>
         {/* HEADER */}
         <div className="modal-header">
@@ -301,6 +301,25 @@ export default function ViewCustomerModal({ customer, onClose, onEdit, onDelete 
             </div>
           </div>
 
+          {/* Section Keanggotaan */}
+          <div className="info-section" style={{ marginBottom: "2rem" }}>
+            <h3 style={{ 
+              fontSize: "1.25rem", 
+              fontWeight: 600, 
+              marginBottom: "1rem",
+              color: "#111827"
+            }}>
+              Keanggotaan
+            </h3>
+            <div className="detail-list">
+              <div className="detail-item">
+                <span className="detail-label">Keanggotaan</span>
+                <span className="detail-colon">:</span>
+                <span className="detail-value">{formatValue(customer.keanggotaan)}</span>
+              </div>
+            </div>
+          </div>
+
           {/* Section Order History */}
           <div className="order-history-section">
             <h3 style={{ 
@@ -370,7 +389,9 @@ export default function ViewCustomerModal({ customer, onClose, onEdit, onDelete 
           gap: "0.75rem", 
           justifyContent: "flex-end",
           padding: "1.5rem",
-          borderTop: "1px solid #e5e7eb"
+          borderTop: "1px solid #e5e7eb",
+          position: "relative",
+          zIndex: 1002
         }}>
           <button 
             type="button" 
@@ -385,7 +406,9 @@ export default function ViewCustomerModal({ customer, onClose, onEdit, onDelete 
               border: "1px solid #e5e7eb",
               borderRadius: "8px",
               cursor: "pointer",
-              fontWeight: 500
+              fontWeight: 500,
+              position: "relative",
+              zIndex: 1003
             }}
           >
             Edit
@@ -403,7 +426,9 @@ export default function ViewCustomerModal({ customer, onClose, onEdit, onDelete 
               border: "none",
               borderRadius: "8px",
               cursor: "pointer",
-              fontWeight: 500
+              fontWeight: 500,
+              position: "relative",
+              zIndex: 1003
             }}
           >
             Delete
