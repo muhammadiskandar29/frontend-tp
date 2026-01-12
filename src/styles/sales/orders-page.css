@@ -484,7 +484,7 @@ ORDERS TABLE
 .orders-table__row {
   display: grid;
   grid-template-columns: 
-    minmax(180px, 1.5fr)                    /* Order ID */
+    minmax(140px, 1.2fr)                    /* Order ID - diperkecil */
     24px                                    /* ExternalLink (kolom kosong) */
     minmax(130px, 1.2fr)                    /* Customer */
     minmax(140px, 1.2fr)                    /* Produk */
@@ -503,7 +503,7 @@ ORDERS TABLE
 .orders-table__head > span:nth-child(2),
 .orders-table__row > div:nth-child(2) {
   padding: 0;
-  margin-left: -0.15rem;
+  margin-left: -0.25rem;
   display: flex;
   justify-content: flex-start;
   align-items: center;

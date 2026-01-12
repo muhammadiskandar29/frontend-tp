@@ -2453,7 +2453,13 @@ export default function ProductPage() {
     fetchProduct();
   }, [kode_produk]);
 
-  if (!productData && !loading) {
+  // ✅ Jika masih loading, return null (halaman kosong - tidak ada apapun)
+  if (loading) {
+    return null;
+  }
+
+  // ✅ Jika tidak ada productData setelah loading selesai, tampilkan notifikasi
+  if (!productData) {
     return (
       <div className="add-products3-container">
         <div style={{ 
@@ -2527,37 +2533,7 @@ export default function ProductPage() {
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
       
-      {/* Overlay Loading - NON-BLOCKING */}
-      {loading && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: "rgba(0, 0, 0, 0.7)",
-          backdropFilter: "blur(4px)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 99999
-        }}>
-          <div style={{
-            background: "white",
-            padding: "32px 48px",
-            borderRadius: "16px",
-            boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)"
-          }}>
-            <p style={{
-              margin: 0,
-              fontSize: "16px",
-              color: "#374151"
-            }}>
-              Sebentar ya, sedang disiapkan datanya...
-            </p>
-          </div>
-        </div>
-      )}
+      {/* ✅ Hapus loading overlay - biarkan halaman kosong sampai data ter-load */}
       
     <div className="add-products3-container" itemScope itemType="https://schema.org/Product" style={{ backgroundColor }}>
       <div className="page-builder-canvas" style={{ backgroundColor }}>

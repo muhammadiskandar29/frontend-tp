@@ -204,6 +204,22 @@ export default function ViewCustomerModal({ customer, onClose, onEdit, onDelete 
             }}>
               Informasi Umum
             </h3>
+            {/* Badge Keanggotaan */}
+            {customer.keanggotaan && (
+              <div style={{
+                display: "inline-block",
+                marginBottom: "1rem",
+                padding: "0.5rem 1rem",
+                border: "1px solid #e5e7eb",
+                borderRadius: "8px",
+                backgroundColor: "#f9fafb",
+                fontSize: "0.875rem",
+                fontWeight: 500,
+                color: "#374151"
+              }}>
+                [{customer.keanggotaan.charAt(0).toUpperCase() + customer.keanggotaan.slice(1)}]
+              </div>
+            )}
             <div className="detail-list">
               <div className="detail-item">
                 <span className="detail-label">Nama</span>
@@ -297,25 +313,6 @@ export default function ViewCustomerModal({ customer, onClose, onEdit, onDelete 
                 <span className="detail-label">Kode Pos</span>
                 <span className="detail-colon">:</span>
                 <span className="detail-value">{formatValue(customer.kode_pos)}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Section Keanggotaan */}
-          <div className="info-section" style={{ marginBottom: "2rem" }}>
-            <h3 style={{ 
-              fontSize: "1.25rem", 
-              fontWeight: 600, 
-              marginBottom: "1rem",
-              color: "#111827"
-            }}>
-              Keanggotaan
-            </h3>
-            <div className="detail-list">
-              <div className="detail-item">
-                <span className="detail-label">Keanggotaan</span>
-                <span className="detail-colon">:</span>
-                <span className="detail-value">{formatValue(customer.keanggotaan)}</span>
               </div>
             </div>
           </div>
