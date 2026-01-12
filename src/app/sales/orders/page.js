@@ -63,6 +63,7 @@ const ORDERS_COLUMNS = [
   { line1: "Follow Up", line2: "Text" },
   { line1: "Bukti", line2: "Pembayaran", icon: "image" },
   { line1: "Gross", line2: "Revenue" },
+  null, // Kolom kosong untuk Update/Konfirmasi button
 ];
 
 
@@ -1239,7 +1240,7 @@ export default function DaftarPesanan() {
               <div className="orders-table__head">
                 {ORDERS_COLUMNS.map((column, idx) => {
                   if (column === null) {
-                    return <span key={idx}></span>; // Kolom kosong untuk ExternalLink
+                    return <span key={idx}></span>; // Kolom kosong
                   }
                   return (
                     <span key={idx} style={{ display: "flex", flexDirection: "column", gap: "0.1rem", alignItems: "flex-start" }}>
@@ -1395,6 +1396,25 @@ export default function DaftarPesanan() {
                             </span>
                             <span style={{ fontSize: "0.875rem", color: "#111827" }}></span>
                           </div>
+                        </div>
+                        
+                        {/* Update/Konfirmasi Button */}
+                        <div className="orders-table__cell" data-label="">
+                          <button
+                            className="orders-action-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEdit(order);
+                            }}
+                            style={{
+                              width: "100%",
+                              padding: "0.4rem 0.75rem",
+                              fontSize: "0.8rem",
+                              whiteSpace: "nowrap"
+                            }}
+                          >
+                            Update / Konfirmasi
+                          </button>
                         </div>
                       </div>
                     );
