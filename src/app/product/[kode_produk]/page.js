@@ -2071,51 +2071,31 @@ export default function ProductPage() {
       ? hargaProduk + ongkirValue 
       : hargaProduk;
 
-    // ✅ Generate alamat dari formWilayah (sesuai struktur addCustomer.js)
-    let alamatFinal = '';
-    if (isFisik && formWilayah.provinsi && formWilayah.kabupaten && formWilayah.kecamatan) {
-      // Untuk produk fisik, buat alamat dari formWilayah
-      const parts = [];
-      if (formWilayah.provinsi) parts.push(formWilayah.provinsi);
-      if (formWilayah.kabupaten) parts.push(formWilayah.kabupaten);
-      if (formWilayah.kecamatan) parts.push(`kec. ${formWilayah.kecamatan}`);
-      if (formWilayah.kode_pos) parts.push(`kode pos ${formWilayah.kode_pos}`);
-      alamatFinal = parts.join(', ');
-    } else if (!isFisik) {
-      // ✅ Untuk produk non-fisik, gunakan formWilayah jika ada, atau customerForm.alamat
-      if (formWilayah.provinsi || formWilayah.kabupaten || formWilayah.kecamatan) {
-        // Jika formWilayah sudah terisi sebagian, buat alamat dari yang ada
-        const parts = [];
-        if (formWilayah.provinsi) parts.push(formWilayah.provinsi);
-        if (formWilayah.kabupaten) parts.push(formWilayah.kabupaten);
-        if (formWilayah.kecamatan) parts.push(`kec. ${formWilayah.kecamatan}`);
-        if (formWilayah.kode_pos) parts.push(`kode pos ${formWilayah.kode_pos}`);
-        alamatFinal = parts.join(', ');
-      } else {
-        // Fallback ke customerForm.alamat atau alamatLengkap
-        alamatFinal = alamatLengkap || customerForm.alamat || '';
+    // ✅ Validasi formWilayah berdasarkan jenis produk
+    if (isFisik) {
+      // Untuk produk fisik, wajib lengkap
+      if (!formWilayah.provinsi || !formWilayah.kabupaten || !formWilayah.kecamatan || !formWilayah.kode_pos) {
+        setSubmitting(false);
+        return toast.error("Silakan lengkapi alamat lengkap (Provinsi, Kabupaten/Kota, Kecamatan, Kode Pos)");
       }
     } else {
-      // Untuk produk fisik tapi formWilayah tidak lengkap, gunakan customerForm.alamat
-      alamatFinal = alamatLengkap || customerForm.alamat || '';
-    }
-
-    // Validasi alamat tidak boleh kosong
-    if (!alamatFinal || !alamatFinal.trim()) {
-      setSubmitting(false);
-      if (isFisik) {
-        return toast.error("Silakan lengkapi alamat lengkap (Provinsi, Kabupaten/Kota, Kecamatan, Kode Pos)");
-      } else {
-        // ✅ Untuk produk non-fisik, minta lengkapi formWilayah minimal provinsi dan kabupaten
+      // ✅ Untuk produk non-fisik, minimal provinsi dan kabupaten
+      if (!formWilayah.provinsi || !formWilayah.kabupaten) {
+        setSubmitting(false);
         return toast.error("Silakan lengkapi alamat (minimal Provinsi dan Kabupaten/Kota)");
       }
     }
 
+    // ✅ Format request baru: alamat null, gunakan field terpisah
     const payload = {
       nama: customerForm.nama,
       wa: customerForm.wa,
       email: customerForm.email,
-      alamat: alamatFinal.trim(),
+      alamat: null, // ✅ Alamat dijadikan null
+      provinsi: formWilayah.provinsi || null,
+      kabupaten: formWilayah.kabupaten || null,
+      kecamatan: formWilayah.kecamatan || null,
+      kode_pos: formWilayah.kode_pos || null,
       produk: parseInt(productData.id, 10),
       harga: String(hargaProduk),
       ongkir: String(ongkirValue),
