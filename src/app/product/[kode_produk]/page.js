@@ -249,17 +249,18 @@ function normalizeLandingpageData(landingpageData) {
   // ✅ Step 1: Cari semua section dan ambil componentId-nya
   const sections = normalized.filter(item => item && item.type === 'section');
   
-  console.log(`[NORMALIZER] Found ${sections.length} sections`);
-
-  // ✅ Step 2: Hitung berapa banyak child blocks yang sudah punya parentId (dari backend)
+  // ✅ Step 2: Cek apakah sudah ada child blocks dengan parentId (backend sudah benar)
+  // Jika semua blocks sudah punya parentId, skip normalisasi (optimasi)
   const blocksWithParentId = normalized.filter(b => b && b.parentId);
-  console.log(`[NORMALIZER] Blocks with parentId (from backend): ${blocksWithParentId.length}`);
+  if (blocksWithParentId.length > 0 && sections.length === 0) {
+    // ✅ Tidak ada section dan sudah ada parentId, tidak perlu normalisasi
+    return normalized;
+  }
 
   sections.forEach(section => {
     const sectionComponentId = section.config?.componentId;
     
     if (!sectionComponentId) {
-      console.warn(`[NORMALIZER] Section tanpa config.componentId, skip:`, section);
       return;
     }
 
@@ -269,7 +270,6 @@ function normalizeLandingpageData(landingpageData) {
     );
     
     if (existingChildren.length > 0) {
-      console.log(`[NORMALIZER] Section "${sectionComponentId}" sudah punya ${existingChildren.length} children dengan parentId (from backend)`);
       // ✅ Cleanup: Hapus content.children jika ada (tidak digunakan lagi)
       if (section.content && section.content.children) {
         delete section.content.children;
@@ -281,8 +281,6 @@ function normalizeLandingpageData(landingpageData) {
     const sectionChildren = section.content?.children || [];
     
     if (!Array.isArray(sectionChildren) || sectionChildren.length === 0) {
-      console.log(`[NORMALIZER] Section "${sectionComponentId}" tidak punya children (content.children kosong)`);
-      console.log(`[NORMALIZER] ⚠️ Backend tidak mengirim parentId di child blocks → section akan kosong`);
       // ✅ Cleanup: Hapus content.children yang kosong
       if (section.content) {
         delete section.content.children;
@@ -291,8 +289,6 @@ function normalizeLandingpageData(landingpageData) {
     }
 
     // ✅ Step 5: Legacy data - normalisasi content.children ke parentId
-    console.log(`[NORMALIZER] ⚠️ Legacy data detected: Section "${sectionComponentId}" punya ${sectionChildren.length} children di content.children`);
-    console.log(`[NORMALIZER] Normalizing legacy data to parentId architecture...`);
 
     sectionChildren.forEach((childRef, childIndex) => {
       let childBlock = null;
@@ -319,22 +315,8 @@ function normalizeLandingpageData(landingpageData) {
       }
 
       // ✅ Step 6: Tambahkan parentId ke child block (di root level)
-      if (childBlock) {
-        if (childBlock.parentId && childBlock.parentId !== sectionComponentId) {
-          console.warn(`[NORMALIZER] Child block sudah punya parentId berbeda:`, {
-            childBlockId: childBlock.config?.componentId || childBlock.order,
-            existingParentId: childBlock.parentId,
-            newParentId: sectionComponentId
-          });
-        } else {
-          childBlock.parentId = sectionComponentId;
-          console.log(`[NORMALIZER] ✅ Added parentId "${sectionComponentId}" to child (legacy):`, {
-            childType: childBlock.type,
-            childComponentId: childBlock.config?.componentId || childBlock.order
-          });
-        }
-      } else {
-        console.warn(`[NORMALIZER] ⚠️ Child tidak ditemukan di landingpage:`, childRef);
+      if (childBlock && !childBlock.parentId) {
+        childBlock.parentId = sectionComponentId;
       }
     });
 
@@ -343,9 +325,6 @@ function normalizeLandingpageData(landingpageData) {
       delete section.content.children;
     }
   });
-
-  const finalBlocksWithParentId = normalized.filter(b => b && b.parentId).length;
-  console.log(`[NORMALIZER] ✅ Normalization complete. Blocks with parentId: ${finalBlocksWithParentId}`);
 
   return normalized;
 }
@@ -1906,41 +1885,10 @@ export default function ProductPage() {
           return blockParentId === actualSectionComponentId;
         });
         
-        // ✅ DEBUG: Log untuk tracking identifier
-        console.log(`[SECTION RENDER] Section ID: "${sectionComponentId}"`, {
-          sectionBlockId: blockToRender.id,
-          sectionConfigComponentId: blockToRender.config?.componentId,
-          sectionDataComponentId: blockToRender.data?.componentId,
-          sectionContentComponentId: blockToRender.content?.componentId,
-          childCount: childComponents.length,
-          allBlocksCount: allBlocks.length,
-          allBlocksWithParentId: allBlocks
-            .filter(b => {
-              const bpId = b.parentId || b.config?.parentId || b.data?.parentId;
-              return !!bpId;
-            })
-            .map(b => {
-              const bpId = b.parentId || b.config?.parentId || b.data?.parentId;
-              const actualSectionComponentId = sectionComponentId || blockToRender.data?.componentId || blockToRender.content?.componentId;
-              return {
-                type: b.type,
-                componentId: b.config?.componentId || b.order,
-                parentId_root: b.parentId,
-                parentId_config: b.config?.parentId,
-                parentId_data: b.data?.parentId,
-                parentId_final: bpId,
-                match: bpId === actualSectionComponentId ? "✅ MATCH" : "❌ NO MATCH"
-              };
-            }),
-          // ✅ Validasi: Jika childCount === 0, cek apakah ada blocks dengan parentId
-          hasAnyParentId: allBlocks.some(b => {
-            const bpId = b.parentId || b.config?.parentId || b.data?.parentId;
-            return !!bpId;
-          }),
-          warning: childComponents.length === 0 
-            ? "⚠️ Section kosong - tidak ada child dengan parentId yang sesuai. Pastikan backend mengirim parentId di child blocks." 
-            : null
-        });
+        // ✅ DEBUG: Hanya log warning jika section kosong (untuk debugging)
+        if (childComponents.length === 0 && process.env.NODE_ENV === 'development') {
+          console.warn(`[SECTION] Section "${sectionComponentId}" kosong - tidak ada child dengan parentId yang sesuai`);
+        }
         
         // ✅ FIX #3: Build section styles from block.style.container, bukan block.data (sama dengan addProducts3)
         const sectionData = blockToRender.data || blockToRender.content || {};
@@ -2236,7 +2184,7 @@ export default function ProductPage() {
     }
   };
 
-  // ✅ Load provinces dengan retry mechanism (maksimal sampai berhasil)
+  // ✅ Load provinces di background (tidak blocking render)
   useEffect(() => {
     if (!productData) return;
     
@@ -2245,50 +2193,25 @@ export default function ProductPage() {
     async function loadProvincesData() {
       setLoadingWilayah(prev => ({ ...prev, provinces: true }));
       
-      const attemptLoad = async (attempt = 0) => {
+      try {
+        const data = await getProvinces();
+        
         if (isCancelled) return;
         
-        const maxRetries = 10; // Maksimal 10 kali retry
-        
-        try {
-          const data = await getProvinces();
-          
-          // ✅ Cek apakah data valid (array tidak kosong)
-          if (data && Array.isArray(data) && data.length > 0) {
-            setWilayahData(prev => ({ ...prev, provinces: data }));
-            setLoadingWilayah(prev => ({ ...prev, provinces: false }));
-            return; // ✅ Berhasil, stop retry
-          }
-          
-          // ✅ Jika data kosong dan belum max retries, retry
-          if (attempt < maxRetries) {
-            const delay = Math.min(1000 * Math.pow(2, attempt), 10000); // Exponential backoff, max 10s
-            console.log(`[PROVINCES] Retry ${attempt + 1}/${maxRetries} dalam ${delay}ms...`);
-            await new Promise(resolve => setTimeout(resolve, delay));
-            return attemptLoad(attempt + 1);
-          } else {
-            console.error("[PROVINCES] Max retries reached, data tetap kosong");
-            setLoadingWilayah(prev => ({ ...prev, provinces: false }));
-          }
-        } catch (err) {
-          console.error(`[PROVINCES] Error attempt ${attempt + 1}:`, err);
-          
-          // ✅ Retry jika belum max retries
-          if (attempt < maxRetries) {
-            const delay = Math.min(1000 * Math.pow(2, attempt), 10000); // Exponential backoff
-            console.log(`[PROVINCES] Retry ${attempt + 1}/${maxRetries} dalam ${delay}ms setelah error...`);
-            await new Promise(resolve => setTimeout(resolve, delay));
-            return attemptLoad(attempt + 1);
-          } else {
-            console.error("[PROVINCES] Max retries reached setelah error");
-            setLoadingWilayah(prev => ({ ...prev, provinces: false }));
-          }
+        // ✅ Cek apakah data valid (array tidak kosong)
+        if (data && Array.isArray(data) && data.length > 0) {
+          setWilayahData(prev => ({ ...prev, provinces: data }));
         }
-      };
-      
-      attemptLoad(0);
+      } catch (err) {
+        console.error("[PROVINCES] Error loading provinces:", err);
+      } finally {
+        if (!isCancelled) {
+          setLoadingWilayah(prev => ({ ...prev, provinces: false }));
+        }
+      }
     }
     
+    // ✅ Load di background tanpa blocking
     loadProvincesData();
     
     // ✅ Cleanup function
@@ -2463,18 +2386,6 @@ export default function ProductPage() {
         } else {
           // ✅ NORMALISASI DATA: Tambahkan parentId ke child blocks
           landingpageData = normalizeLandingpageData(landingpageData);
-          
-          // Log struktur landingpage untuk debugging
-          console.log("[PRODUCT] Landingpage array length:", landingpageData.length);
-          console.log("[PRODUCT] Landingpage structure:", landingpageData.map((item, idx) => ({
-            index: idx,
-            type: item?.type,
-            order: item?.order,
-            hasContent: !!item?.content,
-            hasStyle: !!item?.style,
-            hasConfig: !!item?.config,
-            hasParentId: !!item?.parentId
-          })));
         }
 
         setLandingpage(landingpageData);
@@ -2490,10 +2401,34 @@ export default function ProductPage() {
     fetchProduct();
   }, [kode_produk]);
 
-  // ✅ Jika masih loading atau provinsi masih loading, return null (halaman kosong)
-  // ✅ Pastikan semua data penting sudah ter-load sebelum render
-  if (loading || loadingWilayah.provinces) {
-    return null;
+  // ✅ Loading indicator - hanya block untuk product data, tidak untuk provinces
+  if (loading) {
+    return (
+      <div className="add-products3-container" style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '100vh',
+        flexDirection: 'column',
+        gap: '1rem',
+        backgroundColor: '#ffffff'
+      }}>
+        <div style={{
+          width: "48px",
+          height: "48px",
+          border: "4px solid #3b82f6",
+          borderTopColor: "transparent",
+          borderRadius: "50%",
+          animation: "spin 1s linear infinite"
+        }} />
+        <p style={{ color: '#6b7280', fontSize: '16px' }}>Memuat produk...</p>
+        <style jsx>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
   }
 
   // ✅ Jika tidak ada productData setelah loading selesai, tampilkan notifikasi
@@ -2535,20 +2470,11 @@ export default function ProductPage() {
       })
     : [];
   
-  // Debug logging
-  if (blocks.length > 0) {
-    console.log('[PRODUCT] Total blocks:', blocks.length);
-    console.log('[PRODUCT] Blocks (urutan array dari backend):', blocks.map((b, idx) => ({ 
-      arrayIndex: idx,
-      type: b.type, 
-      componentId: b.config?.componentId || 'MISSING'
-    })));
-    
-    // Warning jika ada componentId yang missing
+  // ✅ Debug logging hanya di development mode
+  if (process.env.NODE_ENV === 'development' && blocks.length > 0) {
     const missingComponentIds = blocks.filter(b => !b.config?.componentId);
     if (missingComponentIds.length > 0) {
       console.warn('[PRODUCT] ⚠️ Blocks tanpa componentId:', missingComponentIds.length);
-      console.warn('[PRODUCT] Ini bisa menyebabkan React key collision!');
     }
   }
 
@@ -2600,10 +2526,9 @@ export default function ProductPage() {
                   // ⚠️ WARNING: componentId missing - ini seharusnya tidak terjadi
                   // Fallback menggunakan array index (deterministik karena urutan array tidak berubah)
                   const fallbackKey = `block-${block.type}-${index}`;
-                  console.warn(`[PRODUCT] ⚠️ Block tanpa componentId, menggunakan fallback key: ${fallbackKey}`, {
-                    type: block.type,
-                    arrayIndex: index
-                  });
+                  if (process.env.NODE_ENV === 'development') {
+                    console.warn(`[PRODUCT] ⚠️ Block tanpa componentId, menggunakan fallback key: ${fallbackKey}`);
+                  }
                   
                   return (
                     <div key={fallbackKey} className="canvas-preview-block">
