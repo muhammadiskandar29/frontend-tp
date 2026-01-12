@@ -482,7 +482,7 @@ ORDERS TABLE
   display: grid;
   grid-template-columns: 
     minmax(180px, 1.5fr)                    /* Order ID */
-    24px                                    /* ExternalLink (no header, lebih dekat) */
+    24px                                    /* ExternalLink (kolom kosong) */
     minmax(130px, 1.2fr)                    /* Customer */
     minmax(140px, 1.2fr)                    /* Produk */
     minmax(110px, 1fr)                      /* Status Pembayaran */
@@ -493,6 +493,12 @@ ORDERS TABLE
   gap: 0.3rem;
   align-items: center;
   min-width: 1200px;
+}
+
+.orders-table__head > span:nth-child(2),
+.orders-table__row > div:nth-child(2) {
+  padding: 0;
+  margin-left: -0.15rem;
 }
 
 .orders-table__head {

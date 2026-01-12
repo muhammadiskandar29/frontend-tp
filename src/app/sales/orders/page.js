@@ -55,6 +55,7 @@ const STATUS_ORDER_MAP = {
 
 const ORDERS_COLUMNS = [
   { line1: "Order", line2: "Id" },
+  null, // Kolom kosong untuk ExternalLink
   { line1: "Customer", line2: "" },
   { line1: "Produk", line2: "" },
   { line1: "Status", line2: "Pembayaran" },
@@ -1232,21 +1233,24 @@ export default function DaftarPesanan() {
           <div className="orders-table__wrapper">
             <div className="orders-table">
               <div className="orders-table__head">
-                {ORDERS_COLUMNS.map((column, idx) => (
-                  <span key={idx} style={{ display: "flex", flexDirection: "column", gap: "0.1rem", alignItems: "flex-start" }}>
-                    {column.icon === "image" ? (
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
-                        <ImageIcon size={14} style={{ color: "#6b7280" }} />
+                {ORDERS_COLUMNS.map((column, idx) => {
+                  if (column === null) {
+                    return <span key={idx}></span>; // Kolom kosong untuk ExternalLink
+                  }
+                  return (
+                    <span key={idx} style={{ display: "flex", flexDirection: "column", gap: "0.1rem", alignItems: "flex-start" }}>
+                      {column.icon === "image" ? (
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                          <ImageIcon size={14} style={{ color: "#6b7280" }} />
+                          <span>{column.line1}</span>
+                        </div>
+                      ) : (
                         <span>{column.line1}</span>
-                      </div>
-                    ) : (
-                      <span>{column.line1}</span>
-                    )}
-                    {column.line2 && <span>{column.line2}</span>}
-                  </span>
-                ))}
-                {/* Empty span for ExternalLink column (no header) */}
-                <span></span>
+                      )}
+                      {column.line2 && <span>{column.line2}</span>}
+                    </span>
+                  );
+                })}
               </div>
               <div className="orders-table__body">
                 {orders.length > 0 ? (
@@ -1362,27 +1366,21 @@ export default function DaftarPesanan() {
                         
                         {/* Follow Up Text */}
                         <div className="orders-table__cell" data-label="Follow Up Text">
-                          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                            <WABubbleChat 
-                              customerId={order.customer_rel?.id || order.customer}
-                              orderId={order.id}
-                              orderStatus={statusOrderValue}
-                              statusPembayaran={statusPembayaranValue}
-                            />
-                            <span style={{ fontSize: "0.875rem", color: "#111827" }}></span>
-                          </div>
+                          <WABubbleChat 
+                            customerId={order.customer_rel?.id || order.customer}
+                            orderId={order.id}
+                            orderStatus={statusOrderValue}
+                            statusPembayaran={statusPembayaranValue}
+                          />
                         </div>
                         
                         {/* Bukti Pembayaran */}
                         <div className="orders-table__cell" data-label="Bukti Pembayaran">
-                          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                            {buktiUrl ? (
-                              <ImageIcon size={16} style={{ color: "#6b7280" }} />
-                            ) : (
-                              <span style={{ fontSize: "0.875rem", color: "#111827" }}>-</span>
-                            )}
-                            <span style={{ fontSize: "0.875rem", color: "#111827" }}></span>
-                          </div>
+                          {buktiUrl ? (
+                            <ImageIcon size={16} style={{ color: "#6b7280" }} />
+                          ) : (
+                            <span style={{ fontSize: "0.875rem", color: "#9ca3af" }}>-</span>
+                          )}
                         </div>
                         
                         {/* Gross Revenue */}
