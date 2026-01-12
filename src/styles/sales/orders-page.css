@@ -490,7 +490,7 @@ ORDERS TABLE
     minmax(140px, 1.2fr)                    /* Produk */
     minmax(110px, 1fr)                      /* Status Pembayaran */
     minmax(100px, 0.9fr)                    /* Status Order */
-    minmax(140px, 1.2fr)                    /* Follow Up Text */
+    minmax(200px, 1.8fr)                    /* Follow Up Text - diperlebar */
     minmax(100px, 0.9fr)                    /* Bukti Pembayaran */
     minmax(140px, 1.2fr);                   /* Gross Revenue */
   gap: 0.3rem;
