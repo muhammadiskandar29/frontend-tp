@@ -1455,6 +1455,11 @@ export default function ProductPage() {
                         </option>
                       ))}
                     </select>
+                    {loadingWilayah.provinces && (
+                      <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                        Memuat provinsi...
+                      </small>
+                    )}
                 </div>
                 
                   <div className="compact-field">
@@ -1482,6 +1487,11 @@ export default function ProductPage() {
                         </option>
                       ))}
                     </select>
+                    {loadingWilayah.cities && (
+                      <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                        Memuat kabupaten/kota...
+                      </small>
+                    )}
                   </div>
                   
                   <div className="compact-field">
@@ -1512,6 +1522,11 @@ export default function ProductPage() {
                     {!selectedWilayahIds.cityId && (
                       <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
                         Pilih kabupaten/kota terlebih dahulu
+                      </small>
+                    )}
+                    {loadingWilayah.districts && (
+                      <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                        Memuat kecamatan...
                       </small>
                     )}
                   </div>
@@ -2233,7 +2248,7 @@ export default function ProductPage() {
       const attemptLoad = async (attempt = 0) => {
         if (isCancelled) return;
         
-        const maxRetries = 20; // Maksimal 20 kali retry untuk lebih agresif
+        const maxRetries = 10; // Maksimal 10 kali retry
         
         try {
           const data = await getProvinces();
@@ -2245,21 +2260,27 @@ export default function ProductPage() {
             return; // ✅ Berhasil, stop retry
           }
           
-          // ✅ Jika data kosong dan belum max retries, retry dengan delay lebih cepat
+          // ✅ Jika data kosong dan belum max retries, retry
           if (attempt < maxRetries) {
-            const delay = Math.min(500 * Math.pow(1.5, attempt), 3000); // Exponential backoff lebih cepat, max 3s
+            const delay = Math.min(1000 * Math.pow(2, attempt), 10000); // Exponential backoff, max 10s
+            console.log(`[PROVINCES] Retry ${attempt + 1}/${maxRetries} dalam ${delay}ms...`);
             await new Promise(resolve => setTimeout(resolve, delay));
             return attemptLoad(attempt + 1);
           } else {
+            console.error("[PROVINCES] Max retries reached, data tetap kosong");
             setLoadingWilayah(prev => ({ ...prev, provinces: false }));
           }
         } catch (err) {
+          console.error(`[PROVINCES] Error attempt ${attempt + 1}:`, err);
+          
           // ✅ Retry jika belum max retries
           if (attempt < maxRetries) {
-            const delay = Math.min(500 * Math.pow(1.5, attempt), 3000); // Exponential backoff lebih cepat, max 3s
+            const delay = Math.min(1000 * Math.pow(2, attempt), 10000); // Exponential backoff
+            console.log(`[PROVINCES] Retry ${attempt + 1}/${maxRetries} dalam ${delay}ms setelah error...`);
             await new Promise(resolve => setTimeout(resolve, delay));
             return attemptLoad(attempt + 1);
           } else {
+            console.error("[PROVINCES] Max retries reached setelah error");
             setLoadingWilayah(prev => ({ ...prev, provinces: false }));
           }
         }
@@ -2286,56 +2307,19 @@ export default function ProductPage() {
       return;
     }
     
-    let isCancelled = false;
-    
     async function loadCitiesData() {
       setLoadingWilayah(prev => ({ ...prev, cities: true }));
-      
-      const attemptLoad = async (attempt = 0) => {
-        if (isCancelled) return;
-        
-        const maxRetries = 20; // Maksimal 20 kali retry untuk lebih agresif
-        
-        try {
-          const data = await getCities(selectedWilayahIds.provinceId);
-          
-          // ✅ Cek apakah data valid (array tidak kosong)
-          if (data && Array.isArray(data) && data.length > 0) {
-            setWilayahData(prev => ({ ...prev, cities: data, districts: [] }));
-            setSelectedWilayahIds(prev => ({ ...prev, cityId: "", districtId: "" }));
-            setLoadingWilayah(prev => ({ ...prev, cities: false }));
-            return; // ✅ Berhasil, stop retry
-          }
-          
-          // ✅ Jika data kosong dan belum max retries, retry dengan delay lebih cepat
-          if (attempt < maxRetries) {
-            const delay = Math.min(500 * Math.pow(1.5, attempt), 3000); // Exponential backoff lebih cepat, max 3s
-            await new Promise(resolve => setTimeout(resolve, delay));
-            return attemptLoad(attempt + 1);
-          } else {
-            setLoadingWilayah(prev => ({ ...prev, cities: false }));
-          }
-        } catch (err) {
-          // ✅ Retry jika belum max retries
-          if (attempt < maxRetries) {
-            const delay = Math.min(500 * Math.pow(1.5, attempt), 3000); // Exponential backoff lebih cepat, max 3s
-            await new Promise(resolve => setTimeout(resolve, delay));
-            return attemptLoad(attempt + 1);
-          } else {
-            setLoadingWilayah(prev => ({ ...prev, cities: false }));
-          }
-        }
-      };
-      
-      attemptLoad(0);
+      try {
+        const data = await getCities(selectedWilayahIds.provinceId);
+        setWilayahData(prev => ({ ...prev, cities: data, districts: [] }));
+        setSelectedWilayahIds(prev => ({ ...prev, cityId: "", districtId: "" }));
+      } catch (err) {
+        console.error("Load cities error:", err);
+      } finally {
+        setLoadingWilayah(prev => ({ ...prev, cities: false }));
+      }
     }
-    
     loadCitiesData();
-    
-    // ✅ Cleanup function
-    return () => {
-      isCancelled = true;
-    };
   }, [selectedWilayahIds.provinceId, productData]);
   
   // Load districts when city selected
@@ -2348,56 +2332,19 @@ export default function ProductPage() {
       return;
     }
     
-    let isCancelled = false;
-    
     async function loadDistrictsData() {
       setLoadingWilayah(prev => ({ ...prev, districts: true }));
-      
-      const attemptLoad = async (attempt = 0) => {
-        if (isCancelled) return;
-        
-        const maxRetries = 20; // Maksimal 20 kali retry untuk lebih agresif
-        
-        try {
-          const data = await getDistricts(selectedWilayahIds.cityId);
-          
-          // ✅ Cek apakah data valid (array tidak kosong)
-          if (data && Array.isArray(data) && data.length > 0) {
-            setWilayahData(prev => ({ ...prev, districts: data }));
-            setSelectedWilayahIds(prev => ({ ...prev, districtId: "" }));
-            setLoadingWilayah(prev => ({ ...prev, districts: false }));
-            return; // ✅ Berhasil, stop retry
-          }
-          
-          // ✅ Jika data kosong dan belum max retries, retry dengan delay lebih cepat
-          if (attempt < maxRetries) {
-            const delay = Math.min(500 * Math.pow(1.5, attempt), 3000); // Exponential backoff lebih cepat, max 3s
-            await new Promise(resolve => setTimeout(resolve, delay));
-            return attemptLoad(attempt + 1);
-          } else {
-            setLoadingWilayah(prev => ({ ...prev, districts: false }));
-          }
-        } catch (err) {
-          // ✅ Retry jika belum max retries
-          if (attempt < maxRetries) {
-            const delay = Math.min(500 * Math.pow(1.5, attempt), 3000); // Exponential backoff lebih cepat, max 3s
-            await new Promise(resolve => setTimeout(resolve, delay));
-            return attemptLoad(attempt + 1);
-          } else {
-            setLoadingWilayah(prev => ({ ...prev, districts: false }));
-          }
-        }
-      };
-      
-      attemptLoad(0);
+      try {
+        const data = await getDistricts(selectedWilayahIds.cityId);
+        setWilayahData(prev => ({ ...prev, districts: data }));
+        setSelectedWilayahIds(prev => ({ ...prev, districtId: "" }));
+      } catch (err) {
+        console.error("Load districts error:", err);
+      } finally {
+        setLoadingWilayah(prev => ({ ...prev, districts: false }));
+      }
     }
-    
     loadDistrictsData();
-    
-    // ✅ Cleanup function
-    return () => {
-      isCancelled = true;
-    };
   }, [selectedWilayahIds.cityId, productData]);
   
   // Calculate cost when district and courier selected (hanya untuk produk fisik)
