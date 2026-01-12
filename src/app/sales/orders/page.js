@@ -46,7 +46,7 @@ const STATUS_PEMBAYARAN_MAP = {
 
 // Status Order Mapping
 const STATUS_ORDER_MAP = {
-  "1": { label: "Proses", class: "proses" },
+  "1": { label: "Pending", class: "pending" },
   "2": { label: "Sukses", class: "sukses" },
   "3": { label: "Failed", class: "failed" },
   "4": { label: "Upselling", class: "upselling" },
