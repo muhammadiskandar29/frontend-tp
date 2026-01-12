@@ -200,8 +200,8 @@ const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran }) =>
       background: "#FEF3C7",
       borderRadius: "8px",
       flexWrap: "nowrap",
-      overflowX: "auto",
-      width: "100%"
+      width: "100%",
+      overflow: "visible"
     }}>
       {bubbles}
     </div>
