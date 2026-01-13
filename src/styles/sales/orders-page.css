@@ -459,10 +459,6 @@ ORDERS TABLE
   overflow-y: auto; /* Enable vertical scroll */
   padding-bottom: 0.25rem;
   position: relative;
-  /* Compensate untuk padding panel agar sticky columns benar-benar di ujung kiri */
-  margin-left: -1.75rem;
-  padding-left: 1.75rem;
-  width: calc(100% + 3.5rem);
 }
 
 .orders-table__wrapper::-webkit-scrollbar {
@@ -521,70 +517,65 @@ ORDERS TABLE
 .orders-table__head > span:nth-child(1),
 .orders-table__row > div:nth-child(1) {
   position: sticky;
-  left: 1.75rem; /* Compensate untuk padding panel */
+  left: 0;
   z-index: 11;
-  background: #ffffff !important; /* Background putih penuh */
+  background: var(--orders-surface);
   padding-right: 0.5rem;
-  padding-left: 0.65rem; /* Match dengan padding row */
-  margin-left: 0;
-  border-right: 1px solid #e5e7eb; /* Border kanan untuk pemisah visual */
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05); /* Shadow kanan saat scroll */
 }
 
 .orders-table__head > span:nth-child(1) {
   z-index: 21; /* Higher z-index untuk head */
-  padding-left: 0.75rem; /* Match dengan padding head */
-  background: #ffffff !important;
 }
 
 .orders-table__head > span:nth-child(2),
 .orders-table__row > div:nth-child(2) {
   position: sticky;
-  left: calc(1.75rem + 140px + 0.3rem); /* Padding panel + Width of Order ID + gap */
+  left: calc(140px + 0.3rem); /* Width of Order ID + gap */
   z-index: 11;
-  background: #ffffff !important; /* Background putih penuh */
-  padding-left: 0;
-  padding-right: 0;
-  margin-left: 0;
-  border-right: 1px solid #e5e7eb; /* Border kanan untuk pemisah visual */
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05); /* Shadow kanan saat scroll */
+  background: var(--orders-surface);
 }
 
 .orders-table__head > span:nth-child(2) {
   z-index: 21; /* Higher z-index untuk head */
-  background: #ffffff !important;
 }
 
 .orders-table__head > span:nth-child(3),
 .orders-table__row > div:nth-child(3) {
   position: sticky;
-  left: calc(1.75rem + 140px + 24px + 0.6rem); /* Padding panel + Width of Order ID + ExternalLink + gaps */
+  left: calc(140px + 24px + 0.6rem); /* Width of Order ID + ExternalLink + gaps */
   z-index: 11;
-  background: #ffffff !important; /* Background putih penuh */
+  background: var(--orders-surface);
   padding-right: 0.5rem;
-  padding-left: 0.65rem; /* Match dengan padding row */
-  margin-left: 0;
-  border-right: 1px solid #e5e7eb; /* Border kanan untuk pemisah visual */
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05); /* Shadow kanan saat scroll */
 }
 
 .orders-table__head > span:nth-child(3) {
   z-index: 21; /* Higher z-index untuk head */
-  padding-left: 0.75rem; /* Match dengan padding head */
-  background: #ffffff !important;
 }
 
-/* Pastikan sticky columns memiliki background penuh saat scroll */
-.orders-table__row > div:nth-child(1),
-.orders-table__row > div:nth-child(2),
-.orders-table__row > div:nth-child(3) {
-  /* Pastikan background cover seluruh area termasuk padding */
-  background-clip: padding-box;
+/* Shadow untuk sticky columns saat scroll horizontal */
+.orders-table__row > div:nth-child(1)::after,
+.orders-table__row > div:nth-child(2)::after,
+.orders-table__row > div:nth-child(3)::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -4px;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.1), transparent);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.orders-table__wrapper:hover .orders-table__row > div:nth-child(1)::after,
+.orders-table__wrapper:hover .orders-table__row > div:nth-child(2)::after,
+.orders-table__wrapper:hover .orders-table__row > div:nth-child(3)::after {
+  opacity: 1;
 }
 
 .orders-table__head {
   padding: 0.6rem 0.75rem;
-  padding-left: 0.75rem; /* Pastikan padding kiri konsisten */
   color: var(--orders-muted);
   font-size: 0.7rem;
   letter-spacing: 0.1em;
@@ -594,7 +585,6 @@ ORDERS TABLE
   z-index: 20;
   background: var(--orders-surface);
   border-bottom: 1px solid var(--orders-border);
-  margin-left: 0; /* Pastikan tidak ada margin */
 }
 
 .orders-table__body {
@@ -608,10 +598,8 @@ ORDERS TABLE
   border: 1px solid var(--orders-border);
   border-radius: 1rem;
   padding: 0.5rem 0.65rem;
-  padding-left: 0.65rem; /* Pastikan padding kiri konsisten */
   box-shadow: var(--orders-shadow);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  margin-left: 0; /* Pastikan tidak ada margin */
 }
 
 .orders-table__row:hover {
