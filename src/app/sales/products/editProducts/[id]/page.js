@@ -958,15 +958,17 @@ export default function EditProductsPage() {
         
         return (
           <div style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
-            {/* Bundling Section - Tampilkan jika ada bundling */}
-            {pengaturanForm.isBundling && pengaturanForm.bundling && pengaturanForm.bundling.length > 0 && (
-              <section className="preview-form-section bundling-section" aria-label="Package Selection" style={{
-                marginBottom: "24px",
-                padding: "24px",
-                backgroundColor: "#ffffff",
-                borderRadius: "12px",
-                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)"
-              }}>
+            {/* ✅ Card besar yang merangkum semua form - SAMA dengan addProducts3 */}
+            <div style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "12px",
+              padding: "24px",
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+              border: "1px solid #e5e7eb"
+            }}>
+              {/* ✅ Section: Bundling/Pilihan Paket (jika ada) */}
+              {pengaturanForm.isBundling && pengaturanForm.bundling && pengaturanForm.bundling.length > 0 && (
+                <section style={{ marginBottom: "24px" }}>
                 <h2 style={{
                   fontSize: "18px",
                   fontWeight: "600",
@@ -1070,15 +1072,15 @@ export default function EditProductsPage() {
                   })}
                 </div>
               </section>
-            )}
-
-            {/* Form Pemesanan */}
-            <section className="preview-form-section compact-form-section" aria-label="Order form">
+              )}
+              
+              {/* Section: Lengkapi Data */}
+              <section className="preview-form-section compact-form-section" aria-label="Order form" style={{ marginBottom: "24px" }}>
               <h2 className="compact-form-title" style={{
                 fontSize: "18px",
                 fontWeight: "600",
                 color: "#000000",
-                marginBottom: "12px"
+                marginBottom: "16px"
               }}>Lengkapi Data:</h2>
               <div className="compact-form-card">
                 <div className="compact-field">
@@ -1278,8 +1280,8 @@ export default function EditProductsPage() {
               </div>
             </section>
 
-            {/* Rincian Pesanan - General untuk semua kategori */}
-            <section className="preview-form-section rincian-pesanan-section" aria-label="Rincian Pesanan">
+              {/* Section: Rincian Pesanan */}
+              <section className="preview-form-section rincian-pesanan-section" aria-label="Rincian Pesanan" style={{ marginBottom: "24px" }}>
               <div className="rincian-pesanan-card">
                 <h3 className="rincian-pesanan-title">RINCIAN PESANAN:</h3>
                 <div className="rincian-pesanan-item">
@@ -1337,8 +1339,8 @@ export default function EditProductsPage() {
               </div>
             </section>
 
-            {/* Payment Section - Selalu muncul */}
-            <section className="preview-payment-section payment-section" aria-label="Payment methods">
+              {/* Section: Metode Pembayaran */}
+              <section className="preview-payment-section payment-section" aria-label="Payment methods" style={{ marginBottom: "24px" }}>
               <h2 className="payment-title">Metode Pembayaran</h2>
               <div className="payment-options-vertical">
                 <label className="payment-option-row">
@@ -1380,11 +1382,15 @@ export default function EditProductsPage() {
               </div>
             </section>
 
-            {/* Button Pesan Sekarang */}
+              {/* Submit Button */}
             <div className="preview-form-submit-wrapper">
-              <button type="button" className="preview-form-submit-btn">
+              <button 
+                type="button" 
+                className="preview-form-submit-btn"
+              >
                 Pesan Sekarang
               </button>
+              </div>
             </div>
           </div>
         );
@@ -2198,9 +2204,19 @@ export default function EditProductsPage() {
         }
       }
 
-      // Parse bundling
+      // ✅ FIX: Parse bundling dari bundling_rel (relasi database)
       let parsedBundling = [];
-      if (produkData.bundling) {
+      if (produkData.bundling_rel && Array.isArray(produkData.bundling_rel)) {
+        // Map bundling_rel ke format yang diharapkan
+        parsedBundling = produkData.bundling_rel
+          .filter(item => item.status === 'A') // Hanya ambil yang status aktif
+          .map(item => ({
+            id: item.id, // Simpan ID untuk update/delete
+            nama: item.nama,
+            harga: typeof item.harga === 'string' ? parseInt(item.harga) : item.harga
+          }));
+      } else if (produkData.bundling) {
+        // Fallback untuk data lama (legacy)
         if (Array.isArray(produkData.bundling)) {
           parsedBundling = produkData.bundling;
         } else if (typeof produkData.bundling === "string") {
@@ -3301,6 +3317,17 @@ export default function EditProductsPage() {
       ...transformedBlocks
     ];
 
+    // ✅ FIX: Prepare bundling untuk relasi database
+    // Format: array of { id?, nama, harga, status }
+    // - Jika ada id: update existing
+    // - Jika tidak ada id: create new
+    const bundlingPayload = (pengaturanForm.bundling || []).map(item => ({
+      ...(item.id ? { id: item.id } : {}), // Hanya kirim id jika ada (untuk update)
+      nama: item.nama || "",
+      harga: String(item.harga || 0),
+      status: "A" // Default aktif
+    }));
+
     // Prepare payload dengan struktur baru
     const payload = {
       nama: pengaturanForm.nama.trim(),
@@ -3310,7 +3337,7 @@ export default function EditProductsPage() {
       harga: String(pengaturanForm.harga || 0),
       jenis_produk: pengaturanForm.jenis_produk || "fisik",
       isBundling: pengaturanForm.isBundling || false,
-      bundling: pengaturanForm.bundling || [], // Array, bukan stringified
+      bundling: bundlingPayload, // ✅ Array untuk relasi database
       tanggal_event: formattedDate,
       assign: pengaturanForm.assign,
       status: "1",

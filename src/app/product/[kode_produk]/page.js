@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import Script from "next/script";
@@ -2184,6 +2184,41 @@ export default function ProductPage() {
     }
   };
 
+  // Handle Save Draft - Fix untuk error "handleSaveDraft is not defined"
+  const handleSaveDraft = useCallback(async () => {
+    // Save form data to localStorage as draft
+    try {
+      const draftData = {
+        customerForm,
+        formWilayah,
+        selectedWilayahIds,
+        paymentMethod,
+        selectedBundling,
+        ongkir,
+        ongkirInfo,
+        timestamp: Date.now(),
+      };
+      
+      localStorage.setItem("order_draft", JSON.stringify(draftData));
+      toast.success("Draft berhasil disimpan");
+    } catch (err) {
+      console.error("[SAVE DRAFT ERROR]", err);
+      toast.error("Gagal menyimpan draft");
+    }
+  }, [customerForm, formWilayah, selectedWilayahIds, paymentMethod, selectedBundling, ongkir, ongkirInfo]);
+
+  // ✅ Make handleSaveDraft available globally (for HTML/embed blocks that might call it)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.handleSaveDraft = handleSaveDraft;
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        delete window.handleSaveDraft;
+      }
+    };
+  }, [handleSaveDraft]);
+
   // ✅ Load provinces di background (tidak blocking render)
   useEffect(() => {
     if (!productData) return;
@@ -2337,16 +2372,32 @@ export default function ProductPage() {
 
         const data = json.data;
         
-        // Parse bundling jika berupa string JSON
-        let bundlingData = data.bundling || [];
-        if (typeof bundlingData === 'string') {
-          try {
-            bundlingData = JSON.parse(bundlingData);
-          } catch (e) {
-            console.warn("[PRODUCT] Failed to parse bundling string:", e);
-            bundlingData = [];
+        // ✅ FIX: Ambil bundling dari bundling_rel (relasi database)
+        // bundling_rel adalah array dari relasi database, bukan JSON string
+        let bundlingData = [];
+        if (data.bundling_rel && Array.isArray(data.bundling_rel)) {
+          // Map bundling_rel ke format yang diharapkan
+          bundlingData = data.bundling_rel
+            .filter(item => item.status === 'A') // Hanya ambil yang status aktif
+            .map(item => ({
+              id: item.id,
+              nama: item.nama,
+              harga: typeof item.harga === 'string' ? parseInt(item.harga) : item.harga
+            }));
+        } else if (data.bundling) {
+          // Fallback untuk data lama (legacy)
+          if (typeof data.bundling === 'string') {
+            try {
+              bundlingData = JSON.parse(data.bundling);
+            } catch (e) {
+              console.warn("[PRODUCT] Failed to parse bundling string:", e);
+              bundlingData = [];
+            }
+          } else if (Array.isArray(data.bundling)) {
+            bundlingData = data.bundling;
           }
         }
+        
         if (!Array.isArray(bundlingData)) {
           bundlingData = [];
         }
