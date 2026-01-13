@@ -2082,7 +2082,14 @@ export default function ProductPage() {
       return toast.error("Data produk tidak valid");
     }
     
-    const hargaProduk = parseInt(productData.harga || '0', 10);
+    // ✅ Ambil harga dari bundling yang dipilih jika ada, jika tidak gunakan harga default
+    let hargaProduk = parseInt(productData.harga || '0', 10);
+    const bundlingData = productData?.bundling && Array.isArray(productData.bundling) ? productData.bundling : [];
+    if (selectedBundling !== null && bundlingData && bundlingData.length > 0 && bundlingData[selectedBundling]) {
+      const selectedBundlingItem = bundlingData[selectedBundling];
+      hargaProduk = parseInt(selectedBundlingItem.harga || productData.harga || '0', 10);
+    }
+    
     const ongkirValue = isKategoriBuku() ? (ongkir || 0) : 0;
     
     const totalHarga = isKategoriBuku() 
@@ -2104,6 +2111,14 @@ export default function ProductPage() {
       }
     }
 
+    // ✅ Ambil bundling_id jika customer memilih bundling
+    let bundlingId = null;
+    if (selectedBundling !== null && bundlingData && bundlingData.length > 0 && bundlingData[selectedBundling]) {
+      const selectedBundlingItem = bundlingData[selectedBundling];
+      // Ambil id dari bundling yang dipilih (dari bundling_rel)
+      bundlingId = selectedBundlingItem.id || null;
+    }
+
     // ✅ Format request: sama seperti addCustomer.js - tanpa alamat, gunakan field terpisah
     const payload = {
       nama: customerForm.nama,
@@ -2122,6 +2137,8 @@ export default function ProductPage() {
       custom_value: Array.isArray(customerForm.custom_value) 
         ? customerForm.custom_value 
         : (customerForm.custom_value ? [customerForm.custom_value] : []),
+      // ✅ Tambahkan bundling_id jika customer memilih bundling
+      ...(bundlingId ? { bundling_id: bundlingId } : {}),
     };
 
     try {
