@@ -2402,31 +2402,14 @@ export default function ProductPage() {
   }, [kode_produk]);
 
   // ✅ Loading indicator - hanya block untuk product data, tidak untuk provinces
+  // ✅ Halaman kosong tanpa animasi/gambar untuk SEO dan meta ads
   if (loading) {
     return (
       <div className="add-products3-container" style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        minHeight: '100vh',
-        flexDirection: 'column',
-        gap: '1rem',
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        minHeight: '100vh'
       }}>
-        <div style={{
-          width: "48px",
-          height: "48px",
-          border: "4px solid #3b82f6",
-          borderTopColor: "transparent",
-          borderRadius: "50%",
-          animation: "spin 1s linear infinite"
-        }} />
-        <p style={{ color: '#6b7280', fontSize: '16px' }}>Memuat produk...</p>
-        <style jsx>{`
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
+        {/* Halaman kosong saat loading - tidak ada animasi/gambar untuk SEO */}
       </div>
     );
   }
@@ -2553,7 +2536,7 @@ export default function ProductPage() {
         </div>
       </div>
 
-      {/* Loading Overlay */}
+      {/* Loading Overlay - tanpa animasi/gambar untuk SEO */}
       {submitting && (
         <div style={{
           position: "fixed",
@@ -2570,15 +2553,6 @@ export default function ProductPage() {
             borderRadius: "8px",
             textAlign: "center"
           }}>
-            <div style={{
-              width: "48px",
-              height: "48px",
-              border: "4px solid #3b82f6",
-              borderTopColor: "transparent",
-              borderRadius: "50%",
-              animation: "spin 1s linear infinite",
-              margin: "0 auto 1rem"
-            }} />
             <p>Memproses pesanan Anda...</p>
           </div>
         </div>
