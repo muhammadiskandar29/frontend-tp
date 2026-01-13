@@ -24,7 +24,7 @@ const BASE_URL = "/api";
 const STATUS_PEMBAYARAN_MAP = {
   0:    { label: "Unpaid", class: "unpaid" },
   null: { label: "Unpaid", class: "unpaid" },
-  1:    { label: "Menunggu", class: "pending" },
+  1:    { label: "Pending", class: "pending" },
   2:    { label: "Paid", class: "paid" },
   3:    { label: "Ditolak", class: "rejected" },
   4:    { label: "DP", class: "dp" },
@@ -652,7 +652,7 @@ export default function DaftarPesanan() {
                 <Clock size={24} />
               </div>
               <div>
-                <p className="summary-card__label">Menunggu</p>
+                <p className="summary-card__label">Pending</p>
                 <p className="summary-card__value">{menungguOrders}</p>
               </div>
             </div>

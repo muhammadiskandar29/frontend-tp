@@ -6,7 +6,7 @@ import "@/styles/sales/orders-page.css";
 const STATUS_PEMBAYARAN_MAP = {
   0:    { label: "Unpaid", class: "unpaid" },
   null: { label: "Unpaid", class: "unpaid" },
-  1:    { label: "Menunggu", class: "pending" },
+  1:    { label: "Pending", class: "pending" },
   2:    { label: "Paid", class: "paid" },
   3:    { label: "Ditolak", class: "rejected" },
   4:    { label: "DP", class: "dp" },

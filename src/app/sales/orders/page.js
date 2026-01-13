@@ -38,7 +38,7 @@ const BASE_URL = "/api";
 const STATUS_PEMBAYARAN_MAP = {
   0:    { label: "Unpaid", class: "unpaid" },
   null: { label: "Unpaid", class: "unpaid" },
-  1:    { label: "Menunggu", class: "pending" },
+  1:    { label: "Pending", class: "pending" },
   2:    { label: "Paid", class: "paid" },
   3:    { label: "Ditolak", class: "rejected" },
   4:    { label: "DP", class: "dp" },
@@ -61,8 +61,9 @@ const ORDERS_COLUMNS = [
   { line1: "Status", line2: "Pembayaran" },
   { line1: "Status", line2: "Order" },
   { line1: "Follow Up", line2: "Text" },
-  { line1: "Bukti", line2: "Pembayaran", icon: "image" },
+  { line1: "Bukti", line2: "Pembayaran" },
   { line1: "Gross", line2: "Revenue" },
+  { line1: "Sales", line2: "" },
   null, // Kolom kosong untuk Update/Konfirmasi button
 ];
 
@@ -382,6 +383,8 @@ export default function DaftarPesanan() {
   const [paymentHistory, setPaymentHistory] = useState({}); // { orderId: [payments] }
   const [showPaymentHistory, setShowPaymentHistory] = useState(false);
   const [selectedOrderIdForHistory, setSelectedOrderIdForHistory] = useState(null);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedImageUrl, setSelectedImageUrl] = useState(null);
 
   const fetchingRef = useRef(false); // Prevent multiple simultaneous fetches
 
@@ -790,6 +793,18 @@ export default function DaftarPesanan() {
     return `/api/image?path=${encodeURIComponent(cleanPath)}`;
   }, []);
 
+  // Handler untuk buka modal gambar
+  const handleOpenImageModal = useCallback((imageUrl) => {
+    setSelectedImageUrl(imageUrl);
+    setShowImageModal(true);
+  }, []);
+
+  // Handler untuk tutup modal gambar
+  const handleCloseImageModal = useCallback(() => {
+    setShowImageModal(false);
+    setSelectedImageUrl(null);
+  }, []);
+
   // Helper untuk mengambil bukti_pembayaran dari order_payment_rel
   const getBuktiPembayaran = useCallback((order) => {
     if (order.bukti_pembayaran) {
@@ -1119,7 +1134,7 @@ export default function DaftarPesanan() {
                 <Clock size={22} />
               </div>
               <div>
-                <p className="summary-card__label">Menunggu</p>
+                <p className="summary-card__label">Pending</p>
                 <p className="summary-card__value">{menungguOrders}</p>
               </div>
             </div>
@@ -1244,14 +1259,7 @@ export default function DaftarPesanan() {
                   }
                   return (
                     <span key={idx} style={{ display: "flex", flexDirection: "column", gap: "0.1rem", alignItems: "flex-start" }}>
-                      {column.icon === "image" ? (
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
-                          <ImageIcon size={14} style={{ color: "#6b7280" }} />
-                          <span>{column.line1}</span>
-                        </div>
-                      ) : (
-                        <span>{column.line1}</span>
-                      )}
+                      <span>{column.line1}</span>
                       {column.line2 && <span>{column.line2}</span>}
                     </span>
                   );
@@ -1382,7 +1390,24 @@ export default function DaftarPesanan() {
                         {/* Bukti Pembayaran */}
                         <div className="orders-table__cell" data-label="Bukti Pembayaran">
                           {buktiUrl ? (
-                            <ImageIcon size={16} style={{ color: "#6b7280" }} />
+                            <ImageIcon 
+                              size={16} 
+                              style={{ 
+                                color: "#6b7280",
+                                cursor: "pointer",
+                                transition: "color 0.2s ease"
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenImageModal(buktiUrl);
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.color = "#2563eb";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.color = "#6b7280";
+                              }}
+                            />
                           ) : (
                             <span style={{ fontSize: "0.875rem", color: "#9ca3af" }}>-</span>
                           )}
@@ -1393,6 +1418,16 @@ export default function DaftarPesanan() {
                           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
                             <span style={{ fontSize: "0.875rem", color: "#111827", fontWeight: 600 }}>
                               Rp {Number(order.total_harga || 0).toLocaleString("id-ID")}
+                            </span>
+                            <span style={{ fontSize: "0.875rem", color: "#111827" }}></span>
+                          </div>
+                        </div>
+                        
+                        {/* Sales */}
+                        <div className="orders-table__cell" data-label="Sales">
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                            <span style={{ fontSize: "0.875rem", color: "#111827" }}>
+                              {order.sales_rel?.nama || order.sales_nama || "-"}
                             </span>
                             <span style={{ fontSize: "0.875rem", color: "#111827" }}></span>
                           </div>
@@ -2247,6 +2282,97 @@ export default function DaftarPesanan() {
                 Terapkan
               </button>
             </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Image Modal Overlay */}
+      {showImageModal && selectedImageUrl && typeof window !== "undefined" && createPortal(
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.9)",
+            zIndex: 10000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "2rem",
+            cursor: "pointer",
+          }}
+          onClick={handleCloseImageModal}
+        >
+          <button
+            onClick={handleCloseImageModal}
+            style={{
+              position: "absolute",
+              top: "1rem",
+              right: "1rem",
+              background: "rgba(255, 255, 255, 0.2)",
+              border: "none",
+              borderRadius: "50%",
+              width: "40px",
+              height: "40px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              color: "#fff",
+              fontSize: "1.5rem",
+              transition: "background 0.2s ease",
+              zIndex: 10001,
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = "rgba(255, 255, 255, 0.3)";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = "rgba(255, 255, 255, 0.2)";
+            }}
+            aria-label="Tutup"
+          >
+            <i className="pi pi-times" />
+          </button>
+          <div
+            style={{
+              position: "relative",
+              maxWidth: "90%",
+              maxHeight: "90%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={selectedImageUrl}
+              alt="Bukti Pembayaran - Full Size"
+              style={{
+                maxWidth: "100%",
+                maxHeight: "90vh",
+                objectFit: "contain",
+                borderRadius: "8px",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.5)",
+                cursor: "zoom-in",
+              }}
+              onClick={(e) => {
+                // Zoom in/out on click
+                if (e.target.style.transform === "scale(2)") {
+                  e.target.style.transform = "scale(1)";
+                  e.target.style.cursor = "zoom-in";
+                } else {
+                  e.target.style.transform = "scale(2)";
+                  e.target.style.cursor = "zoom-out";
+                }
+              }}
+              onError={(e) => {
+                console.error("Gagal memuat gambar:", selectedImageUrl);
+                e.target.style.display = "none";
+              }}
+            />
           </div>
         </div>,
         document.body

@@ -20,8 +20,8 @@ const RejectOrder = dynamic(() => import("./rejectOrder"), { ssr: false });
 
 // Status Validasi Mapping (berdasarkan field `status`)
 const VALIDATION_STATUS_MAP = {
-  0: { label: "Menunggu", class: "pending" },
-  1: { label: "Menunggu", class: "pending" },
+  0: { label: "Pending", class: "pending" },
+  1: { label: "Pending", class: "pending" },
   2: { label: "Valid", class: "valid" },
   3: { label: "Ditolak", class: "rejected" },
 };

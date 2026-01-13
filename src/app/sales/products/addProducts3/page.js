@@ -48,13 +48,11 @@ import {
 import CountdownPreview from './components/CountdownPreview';
 import ImageSliderPreview from './components/ImageSliderPreview';
 import QuotaInfoPreview from './components/QuotaInfoPreview';
-import { LoadingOverlay } from "@/app/loading";
 // PrimeReact Theme & Core
 import "primereact/resources/themes/lara-light-amber/theme.css";
 import "primereact/resources/primereact.min.css";
 import "@/styles/sales/add-products3.css";
 import "@/styles/ongkir.css";
-import "@/styles/loading.css";
 
 // Komponen yang tersedia
 const COMPONENT_CATEGORIES = {
@@ -3085,12 +3083,6 @@ export default function AddProducts3Page() {
 
   return (
     <div className="add-products3-container">
-      {/* Loading Overlay */}
-      <LoadingOverlay 
-        isLoading={isSaving} 
-        message="Sabar yah, data produk sedang diproses :)" 
-      />
-      
       {/* Header Section with Back Button and Save Button */}
       <div className="page-header-section">
         <button

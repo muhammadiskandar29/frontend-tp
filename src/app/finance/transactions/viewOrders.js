@@ -142,7 +142,7 @@ export default function ViewOrders({ order, onClose }) {
     switch (statusCode) {
       case 0:
       case 1:
-        return "Menunggu";
+        return "Pending";
       case 2:
         return "Valid";
       case 3:

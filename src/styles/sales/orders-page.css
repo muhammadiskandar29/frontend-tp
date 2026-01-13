@@ -456,7 +456,9 @@ ORDERS TABLE
 .orders-table__wrapper {
   width: 100%;
   overflow-x: auto;
+  overflow-y: auto; /* Enable vertical scroll */
   padding-bottom: 0.25rem;
+  position: relative;
 }
 
 .orders-table__wrapper::-webkit-scrollbar {
@@ -484,15 +486,16 @@ ORDERS TABLE
 .orders-table__row {
   display: grid;
   grid-template-columns: 
-    minmax(140px, 1.2fr)                    /* Order ID - diperkecil */
-    24px                                    /* ExternalLink (kolom kosong) */
-    minmax(130px, 1.2fr)                    /* Customer */
+    minmax(140px, 1.2fr)                    /* Order ID - STICKY */
+    24px                                    /* ExternalLink (kolom kosong) - STICKY */
+    minmax(130px, 1.2fr)                    /* Customer - STICKY */
     minmax(140px, 1.2fr)                    /* Produk */
     minmax(110px, 1fr)                      /* Status Pembayaran */
     minmax(100px, 0.9fr)                    /* Status Order */
     minmax(280px, 2.5fr)                    /* Follow Up Text - diperlebar lagi */
     minmax(100px, 0.9fr)                    /* Bukti Pembayaran */
     minmax(140px, 1.2fr)                    /* Gross Revenue */
+    minmax(120px, 1fr)                      /* Sales */
     minmax(150px, 1fr);                     /* Update/Konfirmasi button */
   gap: 0.3rem;
   align-items: center;
@@ -510,12 +513,78 @@ ORDERS TABLE
   align-items: center;
 }
 
+/* Sticky columns untuk Order ID, ExternalLink, dan Customer */
+.orders-table__head > span:nth-child(1),
+.orders-table__row > div:nth-child(1) {
+  position: sticky;
+  left: 0;
+  z-index: 11;
+  background: var(--orders-surface);
+  padding-right: 0.5rem;
+}
+
+.orders-table__head > span:nth-child(1) {
+  z-index: 21; /* Higher z-index untuk head */
+}
+
+.orders-table__head > span:nth-child(2),
+.orders-table__row > div:nth-child(2) {
+  position: sticky;
+  left: calc(140px + 0.3rem); /* Width of Order ID + gap */
+  z-index: 11;
+  background: var(--orders-surface);
+}
+
+.orders-table__head > span:nth-child(2) {
+  z-index: 21; /* Higher z-index untuk head */
+}
+
+.orders-table__head > span:nth-child(3),
+.orders-table__row > div:nth-child(3) {
+  position: sticky;
+  left: calc(140px + 24px + 0.6rem); /* Width of Order ID + ExternalLink + gaps */
+  z-index: 11;
+  background: var(--orders-surface);
+  padding-right: 0.5rem;
+}
+
+.orders-table__head > span:nth-child(3) {
+  z-index: 21; /* Higher z-index untuk head */
+}
+
+/* Shadow untuk sticky columns saat scroll horizontal */
+.orders-table__row > div:nth-child(1)::after,
+.orders-table__row > div:nth-child(2)::after,
+.orders-table__row > div:nth-child(3)::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -4px;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.1), transparent);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.orders-table__wrapper:hover .orders-table__row > div:nth-child(1)::after,
+.orders-table__wrapper:hover .orders-table__row > div:nth-child(2)::after,
+.orders-table__wrapper:hover .orders-table__row > div:nth-child(3)::after {
+  opacity: 1;
+}
+
 .orders-table__head {
   padding: 0.6rem 0.75rem;
   color: var(--orders-muted);
   font-size: 0.7rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--orders-surface);
+  border-bottom: 1px solid var(--orders-border);
 }
 
 .orders-table__body {

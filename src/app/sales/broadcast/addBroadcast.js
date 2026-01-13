@@ -28,7 +28,7 @@ const STATUS_PEMBAYARAN_MAP = {
   null: "Unpaid",
   0: "Unpaid",
 
-  1: "Menunggu",
+  1: "Pending",
   2: "Paid",
   3: "Ditolak",
   4: "DP",
