@@ -11,6 +11,8 @@ import "@/styles/sales/admin.css";
 import "@/styles/sales/customers-premium.css";
 import "@/styles/sales/leads.css";
 
+import "@/styles/sales/shared-table.css";
+
 // Lazy load modals
 const EditCustomerModal = dynamic(() => import("./editCustomer"), { ssr: false });
 const ViewCustomerModal = dynamic(() => import("./viewCustomer"), { ssr: false });
@@ -32,16 +34,6 @@ function useDebouncedValue(value, delay = 500) {
   }, [value, delay]);
   return debounced;
 }
-
-const CUSTOMERS_COLUMNS = [
-  { line1: "Member", line2: "Id" },
-  { line1: "Nama", line2: "" },
-  { line1: "Email", line2: "" },
-  { line1: "No WA", line2: "" },
-  { line1: "Verifikasi", line2: "" },
-  { line1: "Pesanan", line2: "Sukses" },
-  { line1: "Total Net", line2: "Revenue" },
-];
 
 export default function AdminCustomerPage() {
   const router = useRouter();
@@ -312,7 +304,7 @@ export default function AdminCustomerPage() {
 
   return (
     <Layout title="Manage Customers">
-      <div className="dashboard-shell customers-shell">
+      <div className="dashboard-shell customers-shell table-shell">
         <section className="dashboard-summary customers-summary">
           <article className="summary-card summary-card--combined summary-card--three-cols">
             <div className="summary-card__column">
@@ -414,97 +406,110 @@ export default function AdminCustomerPage() {
             </div>
           </div>
 
-          <div className="customers-table__wrapper">
-            <div className="customers-table">
-              <div className="customers-table__head">
-                {CUSTOMERS_COLUMNS.map((column, idx) => (
-                  <span key={idx} className="customers-table__head-cell">
-                    <span className="customers-table__head-line1">{column.line1}</span>
-                    {column.line2 && <span className="customers-table__head-line2">{column.line2}</span>}
-                  </span>
-                ))}
-              </div>
-              <div className="customers-table__body">
+          <div className="table-wrapper">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  {/* Sticky 1: Member ID */}
+                  <th className="sticky-left-1">
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span>MEMBER</span>
+                      <span>ID</span>
+                    </div>
+                  </th>
+                  {/* Sticky 2: Nama */}
+                  <th className="sticky-left-2">NAMA</th>
+                  <th>EMAIL</th>
+                  <th>NO WA</th>
+                  <th>VERIFIKASI</th>
+                  <th>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span>PESANAN</span>
+                      <span>SUKSES</span>
+                    </div>
+                  </th>
+                  <th>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span>TOTAL NET</span>
+                      <span>REVENUE</span>
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
                 {loading && customers.length === 0 ? (
-                  <p className="customers-empty">Loading data...</p>
+                  <tr>
+                    <td colSpan={7} className="table-empty">Loading data...</td>
+                  </tr>
                 ) : customers.length > 0 ? (
                   customers.map((cust, i) => (
-                    <div className="customers-table__row" key={cust.id || `${cust.email}-${i}`}>
-                      {/* Id Member */}
-                      <div className="customers-table__cell" data-label="Member Id">
+                    <tr key={cust.id || `${cust.email}-${i}`}>
+                      {/* Sticky 1: Member ID */}
+                      <td className="sticky-left-1" style={{ fontWeight: 500 }}>
                         {cust.memberID || "-"}
-                      </div>
+                      </td>
 
-                      {/* Nama - Klikable */}
-                      <div className="customers-table__cell customers-table__cell--strong" data-label="Nama">
-                        <div className="customer-table__info">
-                          <span
-                            className="customer-table__name"
-                            onClick={() => handleView(cust)}
-                          >
-                            {cust.nama || "-"}
-                          </span>
-                        </div>
-                      </div>
+                      {/* Sticky 2: Nama */}
+                      <td className="sticky-left-2">
+                        <span
+                          style={{ color: '#0ea5e9', fontWeight: 600, cursor: 'pointer' }}
+                          onClick={() => handleView(cust)}
+                        >
+                          {cust.nama || "-"}
+                        </span>
+                      </td>
 
-                      {/* Email */}
-                      <div className="customers-table__cell" data-label="Email">
-                        {cust.email || "-"}
-                      </div>
+                      <td>{cust.email || "-"}</td>
 
-                      {/* No WA */}
-                      <div className="customers-table__cell" data-label="No WA">
+                      <td>
                         {cust.wa ? (
                           <a
                             href={`https://wa.me/${cust.wa.replace(/[^0-9]/g, "").replace(/^0/, "62")}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="wa-link"
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#25D366', textDecoration: 'none' }}
                             title={`Chat WhatsApp ${cust.wa}`}
                           >
-                            <svg
-                              viewBox="0 0 24 24"
-                              width="14"
-                              height="14"
-                              fill="currentColor"
-                            >
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
                               <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
                             </svg>
                             <span>{cust.wa}</span>
                           </a>
-                        ) : (
-                          "-"
-                        )}
-                      </div>
+                        ) : "-"}
+                      </td>
 
-                      {/* Verifikasi */}
-                      <div className="customers-table__cell" data-label="Verifikasi">
+                      <td>
                         <span
                           className={`customers-verif-tag ${cust.verifikasi === "1" || cust.verifikasi === true ? "is-verified" : "is-unverified"
                             }`}
+                          style={{
+                            display: 'inline-block',
+                            padding: '0.25rem 0.6rem',
+                            borderRadius: '0.375rem',
+                            fontSize: '0.7rem',
+                            fontWeight: 600,
+                            backgroundColor: cust.verifikasi === "1" || cust.verifikasi === true ? '#ecfdf5' : '#fef2f2',
+                            color: cust.verifikasi === "1" || cust.verifikasi === true ? '#059669' : '#dc2626',
+                            border: `1px solid ${cust.verifikasi === "1" || cust.verifikasi === true ? '#34d399' : '#f87171'}`
+                          }}
                         >
                           {cust.verifikasi === "1" || cust.verifikasi === true ? "Verified" : "Unverified"}
                         </span>
-                      </div>
+                      </td>
 
-                      {/* Pesanan Sukses - Tampilkan "-" untuk sementara */}
-                      <div className="customers-table__cell" data-label="Pesanan Sukses">
-                        {"-"}
-                      </div>
-
-                      {/* Total Net Revenue - Tampilkan "-" untuk sementara */}
-                      <div className="customers-table__cell" data-label="Total Net Revenue">
-                        {"-"}
-                      </div>
-                    </div>
+                      <td>-</td>
+                      <td>-</td>
+                    </tr>
                   ))
                 ) : (
-                  <p className="customers-empty">
-                    {debouncedSearch.trim() ? "Tidak ada hasil pencarian." : "Tidak ada data customer"}
-                  </p>
+                  <tr>
+                    <td colSpan={7} className="table-empty">
+                      {debouncedSearch.trim() ? "Tidak ada hasil pencarian." : "Tidak ada data customer"}
+                    </td>
+                  </tr>
                 )}
-              </div>
-            </div>
+              </tbody>
+            </table>
           </div>
 
           {/* Pagination dengan Next/Previous Button */}

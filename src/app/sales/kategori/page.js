@@ -8,10 +8,11 @@ import useKategori from "@/hooks/sales/useKategori";
 import { toastSuccess, toastError } from "@/lib/toast";
 import "@/styles/sales/dashboard.css";
 import "@/styles/sales/admin.css";
+import "@/styles/sales/shared-table.css";
 
 // Lazy load modals
 const AddKategoriModal = dynamic(() => import("./addKategori"), { ssr: false });
-const EditKategoriModal = dynamic(() => import("./editKategori"), { ssr: false });
+const EditKategoriModal = dynamic(() => import("./deleteKategori"), { ssr: false });
 const DeleteKategoriModal = dynamic(() => import("./deleteKategori"), { ssr: false });
 
 function useDebouncedValue(value, delay = 250) {
@@ -126,7 +127,7 @@ export default function AdminKategoriPage() {
 
   return (
     <Layout title="Manage Categories">
-      <div className="dashboard-shell customers-shell">
+      <div className="dashboard-shell customers-shell table-shell">
 
 
         <section className="dashboard-summary kategori-summary">
@@ -181,50 +182,46 @@ export default function AdminKategoriPage() {
               + Tambah Kategori
             </button>          </div>
 
-          <div className="users-table__wrapper">
-            <div className="users-table">
-              <div className="users-table__head">
-                <span>#</span>
-                <span>Nama Kategori</span>
-                <span>Actions</span>
-              </div>
-              <div className="users-table__body">
+          <div className="table-wrapper">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th style={{ width: '80px' }}>#</th>
+                  <th>NAMA KATEGORI</th>
+                  <th style={{ textAlign: 'right' }}>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody>
                 {paginatedData.length > 0 ? (
                   paginatedData.map((kat, i) => (
-                    <div className="users-table__row" key={kat.id}>
-                      <div className="users-table__cell" data-label="#">
-                        {startIndex + i + 1}
-                      </div>
-                      <div className="users-table__cell" data-label="Nama Kategori">
-                        {kat.nama}
-                      </div>
-                      <div className="users-table__cell users-table__cell--actions" data-label="Actions">
-                        <button
-                          className="users-action-btn users-action-btn--ghost"
-                          title="Edit kategori"
-                          aria-label="Edit kategori"
-                          onClick={() => handleEdit(kat)}
-                        >
-                          <i className="pi pi-pencil" />
-                        </button>
-                        <button
-                          className="users-action-btn users-action-btn--danger"
-                          title="Hapus kategori"
-                          aria-label="Hapus kategori"
-                          onClick={() => handleDelete(kat)}
-                        >
-                          <i className="pi pi-trash" />
-                        </button>
-                      </div>
-                    </div>
+                    <tr key={kat.id}>
+                      <td>{startIndex + i + 1}</td>
+                      <td style={{ fontWeight: 500 }}>{kat.nama}</td>
+                      <td style={{ textAlign: 'right' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                          <button
+                            className="action-btn"
+                            title="Edit kategori"
+                            onClick={() => handleEdit(kat)}
+                          >
+                            <i className="pi pi-pencil" />
+                          </button>
+                          <button
+                            className="action-btn action-btn--danger"
+                            title="Hapus kategori"
+                            onClick={() => handleDelete(kat)}
+                          >
+                            <i className="pi pi-trash" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
                   ))
                 ) : (
-                  <p className="users-empty">
-                    {kategori.length ? "Tidak ada hasil pencarian." : "Belum ada kategori."}
-                  </p>
+                  <tr><td colSpan={3} className="table-empty">{kategori.length ? "Tidak ada hasil pencarian." : "Belum ada kategori."}</td></tr>
                 )}
-              </div>
-            </div>
+              </tbody>
+            </table>
           </div>
 
           {totalPages > 1 && (

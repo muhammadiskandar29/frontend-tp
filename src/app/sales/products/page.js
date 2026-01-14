@@ -9,6 +9,8 @@ import DeleteProductModal from "./deleteProductModal";
 import "@/styles/sales/dashboard.css";
 import "@/styles/sales/admin.css";
 
+import "@/styles/sales/shared-table.css";
+
 function useDebouncedValue(value, delay = 250) {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
@@ -73,10 +75,10 @@ export default function AdminProductsPage() {
       try {
         const token = localStorage.getItem("token");
         const headers = { Authorization: `Bearer ${token}` };
-        
+
         const usersRes = await fetch("/api/admin/users", { headers });
         const usersJson = await usersRes.json();
-        
+
         if (usersJson.success && Array.isArray(usersJson.data)) {
           const map = new Map();
           usersJson.data.forEach((u) => {
@@ -92,7 +94,7 @@ export default function AdminProductsPage() {
         console.error("Error fetching users for Assign By:", err);
       }
     }
-    
+
     fetchUsers();
   }, []);
 
@@ -117,15 +119,25 @@ export default function AdminProductsPage() {
 
   const getStatusBadge = useCallback((status) => {
     if (status === "1") {
-      return <span className="customers-verif-tag is-verified">Active</span>;
+      return (
+        <span style={{
+          background: '#ecfdf5', color: '#059669', border: '1px solid #34d399',
+          padding: '0.25rem 0.5rem', borderRadius: '0.375rem', fontSize: '0.75rem', fontWeight: 600
+        }}>Active</span>
+      );
     }
-    return <span className="customers-verif-tag is-unverified">Inactive</span>;
+    return (
+      <span style={{
+        background: '#fef2f2', color: '#dc2626', border: '1px solid #f87171',
+        padding: '0.25rem 0.5rem', borderRadius: '0.375rem', fontSize: '0.75rem', fontWeight: 600
+      }}>Inactive</span>
+    );
   }, []);
 
   // Parse assign field dan ambil nama user
   const getAssignNames = useCallback((assign) => {
     if (!assign) return "-";
-    
+
     try {
       // Parse JSON string jika berupa string
       let assignIds = [];
@@ -158,7 +170,7 @@ export default function AdminProductsPage() {
 
   return (
     <Layout title="Manage Products">
-      <div className="dashboard-shell customers-shell">
+      <div className="dashboard-shell customers-shell table-shell">
         <section className="dashboard-summary products-summary">
           <article className="summary-card summary-card--combined summary-card--three-cols">
             <div className="summary-card__column">
@@ -219,7 +231,7 @@ export default function AdminProductsPage() {
               onClick={() => router.push("/sales/products/addProducts3")}
             >
               + Tambah Produk
-            </button>          
+            </button>
           </div>
 
           {error && (
@@ -228,105 +240,102 @@ export default function AdminProductsPage() {
             </div>
           )}
 
-          <div className="products-table__wrapper">
-            <div className="products-table">
-              <div className="products-table__head">
-                <span>Product</span>
-                <span>Category</span>
-                <span>Status</span>
-                <span>Event Date</span>
-                <span>Created By</span>
-                <span>Assign By</span>
-                <span>Created At</span>
-              </div>
-              <div className="products-table__body">
+          <div className="table-wrapper">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th className="sticky-left-1" style={{ width: '250px', minWidth: '250px' }}>PRODUCT</th>
+                  <th className="sticky-left-2" style={{ left: '250px' }}>CATEGORY</th>
+                  <th>STATUS</th>
+                  <th>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span>EVENT</span>
+                      <span>DATE</span>
+                    </div>
+                  </th>
+                  <th>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span>CREATED</span>
+                      <span>BY</span>
+                    </div>
+                  </th>
+                  <th>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span>ASSIGN</span>
+                      <span>BY</span>
+                    </div>
+                  </th>
+                  <th>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span>CREATED</span>
+                      <span>AT</span>
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
                 {loading ? (
-                  <p className="products-empty">Loading data...</p>
+                  <tr><td colSpan={7} className="table-empty">Loading data...</td></tr>
                 ) : paginatedData.length > 0 ? (
                   paginatedData.map((p, i) => (
-                    <div className="products-table__row" key={p.id}>
-                      <div className="products-table__cell products-table__cell--strong" data-label="Product">
+                    <tr key={p.id}>
+                      <td className="sticky-left-1" style={{ width: '250px', minWidth: '250px' }}>
                         <div className="product-table__info">
                           <span
                             className="product-table__name"
+                            style={{ display: 'block', fontWeight: 600, color: '#0ea5e9', cursor: 'pointer', marginBottom: '0.25rem' }}
                             onClick={() => router.push(`/sales/products/view/${p.id}`)}
                           >
                             {p.nama || "-"}
                           </span>
-                          <div className="product-table__actions">
+                          <div className="product-table__actions" style={{ display: 'flex', gap: '0.5rem' }}>
                             <button
-                              className="product-table__action-link"
+                              className="action-btn"
+                              style={{ fontSize: '0.7rem' }}
                               onClick={() => {
-                                // Generate slug dari nama jika kode tidak ada atau tidak valid
-                                const generateSlug = (text) =>
-                                  (text || "")
-                                    .toString()
-                                    .toLowerCase()
-                                    .trim()
-                                    .replace(/[^a-z0-9 -]/g, "")
-                                    .replace(/\s+/g, "-")
-                                    .replace(/-+/g, "-");
-                                
+                                // ... logic ...
+                                // Simpler inline logic or keep extracting if complex
+                                const generateSlug = (text) => (text || "").toString().toLowerCase().trim().replace(/[^a-z0-9 -]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-");
                                 let kodeProduk = p.kode || (p.url ? p.url.replace(/^\//, '') : null);
-                                
-                                // Jika kode mengandung spasi atau karakter tidak valid, generate ulang dari nama
                                 if (!kodeProduk || kodeProduk.includes(' ') || kodeProduk.includes('%20')) {
                                   kodeProduk = generateSlug(p.nama);
                                 }
-                                
-                                if (kodeProduk) {
-                                  window.open(`/product/${kodeProduk}`, '_blank');
-                                } else {
-                                  alert('Kode produk tidak tersedia');
-                                }
+                                if (kodeProduk) window.open(`/product/${kodeProduk}`, '_blank');
+                                else alert('Kode produk tidak tersedia');
                               }}
                             >
                               Review
                             </button>
                             <button
-                              className="product-table__action-link"
-                              onClick={() => {
-                                router.push(`/sales/products/editProducts/${p.id}`);
-                              }}
+                              className="action-btn"
+                              style={{ fontSize: '0.7rem' }}
+                              onClick={() => router.push(`/sales/products/editProducts/${p.id}`)}
                             >
                               Edit
                             </button>
                             <button
-                              className="product-table__action-link product-table__action-link--danger"
+                              className="action-btn action-btn--danger"
+                              style={{ fontSize: '0.7rem' }}
                               onClick={() => openDeleteModal(p)}
                             >
                               Delete
                             </button>
                           </div>
                         </div>
-                      </div>
-                      <div className="products-table__cell" data-label="Category">
-                        {p.kategori_rel?.nama || "-"}
-                      </div>
-                      <div className="products-table__cell" data-label="Status">
-                        {getStatusBadge(p.status)}
-                      </div>
-                      <div className="products-table__cell" data-label="Event Date">
-                        {formatDate(p.tanggal_event)}
-                      </div>
-                      <div className="products-table__cell" data-label="Created By">
-                        {p.user_rel?.nama || "-"}
-                      </div>
-                      <div className="products-table__cell" data-label="Assign By">
-                        {getAssignNames(p.assign)}
-                      </div>
-                      <div className="products-table__cell" data-label="Created At">
-                        {formatDate(p.create_at)}
-                      </div>
-                    </div>
+                      </td>
+                      <td className="sticky-left-2" style={{ left: '250px' }}>{p.kategori_rel?.nama || "-"}</td>
+                      <td>{getStatusBadge(p.status)}</td>
+                      <td>{formatDate(p.tanggal_event)}</td>
+                      <td>{p.user_rel?.nama || "-"}</td>
+                      <td>{getAssignNames(p.assign)}</td>
+                      <td>{formatDate(p.create_at)}</td>
+                    </tr>
                   ))
                 ) : (
-                  <p className="products-empty">
-                    {products.length ? "Tidak ada hasil pencarian." : "Belum ada produk."}
-                  </p>
+                  <tr><td colSpan={7} className="table-empty">{products.length ? "Tidak ada hasil pencarian." : "Belum ada produk."}</td></tr>
                 )}
-              </div>
-            </div>
+              </tbody>
+            </table>
           </div>
 
           {totalPages > 1 && (
