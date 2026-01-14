@@ -6,6 +6,9 @@ import { toast } from "react-hot-toast";
 import Script from "next/script";
 import Head from "next/head";
 import dynamic from "next/dynamic";
+import Image from "next/image";
+// ✅ OPTIMASI: Tree-shake lucide-react - import icons yang digunakan secara dinamis
+// Icons digunakan dalam iconMap untuk list component, jadi tetap perlu di-import
 import { 
   CheckCircle2, Circle, Minus, ArrowRight, ArrowRightCircle,
   ArrowLeft as ArrowLeftIcon, ArrowLeftRight, ChevronRight, CheckSquare, ShieldCheck,
@@ -126,13 +129,12 @@ function CountdownComponent({ data = {}, componentId, containerStyle = {} }) {
     };
   }, [hours, minutes, seconds, componentId]);
 
-  const formatTime = (time) => ({
-    hours: String(time.hours).padStart(2, '0'),
-    minutes: String(time.minutes).padStart(2, '0'),
-    seconds: String(time.seconds).padStart(2, '0')
-  });
-
-  const formattedTime = formatTime(timeLeft);
+  // ✅ OPTIMASI: Memoize formatTime untuk mengurangi re-renders
+  const formattedTime = useMemo(() => ({
+    hours: String(timeLeft.hours).padStart(2, '0'),
+    minutes: String(timeLeft.minutes).padStart(2, '0'),
+    seconds: String(timeLeft.seconds).padStart(2, '0')
+  }), [timeLeft.hours, timeLeft.minutes, timeLeft.seconds]);
 
   const renderNumber = (value, label) => {
     // ✅ GENERAL: Styling sesuai gambar - dark grey box dengan white text, rounded corners
@@ -283,8 +285,11 @@ function normalizeLandingpageData(landingpageData) {
     return landingpageData;
   }
 
-  // ✅ Deep clone hanya jika benar-benar perlu (untuk menghindari mutasi)
-  const normalized = JSON.parse(JSON.stringify(landingpageData));
+  // ✅ OPTIMASI: Deep clone hanya jika benar-benar perlu (untuk menghindari mutasi)
+  // Gunakan structuredClone jika tersedia (lebih cepat), fallback ke JSON.parse
+  const normalized = typeof structuredClone !== 'undefined' 
+    ? structuredClone(landingpageData)
+    : JSON.parse(JSON.stringify(landingpageData));
 
   sections.forEach(section => {
     const sectionComponentId = section.config?.componentId;
@@ -706,8 +711,9 @@ function ProductPageContent() {
     return containerStyles;
   };
 
+  // ✅ OPTIMASI: Memoize renderBlock dengan useCallback untuk mengurangi re-renders
   // Render Block berdasarkan struktur content/style/config - SAMA PERSIS dengan renderPreview di addProducts3
-  const renderBlock = (block, allBlocks = []) => {
+  const renderBlock = useCallback((block, allBlocks = []) => {
     if (!block || !block.type) return null;
 
     const { type, content, style, config } = block;
@@ -928,16 +934,20 @@ function ProductPageContent() {
 
         // ✅ OPTIMASI: Tentukan apakah ini gambar pertama (hero image) untuk priority loading
         // Cek apakah ini block pertama dengan type image untuk prioritas LCP
-        const isHeroImage = allBlocks.findIndex(b => b && b.type === 'image' && !b.parentId) === allBlocks.findIndex(b => b === block);
+        const firstImageBlockIndex = allBlocks.findIndex(b => b && b.type === 'image' && !b.parentId);
+        const currentBlockIndex = allBlocks.findIndex(b => b === block);
+        const isHeroImage = firstImageBlockIndex !== -1 && firstImageBlockIndex === currentBlockIndex;
 
         return (
           <div style={imageContainerStyle}>
             <div style={imageWrapperStyle}>
-              <img 
+              <Image 
                 src={imageData.src} 
                 alt={imageData.alt || ""}
+                width={625}
+                height={625}
+                priority={isHeroImage}
                 loading={isHeroImage ? "eager" : "lazy"}
-                decoding="async"
                 style={{
                   width: "100%",
                   height: "100%",
@@ -945,6 +955,7 @@ function ProductPageContent() {
                   objectPosition: "center",
                   display: "block",
                 }}
+                unoptimized={imageData.src?.startsWith('http') && !imageData.src?.includes(process.env.NEXT_PUBLIC_BASE_URL || '')}
               />
             </div>
             {imageData.caption && <p className="preview-caption">{imageData.caption}</p>}
@@ -1075,14 +1086,16 @@ function ProductPageContent() {
                         <div className="testi-header-new">
                           {item.gambar ? (
                             <div className="testi-avatar-wrapper-new">
-                              <img 
+                              <Image 
                                 src={item.gambar} 
                                 alt={`Foto ${item.nama}`}
+                                width={48}
+                                height={48}
                                 className="testi-avatar-new"
                                 itemProp="author"
                                 loading="lazy"
-                                decoding="async"
                                 style={{ objectFit: 'cover', borderRadius: '50%' }}
+                                unoptimized={item.gambar?.startsWith('http') && !item.gambar?.includes(process.env.NEXT_PUBLIC_BASE_URL || '')}
                               />
                             </div>
                           ) : (
@@ -1660,7 +1673,7 @@ function ProductPageContent() {
                   />
                   <span className="payment-label">Bank Transfer (Manual)</span>
                   <div className="payment-icons-inline">
-                    <img className="pay-icon" src="/assets/bca.png" alt="BCA" />
+                    <Image className="pay-icon" src="/assets/bca.png" alt="BCA" width={32} height={32} loading="lazy" />
                   </div>
                 </label>
                 <label className="payment-option-row">
@@ -1673,10 +1686,10 @@ function ProductPageContent() {
                   />
                   <span className="payment-label">E-Payment</span>
                   <div className="payment-icons-inline">
-                    <img className="pay-icon" src="/assets/qris.svg" alt="QRIS" />
-                    <img className="pay-icon" src="/assets/dana.png" alt="DANA" />
-                    <img className="pay-icon" src="/assets/ovo.png" alt="OVO" />
-                    <img className="pay-icon" src="/assets/link.png" alt="LinkAja" />
+                    <Image className="pay-icon" src="/assets/qris.svg" alt="QRIS" width={32} height={32} loading="lazy" />
+                    <Image className="pay-icon" src="/assets/dana.png" alt="DANA" width={32} height={32} loading="lazy" />
+                    <Image className="pay-icon" src="/assets/ovo.png" alt="OVO" width={32} height={32} loading="lazy" />
+                    <Image className="pay-icon" src="/assets/link.png" alt="LinkAja" width={32} height={32} loading="lazy" />
                   </div>
                 </label>
                 <label className="payment-option-row">
@@ -1689,9 +1702,9 @@ function ProductPageContent() {
                   />
                   <span className="payment-label">Credit / Debit Card</span>
                   <div className="payment-icons-inline">
-                    <img className="pay-icon" src="/assets/visa.svg" alt="Visa" />
-                    <img className="pay-icon" src="/assets/master.png" alt="Mastercard" />
-                    <img className="pay-icon" src="/assets/jcb.png" alt="JCB" />
+                    <Image className="pay-icon" src="/assets/visa.svg" alt="Visa" width={32} height={32} loading="lazy" />
+                    <Image className="pay-icon" src="/assets/master.png" alt="Mastercard" width={32} height={32} loading="lazy" />
+                    <Image className="pay-icon" src="/assets/jcb.png" alt="JCB" width={32} height={32} loading="lazy" />
                   </div>
                 </label>
                 <label className="payment-option-row">
@@ -1704,10 +1717,10 @@ function ProductPageContent() {
                   />
                   <span className="payment-label">Virtual Account</span>
                   <div className="payment-icons-inline">
-                    <img className="pay-icon" src="/assets/bca.png" alt="BCA" />
-                    <img className="pay-icon" src="/assets/mandiri.png" alt="Mandiri" />
-                    <img className="pay-icon" src="/assets/bni.png" alt="BNI" />
-                    <img className="pay-icon" src="/assets/permata.svg" alt="Permata" />
+                    <Image className="pay-icon" src="/assets/bca.png" alt="BCA" width={32} height={32} loading="lazy" />
+                    <Image className="pay-icon" src="/assets/mandiri.png" alt="Mandiri" width={32} height={32} loading="lazy" />
+                    <Image className="pay-icon" src="/assets/bni.png" alt="BNI" width={32} height={32} loading="lazy" />
+                    <Image className="pay-icon" src="/assets/permata.svg" alt="Permata" width={32} height={32} loading="lazy" />
                   </div>
                 </label>
               </div>
@@ -2015,7 +2028,7 @@ function ProductPageContent() {
           <div className="preview-placeholder" style={containerStyle}>{type}</div>
         );
     }
-  };
+  }, [testimoniIndices, productData, ongkir, calculateTotal, customerForm, formWilayah, selectedWilayahIds, wilayahData, loadingWilayah, selectedCourier, costResults, loadingCost, paymentMethod, submitting, selectedBundling, ongkirInfo, alamatLengkap, getKategoriId, getFAQByKategori, cleanHTMLContent, getContainerStyles, getTextStyles]);
 
   // ✅ Fungsi untuk cek apakah form sudah valid (bisa submit)
   const isFormValid = () => {
@@ -2416,16 +2429,17 @@ function ProductPageContent() {
       }
 
       try {
-        // ✅ OPTIMASI: Jangan set loading true segera, biarkan UI render dulu
-        // Gunakan requestIdleCallback atau setTimeout untuk non-blocking
-        const timeoutId = setTimeout(() => setLoading(true), 0);
+        // ✅ OPTIMASI: Defer loading state untuk mengurangi blocking
+        const timeoutId = setTimeout(() => setLoading(true), 50);
         
-        // ✅ OPTIMASI: Timeout 3 detik untuk fetch API
+        // ✅ OPTIMASI: Timeout 5 detik untuk fetch API (lebih longgar untuk mobile)
         const controller = new AbortController();
-        const fetchTimeoutId = setTimeout(() => controller.abort(), 3000);
+        const fetchTimeoutId = setTimeout(() => controller.abort(), 5000);
         
+        // ✅ OPTIMASI: Gunakan cache dengan stale-while-revalidate strategy
         const res = await fetch(`/api/landing/${kode_produk}`, {
-          cache: "default", // ✅ OPTIMASI: Gunakan browser cache
+          cache: "force-cache", // ✅ OPTIMASI: Force cache untuk mengurangi network requests
+          next: { revalidate: 60 }, // Revalidate setiap 60 detik
           signal: controller.signal
         });
         
@@ -2523,10 +2537,17 @@ function ProductPageContent() {
 
     // ✅ OPTIMASI: Non-blocking fetch - biarkan UI render dulu
     // Gunakan requestIdleCallback jika tersedia, fallback ke setTimeout
+    // ✅ OPTIMASI: Start fetch immediately untuk LCP, tapi defer heavy processing
     if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-      window.requestIdleCallback(() => fetchProduct(), { timeout: 100 });
+      // Start fetch immediately untuk LCP
+      fetchProduct();
+      // Defer heavy processing ke idle time
+      window.requestIdleCallback(() => {
+        // Heavy processing bisa dilakukan di sini jika diperlukan
+      }, { timeout: 200 });
     } else {
-      setTimeout(() => fetchProduct(), 0);
+      // Fallback: start immediately
+      fetchProduct();
     }
   }, [kode_produk]);
 
@@ -2569,22 +2590,24 @@ function ProductPageContent() {
   // ✅ ARSITEKTUR FINAL: Root render hanya block TANPA parentId
   // ✅ Section render hanya block dengan parentId === section.config.componentId
   // ✅ Child TIDAK BOLEH dirender di root
-  // ✅ FIX: Hapus useMemo untuk menghindari error React #310 (dependency array issue)
-  const blocks = landingpage && Array.isArray(landingpage) 
-    ? landingpage.filter((item) => {
-        // Pastikan item valid dan bukan settings
-        if (!item || !item.type) return false;
-        if (item.type === 'settings') return false;
-        
-        // ✅ ARSITEKTUR FINAL: Root skip block dengan parentId
-        // parentId HANYA ada di root level (bukan di config)
-        if (item.parentId) {
-          return false; // Ini adalah child dari section, jangan render di root
-        }
-        
-        return true;
-      })
-    : [];
+  // ✅ OPTIMASI: Memoize blocks filtering untuk mengurangi re-renders
+  const blocks = useMemo(() => {
+    if (!landingpage || !Array.isArray(landingpage)) return [];
+    
+    return landingpage.filter((item) => {
+      // Pastikan item valid dan bukan settings
+      if (!item || !item.type) return false;
+      if (item.type === 'settings') return false;
+      
+      // ✅ ARSITEKTUR FINAL: Root skip block dengan parentId
+      // parentId HANYA ada di root level (bukan di config)
+      if (item.parentId) {
+        return false; // Ini adalah child dari section, jangan render di root
+      }
+      
+      return true;
+    });
+  }, [landingpage]);
   
   // ✅ Debug logging hanya di development mode
   if (process.env.NODE_ENV === 'development' && blocks.length > 0) {
@@ -2594,24 +2617,44 @@ function ProductPageContent() {
     }
   }
 
-  // ✅ FIX: Hapus useMemo untuk menghindari error React #310
-  const settings = landingpage && Array.isArray(landingpage) && landingpage.length > 0 && landingpage[0].type === 'settings'
-    ? landingpage[0]
-    : null;
+  // ✅ OPTIMASI: Memoize settings untuk mengurangi re-renders
+  const settings = useMemo(() => {
+    return landingpage && Array.isArray(landingpage) && landingpage.length > 0 && landingpage[0].type === 'settings'
+      ? landingpage[0]
+      : null;
+  }, [landingpage]);
   
-  // ✅ FIX: Gunakan nilai langsung tanpa useMemo untuk menghindari circular dependency
-  const logoUrl = settings?.logo || '/assets/logo.png';
-  const backgroundColor = settings?.background_color || '#ffffff';
+  // ✅ OPTIMASI: Memoize derived values
+  const logoUrl = useMemo(() => settings?.logo || '/assets/logo.png', [settings?.logo]);
+  const backgroundColor = useMemo(() => settings?.background_color || '#ffffff', [settings?.background_color]);
+  
+  // ✅ OPTIMASI: Preload LCP image (first image block)
+  useEffect(() => {
+    if (blocks.length > 0) {
+      const firstImageBlock = blocks.find(b => b && b.type === 'image' && !b.parentId);
+      if (firstImageBlock) {
+        const imageSrc = firstImageBlock.content?.src || firstImageBlock.content?.url;
+        if (imageSrc) {
+          const link = document.createElement('link');
+          link.rel = 'preload';
+          link.as = 'image';
+          link.href = imageSrc;
+          document.head.appendChild(link);
+        }
+      }
+    }
+  }, [blocks]);
 
   return (
     <>
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+        {/* ✅ OPTIMASI: Preconnect untuk fonts lebih awal */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* ✅ OPTIMASI: Load fonts dengan display=swap dan subset untuk mengurangi size */}
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </Head>
-      {/* ✅ Import Google Fonts Inter - SAMA dengan addProducts3 */}
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
       
       {/* ✅ Hapus loading overlay - biarkan halaman kosong sampai data ter-load */}
       
@@ -2620,12 +2663,13 @@ function ProductPageContent() {
         <div className="canvas-wrapper" style={{ backgroundColor }}>
           {/* Logo Section - Top */}
           <div className="canvas-logo-wrapper">
-            <img 
+            <Image 
               src={logoUrl} 
               alt="Logo" 
               className="canvas-logo"
-              loading="eager"
-              decoding="async"
+              width={120}
+              height={60}
+              priority
               style={{ objectFit: 'contain', maxWidth: '120px', height: 'auto' }}
             />
           </div>

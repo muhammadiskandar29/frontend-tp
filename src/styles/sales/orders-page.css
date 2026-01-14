@@ -525,11 +525,26 @@ ORDERS TABLE
   z-index: 11;
   background: #ffffff !important; /* Background putih */
   padding-right: 0.5rem;
+  border-radius: 1rem 0 0 1rem; /* Border radius kiri card agar ikut sticky */
+}
+
+/* Pastikan border radius kiri card ikut sticky dengan extend background */
+.orders-table__row > div:nth-child(1)::before {
+  content: '';
+  position: absolute;
+  top: -0.5rem;
+  left: -0.65rem; /* Extend ke kiri untuk cover padding row */
+  bottom: -0.5rem;
+  width: 0.65rem;
+  background: #ffffff;
+  z-index: -1;
+  border-radius: 1rem 0 0 1rem; /* Match border radius card */
 }
 
 .orders-table__head > span:nth-child(1) {
   z-index: 21; /* Higher z-index untuk head */
   background: #ffffff !important;
+  border-radius: 0; /* Head tidak perlu border radius */
 }
 
 .orders-table__head > span:nth-child(2),
