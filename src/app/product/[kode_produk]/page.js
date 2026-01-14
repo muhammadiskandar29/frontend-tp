@@ -120,58 +120,18 @@ export default async function ProductPage({ params }) {
               />
             </div>
 
-            {/* Content Area - Render blocks utama terlebih dahulu */}
+            {/* Content Area - Render blocks akan dilakukan oleh Client Component */}
             <div className="canvas-content-area">
-              {/* Render root blocks - tidak blocking karena sudah di-fetch di server */}
-              {blocks.length > 0 ? (
-                blocks.map((block, index) => {
-                  const componentId = block.config?.componentId;
-                  
-                  if (!componentId) {
-                    const fallbackKey = `block-${block.type}-${index}`;
-                    return (
-                      <Suspense key={fallbackKey} fallback={<div className="canvas-preview-block">Loading...</div>}>
-                        <ServerBlockRenderer block={block} allBlocks={landingpage || []} />
-                      </Suspense>
-                    );
-                  }
-                  
-                  return (
-                    <Suspense key={componentId} fallback={<div className="canvas-preview-block">Loading...</div>}>
-                      <ServerBlockRenderer block={block} allBlocks={landingpage || []} />
-                    </Suspense>
-                  );
-                })
-              ) : (
-                <div className="preview-placeholder">Belum ada konten</div>
-              )}
+              {/* ✅ Client Component mengambil alih semua rendering blocks */}
+              <Suspense fallback={<div className="preview-placeholder">Memuat konten...</div>}>
+                <ProductClientWrapper kodeProduk={kode_produk} initialData={productData} />
+              </Suspense>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Client Component untuk bagian interaktif - dimuat setelah layout utama */}
-      <Suspense fallback={null}>
-        <ProductClientWrapper kodeProduk={kode_produk} initialData={productData} />
-      </Suspense>
     </>
   );
 }
 
-/**
- * Client Component untuk render semua blocks - dipanggil secara dinamis
- * Mengurangi initial bundle size dengan lazy loading
- */
-import dynamic from "next/dynamic";
-
-const BlocksRenderer = dynamic(() => import("./BlocksRenderer"), {
-  ssr: false, // ✅ Client-side only untuk mengurangi server bundle
-  loading: () => <div className="canvas-preview-block">Loading...</div>
-});
-
-// ✅ Server Component untuk render block individual - delegate ke Client Component
-function ServerBlockRenderer({ block, allBlocks }) {
-  return (
-    <BlocksRenderer block={block} allBlocks={allBlocks} />
-  );
-}
