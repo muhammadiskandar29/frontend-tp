@@ -2742,6 +2742,38 @@ function ProductClient({ initialProductData, initialLandingPage }) {
 
       {/* ✅ Hapus loading overlay - biarkan halaman kosong sampai data ter-load */}
 
+      <style jsx global>{`
+        html, body {
+          background-color: ${backgroundColor} !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          overflow-x: hidden !important;
+          width: 100% !important;
+        }
+        
+        /* Custom Scrollbar to blend with background */
+        ::-webkit-scrollbar {
+          width: 12px;
+          background-color: ${backgroundColor};
+        }
+        
+        ::-webkit-scrollbar-thumb {
+          background-color: rgba(128, 128, 128, 0.5);
+          border-radius: 6px;
+          border: 3px solid ${backgroundColor};
+        }
+        
+        ::-webkit-scrollbar-track {
+          background-color: ${backgroundColor};
+        }
+        
+        .product-page-container {
+          width: 100% !important;
+          max-width: 100% !important;
+          overflow-x: hidden !important;
+        }
+      `}</style>
+
       <div className="add-products3-container product-page-container" itemScope itemType="https://schema.org/Product" style={{ backgroundColor, margin: 0, padding: 0, minHeight: '100vh', width: '100%' }}>
         <div className="page-builder-canvas" style={{ backgroundColor, padding: 0, margin: 0, width: '100%', maxWidth: '100%' }}>
           <div className="canvas-wrapper" style={{ backgroundColor, padding: 0, margin: 0, width: '100%', maxWidth: '100%', minHeight: '100vh' }}>

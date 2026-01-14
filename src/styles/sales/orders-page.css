@@ -560,6 +560,11 @@ ORDERS TABLE
   padding-left: 0.5rem;
 }
 
+/* Row 1 specific: White background to match card */
+.orders-shell .orders-table__row>div:nth-child(1) {
+  background: #ffffff;
+}
+
 /* Ensure Row 1 has left radius */
 .orders-shell .orders-table__row>div:nth-child(1) {
   border-top-left-radius: 1rem;
@@ -584,6 +589,16 @@ ORDERS TABLE
   border-right: 1px solid var(--orders-border);
   box-shadow: 4px 0 6px -4px rgba(0, 0, 0, 0.05);
   /* Subtle depth shadow */
+}
+
+/* Row 2 specific: White background to match card */
+.orders-shell .orders-table__row>div:nth-child(2) {
+  background: #ffffff;
+}
+
+/* Header 2 specific */
+.orders-shell .orders-table__head>span:nth-child(2) {
+  z-index: 40;
 }
 
 /* Header 2 specific */
