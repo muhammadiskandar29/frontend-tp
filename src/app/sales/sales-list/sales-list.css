@@ -1,0 +1,43 @@
+/* src/app/sales/sales-list/sales-list.css */
+
+/* Override specific to sales list to avoid overflow if needed */
+.sales-list-table-wrapper .data-table {
+    min-width: auto !important;
+    /* Override the 1200px min-width from shared-table if we want to fit in screen */
+    width: 100%;
+}
+
+.sales-list-header {
+    margin-bottom: 2rem;
+}
+
+.sales-list-header h1 {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+}
+
+.sales-list-header p {
+    color: #64748b;
+    font-size: 0.875rem;
+}
+
+.sales-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.sales-badge.active {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.sales-badge.inactive {
+    background-color: #f1f5f9;
+    color: #64748b;
+}
