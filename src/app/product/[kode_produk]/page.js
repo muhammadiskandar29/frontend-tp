@@ -286,7 +286,8 @@ function normalizeLandingpageData(landingpageData) {
   }
 
   // ✅ OPTIMASI: Deep clone hanya jika benar-benar perlu (untuk menghindari mutasi)
-  // Gunakan structuredClone jika tersedia (lebih cepat), fallback ke JSON.parse
+  // Gunakan structuredClone jika tersedia (untuk safety), fallback ke JSON.parse
+  // Note: structuredClone tidak selalu lebih cepat, manfaatnya lebih ke safety
   const normalized = typeof structuredClone !== 'undefined' 
     ? structuredClone(landingpageData)
     : JSON.parse(JSON.stringify(landingpageData));
@@ -2028,7 +2029,7 @@ function ProductPageContent() {
           <div className="preview-placeholder" style={containerStyle}>{type}</div>
         );
     }
-  }, [testimoniIndices, productData, ongkir, calculateTotal, customerForm, formWilayah, selectedWilayahIds, wilayahData, loadingWilayah, selectedCourier, costResults, loadingCost, paymentMethod, submitting, selectedBundling, ongkirInfo, alamatLengkap, getKategoriId, getFAQByKategori, cleanHTMLContent, getContainerStyles, getTextStyles]);
+  }, [testimoniIndices, productData, ongkir, calculateTotal, customerForm, formWilayah, selectedWilayahIds, wilayahData, loadingWilayah, selectedCourier, costResults, loadingCost, paymentMethod, submitting, selectedBundling, ongkirInfo, alamatLengkap]);
 
   // ✅ Fungsi untuk cek apakah form sudah valid (bisa submit)
   const isFormValid = () => {
@@ -2432,11 +2433,11 @@ function ProductPageContent() {
         // ✅ OPTIMASI: Defer loading state untuk mengurangi blocking
         const timeoutId = setTimeout(() => setLoading(true), 50);
         
-        // ✅ OPTIMASI: Timeout 5 detik untuk fetch API (lebih longgar untuk mobile)
+        // ✅ OPTIMASI: Timeout sebagai fail-safe (bukan optimasi performa utama)
         const controller = new AbortController();
         const fetchTimeoutId = setTimeout(() => controller.abort(), 5000);
         
-        // ✅ OPTIMASI: Gunakan cache dengan stale-while-revalidate strategy
+        // ✅ OPTIMASI: Gunakan cache dengan stale-while-revalidate strategy (ISR)
         const res = await fetch(`/api/landing/${kode_produk}`, {
           cache: "force-cache", // ✅ OPTIMASI: Force cache untuk mengurangi network requests
           next: { revalidate: 60 }, // Revalidate setiap 60 detik
@@ -2535,20 +2536,9 @@ function ProductPageContent() {
       }
     }
 
-    // ✅ OPTIMASI: Non-blocking fetch - biarkan UI render dulu
-    // Gunakan requestIdleCallback jika tersedia, fallback ke setTimeout
-    // ✅ OPTIMASI: Start fetch immediately untuk LCP, tapi defer heavy processing
-    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-      // Start fetch immediately untuk LCP
-      fetchProduct();
-      // Defer heavy processing ke idle time
-      window.requestIdleCallback(() => {
-        // Heavy processing bisa dilakukan di sini jika diperlukan
-      }, { timeout: 200 });
-    } else {
-      // Fallback: start immediately
-      fetchProduct();
-    }
+    // ✅ OPTIMASI: Start fetch immediately (di Client Component sudah otomatis non-blocking)
+    // Note: Di Server Component fetch otomatis blocking untuk SSR, di Client Component sudah async
+    fetchProduct();
   }, [kode_produk]);
 
   // ✅ Loading indicator - hanya block untuk product data, tidak untuk provinces
@@ -2617,33 +2607,17 @@ function ProductPageContent() {
     }
   }
 
-  // ✅ OPTIMASI: Memoize settings untuk mengurangi re-renders
-  const settings = useMemo(() => {
-    return landingpage && Array.isArray(landingpage) && landingpage.length > 0 && landingpage[0].type === 'settings'
-      ? landingpage[0]
-      : null;
-  }, [landingpage]);
+  // ✅ FIX: Gunakan nilai langsung tanpa useMemo untuk menghindari React error #310
+  // Dependency object tidak stabil, lebih baik langsung akses
+  const settings = landingpage && Array.isArray(landingpage) && landingpage.length > 0 && landingpage[0].type === 'settings'
+    ? landingpage[0]
+    : null;
   
-  // ✅ OPTIMASI: Memoize derived values
-  const logoUrl = useMemo(() => settings?.logo || '/assets/logo.png', [settings?.logo]);
-  const backgroundColor = useMemo(() => settings?.background_color || '#ffffff', [settings?.background_color]);
+  const logoUrl = settings?.logo || '/assets/logo.png';
+  const backgroundColor = settings?.background_color || '#ffffff';
   
-  // ✅ OPTIMASI: Preload LCP image (first image block)
-  useEffect(() => {
-    if (blocks.length > 0) {
-      const firstImageBlock = blocks.find(b => b && b.type === 'image' && !b.parentId);
-      if (firstImageBlock) {
-        const imageSrc = firstImageBlock.content?.src || firstImageBlock.content?.url;
-        if (imageSrc) {
-          const link = document.createElement('link');
-          link.rel = 'preload';
-          link.as = 'image';
-          link.href = imageSrc;
-          document.head.appendChild(link);
-        }
-      }
-    }
-  }, [blocks]);
+  // ✅ FIX: Hapus useEffect preload - preload harus dari server/head atau cukup pakai Image priority
+  // useEffect jalan setelah render, tidak efektif untuk LCP
 
   return (
     <>
