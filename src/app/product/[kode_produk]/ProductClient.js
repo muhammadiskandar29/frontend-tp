@@ -2670,6 +2670,8 @@ function ProductClient({ initialProductData, initialLandingPage }) {
 
   }, [settings, productData]);
 
+  if (loading) return null;
+
   return (
     <>
       <Head>
@@ -2778,7 +2780,7 @@ function ProductClient({ initialProductData, initialLandingPage }) {
         <div className="page-builder-canvas" style={{ backgroundColor, padding: 0, margin: 0, width: '100%', maxWidth: '100%' }}>
           <div className="canvas-wrapper" style={{ backgroundColor, padding: 0, margin: 0, width: '100%', maxWidth: '100%', minHeight: '100vh' }}>
             {/* Logo Section - Top */}
-            <div className="canvas-logo-wrapper" style={{ width: '100%' }}>
+            <div className="canvas-logo-wrapper" style={{ width: '100%', display: 'flex', justifyContent: 'center', paddingTop: '20px' }}>
               <Image
                 src={logoUrl}
                 alt="Logo"

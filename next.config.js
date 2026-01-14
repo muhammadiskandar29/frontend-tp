@@ -6,7 +6,7 @@ const nextConfig = {
       exclude: ['error', 'warn'],
     } : false,
   },
-  
+
   // Optimize images
   images: {
     formats: ['image/avif', 'image/webp'],
@@ -22,8 +22,7 @@ const nextConfig = {
     optimizeCss: true,
   },
 
-  // Optimize CSS loading
-  optimizeFonts: true,
+
 
   // Turbopack config to silence warning
   turbopack: {},
