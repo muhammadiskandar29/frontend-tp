@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useMemo, useCallback } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback, Suspense } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import Script from "next/script";
@@ -359,7 +359,8 @@ function normalizeLandingpageData(landingpageData) {
   return normalized;
 }
 
-export default function ProductPage() {
+// ✅ OPTIMASI: Pisahkan komponen yang menggunakan useSearchParams untuk Suspense boundary
+function ProductPageContent() {
   const { kode_produk } = useParams();
   const searchParams = useSearchParams();
 
@@ -2695,5 +2696,23 @@ export default function ProductPage() {
         </div>
       )}
     </>
+  );
+}
+
+// ✅ OPTIMASI: Wrap dengan Suspense untuk useSearchParams (Next.js requirement)
+export default function ProductPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '100vh' 
+      }}>
+        <p>Loading...</p>
+      </div>
+    }>
+      <ProductPageContent />
+    </Suspense>
   );
 }
