@@ -2548,23 +2548,63 @@ function ProductClient({ initialProductData, initialLandingPage }) {
       }
     }
 
-    // ✅ OPTIMASI: Start fetch immediately (di Client Component sudah otomatis non-blocking)
     // Note: Di Server Component fetch otomatis blocking untuk SSR, di Client Component sudah async
     fetchProduct();
   }, [kode_produk, initialProductData, initialLandingPage]);
 
-  // ✅ Loading indicator - hanya block untuk product data, tidak untuk provinces
-  // ✅ Halaman kosong tanpa animasi/gambar untuk SEO dan meta ads
-  if (loading) {
-    return (
-      <div className="add-products3-container" style={{
-        backgroundColor: '#ffffff',
-        minHeight: '100vh'
-      }}>
-        {/* Halaman kosong saat loading - tidak ada animasi/gambar untuk SEO */}
-      </div>
-    );
-  }
+  // ✅ MOVED UP: Derived state and hooks MUST be before any conditional returns
+  const settings = landingpage && Array.isArray(landingpage)
+    ? landingpage.find(item => item.type === 'settings')
+    : null;
+
+  const logoUrl = settings?.logo || '/assets/logo.png';
+  const backgroundColor = settings?.background_color || '#ffffff';
+
+  // ✅ MOVED UP: SEO & Scripts Management
+  useEffect(() => {
+    // 1. Set Page Title
+    const title = settings?.page_title
+      || settings?.seo_title
+      || (productData?.nama ? `${productData.nama}` : "Product Page");
+
+    if (title) {
+      document.title = title;
+    }
+
+    // 2. Helper to set meta tags dynamically
+    const setMeta = (name, content, attrName = 'name') => {
+      if (!content) return;
+      let meta = document.querySelector(`meta[${attrName}="${name}"]`);
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.setAttribute(attrName, name);
+        document.head.appendChild(meta);
+      }
+      meta.setAttribute('content', content);
+    };
+
+    // 3. Set standard meta tags
+    if (settings?.meta_description) {
+      setMeta('description', settings.meta_description);
+      setMeta('og:description', settings.meta_description, 'property');
+      setMeta('twitter:description', settings.meta_description);
+    }
+
+    // 4. Set OpenGraph tags
+    setMeta('og:title', settings?.seo_title || title, 'property');
+    setMeta('twitter:title', settings?.seo_title || title);
+
+    // Prioritize meta_image, fallback to logo, fallback to default
+    const image = settings?.meta_image || settings?.logo;
+    if (image) {
+      setMeta('og:image', image, 'property');
+      setMeta('twitter:image', image);
+    }
+
+  }, [settings, productData]);
+
+  // ✅ Loading indicator - Return NULL for clean loading state
+  if (loading) return null;
 
   // ✅ Jika tidak ada productData setelah loading selesai, tampilkan notifikasi
   if (!productData) {
@@ -2617,60 +2657,9 @@ function ProductClient({ initialProductData, initialLandingPage }) {
     }
   }
 
-  // ✅ FIX: Gunakan metode find untuk mencari settings block yang lebih robust
-  // Settings block bisa ada di mana saja dalam array, tidak selalu index 0
-  const settings = landingpage && Array.isArray(landingpage)
-    ? landingpage.find(item => item.type === 'settings')
-    : null;
 
-  const logoUrl = settings?.logo || '/assets/logo.png';
-  const backgroundColor = settings?.background_color || '#ffffff';
 
-  // ✅ SEO & Scripts Management (Client-side)
-  // Karena ini Client Component, kita update document title dan meta tags via useEffect
-  useEffect(() => {
-    // 1. Set Page Title
-    const title = settings?.page_title
-      || settings?.seo_title
-      || (productData?.nama ? `${productData.nama}` : "Product Page");
 
-    if (title) {
-      document.title = title;
-    }
-
-    // 2. Helper to set meta tags dynamically
-    const setMeta = (name, content, attrName = 'name') => {
-      if (!content) return;
-      let meta = document.querySelector(`meta[${attrName}="${name}"]`);
-      if (!meta) {
-        meta = document.createElement('meta');
-        meta.setAttribute(attrName, name);
-        document.head.appendChild(meta);
-      }
-      meta.setAttribute('content', content);
-    };
-
-    // 3. Set standard meta tags
-    if (settings?.meta_description) {
-      setMeta('description', settings.meta_description);
-      setMeta('og:description', settings.meta_description, 'property');
-      setMeta('twitter:description', settings.meta_description);
-    }
-
-    // 4. Set OpenGraph tags
-    setMeta('og:title', settings?.seo_title || title, 'property');
-    setMeta('twitter:title', settings?.seo_title || title);
-
-    // Prioritize meta_image, fallback to logo, fallback to default
-    const image = settings?.meta_image || settings?.logo;
-    if (image) {
-      setMeta('og:image', image, 'property');
-      setMeta('twitter:image', image);
-    }
-
-  }, [settings, productData]);
-
-  if (loading) return null;
 
   return (
     <>
