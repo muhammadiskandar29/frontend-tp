@@ -2811,7 +2811,7 @@ function ProductClient({ initialProductData, initialLandingPage }) {
                 width={120}
                 height={60}
                 priority
-                style={{ objectFit: 'contain', maxWidth: '120px', height: 'auto' }}
+                style={{ objectFit: 'contain', width: 'auto', height: 'auto', maxWidth: '100%' }}
               />
             </div>
 
