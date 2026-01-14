@@ -75,44 +75,9 @@ export default function SalesListPage() {
     return (
         <Layout title="Sales Team Management">
             <div className="dashboard-shell table-shell">
-                {/* Stats Summary Cards */}
-                <section className="dashboard-summary">
-                    <article className="summary-card summary-card--combined summary-card--three-cols">
-                        <div className="summary-card__column">
-                            <div className="summary-card__icon accent-blue">
-                                {/* Icon removed as requested */}
-                            </div>
-                            <div>
-                                <p className="summary-card__label">Total Sales</p>
-                                <p className="summary-card__value">{stats.total}</p>
-                            </div>
-                        </div>
-                        <div className="summary-card__divider"></div>
-                        <div className="summary-card__column">
-                            <div className="summary-card__icon accent-emerald">
-                                {/* Icon removed as requested */}
-                            </div>
-                            <div>
-                                <p className="summary-card__label">Active</p>
-                                <p className="summary-card__value">{stats.active}</p>
-                            </div>
-                        </div>
-                        <div className="summary-card__divider"></div>
-                        <div className="summary-card__column">
-                            <div className="summary-card__icon accent-red">
-                                {/* Icon removed as requested */}
-                            </div>
-                            <div>
-                                <p className="summary-card__label">Inactive</p>
-                                <p className="summary-card__value">{stats.inactive}</p>
-                            </div>
-                        </div>
-                    </article>
-                </section>
-
                 {/* Hero / Toolbar */}
                 <section className="dashboard-hero">
-                    <div className="customers-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '1.5rem' }}>
+                    <div className="customers-toolbar" style={{ display: 'flex', width: '100%', marginBottom: '1.5rem' }}>
                         <div className="customers-search" style={{ position: 'relative', maxWidth: '400px', width: '100%' }}>
                             <input
                                 type="search"
@@ -120,7 +85,7 @@ export default function SalesListPage() {
                                 className="customers-search__input"
                                 style={{
                                     width: '100%',
-                                    padding: '0.75rem 1rem',
+                                    padding: '0.75rem 1rem 0.75rem 0.75rem', /* Adjusted padding since icon is gone */
                                     borderRadius: '0.5rem',
                                     border: '1px solid #e2e8f0',
                                     fontSize: '0.875rem'
@@ -129,18 +94,6 @@ export default function SalesListPage() {
                                 onChange={(e) => setSearch(e.target.value)}
                             />
                         </div>
-                        <button className="customers-button customers-button--primary" style={{
-                            background: '#0f172a',
-                            color: 'white',
-                            padding: '0.75rem 1.5rem',
-                            borderRadius: '0.5rem',
-                            fontWeight: 600,
-                            fontSize: '0.875rem',
-                            border: 'none',
-                            cursor: 'pointer'
-                        }}>
-                            + Tambah Sales
-                        </button>
                     </div>
                 </section>
 
@@ -150,6 +103,23 @@ export default function SalesListPage() {
                         <div>
                             <p className="panel__eyebrow">Team Management</p>
                             <h3 className="panel__title">Daftar Sales</h3>
+                        </div>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <button className="customers-button customers-button--primary" style={{
+                                background: '#fb8500',
+                                color: 'white',
+                                padding: '0.75rem 1.5rem',
+                                borderRadius: '0.5rem',
+                                fontWeight: 600,
+                                fontSize: '0.875rem',
+                                border: 'none',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem'
+                            }}>
+                                + Tambah Sales
+                            </button>
                         </div>
                     </div>
 
@@ -254,6 +224,57 @@ export default function SalesListPage() {
                                 )}
                             </tbody>
                         </table>
+                    </div>
+
+                    {/* Pagination - Visual Placeholder matching image style */}
+                    <div className="customers-pagination" style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "1rem", padding: "1.5rem", flexWrap: "wrap", borderTop: "1px solid #e2e8f0" }}>
+                        <button
+                            className="customers-pagination__btn"
+                            disabled
+                            style={{
+                                padding: "0.5rem 1rem",
+                                minWidth: "100px",
+                                background: "#e5e7eb",
+                                color: "#9ca3af",
+                                border: "none",
+                                borderRadius: "0.5rem",
+                                cursor: "not-allowed",
+                                fontWeight: 600,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center"
+                            }}
+                        >
+                            Previous
+                        </button>
+
+                        <div style={{
+                            fontSize: "0.9rem",
+                            color: "#475569",
+                            fontWeight: 500
+                        }}>
+                            Page 1 of 1 ({salesData.length} total)
+                        </div>
+
+                        <button
+                            className="customers-pagination__btn"
+                            disabled
+                            style={{
+                                padding: "0.5rem 1rem",
+                                minWidth: "100px",
+                                background: "#e5e7eb",
+                                color: "#9ca3af",
+                                border: "none",
+                                borderRadius: "0.5rem",
+                                cursor: "not-allowed",
+                                fontWeight: 600,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center"
+                            }}
+                        >
+                            Next
+                        </button>
                     </div>
                 </section>
             </div>
