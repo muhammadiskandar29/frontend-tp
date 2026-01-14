@@ -434,12 +434,13 @@ export default function AdminCustomerPage() {
                       <span>REVENUE</span>
                     </div>
                   </th>
+                  <th>SALES</th>
                 </tr>
               </thead>
               <tbody>
                 {loading && customers.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="table-empty">Loading data...</td>
+                    <td colSpan={8} className="table-empty">Loading data...</td>
                   </tr>
                 ) : customers.length > 0 ? (
                   customers.map((cust, i) => (
@@ -499,11 +500,12 @@ export default function AdminCustomerPage() {
 
                       <td>-</td>
                       <td>-</td>
+                      <td>{cust.sales_rel?.nama || cust.sales_nama || "-"}</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7} className="table-empty">
+                    <td colSpan={8} className="table-empty">
                       {debouncedSearch.trim() ? "Tidak ada hasil pencarian." : "Tidak ada data customer"}
                     </td>
                   </tr>
