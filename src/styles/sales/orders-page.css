@@ -491,12 +491,12 @@ ORDERS TABLE
 .orders-table__row {
   display: grid;
   grid-template-columns:
-    minmax(140px, 1.2fr)
-    /* Order ID - STICKY */
+    150px
+    /* Order ID - FIXED for sticky */
     24px
-    /* ExternalLink (kolom kosong) - STICKY */
-    minmax(130px, 1.2fr)
-    /* Customer - STICKY */
+    /* ExternalLink - FIXED for sticky */
+    160px
+    /* Customer - FIXED for sticky */
     minmax(140px, 1.2fr)
     /* Produk */
     minmax(110px, 1fr)
@@ -504,7 +504,7 @@ ORDERS TABLE
     minmax(100px, 0.9fr)
     /* Status Order */
     minmax(280px, 2.5fr)
-    /* Follow Up Text - diperlebar lagi */
+    /* Follow Up Text */
     minmax(100px, 0.9fr)
     /* Bukti Pembayaran */
     minmax(140px, 1.2fr)
@@ -515,7 +515,7 @@ ORDERS TABLE
   /* Update/Konfirmasi button */
   gap: 0.3rem;
   align-items: center;
-  min-width: 1200px;
+  min-width: 1300px;
   /* Pastikan grid layout tetap stabil */
   contain: layout;
 }
@@ -530,85 +530,82 @@ ORDERS TABLE
 }
 
 /* Sticky columns untuk Order ID, ExternalLink, dan Customer dengan background putih */
+/* Sticky 1: Order ID */
 .orders-table__head>span:nth-child(1),
 .orders-table__row>div:nth-child(1) {
-  /* position: sticky; */
-  /* REMOVED STICKY */
-  /* left: 1.75rem; */
-  z-index: 1;
-  /* background: #ffffff !important; */
-  /* Background putih */
-  padding-right: 0.5rem;
-  /* border-radius: 1rem 0 0 1rem; */
-  /* Border radius kiri card agar ikut sticky */
-}
-
-/* Pastikan border radius kiri card ikut sticky dengan extend background */
-/* Pastikan border radius kiri card ikut sticky dengan extend background */
-.orders-table__row>div:nth-child(1)::before {
-  content: '';
-  position: absolute;
-  top: -0.5rem;
-  left: -0.65rem;
-  /* Extend ke kiri untuk cover padding row */
-  bottom: -0.5rem;
-  width: 0.65rem;
-  /* background: #ffffff; */
-  z-index: -1;
+  position: sticky;
+  left: 1.75rem;
+  /* Matches Wrapper Padding */
+  z-index: 30;
+  background: var(--orders-surface) !important;
+  /* Imitate the card's left border look */
+  border-left: 1px solid var(--orders-border);
+  border-top: 1px solid var(--orders-border);
+  border-bottom: 1px solid var(--orders-border);
   border-radius: 1rem 0 0 1rem;
-  /* Match border radius card */
+  /* Fix spacing */
+  margin-left: -1px;
+  /* Overlap parent border overlap slightly */
+  padding-left: 0.5rem;
 }
 
+/* Ensure Header Sticky sits above Body Sticky */
 .orders-table__head>span:nth-child(1) {
-  z-index: 1;
-  /* Higher z-index untuk head */
-  /* background: #ffffff !important; */
+  z-index: 40;
   border-radius: 0;
-  /* Head tidak perlu border radius */
+  /* Header flat */
+  border-top: none;
+  border-left: none;
+  /* Header doesn't need card shape */
+  border-right: none;
 }
 
+/* Cleanup pseudoelements from previous attempts */
+.orders-table__row>div:nth-child(1)::before {
+  content: none;
+}
+
+/* Sticky 2: External Link */
 .orders-table__head>span:nth-child(2),
 .orders-table__row>div:nth-child(2) {
-  /* position: sticky; */
-  /* REMOVED STICKY */
-  /* left: calc(1.75rem + 140px + 0.3rem); */
-  /* Padding panel + Width of Order ID + gap */
-  z-index: 1;
-  /* background: #ffffff !important; */
-  /* Background putih */
+  position: sticky;
+  left: calc(1.75rem + 150px + 0.3rem);
+  /* 1.75 + width1 + gap */
+  z-index: 30;
+  background: var(--orders-surface) !important;
+  /* Coninuous border top/bottom for the capsule look */
+  border-top: 1px solid var(--orders-border);
+  border-bottom: 1px solid var(--orders-border);
 }
 
 .orders-table__head>span:nth-child(2) {
-  z-index: 1;
-  /* Higher z-index untuk head */
-  /* background: #ffffff !important; */
+  z-index: 40;
+  border-top: none;
 }
 
+/* Sticky 3: Customer */
 .orders-table__head>span:nth-child(3),
 .orders-table__row>div:nth-child(3) {
-  /* position: sticky; */
-  /* REMOVED STICKY */
-  /* left: calc(1.75rem + 140px + 24px + 0.6rem); */
-  /* Padding panel + Width of Order ID + ExternalLink + gaps */
-  z-index: 1;
-  /* background: #ffffff !important; */
-  /* Background putih */
+  position: sticky;
+  left: calc(1.75rem + 150px + 24px + 0.6rem);
+  /* 1.75 + w1 + w2 + 2*gap */
+  z-index: 30;
+  background: var(--orders-surface) !important;
+  /* Close the sticky section with a right border */
+  border-top: 1px solid var(--orders-border);
+  border-bottom: 1px solid var(--orders-border);
+  border-right: 1px solid var(--orders-border);
   padding-right: 0.5rem;
 }
 
 .orders-table__head>span:nth-child(3) {
-  z-index: 1;
-  /* Higher z-index untuk head */
-  /* background: #ffffff !important; */
+  z-index: 40;
+  border-top: none;
+  border-right: none;
 }
 
 /* Pastikan sticky cells berada di atas background */
-.orders-table__row>div:nth-child(1),
-.orders-table__row>div:nth-child(2),
-.orders-table__row>div:nth-child(3) {
-  /* position: sticky; */
-  z-index: 1;
-}
+
 
 /* Shadow untuk sticky columns saat scroll horizontal */
 /* Shadow untuk sticky columns saat scroll horizontal - DISABLED */
