@@ -1852,10 +1852,7 @@ export default function EditProductsPage() {
 
   // Loading state untuk edit mode
   const [loading, setLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
 
-  // State untuk modal konfirmasi exit
-  const [showExitModal, setShowExitModal] = useState(false);
 
   // Function untuk parse landingpage array dari backend ke blocks dan pengaturanForm
   const parseLandingpageArray = (landingpageArray) => {
