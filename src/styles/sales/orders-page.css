@@ -547,22 +547,21 @@ ORDERS TABLE
   align-items: center;
 }
 
-/* Sticky 1: Order ID */
+/* Sticky 1: Order ID - ENHANCED FROM EXPERIMENT */
 .orders-shell .orders-table__head>span:nth-child(1),
 .orders-shell .orders-table__row>div:nth-child(1) {
-  position: sticky;
-  left: 0;
-  z-index: 30;
-  background: var(--orders-surface);
-  /* Visual adjustments */
-  margin-left: -1px;
-  /* Compensate border overlap if needed */
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 30 !important;
+  background: var(--orders-surface) !important;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05) !important;
   padding-left: 0.5rem;
 }
 
 /* Row 1 specific: White background to match card */
 .orders-shell .orders-table__row>div:nth-child(1) {
-  background: #ffffff;
+  background: #ffffff !important;
+  z-index: 20 !important;
 }
 
 /* Ensure Row 1 has left radius */
@@ -571,40 +570,24 @@ ORDERS TABLE
   border-bottom-left-radius: 1rem;
 }
 
-/* Header 1 specific */
+/* Header 1 specific: Higher z-index */
 .orders-shell .orders-table__head>span:nth-child(1) {
-  z-index: 40;
-  /* Higher than body sticky */
+  z-index: 40 !important;
 }
 
-/* Sticky 2: External Link - REMOVE STICKY, LET IT SCROLL */
+/* Column 2 (ExternalLink): NOT STICKY - Let it scroll */
 .orders-shell .orders-table__head>span:nth-child(2),
 .orders-shell .orders-table__row>div:nth-child(2) {
-  position: static;
-  /* Not sticky anymore */
-  z-index: 1;
+  position: static !important;
+  z-index: 1 !important;
 }
 
-/* Header 2 specific */
-.orders-shell .orders-table__head>span:nth-child(2) {
-  z-index: 1;
-}
-
-/* Customer - REMOVE STICKY, LET IT SCROLL */
-.orders-shell .orders-table__head>span:nth-child(3),
-.orders-shell .orders-table__row>div:nth-child(3) {
-  position: static;
-  /* Not sticky anymore */
-  z-index: 1;
-  border-right: none;
-  /* No separator */
-}
-
-/* Unset sticky for others if they were set */
-.orders-shell .orders-table__head>span:nth-child(4),
-.orders-shell .orders-table__row>div:nth-child(4) {
-  position: static;
-  border-right: none;
+/* All other columns: NOT STICKY - Let them scroll */
+.orders-shell .orders-table__head>span:nth-child(n+3),
+.orders-shell .orders-table__row>div:nth-child(n+3) {
+  position: static !important;
+  z-index: 1 !important;
+  border-right: none !important;
 }
 
 /* Pastikan sticky cells berada di atas background */
