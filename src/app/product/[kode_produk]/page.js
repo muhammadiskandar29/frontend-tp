@@ -129,12 +129,13 @@ function CountdownComponent({ data = {}, componentId, containerStyle = {} }) {
     };
   }, [hours, minutes, seconds, componentId]);
 
-  // ✅ OPTIMASI: Memoize formatTime untuk mengurangi re-renders
-  const formattedTime = useMemo(() => ({
+  // ✅ FIX: Hapus useMemo untuk menghindari React error #310
+  // Format time langsung tanpa memoization (operasi sederhana, tidak perlu memoize)
+  const formattedTime = {
     hours: String(timeLeft.hours).padStart(2, '0'),
     minutes: String(timeLeft.minutes).padStart(2, '0'),
     seconds: String(timeLeft.seconds).padStart(2, '0')
-  }), [timeLeft.hours, timeLeft.minutes, timeLeft.seconds]);
+  };
 
   const renderNumber = (value, label) => {
     // ✅ GENERAL: Styling sesuai gambar - dark grey box dengan white text, rounded corners
@@ -455,13 +456,14 @@ function ProductPageContent() {
     return (isNaN(numPrice) ? 0 : numPrice).toLocaleString("id-ID");
   };
 
-  const getKategoriId = () => {
+  // ✅ FIX: Memoize getKategoriId untuk menghindari React error #310
+  const getKategoriId = useCallback(() => {
     if (!productData) return null;
     const kategoriId = productData.kategori_id 
       || (productData.kategori_rel?.id ? Number(productData.kategori_rel.id) : null)
       || (productData.kategori ? Number(productData.kategori) : null);
     return kategoriId;
-  };
+  }, [productData]);
 
   const isKategoriBuku = () => {
     const kategoriId = getKategoriId();
@@ -712,9 +714,10 @@ function ProductPageContent() {
     return containerStyles;
   };
 
-  // ✅ OPTIMASI: Memoize renderBlock dengan useCallback untuk mengurangi re-renders
+  // ✅ FIX: Hapus useCallback untuk menghindari React error #310
+  // Dependency array terlalu kompleks dan tidak stabil
   // Render Block berdasarkan struktur content/style/config - SAMA PERSIS dengan renderPreview di addProducts3
-  const renderBlock = useCallback((block, allBlocks = []) => {
+  const renderBlock = (block, allBlocks = []) => {
     if (!block || !block.type) return null;
 
     const { type, content, style, config } = block;
@@ -2029,7 +2032,7 @@ function ProductPageContent() {
           <div className="preview-placeholder" style={containerStyle}>{type}</div>
         );
     }
-  }, [testimoniIndices, productData, ongkir, calculateTotal, customerForm, formWilayah, selectedWilayahIds, wilayahData, loadingWilayah, selectedCourier, costResults, loadingCost, paymentMethod, submitting, selectedBundling, ongkirInfo, alamatLengkap]);
+  };
 
   // ✅ Fungsi untuk cek apakah form sudah valid (bisa submit)
   const isFormValid = () => {
@@ -2580,24 +2583,22 @@ function ProductPageContent() {
   // ✅ ARSITEKTUR FINAL: Root render hanya block TANPA parentId
   // ✅ Section render hanya block dengan parentId === section.config.componentId
   // ✅ Child TIDAK BOLEH dirender di root
-  // ✅ OPTIMASI: Memoize blocks filtering untuk mengurangi re-renders
-  const blocks = useMemo(() => {
-    if (!landingpage || !Array.isArray(landingpage)) return [];
-    
-    return landingpage.filter((item) => {
-      // Pastikan item valid dan bukan settings
-      if (!item || !item.type) return false;
-      if (item.type === 'settings') return false;
-      
-      // ✅ ARSITEKTUR FINAL: Root skip block dengan parentId
-      // parentId HANYA ada di root level (bukan di config)
-      if (item.parentId) {
-        return false; // Ini adalah child dari section, jangan render di root
-      }
-      
-      return true;
-    });
-  }, [landingpage]);
+  // ✅ FIX: Hapus useMemo untuk menghindari React error #310 (dependency array tidak stabil)
+  const blocks = landingpage && Array.isArray(landingpage) 
+    ? landingpage.filter((item) => {
+        // Pastikan item valid dan bukan settings
+        if (!item || !item.type) return false;
+        if (item.type === 'settings') return false;
+        
+        // ✅ ARSITEKTUR FINAL: Root skip block dengan parentId
+        // parentId HANYA ada di root level (bukan di config)
+        if (item.parentId) {
+          return false; // Ini adalah child dari section, jangan render di root
+        }
+        
+        return true;
+      })
+    : [];
   
   // ✅ Debug logging hanya di development mode
   if (process.env.NODE_ENV === 'development' && blocks.length > 0) {
