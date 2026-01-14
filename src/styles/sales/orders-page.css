@@ -471,7 +471,7 @@ ORDERS TABLE
   width: 100%;
   border-collapse: separate;
   border-spacing: 0 0.5rem;
-  min-width: 1400px;
+  min-width: 1500px;
 }
 
 /* Table Header */
@@ -1041,8 +1041,9 @@ RESPONSIVE STYLES
 }
 
 /* Sticky Classes - UPDATED */
-/* NO SHADOWS as requested */
-/* Logic: Order ID (Col 1) -> Customer (Col 2) are sticky. Product (Col 3) is wide. Action is non-sticky. */
+/* Reduced widths to bring columns closer */
+/* Order ID (Col 1) width: 170px */
+/* Customer (Col 2) width: 160px. Left: 170px */
 
 .orders-shell .sticky-left-1,
 .orders-shell .sticky-left-2 {
@@ -1057,26 +1058,26 @@ RESPONSIVE STYLES
   left: 0;
   z-index: 41 !important;
   /* Higher than col 2 */
-  width: 220px;
-  /* Fixed width for Order ID */
-  min-width: 220px;
+  width: 170px;
+  /* Reduced from 220px */
+  min-width: 170px;
   border-top-left-radius: 0.5rem;
   border-bottom-left-radius: 0.5rem;
 }
 
 /* Customer Column */
 .orders-shell .sticky-left-2 {
-  left: 220px;
+  left: 170px;
   /* Starts after Order ID */
   z-index: 40 !important;
-  width: 200px;
-  min-width: 200px;
+  width: 160px;
+  /* Reduced from 200px */
+  min-width: 160px;
 }
 
 /* Table Body Rows */
 .orders-shell .table-orders tbody tr {
   background: #ffffff;
-  /* FORCE WHITE */
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
@@ -1093,7 +1094,7 @@ RESPONSIVE STYLES
   font-size: 0.875rem;
   color: #1f2937;
   background: white;
-  /* Ensure cells are white */
+  /* Default white */
   border: none;
   vertical-align: middle;
 }
@@ -1108,38 +1109,34 @@ RESPONSIVE STYLES
   border-bottom-right-radius: 0.5rem;
 }
 
-/* Sticky Body Columns */
+/* Sticky Body Columns - MUST BE WHITE */
 .orders-shell .table-orders tbody td.sticky-left-1 {
   position: sticky;
   left: 0;
   z-index: 30;
-  background: white;
+  background: white !important;
 }
 
 .orders-shell .table-orders tbody td.sticky-left-2 {
   position: sticky;
-  left: 220px;
+  left: 170px;
   z-index: 30;
-  background: white;
+  background: white !important;
 }
 
 /* Product Column Helper */
 .orders-shell .col-product {
   min-width: 350px;
-  /* WIDENED PRODUCT COLUMN */
+  /* Wides Product Column */
   max-width: 400px;
 }
 
 /* Specific Content Styles */
-
-.orders-shell .order-id-cell {
-  /* min-width: 180px; Removed to let th control width */
-}
-
 .orders-shell .order-id-content {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
+  /* Reduced gap */
 }
 
 .orders-shell .order-id-link {
@@ -1234,7 +1231,9 @@ RESPONSIVE STYLES
   padding-bottom: 2px;
 }
 
-/* STATUS BADGES - MARKS STYLE (Bordered) */
+/* STATUS BADGES - MARKS STYLE (Bordered + Colored) */
+/* Unified styles for mapped classes */
+
 .orders-shell .status-badge {
   display: inline-block;
   padding: 0.25rem 0.75rem;
@@ -1244,26 +1243,11 @@ RESPONSIVE STYLES
   white-space: nowrap;
   text-align: center;
   border: 1px solid transparent;
-  /* Prepare for border */
 }
 
-/* Status Colors - With Borders */
-.orders-shell .status-processing,
-.orders-shell .orders-status-badge--processing {
-  background-color: #ecfdf5;
-  /* Very light green */
-  color: #059669;
-  border-color: #34d399;
-}
+/* --- PAYMENT STATUSES --- */
 
-.orders-shell .status-pending,
-.orders-shell .orders-status-badge--pending {
-  background-color: #fff7ed;
-  /* Very light orange */
-  color: #ea580c;
-  border-color: #fb923c;
-}
-
+/* Paid / Lunas - Green */
 .orders-shell .payment-paid,
 .orders-shell .orders-status-badge--paid {
   background-color: #ecfdf5;
@@ -1271,28 +1255,93 @@ RESPONSIVE STYLES
   border-color: #34d399;
 }
 
+/* Unpaid - Red */
 .orders-shell .payment-unpaid,
 .orders-shell .orders-status-badge--unpaid {
   background-color: #fef2f2;
-  /* Red tint */
   color: #dc2626;
   border-color: #f87171;
 }
 
+/* Pending - Orange */
+.orders-shell .payment-pending,
+.orders-shell .orders-status-badge--pending {
+  background-color: #fff7ed;
+  color: #ea580c;
+  border-color: #fb923c;
+}
+
+/* Rejected - Red */
+.orders-shell .payment-rejected,
+.orders-shell .orders-status-badge--rejected {
+  background-color: #fef2f2;
+  color: #dc2626;
+  border-color: #f87171;
+}
+
+/* DP - Yellow/Amber */
+.orders-shell .payment-dp,
+.orders-shell .orders-status-badge--dp {
+  background-color: #fffbeb;
+  color: #d97706;
+  border-color: #fbbf24;
+}
+
+
+/* --- ORDER STATUSES --- */
+
+/* Pending - Orange */
+.orders-shell .status-pending {
+  background-color: #fff7ed;
+  color: #ea580c;
+  border-color: #fb923c;
+}
+
+/* Sukses - Blue */
+.orders-shell .status-sukses,
 .orders-shell .orders-status-badge--sukses {
   background-color: #f0f9ff;
   color: #0284c7;
   border-color: #38bdf8;
 }
 
-.orders-shell .orders-status-badge--gagal {
+/* Failed - Red */
+.orders-shell .status-failed,
+.orders-shell .orders-status-badge--failed {
   background-color: #fef2f2;
   color: #dc2626;
   border-color: #f87171;
 }
 
+/* Upselling - Indigo */
+.orders-shell .status-upselling,
+.orders-shell .orders-status-badge--upselling {
+  background-color: #eef2ff;
+  color: #4f46e5;
+  border-color: #818cf8;
+}
+
+/* Dihapus - Gray */
+.orders-shell .status-dihapus,
 .orders-shell .orders-status-badge--dihapus {
   background-color: #f3f4f6;
   color: #4b5563;
   border-color: #9ca3af;
+}
+
+/* Processing - Teal */
+.orders-shell .status-processing,
+.orders-shell .orders-status-badge--processing {
+  background-color: #f0fdf4;
+  /* mint equivalent */
+  color: #16a34a;
+  border-color: #86efac;
+}
+
+/* Default */
+.orders-shell .status-default,
+.orders-shell .orders-status-badge--default {
+  background-color: #f3f4f6;
+  color: #6b7280;
+  border-color: #d1d5db;
 }
