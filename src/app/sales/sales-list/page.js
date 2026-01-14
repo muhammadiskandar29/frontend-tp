@@ -1,191 +1,274 @@
 "use client";
 
-import "@/styles/sales/dashboard-premium.css";
-import "@/styles/sales/shared-table.css"; // Use shared table styles
-import "./sales-list.css";
+import { useEffect, useState, useMemo } from "react";
 import Layout from "@/components/Layout";
-import { Edit2, Trash2, Search, User, Mail, Phone, Briefcase, Calendar } from "lucide-react";
-import { useState, useEffect } from "react";
+import {
+    Users,
+    CheckCircle,
+    XCircle,
+    Search,
+    Edit2,
+    Trash2,
+    Database
+} from "lucide-react";
+
+import "@/styles/sales/dashboard-premium.css";
+import "@/styles/sales/admin.css";
+import "@/styles/sales/shared-table.css";
+import "./sales-list.css";
 
 export default function SalesListPage() {
     const [salesData, setSalesData] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [stats, setStats] = useState({ total: 0, active: 0, inactive: 0 });
+    const [search, setSearch] = useState("");
 
-    useEffect(() => {
-        const fetchSalesData = async () => {
-            try {
-                setLoading(true);
-                const token = localStorage.getItem("token");
-                // Note: In a real app, you might need to handle token absence
+    const fetchSalesData = async () => {
+        try {
+            setLoading(true);
+            const token = localStorage.getItem("token");
+            const res = await fetch("/api/sales/sales-list", {
+                headers: { Authorization: `Bearer ${token}` }
+            });
 
-                const res = await fetch("/api/sales/sales-list", {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                });
-
-                if (!res.ok) {
-                    throw new Error(`Error fetching data: ${res.statusText}`);
-                }
-
+            if (res.ok) {
                 const json = await res.json();
                 if (json.success && Array.isArray(json.data)) {
                     setSalesData(json.data);
-                } else {
-                    console.warn("Unexpected API response format:", json);
-                    setSalesData([]);
+
+                    // Client-side stats calculation
+                    const total = json.data.length;
+                    // Assuming user_rel.status "1" is active
+                    const active = json.data.filter(item => item.user_rel?.status === "1").length;
+                    setStats({
+                        total: total,
+                        active: active,
+                        inactive: total - active
+                    });
                 }
-
-            } catch (err) {
-                console.error("Failed to fetch sales list:", err);
-                setError(err.message);
-            } finally {
-                setLoading(false);
             }
-        };
-
-        fetchSalesData();
-    }, []);
-
-    const handleEdit = (id) => {
-        console.log("Edit sales with id:", id);
-        // Add edit logic here
-    };
-
-    const handleDelete = (id) => {
-        console.log("Delete sales with id:", id);
-        if (confirm("Are you sure you want to delete this sales?")) {
-            // Add delete logic here
+        } catch (err) {
+            console.error("Error fetching sales list:", err);
+        } finally {
+            setLoading(false);
         }
     };
+
+    useEffect(() => {
+        fetchSalesData();
+    }, []);
 
     const formatDate = (dateString) => {
         if (!dateString) return "-";
         try {
             const date = new Date(dateString);
             return date.toLocaleDateString("id-ID", {
-                year: 'numeric',
+                day: '2-digit',
                 month: 'short',
-                day: 'numeric'
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
             });
-        } catch (e) {
+        } catch {
             return dateString;
         }
     };
 
-    return (
-        <Layout title="Daftar Sales">
-            <div className="dashboard-shell table-shell" style={{ padding: '2rem' }}>
-                <div className="sales-list-header">
-                    <h1>Sales Team</h1>
-                    <p>Manage your sales team members and their configurations.</p>
-                </div>
+    // Filter displayed data based on search
+    const filteredData = useMemo(() => {
+        if (!search) return salesData;
+        const lowerSearch = search.toLowerCase();
+        return salesData.filter(item =>
+            item.user_rel?.nama?.toLowerCase().includes(lowerSearch) ||
+            item.user_rel?.email?.toLowerCase().includes(lowerSearch)
+        );
+    }, [search, salesData]);
 
-                <div className="table-wrapper sales-list-table-wrapper">
-                    <table className="data-table">
-                        <thead>
-                            <tr>
-                                <th>Nama Sales</th>
-                                <th>Email</th>
-                                <th>No WA</th>
-                                <th>Profesi</th>
-                                <th>Terdaftar</th>
-                                {/* Status is common in sales lists, showing if active */}
-                                {/* Based on data 'status': "1" usually means active */}
-                                <th>Status</th>
-                                <th>Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {loading ? (
+    return (
+        <Layout title="Sales Team Management">
+            <div className="dashboard-shell table-shell">
+                {/* Stats Summary Cards */}
+                <section className="dashboard-summary">
+                    <article className="summary-card summary-card--combined summary-card--three-cols">
+                        <div className="summary-card__column">
+                            <div className="summary-card__icon accent-blue">
+                                <Users size={22} />
+                            </div>
+                            <div>
+                                <p className="summary-card__label">Total Sales</p>
+                                <p className="summary-card__value">{stats.total}</p>
+                            </div>
+                        </div>
+                        <div className="summary-card__divider"></div>
+                        <div className="summary-card__column">
+                            <div className="summary-card__icon accent-emerald">
+                                <CheckCircle size={22} />
+                            </div>
+                            <div>
+                                <p className="summary-card__label">Active</p>
+                                <p className="summary-card__value">{stats.active}</p>
+                            </div>
+                        </div>
+                        <div className="summary-card__divider"></div>
+                        <div className="summary-card__column">
+                            <div className="summary-card__icon accent-red">
+                                <XCircle size={22} />
+                            </div>
+                            <div>
+                                <p className="summary-card__label">Inactive</p>
+                                <p className="summary-card__value">{stats.inactive}</p>
+                            </div>
+                        </div>
+                    </article>
+                </section>
+
+                {/* Hero / Toolbar */}
+                <section className="dashboard-hero">
+                    <div className="customers-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '1.5rem' }}>
+                        <div className="customers-search" style={{ position: 'relative', maxWidth: '400px', width: '100%' }}>
+                            <input
+                                type="search"
+                                placeholder="Cari nama atau email..."
+                                className="customers-search__input"
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem 1rem 0.75rem 2.5rem',
+                                    borderRadius: '0.5rem',
+                                    border: '1px solid #e2e8f0',
+                                    fontSize: '0.875rem'
+                                }}
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                            />
+                            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                        </div>
+                        <button className="customers-button customers-button--primary" style={{
+                            background: '#0f172a',
+                            color: 'white',
+                            padding: '0.75rem 1.5rem',
+                            borderRadius: '0.5rem',
+                            fontWeight: 600,
+                            fontSize: '0.875rem',
+                            border: 'none',
+                            cursor: 'pointer'
+                        }}>
+                            + Tambah Sales
+                        </button>
+                    </div>
+                </section>
+
+                {/* Main Panel & Table */}
+                <section className="panel">
+                    <div className="panel__header">
+                        <div>
+                            <p className="panel__eyebrow">Team Management</p>
+                            <h3 className="panel__title">Daftar Sales</h3>
+                        </div>
+                    </div>
+
+                    <div className="table-wrapper sales-list-table-wrapper">
+                        <table className="data-table">
+                            <thead>
                                 <tr>
-                                    <td colSpan="6" className="table-empty">Loading sales data...</td>
+                                    <th>Nama Sales</th>
+                                    <th>Email</th>
+                                    <th>Woowa Key</th>
+                                    <th>Last Update Lead</th>
+                                    <th>Aksi</th>
                                 </tr>
-                            ) : error ? (
-                                <tr>
-                                    <td colSpan="6" className="table-empty" style={{ color: 'red' }}>Error: {error}</td>
-                                </tr>
-                            ) : salesData.length === 0 ? (
-                                <tr>
-                                    <td colSpan="6" className="table-empty">Tidak ada data sales.</td>
-                                </tr>
-                            ) : (
-                                salesData.map((sales, index) => (
-                                    <tr key={sales.id || index}>
-                                        <td>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                                <div style={{
-                                                    width: '32px',
-                                                    height: '32px',
-                                                    borderRadius: '50%',
-                                                    background: '#e0f2fe',
-                                                    color: '#0284c7',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center'
-                                                }}>
-                                                    <User size={16} />
-                                                </div>
-                                                <div>
-                                                    <span style={{ display: 'block', fontWeight: 600, color: '#0f172a' }}>{sales.nama}</span>
-                                                    {sales.nama_panggilan && <span style={{ fontSize: '0.75rem', color: '#64748b' }}>({sales.nama_panggilan})</span>}
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748b' }}>
-                                                <Mail size={14} />
-                                                <span>{sales.email || "-"}</span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748b' }}>
-                                                <Phone size={14} />
-                                                <span>{sales.wa || "-"}</span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748b' }}>
-                                                <Briefcase size={14} />
-                                                <span style={{ textTransform: 'capitalize' }}>{sales.profesi || "-"}</span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748b' }}>
-                                                <Calendar size={14} />
-                                                <span>{formatDate(sales.create_at)}</span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span className={`sales-badge ${sales.status === "1" ? "active" : "inactive"}`}>
-                                                {sales.status === "1" ? "Active" : "Inactive"}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div className="action-buttons">
-                                                <button
-                                                    className="table-shell action-btn action-btn--primary"
-                                                    onClick={() => handleEdit(sales.id)}
-                                                    title="Edit"
-                                                >
-                                                    <Edit2 size={16} />
-                                                </button>
-                                                <button
-                                                    className="table-shell action-btn action-btn--danger"
-                                                    onClick={() => handleDelete(sales.id)}
-                                                    title="Delete"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </div>
-                                        </td>
+                            </thead>
+                            <tbody>
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan="5" className="table-empty">Loading data...</td>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                                ) : filteredData.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="5" className="table-empty">Tidak ada data sales ditemukan.</td>
+                                    </tr>
+                                ) : (
+                                    filteredData.map((item) => (
+                                        <tr key={item.id}>
+                                            <td>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                    <div style={{
+                                                        width: '32px',
+                                                        height: '32px',
+                                                        borderRadius: '50%',
+                                                        background: '#f1f5f9',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        color: '#64748b'
+                                                    }}>
+                                                        <User size={16} />
+                                                    </div>
+                                                    <div>
+                                                        <span style={{ display: 'block', fontWeight: 600, color: '#0f172a' }}>
+                                                            {item.user_rel?.nama || "-"}
+                                                        </span>
+                                                        {item.urutan && (
+                                                            <span style={{ fontSize: '0.7rem', color: '#64748b', background: '#f8fafc', padding: '1px 6px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                                                                Urutan: {item.urutan}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div style={{ color: '#475569' }}>{item.user_rel?.email || "-"}</div>
+                                            </td>
+                                            <td>
+                                                {item.woowa_key ? (
+                                                    <div style={{
+                                                        fontFamily: 'monospace',
+                                                        background: '#f8fafc',
+                                                        padding: '0.25rem 0.5rem',
+                                                        borderRadius: '0.25rem',
+                                                        fontSize: '0.75rem',
+                                                        color: '#475569',
+                                                        border: '1px solid #cbd5e1',
+                                                        display: 'inline-block',
+                                                        maxWidth: '200px',
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis',
+                                                        whiteSpace: 'nowrap'
+                                                    }} title={item.woowa_key}>
+                                                        {item.woowa_key}
+                                                    </div>
+                                                ) : (
+                                                    <span style={{ color: '#94a3b8', fontSize: '0.875rem' }}>Not Configured</span>
+                                                )}
+                                            </td>
+                                            <td>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#475569' }}>
+                                                    <Database size={14} />
+                                                    <span>{formatDate(item.last_update_lead)}</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div className="action-buttons">
+                                                    <button
+                                                        className="table-shell action-btn action-btn--primary"
+                                                        title="Edit"
+                                                    >
+                                                        <Edit2 size={16} />
+                                                    </button>
+                                                    <button
+                                                        className="table-shell action-btn action-btn--danger"
+                                                        title="Delete"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
             </div>
         </Layout>
     );

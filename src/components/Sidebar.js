@@ -43,10 +43,12 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
   const [openSubmenu, setOpenSubmenu] = useState(null);
   const [isHovered, setIsHovered] = useState(false);
   const [isExplicitlyOpened, setIsExplicitlyOpened] = useState(isOpen);
+
   // Check if user is sales (divisi 3) or finance (divisi 4)
   const [isSales, setIsSales] = useState(false);
   const [isFinance, setIsFinance] = useState(false);
-  
+  const [isLeader, setIsLeader] = useState(false);
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       const userData = localStorage.getItem("user");
@@ -57,8 +59,8 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
           const userDivisi = user?.divisi || division;
           setIsSales(userDivisi === 3 || userDivisi === "3");
           setIsFinance(userDivisi === 4 || userDivisi === "4");
+          setIsLeader(user?.level === "1" || user?.level === 1);
         } catch (e) {
-          // Fallback to division from localStorage
           setIsSales(division === "3");
           setIsFinance(division === "4");
         }
@@ -68,18 +70,17 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
       }
     }
   }, []);
-  
-  // Check if we're on addProducts page - force mobile behavior
+
   const isAddProductsPage = pathname.includes('/sales/products/addProducts') || pathname.includes('/sales/products/addProducts');
-  
+
   // Listen for custom event from addProducts page
   useEffect(() => {
     if (!isAddProductsPage) return;
-    
+
     const handleToggle = (e) => {
       setIsDrawerOpen(e.detail.isOpen);
     };
-    
+
     window.addEventListener('addProductsSidebarToggle', handleToggle);
     return () => window.removeEventListener('addProductsSidebarToggle', handleToggle);
   }, [isAddProductsPage]);
@@ -113,7 +114,7 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
         },
       ];
     }
-    
+
     // Staff Sales menu (level 2) - hanya Dashboard dan Follow Hari Ini
     if (pathname?.startsWith("/sales/staff")) {
       return [
@@ -135,7 +136,7 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
         },
       ];
     }
-    
+
     // Staff Finance menu (level 2) - untuk nanti
     if (pathname?.startsWith("/finance/staff")) {
       return [
@@ -153,10 +154,13 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
         },
       ];
     }
-    
+
+
+
+    // Admin menu (default)
     // Sales menu (leader)
     if (pathname?.startsWith("/sales")) {
-      return [
+      const salesItems = [
         {
           section: "OVERVIEW",
           items: [
@@ -198,8 +202,20 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
           ],
         },
       ];
+
+      // Add Sales List for Leader (level 1)
+      if (isLeader) {
+        salesItems.splice(3, 0, {
+          section: "TEAM MANAGEMENT",
+          items: [
+            { label: "Sales List", href: `${basePath}/sales-list`, icon: <Users size={18} /> }
+          ]
+        });
+      }
+
+      return salesItems;
     }
-    
+
     // Admin menu (default)
     return [
       {
@@ -215,7 +231,7 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
         ],
       },
     ];
-  }, [pathname, basePath]);
+  }, [pathname, basePath, isLeader]);
 
   // === DETECT SCREEN WIDTH ===
   useEffect(() => {
@@ -277,7 +293,7 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
       setIsDrawerOpen(false);
       return;
     }
-    
+
     // Normal behavior for other pages
     if (viewport === VIEWPORT.DESKTOP) {
       // isRailExpanded controlled by isOpen prop
@@ -294,10 +310,10 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
   // === AUTO OPEN SUBMENU IF CURRENT PAGE IS INSIDE IT ===
   useEffect(() => {
     if (!pathname || !menu) return;
-    
+
     // Find which submenu should be open (if any)
     let submenuToOpen = null;
-    
+
     menu.forEach((section) => {
       if (section.items) {
         section.items.forEach((item) => {
@@ -316,7 +332,7 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
         });
       }
     });
-    
+
     // Only update state if the value actually changed (using functional update to avoid dependency)
     setOpenSubmenu((prev) => {
       return submenuToOpen !== prev ? submenuToOpen : prev;
@@ -372,12 +388,12 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
     if (!pathname || !item) return false;
     // Normalize paths for comparison (handle both /admin and /sales)
     const normalizedPathname = String(pathname).replace(/^\/sales/, "/admin");
-    
+
     if (item.href) {
       const normalizedItemHref = String(item.href).replace(/^\/sales/, "/admin");
       if (normalizedPathname === normalizedItemHref) return true;
     }
-    
+
     if (item.submenu) {
       return item.submenu.some((sub) => {
         if (!sub?.href) return false;
@@ -395,7 +411,7 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
       classes.push(isDrawerOpen ? "sidebar--open" : "sidebar--closed");
       return classes.join(" ");
     }
-    
+
     // Normal behavior for other pages
     const classes = ["sidebar", `sidebar--${viewport}`];
     if (viewport === VIEWPORT.DESKTOP && !isRailExpanded) {
@@ -412,8 +428,8 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
 
   return (
     <>
-      <aside 
-        className={sidebarClass} 
+      <aside
+        className={sidebarClass}
         aria-label="Navigation sidebar"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -423,10 +439,10 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
         <div className="sidebar-logo">
           <Link href={
             pathname?.startsWith("/finance/staff") ? "/finance/staff" :
-            pathname?.startsWith("/sales/staff") ? "/sales/staff" :
-            isFinance ? "/finance" : 
-            isSales ? "/sales" : 
-            "/admin"
+              pathname?.startsWith("/sales/staff") ? "/sales/staff" :
+                isFinance ? "/finance" :
+                  isSales ? "/sales" :
+                    "/admin"
           }>
             <Image
               src="/assets/logo.png"
@@ -441,18 +457,18 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
         <ul className="sidebar-menu">
           {menu.map((section, sectionIndex) => {
             if (!section || !section.section || !section.items) return null;
-            
+
             return (
               <li key={`section-${sectionIndex}`} className="sidebar-section-wrapper">
                 {/* Section Header - Non-clickable label */}
                 <div className="sidebar-section-header">
                   {section.section}
                 </div>
-                
+
                 {/* Section Items */}
                 {section.items.map((item) => {
                   if (!item || !item.label) return null;
-                  
+
                   const active = isMenuActive(item);
                   const isSubmenuOpen = openSubmenu === item.label;
 
@@ -485,9 +501,8 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
                                 }
                               }
                             }}
-                            className={`sidebar-item has-submenu w-full ${
-                              active ? "sidebar-item-active" : ""
-                            } ${isSubmenuOpen ? "open" : ""}`}
+                            className={`sidebar-item has-submenu w-full ${active ? "sidebar-item-active" : ""
+                              } ${isSubmenuOpen ? "open" : ""}`}
                             aria-expanded={isSubmenuOpen}
                             aria-controls={`${item.label}-submenu`}
                           >
@@ -510,9 +525,8 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
                                 <li key={sub.href}>
                                   <Link
                                     href={sub.href}
-                                    className={`submenu-item ${
-                                      isSubActive ? "submenu-item-active" : ""
-                                    }`}
+                                    className={`submenu-item ${isSubActive ? "submenu-item-active" : ""
+                                      }`}
                                     onClick={handleLinkClick}
                                   >
                                     {sub.label}
@@ -551,11 +565,10 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
       {(viewport === VIEWPORT.MOBILE || viewport === VIEWPORT.TABLET) && !isAddProductsPage && (
         <button
           onClick={handleToggle}
-          className={`sidebar-toggle-btn ${
-            isDrawerOpen || (viewport === VIEWPORT.TABLET && isRailExpanded)
-              ? "sidebar-toggle-btn--active"
-              : ""
-          }`}
+          className={`sidebar-toggle-btn ${isDrawerOpen || (viewport === VIEWPORT.TABLET && isRailExpanded)
+            ? "sidebar-toggle-btn--active"
+            : ""
+            }`}
           aria-label="Toggle sidebar visibility"
           aria-expanded={
             viewport === VIEWPORT.MOBILE ? isDrawerOpen : isRailExpanded
