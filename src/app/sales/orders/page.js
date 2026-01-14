@@ -1254,18 +1254,21 @@ export default function DaftarPesanan() {
             <table className="table-orders">
               <thead>
                 <tr>
-                  {/* STICKY LEFT 1: Checkbox */}
-                  <th className="sticky-left-1" style={{ width: '50px', minWidth: '50px' }}>
-                    <input type="checkbox" className="checkbox-custom" />
-                  </th>
-
-                  {/* STICKY LEFT 2: Order ID */}
-                  <th className="sticky-left-2">
+                  {/* STICKY LEFT 1: Order ID */}
+                  <th className="sticky-left-1">
                     Order - Id
                   </th>
 
-                  <th>Customer</th>
-                  <th>Produk</th>
+                  {/* STICKY LEFT 2: Customer */}
+                  <th className="sticky-left-2">
+                    Customer
+                  </th>
+
+                  {/* Product - Widened */}
+                  <th className="col-product">
+                    Produk
+                  </th>
+
                   <th>Status Pembayaran</th>
                   <th>Status Order</th>
                   <th>Follow Up Text</th>
@@ -1311,13 +1314,8 @@ export default function DaftarPesanan() {
 
                     return (
                       <tr key={order.id || `${order.id}-${i}`}>
-                        {/* STICKY LEFT 1: Checkbox */}
+                        {/* STICKY LEFT 1: Order ID + External Link */}
                         <td className="sticky-left-1">
-                          <input type="checkbox" className="checkbox-custom" />
-                        </td>
-
-                        {/* STICKY LEFT 2: Order ID + External Link */}
-                        <td className="sticky-left-2">
                           <div className="order-id-cell">
                             <div className="order-id-content">
                               <div>
@@ -1340,8 +1338,8 @@ export default function DaftarPesanan() {
                           </div>
                         </td>
 
-                        {/* Customer */}
-                        <td>
+                        {/* STICKY LEFT 2: Customer */}
+                        <td className="sticky-left-2">
                           <div className="customer-cell">
                             <span className="customer-name" style={{ fontSize: "0.875rem" }}>{customerNama}</span>
                             <span className="customer-detail">
@@ -1350,8 +1348,8 @@ export default function DaftarPesanan() {
                           </div>
                         </td>
 
-                        {/* Produk */}
-                        <td>
+                        {/* Product - Widened */}
+                        <td className="col-product">
                           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
                             <span style={{ fontSize: "0.875rem", color: "#111827" }}>{produkNama}</span>
                           </div>
@@ -1433,7 +1431,7 @@ export default function DaftarPesanan() {
                   })
                 ) : (
                   <tr>
-                    <td colSpan={11} className="orders-empty">
+                    <td colSpan={10} className="orders-empty">
                       {orders.length ? "Tidak ada hasil pencarian." : "Loading data..."}
                     </td>
                   </tr>
