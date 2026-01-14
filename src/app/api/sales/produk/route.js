@@ -405,27 +405,45 @@ export async function GET(request) {
         Accept: "application/json",
         Authorization: `Bearer ${token}`,
       },
-      cache: 'no-store', // Disable cache for fresher data & speed
+      cache: 'no-store',
     });
 
-    // Validasi status code
+    const data = await response.json();
+
     if (!response.ok) {
-      const data = await response.json();
       return NextResponse.json(
         { success: false, message: data?.message || "Gagal mengambil produk" },
         { status: response.status, headers: corsHeaders }
       );
     }
 
-    // STREAMING RESPONSE: Forward stream langsung ke client (Zero-copy / Zero-parsing)
-    // Ini mengurangi overhead unmarshalling/marshalling JSON yang besar
-    return new NextResponse(response.body, {
-      status: 200,
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "application/json",
-      },
-    });
+    // ✅ OPTIMASI PAYLOAD: Filter field yang HANYA dibutuhkan tabel
+    // Mapping data untuk membuang field berat seperti landingpage, deskripsi, dll
+    let optimizedData = [];
+
+    if (data && Array.isArray(data.data)) {
+      optimizedData = data.data.map(p => ({
+        id: p.id,
+        nama: p.nama,
+        kode: p.kode,
+        url: p.url,
+        status: p.status,
+        kategori_rel: p.kategori_rel, // Dibutuhkan untuk nama kategori
+        user_rel: p.user_rel,         // Dibutuhkan untuk "Created By"
+        assign: p.assign,             // Dibutuhkan untuk "Assign By"
+        tanggal_event: p.tanggal_event, // Dibutuhkan untuk "Event Date"
+        create_at: p.create_at,         // Dibutuhkan untuk "Created At"
+        harga: p.harga,               // Opsional (biasanya ada di table)
+        // EXCLUDE: landingpage, deskripsi, testimoni, video, images, pixel, dll
+      }));
+    }
+
+    // Return filtered data
+    return NextResponse.json({
+      success: true,
+      message: "Data produk berhasil diambil (Optimized)",
+      data: optimizedData
+    }, { headers: corsHeaders });
   } catch (error) {
     console.error("❌ [GET_PRODUK] Error:", error);
     return NextResponse.json(
