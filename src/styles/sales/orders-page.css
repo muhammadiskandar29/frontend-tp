@@ -615,20 +615,21 @@ ORDERS TABLE
   overflow: visible;
 }
 
-/* Background putih untuk 3 kolom pertama - extend sampai ujung card */
+/* Background putih untuk 3 kolom pertama - extend jauh ke kanan untuk menutupi konten scroll */
 .orders-table__row::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
-  /* Width: kolom 1 (minmax 140px) + kolom 2 (24px) + kolom 3 (minmax 130px) + gaps (0.3rem + 0.3rem) + padding row (0.65rem) */
-  width: calc(140px + 24px + 130px + 0.3rem + 0.3rem + 0.65rem);
+  right: -9999px; /* Extend jauh ke kanan untuk menutupi semua konten scroll */
   height: 100%;
   background: #ffffff;
   z-index: 0;
   border-right: 1px solid #e5e7eb;
   box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
   border-radius: 1rem 0 0 1rem; /* Match border radius row di kiri */
+  /* Pastikan width minimum untuk cover 3 kolom */
+  min-width: calc(140px + 24px + 130px + 0.3rem + 0.3rem + 0.65rem);
 }
 
 /* Background putih untuk head juga */
@@ -637,11 +638,13 @@ ORDERS TABLE
   position: absolute;
   top: 0;
   left: 0;
-  width: calc(140px + 24px + 130px + 0.3rem + 0.3rem + 0.75rem);
+  right: -9999px; /* Extend jauh ke kanan untuk menutupi semua konten scroll */
   height: 100%;
   background: #ffffff;
   z-index: 0;
   border-right: 1px solid #e5e7eb;
+  /* Pastikan width minimum untuk cover 3 kolom */
+  min-width: calc(140px + 24px + 130px + 0.3rem + 0.3rem + 0.75rem);
 }
 
 .orders-table__head {

@@ -5,6 +5,8 @@ import { useParams, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import Script from "next/script";
 import Head from "next/head";
+import dynamic from "next/dynamic";
+import Image from "next/image";
 import { 
   CheckCircle2, Circle, Minus, ArrowRight, ArrowRightCircle,
   ArrowLeft as ArrowLeftIcon, ArrowLeftRight, ChevronRight, CheckSquare, ShieldCheck,
@@ -15,9 +17,16 @@ import {
   AlertCircle, Info, HelpCircle as HelpCircleIcon, Ban, Shield, Key, Unlock,
   MapPin, Calendar as CalendarIcon, Clock
 } from "lucide-react";
-import OngkirCalculator from "@/components/OngkirCalculator";
-import ImageSliderPreview from "@/app/sales/products/addProducts3/components/ImageSliderPreview";
-import QuotaInfoPreview from "@/app/sales/products/addProducts3/components/QuotaInfoPreview";
+// ✅ OPTIMASI: Lazy load komponen besar untuk mengurangi initial bundle size
+const OngkirCalculator = dynamic(() => import("@/components/OngkirCalculator"), {
+  ssr: false
+});
+const ImageSliderPreview = dynamic(() => import("@/app/sales/products/addProducts3/components/ImageSliderPreview"), {
+  ssr: false
+});
+const QuotaInfoPreview = dynamic(() => import("@/app/sales/products/addProducts3/components/QuotaInfoPreview"), {
+  ssr: false
+});
 import { getProvinces, getCities, getDistricts, calculateDomesticCost } from "@/utils/shippingService";
 import "@/styles/sales/add-products3.css"; // Canvas style
 import "@/styles/ongkir.css";
@@ -243,19 +252,40 @@ function normalizeLandingpageData(landingpageData) {
     return landingpageData;
   }
 
-  // ✅ Deep clone untuk menghindari mutasi
-  const normalized = JSON.parse(JSON.stringify(landingpageData));
-
-  // ✅ Step 1: Cari semua section dan ambil componentId-nya
-  const sections = normalized.filter(item => item && item.type === 'section');
+  // ✅ OPTIMASI: Cek dulu apakah perlu normalisasi sebelum deep clone (hemat waktu parsing)
+  const blocksWithParentId = landingpageData.filter(b => b && b.parentId);
+  const sections = landingpageData.filter(item => item && item.type === 'section');
   
-  // ✅ Step 2: Cek apakah sudah ada child blocks dengan parentId (backend sudah benar)
-  // Jika semua blocks sudah punya parentId, skip normalisasi (optimasi)
-  const blocksWithParentId = normalized.filter(b => b && b.parentId);
+  // ✅ Step 1: Jika sudah normalized, skip clone (optimasi performa)
   if (blocksWithParentId.length > 0 && sections.length === 0) {
     // ✅ Tidak ada section dan sudah ada parentId, tidak perlu normalisasi
-    return normalized;
+    return landingpageData;
   }
+  
+  // ✅ Cek apakah semua section sudah tidak punya content.children (sudah normalized)
+  const needsNormalization = sections.some(section => {
+    const sectionComponentId = section.config?.componentId;
+    if (!sectionComponentId) return false;
+    
+    // Cek apakah sudah ada child blocks dengan parentId
+    const existingChildren = landingpageData.filter(b => 
+      b && b.type && b.parentId === sectionComponentId
+    );
+    
+    if (existingChildren.length > 0) return false; // Sudah normalized
+    
+    // Cek apakah ada content.children (legacy data)
+    const sectionChildren = section.content?.children || [];
+    return Array.isArray(sectionChildren) && sectionChildren.length > 0;
+  });
+  
+  // ✅ Jika tidak perlu normalisasi, return langsung (hemat deep clone)
+  if (!needsNormalization) {
+    return landingpageData;
+  }
+
+  // ✅ Deep clone hanya jika benar-benar perlu (untuk menghindari mutasi)
+  const normalized = JSON.parse(JSON.stringify(landingpageData));
 
   sections.forEach(section => {
     const sectionComponentId = section.config?.componentId;
@@ -894,19 +924,24 @@ export default function ProductPage() {
         // Ketika aspect ratio dipilih, wrapper akan otomatis memiliki tinggi sesuai ratio
         // CSS aspect-ratio akan menghitung tinggi berdasarkan lebar dan ratio
 
+        // ✅ OPTIMASI: Tentukan apakah ini gambar pertama (hero image) untuk priority loading
+        // Cek apakah ini block pertama dengan type image untuk prioritas LCP
+        const isHeroImage = allBlocks.findIndex(b => b && b.type === 'image' && !b.parentId) === allBlocks.findIndex(b => b === block);
+
         return (
           <div style={imageContainerStyle}>
             <div style={imageWrapperStyle}>
-              <img 
+              <Image 
                 src={imageData.src} 
-                alt={imageData.alt || ""} 
+                alt={imageData.alt || ""}
+                fill
+                sizes={`${imageWidth}vw`}
+                priority={isHeroImage}
                 style={{
-                  width: "100%", // ✅ Gambar selalu 100% dari wrapper (bukan dari setting)
-                  height: "100%",
                   objectFit: objectFitValue,
                   objectPosition: "center",
-                  display: "block",
                 }}
+                unoptimized={imageData.src?.startsWith('/api/image') || imageData.src?.startsWith('http')}
               />
             </div>
             {imageData.caption && <p className="preview-caption">{imageData.caption}</p>}
@@ -1037,12 +1072,16 @@ export default function ProductPage() {
                         <div className="testi-header-new">
                           {item.gambar ? (
                             <div className="testi-avatar-wrapper-new">
-                              <img 
+                              <Image 
                                 src={item.gambar} 
                                 alt={`Foto ${item.nama}`}
+                                width={48}
+                                height={48}
                                 className="testi-avatar-new"
                                 itemProp="author"
                                 loading="lazy"
+                                style={{ objectFit: 'cover', borderRadius: '50%' }}
+                                unoptimized={item.gambar?.startsWith('/api/image') || item.gambar?.startsWith('http')}
                               />
                             </div>
                           ) : (
@@ -2367,7 +2406,7 @@ export default function ProductPage() {
     calculateShippingCost();
   }, [selectedWilayahIds.districtId, selectedCourier, productData]);
 
-  // Fetch Data dari Backend
+  // ✅ OPTIMASI: Fetch Data dari Backend dengan non-blocking approach
   useEffect(() => {
     async function fetchProduct() {
       if (!kode_produk) {
@@ -2376,10 +2415,21 @@ export default function ProductPage() {
       }
 
       try {
-        setLoading(true);
+        // ✅ OPTIMASI: Jangan set loading true segera, biarkan UI render dulu
+        // Gunakan requestIdleCallback atau setTimeout untuk non-blocking
+        const timeoutId = setTimeout(() => setLoading(true), 0);
+        
+        // ✅ OPTIMASI: Timeout 3 detik untuk fetch API
+        const controller = new AbortController();
+        const fetchTimeoutId = setTimeout(() => controller.abort(), 3000);
+        
         const res = await fetch(`/api/landing/${kode_produk}`, {
-          cache: "no-store",
+          cache: "default", // ✅ OPTIMASI: Gunakan browser cache
+          signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
+        clearTimeout(fetchTimeoutId);
         
         const json = await res.json();
 
@@ -2460,13 +2510,23 @@ export default function ProductPage() {
 
       } catch (err) {
         console.error("[PRODUCT] Error fetching product:", err);
-        toast.error(err.message || "Gagal memuat data produk");
+        if (err.name === 'AbortError') {
+          toast.error("Timeout: Data terlalu lama dimuat. Silakan refresh halaman.");
+        } else {
+          toast.error(err.message || "Gagal memuat data produk");
+        }
       } finally {
         setLoading(false);
       }
     }
 
-    fetchProduct();
+    // ✅ OPTIMASI: Non-blocking fetch - biarkan UI render dulu
+    // Gunakan requestIdleCallback jika tersedia, fallback ke setTimeout
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      window.requestIdleCallback(() => fetchProduct(), { timeout: 100 });
+    } else {
+      setTimeout(() => fetchProduct(), 0);
+    }
   }, [kode_produk]);
 
   // ✅ Loading indicator - hanya block untuk product data, tidak untuk provinces
@@ -2505,21 +2565,24 @@ export default function ProductPage() {
   // ✅ Section render hanya block dengan parentId === section.config.componentId
   // ✅ Child TIDAK BOLEH dirender di root
   
-  const blocks = landingpage && Array.isArray(landingpage) 
-    ? landingpage.filter((item) => {
-        // Pastikan item valid dan bukan settings
-        if (!item || !item.type) return false;
-        if (item.type === 'settings') return false;
-        
-        // ✅ ARSITEKTUR FINAL: Root skip block dengan parentId
-        // parentId HANYA ada di root level (bukan di config)
-        if (item.parentId) {
-          return false; // Ini adalah child dari section, jangan render di root
-        }
-        
-        return true;
-      })
-    : [];
+  // ✅ OPTIMASI: useMemo untuk menghindari re-filtering blocks setiap render
+  const blocks = useMemo(() => {
+    if (!landingpage || !Array.isArray(landingpage)) return [];
+    
+    return landingpage.filter((item) => {
+      // Pastikan item valid dan bukan settings
+      if (!item || !item.type) return false;
+      if (item.type === 'settings') return false;
+      
+      // ✅ ARSITEKTUR FINAL: Root skip block dengan parentId
+      // parentId HANYA ada di root level (bukan di config)
+      if (item.parentId) {
+        return false; // Ini adalah child dari section, jangan render di root
+      }
+      
+      return true;
+    });
+  }, [landingpage]);
   
   // ✅ Debug logging hanya di development mode
   if (process.env.NODE_ENV === 'development' && blocks.length > 0) {
@@ -2529,14 +2592,15 @@ export default function ProductPage() {
     }
   }
 
-  // Ambil logo dari settings (jika ada)
-  const settings = landingpage && Array.isArray(landingpage) && landingpage.length > 0 && landingpage[0].type === 'settings'
-    ? landingpage[0]
-    : null;
-  const logoUrl = settings?.logo || '/assets/logo.png';
+  // ✅ OPTIMASI: useMemo untuk settings dan derived values
+  const settings = useMemo(() => {
+    return landingpage && Array.isArray(landingpage) && landingpage.length > 0 && landingpage[0].type === 'settings'
+      ? landingpage[0]
+      : null;
+  }, [landingpage]);
   
-  // ✅ FIX: Ambil background_color dari settings
-  const backgroundColor = settings?.background_color || '#ffffff';
+  const logoUrl = useMemo(() => settings?.logo || '/assets/logo.png', [settings]);
+  const backgroundColor = useMemo(() => settings?.background_color || '#ffffff', [settings]);
 
   return (
     <>
@@ -2555,10 +2619,15 @@ export default function ProductPage() {
         <div className="canvas-wrapper" style={{ backgroundColor }}>
           {/* Logo Section - Top */}
           <div className="canvas-logo-wrapper">
-            <img 
+            <Image 
               src={logoUrl} 
               alt="Logo" 
+              width={120}
+              height={40}
               className="canvas-logo"
+              priority={false}
+              style={{ objectFit: 'contain' }}
+              unoptimized={logoUrl?.startsWith('/api/image') || logoUrl?.startsWith('http')}
             />
           </div>
 

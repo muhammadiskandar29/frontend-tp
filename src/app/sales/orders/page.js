@@ -1427,7 +1427,7 @@ export default function DaftarPesanan() {
                         <div className="orders-table__cell" data-label="Sales">
                           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
                             <span style={{ fontSize: "0.875rem", color: "#111827" }}>
-                              {order.sales_rel?.nama || order.sales_nama || "-"}
+                              {order.customer_rel?.sales_rel?.nama || order.customer_rel?.sales_nama || "-"}
                             </span>
                             <span style={{ fontSize: "0.875rem", color: "#111827" }}></span>
                           </div>
