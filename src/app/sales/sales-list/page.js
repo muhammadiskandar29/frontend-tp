@@ -2,16 +2,6 @@
 
 import { useEffect, useState, useMemo } from "react";
 import Layout from "@/components/Layout";
-import {
-
-    XCircle,
-    Search,
-    Edit2,
-    Trash2,
-    Database
-} from "lucide-react";
-
-import "@/styles/sales/dashboard-premium.css";
 import "@/styles/sales/admin.css";
 import "@/styles/sales/shared-table.css";
 import "./sales-list.css";
@@ -37,7 +27,6 @@ export default function SalesListPage() {
 
                     // Client-side stats calculation
                     const total = json.data.length;
-                    // Assuming user_rel.status "1" is active
                     const active = json.data.filter(item => item.user_rel?.status === "1").length;
                     setStats({
                         total: total,
@@ -91,7 +80,7 @@ export default function SalesListPage() {
                     <article className="summary-card summary-card--combined summary-card--three-cols">
                         <div className="summary-card__column">
                             <div className="summary-card__icon accent-blue">
-                                <Users size={22} />
+                                {/* Icon removed as requested */}
                             </div>
                             <div>
                                 <p className="summary-card__label">Total Sales</p>
@@ -101,7 +90,7 @@ export default function SalesListPage() {
                         <div className="summary-card__divider"></div>
                         <div className="summary-card__column">
                             <div className="summary-card__icon accent-emerald">
-                                <CheckCircle size={22} />
+                                {/* Icon removed as requested */}
                             </div>
                             <div>
                                 <p className="summary-card__label">Active</p>
@@ -111,7 +100,7 @@ export default function SalesListPage() {
                         <div className="summary-card__divider"></div>
                         <div className="summary-card__column">
                             <div className="summary-card__icon accent-red">
-                                <XCircle size={22} />
+                                {/* Icon removed as requested */}
                             </div>
                             <div>
                                 <p className="summary-card__label">Inactive</p>
@@ -131,7 +120,7 @@ export default function SalesListPage() {
                                 className="customers-search__input"
                                 style={{
                                     width: '100%',
-                                    padding: '0.75rem 1rem 0.75rem 2.5rem',
+                                    padding: '0.75rem 1rem',
                                     borderRadius: '0.5rem',
                                     border: '1px solid #e2e8f0',
                                     fontSize: '0.875rem'
@@ -139,7 +128,6 @@ export default function SalesListPage() {
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                             />
-                            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
                         </div>
                         <button className="customers-button customers-button--primary" style={{
                             background: '#0f172a',
@@ -200,7 +188,7 @@ export default function SalesListPage() {
                                                         justifyContent: 'center',
                                                         color: '#64748b'
                                                     }}>
-                                                        <User size={16} />
+                                                        {/* Icon removed */}
                                                     </div>
                                                     <div>
                                                         <span style={{ display: 'block', fontWeight: 600, color: '#0f172a' }}>
@@ -241,7 +229,7 @@ export default function SalesListPage() {
                                             </td>
                                             <td>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#475569' }}>
-                                                    <Database size={14} />
+                                                    {/* Icon removed */}
                                                     <span>{formatDate(item.last_update_lead)}</span>
                                                 </div>
                                             </td>
@@ -251,13 +239,13 @@ export default function SalesListPage() {
                                                         className="table-shell action-btn action-btn--primary"
                                                         title="Edit"
                                                     >
-                                                        <Edit2 size={16} />
+                                                        Edit
                                                     </button>
                                                     <button
                                                         className="table-shell action-btn action-btn--danger"
                                                         title="Delete"
                                                     >
-                                                        <Trash2 size={16} />
+                                                        Hapus
                                                     </button>
                                                 </div>
                                             </td>
