@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import '@/styles/login.css';
@@ -10,7 +10,8 @@ import { isTokenExpired } from '@/lib/checkToken';
 
 const API_URL = '/api/login';
 
-export default function LoginPage() {
+// ✅ FIX: Pisahkan komponen yang menggunakan useSearchParams untuk Suspense boundary
+function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -362,5 +363,23 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// ✅ FIX: Wrap dengan Suspense untuk useSearchParams (Next.js requirement)
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '100vh' 
+      }}>
+        <p>Loading...</p>
+      </div>
+    }>
+      <LoginPageContent />
+    </Suspense>
   );
 }
