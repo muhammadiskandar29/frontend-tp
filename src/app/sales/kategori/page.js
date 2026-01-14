@@ -183,7 +183,7 @@ export default function AdminKategoriPage() {
             </button>          </div>
 
           <div className="table-wrapper">
-            <table className="data-table">
+            <table className="data-table" style={{ minWidth: "auto" }}>
               <thead>
                 <tr>
                   <th style={{ width: '80px' }}>#</th>
