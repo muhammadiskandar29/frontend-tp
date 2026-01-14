@@ -6,7 +6,6 @@ import { toast } from "react-hot-toast";
 import Script from "next/script";
 import Head from "next/head";
 import dynamic from "next/dynamic";
-import Image from "next/image";
 import { 
   CheckCircle2, Circle, Minus, ArrowRight, ArrowRightCircle,
   ArrowLeft as ArrowLeftIcon, ArrowLeftRight, ChevronRight, CheckSquare, ShieldCheck,
@@ -934,17 +933,18 @@ function ProductPageContent() {
         return (
           <div style={imageContainerStyle}>
             <div style={imageWrapperStyle}>
-              <Image 
+              <img 
                 src={imageData.src} 
                 alt={imageData.alt || ""}
-                fill
-                sizes={`${imageWidth}vw`}
-                priority={isHeroImage}
+                loading={isHeroImage ? "eager" : "lazy"}
+                decoding="async"
                 style={{
+                  width: "100%",
+                  height: "100%",
                   objectFit: objectFitValue,
                   objectPosition: "center",
+                  display: "block",
                 }}
-                unoptimized={imageData.src?.startsWith('/api/image') || imageData.src?.startsWith('http')}
               />
             </div>
             {imageData.caption && <p className="preview-caption">{imageData.caption}</p>}
@@ -1075,16 +1075,14 @@ function ProductPageContent() {
                         <div className="testi-header-new">
                           {item.gambar ? (
                             <div className="testi-avatar-wrapper-new">
-                              <Image 
+                              <img 
                                 src={item.gambar} 
                                 alt={`Foto ${item.nama}`}
-                                width={48}
-                                height={48}
                                 className="testi-avatar-new"
                                 itemProp="author"
                                 loading="lazy"
+                                decoding="async"
                                 style={{ objectFit: 'cover', borderRadius: '50%' }}
-                                unoptimized={item.gambar?.startsWith('/api/image') || item.gambar?.startsWith('http')}
                               />
                             </div>
                           ) : (
@@ -2622,15 +2620,13 @@ function ProductPageContent() {
         <div className="canvas-wrapper" style={{ backgroundColor }}>
           {/* Logo Section - Top */}
           <div className="canvas-logo-wrapper">
-            <Image 
+            <img 
               src={logoUrl} 
               alt="Logo" 
-              width={120}
-              height={40}
               className="canvas-logo"
-              priority={false}
-              style={{ objectFit: 'contain' }}
-              unoptimized={logoUrl?.startsWith('/api/image') || logoUrl?.startsWith('http')}
+              loading="eager"
+              decoding="async"
+              style={{ objectFit: 'contain', maxWidth: '120px', height: 'auto' }}
             />
           </div>
 

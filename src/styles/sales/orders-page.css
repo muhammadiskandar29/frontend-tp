@@ -513,19 +513,19 @@ ORDERS TABLE
   align-items: center;
 }
 
-/* Sticky columns untuk Order ID, ExternalLink, dan Customer */
+/* Sticky columns untuk Order ID, ExternalLink, dan Customer dengan background putih */
 .orders-table__head > span:nth-child(1),
 .orders-table__row > div:nth-child(1) {
   position: sticky;
   left: 0;
   z-index: 11;
-  background: transparent;
+  background: #ffffff !important; /* Background putih */
   padding-right: 0.5rem;
 }
 
 .orders-table__head > span:nth-child(1) {
   z-index: 21; /* Higher z-index untuk head */
-  background: #ffffff;
+  background: #ffffff !important;
 }
 
 .orders-table__head > span:nth-child(2),
@@ -533,12 +533,12 @@ ORDERS TABLE
   position: sticky;
   left: calc(140px + 0.3rem); /* Width of Order ID + gap */
   z-index: 11;
-  background: transparent;
+  background: #ffffff !important; /* Background putih */
 }
 
 .orders-table__head > span:nth-child(2) {
   z-index: 21; /* Higher z-index untuk head */
-  background: #ffffff;
+  background: #ffffff !important;
 }
 
 .orders-table__head > span:nth-child(3),
@@ -546,13 +546,13 @@ ORDERS TABLE
   position: sticky;
   left: calc(140px + 24px + 0.6rem); /* Width of Order ID + ExternalLink + gaps */
   z-index: 11;
-  background: transparent;
+  background: #ffffff !important; /* Background putih */
   padding-right: 0.5rem;
 }
 
 .orders-table__head > span:nth-child(3) {
   z-index: 21; /* Higher z-index untuk head */
-  background: #ffffff;
+  background: #ffffff !important;
 }
 
 /* Pastikan sticky cells berada di atas background */
@@ -615,38 +615,6 @@ ORDERS TABLE
   overflow: visible;
 }
 
-/* Background putih untuk 3 kolom pertama - extend sampai ujung card */
-.orders-table__row::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  /* Width: kolom 1 (minmax 140px) + kolom 2 (24px) + kolom 3 (minmax 130px) + gaps (0.3rem + 0.3rem) + padding row (0.65rem) */
-  width: calc(140px + 24px + 130px + 0.3rem + 0.3rem + 0.65rem);
-  height: 100%;
-  background: #ffffff;
-  z-index: 0;
-  border-right: 1px solid #e5e7eb;
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
-  border-radius: 1rem 0 0 1rem; /* Match border radius row di kiri */
-}
-
-/* Background putih untuk head juga */
-.orders-table__head::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: calc(140px + 24px + 130px + 0.3rem + 0.3rem + 0.75rem);
-  height: 100%;
-  background: #ffffff;
-  z-index: 0;
-  border-right: 1px solid #e5e7eb;
-}
-
-.orders-table__head {
-  position: relative;
-}
 
 .orders-table__row:hover {
   transform: translateY(-2px);
