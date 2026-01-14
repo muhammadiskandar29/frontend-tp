@@ -458,6 +458,10 @@ ORDERS TABLE
   overflow-x: auto;
   overflow-y: auto; /* Enable vertical scroll */
   padding-bottom: 0.25rem;
+  /* Compensate untuk padding panel (1.75rem) agar sticky columns benar-benar di ujung kiri */
+  margin-left: -1.75rem;
+  padding-left: 1.75rem;
+  width: calc(100% + 3.5rem);
   position: relative;
 }
 
@@ -517,7 +521,7 @@ ORDERS TABLE
 .orders-table__head > span:nth-child(1),
 .orders-table__row > div:nth-child(1) {
   position: sticky;
-  left: 0;
+  left: 1.75rem; /* Compensate untuk padding panel */
   z-index: 11;
   background: #ffffff !important; /* Background putih */
   padding-right: 0.5rem;
@@ -531,7 +535,7 @@ ORDERS TABLE
 .orders-table__head > span:nth-child(2),
 .orders-table__row > div:nth-child(2) {
   position: sticky;
-  left: calc(140px + 0.3rem); /* Width of Order ID + gap */
+  left: calc(1.75rem + 140px + 0.3rem); /* Padding panel + Width of Order ID + gap */
   z-index: 11;
   background: #ffffff !important; /* Background putih */
 }
@@ -544,7 +548,7 @@ ORDERS TABLE
 .orders-table__head > span:nth-child(3),
 .orders-table__row > div:nth-child(3) {
   position: sticky;
-  left: calc(140px + 24px + 0.6rem); /* Width of Order ID + ExternalLink + gaps */
+  left: calc(1.75rem + 140px + 24px + 0.6rem); /* Padding panel + Width of Order ID + ExternalLink + gaps */
   z-index: 11;
   background: #ffffff !important; /* Background putih */
   padding-right: 0.5rem;
