@@ -32,7 +32,7 @@ export default function AddOrders({ onClose, onAdd }) {
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [message, setMessage] = useState("");
   const { createOrder } = useOrders();
-  
+
   // Debounce untuk search customer
   const [debouncedCustomerSearch, setDebouncedCustomerSearch] = useState("");
 
@@ -51,11 +51,11 @@ export default function AddOrders({ onClose, onAdd }) {
       const params = new URLSearchParams({
         search: searchKeyword,
         page: "1",
-        per_page: "50", // Ambil lebih banyak hasil untuk search (bisa disesuaikan)
+        per_page: "100", // Ambil lebih banyak hasil untuk search
       });
 
       const res = await api(`/sales/customer?${params.toString()}`, { method: "GET" });
-      
+
       if (res?.success && Array.isArray(res.data)) {
         setCustomerResults(res.data);
       } else {
@@ -119,13 +119,14 @@ export default function AddOrders({ onClose, onAdd }) {
       nama: cust.nama || "",
       wa: cust.wa || "",
       email: cust.email || "",
-      alamat_customer: cust.alamat || cust.provinsi ? 
+      alamat_customer: cust.alamat || cust.provinsi ?
         `${cust.alamat || ""}${cust.provinsi ? `, ${cust.provinsi}` : ""}${cust.kabupaten ? `, ${cust.kabupaten}` : ""}${cust.kecamatan ? `, ${cust.kecamatan}` : ""}${cust.kode_pos ? ` ${cust.kode_pos}` : ""}`.trim() : "",
       // Jika alamat pengiriman kosong, isi dengan alamat customer
-      alamat: prev.alamat || (cust.alamat || cust.provinsi ? 
+      alamat: prev.alamat || (cust.alamat || cust.provinsi ?
         `${cust.alamat || ""}${cust.provinsi ? `, ${cust.provinsi}` : ""}${cust.kabupaten ? `, ${cust.kabupaten}` : ""}${cust.kecamatan ? `, ${cust.kecamatan}` : ""}${cust.kode_pos ? ` ${cust.kode_pos}` : ""}`.trim() : ""),
     }));
-    setCustomerSearch(`${cust.nama} | ${cust.wa}`);
+    // Reset search agar tidak men-trigger "Tidak ada hasil" karena keyword nama|wa
+    setCustomerSearch("");
     setCustomerResults([]);
     setShowCustomerForm(false);
   };
@@ -186,16 +187,16 @@ export default function AddOrders({ onClose, onAdd }) {
     if (name === "harga" || name === "ongkir") {
       // Remove all non-numeric characters (including commas)
       const numericValue = value.replace(/\D/g, "");
-      
+
       // Format with thousand separator if has value
       const formattedValue = numericValue ? formatCurrency(numericValue) : "";
-      
+
       // Calculate total - parse both values correctly
       // For the field being edited, use the numericValue directly (already cleaned)
       // For the other field, parse from formData (which may have commas)
       let hargaNum = 0;
       let ongkirNum = 0;
-      
+
       if (name === "harga") {
         hargaNum = numericValue ? Number(numericValue) : 0;
         // Parse ongkir from formData (remove commas and convert to number)
@@ -205,9 +206,9 @@ export default function AddOrders({ onClose, onAdd }) {
         hargaNum = parseCurrency(formData.harga || "");
         ongkirNum = numericValue ? Number(numericValue) : 0;
       }
-      
+
       const total = hargaNum + ongkirNum;
-      
+
       setFormData({
         ...formData,
         [name]: formattedValue,
@@ -269,8 +270,13 @@ export default function AddOrders({ onClose, onAdd }) {
   const isSearchActive = customerSearch.trim().length >= 2;
   // Hanya tampilkan "tidak ditemukan" jika search aktif, tidak ada hasil, DAN belum ada customer terpilih
   const noCustomerFound = isSearchActive && customerResults.length === 0 && !hasSelectedCustomer;
-  // Tampilkan form jika: user ingin edit form, belum ada customer terpilih, atau tidak ada hasil search
+  // Tampilkan form jika: user ingin edit form, belum ada customer terpilih, atau tidak ada hasil search (khusus jika memang sedang mencari)
+  // Kalau sudah selected customer, form hanya muncul jika showCustomerForm true
   const displayCustomerForm = showCustomerForm || !hasSelectedCustomer || (isSearchActive && customerResults.length === 0);
+
+  // Helper untuk cek apakah harus menampilkan input search
+  // Tampilkan jika: Belum ada customer terpilih, OR User sedang mau edit customer (showCustomerForm)
+  const showSearchInput = !hasSelectedCustomer || showCustomerForm;
 
   return (
     <div
@@ -308,7 +314,10 @@ export default function AddOrders({ onClose, onAdd }) {
                     <h4>Data Customer</h4>
                     <p>Temukan customer atau tambah data baru.</p>
                   </div>
-                  {hasSelectedCustomer && (
+                  {hasSelectedCustomer && !showCustomerForm && (
+                    // Tombol Ganti Customer hanya muncul jika sudah ada yang dipilih daN tidak sedang edit form
+                    // Tapi sebenarnya Reset lebih cocok jika user ingin membatalkan pilihan total
+                    // di sini kita ikuti logic "Change Customer" = Reset
                     <button
                       type="button"
                       className="orders-link-btn"
@@ -319,40 +328,43 @@ export default function AddOrders({ onClose, onAdd }) {
                   )}
                 </div>
 
-                <label className="orders-field">
-                  Cari Customer (Nama / WA / Email)
-                  <div style={{ position: "relative" }}>
-                    <input
-                      type="text"
-                      value={customerSearch}
-                      onChange={(e) => {
-                        setCustomerSearch(e.target.value);
-                        setShowCustomerForm(false);
-                      }}
-                      placeholder="Ketik minimal 2 huruf untuk mencari..."
-                      disabled={loadingSearch}
-                    />
-                    {loadingSearch && (
-                      <div style={{
-                        position: "absolute",
-                        right: "12px",
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        color: "#6b7280",
-                        fontSize: "14px"
-                      }}>
-                        <i className="pi pi-spin pi-spinner"></i>
-                      </div>
-                    )}
-                  </div>
-                  <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
-                    {customerSearch.trim().length > 0 && customerSearch.trim().length < 2 && "Ketik minimal 2 huruf untuk mencari"}
-                    {customerSearch.trim().length >= 2 && !loadingSearch && customerResults.length > 0 && `Ditemukan ${customerResults.length} customer`}
-                    {customerSearch.trim().length >= 2 && !loadingSearch && customerResults.length === 0 && "Tidak ada hasil"}
-                  </small>
-                </label>
+                {showSearchInput && (
+                  <label className="orders-field">
+                    Cari Customer (Nama / WA / Email)
+                    <div style={{ position: "relative" }}>
+                      <input
+                        type="text"
+                        value={customerSearch}
+                        onChange={(e) => {
+                          setCustomerSearch(e.target.value);
+                          // Jika user mengetik manual, berarti dia mungkin mau cari user lain atau buat baru
+                          // Tapi di sini kita biarkan logic default
+                        }}
+                        placeholder="Ketik minimal 2 huruf untuk mencari..."
+                        disabled={loadingSearch}
+                      />
+                      {loadingSearch && (
+                        <div style={{
+                          position: "absolute",
+                          right: "12px",
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          color: "#6b7280",
+                          fontSize: "14px"
+                        }}>
+                          <i className="pi pi-spin pi-spinner"></i>
+                        </div>
+                      )}
+                    </div>
+                    <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                      {customerSearch.trim().length > 0 && customerSearch.trim().length < 2 && "Ketik minimal 2 huruf untuk mencari"}
+                      {customerSearch.trim().length >= 2 && !loadingSearch && customerResults.length > 0 && `Ditemukan ${customerResults.length} customer`}
+                      {customerSearch.trim().length >= 2 && !loadingSearch && customerResults.length === 0 && "Tidak ada hasil"}
+                    </small>
+                  </label>
+                )}
 
-                {customerResults.length > 0 && (
+                {showSearchInput && customerResults.length > 0 && (
                   <div className="orders-suggestion">
                     {customerResults.map((c) => (
                       <button
@@ -378,7 +390,7 @@ export default function AddOrders({ onClose, onAdd }) {
                   </div>
                 )}
 
-                {noCustomerFound && (
+                {noCustomerFound && showSearchInput && (
                   <div className="orders-empty-state">
                     <i className="pi pi-info-circle" style={{ marginRight: "6px" }}></i>
                     Customer tidak ditemukan. Isi formulir di bawah untuk menambah data baru.
@@ -388,18 +400,19 @@ export default function AddOrders({ onClose, onAdd }) {
                 {/* Customer Selected Card - hanya tampil jika customer sudah dipilih dan tidak dalam mode edit */}
                 {hasSelectedCustomer && !showCustomerForm && (
                   <div className="customer-selected-card">
-                    <div className="customer-selected-header">
-                      <div>
-                        <span className="customer-selected-label">Customer Terpilih</span>
-                        <strong className="customer-selected-name">{formData.nama || "-"}</strong>
+                    <div className="customer-selected-header" style={{ display: 'block' }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+                        <span className="customer-selected-label" style={{ margin: 0 }}>Customer Terpilih</span>
+                        <button
+                          type="button"
+                          className="orders-link-btn"
+                          onClick={() => setShowCustomerForm(true)}
+                          style={{ fontSize: '0.9rem' }}
+                        >
+                          Edit
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        className="orders-link-btn"
-                        onClick={() => setShowCustomerForm(true)}
-                      >
-                        Edit
-                      </button>
+                      <strong className="customer-selected-name" style={{ fontSize: '1.1rem' }}>{formData.nama || "-"}</strong>
                     </div>
                     <div className="customer-selected-info">
                       <div className="customer-info-item">
@@ -454,10 +467,10 @@ export default function AddOrders({ onClose, onAdd }) {
                       <div className="orders-dual-grid">
                         <label className="orders-field">
                           WA (gunakan 62) *
-                          <input 
-                            type="text" 
-                            name="wa" 
-                            value={formData.wa} 
+                          <input
+                            type="text"
+                            name="wa"
+                            value={formData.wa}
                             onChange={handleChange}
                             placeholder="6281234567890"
                             required
@@ -620,11 +633,11 @@ export default function AddOrders({ onClose, onAdd }) {
                       fontSize: "14px",
                       fontWeight: "500",
                     }}>Rp</span>
-                    <input 
-                      type="text" 
-                      name="total_harga" 
-                      value={formData.total_harga ?? ""} 
-                      readOnly 
+                    <input
+                      type="text"
+                      name="total_harga"
+                      value={formData.total_harga ?? ""}
+                      readOnly
                       placeholder="0"
                       style={{ paddingLeft: "40px", background: "#f9fafb" }}
                     />
