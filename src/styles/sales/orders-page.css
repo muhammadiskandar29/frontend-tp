@@ -577,53 +577,27 @@ ORDERS TABLE
   /* Higher than body sticky */
 }
 
-/* Sticky 2: External Link */
+/* Sticky 2: External Link - REMOVE STICKY, LET IT SCROLL */
 .orders-shell .orders-table__head>span:nth-child(2),
 .orders-shell .orders-table__row>div:nth-child(2) {
-  position: sticky;
-  left: calc(160px + 0.3rem);
-  /* Width Col 1 + Gap */
-  z-index: 30;
-  background: var(--orders-surface);
-}
-
-/* Row 2 specific: White background to match card */
-.orders-shell .orders-table__row>div:nth-child(2) {
-  background: #ffffff;
+  position: static;
+  /* Not sticky anymore */
+  z-index: 1;
 }
 
 /* Header 2 specific */
 .orders-shell .orders-table__head>span:nth-child(2) {
-  z-index: 40;
+  z-index: 1;
 }
 
-/* Sticky 3: Customer - FREEZE SAMPAI SINI */
+/* Customer - REMOVE STICKY, LET IT SCROLL */
 .orders-shell .orders-table__head>span:nth-child(3),
 .orders-shell .orders-table__row>div:nth-child(3) {
-  position: sticky;
-  left: calc(160px + 0.3rem + 40px + 0.3rem);
-  /* Col 1 + Gap + Col 2 + Gap */
-  z-index: 30;
-  background: var(--orders-surface);
-  /* SEPARATOR LINE - Menandai batas antara kolom freeze dan scroll */
-  border-right: 2px solid var(--orders-border);
-  box-shadow: 4px 0 8px -4px rgba(0, 0, 0, 0.1);
-  /* Shadow lebih jelas untuk separator */
-}
-
-/* Row 3 specific: White background to match card */
-.orders-shell .orders-table__row>div:nth-child(3) {
-  background: #ffffff;
-}
-
-/* Header 3 specific */
-.orders-shell .orders-table__head>span:nth-child(3) {
-  z-index: 40;
-}
-
-/* Header 2 specific */
-.orders-shell .orders-table__head>span:nth-child(2) {
-  z-index: 40;
+  position: static;
+  /* Not sticky anymore */
+  z-index: 1;
+  border-right: none;
+  /* No separator */
 }
 
 /* Unset sticky for others if they were set */
