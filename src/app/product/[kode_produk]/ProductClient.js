@@ -2158,6 +2158,7 @@ function ProductClient({ initialProductData, initialLandingPage }) {
       : hargaProduk;
 
     // ✅ Validasi formWilayah berdasarkan jenis produk
+    const isFisik = isKategoriBuku();
     if (isFisik) {
       // Untuk produk fisik, wajib lengkap
       if (!formWilayah.provinsi || !formWilayah.kabupaten || !formWilayah.kecamatan || !formWilayah.kode_pos) {

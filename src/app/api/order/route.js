@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { BACKEND_URL } from "@/config/env";
 
+
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -8,13 +9,10 @@ export async function POST(request) {
     // Validasi field wajib sesuai requirement backend
     const requiredFields = ['nama', 'wa', 'email', 'produk', 'harga', 'total_harga', 'metode_bayar', 'sumber'];
     const missingFields = requiredFields.filter(field => !body[field] && body[field] !== 0);
-    
+
     if (missingFields.length > 0) {
       return NextResponse.json(
-        {
-          success: false,
-          message: `Field wajib tidak lengkap: ${missingFields.join(', ')}`,
-        },
+        { success: false, message: `Field wajib tidak lengkap: ${missingFields.join(', ')}` },
         { status: 400 }
       );
     }
@@ -32,23 +30,17 @@ export async function POST(request) {
       metode_bayar: String(body.metode_bayar),
       sumber: String(body.sumber),
       custom_value: Array.isArray(body.custom_value) ? body.custom_value : [],
-      // Tambahkan down_payment jika ada (untuk workshop)
+      // Tambahkan default nilai untuk field opsional jika ada
       ...(body.down_payment !== undefined && body.down_payment !== null ? { down_payment: String(body.down_payment) } : {}),
-      // Tambahkan status_pembayaran jika ada (untuk workshop = 4)
       ...(body.status_pembayaran !== undefined && body.status_pembayaran !== null ? { status_pembayaran: Number(body.status_pembayaran) } : {}),
+      ...(body.bundling_id ? { bundling_id: body.bundling_id } : {}) // Forward bundling_id
     };
 
-    console.log('📤 [ORDER] Payload:', JSON.stringify(payload, null, 2));
-
-    // Validasi produk harus integer
-    if (isNaN(payload.produk)) {
-      return NextResponse.json(
-        { success: false, message: 'produk harus berupa ID yang valid (integer)' },
-        { status: 400 }
-      );
-    }
-
     // Proxy ke backend
+    // Timeout 15 detik untuk menghindari hang
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
     const response = await fetch(`${BACKEND_URL}/api/order`, {
       method: 'POST',
       headers: {
@@ -56,40 +48,27 @@ export async function POST(request) {
         'Accept': 'application/json',
       },
       body: JSON.stringify(payload),
+      signal: controller.signal
     });
 
-    console.log('📥 [ORDER] Backend status:', response.status);
+    clearTimeout(timeoutId);
 
     // Parse response
-    const responseText = await response.text();
-    let data;
-    
-    try {
-      data = JSON.parse(responseText);
-    } catch {
-      console.error('❌ [ORDER] Non-JSON response:', responseText.substring(0, 500));
-      return NextResponse.json(
-        { success: false, message: 'Backend error: Response bukan JSON' },
-        { status: 500 }
-      );
-    }
-
-    console.log('📥 [ORDER] Backend response:', JSON.stringify(data, null, 2));
+    const data = await response.json().catch(() => null);
 
     // Handle error dari backend
-    if (!response.ok) {
+    if (!response.ok || !data) {
       return NextResponse.json(
         {
           success: false,
           message: data?.message || 'Gagal membuat order',
-          error: data?.error || data,
+          error: data?.error || 'Unknown backend error',
         },
-        { status: response.status }
+        { status: response.status || 500 }
       );
     }
 
     // Success - return response langsung dari backend
-    // Expected format: { success: true, message: "...", data: { order: {...}, whatsapp_response: {...} } }
     return NextResponse.json({
       success: true,
       message: data?.message || 'Order berhasil dibuat',
@@ -99,10 +78,10 @@ export async function POST(request) {
   } catch (error) {
     console.error('❌ [ORDER] Error:', error);
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         message: 'Gagal terhubung ke server. Coba lagi nanti.',
-        error: error.message 
+        error: error.message
       },
       { status: 500 }
     );
