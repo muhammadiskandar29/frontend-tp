@@ -2,10 +2,21 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import "@/styles/sales/customer.css";
+import "@/styles/sales/orders.css";
+import "@/styles/sales/orders-page.css";
+import { createPortal } from "react-dom";
 
 // Use Next.js proxy to avoid CORS
 const BASE_URL = "/api";
+
+const STATUS_PEMBAYARAN_MAP = {
+  0:    { label: "Unpaid", class: "unpaid" },
+  null: { label: "Unpaid", class: "unpaid" },
+  1:    { label: "Pending", class: "pending" },
+  2:    { label: "Paid", class: "paid" },
+  3:    { label: "Ditolak", class: "rejected" },
+  4:    { label: "DP", class: "dp" },
+};
 
 // Helper function to clean order data
 const cleanOrderData = (orderData) => {
@@ -26,7 +37,7 @@ const cleanOrderData = (orderData) => {
   return cleaned;
 };
 
-export default function UpdateOrders({ order, onClose, onSave, setToast }) {
+export default function UpdateOrders({ order, onClose, onSave }) {
   const router = useRouter();
   const [updatedOrder, setUpdatedOrder] = useState(order ? cleanOrderData(order) : {});
   const [showKonfirmasiModal, setShowKonfirmasiModal] = useState(false);
@@ -56,12 +67,42 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
     }
   }, [order]);
 
+  // === Format currency helper ===
+  const formatCurrency = (value) => {
+    if (!value && value !== 0) return "";
+    const numValue = typeof value === "string" ? value.replace(/,/g, "") : value;
+    const num = Number(numValue);
+    if (isNaN(num)) return "";
+    return num.toLocaleString("id-ID");
+  };
+
+  // === Parse currency to number ===
+  const parseCurrency = (value) => {
+    if (!value && value !== 0) return 0;
+    if (value === "" || value === null || value === undefined) return 0;
+    // Remove all non-numeric characters (commas, spaces, etc)
+    const numValue = typeof value === "string" ? value.replace(/\D/g, "") : String(value).replace(/\D/g, "");
+    if (!numValue || numValue === "") return 0;
+    const num = Number(numValue);
+    return isNaN(num) ? 0 : num;
+  };
+
+  // Handle amount change with auto-format
+  const handleAmountChange = (e) => {
+    const value = e.target.value;
+    // Remove all non-numeric characters
+    const numericValue = value.replace(/\D/g, "");
+    // Format with thousand separator if has value
+    const formattedValue = numericValue ? formatCurrency(numericValue) : "";
+    setAmount(formattedValue);
+  };
+
   // Update amount ketika isDP atau total_harga berubah
   useEffect(() => {
     if (!isDP) {
-      // Jika bukan DP, amount otomatis dari total_harga
+      // Jika bukan DP, amount otomatis dari total_harga (formatted)
       const totalHarga = updatedOrder.total_harga || order?.total_harga || 0;
-      setAmount(totalHarga.toString());
+      setAmount(totalHarga > 0 ? formatCurrency(totalHarga) : "");
     }
     // Jika DP, biarkan user input manual (tidak diubah otomatis)
   }, [isDP, updatedOrder.total_harga, order?.total_harga]);
@@ -76,10 +117,11 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
         return statusNum;
       }
     }
-    // Fallback: hitung dari bukti pembayaran
+    // Fallback: hitung dari bukti pembayaran atau order_payment_rel
+    const waktuPembayaran = getWaktuPembayaran(updatedOrder || order);
     if (
       updatedOrder.bukti_pembayaran &&
-      updatedOrder.waktu_pembayaran &&
+      (waktuPembayaran || updatedOrder.waktu_pembayaran) &&
       updatedOrder.bukti_pembayaran !== ""
     )
       return 1;
@@ -126,7 +168,49 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
     }
   };
 
+  // Helper untuk mengambil waktu_pembayaran dari order_payment_rel
+  const getWaktuPembayaran = (orderData) => {
+    // Jika sudah ada di level order, gunakan itu
+    if (orderData?.waktu_pembayaran) {
+      return orderData.waktu_pembayaran;
+    }
+    // Ambil dari order_payment_rel jika ada
+    if (orderData?.order_payment_rel && Array.isArray(orderData.order_payment_rel) && orderData.order_payment_rel.length > 0) {
+      // Cari payment yang statusnya approved (status "2") terlebih dahulu
+      const approvedPayment = orderData.order_payment_rel.find(p => String(p.status).trim() === "2");
+      if (approvedPayment && approvedPayment.create_at) {
+        const date = new Date(approvedPayment.create_at);
+        const pad = (n) => n.toString().padStart(2, "0");
+        return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+      }
+      // Jika tidak ada yang approved, ambil yang terbaru
+      const latestPayment = orderData.order_payment_rel.sort((a, b) => {
+        const dateA = new Date(a.create_at || 0);
+        const dateB = new Date(b.create_at || 0);
+        return dateB - dateA;
+      })[0];
+      if (latestPayment && latestPayment.create_at) {
+        const date = new Date(latestPayment.create_at);
+        const pad = (n) => n.toString().padStart(2, "0");
+        return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+      }
+    }
+    return null;
+  };
+
   const getPaymentStatus = (orderData) => {
+    // Cek dari order_payment_rel jika ada
+    if (orderData?.order_payment_rel && Array.isArray(orderData.order_payment_rel) && orderData.order_payment_rel.length > 0) {
+      const hasApprovedPayment = orderData.order_payment_rel.some(p => String(p.status).trim() === "2");
+      if (hasApprovedPayment) {
+        return 1; // Paid
+      }
+      const hasPendingPayment = orderData.order_payment_rel.some(p => String(p.status).trim() === "1");
+      if (hasPendingPayment) {
+        return 1; // Menunggu
+      }
+    }
+    // Fallback ke logika lama
     if (orderData.bukti_pembayaran && orderData.waktu_pembayaran && orderData.metode_bayar) return 1;
     return Number(orderData.status_pembayaran) || 0;
   };
@@ -138,7 +222,8 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
     if (!order?.id) return setErrorMsg("Order ID tidak valid.");
     if (!bukti?.file) return setErrorMsg("Harap upload bukti pembayaran baru.");
     if (!metodeBayar) return setErrorMsg("Isi metode pembayaran terlebih dahulu.");
-    if (!amount || parseFloat(amount) <= 0) return setErrorMsg("Jumlah pembayaran harus diisi dan lebih dari 0.");
+    const amountValue = parseCurrency(amount);
+    if (!amount || amountValue <= 0) return setErrorMsg("Jumlah pembayaran harus diisi dan lebih dari 0.");
 
     // Validasi untuk DP: amount tidak boleh melebihi remaining
     const statusPembayaran = computedStatus();
@@ -146,7 +231,6 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
       const totalHarga = Number(updatedOrder.total_harga || order?.total_harga || 0);
       const totalPaid = Number(updatedOrder.total_paid || order?.total_paid || 0);
       const remaining = totalHarga - totalPaid;
-      const amountValue = parseFloat(amount);
       
       if (amountValue > remaining) {
         return setErrorMsg(`Jumlah pembayaran tidak boleh melebihi sisa yang harus dibayar (Rp ${remaining.toLocaleString("id-ID")})`);
@@ -163,10 +247,43 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
 
       // Build FormData sesuai API spec
       const formData = new FormData();
-      formData.append("bukti_pembayaran", bukti.file);
-      formData.append("waktu_pembayaran", waktuPembayaran);
-      formData.append("metode_pembayaran", metodeBayar);
-      formData.append("amount", amount);
+      
+      // Pastikan semua field dikirim dengan benar
+      // Backend mengharapkan field name sesuai dengan database column
+      if (bukti?.file) {
+        formData.append("bukti_pembayaran", bukti.file);
+      }
+      
+      // Pastikan waktu_pembayaran selalu dikirim (tidak boleh null atau empty)
+      if (waktuPembayaran && waktuPembayaran.trim() !== "") {
+        formData.append("waktu_pembayaran", waktuPembayaran);
+      } else {
+        console.error("❌ [KONFIRMASI] waktu_pembayaran kosong atau tidak valid!");
+      }
+      
+      // Backend mengharapkan metode_bayar (bukan metode_pembayaran) sesuai dengan database column
+      if (metodeBayar && metodeBayar.trim() !== "") {
+        formData.append("metode_bayar", metodeBayar); // Gunakan metode_bayar sesuai database
+        formData.append("metode_pembayaran", metodeBayar); // Juga kirim metode_pembayaran untuk kompatibilitas
+      }
+      
+      formData.append("amount", String(amountValue));
+
+      // Log untuk debugging - pastikan semua field ada
+      console.log("🔍 [KONFIRMASI] ========== REQUEST DATA ==========");
+      console.log("🔍 [KONFIRMASI] waktu_pembayaran:", waktuPembayaran);
+      console.log("🔍 [KONFIRMASI] metode_pembayaran:", metodeBayar);
+      console.log("🔍 [KONFIRMASI] amount:", amountValue);
+      console.log("🔍 [KONFIRMASI] bukti_pembayaran:", bukti?.file ? `[File] ${bukti.file.name} (${bukti.file.size} bytes)` : "TIDAK ADA");
+      console.log("🔍 [KONFIRMASI] FormData entries:");
+      for (const [key, value] of formData.entries()) {
+        if (value instanceof File) {
+          console.log(`  ✅ ${key}: [File] ${value.name} (${value.size} bytes)`);
+        } else {
+          console.log(`  ✅ ${key}: ${value}`);
+        }
+      }
+      console.log("🔍 [KONFIRMASI] ====================================");
 
       const token = localStorage.getItem("token");
       const url = `${BASE_URL}/sales/order-konfirmasi/${order.id}`;
@@ -268,16 +385,12 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
         ? "Pembayaran berhasil dikonfirmasi! Order sudah lunas." 
         : `Pembayaran berhasil dikonfirmasi! Sisa yang harus dibayar: Rp ${newRemaining.toLocaleString("id-ID")}`;
       
-      setToast?.({
-        show: true,
-        type: "success",
-        message: successMessage,
-      });
+      setErrorMsg("");
+      // Success handled by onSave callback
 
       // Tutup modal dan redirect ke halaman orders setelah delay
       // Button akan tetap muncul ketika user buka modal edit lagi untuk status 4 yang masih ada remaining
       setTimeout(() => {
-        setToast?.((prev) => ({ ...prev, show: false }));
         onClose();
         // Redirect ke halaman orders
         router.push("/sales/orders");
@@ -287,15 +400,7 @@ export default function UpdateOrders({ order, onClose, onSave, setToast }) {
       setErrorMsg("Terjadi kesalahan saat konfirmasi pembayaran.");
       setSubmitting(false);
 
-      setToast?.({
-        show: true,
-        type: "error",
-        message: "Gagal mengkonfirmasi pembayaran.",
-      });
-
-      setTimeout(() => {
-        setToast?.((prev) => ({ ...prev, show: false }));
-      }, 2000);
+      setErrorMsg("Gagal mengkonfirmasi pembayaran.");
     }
   };
 
@@ -306,16 +411,29 @@ const handleSubmitUpdate = async (e) => {
   try {
     const token = localStorage.getItem("token");
 
+    // Pastikan semua field yang diperlukan dikirim sesuai API spec
+    const payload = {
+      alamat: updatedOrder.alamat ?? order?.alamat ?? "",
+      harga: String(updatedOrder.harga ?? order?.harga ?? ""),
+      ongkir: String(updatedOrder.ongkir ?? order?.ongkir ?? ""),
+      total_harga: String(updatedOrder.total_harga ?? order?.total_harga ?? ""),
+      waktu_pembayaran: getWaktuPembayaran(updatedOrder || order) || updatedOrder?.waktu_pembayaran || order?.waktu_pembayaran || null,
+      bukti_pembayaran: updatedOrder.bukti_pembayaran ?? order?.bukti_pembayaran ?? null,
+      metode_bayar: metodeBayar || order?.metode_bayar || null,
+      sumber: updatedOrder.sumber ?? order?.sumber ?? "",
+    };
+
+    // Log untuk debugging
+    console.log("🔍 [UPDATE ORDER] Payload yang dikirim:", payload);
+
     const res = await fetch(`${BASE_URL}/sales/order/${order.id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
+        Accept: "application/json",
       },
-      body: JSON.stringify({
-        ...updatedOrder,
-        metode_bayar: metodeBayar,
-      }),
+      body: JSON.stringify(payload),
     });
 
     const json = await res.json();
@@ -324,7 +442,7 @@ const handleSubmitUpdate = async (e) => {
     onSave(newOrder);             // ⬅️ langsung update parent
     onClose();
   } catch (err) {
-    console.error(err);
+    console.error("❌ [UPDATE ORDER] Error:", err);
   }
 };
 
@@ -479,6 +597,23 @@ const handleSubmitUpdate = async (e) => {
                   />
                 </label>
 
+                {/* Waktu Pembayaran - hanya tampil jika sudah ada */}
+                {(() => {
+                  const waktuPembayaran = getWaktuPembayaran(updatedOrder || order);
+                  return waktuPembayaran ? (
+                    <label className="form-field">
+                      <span className="field-label">Waktu Pembayaran</span>
+                      <input
+                        type="text"
+                        className="field-input field-input--readonly"
+                        value={waktuPembayaran}
+                        readOnly
+                        disabled
+                      />
+                    </label>
+                  ) : null;
+                })()}
+
                 {/* Total Paid & Remaining - hanya tampil jika status pembayaran = 4 (DP) */}
                 {computedStatus() === 4 && (
                   <div style={{ marginBottom: "16px", padding: "16px", background: "#f9fafb", borderRadius: "12px", border: "1px solid #e5e7eb" }}>
@@ -510,41 +645,39 @@ const handleSubmitUpdate = async (e) => {
                 )}
                   
                 {/* Button Konfirmasi Pembayaran */}
-                {canConfirmPayment() ? (
-                  <button
-                    type="button"
-                    className="btn-konfirmasi"
-                    disabled={!metodeBayar}
-                    onClick={() => {
-                      // Set amount ke total_harga saat modal dibuka (jika bukan DP)
-                      // Jika DP, biarkan kosong untuk input manual
-                      const statusPembayaran = computedStatus();
-                      if (statusPembayaran !== 4) {
-                        const totalHarga = updatedOrder.total_harga || order?.total_harga || 0;
-                        setAmount(totalHarga.toString());
-                        setIsDP(false);
-                      } else {
-                        // Untuk DP, biarkan amount kosong untuk input manual (user bisa input berapa saja selama tidak melebihi remaining)
-                        setAmount("");
-                        setIsDP(true);
-                      }
-                      setShowKonfirmasiModal(true);
-                    }}
-                    style={{
-                      width: "100%",
-                      marginBottom: "16px"
-                    }}
-                  >
-                    <i className="pi pi-check-circle" />
-                    {computedStatus() === 4 ? "Konfirmasi Pembayaran Lanjutan" : "Konfirmasi Pembayaran"}
-                  </button>
-                ) : (
-                  computedStatus() === 2 && (
-                    <div style={{ padding: "12px", background: "#d1fae5", borderRadius: "8px", textAlign: "center", color: "#065f46", fontWeight: 500, fontSize: "0.875rem" }}>
-                      ✅ Pembayaran Lunas
-                    </div>
-                  )
-                )}
+                <button
+  type="button"
+  className="btn-konfirmasi"
+  disabled={!metodeBayar}
+  onClick={() => {
+    const statusPembayaran = computedStatus();
+    const totalHarga =
+      updatedOrder.total_harga || order?.total_harga || 0;
+
+    // DP (status 4) → input manual
+    if (statusPembayaran === 4) {
+      setAmount("");
+      setIsDP(true);
+    } else {
+      // selain DP → auto isi total
+      setAmount(totalHarga > 0 ? formatCurrency(totalHarga) : "");
+      setIsDP(false);
+    }
+
+    // 🔥 APAPUN STATUSNYA, MODAL HARUS BUKA
+    setShowKonfirmasiModal(true);
+  }}
+  style={{
+    width: "100%",
+    marginBottom: "16px",
+  }}
+>
+  <i className="pi pi-check-circle" />
+  {computedStatus() === 4
+    ? "Konfirmasi Pembayaran Lanjutan"
+    : "Konfirmasi Pembayaran"}
+</button>
+
 
                 {/* Bukti Pembayaran Preview */}
                 {bukti && (
@@ -679,8 +812,8 @@ const handleSubmitUpdate = async (e) => {
 
         .field-input:focus {
           outline: none;
-          border-color: #3b82f6;
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+          border-color: #ff6c00;
+          box-shadow: 0 0 0 3px rgba(255, 108, 0, 0.15);
         }
 
         .field-input--readonly {
@@ -762,7 +895,7 @@ const handleSubmitUpdate = async (e) => {
         }
 
         .badge-dp {
-          background: #3b82f6;
+          background: #ff6c00;
           color: white;
         }
 
@@ -776,7 +909,7 @@ const handleSubmitUpdate = async (e) => {
           align-items: center;
           gap: 6px;
           padding: 10px 16px;
-          background: #3b82f6;
+          background: #ff6c00;
           color: white;
           border: none;
           border-radius: 8px;
@@ -787,7 +920,7 @@ const handleSubmitUpdate = async (e) => {
         }
 
         .btn-konfirmasi:hover:not(:disabled) {
-          background: #2563eb;
+          background: #c85400;
         }
 
         .btn-konfirmasi:disabled {
@@ -896,17 +1029,15 @@ const handleSubmitUpdate = async (e) => {
                 <span className="field-label">
                   💰 Jumlah Pembayaran {isDP && <span className="dp-badge">(DP)</span>}
                 </span>
-                <div className="field-input-wrapper">
-                  <span className="input-prefix">Rp</span>
+                <div className="money-input">
+                  <span className="money-prefix">Rp</span>
                   <input
-                    type="number"
-                    className="field-input"
+                    type="text"
+                    className="money-input-field"
                     value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
+                    onChange={handleAmountChange}
                     disabled={!isDP}
                     placeholder={isDP ? "Masukkan jumlah DP" : "Jumlah pembayaran"}
-                    min="0"
-                    step="0.01"
                     required
                   />
                 </div>
@@ -1042,8 +1173,8 @@ const handleSubmitUpdate = async (e) => {
         }
 
         .upload-label:hover {
-          border-color: #3b82f6;
-          background: #eff6ff;
+          border-color: #ff6c00;
+          background: rgba(255, 108, 0, 0.05);
         }
 
         .upload-preview {
@@ -1153,7 +1284,7 @@ const handleSubmitUpdate = async (e) => {
           width: 18px;
           height: 18px;
           cursor: pointer;
-          accent-color: #3b82f6;
+          accent-color: #ff6c00;
         }
 
         .dp-checkbox-label {
@@ -1199,26 +1330,35 @@ const handleSubmitUpdate = async (e) => {
 
         .konfirmasi-form .input-prefix {
           position: absolute;
-          left: 12px;
-          color: #6b7280;
-          font-size: 14px;
-          z-index: 1;
+          left: 14px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #1f2937;
+          font-size: 16px;
+          font-weight: 700;
+          z-index: 2;
+          line-height: 1;
+          pointer-events: none;
         }
 
         .konfirmasi-form .field-input-wrapper .field-input {
-          padding-left: 36px;
+          padding-left: 50px;
           width: 100%;
-          padding: 10px 12px;
-          border: 1px solid #d1d5db;
+          padding: 12px 14px;
+          border: 1.5px solid #d1d5db;
           border-radius: 8px;
-          font-size: 14px;
+          font-size: 16px;
+          font-weight: 600;
+          color: #1f2937;
           transition: all 0.2s;
+          background: #ffffff;
+          line-height: 1.5;
         }
 
         .konfirmasi-form .field-input-wrapper .field-input:focus {
           outline: none;
-          border-color: #3b82f6;
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+          border-color: #ff6c00;
+          box-shadow: 0 0 0 3px rgba(255, 108, 0, 0.15);
         }
       `}</style>
     </>

@@ -489,6 +489,7 @@ ORDERS TABLE
   min-width: fit-content;
 }
 
+/* Restore specific header styles */
 .orders-shell .orders-table__head {
   padding: 0.6rem 0.75rem;
   color: var(--orders-muted);
@@ -500,15 +501,12 @@ ORDERS TABLE
   z-index: 20;
   background: var(--orders-surface);
   border-bottom: 1px solid var(--orders-border);
-  display: grid;
-  /* Explicitly reset display */
   font-weight: 600;
 }
 
-/* Ensure Row uses Grid */
+.orders-shell .orders-table__head,
 .orders-shell .orders-table__row {
   display: grid;
-  /* Explicitly set display grid */
   grid-template-columns:
     minmax(140px, 1.2fr)
     /* Order ID - STICKY */

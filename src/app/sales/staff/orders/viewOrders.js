@@ -1,16 +1,61 @@
 "use client";
-import React from "react";
-import "@/styles/sales/customer.css";
+import React, { useState } from "react";
+import "@/styles/sales/orders.css";
+import "@/styles/sales/orders-page.css";
 
-const STATUS_MAP = {
-  0: "Unpaid",
-  1: "Paid",
-  2: "Sukses",
-  3: "Gagal",
+const STATUS_PEMBAYARAN_MAP = {
+  0:    { label: "Unpaid", class: "unpaid" },
+  null: { label: "Unpaid", class: "unpaid" },
+  1:    { label: "Pending", class: "pending" },
+  2:    { label: "Paid", class: "paid" },
+  3:    { label: "Ditolak", class: "rejected" },
+  4:    { label: "DP", class: "dp" },
+};
+
+// 🔹 Helper untuk mengambil waktu_pembayaran dari order_payment_rel
+const getWaktuPembayaran = (order) => {
+  // Jika sudah ada di level order, gunakan itu
+  if (order.waktu_pembayaran) {
+    return order.waktu_pembayaran;
+  }
+  // Ambil dari order_payment_rel jika ada
+  if (order.order_payment_rel && Array.isArray(order.order_payment_rel) && order.order_payment_rel.length > 0) {
+    // Cari payment yang statusnya approved (status "2") terlebih dahulu
+    const approvedPayment = order.order_payment_rel.find(p => String(p.status).trim() === "2");
+    if (approvedPayment && approvedPayment.create_at) {
+      const date = new Date(approvedPayment.create_at);
+      const pad = (n) => n.toString().padStart(2, "0");
+      return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+    }
+    // Jika tidak ada yang approved, ambil yang terbaru
+    const latestPayment = order.order_payment_rel.sort((a, b) => {
+      const dateA = new Date(a.create_at || 0);
+      const dateB = new Date(b.create_at || 0);
+      return dateB - dateA;
+    })[0];
+    if (latestPayment && latestPayment.create_at) {
+      const date = new Date(latestPayment.create_at);
+      const pad = (n) => n.toString().padStart(2, "0");
+      return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+    }
+  }
+  return null;
 };
 
 // 🔹 Helper untuk menentukan status bayar otomatis
 const computeStatusBayar = (order) => {
+  // Cek dari order_payment_rel jika ada
+  if (order.order_payment_rel && Array.isArray(order.order_payment_rel) && order.order_payment_rel.length > 0) {
+    const hasApprovedPayment = order.order_payment_rel.some(p => String(p.status).trim() === "2");
+    if (hasApprovedPayment) {
+      return 1; // Paid
+    }
+    const hasPendingPayment = order.order_payment_rel.some(p => String(p.status).trim() === "1");
+    if (hasPendingPayment) {
+      return 1; // Menunggu
+    }
+  }
+  // Fallback ke logika lama
   if (
     order.bukti_pembayaran &&
     order.bukti_pembayaran !== "" &&
@@ -29,12 +74,58 @@ const buildImageUrl = (path) => {
   return `/api/image?path=${encodeURIComponent(cleanPath)}`;
 };
 
+// 🔹 Helper untuk mengambil bukti_pembayaran dari order_payment_rel
+const getBuktiPembayaran = (order) => {
+  // Jika sudah ada di level order, gunakan itu
+  if (order.bukti_pembayaran) {
+    return order.bukti_pembayaran;
+  }
+  // Ambil dari order_payment_rel jika ada
+  if (order.order_payment_rel && Array.isArray(order.order_payment_rel) && order.order_payment_rel.length > 0) {
+    // Cari payment yang statusnya approved (status "2") terlebih dahulu
+    const approvedPayment = order.order_payment_rel.find(p => String(p.status).trim() === "2");
+    if (approvedPayment && approvedPayment.bukti_pembayaran) {
+      return approvedPayment.bukti_pembayaran;
+    }
+    // Jika tidak ada yang approved, ambil yang terbaru
+    const latestPayment = order.order_payment_rel.sort((a, b) => {
+      const dateA = new Date(a.create_at || 0);
+      const dateB = new Date(b.create_at || 0);
+      return dateB - dateA;
+    })[0];
+    if (latestPayment && latestPayment.bukti_pembayaran) {
+      return latestPayment.bukti_pembayaran;
+    }
+  }
+  return null;
+};
+
 export default function ViewOrders({ order, onClose }) {
   if (!order) return null;
 
-  const statusBayar = computeStatusBayar(order);
-  const statusLabel = STATUS_MAP[statusBayar];
-  const buktiUrl = buildImageUrl(order.bukti_pembayaran);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedImageUrl, setSelectedImageUrl] = useState(null);
+
+  // Ambil status pembayaran dari order
+  const statusPembayaranValue = order.status_pembayaran ?? 0;
+  const statusPembayaranInfo = STATUS_PEMBAYARAN_MAP[statusPembayaranValue] || STATUS_PEMBAYARAN_MAP[0];
+  
+  // Ambil bukti pembayaran dari order_payment_rel
+  const buktiPembayaranPath = getBuktiPembayaran(order);
+  const buktiUrl = buildImageUrl(buktiPembayaranPath);
+  const waktuPembayaran = getWaktuPembayaran(order);
+
+  const handleImageClick = (imageUrl) => {
+    if (imageUrl) {
+      setSelectedImageUrl(imageUrl);
+      setShowImageModal(true);
+    }
+  };
+
+  const handleCloseImageModal = () => {
+    setShowImageModal(false);
+    setSelectedImageUrl(null);
+  };
 
   return (
     <div className="modal-overlay">
@@ -106,7 +197,9 @@ export default function ViewOrders({ order, onClose }) {
                 <span className="detail-label">Status Pembayaran</span>
                 <span className="detail-colon">:</span>
                 <span className="detail-value">
-                  <span className={`status-badge ${statusLabel.toLowerCase()}`}>{statusLabel}</span>
+                  <span className={`orders-status-badge orders-status-badge--${statusPembayaranInfo.class}`}>
+                    {statusPembayaranInfo.label}
+                  </span>
                 </span>
               </div>
               <div className="detail-item">
@@ -117,7 +210,7 @@ export default function ViewOrders({ order, onClose }) {
               <div className="detail-item">
                 <span className="detail-label">Waktu Pembayaran</span>
                 <span className="detail-colon">:</span>
-                <span className="detail-value">{order.waktu_pembayaran || "-"}</span>
+                <span className="detail-value">{waktuPembayaran || "-"}</span>
               </div>
               <div className="detail-item">
                 <span className="detail-label">Bukti Pembayaran</span>
@@ -127,6 +220,7 @@ export default function ViewOrders({ order, onClose }) {
                     <img
                       src={buktiUrl}
                       alt={`Bukti Pembayaran ${order.customer_rel?.nama || "-"}`}
+                      onClick={() => handleImageClick(buktiUrl)}
                       style={{
                         maxWidth: 150,
                         maxHeight: 120,
@@ -134,6 +228,16 @@ export default function ViewOrders({ order, onClose }) {
                         marginTop: 4,
                         borderRadius: 6,
                         border: "1px solid #e5e7eb",
+                        cursor: "pointer",
+                        transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = "scale(1.05)";
+                        e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = "scale(1)";
+                        e.currentTarget.style.boxShadow = "none";
                       }}
                       onError={(e) => {
                         e.target.style.display = "none";
@@ -171,6 +275,80 @@ export default function ViewOrders({ order, onClose }) {
           </div>
         </div>
       </div>
+
+      {/* Image Lightbox Modal */}
+      {showImageModal && selectedImageUrl && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.9)",
+            zIndex: 10000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "2rem",
+            cursor: "pointer",
+          }}
+          onClick={handleCloseImageModal}
+        >
+          <div
+            style={{
+              position: "relative",
+              maxWidth: "90%",
+              maxHeight: "90%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={selectedImageUrl}
+              alt="Bukti Pembayaran - Full Size"
+              style={{
+                maxWidth: "100%",
+                maxHeight: "90vh",
+                objectFit: "contain",
+                borderRadius: "8px",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.5)",
+              }}
+            />
+            <button
+              onClick={handleCloseImageModal}
+              style={{
+                position: "absolute",
+                top: "-2.5rem",
+                right: 0,
+                background: "rgba(255, 255, 255, 0.9)",
+                border: "none",
+                borderRadius: "50%",
+                width: "2rem",
+                height: "2rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                fontSize: "1.5rem",
+                color: "#374151",
+                fontWeight: "bold",
+                transition: "background 0.2s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(255, 255, 255, 1)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.9)";
+              }}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

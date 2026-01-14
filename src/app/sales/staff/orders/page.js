@@ -3,15 +3,29 @@
 import { useEffect, useState, useRef, useMemo, useCallback, memo } from "react";
 import Layout from "@/components/Layout";
 import dynamic from "next/dynamic";
-import { ShoppingCart, Clock, CheckCircle, PartyPopper, XCircle, Filter } from "lucide-react";
+import { ShoppingCart, Clock, CheckCircle, PartyPopper, XCircle, Filter, ExternalLink, Image as ImageIcon } from "lucide-react";
 import { Calendar } from "primereact/calendar";
 import "primereact/resources/themes/lara-light-cyan/theme.css";
 import "primereact/resources/primereact.min.css";
-import "@/styles/sales/dashboard.css";
-import "@/styles/sales/admin.css";
+import "@/styles/sales/orders-page.css";
 import { getOrders, updateOrderAdmin, getOrderStatistics } from "@/lib/sales/orders";
+import { api } from "@/lib/api";
+import { createPortal } from "react-dom";
 
-// Lazy load modals
+/**
+ * Simple debounce hook to avoid rerunning expensive computations
+ */
+function useDebouncedValue(value, delay = 500) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(id);
+  }, [value, delay]);
+  return debounced;
+}
+
+// Lazy load modals - sama seperti customers
+// CSS di-import di dalam komponen masing-masing
 const ViewOrders = dynamic(() => import("./viewOrders"), { ssr: false });
 const UpdateOrders = dynamic(() => import("./updateOrders"), { ssr: false });
 const AddOrders = dynamic(() => import("./addOrders"), { ssr: false });
@@ -32,7 +46,7 @@ const STATUS_PEMBAYARAN_MAP = {
 
 // Status Order Mapping
 const STATUS_ORDER_MAP = {
-  "1": { label: "Proses", class: "proses" },
+  "1": { label: "Pending", class: "pending" },
   "2": { label: "Sukses", class: "sukses" },
   "3": { label: "Failed", class: "failed" },
   "4": { label: "Upselling", class: "upselling" },
@@ -40,21 +54,300 @@ const STATUS_ORDER_MAP = {
 };
 
 const ORDERS_COLUMNS = [
-  "#",
-  "Customer",
-  "Produk",
-  "Total Harga",
-  "Status Order",
-  "Status Pembayaran",
-  "Tanggal",
-  "Sumber",
-  "Waktu Pembayaran",
-  "Metode Bayar",
-  "Actions",
+  { line1: "Order", line2: "Id" },
+  null, // Kolom kosong untuk ExternalLink
+  { line1: "Customer", line2: "" },
+  { line1: "Produk", line2: "" },
+  { line1: "Status", line2: "Pembayaran" },
+  { line1: "Status", line2: "Order" },
+  { line1: "Follow Up", line2: "Text" },
+  { line1: "Bukti", line2: "Pembayaran" },
+  { line1: "Gross", line2: "Revenue" },
+  { line1: "Sales", line2: "" },
+  null, // Kolom kosong untuk Update/Konfirmasi button
 ];
 
 
-const DEFAULT_TOAST = { show: false, message: "", type: "success" };
+// Helper component untuk WA Bubble Chat dengan deteksi status
+const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran }) => {
+  const [followupLogs, setFollowupLogs] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!customerId) return;
+    fetchFollowupLogs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customerId]);
+
+  const fetchFollowupLogs = async () => {
+    if (!customerId) return;
+    setLoading(true);
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const res = await fetch("/api/sales/logs-follup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ customer: Number(customerId) }),
+      });
+      const data = await res.json();
+      if (res.ok && Array.isArray(data.data)) {
+        // Filter by order id jika ada field order di log
+        let filtered = data.data;
+        if (orderId) {
+          filtered = data.data.filter(log => {
+            const logOrderId = log.order || log.order_id || log.orderId;
+            return logOrderId && Number(logOrderId) === Number(orderId);
+          });
+        }
+        setFollowupLogs(filtered);
+      }
+    } catch (err) {
+      console.error("Error fetching followup logs:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Helper untuk cek apakah event sudah terkirim (status === "1" atau 1)
+  const isSent = (eventType) => {
+    const log = followupLogs.find(l => {
+      const logEvent = l.follup || l.type || l.follup_rel?.id || l.event;
+      return Number(logEvent) === Number(eventType);
+    });
+    return log && (log.status === "1" || log.status === 1);
+  };
+
+  // Helper untuk membuat bubble
+  const createBubble = (content, eventType, isGray = false) => {
+    const sent = isSent(eventType);
+    const bgColor = sent ? "#25D366" : "#E5E7EB";
+    const textColor = sent ? "white" : "#6B7280";
+    
+    return (
+      <div key={`bubble-${eventType}`} style={{
+        position: "relative",
+        background: bgColor,
+        borderRadius: "7px 7px 7px 0",
+        width: "28px",
+        height: "24px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: "13px",
+        color: textColor,
+        fontWeight: "bold",
+        flexShrink: 0
+      }}>
+        {content}
+      </div>
+    );
+  };
+
+  const bubbles = [];
+  
+  // WA icon bubble (selalu abu-abu default, hijau jika event 5 terkirim)
+  bubbles.push(
+    <div key="wa-logo" style={{
+      position: "relative",
+      background: isSent(5) ? "#25D366" : "#E5E7EB",
+      borderRadius: "7px 7px 7px 0",
+      width: "28px",
+      height: "24px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "2px 4px",
+      flexShrink: 0
+    }}>
+      <svg viewBox="0 0 24 24" width="16" height="16" fill={isSent(5) ? "white" : "#6B7280"}>
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+      </svg>
+    </div>
+  );
+  
+  // W bubble (event 5 = Register)
+  bubbles.push(createBubble("W", 5));
+  
+  // Bubble 1-4 (Followup 1-4)
+  for (let i = 1; i <= 4; i++) {
+    bubbles.push(createBubble(i.toString(), i));
+  }
+  
+  // P bubble (event 6 = Proses/Pembayaran Diterima) - hanya tampil jika status pembayaran sudah diterima
+  if (statusPembayaran === 2 || statusPembayaran === "2") {
+    bubbles.push(createBubble("P", 6));
+  }
+  
+  // 7 bubble (Selesai) - hanya tampil jika status order sukses
+  if (orderStatus === "2" || orderStatus === 2) {
+    bubbles.push(createBubble("7", 7));
+  }
+  
+  // 8 bubble (Upselling) - hanya tampil jika status order upselling
+  if (orderStatus === "4" || orderStatus === 4) {
+    bubbles.push(createBubble("8", 8));
+  }
+  
+  return (
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      gap: "4px",
+      padding: "4px 8px",
+      background: "#FEF3C7",
+      borderRadius: "8px",
+      flexWrap: "nowrap",
+      width: "100%",
+      overflow: "visible"
+    }}>
+      {bubbles}
+    </div>
+  );
+};
+
+// Helper component untuk WA Bubble Chat (chat bubble shape) - OLD VERSION
+const WABubbleChatOld = ({ followUpCount = 0 }) => {
+  const bubbles = [];
+  
+  // WhatsApp icon bubble (hijau) - menggunakan SVG
+  bubbles.push(
+    <div key="wa-logo" style={{
+      position: "relative",
+      background: "#25D366",
+      borderRadius: "7px 7px 7px 0",
+      width: "24px",
+      height: "20px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "2px 4px"
+    }}>
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="white">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+      </svg>
+    </div>
+  );
+  
+  // W bubble (hijau)
+  bubbles.push(
+    <div key="w" style={{
+      position: "relative",
+      background: "#25D366",
+      borderRadius: "7px 7px 7px 0",
+      width: "24px",
+      height: "20px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: "12px",
+      color: "white",
+      fontWeight: "bold"
+    }}>
+      W
+    </div>
+  );
+  
+  // Number bubbles: 1 (gray), 2-4 (green jika ada), ... (gray jika > 4)
+  if (followUpCount > 0) {
+    // Bubble 1 (selalu gray)
+    bubbles.push(
+      <div key="bubble-1" style={{
+        position: "relative",
+        background: "#E5E7EB",
+        borderRadius: "7px 7px 7px 0",
+        width: "24px",
+        height: "20px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: "12px",
+        color: "#6B7280",
+        fontWeight: "bold"
+      }}>
+        1
+      </div>
+    );
+    
+    // Bubbles 2-4 (green jika followUpCount >= 2)
+    for (let i = 2; i <= Math.min(followUpCount, 4); i++) {
+      bubbles.push(
+        <div key={`bubble-${i}`} style={{
+          position: "relative",
+          background: "#25D366",
+          borderRadius: "7px 7px 7px 0",
+          width: "24px",
+          height: "20px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "12px",
+          color: "white",
+          fontWeight: "bold"
+        }}>
+          {i}
+        </div>
+      );
+    }
+    
+    // Jika lebih dari 4, tambahkan gray bubble dengan ...
+    if (followUpCount > 4) {
+      bubbles.push(
+        <div key="more" style={{
+          position: "relative",
+          background: "#E5E7EB",
+          borderRadius: "7px 7px 7px 0",
+          width: "24px",
+          height: "20px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "10px",
+          color: "#6B7280",
+          fontWeight: "bold"
+        }}>
+          ...
+        </div>
+      );
+    }
+  } else {
+    // Jika tidak ada follow up, tambahkan gray bubble dengan 1
+    bubbles.push(
+      <div key="no-followup" style={{
+        position: "relative",
+        background: "#E5E7EB",
+        borderRadius: "7px 7px 7px 0",
+        width: "24px",
+        height: "20px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: "12px",
+        color: "#6B7280",
+        fontWeight: "bold"
+      }}>
+        1
+      </div>
+    );
+  }
+  
+  return (
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      gap: "3px",
+      padding: "4px 8px",
+      background: "#FEF3C7",
+      borderRadius: "8px",
+      flexWrap: "wrap"
+    }}>
+      {bubbles}
+    </div>
+  );
+};
 
 export default function DaftarPesanan() {
   // Pagination state dengan fallback pagination
@@ -67,8 +360,19 @@ export default function DaftarPesanan() {
   
   // Filter state
   const [searchInput, setSearchInput] = useState("");
+  const debouncedSearch = useDebouncedValue(searchInput, 500); // Debounce 500ms
   const [dateRange, setDateRange] = useState(null); // [startDate, endDate] atau null
   const [filterPreset, setFilterPreset] = useState("all"); // all | today
+  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+  
+  // Filter modal state
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [selectedProducts, setSelectedProducts] = useState([]); // Array of product IDs
+  const [selectedProductsData, setSelectedProductsData] = useState([]); // Array of full product objects
+  const [selectedStatusOrder, setSelectedStatusOrder] = useState([]); // Array of status order values
+  const [selectedStatusPembayaran, setSelectedStatusPembayaran] = useState([]); // Array of status pembayaran values
+  const [productSearch, setProductSearch] = useState("");
+  const [productResults, setProductResults] = useState([]);
   
   // State lainnya
   const [statistics, setStatistics] = useState(null);
@@ -79,23 +383,112 @@ export default function DaftarPesanan() {
   const [paymentHistory, setPaymentHistory] = useState({}); // { orderId: [payments] }
   const [showPaymentHistory, setShowPaymentHistory] = useState(false);
   const [selectedOrderIdForHistory, setSelectedOrderIdForHistory] = useState(null);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedImageUrl, setSelectedImageUrl] = useState(null);
 
-  const [toast, setToast] = useState(DEFAULT_TOAST);
-  const toastTimeoutRef = useRef(null);
   const fetchingRef = useRef(false); // Prevent multiple simultaneous fetches
 
-  const showToast = (message, type = "success") => {
-    setToast({ show: true, message, type });
-    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-    toastTimeoutRef.current = setTimeout(() => {
-      setToast({ show: false, message: "", type });
-    }, 2500);
-  };
+  // Convert filter untuk API (termasuk search) - sama seperti customers
+  const filters = useMemo(() => ({
+    search: debouncedSearch.trim() || null,
+    dateRange: dateRange,
+    statusOrder: selectedStatusOrder,
+    statusPembayaran: selectedStatusPembayaran,
+    products: selectedProducts,
+  }), [debouncedSearch, dateRange, selectedStatusOrder, selectedStatusPembayaran, selectedProducts]);
+
+  // 🔹 Search produk untuk filter
+  const handleSearchProduct = useCallback(async (keyword) => {
+    if (!keyword.trim()) {
+      setProductResults([]);
+      return;
+    }
+
+    try {
+      const res = await api("/sales/produk", { method: "GET" });
+      if (res?.success && Array.isArray(res.data)) {
+        const filtered = res.data.filter((prod) =>
+          (prod.status === "1" || prod.status === 1) &&
+          prod.nama?.toLowerCase().includes(keyword.toLowerCase())
+        );
+        setProductResults(filtered);
+      } else {
+        setProductResults([]);
+      }
+    } catch (err) {
+      console.error("Error searching products:", err);
+      setProductResults([]);
+    }
+  }, []);
+
+  // Debounce product search
+  const debouncedProductSearch = useDebouncedValue(productSearch, 300);
 
   useEffect(() => {
-    return () => {
-      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-    };
+    if (debouncedProductSearch.trim().length >= 2) {
+      handleSearchProduct(debouncedProductSearch);
+    } else {
+      setProductResults([]);
+    }
+  }, [debouncedProductSearch, handleSearchProduct]);
+
+  // 🔹 Handle product selection (multiple)
+  const handleToggleProduct = useCallback((product) => {
+    const productId = typeof product === 'object' ? product.id : product;
+    const productData = typeof product === 'object' ? product : productResults.find(p => p.id === productId);
+    
+    setSelectedProducts((prev) => {
+      if (prev.includes(productId)) {
+        // Remove from selected
+        setSelectedProductsData((prevData) => prevData.filter(p => p.id !== productId));
+        return prev.filter((id) => id !== productId);
+      } else {
+        // Add to selected
+        if (productData) {
+          setSelectedProductsData((prevData) => {
+            // Check if already exists
+            if (prevData.find(p => p.id === productId)) {
+              return prevData;
+            }
+            return [...prevData, productData];
+          });
+        }
+        return [...prev, productId];
+      }
+    });
+  }, [productResults]);
+
+  // 🔹 Handle status order toggle (multiple)
+  const handleToggleStatusOrder = useCallback((status) => {
+    setSelectedStatusOrder((prev) => {
+      if (prev.includes(status)) {
+        return prev.filter((s) => s !== status);
+      } else {
+        return [...prev, status];
+      }
+    });
+  }, []);
+
+  // 🔹 Handle status pembayaran toggle (multiple)
+  const handleToggleStatusPembayaran = useCallback((status) => {
+    setSelectedStatusPembayaran((prev) => {
+      if (prev.includes(status)) {
+        return prev.filter((s) => s !== status);
+      } else {
+        return [...prev, status];
+      }
+    });
+  }, []);
+
+  // 🔹 Reset all filters
+  const handleResetFilters = useCallback(() => {
+    setDateRange(null);
+    setSelectedProducts([]);
+    setSelectedProductsData([]);
+    setSelectedStatusOrder([]);
+    setSelectedStatusPembayaran([]);
+    setProductSearch("");
+    setProductResults([]);
   }, []);
 
   // 🔹 Load statistics
@@ -132,7 +525,50 @@ export default function DaftarPesanan() {
         return;
       }
 
-      const res = await fetch(`/api/sales/order?page=${pageNumber}&per_page=${perPage}`, {
+      // Build query parameters
+      const params = new URLSearchParams({
+        page: String(pageNumber),
+        per_page: String(perPage),
+      });
+
+      // Add search parameter (gunakan filters.search untuk konsistensi)
+      if (filters.search && filters.search.trim()) {
+        params.append("search", filters.search.trim());
+      }
+
+      // Add date range filter (tanggal orderan)
+      if (filters.dateRange && Array.isArray(filters.dateRange) && filters.dateRange.length === 2 && filters.dateRange[0] && filters.dateRange[1]) {
+        const fromDate = new Date(filters.dateRange[0]);
+        const toDate = new Date(filters.dateRange[1]);
+        // Set time to start and end of day
+        fromDate.setHours(0, 0, 0, 0);
+        toDate.setHours(23, 59, 59, 999);
+        params.append("tanggal_from", fromDate.toISOString().split('T')[0]);
+        params.append("tanggal_to", toDate.toISOString().split('T')[0]);
+      }
+
+      // Add status order filter (multiple)
+      if (filters.statusOrder && filters.statusOrder.length > 0) {
+        filters.statusOrder.forEach(status => {
+          params.append("status_order", status);
+        });
+      }
+
+      // Add status pembayaran filter (multiple)
+      if (filters.statusPembayaran && filters.statusPembayaran.length > 0) {
+        filters.statusPembayaran.forEach(status => {
+          params.append("status_pembayaran", status);
+        });
+      }
+
+      // Add produk filter (multiple) - jika backend support produk_id
+      if (filters.products && filters.products.length > 0) {
+        filters.products.forEach(productId => {
+          params.append("produk_id", productId);
+        });
+      }
+
+      const res = await fetch(`/api/sales/order?${params.toString()}`, {
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
@@ -157,20 +593,45 @@ export default function DaftarPesanan() {
             ? Number(order.remaining)
             : (totalHarga - totalPaid);
           
+          // Ambil waktu_pembayaran dari order_payment_rel jika ada
+          // Prioritas: ambil dari payment yang statusnya approved (status "2") atau yang terbaru
+          let waktuPembayaran = order.waktu_pembayaran || "";
+          if (!waktuPembayaran && order.order_payment_rel && Array.isArray(order.order_payment_rel) && order.order_payment_rel.length > 0) {
+            // Cari payment yang statusnya approved (status "2") terlebih dahulu
+            const approvedPayment = order.order_payment_rel.find(p => String(p.status).trim() === "2");
+            if (approvedPayment && approvedPayment.create_at) {
+              // Format create_at dari "2025-12-27 08:57:53" ke format yang diinginkan
+              const date = new Date(approvedPayment.create_at);
+              const pad = (n) => n.toString().padStart(2, "0");
+              waktuPembayaran = `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+            } else {
+              // Jika tidak ada yang approved, ambil yang terbaru (create_at terakhir)
+              const latestPayment = order.order_payment_rel.sort((a, b) => {
+                const dateA = new Date(a.create_at || 0);
+                const dateB = new Date(b.create_at || 0);
+                return dateB - dateA;
+              })[0];
+              if (latestPayment && latestPayment.create_at) {
+                const date = new Date(latestPayment.create_at);
+                const pad = (n) => n.toString().padStart(2, "0");
+                waktuPembayaran = `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+              }
+            }
+          }
+          
           // LOGIKA STATUS PEMBAYARAN:
           // - Jika sudah lunas (total_paid >= total_harga), set ke 2 (Paid)
           // - Jika masih ada remaining (total_paid < total_harga), set ke 4 (DP)
           // - Status pembayaran harus tetap 4 (DP) sampai remaining = 0
           // - Perubahan status payment individual (approve/reject) hanya mempengaruhi paymentHistoryModal.js, bukan page.js
           let statusPembayaran = order.status_pembayaran;
-          
-          if (totalPaid >= totalHarga) {
-            // Jika sudah lunas, set ke 2 (Paid)
-            statusPembayaran = 2;
-          } else if (remaining > 0 || totalPaid < totalHarga) {
-            // Jika masih ada remaining, set ke 4 (DP)
-            // Ini berlaku untuk semua kasus: konfirmasi pertama kali, konfirmasi lanjutan, setelah approve/reject
-            statusPembayaran = 4;
+
+          if (totalPaid >= totalHarga && totalHarga > 0) {
+            statusPembayaran = 2; // Paid
+          } else if (totalPaid > 0 && totalPaid < totalHarga) {
+            statusPembayaran = 4; // DP (ada pembayaran sebagian)
+          } else {
+            statusPembayaran = order.status_pembayaran ?? 0; // Unpaid / lainnya
           }
           
           // Pastikan status_order tetap "Proses" (1) meskipun ada payment yang di-reject
@@ -192,6 +653,7 @@ export default function DaftarPesanan() {
             status_order: statusOrder,
             total_paid: totalPaid,
             remaining: remaining,
+            waktu_pembayaran: waktuPembayaran, // Pastikan waktu_pembayaran ada
           };
         });
         
@@ -230,11 +692,11 @@ export default function DaftarPesanan() {
       fetchingRef.current = false;
     } catch (err) {
       console.error("Error fetching orders:", err);
-      showToast("Gagal memuat data", "error");
+      setToast({ show: true, message: "Gagal memuat data", type: "error" });
       setLoading(false);
       fetchingRef.current = false;
     }
-  }, [showToast, perPage]);
+  }, [perPage, filters]);
 
   // Load statistics on mount
   useEffect(() => {
@@ -250,14 +712,49 @@ export default function DaftarPesanan() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Hanya sekali saat mount
 
-  // Fetch data saat page berubah
+  // Reset to page 1 when search or filter changes
   useEffect(() => {
-    if (page > 0 && !loading) {
+    setPage(1);
+    setOrders([]);
+    setHasMore(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, dateRange, selectedStatusOrder, selectedStatusPembayaran, selectedProducts]); // Reset when search or filter changes
+
+  // Fetch data saat page atau filters berubah
+  useEffect(() => {
+    if (page > 0) {
       fetchOrders(page);
-      // Tidak scroll ke atas, tetap di posisi saat ini
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]); // Hanya depend pada page
+  }, [page, filters]); // Depend pada page dan filters (sama seperti customers)
+
+  // Scroll to top and prevent body scroll when filter modal opens
+  useEffect(() => {
+    if (showFilterModal && typeof window !== "undefined") {
+      // Get current scroll position
+      const scrollY = window.scrollY;
+      
+      // Force scroll to top immediately BEFORE locking body
+      window.scrollTo(0, 0);
+      
+      // Then prevent body scroll and lock position
+      requestAnimationFrame(() => {
+        document.body.style.position = "fixed";
+        document.body.style.top = "0";
+        document.body.style.width = "100%";
+        document.body.style.overflow = "hidden";
+      });
+      
+      return () => {
+        // Restore body scroll
+        document.body.style.position = "";
+        document.body.style.top = "";
+        document.body.style.width = "";
+        document.body.style.overflow = "";
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [showFilterModal]);
 
   // 🔹 Next page
   const handleNextPage = useCallback(() => {
@@ -283,11 +780,103 @@ export default function DaftarPesanan() {
     setOrders([]);
     setHasMore(true);
     await Promise.all([loadStatistics(), fetchOrders(1)]);
-    if (message) showToast(message, type);
+    if (message) {
+      setToast({ show: true, message, type });
+      setTimeout(() => setToast({ show: false, message: "", type: "success" }), 3000);
+    }
   };
 
+  // Helper untuk build URL gambar via proxy
+  const buildImageUrl = useCallback((path) => {
+    if (!path) return null;
+    const cleanPath = path.replace(/^\/?(storage\/)?/, "");
+    return `/api/image?path=${encodeURIComponent(cleanPath)}`;
+  }, []);
+
+  // Handler untuk buka modal gambar
+  const handleOpenImageModal = useCallback((imageUrl) => {
+    setSelectedImageUrl(imageUrl);
+    setShowImageModal(true);
+  }, []);
+
+  // Handler untuk tutup modal gambar
+  const handleCloseImageModal = useCallback(() => {
+    setShowImageModal(false);
+    setSelectedImageUrl(null);
+  }, []);
+
+  // Helper untuk mengambil bukti_pembayaran dari order_payment_rel
+  const getBuktiPembayaran = useCallback((order) => {
+    if (order.bukti_pembayaran) {
+      return order.bukti_pembayaran;
+    }
+    if (order.order_payment_rel && Array.isArray(order.order_payment_rel) && order.order_payment_rel.length > 0) {
+      const approvedPayment = order.order_payment_rel.find(p => String(p.status).trim() === "2");
+      if (approvedPayment && approvedPayment.bukti_pembayaran) {
+        return approvedPayment.bukti_pembayaran;
+      }
+      const latestPayment = order.order_payment_rel.sort((a, b) => {
+        const dateA = new Date(a.create_at || 0);
+        const dateB = new Date(b.create_at || 0);
+        return dateB - dateA;
+      })[0];
+      if (latestPayment && latestPayment.bukti_pembayaran) {
+        return latestPayment.bukti_pembayaran;
+      }
+    }
+    return null;
+  }, []);
+
+  // Format tanggal untuk Order ID: "11 Jan 2026, 22.40"
+  const formatOrderDate = useCallback((dateString) => {
+    if (!dateString) return "-";
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "-";
+      
+      const day = date.getDate();
+      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const month = monthNames[date.getMonth()];
+      const year = date.getFullYear();
+      const hours = String(date.getHours()).padStart(2, "0");
+      const minutes = String(date.getMinutes()).padStart(2, "0");
+      
+      return `${day} ${month} ${year}, ${hours}.${minutes}`;
+    } catch {
+      return "-";
+    }
+  }, []);
+
+  // Format tanggal hanya menampilkan tanggal tanpa jam (YYYY-MM-DD)
+  const formatDateOnly = useCallback((dateString) => {
+    if (!dateString) return "-";
+    try {
+      // Jika sudah format YYYY-MM-DD, langsung return
+      if (typeof dateString === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        return dateString;
+      }
+      // Jika ada jam, ambil hanya bagian tanggal
+      if (typeof dateString === "string" && dateString.includes(" ")) {
+        return dateString.split(" ")[0];
+      }
+      // Jika ada T (ISO format), ambil hanya bagian tanggal
+      if (typeof dateString === "string" && dateString.includes("T")) {
+        return dateString.split("T")[0];
+      }
+      // Jika Date object, format ke YYYY-MM-DD
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "-";
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    } catch {
+      return "-";
+    }
+  }, []);
+
   // 🔹 Format date range untuk display
-  const formatDateRange = (range) => {
+  const formatDateRange = useCallback((range) => {
     if (!range || !Array.isArray(range) || range.length !== 2 || !range[0] || !range[1]) {
       return "Pilih tanggal";
     }
@@ -299,10 +888,24 @@ export default function DaftarPesanan() {
     };
     
     return `${formatDate(range[0])} - ${formatDate(range[1])}`;
-  };
+  }, []);
 
   // === Helper ===
-  function computeStatusBayar(o) {
+  const computeStatusBayar = useCallback((o) => {
+    // Cek dari order_payment_rel jika ada
+    if (o.order_payment_rel && Array.isArray(o.order_payment_rel) && o.order_payment_rel.length > 0) {
+      // Jika ada payment yang approved (status "2"), berarti sudah paid
+      const hasApprovedPayment = o.order_payment_rel.some(p => String(p.status).trim() === "2");
+      if (hasApprovedPayment) {
+        return 1; // Paid
+      }
+      // Jika ada payment yang pending (status "1"), berarti menunggu
+      const hasPendingPayment = o.order_payment_rel.some(p => String(p.status).trim() === "1");
+      if (hasPendingPayment) {
+        return 1; // Menunggu (dianggap sebagai status pembayaran yang sudah ada)
+      }
+    }
+    // Fallback ke logika lama
     if (
       o.bukti_pembayaran &&
       o.bukti_pembayaran !== "" &&
@@ -312,46 +915,8 @@ export default function DaftarPesanan() {
       return 1; // Paid
     }
     return 0; // Unpaid
-  }
+  }, []);
 
-  // === FILTER ===
-  // Filter orders berdasarkan search dan date range
-  const filteredOrders = useMemo(() => {
-    let filtered = [...orders];
-
-    // Filter by search (customer name, product name, alamat, total harga)
-    if (searchInput && searchInput.trim()) {
-      const searchLower = searchInput.toLowerCase().trim();
-      filtered = filtered.filter((order) => {
-        const customerName = order.customer_rel?.nama?.toLowerCase() || "";
-        const productName = order.produk_rel?.nama?.toLowerCase() || "";
-        const alamat = order.alamat?.toLowerCase() || "";
-        const totalHarga = order.total_harga?.toString() || "";
-        
-        return (
-          customerName.includes(searchLower) ||
-          productName.includes(searchLower) ||
-          alamat.includes(searchLower) ||
-          totalHarga.includes(searchLower)
-        );
-      });
-    }
-
-    // Filter by date range
-    if (dateRange && Array.isArray(dateRange) && dateRange.length === 2 && dateRange[0] && dateRange[1]) {
-      filtered = filtered.filter((order) => {
-        if (!order.tanggal) return false;
-        const orderDate = new Date(order.tanggal);
-        const fromDate = new Date(dateRange[0]);
-        fromDate.setHours(0, 0, 0, 0);
-        const toDate = new Date(dateRange[1]);
-        toDate.setHours(23, 59, 59, 999);
-        return orderDate >= fromDate && orderDate <= toDate;
-      });
-    }
-
-    return filtered;
-  }, [orders, searchInput, dateRange]);
 
   // === SUMMARY ===
   // Gunakan data dari statistics API
@@ -382,9 +947,10 @@ export default function DaftarPesanan() {
   };
 
   const handleSuccessEdit = async (updatedFromForm) => {
-    try {
+      try {
       if (!selectedOrder?.id) {
-        showToast("Order ID tidak valid", "error");
+        setToast({ show: true, message: "Order ID tidak valid", type: "error" });
+        setTimeout(() => setToast({ show: false, message: "", type: "success" }), 3000);
         return;
       }
 
@@ -453,7 +1019,8 @@ export default function DaftarPesanan() {
         // Reset selected
         setSelectedOrder(null);
 
-        showToast(updatedFromForm.message || "Pembayaran berhasil dikonfirmasi!", "success");
+        setToast({ show: true, message: updatedFromForm.message || "Pembayaran berhasil dikonfirmasi!", type: "success" });
+        setTimeout(() => setToast({ show: false, message: "", type: "success" }), 3000);
 
         // Refresh statistics dan data dari backend
         await Promise.all([loadStatistics(), fetchOrders(page)]);
@@ -511,17 +1078,20 @@ export default function DaftarPesanan() {
   
         // Reset selected
         setSelectedOrder(null);
-  
-        showToast(result.message || "Order berhasil diupdate!", "success");
+
+        setToast({ show: true, message: result.message || "Order berhasil diupdate!", type: "success" });
+        setTimeout(() => setToast({ show: false, message: "", type: "success" }), 3000);
 
         // Refresh statistics
         await loadStatistics();
       } else {
-        showToast(result.message || "Gagal mengupdate order", "error");
+        setToast({ show: true, message: result.message || "Gagal mengupdate order", type: "error" });
+        setTimeout(() => setToast({ show: false, message: "", type: "success" }), 3000);
       }
     } catch (err) {
       console.error("Error updating order:", err);
-      showToast("Terjadi kesalahan saat mengupdate order", "error");
+      setToast({ show: true, message: "Terjadi kesalahan saat mengupdate order", type: "error" });
+      setTimeout(() => setToast({ show: false, message: "", type: "success" }), 3000);
     }
   };
   
@@ -536,8 +1106,61 @@ export default function DaftarPesanan() {
 
   return (
     <Layout title="Manage Orders">
-      <div className="dashboard-shell orders-shell">
-        <section className="dashboard-hero orders-hero">
+      <div className="orders-shell">
+        <section className="orders-summary">
+          <article className="summary-card summary-card--combined">
+            <div className="summary-card__column">
+              <div className={`summary-card__icon accent-orange`}>
+                <ShoppingCart size={22} />
+              </div>
+              <div>
+                <p className="summary-card__label">Total orders</p>
+                <p className="summary-card__value">{totalOrders}</p>
+              </div>
+            </div>
+            <div className="summary-card__divider"></div>
+            <div className="summary-card__column">
+              <div className={`summary-card__icon accent-orange`}>
+                <Clock size={22} />
+              </div>
+              <div>
+                <p className="summary-card__label">Unpaid</p>
+                <p className="summary-card__value">{unpaidOrders}</p>
+              </div>
+            </div>
+            <div className="summary-card__divider"></div>
+            <div className="summary-card__column">
+              <div className={`summary-card__icon accent-orange`}>
+                <Clock size={22} />
+              </div>
+              <div>
+                <p className="summary-card__label">Pending</p>
+                <p className="summary-card__value">{menungguOrders}</p>
+              </div>
+            </div>
+            <div className="summary-card__divider"></div>
+            <div className="summary-card__column">
+              <div className={`summary-card__icon accent-orange`}>
+                <CheckCircle size={22} />
+              </div>
+              <div>
+                <p className="summary-card__label">Sudah Approve</p>
+                <p className="summary-card__value">{approvedOrders}</p>
+              </div>
+            </div>
+            <div className="summary-card__divider"></div>
+            <div className="summary-card__column">
+              <div className={`summary-card__icon accent-orange`}>
+                <XCircle size={22} />
+              </div>
+              <div>
+                <p className="summary-card__label">Ditolak</p>
+                <p className="summary-card__value">{ditolakOrders}</p>
+              </div>
+            </div>
+          </article>
+        </section>
+        <section className="orders-hero">
           <div className="orders-toolbar">
             <div className="orders-search">
               <input
@@ -550,31 +1173,15 @@ export default function DaftarPesanan() {
               <span className="orders-search__icon pi pi-search" />
             </div>
             <div className="orders-toolbar-buttons">
-              <div className="orders-filters" aria-label="Filter pesanan">
-                <button
-                  type="button"
-                  className={`orders-filter-btn ${filterPreset === "all" ? "is-active" : ""}`}
-                  onClick={() => setFilterPreset("all")}
-                >
-                  Semua
-                </button>
-                <button
-                  type="button"
-                  className={`orders-filter-btn ${filterPreset === "today" ? "is-active" : ""}`}
-                  onClick={() => setFilterPreset("today")}
-                >
-                  Hari Ini
-                </button>
-                <button
-                  type="button"
-                  className="orders-filter-btn orders-filter-icon-btn"
-                  title="Filter"
-                  aria-label="Filter"
-                  onClick={() => {}}
-                >
-                  <Filter size={16} />
-                </button>
-              </div>
+              {/* Filter Icon Button */}
+              <button
+                type="button"
+                onClick={() => setShowFilterModal(true)}
+                className="customers-button customers-button--secondary"
+                title="Filter"
+              >
+                <Filter size={16} />
+              </button>
               <div style={{ position: "relative" }}>
                 <Calendar
                   value={dateRange}
@@ -595,11 +1202,11 @@ export default function DaftarPesanan() {
                   inputStyle={{
                     width: "100%",
                     padding: "0.55rem 2.2rem 0.55rem 0.75rem",
-                    border: "1px solid var(--dash-border)",
+                    border: "1px solid #e9ecef",
                     borderRadius: "0.5rem",
                     fontSize: "0.85rem",
-                    background: "var(--dash-surface)",
-                    color: "var(--dash-text)",
+                    background: "#ffffff",
+                    color: "#212529",
                     boxShadow: "none",
                     cursor: "pointer"
                   }}
@@ -611,74 +1218,22 @@ export default function DaftarPesanan() {
                   }}
                 />
               </div>
-              {dateRange && Array.isArray(dateRange) && dateRange.length === 2 && dateRange[0] && dateRange[1] && (
+              {(dateRange && Array.isArray(dateRange) && dateRange.length === 2 && dateRange[0] && dateRange[1]) ||
+               selectedProducts.length > 0 ||
+               selectedStatusOrder.length > 0 ||
+               selectedStatusPembayaran.length > 0 ? (
                 <button
-                  onClick={() => setDateRange(null)}
-                  className="orders-button orders-button--secondary"
-                  style={{ whiteSpace: "nowrap" }}
+                  onClick={handleResetFilters}
+                  className="customers-button customers-button--secondary"
+                  title="Reset Filter"
                 >
-                  <i className="pi pi-times" style={{ marginRight: "0.25rem" }} />
+                  <i className="pi pi-times" />
                   Reset
                 </button>
-              )}
+              ) : null}
             </div>
           </div>
         </section>
-
-        <section className="dashboard-summary orders-summary">
-          <article className="summary-card summary-card--combined">
-            <div className="summary-card__column">
-              <div className={`summary-card__icon accent-orange`}>
-                <ShoppingCart size={24} />
-              </div>
-              <div>
-                <p className="summary-card__label">Total orders</p>
-                <p className="summary-card__value">{totalOrders}</p>
-              </div>
-            </div>
-            <div className="summary-card__divider"></div>
-            <div className="summary-card__column">
-              <div className={`summary-card__icon accent-orange`}>
-                <Clock size={24} />
-              </div>
-              <div>
-                <p className="summary-card__label">Unpaid</p>
-                <p className="summary-card__value">{unpaidOrders}</p>
-              </div>
-            </div>
-            <div className="summary-card__divider"></div>
-            <div className="summary-card__column">
-              <div className={`summary-card__icon accent-orange`}>
-                <Clock size={24} />
-              </div>
-              <div>
-                <p className="summary-card__label">Pending</p>
-                <p className="summary-card__value">{menungguOrders}</p>
-              </div>
-            </div>
-            <div className="summary-card__divider"></div>
-            <div className="summary-card__column">
-              <div className={`summary-card__icon accent-orange`}>
-                <CheckCircle size={24} />
-              </div>
-              <div>
-                <p className="summary-card__label">Sudah Approve</p>
-                <p className="summary-card__value">{approvedOrders}</p>
-              </div>
-            </div>
-            <div className="summary-card__divider"></div>
-            <div className="summary-card__column">
-              <div className={`summary-card__icon accent-orange`}>
-                <XCircle size={24} />
-              </div>
-              <div>
-                <p className="summary-card__label">Ditolak</p>
-                <p className="summary-card__value">{ditolakOrders}</p>
-              </div>
-            </div>
-          </article>
-        </section>
-        
         <section className="panel orders-panel">
           <div className="panel__header">
             <div>
@@ -687,21 +1242,32 @@ export default function DaftarPesanan() {
             </div>
             <div className="customers-toolbar-buttons">
 
-            <button className="customers-button customers-button--primary" onClick={() => setShowAdd(true)}>
-                + Tambah Pesanan
-              </button>
+            <button 
+              className="customers-button customers-button--primary" 
+              onClick={() => setShowAdd(true)}
+            >
+              + Tambah Pesanan
+            </button>
               </div>
           </div>
           <div className="orders-table__wrapper">
             <div className="orders-table">
               <div className="orders-table__head">
-                {ORDERS_COLUMNS.map((column) => (
-                  <span key={column}>{column}</span>
-                ))}
+                {ORDERS_COLUMNS.map((column, idx) => {
+                  if (column === null) {
+                    return <span key={idx}></span>; // Kolom kosong
+                  }
+                  return (
+                    <span key={idx} style={{ display: "flex", flexDirection: "column", gap: "0.1rem", alignItems: "flex-start" }}>
+                      <span>{column.line1}</span>
+                      {column.line2 && <span>{column.line2}</span>}
+                    </span>
+                  );
+                })}
               </div>
               <div className="orders-table__body">
-                {filteredOrders.length > 0 ? (
-                  filteredOrders.map((order, i) => {
+                {orders.length > 0 ? (
+                  orders.map((order, i) => {
                     // Handle produk name - dari produk_rel
                     const produkNama = order.produk_rel?.nama || "-";
 
@@ -729,95 +1295,160 @@ export default function DaftarPesanan() {
                     }
                     const statusPembayaranInfo = STATUS_PEMBAYARAN_MAP[statusPembayaranValue] || STATUS_PEMBAYARAN_MAP[0];
 
+                    // Get bukti pembayaran
+                    const buktiPembayaranPath = getBuktiPembayaran(order);
+                    const buktiUrl = buildImageUrl(buktiPembayaranPath);
+
                     return (
                       <div className="orders-table__row" key={order.id || `${order.id}-${i}`}>
-                        <div className="orders-table__cell" data-label="#">
-                          {(page - 1) * perPage + i + 1}
-                        </div>
-                        <div className="orders-table__cell orders-table__cell--strong" data-label="Customer">
-                          {customerNama}
-                        </div>
-                        <div className="orders-table__cell" data-label="Produk">
-                          {produkNama}
-                        </div>
-                        <div className="orders-table__cell" data-label="Total Harga">
-                          <div className="payment-details">
-                            <div className="payment-main">
-                              <strong>Rp {Number(order.total_harga || 0).toLocaleString("id-ID")}</strong>
-                            </div>
-                            
-                            
-                            {/* Total Paid & Remaining
-                                NOTE:
-                                - Hanya tampil untuk order dengan status pembayaran DP (4)
-                                - Untuk pembayaran full (bukan DP), meskipun total_paid > 0,
-                                  tidak menampilkan breakdown agar hanya terlihat total harga saja
-                            */}
-                            {statusPembayaranValue === 4 && (
-                              <div className="payment-breakdown">
-                                <div className="payment-item">
-                                  <span 
-                                    className="payment-label payment-clickable" 
-                                    onClick={() => handleShowPaymentHistory(order)}
-                                    style={{ cursor: "pointer", textDecoration: "underline" }}
-                                    title="Klik untuk melihat riwayat pembayaran"
-                                  >
-                                    Total Paid:
-                                  </span>
-                                  <span className="payment-value paid">
-                                    Rp {Number(order.total_paid || 0).toLocaleString("id-ID")}
-                                  </span>
-                                </div>
-                                <div className="payment-item">
-                                  <span className="payment-label">Remaining:</span>
-                                  <span className="payment-value remaining">
-                                    Rp {Number(
-                                      order.remaining !== undefined 
-                                        ? order.remaining 
-                                        : (Number(order.total_harga || 0) - Number(order.total_paid || 0))
-                                    ).toLocaleString("id-ID")}
-                                  </span>
-                                </div>
-                              </div>
-                            )}
+                        {/* Order ID */}
+                        <div className="orders-table__cell" data-label="Order ID">
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                            <span style={{ 
+                              fontSize: "0.9rem",
+                              color: "#2563eb",
+                              fontWeight: 500
+                            }}>
+                              {order.id || "-"}
+                            </span>
+                            <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>
+                              {formatOrderDate(order.tanggal || order.create_at)}
+                            </span>
                           </div>
                         </div>
-                        <div className="orders-table__cell" data-label="Status Order">
-                          <span className={`orders-status-badge orders-status-badge--${statusOrderInfo.class}`}>
-                            {statusOrderInfo.label}
-                          </span>
+                        
+                        {/* ExternalLink (kolom terpisah tanpa header) */}
+                        <div className="orders-table__cell" style={{ padding: 0 }}>
+                          <ExternalLink 
+                            size={18} 
+                            style={{ 
+                              color: "#6b7280", 
+                              cursor: "pointer",
+                              transition: "color 0.2s ease"
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleView(order);
+                            }}
+                            onMouseEnter={(e) => {
+                              e.target.style.color = "#2563eb";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.target.style.color = "#6b7280";
+                            }}
+                          />
                         </div>
+                        
+                        {/* Customer */}
+                        <div className="orders-table__cell orders-table__cell--strong" data-label="Customer">
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                            <span style={{ fontSize: "0.875rem", color: "#111827" }}>{customerNama}</span>
+                            <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>
+                              {order.customer_rel?.wa ? `+${order.customer_rel.wa}` : "-"}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {/* Produk */}
+                        <div className="orders-table__cell" data-label="Produk">
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                            <span style={{ fontSize: "0.875rem", color: "#111827" }}>{produkNama}</span>
+                            <span style={{ fontSize: "0.875rem", color: "#111827" }}></span>
+                          </div>
+                        </div>
+                        
+                        {/* Status Pembayaran */}
                         <div className="orders-table__cell" data-label="Status Pembayaran">
-                          <span className={`orders-status-badge orders-status-badge--${statusPembayaranInfo.class}`}>
-                            {statusPembayaranInfo.label}
-                          </span>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                            <span className={`orders-status-badge orders-status-badge--${statusPembayaranInfo.class}`}>
+                              {statusPembayaranInfo.label}
+                            </span>
+                            <span style={{ fontSize: "0.875rem", color: "#111827" }}></span>
+                          </div>
                         </div>
-                        <div className="orders-table__cell" data-label="Tanggal">
-                          {order.tanggal || "-"}
+                        
+                        {/* Status Order */}
+                        <div className="orders-table__cell" data-label="Status Order">
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                            <span className={`orders-status-badge orders-status-badge--${statusOrderInfo.class}`}>
+                              {statusOrderInfo.label}
+                            </span>
+                            <span style={{ fontSize: "0.875rem", color: "#111827" }}></span>
+                          </div>
                         </div>
-                        <div className="orders-table__cell" data-label="Sumber">
-                          {order.sumber ? `#${order.sumber}` : "-"}
+                        
+                        {/* Follow Up Text */}
+                        <div className="orders-table__cell" data-label="Follow Up Text">
+                          <WABubbleChat 
+                            customerId={order.customer_rel?.id || order.customer}
+                            orderId={order.id}
+                            orderStatus={statusOrderValue}
+                            statusPembayaran={statusPembayaranValue}
+                          />
                         </div>
-                        <div className="orders-table__cell" data-label="Waktu Pembayaran">
-                          {order.waktu_pembayaran || "-"}
+                        
+                        {/* Bukti Pembayaran */}
+                        <div className="orders-table__cell" data-label="Bukti Pembayaran">
+                          {buktiUrl ? (
+                            <ImageIcon 
+                              size={16} 
+                              style={{ 
+                                color: "#6b7280",
+                                cursor: "pointer",
+                                transition: "color 0.2s ease"
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenImageModal(buktiUrl);
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.color = "#2563eb";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.color = "#6b7280";
+                              }}
+                            />
+                          ) : (
+                            <span style={{ fontSize: "0.875rem", color: "#9ca3af" }}>-</span>
+                          )}
                         </div>
-                        <div className="orders-table__cell" data-label="Metode Bayar">
-                          {order.metode_bayar || "-"}
+                        
+                        {/* Gross Revenue */}
+                        <div className="orders-table__cell" data-label="Gross Revenue">
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                            <span style={{ fontSize: "0.875rem", color: "#111827", fontWeight: 600 }}>
+                              Rp {Number(order.total_harga || 0).toLocaleString("id-ID")}
+                            </span>
+                            <span style={{ fontSize: "0.875rem", color: "#111827" }}></span>
+                          </div>
                         </div>
-                        <div className="orders-table__cell orders-table__cell--actions" data-label="Actions">
+                        
+                        {/* Sales */}
+                        <div className="orders-table__cell" data-label="Sales">
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                            <span style={{ fontSize: "0.875rem", color: "#111827" }}>
+                              {order.customer_rel?.sales_rel?.nama || order.customer_rel?.sales_nama || "-"}
+                            </span>
+                            <span style={{ fontSize: "0.875rem", color: "#111827" }}></span>
+                          </div>
+                        </div>
+                        
+                        {/* Update/Konfirmasi Button */}
+                        <div className="orders-table__cell" data-label="">
                           <button
                             className="orders-action-btn"
-                            title="View"
-                            onClick={() => handleView(order)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEdit(order);
+                            }}
+                            style={{
+                              width: "100%",
+                              padding: "0.4rem 0.75rem",
+                              fontSize: "0.8rem",
+                              whiteSpace: "nowrap"
+                            }}
                           >
-                            <i className="pi pi-eye" />
-                          </button>
-                          <button
-                            className="orders-action-btn orders-action-btn--ghost"
-                            title="Edit"
-                            onClick={() => handleEdit(order)}
-                          >
-                            <i className="pi pi-pencil" />
+                            Update / Konfirmasi
                           </button>
                         </div>
                       </div>
@@ -910,39 +1541,6 @@ export default function DaftarPesanan() {
           </div>
         </section>
 
-        {/* TOAST */}
-        {toast.show && (
-          <div className={`toast toast-${toast.type || "success"} toast-show`}>
-            <div className="toast-icon">
-              {toast.type === "error" ? (
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              ) : toast.type === "warning" ? (
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              ) : (
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              )}
-            </div>
-            <div className="toast-content">
-              <div className="toast-message">{toast.message}</div>
-            </div>
-            <button 
-              className="toast-close"
-              onClick={() => setToast({ show: false, message: "", type: "success" })}
-              aria-label="Close"
-            >
-              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-            <div className="toast-progress"></div>
-          </div>
-        )}
       </div>
 
       {/* MODALS - Render di luar main content untuk memastikan z-index bekerja */}
@@ -954,7 +1552,6 @@ export default function DaftarPesanan() {
             // Refresh data and show success message
             await requestRefresh("Pesanan baru berhasil ditambahkan!");
           }}
-          showToast={showToast}
         />
       )}
 
@@ -983,7 +1580,6 @@ export default function DaftarPesanan() {
             requestRefresh(""); // Auto refresh setelah edit
           }}
           onSave={handleSuccessEdit}
-          setToast={setToast}
           refreshOrders={() => requestRefresh("")}
         />
       )}
@@ -1089,7 +1685,7 @@ export default function DaftarPesanan() {
 
         .payment-label.payment-clickable:hover {
           opacity: 0.8;
-          color: #3b82f6;
+          color: #c85400;
           text-decoration: underline;
         }
 
@@ -1150,6 +1746,638 @@ export default function DaftarPesanan() {
       `}</style>
 
       {/* Modal Payment History */}
+      {/* Filter Modal */}
+      {showFilterModal && typeof window !== "undefined" && createPortal(
+        <div 
+          className="modal-overlay" 
+          onClick={() => setShowFilterModal(false)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: "100vw",
+            height: "100vh",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(17, 24, 39, 0.55)",
+            backdropFilter: "blur(3px)",
+            margin: 0,
+            padding: "1rem",
+            boxSizing: "border-box",
+            overflowY: "auto",
+            overflowX: "hidden",
+          }}
+          onWheel={(e) => {
+            // Prevent body scroll when scrolling modal content
+            e.stopPropagation();
+          }}
+        >
+          <div 
+            className="modal-card" 
+            onClick={(e) => e.stopPropagation()} 
+            style={{ 
+              maxWidth: "600px", 
+              width: "90%",
+              position: "relative",
+              zIndex: 10000,
+              margin: "auto",
+              flexShrink: 0,
+            }}
+          >
+            <div className="modal-header" style={{ 
+              padding: "1.5rem 1.75rem",
+              borderBottom: "1px solid #e5e7eb",
+              background: "#ffffff"
+            }}>
+              <h3 style={{ 
+                margin: 0, 
+                fontSize: "1.25rem", 
+                fontWeight: "700", 
+                color: "#111827",
+                letterSpacing: "-0.01em"
+              }}>
+                Filter Orders
+              </h3>
+              <button
+                type="button"
+                className="modal-close"
+                onClick={() => setShowFilterModal(false)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "#6b7280",
+                  cursor: "pointer",
+                  padding: "0.5rem",
+                  borderRadius: "0.5rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "32px",
+                  height: "32px",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#f3f4f6";
+                  e.currentTarget.style.color = "#111827";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "transparent";
+                  e.currentTarget.style.color = "#6b7280";
+                }}
+              >
+                <i className="pi pi-times" style={{ fontSize: "1.125rem" }} />
+              </button>
+            </div>
+            <div className="modal-body" style={{ 
+              maxHeight: "70vh", 
+              overflowY: "auto", 
+              padding: "1.75rem",
+              background: "#ffffff"
+            }}>
+              {/* Produk Filter */}
+              <div style={{ marginBottom: "2rem" }}>
+                <label className="field-label" style={{ 
+                  marginBottom: "0.875rem", 
+                  display: "block",
+                  fontSize: "0.9375rem",
+                  fontWeight: "600",
+                  color: "#111827",
+                  letterSpacing: "-0.01em"
+                }}>
+                  Produk
+                </label>
+                <div style={{ position: "relative", marginBottom: "0.875rem" }}>
+                  <input
+                    type="text"
+                    placeholder="Cari produk..."
+                    value={productSearch}
+                    onChange={(e) => setProductSearch(e.target.value)}
+                    className="field-input"
+                    style={{ 
+                      width: "100%", 
+                      padding: "0.875rem 2.75rem 0.875rem 1rem",
+                      border: "1.5px solid #e5e7eb",
+                      borderRadius: "0.625rem",
+                      fontSize: "0.9375rem",
+                      background: "#ffffff",
+                      transition: "all 0.2s",
+                      color: "#111827",
+                      boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = "#ff6c00";
+                      e.target.style.boxShadow = "0 0 0 3px rgba(255, 108, 0, 0.1)";
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = "#e5e7eb";
+                      e.target.style.boxShadow = "0 1px 2px rgba(0, 0, 0, 0.05)";
+                    }}
+                  />
+                  <span className="pi pi-search" style={{
+                    position: "absolute",
+                    right: "1rem",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "#9ca3af",
+                    fontSize: "1rem",
+                    pointerEvents: "none",
+                  }} />
+                </div>
+                {/* Show selected products first, then search results */}
+                {(selectedProductsData.length > 0 || productResults.length > 0) && (
+                  <div style={{
+                    marginTop: "0.75rem",
+                    border: "1.5px solid #e5e7eb",
+                    borderRadius: "0.625rem",
+                    maxHeight: "280px",
+                    overflowY: "auto",
+                    background: "#ffffff",
+                    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+                  }}>
+                    {/* Selected products section */}
+                    {selectedProductsData.length > 0 && (
+                      <>
+                        {selectedProductsData.map((prod) => {
+                          const isSelected = selectedProducts.includes(prod.id);
+                          return (
+                            <div
+                              key={`selected-${prod.id}`}
+                              onClick={() => handleToggleProduct(prod)}
+                              style={{
+                                padding: "0.875rem 1.125rem",
+                                cursor: "pointer",
+                                borderBottom: "1px solid #f3f4f6",
+                                background: isSelected ? "#fff5ed" : "#ffffff",
+                                borderLeft: isSelected ? "4px solid #ff6c00" : "4px solid transparent",
+                                transition: "all 0.15s",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.75rem",
+                              }}
+                              onMouseEnter={(e) => {
+                                if (!isSelected) {
+                                  e.currentTarget.style.background = "#f9fafb";
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (!isSelected) {
+                                  e.currentTarget.style.background = "#ffffff";
+                                }
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => {}}
+                                style={{
+                                  width: "18px",
+                                  height: "18px",
+                                  cursor: "pointer",
+                                  accentColor: "#ff6c00",
+                                }}
+                              />
+                              <span style={{
+                                color: isSelected ? "#c85400" : "#111827",
+                                fontWeight: isSelected ? "600" : "500",
+                                fontSize: "0.9375rem",
+                                flex: 1,
+                              }}>
+                                {prod.nama}
+                              </span>
+                              {isSelected && (
+                                <span style={{
+                                  fontSize: "0.75rem",
+                                  color: "#c85400",
+                                  fontWeight: "600",
+                                  background: "#fff5ed",
+                                  padding: "0.25rem 0.5rem",
+                                  borderRadius: "0.25rem",
+                                }}>
+                                  Dipilih
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                        {productResults.length > 0 && productResults.some(prod => !selectedProducts.includes(prod.id)) && (
+                          <div style={{
+                            padding: "0.5rem 1rem",
+                            background: "#f9fafb",
+                            borderTop: "1px solid #e5e7eb",
+                            borderBottom: "1px solid #e5e7eb",
+                            fontSize: "0.75rem",
+                            color: "#6b7280",
+                            fontWeight: "600",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.05em",
+                          }}>
+                            Hasil Pencarian
+                          </div>
+                        )}
+                      </>
+                    )}
+                    {/* Search results (exclude already selected) */}
+                    {productResults
+                      .filter(prod => !selectedProducts.includes(prod.id))
+                      .map((prod) => {
+                        return (
+                          <div
+                            key={`result-${prod.id}`}
+                            onClick={() => handleToggleProduct(prod)}
+                            style={{
+                              padding: "0.875rem 1.125rem",
+                              cursor: "pointer",
+                              borderBottom: "1px solid #f3f4f6",
+                              background: "#ffffff",
+                              borderLeft: "4px solid transparent",
+                              transition: "all 0.15s",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "0.75rem",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = "#f9fafb";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = "#ffffff";
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={false}
+                              onChange={() => {}}
+                              style={{
+                                width: "18px",
+                                height: "18px",
+                                cursor: "pointer",
+                                accentColor: "#ff6c00",
+                              }}
+                            />
+                            <span style={{
+                              color: "#111827",
+                              fontWeight: "500",
+                              fontSize: "0.9375rem",
+                              flex: 1,
+                            }}>
+                              {prod.nama}
+                            </span>
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
+                {selectedProductsData.length > 0 && (
+                  <div style={{ marginTop: "0.75rem", display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+                    {selectedProductsData.map((product) => (
+                      <span
+                        key={product.id}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.5rem",
+                          padding: "0.5rem 0.75rem",
+                          background: "#fff5ed",
+                          border: "1px solid #ff6c00",
+                          borderRadius: "0.375rem",
+                          fontSize: "0.8125rem",
+                          color: "#c85400",
+                          fontWeight: "500",
+                        }}
+                      >
+                        {product.nama}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleProduct(product);
+                          }}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            color: "#c85400",
+                            cursor: "pointer",
+                            padding: 0,
+                            margin: 0,
+                            display: "flex",
+                            alignItems: "center",
+                          }}
+                        >
+                          <i className="pi pi-times" style={{ fontSize: "0.75rem" }} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Status Order Filter */}
+              <div style={{ marginBottom: "2rem" }}>
+                <label className="field-label" style={{ 
+                  marginBottom: "0.875rem", 
+                  display: "block",
+                  fontSize: "0.9375rem",
+                  fontWeight: "600",
+                  color: "#111827",
+                  letterSpacing: "-0.01em"
+                }}>
+                  Status Order
+                </label>
+                <div style={{ 
+                  display: "flex", 
+                  flexDirection: "column", 
+                  gap: "0.625rem",
+                  background: "#f9fafb",
+                  padding: "0.75rem",
+                  borderRadius: "0.625rem",
+                  border: "1.5px solid #e5e7eb",
+                }}>
+                  {Object.entries(STATUS_ORDER_MAP).map(([value, { label }]) => {
+                    const isChecked = selectedStatusOrder.includes(value);
+                    return (
+                      <label
+                        key={value}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          cursor: "pointer",
+                          padding: "0.75rem 1rem",
+                          borderRadius: "0.5rem",
+                          background: isChecked ? "#fff5ed" : "transparent",
+                          border: isChecked ? "1.5px solid #ff6c00" : "1.5px solid transparent",
+                          transition: "all 0.15s",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isChecked) {
+                            e.currentTarget.style.background = "#ffffff";
+                            e.currentTarget.style.borderColor = "#e5e7eb";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isChecked) {
+                            e.currentTarget.style.background = "transparent";
+                            e.currentTarget.style.borderColor = "transparent";
+                          }
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => handleToggleStatusOrder(value)}
+                          style={{ 
+                            marginRight: "0.75rem",
+                            width: "18px",
+                            height: "18px",
+                            cursor: "pointer",
+                            accentColor: "#ff6c00",
+                          }}
+                        />
+                        <span style={{
+                          color: isChecked ? "#c85400" : "#111827",
+                          fontWeight: isChecked ? "600" : "500",
+                          fontSize: "0.9375rem",
+                        }}>{label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Status Pembayaran Filter */}
+              <div style={{ marginBottom: "2rem" }}>
+                <label className="field-label" style={{ 
+                  marginBottom: "0.875rem", 
+                  display: "block",
+                  fontSize: "0.9375rem",
+                  fontWeight: "600",
+                  color: "#111827",
+                  letterSpacing: "-0.01em"
+                }}>
+                  Status Pembayaran
+                </label>
+                <div style={{ 
+                  display: "flex", 
+                  flexDirection: "column", 
+                  gap: "0.625rem",
+                  background: "#f9fafb",
+                  padding: "0.75rem",
+                  borderRadius: "0.625rem",
+                  border: "1.5px solid #e5e7eb",
+                }}>
+                  {Object.entries(STATUS_PEMBAYARAN_MAP).map(([value, { label }]) => {
+                    const isChecked = selectedStatusPembayaran.includes(String(value));
+                    return (
+                      <label
+                        key={value}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          cursor: "pointer",
+                          padding: "0.75rem 1rem",
+                          borderRadius: "0.5rem",
+                          background: isChecked ? "#fff5ed" : "transparent",
+                          border: isChecked ? "1.5px solid #ff6c00" : "1.5px solid transparent",
+                          transition: "all 0.15s",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isChecked) {
+                            e.currentTarget.style.background = "#ffffff";
+                            e.currentTarget.style.borderColor = "#e5e7eb";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isChecked) {
+                            e.currentTarget.style.background = "transparent";
+                            e.currentTarget.style.borderColor = "transparent";
+                          }
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => handleToggleStatusPembayaran(String(value))}
+                          style={{ 
+                            marginRight: "0.75rem",
+                            width: "18px",
+                            height: "18px",
+                            cursor: "pointer",
+                            accentColor: "#ff6c00",
+                          }}
+                        />
+                        <span style={{
+                          color: isChecked ? "#c85400" : "#111827",
+                          fontWeight: isChecked ? "600" : "500",
+                          fontSize: "0.9375rem",
+                        }}>{label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer" style={{ 
+              display: "flex", 
+              justifyContent: "flex-end", 
+              gap: "0.75rem", 
+              padding: "1.5rem 1.75rem",
+              borderTop: "1px solid #e5e7eb",
+              background: "#f9fafb",
+            }}>
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                style={{
+                  padding: "0.75rem 1.5rem",
+                  background: "#ffffff",
+                  border: "1.5px solid #e5e7eb",
+                  borderRadius: "0.625rem",
+                  color: "#374151",
+                  fontWeight: "600",
+                  fontSize: "0.9375rem",
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#f3f4f6";
+                  e.currentTarget.style.borderColor = "#d1d5db";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "#ffffff";
+                  e.currentTarget.style.borderColor = "#e5e7eb";
+                }}
+              >
+                <i className="pi pi-times" style={{ fontSize: "0.875rem" }} />
+                Reset
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowFilterModal(false)}
+                style={{
+                  padding: "0.75rem 1.5rem",
+                  background: "#ff6c00",
+                  border: "none",
+                  borderRadius: "0.625rem",
+                  color: "#ffffff",
+                  fontWeight: "600",
+                  fontSize: "0.9375rem",
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                  boxShadow: "0 2px 4px rgba(255, 108, 0, 0.2)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#e55a00";
+                  e.currentTarget.style.boxShadow = "0 4px 8px rgba(255, 108, 0, 0.3)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "#ff6c00";
+                  e.currentTarget.style.boxShadow = "0 2px 4px rgba(255, 108, 0, 0.2)";
+                }}
+              >
+                Terapkan
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Image Modal Overlay */}
+      {showImageModal && selectedImageUrl && typeof window !== "undefined" && createPortal(
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.9)",
+            zIndex: 10000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "2rem",
+            cursor: "pointer",
+          }}
+          onClick={handleCloseImageModal}
+        >
+          <button
+            onClick={handleCloseImageModal}
+            style={{
+              position: "absolute",
+              top: "1rem",
+              right: "1rem",
+              background: "rgba(255, 255, 255, 0.2)",
+              border: "none",
+              borderRadius: "50%",
+              width: "40px",
+              height: "40px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              color: "#fff",
+              fontSize: "1.5rem",
+              transition: "background 0.2s ease",
+              zIndex: 10001,
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = "rgba(255, 255, 255, 0.3)";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = "rgba(255, 255, 255, 0.2)";
+            }}
+            aria-label="Tutup"
+          >
+            <i className="pi pi-times" />
+          </button>
+          <div
+            style={{
+              position: "relative",
+              maxWidth: "90%",
+              maxHeight: "90%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={selectedImageUrl}
+              alt="Bukti Pembayaran - Full Size"
+              style={{
+                maxWidth: "100%",
+                maxHeight: "90vh",
+                objectFit: "contain",
+                borderRadius: "8px",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.5)",
+                cursor: "zoom-in",
+              }}
+              onClick={(e) => {
+                // Zoom in/out on click
+                if (e.target.style.transform === "scale(2)") {
+                  e.target.style.transform = "scale(1)";
+                  e.target.style.cursor = "zoom-in";
+                } else {
+                  e.target.style.transform = "scale(2)";
+                  e.target.style.cursor = "zoom-out";
+                }
+              }}
+              onError={(e) => {
+                console.error("Gagal memuat gambar:", selectedImageUrl);
+                e.target.style.display = "none";
+              }}
+            />
+          </div>
+        </div>,
+        document.body
+      )}
+
       <PaymentHistoryModal
         orderId={selectedOrderIdForHistory}
         isOpen={showPaymentHistory}
@@ -1158,6 +2386,41 @@ export default function DaftarPesanan() {
           setSelectedOrderIdForHistory(null);
         }}
       />
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <div className={`toast toast-${toast.type || "success"} toast-show`}>
+          <div className="toast-icon">
+            {toast.type === "error" ? (
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : toast.type === "warning" ? (
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            ) : (
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </div>
+          <div className="toast-content">
+            <div className="toast-message">{toast.message}</div>
+          </div>
+          <button 
+            className="toast-close"
+            onClick={() => setToast({ show: false, message: "", type: "success" })}
+            aria-label="Close"
+          >
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <div className="toast-progress"></div>
+        </div>
+      )}
+
     </Layout>
   );
 }
