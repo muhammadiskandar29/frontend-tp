@@ -459,10 +459,10 @@ ORDERS TABLE
   overflow-y: auto;
   /* Enable vertical scroll */
   padding-bottom: 0.25rem;
-  /* Compensate untuk padding panel (1.75rem) */
-  margin-left: 0;
-  padding-left: 0;
-  width: 100%;
+  /* Compensate untuk padding panel (1.75rem) agar sticky columns benar-benar di ujung kiri */
+  margin-left: -1.75rem;
+  padding-left: 1.75rem;
+  width: calc(100% + 3.5rem);
   position: relative;
 }
 
@@ -482,28 +482,21 @@ ORDERS TABLE
 .orders-table {
   display: flex;
   flex-direction: column;
-  gap: 0;
-  /* REMOVED GAP */
+  gap: 0.5rem;
   width: 100%;
   min-width: fit-content;
-  /* Add border container for the whole table */
-  border: 1px solid var(--orders-border);
-  border-radius: var(--orders-radius);
-  background: var(--orders-surface);
-  overflow: hidden;
-  /* Ensure rounded corners for the whole table */
 }
 
 .orders-table__head,
 .orders-table__row {
   display: grid;
   grid-template-columns:
-    150px
-    /* Order ID - FIXED */
+    minmax(140px, 1.2fr)
+    /* Order ID - STICKY */
     24px
-    /* ExternalLink - FIXED */
-    160px
-    /* Customer - FIXED */
+    /* ExternalLink (kolom kosong) - STICKY */
+    minmax(130px, 1.2fr)
+    /* Customer - STICKY */
     minmax(140px, 1.2fr)
     /* Produk */
     minmax(110px, 1fr)
@@ -511,7 +504,7 @@ ORDERS TABLE
     minmax(100px, 0.9fr)
     /* Status Order */
     minmax(280px, 2.5fr)
-    /* Follow Up Text */
+    /* Follow Up Text - diperlebar lagi */
     minmax(100px, 0.9fr)
     /* Bukti Pembayaran */
     minmax(140px, 1.2fr)
@@ -520,11 +513,9 @@ ORDERS TABLE
     /* Sales */
     minmax(150px, 1fr);
   /* Update/Konfirmasi button */
-  gap: 0;
-  /* REMOVED GAP inside grid */
+  gap: 0.3rem;
   align-items: center;
-  /* min-width: 1300px; - Let context decide or keep if needed, sticking to 1300 for calculation safety */
-  min-width: 1300px;
+  min-width: 1200px;
   /* Pastikan grid layout tetap stabil */
   contain: layout;
 }
@@ -533,9 +524,9 @@ ORDERS TABLE
 .orders-table__head>span:nth-child(2),
 .orders-table__row>div:nth-child(2) {
   padding: 0;
+  margin-left: -0.25rem;
   display: flex;
-  justify-content: center;
-  /* Center icon */
+  justify-content: flex-start;
   align-items: center;
 }
 
@@ -543,66 +534,65 @@ ORDERS TABLE
 /* Sticky 1: Order ID */
 .orders-table__head>span:nth-child(1),
 .orders-table__row>div:nth-child(1) {
-  position: sticky;
-  left: 0;
-  /* Reset to 0 relative to table */
-  z-index: 30;
-  background: var(--orders-surface);
-  border-right: 1px solid transparent;
-  padding-left: 1.5rem;
-  /* More padding on left edge */
+  /* position: sticky; */
+  /* left: 1.75rem; */
+  z-index: 1;
+  /* background: #ffffff !important; */
+  padding-right: 0.5rem;
+  /* border-radius: 1rem 0 0 1rem; */
+}
+
+/* Pastikan border radius kiri card ikut sticky dengan extend background */
+.orders-table__row>div:nth-child(1)::before {
+  content: '';
+  position: absolute;
+  top: -0.5rem;
+  left: -0.65rem;
+  /* Extend ke kiri untuk cover padding row */
+  bottom: -0.5rem;
+  width: 0.65rem;
+  /* background: #ffffff; */
+  z-index: -1;
+  border-radius: 1rem 0 0 1rem;
+  /* Match border radius card */
 }
 
 /* Header specific */
 .orders-table__head>span:nth-child(1) {
-  z-index: 40;
-  background: #f9fafb;
-  /* Match header bg */
-}
-
-/* Row Hover specific */
-.orders-table__row:hover>div:nth-child(1) {
-  background: #f8f9fa;
+  z-index: 1;
+  /* background: #ffffff !important; */
+  border-radius: 0;
 }
 
 /* Sticky 2: Link */
 .orders-table__head>span:nth-child(2),
 .orders-table__row>div:nth-child(2) {
-  position: sticky;
-  left: 150px;
-  /* Width of col 1 */
-  z-index: 30;
-  background: var(--orders-surface);
+  /* position: sticky; */
+  /* left: calc(1.75rem + 140px + 0.3rem); */
+  z-index: 1;
+  /* background: #ffffff !important; */
 }
 
 .orders-table__head>span:nth-child(2) {
-  z-index: 40;
-  background: #f9fafb;
-}
-
-.orders-table__row:hover>div:nth-child(2) {
-  background: #f8f9fa;
+  z-index: 1;
+  /* background: #ffffff !important; */
 }
 
 /* Sticky 3: Customer */
 .orders-table__head>span:nth-child(3),
 .orders-table__row>div:nth-child(3) {
-  position: sticky;
-  left: calc(150px + 24px);
-  /* Width 1 + Width 2 */
-  z-index: 30;
-  background: var(--orders-surface);
+  /* position: sticky; */
+  /* left: calc(1.75rem + 140px + 24px + 0.6rem); */
+  z-index: 1;
+  /* background: #ffffff !important; */
+  padding-right: 0.5rem;
   border-right: 2px solid var(--orders-border);
   /* Divider line */
 }
 
 .orders-table__head>span:nth-child(3) {
-  z-index: 40;
-  background: #f9fafb;
-}
-
-.orders-table__row:hover>div:nth-child(3) {
-  background: #f8f9fa;
+  z-index: 1;
+  /* background: #ffffff !important; */
 }
 
 /* Pastikan sticky cells berada di atas background */
@@ -634,7 +624,7 @@ ORDERS TABLE
 */
 
 .orders-table__head {
-  padding: 0.85rem 0;
+  padding: 0.6rem 0.75rem;
   /* Adjust padding */
   color: var(--orders-muted);
   font-size: 0.7rem;
@@ -642,9 +632,9 @@ ORDERS TABLE
   text-transform: uppercase;
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 20;
   /* Top most */
-  background: #f9fafb;
+  background: var(--orders-surface);
   /* Slightly different header bg */
   border-bottom: 1px solid var(--orders-border);
   font-weight: 600;
@@ -653,36 +643,31 @@ ORDERS TABLE
 .orders-table__body {
   display: flex;
   flex-direction: column;
-  gap: 0;
-  /* REMOVED GAP */
+  gap: 0.5rem;
 }
 
 .orders-table__row {
   background: var(--orders-surface);
-  border: none;
+  border: 1px solid var(--orders-border);
   /* Removed individual border */
-  border-bottom: 1px solid var(--orders-border);
-  /* Add separator */
-  border-radius: 0;
+  border-radius: 1rem;
   /* Removed radius */
-  padding: 0.75rem 0;
-  box-shadow: none;
+  padding: 0.5rem 0.65rem;
+  box-shadow: var(--orders-shadow);
   /* Removed shadow */
-  transition: background 0.15s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
   position: relative;
   overflow: visible;
 }
 
 .orders-table__row:last-child {
-  border-bottom: none;
+  border-bottom: 1px solid var(--orders-border);
 }
 
 .orders-table__row:hover {
-  transform: none;
+  transform: translateY(-2px);
   /* Disable transform */
-  background: #f8f9fa;
-  /* Highlight on hover */
-  box-shadow: none;
+  box-shadow: 0 24px 45px rgba(15, 23, 42, 0.14);
 }
 
 .orders-table__cell {
@@ -690,7 +675,6 @@ ORDERS TABLE
   color: var(--orders-text);
   min-width: 0;
   word-break: break-word;
-  padding: 0 0.75rem;
   /* Add padding inside cells */
   white-space: normal;
   overflow: hidden;
