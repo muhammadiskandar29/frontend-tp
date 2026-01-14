@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function AdminLoginRedirect() {
+// ✅ FIX: Pisahkan komponen yang menggunakan useSearchParams untuk Suspense boundary
+function AdminLoginRedirectContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -29,6 +30,24 @@ export default function AdminLoginRedirect() {
     }}>
       Redirecting to login...
     </div>
+  );
+}
+
+// ✅ FIX: Wrap dengan Suspense untuk useSearchParams (Next.js requirement)
+export default function AdminLoginRedirect() {
+  return (
+    <Suspense fallback={
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '100vh' 
+      }}>
+        <p>Loading...</p>
+      </div>
+    }>
+      <AdminLoginRedirectContent />
+    </Suspense>
   );
 }
 

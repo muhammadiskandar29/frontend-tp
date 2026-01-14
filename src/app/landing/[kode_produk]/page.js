@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import OngkirCalculator from "@/components/OngkirCalculator";
@@ -31,7 +31,8 @@ function FAQItem({ question, answer }) {
   );
 }
 
-export default function LandingPage() {
+// ✅ FIX: Pisahkan komponen yang menggunakan useSearchParams untuk Suspense boundary
+function LandingPageContent() {
   const { kode_produk } = useParams();
   const searchParams = useSearchParams();
 
@@ -2029,5 +2030,23 @@ export default function LandingPage() {
         )}
       </div>
     </article>
+  );
+}
+
+// ✅ FIX: Wrap dengan Suspense untuk useSearchParams (Next.js requirement)
+export default function LandingPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '100vh' 
+      }}>
+        <p>Loading...</p>
+      </div>
+    }>
+      <LandingPageContent />
+    </Suspense>
   );
 }

@@ -1,10 +1,11 @@
 "use client";
 import { useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { toast } from "react-hot-toast";
 import "@/styles/transfer.css";
 
-export default function BankTransferPage() {
+// ✅ FIX: Pisahkan komponen yang menggunakan useSearchParams untuk Suspense boundary
+function BankTransferPageContent() {
   const params = useSearchParams();
   const product = params.get("product");
   const harga = params.get("harga");
@@ -494,5 +495,23 @@ export default function BankTransferPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// ✅ FIX: Wrap dengan Suspense untuk useSearchParams (Next.js requirement)
+export default function BankTransferPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '100vh' 
+      }}>
+        <p>Loading...</p>
+      </div>
+    }>
+      <BankTransferPageContent />
+    </Suspense>
   );
 }

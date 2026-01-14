@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { loginCustomer } from "@/lib/customerAuth";
@@ -8,7 +8,8 @@ import "@/styles/sales/otp.css";
 
 const OTP_VALID_DURATION = 5 * 60; // 5 menit
 
-export default function VerifyOrderOTPPage() {
+// ✅ FIX: Pisahkan komponen yang menggunakan useSearchParams untuk Suspense boundary
+function VerifyOrderOTPPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -590,5 +591,23 @@ export default function VerifyOrderOTPPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+// ✅ FIX: Wrap dengan Suspense untuk useSearchParams (Next.js requirement)
+export default function VerifyOrderOTPPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '100vh' 
+      }}>
+        <p>Loading...</p>
+      </div>
+    }>
+      <VerifyOrderOTPPageContent />
+    </Suspense>
   );
 }
