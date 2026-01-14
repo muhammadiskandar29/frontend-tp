@@ -2186,6 +2186,9 @@ function ProductClient({ initialProductData, initialLandingPage }) {
       nama: customerForm.nama,
       wa: customerForm.wa,
       email: customerForm.email,
+      // Field alamat dikosongkan karena kita pakai breakdown wilayah
+      // Backend akan menampung provinsi, kabupaten, kecamatan, kode_pos
+      alamat: '',
       provinsi: formWilayah.provinsi || null,
       kabupaten: formWilayah.kabupaten || null,
       kecamatan: formWilayah.kecamatan || null,
