@@ -1251,21 +1251,22 @@ export default function DaftarPesanan() {
             </div>
           </div>
           <div className="orders-table__wrapper">
-            <div className="orders-table">
-              <div className="orders-table__head">
-                {ORDERS_COLUMNS.map((column, idx) => {
-                  if (column === null) {
-                    return <span key={idx}></span>; // Kolom kosong
-                  }
-                  return (
-                    <span key={idx} style={{ display: "flex", flexDirection: "column", gap: "0.1rem", alignItems: "flex-start" }}>
-                      <span>{column.line1}</span>
-                      {column.line2 && <span>{column.line2}</span>}
-                    </span>
-                  );
-                })}
-              </div>
-              <div className="orders-table__body">
+            <table className="table-orders">
+              <thead>
+                <tr>
+                  <th className="sticky-col-1">Order - Id</th>
+                  <th>Customer</th>
+                  <th>Produk</th>
+                  <th>Status Pembayaran</th>
+                  <th>Status Order</th>
+                  <th>Follow Up Text</th>
+                  <th style={{ textAlign: 'center' }}>Bukti Pembayaran</th>
+                  <th>Gross Revenue</th>
+                  <th>Sales</th>
+                  <th className="sticky-col-right"></th>
+                </tr>
+              </thead>
+              <tbody>
                 {orders.length > 0 ? (
                   orders.map((order, i) => {
                     // Handle produk name - dari produk_rel
@@ -1300,95 +1301,91 @@ export default function DaftarPesanan() {
                     const buktiUrl = buildImageUrl(buktiPembayaranPath);
 
                     return (
-                      <div className="orders-table__row" key={order.id || `${order.id}-${i}`}>
-                        {/* Order ID */}
-                        <div className="orders-table__cell" data-label="Order ID">
-                          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                            <span style={{
-                              fontSize: "0.9rem",
-                              color: "#2563eb",
-                              fontWeight: 500
-                            }}>
-                              {order.id || "-"}
-                            </span>
-                            <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>
-                              {formatOrderDate(order.tanggal || order.create_at)}
-                            </span>
+                      <tr key={order.id || `${order.id}-${i}`}>
+                        {/* STICKY COLUMN: Order ID + External Link */}
+                        <td className="sticky-col-1">
+                          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                              <span style={{
+                                fontSize: "0.9rem",
+                                color: "#2563eb",
+                                fontWeight: 500
+                              }}>
+                                {order.id || "-"}
+                              </span>
+                              <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>
+                                {formatOrderDate(order.tanggal || order.create_at)}
+                              </span>
+                            </div>
+                            <ExternalLink
+                              size={18}
+                              style={{
+                                color: "#6b7280",
+                                cursor: "pointer",
+                                transition: "color 0.2s ease",
+                                flexShrink: 0
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleView(order);
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.color = "#2563eb";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.color = "#6b7280";
+                              }}
+                            />
                           </div>
-                        </div>
-
-                        {/* ExternalLink (kolom terpisah tanpa header) */}
-                        <div className="orders-table__cell" style={{ padding: 0 }}>
-                          <ExternalLink
-                            size={18}
-                            style={{
-                              color: "#6b7280",
-                              cursor: "pointer",
-                              transition: "color 0.2s ease"
-                            }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleView(order);
-                            }}
-                            onMouseEnter={(e) => {
-                              e.target.style.color = "#2563eb";
-                            }}
-                            onMouseLeave={(e) => {
-                              e.target.style.color = "#6b7280";
-                            }}
-                          />
-                        </div>
+                        </td>
 
                         {/* Customer */}
-                        <div className="orders-table__cell orders-table__cell--strong" data-label="Customer">
+                        <td>
                           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                            <span style={{ fontSize: "0.875rem", color: "#111827" }}>{customerNama}</span>
+                            <span style={{ fontSize: "0.875rem", color: "#111827", fontWeight: 600 }}>{customerNama}</span>
                             <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>
                               {order.customer_rel?.wa ? `+${order.customer_rel.wa}` : "-"}
                             </span>
                           </div>
-                        </div>
+                        </td>
 
                         {/* Produk */}
-                        <div className="orders-table__cell" data-label="Produk">
+                        <td>
                           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
                             <span style={{ fontSize: "0.875rem", color: "#111827" }}>{produkNama}</span>
-                            <span style={{ fontSize: "0.875rem", color: "#111827" }}></span>
                           </div>
-                        </div>
+                        </td>
 
                         {/* Status Pembayaran */}
-                        <div className="orders-table__cell" data-label="Status Pembayaran">
+                        <td>
                           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
                             <span className={`orders-status-badge orders-status-badge--${statusPembayaranInfo.class}`}>
                               {statusPembayaranInfo.label}
                             </span>
-                            <span style={{ fontSize: "0.875rem", color: "#111827" }}></span>
                           </div>
-                        </div>
+                        </td>
 
                         {/* Status Order */}
-                        <div className="orders-table__cell" data-label="Status Order">
+                        <td>
                           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
                             <span className={`orders-status-badge orders-status-badge--${statusOrderInfo.class}`}>
                               {statusOrderInfo.label}
                             </span>
-                            <span style={{ fontSize: "0.875rem", color: "#111827" }}></span>
                           </div>
-                        </div>
+                        </td>
 
                         {/* Follow Up Text */}
-                        <div className="orders-table__cell" data-label="Follow Up Text">
+                        <td>
                           <WABubbleChat
                             customerId={order.customer_rel?.id || order.customer}
                             orderId={order.id}
                             orderStatus={statusOrderValue}
                             statusPembayaran={statusPembayaranValue}
                           />
-                        </div>
+                        </td>
 
                         {/* Bukti Pembayaran */}
-                        <div className="orders-table__cell" data-label="Bukti Pembayaran">
+                        <td style={{ textAlign: 'center' }}>
                           {buktiUrl ? (
                             <ImageIcon
                               size={16}
@@ -1411,30 +1408,28 @@ export default function DaftarPesanan() {
                           ) : (
                             <span style={{ fontSize: "0.875rem", color: "#9ca3af" }}>-</span>
                           )}
-                        </div>
+                        </td>
 
                         {/* Gross Revenue */}
-                        <div className="orders-table__cell" data-label="Gross Revenue">
+                        <td>
                           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
                             <span style={{ fontSize: "0.875rem", color: "#111827", fontWeight: 600 }}>
                               Rp {Number(order.total_harga || 0).toLocaleString("id-ID")}
                             </span>
-                            <span style={{ fontSize: "0.875rem", color: "#111827" }}></span>
                           </div>
-                        </div>
+                        </td>
 
                         {/* Sales */}
-                        <div className="orders-table__cell" data-label="Sales">
+                        <td>
                           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
                             <span style={{ fontSize: "0.875rem", color: "#111827" }}>
                               {order.customer_rel?.sales_rel?.nama || order.customer_rel?.sales_nama || "-"}
                             </span>
-                            <span style={{ fontSize: "0.875rem", color: "#111827" }}></span>
                           </div>
-                        </div>
+                        </td>
 
-                        {/* Update/Konfirmasi Button */}
-                        <div className="orders-table__cell" data-label="">
+                        {/* STICKY RIGHT COLUMN: Update/Konfirmasi Button */}
+                        <td className="sticky-col-right">
                           <button
                             className="orders-action-btn"
                             onClick={(e) => {
@@ -1450,17 +1445,19 @@ export default function DaftarPesanan() {
                           >
                             Update / Konfirmasi
                           </button>
-                        </div>
-                      </div>
+                        </td>
+                      </tr>
                     );
                   })
                 ) : (
-                  <p className="orders-empty">
-                    {orders.length ? "Tidak ada hasil pencarian." : "Loading data..."}
-                  </p>
+                  <tr>
+                    <td colSpan={10} className="orders-empty">
+                      {orders.length ? "Tidak ada hasil pencarian." : "Loading data..."}
+                    </td>
+                  </tr>
                 )}
-              </div>
-            </div>
+              </tbody>
+            </table>
           </div>
 
           {/* Pagination dengan Next/Previous Button */}
