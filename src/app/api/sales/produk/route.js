@@ -77,9 +77,9 @@ const compressImage = async (buffer, extension, filename) => {
   try {
     const targetSizeBytes = IMAGE_CONFIG.targetSizeKB * 1024;
     const originalSizeKB = (buffer.length / 1024).toFixed(2);
-    
+
     console.log(`  📊 Original size: ${originalSizeKB} KB`);
-    
+
     if (buffer.length <= targetSizeBytes) {
       console.log(`  ✅ File already under ${IMAGE_CONFIG.targetSizeKB}KB, skipping compression`);
       return buffer;
@@ -144,7 +144,7 @@ const convertFileToBase64 = async (file) => {
 
   try {
     const extension = getFileExtension(file.name);
-    
+
     // Validate extension
     if (!isValidExtension(extension)) {
       console.error(`  ❌ Invalid file extension: ${extension}`);
@@ -167,7 +167,7 @@ const convertFileToBase64 = async (file) => {
     // Convert to base64
     const base64 = buffer.toString("base64");
     const mimeType = file.type || MIME_TYPES[extension] || "image/jpeg";
-    
+
     return `data:${mimeType};base64,${base64}`;
   } catch (error) {
     console.error(`  ❌ Failed to convert file to base64: ${error.message}`);
@@ -295,7 +295,7 @@ const extractPayload = async (reqBody) => {
 
   // Parse video (array of strings)
   const videoParsed = safeParseJSON(reqBody.video, []);
-  payload.video = Array.isArray(videoParsed) 
+  payload.video = Array.isArray(videoParsed)
     ? videoParsed.filter(v => typeof v === "string" && v.trim() !== "").map(v => v.trim())
     : [];
 
@@ -331,7 +331,7 @@ const extractPayload = async (reqBody) => {
       for (const item of testimoniParsed) {
         if (item && typeof item === "object") {
           let gambarBase64 = null;
-          
+
           // If there's a file, convert it (FormData)
           if (item.gambar instanceof File) {
             gambarBase64 = await convertFileToBase64(item.gambar);
@@ -405,18 +405,27 @@ export async function GET(request) {
         Accept: "application/json",
         Authorization: `Bearer ${token}`,
       },
+      cache: 'no-store', // Disable cache for fresher data & speed
     });
 
-    const data = await response.json();
-
+    // Validasi status code
     if (!response.ok) {
+      const data = await response.json();
       return NextResponse.json(
         { success: false, message: data?.message || "Gagal mengambil produk" },
         { status: response.status, headers: corsHeaders }
       );
     }
 
-    return NextResponse.json(data, { headers: corsHeaders });
+    // STREAMING RESPONSE: Forward stream langsung ke client (Zero-copy / Zero-parsing)
+    // Ini mengurangi overhead unmarshalling/marshalling JSON yang besar
+    return new NextResponse(response.body, {
+      status: 200,
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "application/json",
+      },
+    });
   } catch (error) {
     console.error("❌ [GET_PRODUK] Error:", error);
     return NextResponse.json(
@@ -459,12 +468,12 @@ export async function POST(request) {
     if (contentType.includes("multipart/form-data")) {
       // Forward FormData langsung ke backend Laravel
       const incomingFormData = await request.formData();
-      
+
       // DEBUG: Log incoming FormData
       console.log("[ROUTE] ========== INCOMING FORMDATA ==========");
       const incomingEntries = [];
       const incomingJSON = {};
-      
+
       for (const [key, value] of incomingFormData.entries()) {
         if (value instanceof File) {
           incomingEntries.push({ key, type: "File", name: value.name, size: `${(value.size / 1024).toFixed(2)} KB` });
@@ -478,7 +487,7 @@ export async function POST(request) {
         } else {
           const str = String(value);
           incomingEntries.push({ key, type: "String", value: str.length > 100 ? str.substring(0, 100) + "..." : str });
-          
+
           // Try to parse JSON strings for better readability
           try {
             const parsed = JSON.parse(str);
@@ -489,12 +498,12 @@ export async function POST(request) {
         }
       }
       console.table(incomingEntries);
-      
+
       // Tampilkan sebagai JSON yang readable
       console.log("[ROUTE] ========== INCOMING FORMDATA AS JSON ==========");
       console.log(JSON.stringify(incomingJSON, null, 2));
       console.log("[ROUTE] ==============================================");
-      
+
       // Verify kategori exists
       const kategoriValue = incomingFormData.get("kategori");
       console.log("[ROUTE] Kategori check:", {
@@ -503,7 +512,7 @@ export async function POST(request) {
         type: typeof kategoriValue,
         stringValue: String(kategoriValue)
       });
-      
+
       if (!kategoriValue || kategoriValue === "" || kategoriValue === "null" || kategoriValue === "undefined") {
         console.error("[ROUTE] ❌ KATEGORI TIDAK ADA ATAU INVALID!");
         return NextResponse.json(
@@ -521,7 +530,7 @@ export async function POST(request) {
           { status: 400, headers: corsHeaders }
         );
       }
-      
+
       // ============================
       // SIMPAN REQUEST DATA KE OBJECT DULU (untuk debugging)
       // ============================
@@ -530,7 +539,7 @@ export async function POST(request) {
         timestamp: new Date().toISOString(),
         incomingFormData: {}
       };
-      
+
       // Convert incoming FormData ke object untuk logging
       for (const [key, value] of incomingFormData.entries()) {
         if (value instanceof File) {
@@ -551,26 +560,26 @@ export async function POST(request) {
           }
         }
       }
-      
+
       console.log("[ROUTE] Request data object:", JSON.stringify(requestDataToLog, null, 2));
       console.log("[ROUTE] Fields count:", Object.keys(requestDataToLog.incomingFormData).length);
       console.log("[ROUTE] Fields:", Object.keys(requestDataToLog.incomingFormData));
       console.log("[ROUTE] ==========================================");
-      
+
       // Create FormData untuk forward ke backend (menggunakan form-data package)
       const forwardFormData = new FormData();
-      
+
       console.log("[ROUTE] ========== BUILDING FORWARD FORMDATA ==========");
       let appendedCount = 0;
       const appendedFields = [];
-      
+
       // Forward all entries ke backend - SIMPLE APPROACH
       for (const [key, value] of incomingFormData.entries()) {
         if (value instanceof File) {
           // Convert File to Buffer untuk form-data package
           const arrayBuffer = await value.arrayBuffer();
           const buffer = Buffer.from(arrayBuffer);
-          
+
           // Append dengan options yang benar
           forwardFormData.append(key, buffer, {
             filename: value.name,
@@ -588,23 +597,23 @@ export async function POST(request) {
           console.log(`[ROUTE] ✅ String appended: ${key} = ${strValue.length > 50 ? strValue.substring(0, 50) + "..." : strValue}`);
         }
       }
-      
+
       console.log(`[ROUTE] Total appended: ${appendedCount} fields`);
       console.log("[ROUTE] Appended fields:", appendedFields.map(f => `${f.key} (${f.type})`).join(", "));
       console.log("[ROUTE] ==============================================");
-      
+
       // Verify data di incomingFormData sebelum forward
       console.log("[ROUTE] ========== VERIFYING INCOMING DATA ==========");
       const verifyKategori = incomingFormData.get("kategori");
       const verifyNama = incomingFormData.get("nama");
       const verifyAssign = incomingFormData.get("assign");
       const verifyHeader = incomingFormData.get("header");
-      
+
       console.log("Kategori:", verifyKategori ? String(verifyKategori) : "NULL");
       console.log("Nama:", verifyNama ? String(verifyNama) : "NULL");
       console.log("Assign:", verifyAssign ? String(verifyAssign) : "NULL");
       console.log("Header:", verifyHeader instanceof File ? `File(${verifyHeader.name}, ${(verifyHeader.size / 1024).toFixed(2)} KB)` : "NULL");
-      
+
       if (!verifyKategori || !verifyNama || !verifyHeader) {
         console.error("[ROUTE] ❌ MISSING CRITICAL FIELDS IN INCOMING!");
         return NextResponse.json(
@@ -628,10 +637,10 @@ export async function POST(request) {
       }
       console.log("[ROUTE] ✅ All critical fields present in incoming");
       console.log("[ROUTE] ==============================================");
-      
+
       // Get headers untuk FormData (PENTING: harus dipanggil sebelum fetch)
       const formDataHeaders = forwardFormData.getHeaders();
-      
+
       console.log("[ROUTE] ========== REQUEST DETAILS ==========");
       console.log("URL:", `${BACKEND_URL}/api/sales/produk`);
       console.log("Method:", "POST");
@@ -640,37 +649,37 @@ export async function POST(request) {
       console.log("Token:", token.substring(0, 20) + "...");
       console.log("Total fields to send:", appendedCount);
       console.log("[ROUTE] ======================================");
-      
+
       // Forward ke backend Laravel dengan FormData
       // PENTING: form-data package perlu digunakan dengan cara yang benar
       // Native fetch di Node.js tidak support form-data package langsung
       // Kita perlu convert ke stream atau menggunakan pendekatan lain
-      
+
       try {
         // Convert form-data ke stream untuk fetch
         // form-data package memiliki method untuk get stream
         const formDataStream = forwardFormData;
-        
+
         // Get headers - PENTING: jangan override content-type
         const headers = {
           ...formDataHeaders, // Ini sudah include content-type dengan boundary
           Accept: "application/json",
           Authorization: `Bearer ${token}`,
         };
-        
+
         // Remove content-length jika ada (biar form-data handle sendiri)
         delete headers["content-length"];
-        
+
         console.log("[ROUTE] Final headers:", {
           "content-type": headers["content-type"]?.substring(0, 50) + "...",
           "accept": headers["Accept"],
           "authorization": headers["Authorization"]?.substring(0, 30) + "...",
           "has-boundary": headers["content-type"]?.includes("boundary")
         });
-        
+
         // Forward dengan axios yang lebih kompatibel dengan form-data package
         console.log("[ROUTE] Sending request to backend using axios...");
-        
+
         // Axios lebih kompatibel dengan form-data package
         const axiosResponse = await axios.post(
           `${BACKEND_URL}/api/sales/produk`,
@@ -685,7 +694,7 @@ export async function POST(request) {
             maxBodyLength: Infinity,
           }
         );
-        
+
         // Convert axios response ke format yang compatible dengan kode berikutnya
         response = {
           ok: axiosResponse.status >= 200 && axiosResponse.status < 300,
@@ -695,13 +704,13 @@ export async function POST(request) {
           text: async () => JSON.stringify(axiosResponse.data),
           json: async () => axiosResponse.data,
         };
-        
+
         console.log("[ROUTE] ✅ Request sent successfully");
         console.log("[ROUTE] Backend response status:", response.status);
         console.log("[ROUTE] Backend response ok:", response.ok);
       } catch (axiosError) {
         console.error("[ROUTE] ❌ Axios error:", axiosError);
-        
+
         // Handle axios error response
         if (axiosError.response) {
           // Backend responded with error
@@ -734,20 +743,20 @@ export async function POST(request) {
     } else {
       // Handle JSON request (untuk backward compatibility dan format baru)
       const reqBody = await request.json();
-      
+
       console.log("[ROUTE] ========== INCOMING JSON PAYLOAD ==========");
       console.log("Payload keys:", Object.keys(reqBody));
       console.log("[ROUTE] ============================================");
-      
+
       // Check if this is the new format with landingpage array
       const isNewFormat = reqBody.landingpage && Array.isArray(reqBody.landingpage);
-      
+
       let payloadToSend;
-      
+
       if (isNewFormat) {
         // New format: langsung forward dengan struktur yang sesuai
         console.log("[ROUTE] Detected new JSON format with landingpage array");
-        
+
         payloadToSend = {
           nama: reqBody.nama || "",
           kategori: String(reqBody.kategori || ""),
@@ -762,7 +771,7 @@ export async function POST(request) {
           status: String(reqBody.status || "1"),
           landingpage: JSON.stringify(reqBody.landingpage || []),
         };
-        
+
         // Validate required fields
         if (!payloadToSend.nama || !payloadToSend.kategori || !payloadToSend.kode) {
           return NextResponse.json(
@@ -836,7 +845,7 @@ export async function POST(request) {
         body: JSON.stringify(payloadToSend),
       });
     }
-    
+
     // Handle response
     let data;
     let responseText = null;
@@ -849,7 +858,7 @@ export async function POST(request) {
         responseText = await response.text();
         data = JSON.parse(responseText);
       }
-      
+
       // Log response untuk debugging
       console.log("[ROUTE] Backend response:", {
         status: response.status,
@@ -857,7 +866,7 @@ export async function POST(request) {
         message: data?.message,
         hasData: !!data?.data
       });
-      
+
       // Jika success dan ada data, pastikan data adalah array
       if (data?.success && data?.data) {
         // Jika data bukan array, wrap dalam array
@@ -897,7 +906,7 @@ export async function POST(request) {
       if (responseText) {
         console.error("Response text (raw):", responseText.substring(0, 500));
       }
-      
+
       let extractedErrors = {};
       let extractedErrorFields = [];
 
@@ -906,7 +915,7 @@ export async function POST(request) {
         extractedErrors = data.errors;
         extractedErrorFields = Object.keys(data.errors);
         console.error("Errors found in data.errors:", extractedErrors);
-      } 
+      }
       // Method 2: Check data.data.errors
       else if (data?.data?.errors && typeof data.data.errors === "object") {
         extractedErrors = data.data.errors;
@@ -917,14 +926,14 @@ export async function POST(request) {
       else if (data?.message) {
         console.error("Parsing errors from message:", data.message);
         const message = data.message;
-        
+
         // Extract field names from message like "The kategori field is required. (and 2 more errors)"
         const fieldPatterns = [
           /The\s+(\w+)\s+field\s+is\s+required/gi,
           /(\w+)\s+field\s+is\s+required/gi,
           /(\w+)\s+is\s+required/gi,
         ];
-        
+
         for (const pattern of fieldPatterns) {
           const matches = message.matchAll(pattern);
           for (const match of matches) {
@@ -935,14 +944,14 @@ export async function POST(request) {
             }
           }
         }
-        
+
         // Check for "and X more errors"
         const moreErrorsMatch = message.match(/and\s+(\d+)\s+more\s+errors?/i);
         if (moreErrorsMatch) {
           console.error(`⚠️ Ada ${moreErrorsMatch[1]} error lainnya yang tidak terdeteksi`);
         }
       }
-      
+
       console.error("Extracted errors:", extractedErrors);
       console.error("Extracted error fields:", extractedErrorFields);
       console.error("[ROUTE] ============================================");
@@ -952,8 +961,8 @@ export async function POST(request) {
       if (extractedErrorFields.length > 0) {
         detailedMessage += `\n\n📋 Field yang error (${extractedErrorFields.length}):`;
         for (const field of extractedErrorFields) {
-          const errors = Array.isArray(extractedErrors[field]) 
-            ? extractedErrors[field] 
+          const errors = Array.isArray(extractedErrors[field])
+            ? extractedErrors[field]
             : [extractedErrors[field] || "Field ini wajib diisi"];
           errors.forEach((err) => {
             detailedMessage += `\n  ❌ ${field}: ${err}`;
@@ -986,9 +995,9 @@ export async function POST(request) {
     if (data.success && data.data) {
       // Pastikan data adalah array
       const responseData = Array.isArray(data.data) ? data.data : [data.data];
-      
+
       console.log("[ROUTE] ✅ Returning success response with data array:", responseData.length, "items");
-      
+
       return NextResponse.json({
         success: true,
         message: data.message || "Produk berhasil dibuat",

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useMemo, useCallback, Suspense } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import Script from "next/script";
 
@@ -370,6 +370,7 @@ function normalizeLandingpageData(landingpageData) {
 function ProductClient({ initialProductData, initialLandingPage }) {
   const { kode_produk } = useParams();
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   const [paymentMethod, setPaymentMethod] = useState("");
   // ✅ Initialize with server data if available
@@ -2251,8 +2252,8 @@ function ProductClient({ initialProductData, initialLandingPage }) {
         toast.success("Order berhasil! Lanjut ke pembayaran...");
       }
 
-      await new Promise((r) => setTimeout(r, 500));
-      window.location.href = "/verify-order";
+      // ✅ OPTIMASI SPEED: Langsung redirect tanpa delay
+      router.push("/verify-order");
 
     } catch (err) {
       console.error("[SUBMIT ERROR]", err);
