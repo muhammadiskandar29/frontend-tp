@@ -521,36 +521,11 @@ ORDERS TABLE
   z-index: 11;
   background: #ffffff !important; /* Background putih */
   padding-right: 0.5rem;
-  border-radius: 1rem 0 0 1rem; /* Border radius kiri untuk match card */
-}
-
-/* Extend background ke gap area untuk menutupi */
-.orders-table__row > div:nth-child(1)::after {
-  content: '';
-  position: absolute;
-  top: -0.5rem;
-  right: -0.3rem; /* Cover gap 0.3rem */
-  bottom: -0.5rem;
-  width: 0.3rem;
-  background: #ffffff;
-  z-index: -1;
 }
 
 .orders-table__head > span:nth-child(1) {
   z-index: 21; /* Higher z-index untuk head */
   background: #ffffff !important;
-  border-radius: 0; /* Head tidak perlu border radius */
-}
-
-.orders-table__head > span:nth-child(1)::after {
-  content: '';
-  position: absolute;
-  top: -0.6rem;
-  right: -0.3rem; /* Cover gap 0.3rem */
-  bottom: -0.6rem;
-  width: 0.3rem;
-  background: #ffffff;
-  z-index: -1;
 }
 
 .orders-table__head > span:nth-child(2),
@@ -561,54 +536,9 @@ ORDERS TABLE
   background: #ffffff !important; /* Background putih */
 }
 
-/* Extend background ke gap area sebelum dan sesudah */
-.orders-table__row > div:nth-child(2)::before {
-  content: '';
-  position: absolute;
-  top: -0.5rem;
-  left: -0.3rem; /* Cover gap sebelumnya */
-  bottom: -0.5rem;
-  width: 0.3rem;
-  background: #ffffff;
-  z-index: -1;
-}
-
-.orders-table__row > div:nth-child(2)::after {
-  content: '';
-  position: absolute;
-  top: -0.5rem;
-  right: -0.3rem; /* Cover gap sesudah */
-  bottom: -0.5rem;
-  width: 0.3rem;
-  background: #ffffff;
-  z-index: -1;
-}
-
 .orders-table__head > span:nth-child(2) {
   z-index: 21; /* Higher z-index untuk head */
   background: #ffffff !important;
-}
-
-.orders-table__head > span:nth-child(2)::before {
-  content: '';
-  position: absolute;
-  top: -0.6rem;
-  left: -0.3rem;
-  bottom: -0.6rem;
-  width: 0.3rem;
-  background: #ffffff;
-  z-index: -1;
-}
-
-.orders-table__head > span:nth-child(2)::after {
-  content: '';
-  position: absolute;
-  top: -0.6rem;
-  right: -0.3rem;
-  bottom: -0.6rem;
-  width: 0.3rem;
-  background: #ffffff;
-  z-index: -1;
 }
 
 .orders-table__head > span:nth-child(3),
@@ -620,32 +550,9 @@ ORDERS TABLE
   padding-right: 0.5rem;
 }
 
-/* Extend background ke gap area sebelumnya */
-.orders-table__row > div:nth-child(3)::before {
-  content: '';
-  position: absolute;
-  top: -0.5rem;
-  left: -0.3rem; /* Cover gap sebelumnya */
-  bottom: -0.5rem;
-  width: 0.3rem;
-  background: #ffffff;
-  z-index: -1;
-}
-
 .orders-table__head > span:nth-child(3) {
   z-index: 21; /* Higher z-index untuk head */
   background: #ffffff !important;
-}
-
-.orders-table__head > span:nth-child(3)::before {
-  content: '';
-  position: absolute;
-  top: -0.6rem;
-  left: -0.3rem;
-  bottom: -0.6rem;
-  width: 0.3rem;
-  background: #ffffff;
-  z-index: -1;
 }
 
 /* Pastikan sticky cells berada di atas background */
