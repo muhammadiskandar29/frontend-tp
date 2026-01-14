@@ -25,8 +25,8 @@ export default function Dashboard() {
     leadsAssignedThisMonth: 0,
     followUpDoneToday: 0,
     followUpOverdue: 0,
-            activeDeals: 0,
-            closedThisMonth: 0,
+    activeDeals: 0,
+    closedThisMonth: 0,
     avgResponseTime: "N/A",
     monthlyTarget: 0,
     monthlyProgress: 0,
@@ -69,7 +69,7 @@ export default function Dashboard() {
       if (currentUserId) {
         leadsParams.append("sales_id", currentUserId.toString());
       }
-      
+
       const leadsRes = await fetch(`${BASE_URL}/sales/lead?${leadsParams.toString()}`, {
         headers: {
           "Content-Type": "application/json",
@@ -84,7 +84,7 @@ export default function Dashboard() {
           const leads = Array.isArray(leadsData.data) ? leadsData.data : [];
           const today = new Date();
           today.setHours(0, 0, 0, 0);
-          
+
           const thisMonth = new Date();
           thisMonth.setDate(1);
           thisMonth.setHours(0, 0, 0, 0);
@@ -149,11 +149,11 @@ export default function Dashboard() {
         const dashboardData = await dashboardRes.json();
         if (dashboardData.success && dashboardData.data) {
           const data = dashboardData.data;
-          
+
           // Extract follow-up done today if available
           // This would need to come from follow-up logs API
           // For now, we'll set it to 0 and can be enhanced later
-          
+
           // Extract target and progress if available
           if (data.monthly_target) {
             setStats(prev => ({
@@ -292,10 +292,10 @@ export default function Dashboard() {
   ];
 
   // Calculate progress percentages
-  const monthlyProgressPercent = stats.monthlyTarget > 0 
+  const monthlyProgressPercent = stats.monthlyTarget > 0
     ? Math.min((stats.monthlyProgress / stats.monthlyTarget) * 100, 100)
     : 0;
-  
+
   const closingProgressPercent = stats.closingTarget > 0
     ? Math.min((stats.closingProgress / stats.closingTarget) * 100, 100)
     : 0;
@@ -303,30 +303,6 @@ export default function Dashboard() {
   return (
     <Layout title="Dashboard" aboveContent={<GreetingBanner />}>
       <div className="dashboard-shell">
-        {/* Time Context */}
-        <section className="dashboard-hero" style={{ marginBottom: "2rem" }}>
-          <div style={{ 
-            display: "flex", 
-            alignItems: "center", 
-            gap: "1rem",
-            padding: "0.75rem 1rem",
-            background: "var(--dash-surface)",
-            border: "1px solid var(--dash-border)",
-            borderRadius: "var(--radius-lg)",
-            fontSize: "0.875rem",
-            color: "var(--dash-muted)"
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <Calendar size={16} />
-              <span>{formatDate(currentTime)}</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <Clock size={16} />
-              <span>{formatTime(currentTime)}</span>
-            </div>
-          </div>
-        </section>
-
         {/* Leads Activity Panel */}
         <section className="dashboard-panels">
           <article className="panel panel--summary">
@@ -406,25 +382,25 @@ export default function Dashboard() {
                   <h3 className="panel__title">Monthly Goals</h3>
                 </div>
               </div>
-              
+
               <div style={{ padding: "1.5rem" }}>
                 {stats.monthlyTarget > 0 && (
                   <div style={{ marginBottom: "1.5rem" }}>
-                    <div style={{ 
-                      display: "flex", 
-                      justifyContent: "space-between", 
+                    <div style={{
+                      display: "flex",
+                      justifyContent: "space-between",
                       alignItems: "center",
                       marginBottom: "0.5rem"
                     }}>
-                      <span style={{ 
-                        fontSize: "0.875rem", 
+                      <span style={{
+                        fontSize: "0.875rem",
                         color: "var(--dash-muted)",
                         fontWeight: 500
                       }}>
                         Target Bulanan
                       </span>
-                      <span style={{ 
-                        fontSize: "0.875rem", 
+                      <span style={{
+                        fontSize: "0.875rem",
                         color: "var(--dash-text-dark)",
                         fontWeight: 600
                       }}>
@@ -444,8 +420,8 @@ export default function Dashboard() {
                         background: monthlyProgressPercent >= 100
                           ? "linear-gradient(90deg, #10b981 0%, #059669 100%)"
                           : monthlyProgressPercent >= 75
-                          ? "linear-gradient(90deg, #f59e0b 0%, #d97706 100%)"
-                          : "linear-gradient(90deg, #3b82f6 0%, #2563eb 100%)",
+                            ? "linear-gradient(90deg, #f59e0b 0%, #d97706 100%)"
+                            : "linear-gradient(90deg, #3b82f6 0%, #2563eb 100%)",
                         borderRadius: "4px",
                         transition: "width 0.3s ease"
                       }} />
@@ -455,21 +431,21 @@ export default function Dashboard() {
 
                 {stats.closingTarget > 0 && (
                   <div>
-                    <div style={{ 
-                      display: "flex", 
-                      justifyContent: "space-between", 
+                    <div style={{
+                      display: "flex",
+                      justifyContent: "space-between",
                       alignItems: "center",
                       marginBottom: "0.5rem"
                     }}>
-                      <span style={{ 
-                        fontSize: "0.875rem", 
+                      <span style={{
+                        fontSize: "0.875rem",
                         color: "var(--dash-muted)",
                         fontWeight: 500
                       }}>
                         Target Closing
                       </span>
-                      <span style={{ 
-                        fontSize: "0.875rem", 
+                      <span style={{
+                        fontSize: "0.875rem",
                         color: "var(--dash-text-dark)",
                         fontWeight: 600
                       }}>
@@ -489,8 +465,8 @@ export default function Dashboard() {
                         background: closingProgressPercent >= 100
                           ? "linear-gradient(90deg, #10b981 0%, #059669 100%)"
                           : closingProgressPercent >= 75
-                          ? "linear-gradient(90deg, #f59e0b 0%, #d97706 100%)"
-                          : "linear-gradient(90deg, #3b82f6 0%, #2563eb 100%)",
+                            ? "linear-gradient(90deg, #f59e0b 0%, #d97706 100%)"
+                            : "linear-gradient(90deg, #3b82f6 0%, #2563eb 100%)",
                         borderRadius: "4px",
                         transition: "width 0.3s ease"
                       }} />
