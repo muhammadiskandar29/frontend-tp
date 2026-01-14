@@ -464,29 +464,31 @@ function ProductPageContent() {
   };
 
   // ✅ Hitung total secara reactive dengan useMemo - auto update jika ada bundling atau tidak
+  // ✅ FIX: Gunakan primitive values untuk dependency yang lebih stabil
+  const productHarga = productData?.harga || 0;
+  const productKategoriId = productData?.kategori_id 
+    || (productData?.kategori_rel?.id ? Number(productData.kategori_rel.id) : null)
+    || (productData?.kategori ? Number(productData.kategori) : null);
+  
   const calculateTotal = useMemo(() => {
     if (!productData) return 0;
     
     // ✅ Parse harga dengan benar (handle string dan number)
     let basePrice = 0;
-    if (productData.harga) {
-      if (typeof productData.harga === 'string') {
-        basePrice = parseInt(productData.harga.replace(/[^\d]/g, "")) || 0;
+    if (productHarga) {
+      if (typeof productHarga === 'string') {
+        basePrice = parseInt(productHarga.replace(/[^\d]/g, "")) || 0;
       } else {
-        basePrice = parseInt(productData.harga) || 0;
+        basePrice = parseInt(productHarga) || 0;
       }
     }
     
-    // ✅ Hitung kategori ID langsung (tidak memanggil fungsi)
-    const kategoriId = productData.kategori_id 
-      || (productData.kategori_rel?.id ? Number(productData.kategori_rel.id) : null)
-      || (productData.kategori ? Number(productData.kategori) : null);
-    const isFormBuku = kategoriId === 4; // Kategori Buku (4)
+    const isFormBuku = productKategoriId === 4; // Kategori Buku (4)
     const shippingCost = isFormBuku ? ongkir : 0;
     const total = basePrice + shippingCost;
     
     return total;
-  }, [productData, ongkir]); // ✅ Gunakan productData sebagai dependency untuk memastikan reactive
+  }, [productHarga, productKategoriId, ongkir]); // ✅ Gunakan primitive values untuk dependency yang lebih stabil
 
   // FAQ Mapping
   const getFAQByKategori = (kategoriId) => {
@@ -2566,24 +2568,25 @@ function ProductPageContent() {
   // ✅ Section render hanya block dengan parentId === section.config.componentId
   // ✅ Child TIDAK BOLEH dirender di root
   
-  // ✅ OPTIMASI: useMemo untuk menghindari re-filtering blocks setiap render
-  const blocks = useMemo(() => {
-    if (!landingpage || !Array.isArray(landingpage)) return [];
-    
-    return landingpage.filter((item) => {
-      // Pastikan item valid dan bukan settings
-      if (!item || !item.type) return false;
-      if (item.type === 'settings') return false;
-      
-      // ✅ ARSITEKTUR FINAL: Root skip block dengan parentId
-      // parentId HANYA ada di root level (bukan di config)
-      if (item.parentId) {
-        return false; // Ini adalah child dari section, jangan render di root
-      }
-      
-      return true;
-    });
-  }, [landingpage]);
+  // ✅ ARSITEKTUR FINAL: Root render hanya block TANPA parentId
+  // ✅ Section render hanya block dengan parentId === section.config.componentId
+  // ✅ Child TIDAK BOLEH dirender di root
+  // ✅ FIX: Hapus useMemo untuk menghindari error React #310 (dependency array issue)
+  const blocks = landingpage && Array.isArray(landingpage) 
+    ? landingpage.filter((item) => {
+        // Pastikan item valid dan bukan settings
+        if (!item || !item.type) return false;
+        if (item.type === 'settings') return false;
+        
+        // ✅ ARSITEKTUR FINAL: Root skip block dengan parentId
+        // parentId HANYA ada di root level (bukan di config)
+        if (item.parentId) {
+          return false; // Ini adalah child dari section, jangan render di root
+        }
+        
+        return true;
+      })
+    : [];
   
   // ✅ Debug logging hanya di development mode
   if (process.env.NODE_ENV === 'development' && blocks.length > 0) {
@@ -2593,15 +2596,14 @@ function ProductPageContent() {
     }
   }
 
-  // ✅ OPTIMASI: useMemo untuk settings dan derived values
-  const settings = useMemo(() => {
-    return landingpage && Array.isArray(landingpage) && landingpage.length > 0 && landingpage[0].type === 'settings'
-      ? landingpage[0]
-      : null;
-  }, [landingpage]);
+  // ✅ FIX: Hapus useMemo untuk menghindari error React #310
+  const settings = landingpage && Array.isArray(landingpage) && landingpage.length > 0 && landingpage[0].type === 'settings'
+    ? landingpage[0]
+    : null;
   
-  const logoUrl = useMemo(() => settings?.logo || '/assets/logo.png', [settings]);
-  const backgroundColor = useMemo(() => settings?.background_color || '#ffffff', [settings]);
+  // ✅ FIX: Gunakan nilai langsung tanpa useMemo untuk menghindari circular dependency
+  const logoUrl = settings?.logo || '/assets/logo.png';
+  const backgroundColor = settings?.background_color || '#ffffff';
 
   return (
     <>
