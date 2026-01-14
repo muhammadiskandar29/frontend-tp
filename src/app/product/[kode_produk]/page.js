@@ -7,8 +7,12 @@ async function getProduct(kode_produk) {
   try {
     // Gunakan getBackendUrl untuk memastikan URL absolut di server
     const url = getBackendUrl(`landing/${kode_produk}`);
-    // fetch dengan cache: 'no-store' agar selalu dapat update terbaru (penting untuk settings)
-    const res = await fetch(url, { cache: 'no-store' });
+    // fetch dengan cache: 'no-store' agar selalu dapat update terbaru
+    // Tambahkan timeout 10 detik agar tidak hang selamanya saat build
+    const res = await fetch(url, {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(10000)
+    });
 
     if (!res.ok) {
       console.warn(`[SERVER] Fetch product failed: ${res.status}`);
@@ -71,7 +75,7 @@ export async function generateMetadata({ params }) {
       description: description,
       images: images,
     },
-    // Meta tags tambahan bisa ditambahkan di sini
+    viewport: "width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes",
   };
 }
 

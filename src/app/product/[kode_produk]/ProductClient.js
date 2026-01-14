@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useMemo, useCallback, Suspense } from "rea
 import { useParams, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import Script from "next/script";
-import Head from "next/head";
+
 import dynamic from "next/dynamic";
 import Image from "next/image";
 // ✅ OPTIMASI: Tree-shake lucide-react - import icons yang digunakan secara dinamis
@@ -2603,6 +2603,73 @@ function ProductClient({ initialProductData, initialLandingPage }) {
 
   }, [settings, productData]);
 
+  // ✅ MOVED UP: Global Style Injection (Plain JS - No styled-jsx)
+  useEffect(() => {
+    // 1. Force Body & HTML Styles directly via DOM
+    document.documentElement.style.backgroundColor = backgroundColor;
+    document.documentElement.style.margin = '0';
+    document.documentElement.style.padding = '0';
+    document.documentElement.style.overflowX = 'hidden';
+    document.documentElement.style.width = '100%';
+
+    document.body.style.backgroundColor = backgroundColor;
+    document.body.style.margin = '0';
+    document.body.style.padding = '0';
+    document.body.style.overflowX = 'hidden';
+    document.body.style.width = '100%';
+
+    // 2. Inject Custom Scrollbar Style Tag
+    const styleId = `dynamic-page-style-${kode_produk}`;
+    let styleTag = document.getElementById(styleId);
+
+    if (!styleTag) {
+      styleTag = document.createElement('style');
+      styleTag.id = styleId;
+      document.head.appendChild(styleTag);
+    }
+
+    styleTag.innerHTML = `
+      html, body {
+        background-color: ${backgroundColor} !important;
+      }
+      ::-webkit-scrollbar {
+        width: 12px;
+        background-color: ${backgroundColor};
+      }
+      ::-webkit-scrollbar-thumb {
+        background-color: rgba(128, 128, 128, 0.5);
+        border-radius: 6px;
+        border: 3px solid ${backgroundColor};
+      }
+      ::-webkit-scrollbar-track {
+        background-color: ${backgroundColor};
+      }
+      .product-page-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+      }
+    `;
+
+    // Cleanup on unmount (optional, but good practice)
+    return () => {
+      document.documentElement.style.backgroundColor = '';
+      document.documentElement.style.margin = '';
+      document.documentElement.style.padding = '';
+      document.documentElement.style.overflowX = '';
+      document.documentElement.style.width = '';
+
+      document.body.style.backgroundColor = '';
+      document.body.style.margin = '';
+      document.body.style.padding = '';
+      document.body.style.overflowX = '';
+      document.body.style.width = '';
+
+      const tag = document.getElementById(styleId);
+      if (tag) tag.remove();
+    };
+  }, [backgroundColor, kode_produk]);
+
   // ✅ Loading indicator - Return NULL for clean loading state
   if (loading) return null;
 
@@ -2663,14 +2730,11 @@ function ProductClient({ initialProductData, initialLandingPage }) {
 
   return (
     <>
-      <Head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
-        {/* ✅ OPTIMASI: Preconnect untuk fonts lebih awal */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/* ✅ OPTIMASI: Load fonts dengan display=swap dan subset untuk mengurangi size */}
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-      </Head>
+      {/* ✅ OPTIMASI: Preconnect untuk fonts lebih awal */}
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      {/* ✅ OPTIMASI: Load fonts dengan display=swap dan subset untuk mengurangi size */}
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
       {/* ✅ Scripts Injection Strategy */}
       {/* Script injected via next/script component inside JSX */}
@@ -2733,37 +2797,7 @@ function ProductClient({ initialProductData, initialLandingPage }) {
 
       {/* ✅ Hapus loading overlay - biarkan halaman kosong sampai data ter-load */}
 
-      <style jsx global>{`
-        html, body {
-          background-color: ${backgroundColor} !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          overflow-x: hidden !important;
-          width: 100% !important;
-        }
-        
-        /* Custom Scrollbar to blend with background */
-        ::-webkit-scrollbar {
-          width: 12px;
-          background-color: ${backgroundColor};
-        }
-        
-        ::-webkit-scrollbar-thumb {
-          background-color: rgba(128, 128, 128, 0.5);
-          border-radius: 6px;
-          border: 3px solid ${backgroundColor};
-        }
-        
-        ::-webkit-scrollbar-track {
-          background-color: ${backgroundColor};
-        }
-        
-        .product-page-container {
-          width: 100% !important;
-          max-width: 100% !important;
-          overflow-x: hidden !important;
-        }
-      `}</style>
+
 
       <div className="add-products3-container product-page-container" itemScope itemType="https://schema.org/Product" style={{ backgroundColor, margin: 0, padding: 0, minHeight: '100vh', width: '100%' }}>
         <div className="page-builder-canvas" style={{ backgroundColor, padding: 0, margin: 0, width: '100%', maxWidth: '100%' }}>
