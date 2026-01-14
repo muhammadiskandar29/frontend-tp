@@ -2742,11 +2742,11 @@ function ProductClient({ initialProductData, initialLandingPage }) {
 
       {/* ✅ Hapus loading overlay - biarkan halaman kosong sampai data ter-load */}
 
-      <div className="add-products3-container" itemScope itemType="https://schema.org/Product" style={{ backgroundColor }}>
-        <div className="page-builder-canvas" style={{ backgroundColor }}>
-          <div className="canvas-wrapper" style={{ backgroundColor }}>
+      <div className="add-products3-container product-page-container" itemScope itemType="https://schema.org/Product" style={{ backgroundColor, margin: 0, padding: 0, minHeight: '100vh', width: '100%' }}>
+        <div className="page-builder-canvas" style={{ backgroundColor, padding: 0, margin: 0, width: '100%', maxWidth: '100%' }}>
+          <div className="canvas-wrapper" style={{ backgroundColor, padding: 0, margin: 0, width: '100%', maxWidth: '100%', minHeight: '100vh' }}>
             {/* Logo Section - Top */}
-            <div className="canvas-logo-wrapper">
+            <div className="canvas-logo-wrapper" style={{ width: '100%' }}>
               <Image
                 src={logoUrl}
                 alt="Logo"
@@ -2759,7 +2759,8 @@ function ProductClient({ initialProductData, initialLandingPage }) {
             </div>
 
             {/* Content Area - Center dengan padding */}
-            <div className="canvas-content-area">
+            {/* Content Area - Center dengan padding */}
+            <div className="canvas-content-area" style={{ padding: 0, width: '100%', maxWidth: '100%' }}>
               {/* ✅ Render Blocks sesuai urutan array dari backend (sumber kebenaran) */}
               {/* ✅ IMPORTANT: Pass landingpage sebagai allBlocks agar section bisa menemukan child-nya */}
               {blocks.length > 0 ? (
@@ -2792,9 +2793,7 @@ function ProductClient({ initialProductData, initialLandingPage }) {
                     </div>
                   );
                 })
-              ) : (
-                <div className="preview-placeholder">Belum ada konten</div>
-              )}
+              ) : null}
             </div>
           </div>
         </div>
