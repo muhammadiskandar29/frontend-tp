@@ -1256,25 +1256,53 @@ export default function DaftarPesanan() {
                 <tr>
                   {/* STICKY LEFT 1: Order ID */}
                   <th className="sticky-left-1">
-                    Order - Id
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span>ORDER</span>
+                      <span>ID</span>
+                    </div>
                   </th>
 
                   {/* STICKY LEFT 2: Customer */}
                   <th className="sticky-left-2">
-                    Customer
+                    CUSTOMER
                   </th>
 
                   {/* Product - Widened */}
                   <th className="col-product">
-                    Produk
+                    PRODUK
                   </th>
 
-                  <th>Status Pembayaran</th>
-                  <th>Status Order</th>
-                  <th>Follow Up Text</th>
-                  <th style={{ textAlign: 'center' }}>Bukti Pembayaran</th>
-                  <th>Gross Revenue</th>
-                  <th>Sales</th>
+                  <th>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span>STATUS</span>
+                      <span>PEMBAYARAN</span>
+                    </div>
+                  </th>
+                  <th>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span>STATUS</span>
+                      <span>ORDER</span>
+                    </div>
+                  </th>
+                  <th>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span>FOLLOW UP</span>
+                      <span>TEXT</span>
+                    </div>
+                  </th>
+                  <th style={{ textAlign: 'center' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <span>BUKTI</span>
+                      <span>PEMBAYARAN</span>
+                    </div>
+                  </th>
+                  <th>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span>GROSS</span>
+                      <span>REVENUE</span>
+                    </div>
+                  </th>
+                  <th>SALES</th>
 
                   {/* Action Column - NON STICKY */}
                   <th></th>
