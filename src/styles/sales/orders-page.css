@@ -24,7 +24,7 @@ Completely isolated from global CSS to ensure consistent rendering
   --orders-primary: #F1A124;
   --orders-primary-hover: #df9620;
   --orders-white: #ffffff;
-  
+
   /* Layout */
   display: flex;
   flex-direction: column;
@@ -342,7 +342,7 @@ DASHBOARD SUMMARY & SUMMARY CARD
   color: #ffffff;
 }
 
-.orders-shell .orders-summary .summary-card__column > div:not(.summary-card__icon) {
+.orders-shell .orders-summary .summary-card__column>div:not(.summary-card__icon) {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -456,7 +456,8 @@ ORDERS TABLE
 .orders-table__wrapper {
   width: 100%;
   overflow-x: auto;
-  overflow-y: auto; /* Enable vertical scroll */
+  overflow-y: auto;
+  /* Enable vertical scroll */
   padding-bottom: 0.25rem;
   /* Compensate untuk padding panel (1.75rem) agar sticky columns benar-benar di ujung kiri */
   margin-left: -1.75rem;
@@ -489,18 +490,29 @@ ORDERS TABLE
 .orders-table__head,
 .orders-table__row {
   display: grid;
-  grid-template-columns: 
-    minmax(140px, 1.2fr)                    /* Order ID - STICKY */
-    24px                                    /* ExternalLink (kolom kosong) - STICKY */
-    minmax(130px, 1.2fr)                    /* Customer - STICKY */
-    minmax(140px, 1.2fr)                    /* Produk */
-    minmax(110px, 1fr)                      /* Status Pembayaran */
-    minmax(100px, 0.9fr)                    /* Status Order */
-    minmax(280px, 2.5fr)                    /* Follow Up Text - diperlebar lagi */
-    minmax(100px, 0.9fr)                    /* Bukti Pembayaran */
-    minmax(140px, 1.2fr)                    /* Gross Revenue */
-    minmax(120px, 1fr)                      /* Sales */
-    minmax(150px, 1fr);                     /* Update/Konfirmasi button */
+  grid-template-columns:
+    minmax(140px, 1.2fr)
+    /* Order ID - STICKY */
+    24px
+    /* ExternalLink (kolom kosong) - STICKY */
+    minmax(130px, 1.2fr)
+    /* Customer - STICKY */
+    minmax(140px, 1.2fr)
+    /* Produk */
+    minmax(110px, 1fr)
+    /* Status Pembayaran */
+    minmax(100px, 0.9fr)
+    /* Status Order */
+    minmax(280px, 2.5fr)
+    /* Follow Up Text - diperlebar lagi */
+    minmax(100px, 0.9fr)
+    /* Bukti Pembayaran */
+    minmax(140px, 1.2fr)
+    /* Gross Revenue */
+    minmax(120px, 1fr)
+    /* Sales */
+    minmax(150px, 1fr);
+  /* Update/Konfirmasi button */
   gap: 0.3rem;
   align-items: center;
   min-width: 1200px;
@@ -508,8 +520,8 @@ ORDERS TABLE
   contain: layout;
 }
 
-.orders-table__head > span:nth-child(2),
-.orders-table__row > div:nth-child(2) {
+.orders-table__head>span:nth-child(2),
+.orders-table__row>div:nth-child(2) {
   padding: 0;
   margin-left: -0.25rem;
   display: flex;
@@ -518,77 +530,89 @@ ORDERS TABLE
 }
 
 /* Sticky columns untuk Order ID, ExternalLink, dan Customer dengan background putih */
-.orders-table__head > span:nth-child(1),
-.orders-table__row > div:nth-child(1) {
-  /* position: sticky; */ /* REMOVED STICKY */
-  /* left: 1.75rem; */
-  z-index: 1;
-  /* background: #ffffff !important; */
+.orders-table__head>span:nth-child(1),
+.orders-table__row>div:nth-child(1) {
+  position: sticky;
+  left: 1.75rem;
+  /* Compensate untuk padding panel */
+  z-index: 11;
+  background: #ffffff !important;
+  /* Background putih */
   padding-right: 0.5rem;
-  /* border-radius: 1rem 0 0 1rem; */
+  border-radius: 1rem 0 0 1rem;
+  /* Border radius kiri card agar ikut sticky */
 }
 
 /* Pastikan border radius kiri card ikut sticky dengan extend background */
 /* Pastikan border radius kiri card ikut sticky dengan extend background */
-.orders-table__row > div:nth-child(1)::before {
+.orders-table__row>div:nth-child(1)::before {
   content: '';
   position: absolute;
   top: -0.5rem;
-  left: -0.65rem; /* Extend ke kiri untuk cover padding row */
+  left: -0.65rem;
+  /* Extend ke kiri untuk cover padding row */
   bottom: -0.5rem;
   width: 0.65rem;
-  /* background: #ffffff; */
+  background: #ffffff;
   z-index: -1;
-  border-radius: 1rem 0 0 1rem; /* Match border radius card */
+  border-radius: 1rem 0 0 1rem;
+  /* Match border radius card */
 }
 
-.orders-table__head > span:nth-child(1) {
-  z-index: 1; 
-  /* background: #ffffff !important; */
+.orders-table__head>span:nth-child(1) {
+  z-index: 21;
+  /* Higher z-index untuk head */
+  background: #ffffff !important;
   border-radius: 0;
+  /* Head tidak perlu border radius */
 }
 
-.orders-table__head > span:nth-child(2),
-.orders-table__row > div:nth-child(2) {
-  /* position: sticky; */ /* REMOVED STICKY */
-  /* left: calc(1.75rem + 140px + 0.3rem); */
-  z-index: 1;
-  /* background: #ffffff !important; */
+.orders-table__head>span:nth-child(2),
+.orders-table__row>div:nth-child(2) {
+  position: sticky;
+  left: calc(1.75rem + 140px + 0.3rem);
+  /* Padding panel + Width of Order ID + gap */
+  z-index: 11;
+  background: #ffffff !important;
+  /* Background putih */
 }
 
-.orders-table__head > span:nth-child(2) {
-  z-index: 1;
-  /* background: #ffffff !important; */
+.orders-table__head>span:nth-child(2) {
+  z-index: 21;
+  /* Higher z-index untuk head */
+  background: #ffffff !important;
 }
 
-.orders-table__head > span:nth-child(3),
-.orders-table__row > div:nth-child(3) {
-  /* position: sticky; */ /* REMOVED STICKY */
-  /* left: calc(1.75rem + 140px + 24px + 0.6rem); */
-  z-index: 1;
-  /* background: #ffffff !important; */
+.orders-table__head>span:nth-child(3),
+.orders-table__row>div:nth-child(3) {
+  position: sticky;
+  left: calc(1.75rem + 140px + 24px + 0.6rem);
+  /* Padding panel + Width of Order ID + ExternalLink + gaps */
+  z-index: 11;
+  background: #ffffff !important;
+  /* Background putih */
   padding-right: 0.5rem;
 }
 
-.orders-table__head > span:nth-child(3) {
-  z-index: 1;
-  /* background: #ffffff !important; */
+.orders-table__head>span:nth-child(3) {
+  z-index: 21;
+  /* Higher z-index untuk head */
+  background: #ffffff !important;
 }
 
 /* Pastikan sticky cells berada di atas background */
-.orders-table__row > div:nth-child(1),
-.orders-table__row > div:nth-child(2),
-.orders-table__row > div:nth-child(3) {
-  /* position: sticky; */
-  z-index: 1;
+.orders-table__row>div:nth-child(1),
+.orders-table__row>div:nth-child(2),
+.orders-table__row>div:nth-child(3) {
+  position: sticky;
+  z-index: 11;
 }
 
 /* Shadow untuk sticky columns saat scroll horizontal */
-/* Shadow untuk sticky columns saat scroll horizontal - DISABLED */
-/*
-.orders-table__row > div:nth-child(1)::after,
-.orders-table__row > div:nth-child(2)::after,
-.orders-table__row > div:nth-child(3)::after {
+/* Shadow untuk sticky columns saat scroll horizontal */
+.orders-table__row>div:nth-child(1)::after,
+.orders-table__row>div:nth-child(2)::after,
+.orders-table__row>div:nth-child(3)::after {
   content: '';
   position: absolute;
   top: 0;
@@ -601,12 +625,11 @@ ORDERS TABLE
   transition: opacity 0.2s ease;
 }
 
-.orders-table__wrapper:hover .orders-table__row > div:nth-child(1)::after,
-.orders-table__wrapper:hover .orders-table__row > div:nth-child(2)::after,
-.orders-table__wrapper:hover .orders-table__row > div:nth-child(3)::after {
+.orders-table__wrapper:hover .orders-table__row>div:nth-child(1)::after,
+.orders-table__wrapper:hover .orders-table__row>div:nth-child(2)::after,
+.orders-table__wrapper:hover .orders-table__row>div:nth-child(3)::after {
   opacity: 1;
 }
-*/
 
 .orders-table__head {
   padding: 0.6rem 0.75rem;
@@ -656,7 +679,7 @@ ORDERS TABLE
   position: relative;
 }
 
-.orders-table__cell > * {
+.orders-table__cell>* {
   /* Pastikan outline tidak mempengaruhi layout */
   outline-offset: 0 !important;
 }
@@ -833,9 +856,12 @@ ORDERS STATUS BADGE
 }
 
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.7;
   }
@@ -968,7 +994,7 @@ RESPONSIVE STYLES
     grid-template-columns: repeat(3, 1fr);
     gap: 1.25rem;
   }
-  
+
   .orders-shell .orders-summary .summary-card__divider {
     display: none;
   }
@@ -980,7 +1006,7 @@ RESPONSIVE STYLES
     gap: 1rem;
     padding: 1rem 1.25rem;
   }
-  
+
   .orders-shell .orders-summary .summary-card__divider {
     display: none;
   }
@@ -1016,4 +1042,3 @@ RESPONSIVE STYLES
     font-size: 0.7rem;
   }
 }
-
