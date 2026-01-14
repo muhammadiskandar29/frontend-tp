@@ -1254,7 +1254,16 @@ export default function DaftarPesanan() {
             <table className="table-orders">
               <thead>
                 <tr>
-                  <th className="sticky-col-1">Order - Id</th>
+                  {/* STICKY LEFT 1: Checkbox */}
+                  <th className="sticky-left-1" style={{ width: '50px', minWidth: '50px' }}>
+                    <input type="checkbox" className="checkbox-custom" />
+                  </th>
+
+                  {/* STICKY LEFT 2: Order ID */}
+                  <th className="sticky-left-2">
+                    Order - Id
+                  </th>
+
                   <th>Customer</th>
                   <th>Produk</th>
                   <th>Status Pembayaran</th>
@@ -1263,7 +1272,9 @@ export default function DaftarPesanan() {
                   <th style={{ textAlign: 'center' }}>Bukti Pembayaran</th>
                   <th>Gross Revenue</th>
                   <th>Sales</th>
-                  <th className="sticky-col-right"></th>
+
+                  {/* Action Column - NON STICKY */}
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -1283,12 +1294,10 @@ export default function DaftarPesanan() {
                     const statusOrderInfo = STATUS_ORDER_MAP[statusOrderValue] || { label: "-", class: "default" };
 
                     // Get Status Pembayaran
-                    // Handle string "4" atau number 4
                     let statusPembayaranValue = order.status_pembayaran;
                     if (statusPembayaranValue === null || statusPembayaranValue === undefined) {
                       statusPembayaranValue = 0;
                     } else {
-                      // Konversi ke number untuk konsistensi
                       statusPembayaranValue = Number(statusPembayaranValue);
                       if (isNaN(statusPembayaranValue)) {
                         statusPembayaranValue = 0;
@@ -1302,48 +1311,40 @@ export default function DaftarPesanan() {
 
                     return (
                       <tr key={order.id || `${order.id}-${i}`}>
-                        {/* STICKY COLUMN: Order ID + External Link */}
-                        <td className="sticky-col-1">
-                          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                            <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                              <span style={{
-                                fontSize: "0.9rem",
-                                color: "#2563eb",
-                                fontWeight: 500
-                              }}>
-                                {order.id || "-"}
-                              </span>
-                              <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>
-                                {formatOrderDate(order.tanggal || order.create_at)}
-                              </span>
+                        {/* STICKY LEFT 1: Checkbox */}
+                        <td className="sticky-left-1">
+                          <input type="checkbox" className="checkbox-custom" />
+                        </td>
+
+                        {/* STICKY LEFT 2: Order ID + External Link */}
+                        <td className="sticky-left-2">
+                          <div className="order-id-cell">
+                            <div className="order-id-content">
+                              <div>
+                                <span className="order-id-text" style={{ fontSize: "0.9rem" }}>
+                                  {order.id || "-"}
+                                </span>
+                                <p className="order-date-text">
+                                  {formatOrderDate(order.tanggal || order.create_at)}
+                                </p>
+                              </div>
+                              <ExternalLink
+                                size={16}
+                                className="external-link-icon"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleView(order);
+                                }}
+                              />
                             </div>
-                            <ExternalLink
-                              size={18}
-                              style={{
-                                color: "#6b7280",
-                                cursor: "pointer",
-                                transition: "color 0.2s ease",
-                                flexShrink: 0
-                              }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleView(order);
-                              }}
-                              onMouseEnter={(e) => {
-                                e.target.style.color = "#2563eb";
-                              }}
-                              onMouseLeave={(e) => {
-                                e.target.style.color = "#6b7280";
-                              }}
-                            />
                           </div>
                         </td>
 
                         {/* Customer */}
                         <td>
-                          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                            <span style={{ fontSize: "0.875rem", color: "#111827", fontWeight: 600 }}>{customerNama}</span>
-                            <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>
+                          <div className="customer-cell">
+                            <span className="customer-name" style={{ fontSize: "0.875rem" }}>{customerNama}</span>
+                            <span className="customer-detail">
                               {order.customer_rel?.wa ? `+${order.customer_rel.wa}` : "-"}
                             </span>
                           </div>
@@ -1358,20 +1359,16 @@ export default function DaftarPesanan() {
 
                         {/* Status Pembayaran */}
                         <td>
-                          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                            <span className={`orders-status-badge orders-status-badge--${statusPembayaranInfo.class}`}>
-                              {statusPembayaranInfo.label}
-                            </span>
-                          </div>
+                          <span className={`status-badge payment-${statusPembayaranInfo.class}`}>
+                            {statusPembayaranInfo.label}
+                          </span>
                         </td>
 
                         {/* Status Order */}
                         <td>
-                          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                            <span className={`orders-status-badge orders-status-badge--${statusOrderInfo.class}`}>
-                              {statusOrderInfo.label}
-                            </span>
-                          </div>
+                          <span className={`status-badge status-${statusOrderInfo.class}`}>
+                            {statusOrderInfo.label}
+                          </span>
                         </td>
 
                         {/* Follow Up Text */}
@@ -1388,48 +1385,33 @@ export default function DaftarPesanan() {
                         <td style={{ textAlign: 'center' }}>
                           {buktiUrl ? (
                             <ImageIcon
-                              size={16}
-                              style={{
-                                color: "#6b7280",
-                                cursor: "pointer",
-                                transition: "color 0.2s ease"
-                              }}
+                              size={20}
+                              className="proof-icon"
+                              style={{ cursor: "pointer", margin: "0 auto" }}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleOpenImageModal(buktiUrl);
                               }}
-                              onMouseEnter={(e) => {
-                                e.target.style.color = "#2563eb";
-                              }}
-                              onMouseLeave={(e) => {
-                                e.target.style.color = "#6b7280";
-                              }}
                             />
                           ) : (
-                            <span style={{ fontSize: "0.875rem", color: "#9ca3af" }}>-</span>
+                            <span className="no-data">-</span>
                           )}
                         </td>
 
                         {/* Gross Revenue */}
-                        <td>
-                          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                            <span style={{ fontSize: "0.875rem", color: "#111827", fontWeight: 600 }}>
-                              Rp {Number(order.total_harga || 0).toLocaleString("id-ID")}
-                            </span>
-                          </div>
+                        <td className="revenue-text">
+                          Rp {Number(order.total_harga || 0).toLocaleString("id-ID")}
                         </td>
 
                         {/* Sales */}
                         <td>
-                          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                            <span style={{ fontSize: "0.875rem", color: "#111827" }}>
-                              {order.customer_rel?.sales_rel?.nama || order.customer_rel?.sales_nama || "-"}
-                            </span>
-                          </div>
+                          <span style={{ fontSize: "0.875rem", color: "#111827" }}>
+                            {order.customer_rel?.sales_rel?.nama || order.customer_rel?.sales_nama || "-"}
+                          </span>
                         </td>
 
-                        {/* STICKY RIGHT COLUMN: Update/Konfirmasi Button */}
-                        <td className="sticky-col-right">
+                        {/* Action Column - NON STICKY */}
+                        <td>
                           <button
                             className="orders-action-btn"
                             onClick={(e) => {
@@ -1451,7 +1433,7 @@ export default function DaftarPesanan() {
                   })
                 ) : (
                   <tr>
-                    <td colSpan={10} className="orders-empty">
+                    <td colSpan={11} className="orders-empty">
                       {orders.length ? "Tidak ada hasil pencarian." : "Loading data..."}
                     </td>
                   </tr>
