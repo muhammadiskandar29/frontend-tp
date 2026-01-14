@@ -278,16 +278,9 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
   // Initialize district ID dari customer data setelah districts loaded
   useEffect(() => {
     if (regionData.districts.length > 0 && regionForm.kecamatan && !selectedRegionIds.districtId) {
-      // Cari district dengan case-insensitive dan trim untuk menghindari masalah whitespace
-      const district = regionData.districts.find(d => 
-        d.name?.trim().toLowerCase() === regionForm.kecamatan?.trim().toLowerCase()
-      );
+      const district = regionData.districts.find(d => d.name === regionForm.kecamatan);
       if (district) {
         setSelectedRegionIds(prev => ({ ...prev, districtId: district.id || district.district_id }));
-        // Pastikan kode_pos terisi jika ada di district atau pertahankan yang sudah ada
-        if (district.postal_code && !regionForm.kode_pos) {
-          setRegionForm(prev => ({ ...prev, kode_pos: district.postal_code }));
-        }
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -34,14 +34,13 @@ function useDebouncedValue(value, delay = 500) {
 }
 
 const CUSTOMERS_COLUMNS = [
-  "#",
-  "Nama",
-  "Email",
-  "No Telepon",
-  "Follow Up",
-  "Riwayat Order",
-  "Verifikasi",
-  "Actions",
+  { line1: "Id", line2: "Member" },
+  { line1: "Nama", line2: "" },
+  { line1: "Email", line2: "" },
+  { line1: "No WA", line2: "" },
+  { line1: "Verifikasi", line2: "" },
+  { line1: "Pesanan", line2: "Sukses" },
+  { line1: "Total Net", line2: "Revenue" },
 ];
 
 export default function AdminCustomerPage() {
@@ -63,6 +62,9 @@ export default function AdminCustomerPage() {
   const [showHistory, setShowHistory] = useState(false);
   const [showFollowupLog, setShowFollowupLog] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
+  // State untuk nested modal (dari viewCustomer)
+  const [showEditFromView, setShowEditFromView] = useState(false);
+  const [showDeleteFromView, setShowDeleteFromView] = useState(false);
   
   // Filter state - hanya verifikasi
   const [verifikasiFilter, setVerifikasiFilter] = useState("all"); // all | verified | unverified
@@ -220,6 +222,8 @@ export default function AdminCustomerPage() {
     setShowDelete(false);
     setShowView(false);
     setShowAdd(false);
+    setShowEditFromView(false);
+    setShowDeleteFromView(false);
     setSelectedCustomer(null);
   };
 
@@ -273,6 +277,20 @@ export default function AdminCustomerPage() {
   const handleView = (cust) => {
     setSelectedCustomer(cust);
     setShowView(true);
+  };
+
+  // 🔹 Handler untuk edit dari viewCustomer modal
+  const handleEditFromView = (cust) => {
+    // Biarkan viewCustomer modal tetap terbuka, buka editCustomer modal di atasnya
+    setSelectedCustomer(cust);
+    setShowEditFromView(true);
+  };
+
+  // 🔹 Handler untuk delete dari viewCustomer modal
+  const handleDeleteFromView = (cust) => {
+    // Biarkan viewCustomer modal tetap terbuka, buka deleteCustomer modal di atasnya
+    setSelectedCustomer(cust);
+    setShowDeleteFromView(true);
   };
 
   const handleHistory = (cust) => {
@@ -399,8 +417,11 @@ export default function AdminCustomerPage() {
           <div className="customers-table__wrapper">
             <div className="customers-table">
               <div className="customers-table__head">
-                {CUSTOMERS_COLUMNS.map((column) => (
-                  <span key={column}>{column}</span>
+                {CUSTOMERS_COLUMNS.map((column, idx) => (
+                  <span key={idx} className="customers-table__head-cell">
+                    <span className="customers-table__head-line1">{column.line1}</span>
+                    {column.line2 && <span className="customers-table__head-line2">{column.line2}</span>}
+                  </span>
                 ))}
               </div>
               <div className="customers-table__body">
@@ -409,16 +430,30 @@ export default function AdminCustomerPage() {
                 ) : customers.length > 0 ? (
                   customers.map((cust, i) => (
                   <div className="customers-table__row" key={cust.id || `${cust.email}-${i}`}>
-                    <div className="customers-table__cell" data-label="#">
-                      {(page - 1) * perPage + i + 1}
+                    {/* Id Member */}
+                    <div className="customers-table__cell" data-label="Member Id">
+                      {cust.memberID || "-"}
                     </div>
+                    
+                    {/* Nama - Klikable */}
                     <div className="customers-table__cell customers-table__cell--strong" data-label="Nama">
-                      {cust.nama || "-"}
+                      <div className="customer-table__info">
+                        <span
+                          className="customer-table__name"
+                          onClick={() => handleView(cust)}
+                        >
+                          {cust.nama || "-"}
+                        </span>
+                      </div>
                     </div>
+                    
+                    {/* Email */}
                     <div className="customers-table__cell" data-label="Email">
                       {cust.email || "-"}
                     </div>
-                    <div className="customers-table__cell" data-label="No Telepon">
+                    
+                    {/* No WA */}
+                    <div className="customers-table__cell" data-label="No WA">
                       {cust.wa ? (
                         <a
                           href={`https://wa.me/${cust.wa.replace(/[^0-9]/g, "").replace(/^0/, "62")}`}
@@ -441,30 +476,8 @@ export default function AdminCustomerPage() {
                         "-"
                       )}
                     </div>
-                    <div className="customers-table__cell" data-label="Follow Up">
-                      <a
-                        href="#"
-                        className="customers-history-link"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handleFollowupLog(cust);
-                        }}
-                      >
-                        Lihat Log
-                      </a>
-                    </div>
-                    <div className="customers-table__cell" data-label="Riwayat Order">
-                      <a
-                        href="#"
-                        className="customers-history-link"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handleHistory(cust);
-                        }}
-                      >
-                        Lihat Riwayat
-                      </a>
-                    </div>
+                    
+                    {/* Verifikasi */}
                     <div className="customers-table__cell" data-label="Verifikasi">
                       <span
                         className={`customers-verif-tag ${
@@ -474,28 +487,15 @@ export default function AdminCustomerPage() {
                         {cust.verifikasi === "1" || cust.verifikasi === true ? "Verified" : "Unverified"}
                       </span>
                     </div>
-                    <div className="customers-table__cell customers-table__cell--actions" data-label="Actions">
-                      <button
-                        className="customers-action-btn"
-                        title="Lihat"
-                        onClick={() => handleView(cust)}
-                      >
-                        <i className="pi pi-eye" />
-                      </button>
-                      <button
-                        className="customers-action-btn customers-action-btn--ghost"
-                        title="Edit"
-                        onClick={() => handleEdit(cust)}
-                      >
-                        <i className="pi pi-pencil" />
-                      </button>
-                      <button
-                        className="customers-action-btn customers-action-btn--danger"
-                        title="Hapus"
-                        onClick={() => handleDelete(cust)}
-                      >
-                        <i className="pi pi-trash" />
-                      </button>
+                    
+                    {/* Pesanan Sukses - Tampilkan "-" untuk sementara */}
+                    <div className="customers-table__cell" data-label="Pesanan Sukses">
+                      {"-"}
+                    </div>
+                    
+                    {/* Total Net Revenue - Tampilkan "-" untuk sementara */}
+                    <div className="customers-table__cell" data-label="Total Net Revenue">
+                      {"-"}
                     </div>
                   </div>
                 ))
@@ -616,7 +616,59 @@ export default function AdminCustomerPage() {
               setShowView(false);
               setSelectedCustomer(null);
             }}
+            onEdit={handleEditFromView}
+            onDelete={handleDeleteFromView}
           />
+        )}
+
+        {/* Nested modals dari viewCustomer - dengan z-index lebih tinggi */}
+        {showEditFromView && selectedCustomer && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 1001 }}>
+            <EditCustomerModal
+              customer={selectedCustomer}
+              onClose={() => {
+                setShowEditFromView(false);
+                // Jangan set selectedCustomer ke null, biarkan viewCustomer modal tetap terbuka
+              }}
+              onSuccess={(msg) => {
+                requestRefresh(msg);
+                setShowEditFromView(false);
+                // Refresh customer data di viewCustomer modal dengan menutup dan membuka lagi
+                if (showView) {
+                  setShowView(false);
+                  setTimeout(() => {
+                    setShowView(true);
+                  }, 100);
+                }
+              }}
+            />
+          </div>
+        )}
+
+        {showDeleteFromView && selectedCustomer && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 1001 }}>
+            <DeleteCustomerModal
+              customer={selectedCustomer}
+              onClose={() => {
+                setShowDeleteFromView(false);
+                // Jangan set selectedCustomer ke null, biarkan viewCustomer modal tetap terbuka
+              }}
+              onConfirm={async () => {
+                try {
+                  await deleteCustomer(selectedCustomer.id);
+                  requestRefresh("Customer berhasil dihapus!", "warning");
+                  // Tutup semua modal setelah delete
+                  setShowDeleteFromView(false);
+                  setShowView(false);
+                  setSelectedCustomer(null);
+                } catch (err) {
+                  console.error("Error deleting customer:", err);
+                  toastError("Gagal menghapus customer");
+                  setShowDeleteFromView(false);
+                }
+              }}
+            />
+          </div>
         )}
 
         {showHistory && selectedCustomer && (

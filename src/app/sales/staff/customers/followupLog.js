@@ -463,3 +463,4 @@ export default function FollowupLogModal({ customer, onClose }) {
     </div>
   );
 }
+

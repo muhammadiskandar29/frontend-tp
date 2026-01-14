@@ -36,12 +36,12 @@ const BASE_URL = "/api";
 
 // Status Pembayaran Mapping
 const STATUS_PEMBAYARAN_MAP = {
-  0:    { label: "Unpaid", class: "unpaid" },
+  0: { label: "Unpaid", class: "unpaid" },
   null: { label: "Unpaid", class: "unpaid" },
-  1:    { label: "Pending", class: "pending" },
-  2:    { label: "Paid", class: "paid" },
-  3:    { label: "Ditolak", class: "rejected" },
-  4:    { label: "DP", class: "dp" },
+  1: { label: "Pending", class: "pending" },
+  2: { label: "Paid", class: "paid" },
+  3: { label: "Ditolak", class: "rejected" },
+  4: { label: "DP", class: "dp" },
 };
 
 // Status Order Mapping
@@ -126,7 +126,7 @@ const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran }) =>
     const sent = isSent(eventType);
     const bgColor = sent ? "#25D366" : "#E5E7EB";
     const textColor = sent ? "white" : "#6B7280";
-    
+
     return (
       <div key={`bubble-${eventType}`} style={{
         position: "relative",
@@ -148,7 +148,7 @@ const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran }) =>
   };
 
   const bubbles = [];
-  
+
   // WA icon bubble (selalu abu-abu default, hijau jika event 5 terkirim)
   bubbles.push(
     <div key="wa-logo" style={{
@@ -164,34 +164,34 @@ const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran }) =>
       flexShrink: 0
     }}>
       <svg viewBox="0 0 24 24" width="16" height="16" fill={isSent(5) ? "white" : "#6B7280"}>
-        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
       </svg>
     </div>
   );
-  
+
   // W bubble (event 5 = Register)
   bubbles.push(createBubble("W", 5));
-  
+
   // Bubble 1-4 (Followup 1-4)
   for (let i = 1; i <= 4; i++) {
     bubbles.push(createBubble(i.toString(), i));
   }
-  
+
   // P bubble (event 6 = Proses/Pembayaran Diterima) - hanya tampil jika status pembayaran sudah diterima
   if (statusPembayaran === 2 || statusPembayaran === "2") {
     bubbles.push(createBubble("P", 6));
   }
-  
+
   // 7 bubble (Selesai) - hanya tampil jika status order sukses
   if (orderStatus === "2" || orderStatus === 2) {
     bubbles.push(createBubble("7", 7));
   }
-  
+
   // 8 bubble (Upselling) - hanya tampil jika status order upselling
   if (orderStatus === "4" || orderStatus === 4) {
     bubbles.push(createBubble("8", 8));
   }
-  
+
   return (
     <div style={{
       display: "flex",
@@ -212,7 +212,7 @@ const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran }) =>
 // Helper component untuk WA Bubble Chat (chat bubble shape) - OLD VERSION
 const WABubbleChatOld = ({ followUpCount = 0 }) => {
   const bubbles = [];
-  
+
   // WhatsApp icon bubble (hijau) - menggunakan SVG
   bubbles.push(
     <div key="wa-logo" style={{
@@ -227,11 +227,11 @@ const WABubbleChatOld = ({ followUpCount = 0 }) => {
       padding: "2px 4px"
     }}>
       <svg viewBox="0 0 24 24" width="14" height="14" fill="white">
-        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
       </svg>
     </div>
   );
-  
+
   // W bubble (hijau)
   bubbles.push(
     <div key="w" style={{
@@ -250,7 +250,7 @@ const WABubbleChatOld = ({ followUpCount = 0 }) => {
       W
     </div>
   );
-  
+
   // Number bubbles: 1 (gray), 2-4 (green jika ada), ... (gray jika > 4)
   if (followUpCount > 0) {
     // Bubble 1 (selalu gray)
@@ -271,7 +271,7 @@ const WABubbleChatOld = ({ followUpCount = 0 }) => {
         1
       </div>
     );
-    
+
     // Bubbles 2-4 (green jika followUpCount >= 2)
     for (let i = 2; i <= Math.min(followUpCount, 4); i++) {
       bubbles.push(
@@ -292,7 +292,7 @@ const WABubbleChatOld = ({ followUpCount = 0 }) => {
         </div>
       );
     }
-    
+
     // Jika lebih dari 4, tambahkan gray bubble dengan ...
     if (followUpCount > 4) {
       bubbles.push(
@@ -333,7 +333,7 @@ const WABubbleChatOld = ({ followUpCount = 0 }) => {
       </div>
     );
   }
-  
+
   return (
     <div style={{
       display: "flex",
@@ -357,14 +357,14 @@ export default function DaftarPesanan() {
   const [loading, setLoading] = useState(false);
   const [paginationInfo, setPaginationInfo] = useState(null); // Store pagination info from backend
   const perPage = 15; // Data per halaman
-  
+
   // Filter state
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearch = useDebouncedValue(searchInput, 500); // Debounce 500ms
   const [dateRange, setDateRange] = useState(null); // [startDate, endDate] atau null
   const [filterPreset, setFilterPreset] = useState("all"); // all | today
   const [toast, setToast] = useState({ show: false, message: "", type: "success" });
-  
+
   // Filter modal state
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState([]); // Array of product IDs
@@ -373,7 +373,7 @@ export default function DaftarPesanan() {
   const [selectedStatusPembayaran, setSelectedStatusPembayaran] = useState([]); // Array of status pembayaran values
   const [productSearch, setProductSearch] = useState("");
   const [productResults, setProductResults] = useState([]);
-  
+
   // State lainnya
   const [statistics, setStatistics] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
@@ -436,7 +436,7 @@ export default function DaftarPesanan() {
   const handleToggleProduct = useCallback((product) => {
     const productId = typeof product === 'object' ? product.id : product;
     const productData = typeof product === 'object' ? product : productResults.find(p => p.id === productId);
-    
+
     setSelectedProducts((prev) => {
       if (prev.includes(productId)) {
         // Remove from selected
@@ -581,7 +581,7 @@ export default function DaftarPesanan() {
       }
 
       const json = await res.json();
-      
+
       // Handle response dengan struktur baru: { success: true, message: "...", data: [...], pagination: {...} }
       if (json.success && json.data && Array.isArray(json.data)) {
         // Normalisasi data: pastikan status_pembayaran tetap 4 jika masih ada remaining
@@ -589,10 +589,10 @@ export default function DaftarPesanan() {
         const normalizedData = json.data.map((order) => {
           const totalHarga = Number(order.total_harga || 0);
           const totalPaid = Number(order.total_paid || 0);
-          const remaining = order.remaining !== undefined 
+          const remaining = order.remaining !== undefined
             ? Number(order.remaining)
             : (totalHarga - totalPaid);
-          
+
           // Ambil waktu_pembayaran dari order_payment_rel jika ada
           // Prioritas: ambil dari payment yang statusnya approved (status "2") atau yang terbaru
           let waktuPembayaran = order.waktu_pembayaran || "";
@@ -618,7 +618,7 @@ export default function DaftarPesanan() {
               }
             }
           }
-          
+
           // LOGIKA STATUS PEMBAYARAN:
           // - Jika sudah lunas (total_paid >= total_harga), set ke 2 (Paid)
           // - Jika masih ada remaining (total_paid < total_harga), set ke 4 (DP)
@@ -633,7 +633,7 @@ export default function DaftarPesanan() {
           } else {
             statusPembayaran = order.status_pembayaran ?? 0; // Unpaid / lainnya
           }
-          
+
           // Pastikan status_order tetap "Proses" (1) meskipun ada payment yang di-reject
           // Status order tidak boleh berubah menjadi "Failed" (3) hanya karena payment di-reject
           // User masih bisa konfirmasi pembayaran lagi jika payment di-reject
@@ -646,7 +646,7 @@ export default function DaftarPesanan() {
               statusOrder = "1"; // Kembalikan ke "Proses"
             }
           }
-          
+
           return {
             ...order,
             status_pembayaran: statusPembayaran,
@@ -656,7 +656,7 @@ export default function DaftarPesanan() {
             waktu_pembayaran: waktuPembayaran, // Pastikan waktu_pembayaran ada
           };
         });
-        
+
         // Selalu replace data (bukan append) - setiap page menampilkan data yang berbeda
         setOrders(normalizedData);
 
@@ -687,7 +687,7 @@ export default function DaftarPesanan() {
         setOrders([]);
         setHasMore(false);
       }
-      
+
       setLoading(false);
       fetchingRef.current = false;
     } catch (err) {
@@ -733,10 +733,10 @@ export default function DaftarPesanan() {
     if (showFilterModal && typeof window !== "undefined") {
       // Get current scroll position
       const scrollY = window.scrollY;
-      
+
       // Force scroll to top immediately BEFORE locking body
       window.scrollTo(0, 0);
-      
+
       // Then prevent body scroll and lock position
       requestAnimationFrame(() => {
         document.body.style.position = "fixed";
@@ -744,7 +744,7 @@ export default function DaftarPesanan() {
         document.body.style.width = "100%";
         document.body.style.overflow = "hidden";
       });
-      
+
       return () => {
         // Restore body scroll
         document.body.style.position = "";
@@ -759,7 +759,7 @@ export default function DaftarPesanan() {
   // 🔹 Next page
   const handleNextPage = useCallback(() => {
     if (loading || !hasMore) return; // Jangan load jika sedang loading atau sudah habis
-    
+
     const nextPage = page + 1;
     console.log("🔄 Next page clicked, loading page:", nextPage);
     setPage(nextPage);
@@ -768,7 +768,7 @@ export default function DaftarPesanan() {
   // 🔹 Previous page
   const handlePrevPage = useCallback(() => {
     if (loading || page <= 1) return; // Jangan load jika sedang loading atau sudah di page 1
-    
+
     const prevPage = page - 1;
     console.log("🔄 Previous page clicked, loading page:", prevPage);
     setPage(prevPage);
@@ -833,14 +833,14 @@ export default function DaftarPesanan() {
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return "-";
-      
+
       const day = date.getDate();
       const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
       const month = monthNames[date.getMonth()];
       const year = date.getFullYear();
       const hours = String(date.getHours()).padStart(2, "0");
       const minutes = String(date.getMinutes()).padStart(2, "0");
-      
+
       return `${day} ${month} ${year}, ${hours}.${minutes}`;
     } catch {
       return "-";
@@ -880,13 +880,13 @@ export default function DaftarPesanan() {
     if (!range || !Array.isArray(range) || range.length !== 2 || !range[0] || !range[1]) {
       return "Pilih tanggal";
     }
-    
+
     const formatDate = (date) => {
       const d = new Date(date);
       const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
       return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
     };
-    
+
     return `${formatDate(range[0])} - ${formatDate(range[1])}`;
   }, []);
 
@@ -947,7 +947,7 @@ export default function DaftarPesanan() {
   };
 
   const handleSuccessEdit = async (updatedFromForm) => {
-      try {
+    try {
       if (!selectedOrder?.id) {
         setToast({ show: true, message: "Order ID tidak valid", type: "error" });
         setTimeout(() => setToast({ show: false, message: "", type: "success" }), 3000);
@@ -955,7 +955,7 @@ export default function DaftarPesanan() {
       }
 
       // Cek apakah ini konfirmasi pembayaran (ada status_pembayaran, total_paid, atau remaining)
-      const isPaymentConfirmation = 
+      const isPaymentConfirmation =
         updatedFromForm.status_pembayaran !== undefined ||
         updatedFromForm.total_paid !== undefined ||
         updatedFromForm.remaining !== undefined ||
@@ -970,7 +970,7 @@ export default function DaftarPesanan() {
         // Hitung remaining untuk menentukan apakah masih DP
         const totalHarga = Number(updatedFromForm.total_harga ?? selectedOrder?.total_harga ?? 0);
         const totalPaid = Number(updatedFromForm.total_paid ?? selectedOrder?.total_paid ?? 0);
-        const remaining = updatedFromForm.remaining !== undefined 
+        const remaining = updatedFromForm.remaining !== undefined
           ? Number(updatedFromForm.remaining)
           : (totalHarga - totalPaid);
 
@@ -980,7 +980,7 @@ export default function DaftarPesanan() {
         // - Status pembayaran harus tetap 4 (DP) sampai remaining = 0
         // - Perubahan status payment individual (approve/reject) hanya mempengaruhi paymentHistoryModal.js, bukan page.js
         let finalStatusPembayaran;
-        
+
         if (totalPaid >= totalHarga) {
           // Jika sudah lunas, set ke 2 (Paid)
           finalStatusPembayaran = 2;
@@ -998,20 +998,20 @@ export default function DaftarPesanan() {
           prev.map((o) =>
             o.id === selectedOrder.id
               ? {
-                  ...o,
-                  ...updatedFromForm,
+                ...o,
+                ...updatedFromForm,
 
-                  // Pastikan status_pembayaran tetap 4 jika masih ada remaining
-                  status_pembayaran: finalStatusPembayaran,
+                // Pastikan status_pembayaran tetap 4 jika masih ada remaining
+                status_pembayaran: finalStatusPembayaran,
 
-                  // Pastikan total_paid dan remaining tetap ada
-                  total_paid: totalPaid,
-                  remaining: remaining,
+                // Pastikan total_paid dan remaining tetap ada
+                total_paid: totalPaid,
+                remaining: remaining,
 
-                  // pertahankan relasi supaya view tidak error
-                  customer_rel: updatedFromForm.customer_rel || o.customer_rel,
-                  produk_rel: updatedFromForm.produk_rel || o.produk_rel,
-                }
+                // pertahankan relasi supaya view tidak error
+                customer_rel: updatedFromForm.customer_rel || o.customer_rel,
+                produk_rel: updatedFromForm.produk_rel || o.produk_rel,
+              }
               : o
           )
         );
@@ -1026,56 +1026,56 @@ export default function DaftarPesanan() {
         await Promise.all([loadStatistics(), fetchOrders(page)]);
         return;
       }
-  
+
       // Untuk update order biasa (bukan konfirmasi pembayaran), gunakan updateOrderAdmin
       const result = await updateOrderAdmin(selectedOrder.id, updatedFromForm);
-  
+
       if (result.success) {
         const updatedFromAPI = result.data?.order || result.data;
-  
+
         // Tutup modal
         setShowEdit(false);
 
         // Hitung remaining untuk menentukan apakah masih DP
         const totalHarga = Number(updatedFromAPI.total_harga ?? selectedOrder?.total_harga ?? 0);
         const totalPaid = Number(updatedFromAPI.total_paid ?? selectedOrder?.total_paid ?? 0);
-        const remaining = updatedFromAPI.remaining !== undefined 
+        const remaining = updatedFromAPI.remaining !== undefined
           ? Number(updatedFromAPI.remaining)
           : (totalHarga - totalPaid);
 
         // Pastikan status_pembayaran tetap 4 jika masih ada remaining
         let finalStatusPembayaran = updatedFromAPI.status_pembayaran ?? selectedOrder?.status_pembayaran ?? 0;
-        
+
         // Jika sebelumnya 4 dan masih ada remaining, tetap 4
         if (selectedOrder?.status_pembayaran === 4 && remaining > 0) {
           finalStatusPembayaran = 4;
-        } 
+        }
         // Jika ada pembayaran tapi belum lunas, set ke 4 (DP)
         else if (totalPaid > 0 && remaining > 0 && totalPaid < totalHarga) {
           finalStatusPembayaran = 4;
         }
-  
+
         // Update state orders agar UI langsung berubah
         setOrders((prev) =>
           prev.map((o) =>
             o.id === selectedOrder.id
               ? {
-                  ...o,
-                  ...updatedFromAPI,
+                ...o,
+                ...updatedFromAPI,
 
-                  // Pastikan status_pembayaran tetap 4 jika masih ada remaining
-                  status_pembayaran: finalStatusPembayaran,
-                  total_paid: totalPaid,
-                  remaining: remaining,
-  
-                  // pertahankan relasi supaya view tidak error
-                  customer_rel: updatedFromAPI.customer_rel || o.customer_rel,
-                  produk_rel: updatedFromAPI.produk_rel || o.produk_rel,
-                }
+                // Pastikan status_pembayaran tetap 4 jika masih ada remaining
+                status_pembayaran: finalStatusPembayaran,
+                total_paid: totalPaid,
+                remaining: remaining,
+
+                // pertahankan relasi supaya view tidak error
+                customer_rel: updatedFromAPI.customer_rel || o.customer_rel,
+                produk_rel: updatedFromAPI.produk_rel || o.produk_rel,
+              }
               : o
           )
         );
-  
+
         // Reset selected
         setSelectedOrder(null);
 
@@ -1094,7 +1094,7 @@ export default function DaftarPesanan() {
       setTimeout(() => setToast({ show: false, message: "", type: "success" }), 3000);
     }
   };
-  
+
 
   const closeAllModals = () => {
     setShowAdd(false);
@@ -1144,7 +1144,7 @@ export default function DaftarPesanan() {
                 <CheckCircle size={22} />
               </div>
               <div>
-                <p className="summary-card__label">Sudah Approve</p>
+                <p className="summary-card__label">Sukses</p>
                 <p className="summary-card__value">{approvedOrders}</p>
               </div>
             </div>
@@ -1219,9 +1219,9 @@ export default function DaftarPesanan() {
                 />
               </div>
               {(dateRange && Array.isArray(dateRange) && dateRange.length === 2 && dateRange[0] && dateRange[1]) ||
-               selectedProducts.length > 0 ||
-               selectedStatusOrder.length > 0 ||
-               selectedStatusPembayaran.length > 0 ? (
+                selectedProducts.length > 0 ||
+                selectedStatusOrder.length > 0 ||
+                selectedStatusPembayaran.length > 0 ? (
                 <button
                   onClick={handleResetFilters}
                   className="customers-button customers-button--secondary"
@@ -1242,13 +1242,13 @@ export default function DaftarPesanan() {
             </div>
             <div className="customers-toolbar-buttons">
 
-            <button 
-              className="customers-button customers-button--primary" 
-              onClick={() => setShowAdd(true)}
-            >
-              + Tambah Pesanan
-            </button>
-              </div>
+              <button
+                className="customers-button customers-button--primary"
+                onClick={() => setShowAdd(true)}
+              >
+                + Tambah Pesanan
+              </button>
+            </div>
           </div>
           <div className="orders-table__wrapper">
             <div className="orders-table">
@@ -1304,7 +1304,7 @@ export default function DaftarPesanan() {
                         {/* Order ID */}
                         <div className="orders-table__cell" data-label="Order ID">
                           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                            <span style={{ 
+                            <span style={{
                               fontSize: "0.9rem",
                               color: "#2563eb",
                               fontWeight: 500
@@ -1316,13 +1316,13 @@ export default function DaftarPesanan() {
                             </span>
                           </div>
                         </div>
-                        
+
                         {/* ExternalLink (kolom terpisah tanpa header) */}
                         <div className="orders-table__cell" style={{ padding: 0 }}>
-                          <ExternalLink 
-                            size={18} 
-                            style={{ 
-                              color: "#6b7280", 
+                          <ExternalLink
+                            size={18}
+                            style={{
+                              color: "#6b7280",
                               cursor: "pointer",
                               transition: "color 0.2s ease"
                             }}
@@ -1338,7 +1338,7 @@ export default function DaftarPesanan() {
                             }}
                           />
                         </div>
-                        
+
                         {/* Customer */}
                         <div className="orders-table__cell orders-table__cell--strong" data-label="Customer">
                           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
@@ -1348,7 +1348,7 @@ export default function DaftarPesanan() {
                             </span>
                           </div>
                         </div>
-                        
+
                         {/* Produk */}
                         <div className="orders-table__cell" data-label="Produk">
                           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
@@ -1356,7 +1356,7 @@ export default function DaftarPesanan() {
                             <span style={{ fontSize: "0.875rem", color: "#111827" }}></span>
                           </div>
                         </div>
-                        
+
                         {/* Status Pembayaran */}
                         <div className="orders-table__cell" data-label="Status Pembayaran">
                           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
@@ -1366,7 +1366,7 @@ export default function DaftarPesanan() {
                             <span style={{ fontSize: "0.875rem", color: "#111827" }}></span>
                           </div>
                         </div>
-                        
+
                         {/* Status Order */}
                         <div className="orders-table__cell" data-label="Status Order">
                           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
@@ -1376,23 +1376,23 @@ export default function DaftarPesanan() {
                             <span style={{ fontSize: "0.875rem", color: "#111827" }}></span>
                           </div>
                         </div>
-                        
+
                         {/* Follow Up Text */}
                         <div className="orders-table__cell" data-label="Follow Up Text">
-                          <WABubbleChat 
+                          <WABubbleChat
                             customerId={order.customer_rel?.id || order.customer}
                             orderId={order.id}
                             orderStatus={statusOrderValue}
                             statusPembayaran={statusPembayaranValue}
                           />
                         </div>
-                        
+
                         {/* Bukti Pembayaran */}
                         <div className="orders-table__cell" data-label="Bukti Pembayaran">
                           {buktiUrl ? (
-                            <ImageIcon 
-                              size={16} 
-                              style={{ 
+                            <ImageIcon
+                              size={16}
+                              style={{
                                 color: "#6b7280",
                                 cursor: "pointer",
                                 transition: "color 0.2s ease"
@@ -1412,7 +1412,7 @@ export default function DaftarPesanan() {
                             <span style={{ fontSize: "0.875rem", color: "#9ca3af" }}>-</span>
                           )}
                         </div>
-                        
+
                         {/* Gross Revenue */}
                         <div className="orders-table__cell" data-label="Gross Revenue">
                           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
@@ -1422,7 +1422,7 @@ export default function DaftarPesanan() {
                             <span style={{ fontSize: "0.875rem", color: "#111827" }}></span>
                           </div>
                         </div>
-                        
+
                         {/* Sales */}
                         <div className="orders-table__cell" data-label="Sales">
                           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
@@ -1432,7 +1432,7 @@ export default function DaftarPesanan() {
                             <span style={{ fontSize: "0.875rem", color: "#111827" }}></span>
                           </div>
                         </div>
-                        
+
                         {/* Update/Konfirmasi Button */}
                         <div className="orders-table__cell" data-label="">
                           <button
@@ -1492,9 +1492,9 @@ export default function DaftarPesanan() {
             </button>
 
             {/* Page Info */}
-            <div style={{ 
-              display: "flex", 
-              alignItems: "center", 
+            <div style={{
+              display: "flex",
+              alignItems: "center",
               gap: "0.5rem",
               fontSize: "0.95rem",
               color: "var(--dash-text)",
@@ -1748,8 +1748,8 @@ export default function DaftarPesanan() {
       {/* Modal Payment History */}
       {/* Filter Modal */}
       {showFilterModal && typeof window !== "undefined" && createPortal(
-        <div 
-          className="modal-overlay" 
+        <div
+          className="modal-overlay"
           onClick={() => setShowFilterModal(false)}
           style={{
             position: "fixed",
@@ -1776,11 +1776,11 @@ export default function DaftarPesanan() {
             e.stopPropagation();
           }}
         >
-          <div 
-            className="modal-card" 
-            onClick={(e) => e.stopPropagation()} 
-            style={{ 
-              maxWidth: "600px", 
+          <div
+            className="modal-card"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: "600px",
               width: "90%",
               position: "relative",
               zIndex: 10000,
@@ -1788,15 +1788,15 @@ export default function DaftarPesanan() {
               flexShrink: 0,
             }}
           >
-            <div className="modal-header" style={{ 
+            <div className="modal-header" style={{
               padding: "1.5rem 1.75rem",
               borderBottom: "1px solid #e5e7eb",
               background: "#ffffff"
             }}>
-              <h3 style={{ 
-                margin: 0, 
-                fontSize: "1.25rem", 
-                fontWeight: "700", 
+              <h3 style={{
+                margin: 0,
+                fontSize: "1.25rem",
+                fontWeight: "700",
                 color: "#111827",
                 letterSpacing: "-0.01em"
               }}>
@@ -1832,16 +1832,16 @@ export default function DaftarPesanan() {
                 <i className="pi pi-times" style={{ fontSize: "1.125rem" }} />
               </button>
             </div>
-            <div className="modal-body" style={{ 
-              maxHeight: "70vh", 
-              overflowY: "auto", 
+            <div className="modal-body" style={{
+              maxHeight: "70vh",
+              overflowY: "auto",
               padding: "1.75rem",
               background: "#ffffff"
             }}>
               {/* Produk Filter */}
               <div style={{ marginBottom: "2rem" }}>
-                <label className="field-label" style={{ 
-                  marginBottom: "0.875rem", 
+                <label className="field-label" style={{
+                  marginBottom: "0.875rem",
                   display: "block",
                   fontSize: "0.9375rem",
                   fontWeight: "600",
@@ -1857,8 +1857,8 @@ export default function DaftarPesanan() {
                     value={productSearch}
                     onChange={(e) => setProductSearch(e.target.value)}
                     className="field-input"
-                    style={{ 
-                      width: "100%", 
+                    style={{
+                      width: "100%",
                       padding: "0.875rem 2.75rem 0.875rem 1rem",
                       border: "1.5px solid #e5e7eb",
                       borderRadius: "0.625rem",
@@ -1932,7 +1932,7 @@ export default function DaftarPesanan() {
                               <input
                                 type="checkbox"
                                 checked={isSelected}
-                                onChange={() => {}}
+                                onChange={() => { }}
                                 style={{
                                   width: "18px",
                                   height: "18px",
@@ -2009,7 +2009,7 @@ export default function DaftarPesanan() {
                             <input
                               type="checkbox"
                               checked={false}
-                              onChange={() => {}}
+                              onChange={() => { }}
                               style={{
                                 width: "18px",
                                 height: "18px",
@@ -2076,8 +2076,8 @@ export default function DaftarPesanan() {
 
               {/* Status Order Filter */}
               <div style={{ marginBottom: "2rem" }}>
-                <label className="field-label" style={{ 
-                  marginBottom: "0.875rem", 
+                <label className="field-label" style={{
+                  marginBottom: "0.875rem",
                   display: "block",
                   fontSize: "0.9375rem",
                   fontWeight: "600",
@@ -2086,9 +2086,9 @@ export default function DaftarPesanan() {
                 }}>
                   Status Order
                 </label>
-                <div style={{ 
-                  display: "flex", 
-                  flexDirection: "column", 
+                <div style={{
+                  display: "flex",
+                  flexDirection: "column",
                   gap: "0.625rem",
                   background: "#f9fafb",
                   padding: "0.75rem",
@@ -2127,7 +2127,7 @@ export default function DaftarPesanan() {
                           type="checkbox"
                           checked={isChecked}
                           onChange={() => handleToggleStatusOrder(value)}
-                          style={{ 
+                          style={{
                             marginRight: "0.75rem",
                             width: "18px",
                             height: "18px",
@@ -2148,8 +2148,8 @@ export default function DaftarPesanan() {
 
               {/* Status Pembayaran Filter */}
               <div style={{ marginBottom: "2rem" }}>
-                <label className="field-label" style={{ 
-                  marginBottom: "0.875rem", 
+                <label className="field-label" style={{
+                  marginBottom: "0.875rem",
                   display: "block",
                   fontSize: "0.9375rem",
                   fontWeight: "600",
@@ -2158,9 +2158,9 @@ export default function DaftarPesanan() {
                 }}>
                   Status Pembayaran
                 </label>
-                <div style={{ 
-                  display: "flex", 
-                  flexDirection: "column", 
+                <div style={{
+                  display: "flex",
+                  flexDirection: "column",
                   gap: "0.625rem",
                   background: "#f9fafb",
                   padding: "0.75rem",
@@ -2199,7 +2199,7 @@ export default function DaftarPesanan() {
                           type="checkbox"
                           checked={isChecked}
                           onChange={() => handleToggleStatusPembayaran(String(value))}
-                          style={{ 
+                          style={{
                             marginRight: "0.75rem",
                             width: "18px",
                             height: "18px",
@@ -2218,10 +2218,10 @@ export default function DaftarPesanan() {
                 </div>
               </div>
             </div>
-            <div className="modal-footer" style={{ 
-              display: "flex", 
-              justifyContent: "flex-end", 
-              gap: "0.75rem", 
+            <div className="modal-footer" style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: "0.75rem",
               padding: "1.5rem 1.75rem",
               borderTop: "1px solid #e5e7eb",
               background: "#f9fafb",
@@ -2408,7 +2408,7 @@ export default function DaftarPesanan() {
           <div className="toast-content">
             <div className="toast-message">{toast.message}</div>
           </div>
-          <button 
+          <button
             className="toast-close"
             onClick={() => setToast({ show: false, message: "", type: "success" })}
             aria-label="Close"
