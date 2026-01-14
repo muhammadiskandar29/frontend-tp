@@ -26,15 +26,16 @@ Completely isolated from global CSS to ensure consistent rendering
   --orders-white: #ffffff;
 
   /* Layout */
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  position: relative;
-  isolation: isolate;
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2rem !important;
+  position: relative !important;
+  isolation: isolate !important;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
 }
 
 .orders-shell .orders-hero {
@@ -47,7 +48,7 @@ Completely isolated from global CSS to ensure consistent rendering
 ORDERS TOOLBAR & SEARCH
 =========================== */
 
-.orders-toolbar {
+.orders-shell .orders-toolbar {
   display: flex;
   flex-wrap: wrap;
   gap: 0.85rem;
@@ -55,13 +56,13 @@ ORDERS TOOLBAR & SEARCH
   justify-content: space-between;
 }
 
-.orders-search {
+.orders-shell .orders-search {
   position: relative;
   flex: 1 1 320px;
   max-width: 460px;
 }
 
-.orders-search__input {
+.orders-shell .orders-search__input {
   width: 100%;
   border: 1px solid var(--orders-border);
   border-radius: 0.5rem;
@@ -72,18 +73,18 @@ ORDERS TOOLBAR & SEARCH
   transition: border 0.2s ease, background 0.2s ease;
 }
 
-.orders-search__input::placeholder {
+.orders-shell .orders-search__input::placeholder {
   color: var(--orders-muted);
 }
 
-.orders-search__input:focus {
+.orders-shell .orders-search__input:focus {
   outline: none;
   border-color: var(--orders-primary);
   box-shadow: none;
   background: var(--orders-white);
 }
 
-.orders-search__icon {
+.orders-shell .orders-search__icon {
   position: absolute;
   right: 1rem;
   top: 50%;
@@ -92,7 +93,7 @@ ORDERS TOOLBAR & SEARCH
   font-size: 0.9rem;
 }
 
-.orders-toolbar-buttons {
+.orders-shell .orders-toolbar-buttons {
   display: flex;
   align-items: center;
   gap: 0.85rem;
@@ -103,13 +104,13 @@ ORDERS TOOLBAR & SEARCH
 ORDERS FILTERS
 =========================== */
 
-.orders-filters {
+.orders-shell .orders-filters {
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.orders-filter-btn {
+.orders-shell .orders-filter-btn {
   border: 1px solid var(--orders-border);
   background: var(--orders-white);
   color: var(--orders-text);
@@ -125,15 +126,15 @@ ORDERS FILTERS
   outline: none !important;
 }
 
-.orders-filter-btn:hover {
+.orders-shell .orders-filter-btn:hover {
   background: rgba(255, 108, 0, 0.06) !important;
   border-color: rgba(255, 108, 0, 0.3) !important;
   color: #c85400 !important;
 }
 
-.orders-filter-btn:active,
-.orders-filter-btn:focus,
-.orders-filter-btn:focus-visible {
+.orders-shell .orders-filter-btn:active,
+.orders-shell .orders-filter-btn:focus,
+.orders-shell .orders-filter-btn:focus-visible {
   background: rgba(255, 108, 0, 0.08) !important;
   border-color: rgba(255, 108, 0, 0.5) !important;
   color: #c85400 !important;
@@ -141,21 +142,21 @@ ORDERS FILTERS
   outline-offset: 2px !important;
 }
 
-.orders-filter-btn.is-active {
+.orders-shell .orders-filter-btn.is-active {
   border-color: rgba(255, 108, 0, 0.5) !important;
   color: #c85400 !important;
   background: rgba(255, 108, 0, 0.08) !important;
 }
 
-.orders-filter-btn.is-active:hover {
+.orders-shell .orders-filter-btn.is-active:hover {
   background: rgba(255, 108, 0, 0.12) !important;
   border-color: rgba(255, 108, 0, 0.6) !important;
   color: #c85400 !important;
 }
 
-.orders-filter-btn.is-active:active,
-.orders-filter-btn.is-active:focus,
-.orders-filter-btn.is-active:focus-visible {
+.orders-shell .orders-filter-btn.is-active:active,
+.orders-shell .orders-filter-btn.is-active:focus,
+.orders-shell .orders-filter-btn.is-active:focus-visible {
   background: rgba(255, 108, 0, 0.15) !important;
   border-color: rgba(255, 108, 0, 0.7) !important;
   color: #c85400 !important;
@@ -166,7 +167,7 @@ ORDERS FILTERS
 ORDERS BUTTONS
 =========================== */
 
-.orders-button {
+.orders-shell .orders-button {
   border: none;
   border-radius: 999px;
   padding: 0.85rem 1.5rem;
@@ -179,38 +180,38 @@ ORDERS BUTTONS
   gap: 0.4rem;
 }
 
-.orders-button:focus-visible {
+.orders-shell .orders-button:focus-visible {
   /* Gunakan box-shadow sebagai outline untuk menghindari perubahan layout */
   outline: none;
   box-shadow: 0 0 0 2px rgba(255, 108, 0, 0.45);
 }
 
-.orders-button--primary {
+.orders-shell .orders-button--primary {
   background: #f1a124 !important;
   color: #fff !important;
   box-shadow: 0 12px 25px rgba(241, 161, 36, 0.25) !important;
 }
 
-.orders-button--primary:hover {
+.orders-shell .orders-button--primary:hover {
   background: #c85400 !important;
   transform: translateY(-1px);
 }
 
-.orders-button--primary:active,
-.orders-button--primary:focus,
-.orders-button--primary:focus-visible {
+.orders-shell .orders-button--primary:active,
+.orders-shell .orders-button--primary:focus,
+.orders-shell .orders-button--primary:focus-visible {
   background: #c85400 !important;
   color: #fff !important;
   outline: none;
   border-color: transparent !important;
 }
 
-.orders-button--primary:visited {
+.orders-shell .orders-button--primary:visited {
   background: #f1a124 !important;
   color: #fff !important;
 }
 
-.orders-button--secondary {
+.orders-shell .orders-button--secondary {
   background: var(--orders-white);
   color: var(--orders-primary);
   border: 1px solid rgba(255, 108, 0, 0.35);
@@ -218,14 +219,14 @@ ORDERS BUTTONS
   outline: none !important;
 }
 
-.orders-button--secondary:hover {
+.orders-shell .orders-button--secondary:hover {
   background: rgba(255, 108, 0, 0.06);
   border-color: rgba(255, 108, 0, 0.55);
 }
 
-.orders-button--secondary:active,
-.orders-button--secondary:focus,
-.orders-button--secondary:focus-visible {
+.orders-shell .orders-button--secondary:active,
+.orders-shell .orders-button--secondary:focus,
+.orders-shell .orders-button--secondary:focus-visible {
   background: rgba(255, 108, 0, 0.08) !important;
   border-color: rgba(255, 108, 0, 0.65) !important;
   color: var(--orders-primary) !important;
@@ -238,13 +239,13 @@ ORDERS BUTTONS
 CUSTOMERS BUTTONS (used in orders page)
 =========================== */
 
-.customers-toolbar-buttons {
+.orders-shell .customers-toolbar-buttons {
   display: flex;
   gap: 10px;
   align-items: center;
 }
 
-.customers-button {
+.orders-shell .customers-button {
   border: 1px solid transparent;
   border-radius: 0.5rem;
   padding: 0.55rem 0.9rem;
@@ -258,7 +259,7 @@ CUSTOMERS BUTTONS (used in orders page)
   outline: none !important;
 }
 
-.customers-button:focus-visible {
+.orders-shell .customers-button:focus-visible {
   /* Gunakan box-shadow sebagai outline untuk menghindari perubahan layout */
   outline: none;
   box-shadow: 0 0 0 2px rgba(255, 108, 0, 0.45);
@@ -453,7 +454,8 @@ PANEL STYLES
 ORDERS TABLE
 =========================== */
 
-.orders-table__wrapper {
+/* Prepend .orders-shell to strictly scope these */
+.orders-shell .orders-table__wrapper {
   width: 100%;
   overflow-x: auto;
   overflow-y: auto;
@@ -466,20 +468,20 @@ ORDERS TABLE
   position: relative;
 }
 
-.orders-table__wrapper::-webkit-scrollbar {
+.orders-shell .orders-table__wrapper::-webkit-scrollbar {
   height: 6px;
 }
 
-.orders-table__wrapper::-webkit-scrollbar-thumb {
+.orders-shell .orders-table__wrapper::-webkit-scrollbar-thumb {
   background: var(--orders-border);
   border-radius: 999px;
 }
 
-.orders-table__wrapper::-webkit-scrollbar-track {
+.orders-shell .orders-table__wrapper::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.orders-table {
+.orders-shell .orders-table {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -487,9 +489,26 @@ ORDERS TABLE
   min-width: fit-content;
 }
 
-.orders-table__head,
-.orders-table__row {
+.orders-shell .orders-table__head {
+  padding: 0.6rem 0.75rem;
+  color: var(--orders-muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--orders-surface);
+  border-bottom: 1px solid var(--orders-border);
   display: grid;
+  /* Explicitly reset display */
+  font-weight: 600;
+}
+
+/* Ensure Row uses Grid */
+.orders-shell .orders-table__row {
+  display: grid;
+  /* Explicitly set display grid */
   grid-template-columns:
     minmax(140px, 1.2fr)
     /* Order ID - STICKY */
@@ -521,8 +540,8 @@ ORDERS TABLE
 }
 
 /* Removed old sticky adjustments */
-.orders-table__head>span:nth-child(2),
-.orders-table__row>div:nth-child(2) {
+.orders-shell .orders-table__head>span:nth-child(2),
+.orders-shell .orders-table__row>div:nth-child(2) {
   padding: 0;
   margin-left: -0.25rem;
   display: flex;
@@ -532,8 +551,8 @@ ORDERS TABLE
 
 /* Sticky columns untuk Order ID, ExternalLink, dan Customer dengan background putih */
 /* Sticky 1: Order ID */
-.orders-table__head>span:nth-child(1),
-.orders-table__row>div:nth-child(1) {
+.orders-shell .orders-table__head>span:nth-child(1),
+.orders-shell .orders-table__row>div:nth-child(1) {
   /* position: sticky; */
   /* left: 1.75rem; */
   z-index: 1;
@@ -543,7 +562,7 @@ ORDERS TABLE
 }
 
 /* Pastikan border radius kiri card ikut sticky dengan extend background */
-.orders-table__row>div:nth-child(1)::before {
+.orders-shell .orders-table__row>div:nth-child(1)::before {
   content: '';
   position: absolute;
   top: -0.5rem;
@@ -558,29 +577,29 @@ ORDERS TABLE
 }
 
 /* Header specific */
-.orders-table__head>span:nth-child(1) {
+.orders-shell .orders-table__head>span:nth-child(1) {
   z-index: 1;
   /* background: #ffffff !important; */
   border-radius: 0;
 }
 
 /* Sticky 2: Link */
-.orders-table__head>span:nth-child(2),
-.orders-table__row>div:nth-child(2) {
+.orders-shell .orders-table__head>span:nth-child(2),
+.orders-shell .orders-table__row>div:nth-child(2) {
   /* position: sticky; */
   /* left: calc(1.75rem + 140px + 0.3rem); */
   z-index: 1;
   /* background: #ffffff !important; */
 }
 
-.orders-table__head>span:nth-child(2) {
+.orders-shell .orders-table__head>span:nth-child(2) {
   z-index: 1;
   /* background: #ffffff !important; */
 }
 
 /* Sticky 3: Customer */
-.orders-table__head>span:nth-child(3),
-.orders-table__row>div:nth-child(3) {
+.orders-shell .orders-table__head>span:nth-child(3),
+.orders-shell .orders-table__row>div:nth-child(3) {
   /* position: sticky; */
   /* left: calc(1.75rem + 140px + 24px + 0.6rem); */
   z-index: 1;
@@ -590,7 +609,7 @@ ORDERS TABLE
   /* Divider line */
 }
 
-.orders-table__head>span:nth-child(3) {
+.orders-shell .orders-table__head>span:nth-child(3) {
   z-index: 1;
   /* background: #ffffff !important; */
 }
@@ -623,7 +642,7 @@ ORDERS TABLE
 }
 */
 
-.orders-table__head {
+.orders-shell .orders-table__head {
   padding: 0.6rem 0.75rem;
   /* Adjust padding */
   color: var(--orders-muted);
@@ -640,13 +659,13 @@ ORDERS TABLE
   font-weight: 600;
 }
 
-.orders-table__body {
+.orders-shell .orders-table__body {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.orders-table__row {
+.orders-shell .orders-table__row {
   background: var(--orders-surface);
   border: 1px solid var(--orders-border);
   /* Removed individual border */
@@ -660,22 +679,30 @@ ORDERS TABLE
   overflow: visible;
 }
 
-.orders-table__row:last-child {
+.orders-shell .orders-table__row:last-child {
   border-bottom: 1px solid var(--orders-border);
 }
 
-.orders-table__row:hover {
+.orders-shell .orders-table__row:hover {
   transform: translateY(-2px);
   /* Disable transform */
   box-shadow: 0 24px 45px rgba(15, 23, 42, 0.14);
 }
 
-.orders-table__cell {
+.orders-shell .orders-table__row:hover {
+  transform: translateY(-2px);
+  /* Disable transform */
+  box-shadow: 0 24px 45px rgba(15, 23, 42, 0.14);
+}
+
+.orders-shell .orders-table__cell {
   font-size: 0.8rem;
   color: var(--orders-text);
   min-width: 0;
   word-break: break-word;
   /* Add padding inside cells */
+  padding: 0;
+  /* Reset padding to be sure */
   white-space: normal;
   overflow: hidden;
   text-overflow: ellipsis;
