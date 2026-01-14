@@ -532,14 +532,14 @@ ORDERS TABLE
 /* Sticky columns untuk Order ID, ExternalLink, dan Customer dengan background putih */
 .orders-table__head>span:nth-child(1),
 .orders-table__row>div:nth-child(1) {
-  position: sticky;
-  left: 1.75rem;
-  /* Compensate untuk padding panel */
-  z-index: 11;
-  background: #ffffff !important;
+  /* position: sticky; */
+  /* REMOVED STICKY */
+  /* left: 1.75rem; */
+  z-index: 1;
+  /* background: #ffffff !important; */
   /* Background putih */
   padding-right: 0.5rem;
-  border-radius: 1rem 0 0 1rem;
+  /* border-radius: 1rem 0 0 1rem; */
   /* Border radius kiri card agar ikut sticky */
 }
 
@@ -553,66 +553,69 @@ ORDERS TABLE
   /* Extend ke kiri untuk cover padding row */
   bottom: -0.5rem;
   width: 0.65rem;
-  background: #ffffff;
+  /* background: #ffffff; */
   z-index: -1;
   border-radius: 1rem 0 0 1rem;
   /* Match border radius card */
 }
 
 .orders-table__head>span:nth-child(1) {
-  z-index: 21;
+  z-index: 1;
   /* Higher z-index untuk head */
-  background: #ffffff !important;
+  /* background: #ffffff !important; */
   border-radius: 0;
   /* Head tidak perlu border radius */
 }
 
 .orders-table__head>span:nth-child(2),
 .orders-table__row>div:nth-child(2) {
-  position: sticky;
-  left: calc(1.75rem + 140px + 0.3rem);
+  /* position: sticky; */
+  /* REMOVED STICKY */
+  /* left: calc(1.75rem + 140px + 0.3rem); */
   /* Padding panel + Width of Order ID + gap */
-  z-index: 11;
-  background: #ffffff !important;
+  z-index: 1;
+  /* background: #ffffff !important; */
   /* Background putih */
 }
 
 .orders-table__head>span:nth-child(2) {
-  z-index: 21;
+  z-index: 1;
   /* Higher z-index untuk head */
-  background: #ffffff !important;
+  /* background: #ffffff !important; */
 }
 
 .orders-table__head>span:nth-child(3),
 .orders-table__row>div:nth-child(3) {
-  position: sticky;
-  left: calc(1.75rem + 140px + 24px + 0.6rem);
+  /* position: sticky; */
+  /* REMOVED STICKY */
+  /* left: calc(1.75rem + 140px + 24px + 0.6rem); */
   /* Padding panel + Width of Order ID + ExternalLink + gaps */
-  z-index: 11;
-  background: #ffffff !important;
+  z-index: 1;
+  /* background: #ffffff !important; */
   /* Background putih */
   padding-right: 0.5rem;
 }
 
 .orders-table__head>span:nth-child(3) {
-  z-index: 21;
+  z-index: 1;
   /* Higher z-index untuk head */
-  background: #ffffff !important;
+  /* background: #ffffff !important; */
 }
 
 /* Pastikan sticky cells berada di atas background */
 .orders-table__row>div:nth-child(1),
 .orders-table__row>div:nth-child(2),
 .orders-table__row>div:nth-child(3) {
-  position: sticky;
-  z-index: 11;
+  /* position: sticky; */
+  z-index: 1;
 }
 
 /* Shadow untuk sticky columns saat scroll horizontal */
-/* Shadow untuk sticky columns saat scroll horizontal */
-.orders-table__row>div:nth-child(1)::after,
-.orders-table__row>div:nth-child(2)::after,
-.orders-table__row>div:nth-child(3)::after {
+/* Shadow untuk sticky columns saat scroll horizontal - DISABLED */
+/*
+.orders-table__row > div:nth-child(1)::after,
+.orders-table__row > div:nth-child(2)::after,
+.orders-table__row > div:nth-child(3)::after {
   content: '';
   position: absolute;
   top: 0;
@@ -625,11 +628,12 @@ ORDERS TABLE
   transition: opacity 0.2s ease;
 }
 
-.orders-table__wrapper:hover .orders-table__row>div:nth-child(1)::after,
-.orders-table__wrapper:hover .orders-table__row>div:nth-child(2)::after,
-.orders-table__wrapper:hover .orders-table__row>div:nth-child(3)::after {
+.orders-table__wrapper:hover .orders-table__row > div:nth-child(1)::after,
+.orders-table__wrapper:hover .orders-table__row > div:nth-child(2)::after,
+.orders-table__wrapper:hover .orders-table__row > div:nth-child(3)::after {
   opacity: 1;
 }
+*/
 
 .orders-table__head {
   padding: 0.6rem 0.75rem;
