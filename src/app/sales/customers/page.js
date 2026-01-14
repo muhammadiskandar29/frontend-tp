@@ -85,6 +85,37 @@ export default function AdminCustomerPage() {
     return { verified, unverified };
   }, [customers]);
 
+  const [userMap, setUserMap] = useState(new Map());
+
+  // Fetch users untuk Sales mapping
+  useEffect(() => {
+    async function fetchUsers() {
+      try {
+        const token = localStorage.getItem("token");
+        const headers = { Authorization: `Bearer ${token}` };
+
+        const usersRes = await fetch("/api/admin/users", { headers });
+        const usersJson = await usersRes.json();
+
+        if (usersJson.success && Array.isArray(usersJson.data)) {
+          const map = new Map();
+          usersJson.data.forEach((u) => {
+            const userId = u.user_rel?.id || u.sales_rel?.id || u.user?.id || u.sales?.id || u.id;
+            const nama = u.user_rel?.nama || u.sales_rel?.nama || u.user?.nama || u.sales?.nama || u.nama || u.name || `User #${userId}`;
+            if (userId) {
+              map.set(String(userId), nama);
+            }
+          });
+          setUserMap(map);
+        }
+      } catch (err) {
+        console.error("Error fetching users for Sales mapping:", err);
+      }
+    }
+
+    fetchUsers();
+  }, []);
+
   const fetchingRef = useRef(false); // Prevent multiple simultaneous fetches
 
   // 🔹 Fetch customers dengan fallback pagination - optimized
@@ -500,7 +531,7 @@ export default function AdminCustomerPage() {
 
                       <td>-</td>
                       <td>-</td>
-                      <td>{cust.sales_rel?.nama || cust.sales_nama || "-"}</td>
+                      <td>{cust.sales_rel?.nama || userMap.get(String(cust.sales_id)) || cust.sales_nama || "-"}</td>
                     </tr>
                   ))
                 ) : (
