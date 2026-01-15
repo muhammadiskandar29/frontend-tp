@@ -58,12 +58,13 @@ function FAQItem({ question, answer }) {
 
 // ✅ Countdown Component - GENERAL: Styling sesuai gambar (minimalis, dark grey boxes)
 // ✅ Countdown Component - REFACKTOR: Mobile Responsive & Minimalist
+// ✅ Countdown Component - REFACKTOR: Orange Style (Match User Request)
 function CountdownComponent({ data = {}, componentId, containerStyle = {} }) {
   const hours = data.hours !== undefined ? data.hours : 0;
   const minutes = data.minutes !== undefined ? data.minutes : 0;
   const seconds = data.seconds !== undefined ? data.seconds : 0;
-  // ✅ GENERAL: Warna tetap dark grey dan white untuk konsistensi dengan gambar
-  const bgColor = data.bgColor || "#374151"; // Dark grey default
+  // ✅ UPDATE: Default styling to match image (Orange boxes, white text)
+  const bgColor = data.bgColor || "#FF9900"; // Orange default
   const textColor = data.textColor || "#ffffff"; // White text default
 
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
@@ -138,38 +139,35 @@ function CountdownComponent({ data = {}, componentId, containerStyle = {} }) {
   };
 
   const renderNumber = (value) => {
-    // ✅ STYLE: Responsive Box & Typography
+    // ✅ STYLE: Box Orange & Typography
     const boxStyle = {
       backgroundColor: bgColor,
-      borderRadius: "8px",
-      padding: "12px 16px", // Reduced padding
-      // minWidth: "60px", // Removed fixed minWidth for responsiveness
-      width: "auto",
-      minWidth: "15vw", // Responsive minimum width
-      maxWidth: "80px",
+      borderRadius: "12px", // Slightly more rounded match image
+      padding: "16px 12px",
+      minWidth: "70px",
+      width: "18vw", // Responsive width
+      maxWidth: "100px",
       textAlign: "center",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
       justifyContent: "center",
-      boxShadow: "none",
-      aspectRatio: "1/1", // Square shape preference
+      boxShadow: "0 4px 6px rgba(0,0,0,0.1)", // Add slight shadow
+      aspectRatio: "1/1",
     };
 
     const numberStyle = {
-      // ✅ Responsive Font Size: Clamp between 24px and 48px
-      fontSize: "clamp(24px, 6vw, 42px)",
-      fontWeight: "bold",
+      fontSize: "clamp(28px, 6vw, 48px)", // Large bold font
+      fontWeight: "800", // Extra bold
       color: textColor,
-      fontFamily: "monospace",
+      fontFamily: "'Inter', sans-serif", // Modern sans-serif
       lineHeight: "1",
-      margin: 0,
+      letterSpacing: "1px"
     };
 
     return (
       <div style={boxStyle} className="countdown-box">
         <div style={numberStyle}>{value}</div>
-        {/* Labels removed as requested */}
       </div>
     );
   };
@@ -179,35 +177,35 @@ function CountdownComponent({ data = {}, componentId, containerStyle = {} }) {
 
   return (
     <div style={{
-      padding: "16px", // Reduced outer padding
+      padding: "16px",
       backgroundColor: "transparent",
       borderRadius: "12px",
       textAlign: "center",
       ...safeContainerStyle
     }}>
-      {/* ✅ Container: Always Row (flex-nowrap) */}
       <div style={{
         display: "flex",
-        gap: "8px", // Reduced gap
+        gap: "12px", // Comfortable gap
         justifyContent: "center",
         alignItems: "center",
-        flexWrap: "nowrap", // Force single row
-        overflowX: "hidden" // Prevent overflow
+        flexWrap: "nowrap",
       }}>
         {renderNumber(formattedTime.hours)}
 
         <span style={{
-          fontSize: "clamp(20px, 5vw, 32px)", // Responsive colon size
+          fontSize: "clamp(28px, 6vw, 42px)",
           color: "#374151",
           fontWeight: "bold",
+          marginBottom: "8px" // Adjust vertical alignment
         }}>:</span>
 
         {renderNumber(formattedTime.minutes)}
 
         <span style={{
-          fontSize: "clamp(20px, 5vw, 32px)",
+          fontSize: "clamp(28px, 6vw, 42px)",
           color: "#374151",
           fontWeight: "bold",
+          marginBottom: "8px"
         }}>:</span>
 
         {renderNumber(formattedTime.seconds)}
