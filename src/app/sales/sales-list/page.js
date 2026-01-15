@@ -2,15 +2,27 @@
 
 import { useEffect, useState, useMemo } from "react";
 import Layout from "@/components/Layout";
+import dynamic from "next/dynamic";
 import "@/styles/sales/admin.css";
 import "@/styles/sales/shared-table.css";
 import "./sales-list.css";
+
+// Dynamic import for modals to ensure client-side rendering
+const AddSalesModal = dynamic(() => import("./addSales"), { ssr: false });
+const EditSalesModal = dynamic(() => import("./editSales"), { ssr: false });
+const DeleteSalesModal = dynamic(() => import("./deleteSales"), { ssr: false });
 
 export default function SalesListPage() {
     const [salesData, setSalesData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({ total: 0, active: 0, inactive: 0 });
     const [search, setSearch] = useState("");
+
+    // Modal states
+    const [showAdd, setShowAdd] = useState(false);
+    const [showEdit, setShowEdit] = useState(false);
+    const [showDelete, setShowDelete] = useState(false);
+    const [selectedSales, setSelectedSales] = useState(null);
 
     const fetchSalesData = async () => {
         try {
@@ -45,6 +57,34 @@ export default function SalesListPage() {
     useEffect(() => {
         fetchSalesData();
     }, []);
+
+    const handleAddSuccess = () => {
+        setShowAdd(false);
+        fetchSalesData();
+    };
+
+    const handleEdit = (item) => {
+        setSelectedSales(item);
+        setShowEdit(true);
+    };
+
+    const handleEditSuccess = () => {
+        setShowEdit(false);
+        setSelectedSales(null);
+        fetchSalesData();
+    };
+
+    const handleDelete = (item) => {
+        setSelectedSales(item);
+        setShowDelete(true);
+    };
+
+    const handleDeleteSuccess = () => {
+        setShowDelete(false);
+        setSelectedSales(null);
+        fetchSalesData();
+    };
+
 
     const formatDate = (dateString) => {
         if (!dateString) return "-";
@@ -85,7 +125,7 @@ export default function SalesListPage() {
                                 className="customers-search__input"
                                 style={{
                                     width: '100%',
-                                    padding: '0.75rem 1rem 0.75rem 0.75rem', /* Adjusted padding since icon is gone */
+                                    padding: '0.75rem 1rem 0.75rem 0.75rem',
                                     borderRadius: '0.5rem',
                                     border: '1px solid #e2e8f0',
                                     fontSize: '0.875rem'
@@ -105,19 +145,23 @@ export default function SalesListPage() {
                             <h3 className="panel__title">Daftar Sales</h3>
                         </div>
                         <div style={{ display: 'flex', gap: '10px' }}>
-                            <button className="customers-button customers-button--primary" style={{
-                                background: '#fb8500',
-                                color: 'white',
-                                padding: '0.75rem 1.5rem',
-                                borderRadius: '0.5rem',
-                                fontWeight: 600,
-                                fontSize: '0.875rem',
-                                border: 'none',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.5rem'
-                            }}>
+                            <button
+                                className="customers-button customers-button--primary"
+                                onClick={() => setShowAdd(true)}
+                                style={{
+                                    background: '#fb8500',
+                                    color: 'white',
+                                    padding: '0.75rem 1.5rem',
+                                    borderRadius: '0.5rem',
+                                    fontWeight: 600,
+                                    fontSize: '0.875rem',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem'
+                                }}
+                            >
                                 + Tambah Sales
                             </button>
                         </div>
@@ -127,6 +171,7 @@ export default function SalesListPage() {
                         <table className="data-table">
                             <thead>
                                 <tr>
+                                    <th>Urutan</th>
                                     <th>Nama Sales</th>
                                     <th>Email</th>
                                     <th>Woowa Key</th>
@@ -137,40 +182,24 @@ export default function SalesListPage() {
                             <tbody>
                                 {loading ? (
                                     <tr>
-                                        <td colSpan="5" className="table-empty">Loading data...</td>
+                                        <td colSpan="6" className="table-empty">Loading data...</td>
                                     </tr>
                                 ) : filteredData.length === 0 ? (
                                     <tr>
-                                        <td colSpan="5" className="table-empty">Tidak ada data sales ditemukan.</td>
+                                        <td colSpan="6" className="table-empty">Tidak ada data sales ditemukan.</td>
                                     </tr>
                                 ) : (
                                     filteredData.map((item) => (
                                         <tr key={item.id}>
                                             <td>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                                    <div style={{
-                                                        width: '32px',
-                                                        height: '32px',
-                                                        borderRadius: '50%',
-                                                        background: '#f1f5f9',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        color: '#64748b'
-                                                    }}>
-                                                        {/* Icon removed */}
-                                                    </div>
-                                                    <div>
-                                                        <span style={{ display: 'block', fontWeight: 600, color: '#0f172a' }}>
-                                                            {item.user_rel?.nama || "-"}
-                                                        </span>
-                                                        {item.urutan && (
-                                                            <span style={{ fontSize: '0.7rem', color: '#64748b', background: '#f8fafc', padding: '1px 6px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
-                                                                Urutan: {item.urutan}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
+                                                <span style={{ fontWeight: 500, color: '#475569' }}>
+                                                    {item.urutan || "-"}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span style={{ fontWeight: 600, color: '#0f172a' }}>
+                                                    {item.user_rel?.nama || "-"}
+                                                </span>
                                             </td>
                                             <td>
                                                 <div style={{ color: '#475569' }}>{item.user_rel?.email || "-"}</div>
@@ -199,7 +228,6 @@ export default function SalesListPage() {
                                             </td>
                                             <td>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#475569' }}>
-                                                    {/* Icon removed */}
                                                     <span>{formatDate(item.last_update_lead)}</span>
                                                 </div>
                                             </td>
@@ -208,12 +236,14 @@ export default function SalesListPage() {
                                                     <button
                                                         className="table-shell action-btn action-btn--primary"
                                                         title="Edit"
+                                                        onClick={() => handleEdit(item)}
                                                     >
                                                         Edit
                                                     </button>
                                                     <button
                                                         className="table-shell action-btn action-btn--danger"
                                                         title="Delete"
+                                                        onClick={() => handleDelete(item)}
                                                     >
                                                         Hapus
                                                     </button>
@@ -277,6 +307,36 @@ export default function SalesListPage() {
                         </button>
                     </div>
                 </section>
+
+                {/* Modals */}
+                {showAdd && (
+                    <AddSalesModal
+                        onClose={() => setShowAdd(false)}
+                        onSuccess={handleAddSuccess}
+                    />
+                )}
+
+                {showEdit && selectedSales && (
+                    <EditSalesModal
+                        sales={selectedSales}
+                        onClose={() => {
+                            setShowEdit(false);
+                            setSelectedSales(null);
+                        }}
+                        onSuccess={handleEditSuccess}
+                    />
+                )}
+
+                {showDelete && selectedSales && (
+                    <DeleteSalesModal
+                        sales={selectedSales}
+                        onClose={() => {
+                            setShowDelete(false);
+                            setSelectedSales(null);
+                        }}
+                        onSuccess={handleDeleteSuccess}
+                    />
+                )}
             </div>
         </Layout>
     );
