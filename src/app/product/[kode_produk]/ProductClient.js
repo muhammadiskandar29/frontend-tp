@@ -57,6 +57,7 @@ function FAQItem({ question, answer }) {
 }
 
 // ✅ Countdown Component - GENERAL: Styling sesuai gambar (minimalis, dark grey boxes)
+// ✅ Countdown Component - REFACKTOR: Mobile Responsive & Minimalist
 function CountdownComponent({ data = {}, componentId, containerStyle = {} }) {
   const hours = data.hours !== undefined ? data.hours : 0;
   const minutes = data.minutes !== undefined ? data.minutes : 0;
@@ -129,100 +130,87 @@ function CountdownComponent({ data = {}, componentId, containerStyle = {} }) {
     };
   }, [hours, minutes, seconds, componentId]);
 
-  // ✅ FIX: Hapus useMemo untuk menghindari React error #310
-  // Format time langsung tanpa memoization (operasi sederhana, tidak perlu memoize)
+  // Format time
   const formattedTime = {
     hours: String(timeLeft.hours).padStart(2, '0'),
     minutes: String(timeLeft.minutes).padStart(2, '0'),
     seconds: String(timeLeft.seconds).padStart(2, '0')
   };
 
-  const renderNumber = (value, label) => {
-    // ✅ GENERAL: Styling sesuai gambar - dark grey box dengan white text, rounded corners
-    // Menggunakan bgColor dan textColor dari props untuk konsistensi
+  const renderNumber = (value) => {
+    // ✅ STYLE: Responsive Box & Typography
     const boxStyle = {
-      backgroundColor: bgColor, // Dark grey (#374151) atau dari props
-      borderRadius: "8px", // Slightly rounded corners
-      padding: "16px 24px",
-      minWidth: "80px",
+      backgroundColor: bgColor,
+      borderRadius: "8px",
+      padding: "12px 16px", // Reduced padding
+      // minWidth: "60px", // Removed fixed minWidth for responsiveness
+      width: "auto",
+      minWidth: "15vw", // Responsive minimum width
+      maxWidth: "80px",
       textAlign: "center",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
       justifyContent: "center",
-      boxShadow: "none", // Clean, minimal shadow
+      boxShadow: "none",
+      aspectRatio: "1/1", // Square shape preference
     };
 
     const numberStyle = {
-      fontSize: "48px",
+      // ✅ Responsive Font Size: Clamp between 24px and 48px
+      fontSize: "clamp(24px, 6vw, 42px)",
       fontWeight: "bold",
-      color: textColor, // White (#ffffff) atau dari props
+      color: textColor,
       fontFamily: "monospace",
       lineHeight: "1",
       margin: 0,
     };
 
-    const labelStyle = {
-      fontSize: "14px",
-      color: "#374151", // Dark grey untuk label (tetap konsisten)
-      fontWeight: "500",
-      marginTop: "8px",
-      textAlign: "center",
-    };
-
     return (
-      <div style={boxStyle}>
+      <div style={boxStyle} className="countdown-box">
         <div style={numberStyle}>{value}</div>
-        {label && <div style={labelStyle}>{label}</div>}
+        {/* Labels removed as requested */}
       </div>
     );
   };
 
-  // Extract only padding and margin from containerStyle, exclude background
+  // Extract only padding and margin from containerStyle
   const { backgroundColor, backgroundImage, ...safeContainerStyle } = containerStyle || {};
 
   return (
     <div style={{
-      padding: "24px",
+      padding: "16px", // Reduced outer padding
       backgroundColor: "transparent",
       borderRadius: "12px",
       textAlign: "center",
-      ...safeContainerStyle // Only use padding, margin, etc. - no background
+      ...safeContainerStyle
     }}>
-      {/* ✅ Container untuk countdown boxes dengan colon separator */}
+      {/* ✅ Container: Always Row (flex-nowrap) */}
       <div style={{
         display: "flex",
-        gap: "12px",
+        gap: "8px", // Reduced gap
         justifyContent: "center",
-        alignItems: "flex-start", // Align ke atas agar label sejajar
-        flexWrap: "wrap"
+        alignItems: "center",
+        flexWrap: "nowrap", // Force single row
+        overflowX: "hidden" // Prevent overflow
       }}>
-        {/* Hours box dengan label - setiap card punya card sendiri */}
-        {renderNumber(formattedTime.hours, "Jam")}
+        {renderNumber(formattedTime.hours)}
 
-        {/* Colon separator */}
         <span style={{
-          fontSize: "32px",
+          fontSize: "clamp(20px, 5vw, 32px)", // Responsive colon size
           color: "#374151",
           fontWeight: "bold",
-          marginTop: "16px", // Align dengan angka
-          lineHeight: "48px" // Match dengan tinggi angka
         }}>:</span>
 
-        {/* Minutes box dengan label - setiap card punya card sendiri */}
-        {renderNumber(formattedTime.minutes, "Menit")}
+        {renderNumber(formattedTime.minutes)}
 
-        {/* Colon separator */}
         <span style={{
-          fontSize: "32px",
+          fontSize: "clamp(20px, 5vw, 32px)",
           color: "#374151",
           fontWeight: "bold",
-          marginTop: "16px",
-          lineHeight: "48px"
         }}>:</span>
 
-        {/* Seconds box dengan label - setiap card punya card sendiri */}
-        {renderNumber(formattedTime.seconds, "Detik")}
+        {renderNumber(formattedTime.seconds)}
       </div>
     </div>
   );
@@ -411,6 +399,36 @@ function ProductClient({ initialProductData, initialLandingPage }) {
     kecamatan: "",
     kode_pos: "",
   });
+
+  // State untuk search kecamatan (Produk Non-Fisik)
+  const [districtSearchTerm, setDistrictSearchTerm] = useState("");
+  const [districtSearchResults, setDistrictSearchResults] = useState([]);
+  const [loadingDistrictSearch, setLoadingDistrictSearch] = useState(false);
+  const [showDistrictResults, setShowDistrictResults] = useState(false);
+
+  // Debounce search handler for District Search
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (districtSearchTerm.length >= 3 && showDistrictResults) {
+        setLoadingDistrictSearch(true);
+        try {
+          const res = await fetch(`/api/shipping/search?search=${encodeURIComponent(districtSearchTerm)}`);
+          const json = await res.json();
+          if (json.success && Array.isArray(json.data)) {
+            setDistrictSearchResults(json.data);
+          } else {
+            setDistrictSearchResults([]);
+          }
+        } catch (e) {
+          console.error(e);
+          setDistrictSearchResults([]);
+        } finally {
+          setLoadingDistrictSearch(false);
+        }
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [districtSearchTerm, showDistrictResults]);
 
   // State untuk dropdown wilayah (cascading)
   const [wilayahData, setWilayahData] = useState({
@@ -1469,134 +1487,228 @@ function ProductClient({ initialProductData, initialLandingPage }) {
                     />
                   </div>
 
-                  {/* ✅ Field Provinsi, Kabupaten/Kota, Kecamatan, Kode Pos (selalu tampil) */}
-                  <div className="compact-field">
-                    <label className="compact-label">Provinsi <span className="required">*</span></label>
-                    <select
-                      className="compact-input"
-                      value={selectedWilayahIds.provinceId}
-                      onChange={(e) => {
-                        const provinceId = e.target.value;
-                        setSelectedWilayahIds({ provinceId, cityId: "", districtId: "" });
-                        const provinceName = getProvinceName(provinceId);
-                        setFormWilayah(prev => ({ ...prev, provinsi: provinceName, kabupaten: "", kecamatan: "", kode_pos: "" }));
-                      }}
-                      disabled={loadingWilayah.provinces}
-                      style={{
-                        appearance: 'auto',
-                        cursor: loadingWilayah.provinces ? 'not-allowed' : 'pointer',
-                        backgroundColor: loadingWilayah.provinces ? '#f9fafb' : 'white'
-                      }}
-                    >
-                      <option value="">Pilih Provinsi</option>
-                      {wilayahData.provinces.map((province) => (
-                        <option key={province.id} value={province.id}>
-                          {province.name}
-                        </option>
-                      ))}
-                    </select>
-                    {loadingWilayah.provinces && (
-                      <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
-                        Memuat provinsi...
-                      </small>
-                    )}
-                  </div>
+                  {/* ✅ LOGIC PEMISAHAN FORM: FISIK vs NON-FISIK */}
+                  {isKategoriBuku() ? (
+                    /* === FORM PRODUK FISIK (LENGKAP: PROV -> KOTA -> KEC -> KODEPOS) === */
+                    <>
+                      <div className="compact-field">
+                        <label className="compact-label">Provinsi <span className="required">*</span></label>
+                        <select
+                          className="compact-input"
+                          value={selectedWilayahIds.provinceId}
+                          onChange={(e) => {
+                            const provinceId = e.target.value;
+                            setSelectedWilayahIds({ provinceId, cityId: "", districtId: "" });
+                            const provinceName = getProvinceName(provinceId);
+                            setFormWilayah(prev => ({ ...prev, provinsi: provinceName, kabupaten: "", kecamatan: "", kode_pos: "" }));
+                          }}
+                          disabled={loadingWilayah.provinces}
+                          style={{
+                            appearance: 'auto',
+                            cursor: loadingWilayah.provinces ? 'not-allowed' : 'pointer',
+                            backgroundColor: loadingWilayah.provinces ? '#f9fafb' : 'white'
+                          }}
+                        >
+                          <option value="">Pilih Provinsi</option>
+                          {wilayahData.provinces.map((province) => (
+                            <option key={province.id} value={province.id}>
+                              {province.name}
+                            </option>
+                          ))}
+                        </select>
+                        {loadingWilayah.provinces && (
+                          <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                            Memuat provinsi...
+                          </small>
+                        )}
+                      </div>
 
-                  <div className="compact-field">
-                    <label className="compact-label">Kabupaten/Kota <span className="required">*</span></label>
-                    <select
-                      className="compact-input"
-                      value={selectedWilayahIds.cityId}
-                      onChange={(e) => {
-                        const cityId = e.target.value;
-                        setSelectedWilayahIds(prev => ({ ...prev, cityId, districtId: "" }));
-                        const cityName = getCityName(cityId);
-                        setFormWilayah(prev => ({ ...prev, kabupaten: cityName, kecamatan: "", kode_pos: "" }));
-                      }}
-                      disabled={!selectedWilayahIds.provinceId || loadingWilayah.cities}
-                      style={{
-                        appearance: 'auto',
-                        cursor: (!selectedWilayahIds.provinceId || loadingWilayah.cities) ? 'not-allowed' : 'pointer',
-                        backgroundColor: (!selectedWilayahIds.provinceId || loadingWilayah.cities) ? '#f9fafb' : 'white'
-                      }}
-                    >
-                      <option value="">Pilih Kabupaten/Kota</option>
-                      {wilayahData.cities.map((city) => (
-                        <option key={city.id} value={city.id}>
-                          {city.name}
-                        </option>
-                      ))}
-                    </select>
-                    {loadingWilayah.cities && (
-                      <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
-                        Memuat kabupaten/kota...
-                      </small>
-                    )}
-                  </div>
+                      <div className="compact-field">
+                        <label className="compact-label">Kabupaten/Kota <span className="required">*</span></label>
+                        <select
+                          className="compact-input"
+                          value={selectedWilayahIds.cityId}
+                          onChange={(e) => {
+                            const cityId = e.target.value;
+                            setSelectedWilayahIds(prev => ({ ...prev, cityId, districtId: "" }));
+                            const cityName = getCityName(cityId);
+                            setFormWilayah(prev => ({ ...prev, kabupaten: cityName, kecamatan: "", kode_pos: "" }));
+                          }}
+                          disabled={!selectedWilayahIds.provinceId || loadingWilayah.cities}
+                          style={{
+                            appearance: 'auto',
+                            cursor: (!selectedWilayahIds.provinceId || loadingWilayah.cities) ? 'not-allowed' : 'pointer',
+                            backgroundColor: (!selectedWilayahIds.provinceId || loadingWilayah.cities) ? '#f9fafb' : 'white'
+                          }}
+                        >
+                          <option value="">Pilih Kabupaten/Kota</option>
+                          {wilayahData.cities.map((city) => (
+                            <option key={city.id} value={city.id}>
+                              {city.name}
+                            </option>
+                          ))}
+                        </select>
+                        {loadingWilayah.cities && (
+                          <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                            Memuat kabupaten/kota...
+                          </small>
+                        )}
+                      </div>
 
-                  <div className="compact-field">
-                    <label className="compact-label">Kecamatan <span className="required">*</span></label>
-                    <select
-                      className="compact-input"
-                      value={selectedWilayahIds.districtId}
-                      onChange={(e) => {
-                        const districtId = e.target.value;
-                        setSelectedWilayahIds(prev => ({ ...prev, districtId }));
-                        const districtName = getDistrictName(districtId);
-                        setFormWilayah(prev => ({ ...prev, kecamatan: districtName }));
-                      }}
-                      disabled={!selectedWilayahIds.cityId || loadingWilayah.districts}
-                      style={{
-                        appearance: 'auto',
-                        cursor: (!selectedWilayahIds.cityId || loadingWilayah.districts) ? 'not-allowed' : 'pointer',
-                        backgroundColor: (!selectedWilayahIds.cityId || loadingWilayah.districts) ? '#f9fafb' : 'white'
-                      }}
-                    >
-                      <option value="">Pilih Kecamatan</option>
-                      {wilayahData.districts.map((district) => (
-                        <option key={district.district_id || district.id} value={district.district_id || district.id}>
-                          {district.name}
-                        </option>
-                      ))}
-                    </select>
-                    {!selectedWilayahIds.cityId && (
-                      <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
-                        Pilih kabupaten/kota terlebih dahulu
-                      </small>
-                    )}
-                    {loadingWilayah.districts && (
-                      <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
-                        Memuat kecamatan...
-                      </small>
-                    )}
-                  </div>
+                      <div className="compact-field" style={{ position: 'relative' }}>
+                        <label className="compact-label">Kecamatan <span className="required">*</span></label>
+                        <select
+                          className="compact-input"
+                          value={selectedWilayahIds.districtId}
+                          onChange={(e) => {
+                            const districtId = e.target.value;
+                            setSelectedWilayahIds(prev => ({ ...prev, districtId }));
+                            const districtName = getDistrictName(districtId);
+                            setFormWilayah(prev => ({ ...prev, kecamatan: districtName }));
+                          }}
+                          disabled={!selectedWilayahIds.cityId || loadingWilayah.districts}
+                          style={{
+                            appearance: 'auto',
+                            cursor: (!selectedWilayahIds.cityId || loadingWilayah.districts) ? 'not-allowed' : 'pointer',
+                            backgroundColor: (!selectedWilayahIds.cityId || loadingWilayah.districts) ? '#f9fafb' : 'white'
+                          }}
+                        >
+                          <option value="">Pilih Kecamatan</option>
+                          {wilayahData.districts.map((district) => (
+                            <option key={district.district_id || district.id} value={district.district_id || district.id}>
+                              {district.name}
+                            </option>
+                          ))}
+                        </select>
+                        {loadingWilayah.districts && (
+                          <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                            Memuat kecamatan...
+                          </small>
+                        )}
+                      </div>
 
-                  <div className="compact-field">
-                    <label className="compact-label">Kode Pos <span className="required">*</span></label>
-                    <input
-                      type="text"
-                      placeholder="Contoh: 12120"
-                      className="compact-input"
-                      value={formWilayah.kode_pos}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/\D/g, '');
-                        setFormWilayah(prev => ({ ...prev, kode_pos: val }));
-                      }}
-                      disabled={!selectedWilayahIds.districtId}
-                      style={{
-                        cursor: !selectedWilayahIds.districtId ? 'not-allowed' : 'text',
-                        backgroundColor: !selectedWilayahIds.districtId ? '#f9fafb' : 'white'
-                      }}
-                    />
-                    {!selectedWilayahIds.districtId && (
-                      <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
-                        Pilih kecamatan terlebih dahulu
-                      </small>
-                    )}
-                  </div>
+                      <div className="compact-field">
+                        <label className="compact-label">Kode Pos <span className="required">*</span></label>
+                        <input
+                          type="text"
+                          placeholder="Contoh: 12120"
+                          className="compact-input"
+                          value={formWilayah.kode_pos}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, '');
+                            setFormWilayah(prev => ({ ...prev, kode_pos: val }));
+                          }}
+                          disabled={!selectedWilayahIds.districtId}
+                          style={{
+                            cursor: !selectedWilayahIds.districtId ? 'not-allowed' : 'text',
+                            backgroundColor: !selectedWilayahIds.districtId ? '#f9fafb' : 'white'
+                          }}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    /* === FORM PRODUK NON-FISIK (HANYA SEARCH KECAMATAN) === */
+                    <div className="compact-field" style={{ position: 'relative' }}>
+                      <label className="compact-label">Kecamatan <span className="required">*</span></label>
+                      <input
+                        type="text"
+                        className="compact-input"
+                        placeholder="Ketik untuk mencari kecamatan..."
+                        value={districtSearchTerm}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setDistrictSearchTerm(val);
+                          setShowDistrictResults(true);
+                        }}
+                        onFocus={() => {
+                          if (districtSearchTerm.length >= 3) setShowDistrictResults(true);
+                        }}
+                        onBlur={() => {
+                          // Delay hide agar click event pada result bisa tertangkap
+                          setTimeout(() => setShowDistrictResults(false), 200);
+                        }}
+                      />
+
+                      {loadingDistrictSearch && (
+                        <div style={{
+                          position: 'absolute', right: '12px', top: '38px',
+                          fontSize: '12px', color: '#6b7280'
+                        }}>
+                          Mencari...
+                        </div>
+                      )}
+
+                      {/* Search Results Dropdown */}
+                      {showDistrictResults && districtSearchResults.length > 0 && (
+                        <div className="district-search-results" style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          right: 0,
+                          backgroundColor: 'white',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '0 0 6px 6px',
+                          maxHeight: '200px',
+                          overflowY: 'auto',
+                          zIndex: 50,
+                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                        }}>
+                          {districtSearchResults.map((item, idx) => (
+                            <div
+                              key={item.id || idx}
+                              onClick={() => {
+                                // Set Display Value
+                                setDistrictSearchTerm(item.label);
+
+                                // Set Form Values
+                                setFormWilayah(prev => ({
+                                  ...prev,
+                                  provinsi: item.province_name,
+                                  kabupaten: item.city_name,
+                                  kecamatan: item.district_name,
+                                  kode_pos: ""
+                                }));
+
+                                setShowDistrictResults(false);
+                              }}
+                              style={{
+                                padding: '8px 12px',
+                                fontSize: '14px',
+                                cursor: 'pointer',
+                                borderBottom: '1px solid #f3f4f6',
+                                color: '#1f2937'
+                              }}
+                              onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                              onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                            >
+                              {item.label}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {showDistrictResults && districtSearchResults.length === 0 && districtSearchTerm.length >= 3 && !loadingDistrictSearch && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          right: 0,
+                          backgroundColor: 'white',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '0 0 6px 6px',
+                          padding: '8px 12px',
+                          fontSize: '14px',
+                          color: '#6b7280',
+                          zIndex: 50
+                        }}>
+                          Tidak ditemukan.
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* ✅ Bagian Ongkir dengan Kurir (hanya untuk produk fisik) */}
-                  {isFormBuku && (
+                  {isKategoriBuku() && (
                     <div className="compact-field">
                       <label className="compact-label">Kurir <span className="required">*</span></label>
                       <select
@@ -1647,7 +1759,7 @@ function ProductClient({ initialProductData, initialLandingPage }) {
                       Rp {formatPrice(productData?.harga || 0)}
                     </div>
                   </div>
-                  {isFormBuku && ongkir > 0 && (
+                  {isKategoriBuku() && ongkir > 0 && (
                     <div className="rincian-pesanan-item">
                       <div className="rincian-pesanan-detail">
                         <div className="rincian-pesanan-name">Ongkos Kirim</div>
@@ -2076,8 +2188,8 @@ function ProductClient({ initialProductData, initialLandingPage }) {
         return false; // Kode pos tidak valid
       }
     } else {
-      // Produk non-fisik: minimal provinsi dan kabupaten
-      if (!formWilayah.provinsi || !formWilayah.kabupaten) {
+      // Produk non-fisik: minimal provinsi, kabupaten, dan kecamatan
+      if (!formWilayah.provinsi || !formWilayah.kabupaten || !formWilayah.kecamatan) {
         return false; // Alamat belum lengkap
       }
     }
@@ -2116,8 +2228,8 @@ function ProductClient({ initialProductData, initialLandingPage }) {
         return "Kode Pos harus berupa angka!";
       }
     } else {
-      if (!formWilayah.provinsi || !formWilayah.kabupaten) {
-        return "Silakan lengkapi alamat (minimal Provinsi dan Kabupaten/Kota)";
+      if (!formWilayah.provinsi || !formWilayah.kabupaten || !formWilayah.kecamatan) {
+        return "Silakan lengkapi alamat (minimal Provinsi, Kabupaten/Kota, Kecamatan)";
       }
     }
 
@@ -2166,10 +2278,10 @@ function ProductClient({ initialProductData, initialLandingPage }) {
         return toast.error("Silakan lengkapi alamat lengkap (Provinsi, Kabupaten/Kota, Kecamatan, Kode Pos)");
       }
     } else {
-      // ✅ Untuk produk non-fisik, minimal provinsi dan kabupaten
-      if (!formWilayah.provinsi || !formWilayah.kabupaten) {
+      // ✅ Untuk produk non-fisik, minimal provinsi, kabupaten, dan kecamatan
+      if (!formWilayah.provinsi || !formWilayah.kabupaten || !formWilayah.kecamatan) {
         setSubmitting(false);
-        return toast.error("Silakan lengkapi alamat (minimal Provinsi dan Kabupaten/Kota)");
+        return toast.error("Silakan lengkapi alamat (minimal Provinsi, Kabupaten/Kota, dan Kecamatan)");
       }
     }
 
@@ -2653,6 +2765,45 @@ function ProductClient({ initialProductData, initialLandingPage }) {
         width: 100% !important;
         max-width: 100% !important;
         overflow-x: hidden !important;
+      }
+      
+      /* ✅ MOBILE & TABLET OPTIMIZATION */
+      @media (max-width: 768px) {
+        .canvas-content-area, .page-builder-canvas {
+            padding-left: 16px !important;
+            padding-right: 16px !important;
+            box-sizing: border-box !important;
+        }
+        
+        /* Auto scale images */
+        .preview-section-child img {
+            max-width: 100% !important;
+            height: auto !important;
+        }
+
+        /* Responsive Video Height */
+        .preview-video-wrapper {
+             width: 100% !important; /* Force full width on mobile */
+             /* Height is auto handled by aspect-ratio 16/9, making it larger because width is larger */
+        }
+        
+        /* Scale text generally */
+        .preview-text {
+            font-size: 0.95em !important; /* Slight scale down */
+            overflow-wrap: break-word;
+        }
+
+        /* Adjust compact form padding */
+        .compact-form-card {
+            padding: 16px !important;
+        }
+
+        /* Testimonials navigation adjust */
+        .testimoni-nav-btn-new {
+            width: 32px !important;
+            height: 32px !important;
+            font-size: 16px !important;
+        }
       }
     `;
 

@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
-import { 
-  Type, Image as ImageIcon, FileText, List, MessageSquare, 
+import {
+  Type, Image as ImageIcon, FileText, List, MessageSquare,
   HelpCircle, Youtube, X, ArrowLeft, ChevronDown, Layout,
   CheckCircle2, Circle, Minus, ArrowRight, ArrowRightCircle,
   ArrowLeft as ArrowLeftIcon, ArrowLeftRight, ChevronRight, CheckSquare, ShieldCheck,
@@ -90,7 +90,7 @@ export default function AddProducts3Page() {
   const [productKategori, setProductKategori] = useState(null); // Untuk menentukan kategori produk
   const [activeTab, setActiveTab] = useState("konten"); // State untuk tab aktif
   const [selectedBundling, setSelectedBundling] = useState(null); // State untuk bundling yang dipilih
-  
+
   // State untuk form wilayah (produk non-fisik) - HANYA NAMA, BUKAN ID
   const [regionForm, setRegionForm] = useState({
     provinsi: "", // Nama provinsi (string)
@@ -98,21 +98,21 @@ export default function AddProducts3Page() {
     kecamatan: "", // Nama kecamatan (string)
     kode_pos: "" // Kode pos (string)
   });
-  
+
   // State untuk cascading dropdown (internal - untuk fetch)
   const [regionData, setRegionData] = useState({
     provinces: [],
     cities: [],
     districts: []
   });
-  
+
   // State untuk selected IDs (internal - hanya untuk fetch, tidak disimpan)
   const [selectedRegionIds, setSelectedRegionIds] = useState({
     provinceId: "",
     cityId: "",
     districtId: ""
   });
-  
+
   // Loading states
   const [loadingRegion, setLoadingRegion] = useState({
     provinces: false,
@@ -120,10 +120,10 @@ export default function AddProducts3Page() {
     districts: false
   });
   const [isSaving, setIsSaving] = useState(false);
-  
+
   // State untuk modal konfirmasi exit
   const [showExitModal, setShowExitModal] = useState(false);
-  
+
   // State untuk form pengaturan
   const [pengaturanForm, setPengaturanForm] = useState({
     nama: "",
@@ -164,13 +164,13 @@ export default function AddProducts3Page() {
     custom_head_script: "",
     enable_custom_head_script: false
   });
-  
+
   // State untuk options dropdown
   const [kategoriOptions, setKategoriOptions] = useState([]);
   const [userOptions, setUserOptions] = useState([]);
   const [showBgColorPicker, setShowBgColorPicker] = useState(false);
   const bgColorPickerRef = useRef(null);
-  
+
   // Refs untuk scroll ke komponen di sidebar
   const componentRefs = useRef({});
 
@@ -224,7 +224,7 @@ export default function AddProducts3Page() {
       form: { kategori: null }, // Kategori untuk form pemesanan
       faq: { items: [] },
       slider: { images: [] },
-      "image-slider": { 
+      "image-slider": {
         images: [],
         sliderType: "gallery",
         autoslide: false,
@@ -240,7 +240,7 @@ export default function AddProducts3Page() {
       },
       button: { text: "Klik Disini", link: "#", style: "primary" },
       embed: { code: "" },
-      section: { 
+      section: {
         children: [], // Array of block IDs that are children of this section
         marginRight: 0,
         marginLeft: 0,
@@ -257,10 +257,10 @@ export default function AddProducts3Page() {
       divider: { style: "solid", color: "#e5e7eb" },
       "scroll-target": { target: "" },
       animation: { type: "fade" },
-      countdown: { 
-        hours: 0, 
-        minutes: 0, 
-        seconds: 0, 
+      countdown: {
+        hours: 0,
+        minutes: 0,
+        seconds: 0,
         textColor: "#e5e7eb",
         bgColor: "#1f2937",
         numberStyle: "flip"
@@ -280,7 +280,7 @@ export default function AddProducts3Page() {
         return;
       }
     }
-    
+
     const newBlock = {
       id: `block-${Date.now()}`,
       type: componentId,
@@ -293,7 +293,7 @@ export default function AddProducts3Page() {
         }
       } : {})
     };
-    
+
     setBlocks([...blocks, newBlock]);
     // Komponen baru default expanded (tidak perlu ditambahkan ke collapsedBlockIds)
     setShowComponentModal(false);
@@ -301,8 +301,8 @@ export default function AddProducts3Page() {
 
   // Handler untuk update block data
   const handleUpdateBlock = (blockId, newData) => {
-    setBlocks(blocks.map(block => 
-      block.id === blockId 
+    setBlocks(blocks.map(block =>
+      block.id === blockId
         ? { ...block, data: { ...block.data, ...newData } }
         : block
     ));
@@ -315,8 +315,8 @@ export default function AddProducts3Page() {
 
   // Handler untuk update child block
   const handleUpdateChildBlock = (childId, newData) => {
-    setBlocks(blocks.map(block => 
-      block.id === childId 
+    setBlocks(blocks.map(block =>
+      block.id === childId
         ? { ...block, data: { ...block.data, ...newData } }
         : block
     ));
@@ -332,33 +332,33 @@ export default function AddProducts3Page() {
     // ✅ ARSITEKTUR BENAR: Move child block berdasarkan order, tidak perlu data.children
     const childBlock = blocks.find(b => b.id === childId);
     if (!childBlock || !childBlock.parentId) return;
-    
+
     // ✅ ARSITEKTUR BENAR: Find parent section HANYA berdasarkan config.componentId
     const sectionComponentId = childBlock.parentId;
-    const parentSection = blocks.find(b => 
+    const parentSection = blocks.find(b =>
       b.type === "section" && b.config?.componentId === sectionComponentId
     );
     if (!parentSection) {
       console.error(`[MOVE CHILD ERROR] Section dengan componentId "${sectionComponentId}" tidak ditemukan!`);
       return;
     }
-    
+
     // Get all child blocks dari section ini, sorted by order
     const childBlocks = blocks
       .filter(b => b.parentId === sectionComponentId)
       .sort((a, b) => (a.order || 0) - (b.order || 0));
-    
+
     const currentIndex = childBlocks.findIndex(b => b.id === childId);
     if (currentIndex === -1) return;
-    
+
     const newIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
     if (newIndex < 0 || newIndex >= childBlocks.length) return;
-    
+
     // Swap order
     const tempOrder = childBlocks[currentIndex].order;
     childBlocks[currentIndex].order = childBlocks[newIndex].order;
     childBlocks[newIndex].order = tempOrder;
-    
+
     // Update blocks dengan order baru
     setBlocks(blocks.map(b => {
       if (b.id === childBlocks[currentIndex].id) {
@@ -375,10 +375,10 @@ export default function AddProducts3Page() {
   const moveBlock = (blockId, direction) => {
     const index = blocks.findIndex(b => b.id === blockId);
     if (index === -1) return;
-    
+
     const newIndex = direction === 'up' ? index - 1 : index + 1;
     if (newIndex < 0 || newIndex >= blocks.length) return;
-    
+
     const newBlocks = [...blocks];
     [newBlocks[index], newBlocks[newIndex]] = [newBlocks[newIndex], newBlocks[index]];
     setBlocks(newBlocks);
@@ -399,12 +399,12 @@ export default function AddProducts3Page() {
     console.log('[handleToggleExpand] Called with blockId:', blockId);
     console.log('[handleToggleExpand] Current collapsedBlockIds:', Array.from(collapsedBlockIds));
     console.log('[handleToggleExpand] Block exists?', blocks.find(b => b.id === blockId));
-    
+
     setCollapsedBlockIds((prev) => {
       const newSet = new Set(prev);
       const wasCollapsed = newSet.has(blockId);
       console.log('[handleToggleExpand] Before toggle - wasCollapsed:', wasCollapsed);
-      
+
       if (wasCollapsed) {
         // Jika sudah collapsed, expand (hapus dari set)
         newSet.delete(blockId);
@@ -414,7 +414,7 @@ export default function AddProducts3Page() {
         newSet.add(blockId);
         console.log('[handleToggleExpand] Collapsing block - added to set');
       }
-      
+
       console.log('[handleToggleExpand] After toggle - newSet:', Array.from(newSet));
       console.log('[handleToggleExpand] BlockId:', blockId, 'Now Collapsed:', newSet.has(blockId));
       return newSet;
@@ -425,9 +425,9 @@ export default function AddProducts3Page() {
   const renderComponent = (block, index) => {
     // Default expanded, kecuali jika ada di collapsedBlockIds
     const isExpanded = !collapsedBlockIds.has(block.id);
-    
+
     console.log('[renderComponent] Block:', block.id, 'Type:', block.type, 'isExpanded:', isExpanded, 'inCollapsedSet:', collapsedBlockIds.has(block.id));
-    
+
     const commonProps = {
       data: block.data,
       onUpdate: (newData) => handleUpdateBlock(block.id, newData),
@@ -468,7 +468,7 @@ export default function AddProducts3Page() {
         return <EmbedComponent {...commonProps} />;
       case "section":
         return (
-          <SectionComponent 
+          <SectionComponent
             {...commonProps}
             block={block} // ✅ FIX: Pass block lengkap, bukan hanya data
             allBlocks={blocks}
@@ -502,7 +502,7 @@ export default function AddProducts3Page() {
   // ✅ ARSITEKTUR BENAR: isChildBlock hanya cek parentId saja
   const isChildBlock = (block) => {
     if (!block || !block.id) return false;
-    
+
     // ✅ ARSITEKTUR BENAR: Hanya cek parentId, TIDAK ada data.children
     if (block.parentId) {
       // ✅ ARSITEKTUR BENAR: Cek apakah parentId merujuk ke section.config.componentId
@@ -515,7 +515,7 @@ export default function AddProducts3Page() {
         return true;
       }
     }
-    
+
     return false;
   };
 
@@ -526,7 +526,7 @@ export default function AddProducts3Page() {
     // Jika block adalah child dari section, pastikan data-nya ter-update
     const latestBlock = blocks.find(b => b.id === block.id) || block;
     const blockToRender = latestBlock.id === block.id ? latestBlock : block;
-    
+
     // Debug log untuk melihat data yang digunakan
     if (blockToRender.type === 'list') {
       console.log(`[RENDER] Rendering list block:`, {
@@ -536,15 +536,15 @@ export default function AddProducts3Page() {
         componentTitle: blockToRender.data?.componentTitle
       });
     }
-    
+
     switch (blockToRender.type) {
       case "text":
         const textData = blockToRender.data || {};
         const textStyles = {
           // fontSize removed - now handled by inline styles in HTML content
           lineHeight: textData.lineHeight || 1.5,
-          fontFamily: textData.fontFamily && textData.fontFamily !== "Page Font" 
-            ? textData.fontFamily 
+          fontFamily: textData.fontFamily && textData.fontFamily !== "Page Font"
+            ? textData.fontFamily
             : "inherit",
           color: textData.textColor || "#000000",
           backgroundColor: textData.backgroundColor && textData.backgroundColor !== "transparent"
@@ -562,8 +562,8 @@ export default function AddProducts3Page() {
 
         // Determine tag based on paragraph style
         const Tag = textData.paragraphStyle === "h1" ? "h1" :
-                    textData.paragraphStyle === "h2" ? "h2" :
-                    textData.paragraphStyle === "h3" ? "h3" : "div";
+          textData.paragraphStyle === "h2" ? "h2" :
+            textData.paragraphStyle === "h3" ? "h3" : "div";
 
         // Background dari advance settings
         let textBackgroundStyle = {};
@@ -574,7 +574,7 @@ export default function AddProducts3Page() {
           textBackgroundStyle.backgroundSize = "cover";
           textBackgroundStyle.backgroundPosition = "center";
         }
-        
+
         // Padding dari advance settings
         const textPaddingStyle = {
           paddingTop: `${textData.paddingTop || 0}px`,
@@ -582,13 +582,13 @@ export default function AddProducts3Page() {
           paddingBottom: `${textData.paddingBottom || 0}px`,
           paddingLeft: `${textData.paddingLeft || 0}px`,
         };
-        
+
         // Rich text content (HTML)
         const richContent = textData.content || "<p>Teks...</p>";
-        
+
         return (
-          <Tag 
-            className="preview-text" 
+          <Tag
+            className="preview-text"
             style={{
               ...textStyles,
               ...textBackgroundStyle,
@@ -683,9 +683,9 @@ export default function AddProducts3Page() {
         return (
           <div style={containerStyle}>
             <div style={imageWrapperStyle}>
-              <img 
-                src={imageData.src} 
-                alt={imageData.alt || ""} 
+              <img
+                src={imageData.src}
+                alt={imageData.alt || ""}
                 style={{
                   width: "100%",
                   height: "100%",
@@ -704,7 +704,7 @@ export default function AddProducts3Page() {
         if (videoItems.length === 0) {
           return <div className="preview-placeholder">Belum ada video</div>;
         }
-        
+
         // Advanced settings untuk video
         const videoData = blockToRender.data || {};
         const videoAlignment = videoData.alignment || "center";
@@ -713,7 +713,7 @@ export default function AddProducts3Page() {
         const videoPaddingRight = videoData.paddingRight || 0;
         const videoPaddingBottom = videoData.paddingBottom || 0;
         const videoPaddingLeft = videoData.paddingLeft || 0;
-        
+
         // Container style dengan alignment dan padding
         const videoContainerStyle = {
           display: "flex",
@@ -726,7 +726,7 @@ export default function AddProducts3Page() {
           paddingBottom: `${videoPaddingBottom}px`,
           paddingLeft: `${videoPaddingLeft}px`,
         };
-        
+
         // Video wrapper style dengan width dan aspect ratio 16:9
         const videoWrapperStyle = {
           width: `${videoWidth}%`,
@@ -738,16 +738,16 @@ export default function AddProducts3Page() {
           display: "flex",
           justifyContent: videoAlignment === "left" ? "flex-start" : videoAlignment === "right" ? "flex-end" : "center",
         };
-        
+
         return (
           <div className="preview-videos" style={videoContainerStyle}>
             {videoItems.map((item, i) => (
               item.embedUrl ? (
                 <div key={i} className="preview-video-wrapper" style={videoWrapperStyle}>
-                  <iframe 
-                    src={item.embedUrl} 
-                    title={`Video ${i + 1}`} 
-                    className="preview-video-iframe" 
+                  <iframe
+                    src={item.embedUrl}
+                    title={`Video ${i + 1}`}
+                    className="preview-video-iframe"
                     allowFullScreen
                     style={{
                       width: "100%",
@@ -766,26 +766,26 @@ export default function AddProducts3Page() {
         if (testimoniItems.length === 0) {
           return <div className="preview-placeholder">Belum ada testimoni</div>;
         }
-        
+
         const currentIndex = testimoniIndices[blockToRender.id] || 0;
         const maxIndex = Math.max(0, testimoniItems.length - 3);
-        
+
         const handlePrev = () => {
           setTestimoniIndices(prev => ({
             ...prev,
             [block.id]: Math.max(0, currentIndex - 1)
           }));
         };
-        
+
         const handleNext = () => {
           setTestimoniIndices(prev => ({
             ...prev,
             [block.id]: Math.min(maxIndex, currentIndex + 1)
           }));
         };
-        
+
         const testimoniTitle = blockToRender.data?.componentTitle || "";
-        
+
         return (
           <section className="preview-testimonials" aria-label="Customer testimonials">
             <h2 style={{
@@ -797,7 +797,7 @@ export default function AddProducts3Page() {
             }}>{testimoniTitle}</h2>
             <div className="testimonials-carousel-wrapper-new">
               {currentIndex > 0 && (
-                <button 
+                <button
                   className="testimoni-nav-btn-new testimoni-nav-prev-new"
                   onClick={handlePrev}
                   aria-label="Previous testimonials"
@@ -806,7 +806,7 @@ export default function AddProducts3Page() {
                 </button>
               )}
               <div className="testimonials-carousel-new" itemScope itemType="https://schema.org/Review">
-                <div 
+                <div
                   className="testimonials-track-new"
                   style={{ transform: `translateX(-${currentIndex * 32}%)` }}
                 >
@@ -816,8 +816,8 @@ export default function AddProducts3Page() {
                         <div className="testi-header-new">
                           {item.gambar ? (
                             <div className="testi-avatar-wrapper-new">
-                              <img 
-                                src={item.gambar} 
+                              <img
+                                src={item.gambar}
                                 alt={`Foto ${item.nama}`}
                                 className="testi-avatar-new"
                                 itemProp="author"
@@ -843,11 +843,11 @@ export default function AddProducts3Page() {
                             {item.showRating !== false && (
                               <div className="testi-stars-new">
                                 {[1, 2, 3, 4, 5].map((star) => (
-                                  <span 
-                                    key={star} 
+                                  <span
+                                    key={star}
                                     className="star-new"
-                                    style={{ 
-                                      color: star <= (item.rating || 5) ? "#fbbf24" : "#d1d5db" 
+                                    style={{
+                                      color: star <= (item.rating || 5) ? "#fbbf24" : "#d1d5db"
                                     }}
                                   >
                                     ★
@@ -857,11 +857,11 @@ export default function AddProducts3Page() {
                             )}
                           </div>
                         </div>
-                        <div 
-                          className="testi-desc-new" 
+                        <div
+                          className="testi-desc-new"
                           itemProp="reviewBody"
-                          dangerouslySetInnerHTML={{ 
-                            __html: item.isiTestimony || item.deskripsi || "<p>Deskripsi testimoni</p>" 
+                          dangerouslySetInnerHTML={{
+                            __html: item.isiTestimony || item.deskripsi || "<p>Deskripsi testimoni</p>"
                           }}
                         />
                       </article>
@@ -870,7 +870,7 @@ export default function AddProducts3Page() {
                 </div>
               </div>
               {currentIndex < maxIndex && testimoniItems.length > 3 && (
-                <button 
+                <button
                   className="testimoni-nav-btn-new testimoni-nav-next-new"
                   onClick={handleNext}
                   aria-label="Next testimonials"
@@ -883,7 +883,7 @@ export default function AddProducts3Page() {
         );
       case "list":
         const listItems = blockToRender.data?.items || [];
-        
+
         // Icon mapping
         const iconMap = {
           CheckCircle2, Circle, Minus, ArrowRight, ArrowRightCircle,
@@ -895,10 +895,10 @@ export default function AddProducts3Page() {
           AlertCircle, Info, HelpCircle: HelpCircleIcon, Ban, Shield, Key, Unlock,
           MapPin, Calendar: CalendarIcon, Clock
         };
-        
+
         const listTitle = blockToRender.data?.componentTitle || "";
         const listData = blockToRender.data || {};
-        
+
         // Build styles from advance settings
         const listStyles = {
           paddingTop: `${listData.paddingTop || 0}px`,
@@ -906,7 +906,7 @@ export default function AddProducts3Page() {
           paddingBottom: `${listData.paddingBottom || 0}px`,
           paddingLeft: `${listData.paddingLeft || 0}px`,
         };
-        
+
         // Background dari advance settings
         let listBackgroundStyle = {};
         if (listData.bgType === "color") {
@@ -916,9 +916,9 @@ export default function AddProducts3Page() {
           listBackgroundStyle.backgroundSize = "cover";
           listBackgroundStyle.backgroundPosition = "center";
         }
-        
+
         return (
-          <div 
+          <div
             className="preview-list-wrapper"
             style={{
               ...listStyles,
@@ -945,7 +945,7 @@ export default function AddProducts3Page() {
                   const iconColor = item.iconColor || "#000000";
                   const content = item.content || item.nama || `Point ${i + 1}`;
                   const IconComponent = iconMap[iconName] || CheckCircle2;
-                  
+
                   return (
                     <li key={i} className="preview-list-item">
                       <span className="preview-list-icon" style={{ color: iconColor }}>
@@ -962,14 +962,14 @@ export default function AddProducts3Page() {
       case "faq":
         // Generate FAQ berdasarkan kategori produk
         const faqItems = generateFAQByKategori(productKategori);
-        
+
         // FAQ Item Component untuk preview
         const FAQItem = ({ question, answer }) => {
           const [isOpen, setIsOpen] = useState(false);
           return (
             <div className="faq-item">
-              <button 
-                className="faq-question" 
+              <button
+                className="faq-question"
                 onClick={() => setIsOpen(!isOpen)}
                 aria-expanded={isOpen}
               >
@@ -984,7 +984,7 @@ export default function AddProducts3Page() {
             </div>
           );
         };
-        
+
         if (!productKategori) {
           return (
             <section className="preview-faq-section">
@@ -997,15 +997,15 @@ export default function AddProducts3Page() {
             </section>
           );
         }
-        
+
         return (
           <section className="preview-faq-section" aria-label="Frequently Asked Questions">
             <h2 className="faq-title">Pertanyaan yang Sering Diajukan</h2>
             <div className="faq-container">
               {faqItems.map((faq, index) => (
-                <FAQItem 
+                <FAQItem
                   key={index}
-                  question={faq.question} 
+                  question={faq.question}
                   answer={faq.answer}
                 />
               ))}
@@ -1018,7 +1018,7 @@ export default function AddProducts3Page() {
         const isFormWorkshop = productKategori === 6; // Kategori Workshop (6)
         // Cek jenis produk untuk menentukan apakah perlu ongkir
         const isProdukFisik = pengaturanForm.jenis_produk === "fisik";
-        
+
         return (
           <div style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
             {/* ✅ Card besar yang merangkum semua form */}
@@ -1032,109 +1032,109 @@ export default function AddProducts3Page() {
               {/* Bundling Section - Tampilkan jika ada bundling */}
               {pengaturanForm.isBundling && pengaturanForm.bundling && pengaturanForm.bundling.length > 0 && (
                 <section style={{ marginBottom: "24px" }}>
-                <h2 style={{
-                  fontSize: "18px",
-                  fontWeight: "600",
-                  color: "#000000",
-                  marginBottom: "8px",
-                  lineHeight: "1.4"
-                }}>
-                  {pengaturanForm.nama || "Produk"}
-                </h2>
-                <p style={{
-                  fontSize: "18px",
-                  color: "#000000",
-                  marginBottom: "20px",
-                  fontWeight: "600"
-                }}>
-                  Pilihan Paket
-                </p>
-                <div style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: "12px"
-                }}>
-                  {pengaturanForm.bundling.map((item, index) => {
-                    const isSelected = selectedBundling === index;
-                    const formatHarga = (harga) => {
-                      if (!harga || harga === 0) return "0";
-                      return harga.toLocaleString("id-ID");
-                    };
-                    
-                    return (
-                      <button
-                        key={index}
-                        type="button"
-                        onClick={() => {
-                          setSelectedBundling(index);
-                          // Update harga di Rincian Pemesanan
-                          requestAnimationFrame(() => {
-                            const hargaElement = document.querySelector('.rincian-pesanan-item .rincian-pesanan-price');
-                            const totalElement = document.getElementById('rincian-total');
-                            const ongkirElement = document.getElementById('rincian-ongkir');
-                            
-                            const harga = item.harga || 0;
-                            
-                            if (hargaElement && !hargaElement.id) {
-                              hargaElement.textContent = `Rp ${formatHarga(harga)}`;
+                  <h2 style={{
+                    fontSize: "18px",
+                    fontWeight: "600",
+                    color: "#000000",
+                    marginBottom: "8px",
+                    lineHeight: "1.4"
+                  }}>
+                    {pengaturanForm.nama || "Produk"}
+                  </h2>
+                  <p style={{
+                    fontSize: "18px",
+                    color: "#000000",
+                    marginBottom: "20px",
+                    fontWeight: "600"
+                  }}>
+                    Pilihan Paket
+                  </p>
+                  <div style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: "12px"
+                  }}>
+                    {pengaturanForm.bundling.map((item, index) => {
+                      const isSelected = selectedBundling === index;
+                      const formatHarga = (harga) => {
+                        if (!harga || harga === 0) return "0";
+                        return harga.toLocaleString("id-ID");
+                      };
+
+                      return (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => {
+                            setSelectedBundling(index);
+                            // Update harga di Rincian Pemesanan
+                            requestAnimationFrame(() => {
+                              const hargaElement = document.querySelector('.rincian-pesanan-item .rincian-pesanan-price');
+                              const totalElement = document.getElementById('rincian-total');
+                              const ongkirElement = document.getElementById('rincian-ongkir');
+
+                              const harga = item.harga || 0;
+
+                              if (hargaElement && !hargaElement.id) {
+                                hargaElement.textContent = `Rp ${formatHarga(harga)}`;
+                              }
+
+                              if (totalElement) {
+                                // Get ongkir jika ada (untuk kategori 4)
+                                const ongkir = ongkirElement && ongkirElement.textContent !== "Rp 0"
+                                  ? parseInt(ongkirElement.textContent.replace(/[^0-9]/g, '')) || 0
+                                  : 0;
+                                const total = harga + ongkir;
+                                totalElement.textContent = `Rp ${formatHarga(total)}`;
+                              }
+                            });
+                          }}
+                          style={{
+                            flex: "1 1 calc(33.333% - 8px)",
+                            minWidth: "200px",
+                            padding: "16px 20px",
+                            borderRadius: "10px",
+                            border: isSelected ? "2px solid #F1A124" : "1px solid #e5e7eb",
+                            backgroundColor: isSelected ? "#F1A124" : "#ffffff",
+                            color: isSelected ? "#ffffff" : "#374151",
+                            fontSize: "15px",
+                            fontWeight: "500",
+                            cursor: "pointer",
+                            transition: "all 0.2s ease",
+                            textAlign: "center",
+                            boxShadow: isSelected ? "0 4px 12px rgba(241, 161, 36, 0.3)" : "0 1px 3px rgba(0, 0, 0, 0.1)",
+                            outline: "none"
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isSelected) {
+                              e.currentTarget.style.backgroundColor = "#f9fafb";
+                              e.currentTarget.style.borderColor = "#d1d5db";
                             }
-                            
-                            if (totalElement) {
-                              // Get ongkir jika ada (untuk kategori 4)
-                              const ongkir = ongkirElement && ongkirElement.textContent !== "Rp 0" 
-                                ? parseInt(ongkirElement.textContent.replace(/[^0-9]/g, '')) || 0 
-                                : 0;
-                              const total = harga + ongkir;
-                              totalElement.textContent = `Rp ${formatHarga(total)}`;
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isSelected) {
+                              e.currentTarget.style.backgroundColor = "#ffffff";
+                              e.currentTarget.style.borderColor = "#e5e7eb";
                             }
-                          });
-                        }}
-                        style={{
-                          flex: "1 1 calc(33.333% - 8px)",
-                          minWidth: "200px",
-                          padding: "16px 20px",
-                          borderRadius: "10px",
-                          border: isSelected ? "2px solid #F1A124" : "1px solid #e5e7eb",
-                          backgroundColor: isSelected ? "#F1A124" : "#ffffff",
-                          color: isSelected ? "#ffffff" : "#374151",
-                          fontSize: "15px",
-                          fontWeight: "500",
-                          cursor: "pointer",
-                          transition: "all 0.2s ease",
-                          textAlign: "center",
-                          boxShadow: isSelected ? "0 4px 12px rgba(241, 161, 36, 0.3)" : "0 1px 3px rgba(0, 0, 0, 0.1)",
-                          outline: "none"
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!isSelected) {
-                            e.currentTarget.style.backgroundColor = "#f9fafb";
-                            e.currentTarget.style.borderColor = "#d1d5db";
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!isSelected) {
-                            e.currentTarget.style.backgroundColor = "#ffffff";
-                            e.currentTarget.style.borderColor = "#e5e7eb";
-                          }
-                        }}
-                      >
-                        {item.nama || `Paket ${index + 1}`}
-                        {item.harga && (
-                          <span style={{
-                            display: "block",
-                            marginTop: "4px",
-                            fontSize: "14px",
-                            fontWeight: "600",
-                            opacity: isSelected ? "1" : "0.8"
-                          }}>
-                            Rp {formatHarga(item.harga)}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
+                          }}
+                        >
+                          {item.nama || `Paket ${index + 1}`}
+                          {item.harga && (
+                            <span style={{
+                              display: "block",
+                              marginTop: "4px",
+                              fontSize: "14px",
+                              fontWeight: "600",
+                              opacity: isSelected ? "1" : "0.8"
+                            }}>
+                              Rp {formatHarga(item.harga)}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
               )}
 
               {/* Form Pemesanan */}
@@ -1145,306 +1145,320 @@ export default function AddProducts3Page() {
                   color: "#000000",
                   marginBottom: "16px"
                 }}>Lengkapi Data:</h2>
-              <div className="compact-form-card">
-                <div className="compact-field">
-                  <label className="compact-label">Nama Lengkap <span className="required">*</span></label>
-                  <input type="text" placeholder="Contoh: Krisdayanti" className="compact-input" />
-                </div>
-                <div className="compact-field">
-                  <label className="compact-label">No. WhatsApp <span className="required">*</span></label>
-                  <div className="wa-input-wrapper">
-                    <div className="wa-prefix">
-                      <span className="flag">🇮🇩</span>
-                      <span className="code">+62</span>
-                    </div>
-                    <input type="tel" placeholder="812345678" className="compact-input wa-input" />
-                  </div>
-                </div>
-                <div className="compact-field">
-                  <label className="compact-label">Email <span className="required">*</span></label>
-                  <input type="email" placeholder="email@example.com" className="compact-input" />
-                </div>
-                
-                {/* Form Wilayah - Cascading Dropdown (Selalu tampil untuk form customer) */}
-                {/* Provinsi Dropdown */}
-                <div className="compact-field">
-                  <label className="compact-label">Provinsi <span className="required">*</span></label>
-                  <select
-                    className="compact-input"
-                    value={selectedRegionIds.provinceId}
-                    onChange={(e) => handleRegionChange("provinsi", e.target.value)}
-                    disabled={loadingRegion.provinces}
-                    style={{ 
-                      appearance: 'auto', 
-                      cursor: loadingRegion.provinces ? 'not-allowed' : 'pointer',
-                      backgroundColor: loadingRegion.provinces ? '#f9fafb' : 'white'
-                    }}
-                  >
-                    <option value="">Pilih Provinsi</option>
-                    {regionData.provinces.map((province) => (
-                      <option key={province.id} value={province.id}>
-                        {province.name}
-                      </option>
-                    ))}
-                  </select>
-                  {loadingRegion.provinces && (
-                    <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
-                      Memuat provinsi...
-                    </small>
-                  )}
-                </div>
-                
-                {/* Kabupaten/Kota Dropdown */}
-                <div className="compact-field">
-                  <label className="compact-label">Kabupaten/Kota <span className="required">*</span></label>
-                  <select
-                    className="compact-input"
-                    value={selectedRegionIds.cityId}
-                    onChange={(e) => handleRegionChange("kabupaten", e.target.value)}
-                    disabled={!selectedRegionIds.provinceId || loadingRegion.cities}
-                    style={{ 
-                      appearance: 'auto', 
-                      cursor: (!selectedRegionIds.provinceId || loadingRegion.cities) ? 'not-allowed' : 'pointer',
-                      backgroundColor: (!selectedRegionIds.provinceId || loadingRegion.cities) ? '#f9fafb' : 'white'
-                    }}
-                  >
-                    <option value="">Pilih Kabupaten/Kota</option>
-                    {regionData.cities.map((city) => (
-                      <option key={city.id} value={city.id}>
-                        {city.name}
-                      </option>
-                    ))}
-                  </select>
-                  {loadingRegion.cities && (
-                    <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
-                      Memuat kabupaten/kota...
-                    </small>
-                  )}
-                </div>
-                
-                {/* Kecamatan Dropdown */}
-                <div className="compact-field">
-                  <label className="compact-label">Kecamatan <span className="required">*</span></label>
-                  <select
-                    className="compact-input"
-                    value={selectedRegionIds.districtId}
-                    onChange={(e) => handleRegionChange("kecamatan", e.target.value)}
-                    disabled={!selectedRegionIds.cityId || loadingRegion.districts}
-                    style={{ 
-                      appearance: 'auto', 
-                      cursor: (!selectedRegionIds.cityId || loadingRegion.districts) ? 'not-allowed' : 'pointer',
-                      backgroundColor: (!selectedRegionIds.cityId || loadingRegion.districts) ? '#f9fafb' : 'white'
-                    }}
-                  >
-                    <option value="">Pilih Kecamatan</option>
-                    {regionData.districts.map((district) => (
-                      <option key={district.id || district.district_id} value={district.id || district.district_id}>
-                        {district.name}
-                      </option>
-                    ))}
-                  </select>
-                  {loadingRegion.districts && (
-                    <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
-                      Memuat kecamatan...
-                    </small>
-                  )}
-                </div>
-                
-                {/* Kode Pos - Auto dari district atau manual input */}
-                <div className="compact-field">
-                  <label className="compact-label">Kode Pos <span className="required">*</span></label>
-                  <input
-                    type="text"
-                    placeholder="Contoh: 12120"
-                    className="compact-input"
-                    value={regionForm.kode_pos}
-                    onChange={(e) => handleRegionChange("kode_pos", e.target.value)}
-                    disabled={!selectedRegionIds.districtId}
-                    style={{ 
-                      cursor: !selectedRegionIds.districtId ? 'not-allowed' : 'text',
-                      backgroundColor: !selectedRegionIds.districtId ? '#f9fafb' : 'white'
-                    }}
-                  />
-                  {!selectedRegionIds.districtId && (
-                    <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
-                      Pilih kecamatan terlebih dahulu
-                    </small>
-                  )}
-                </div>
-                
-                {/* Form Ongkir - Hanya untuk produk Fisik */}
-                {isProdukFisik && (
+                <div className="compact-form-card">
                   <div className="compact-field">
-                    <OngkirCalculator
-                      onSelectOngkir={(info) => {
-                        // Update ongkir di Rincian Pemesanan
-                        const ongkirElement = document.getElementById('rincian-ongkir');
-                        const totalElement = document.getElementById('rincian-total');
-                        
-                        const formatHarga = (harga) => {
-                          if (!harga || harga === 0) return "0";
-                          return harga.toLocaleString("id-ID");
-                        };
-                        
-                        // Get harga yang aktif (bundling atau default)
-                        let activeHarga = pengaturanForm.harga || 0;
-                        if (pengaturanForm.isBundling && selectedBundling !== null && pengaturanForm.bundling && pengaturanForm.bundling[selectedBundling]) {
-                          activeHarga = pengaturanForm.bundling[selectedBundling].harga || 0;
-                        }
-                        
-                        if (ongkirElement && info && info.cost) {
-                          const ongkir = info.cost;
-                          
-                          // Update ongkir display
-                          ongkirElement.textContent = `Rp ${formatHarga(ongkir)}`;
-                          
-                          // Update total (harga aktif + ongkir)
-                          if (totalElement) {
-                            const total = activeHarga + ongkir;
-                            totalElement.textContent = `Rp ${formatHarga(total)}`;
+                    <label className="compact-label">Nama Lengkap <span className="required">*</span></label>
+                    <input type="text" placeholder="Contoh: Krisdayanti" className="compact-input" />
+                  </div>
+                  <div className="compact-field">
+                    <label className="compact-label">No. WhatsApp <span className="required">*</span></label>
+                    <div className="wa-input-wrapper">
+                      <div className="wa-prefix">
+                        <span className="flag">🇮🇩</span>
+                        <span className="code">+62</span>
+                      </div>
+                      <input type="tel" placeholder="812345678" className="compact-input wa-input" />
+                    </div>
+                  </div>
+                  <div className="compact-field">
+                    <label className="compact-label">Email <span className="required">*</span></label>
+                    <input type="email" placeholder="email@example.com" className="compact-input" />
+                  </div>
+
+                  {/* ✅ LOGIC PEMISAHAN FORM: FISIK vs NON-FISIK */}
+                  {isFormBuku ? (
+                    /* === FORM PRODUK FISIK (LENGKAP: PROV -> KOTA -> KEC -> KODEPOS) === */
+                    <>
+                      <div className="compact-field">
+                        <label className="compact-label">Provinsi <span className="required">*</span></label>
+                        <select
+                          className="compact-input"
+                          value={selectedRegionIds.provinceId}
+                          onChange={(e) => handleRegionChange("provinsi", e.target.value)}
+                          disabled={loadingRegion.provinces}
+                          style={{
+                            appearance: 'auto',
+                            cursor: loadingRegion.provinces ? 'not-allowed' : 'pointer',
+                            backgroundColor: loadingRegion.provinces ? '#f9fafb' : 'white'
+                          }}
+                        >
+                          <option value="">Pilih Provinsi</option>
+                          {regionData.provinces.map((province) => (
+                            <option key={province.id} value={province.id}>
+                              {province.name}
+                            </option>
+                          ))}
+                        </select>
+                        {loadingRegion.provinces && (
+                          <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                            Memuat provinsi...
+                          </small>
+                        )}
+                      </div>
+
+                      <div className="compact-field">
+                        <label className="compact-label">Kabupaten/Kota <span className="required">*</span></label>
+                        <select
+                          className="compact-input"
+                          value={selectedRegionIds.cityId}
+                          onChange={(e) => handleRegionChange("kabupaten", e.target.value)}
+                          disabled={!selectedRegionIds.provinceId || loadingRegion.cities}
+                          style={{
+                            appearance: 'auto',
+                            cursor: (!selectedRegionIds.provinceId || loadingRegion.cities) ? 'not-allowed' : 'pointer',
+                            backgroundColor: (!selectedRegionIds.provinceId || loadingRegion.cities) ? '#f9fafb' : 'white'
+                          }}
+                        >
+                          <option value="">Pilih Kabupaten/Kota</option>
+                          {regionData.cities.map((city) => (
+                            <option key={city.id} value={city.id}>
+                              {city.name}
+                            </option>
+                          ))}
+                        </select>
+                        {loadingRegion.cities && (
+                          <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                            Memuat kabupaten/kota...
+                          </small>
+                        )}
+                      </div>
+
+                      <div className="compact-field">
+                        <label className="compact-label">Kecamatan <span className="required">*</span></label>
+                        <select
+                          className="compact-input"
+                          value={selectedRegionIds.districtId}
+                          onChange={(e) => handleRegionChange("kecamatan", e.target.value)}
+                          disabled={!selectedRegionIds.cityId || loadingRegion.districts}
+                          style={{
+                            appearance: 'auto',
+                            cursor: (!selectedRegionIds.cityId || loadingRegion.districts) ? 'not-allowed' : 'pointer',
+                            backgroundColor: (!selectedRegionIds.cityId || loadingRegion.districts) ? '#f9fafb' : 'white'
+                          }}
+                        >
+                          <option value="">Pilih Kecamatan</option>
+                          {regionData.districts.map((district) => (
+                            <option key={district.id || district.district_id} value={district.id || district.district_id}>
+                              {district.name}
+                            </option>
+                          ))}
+                        </select>
+                        {loadingRegion.districts && (
+                          <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                            Memuat kecamatan...
+                          </small>
+                        )}
+                      </div>
+
+                      <div className="compact-field">
+                        <label className="compact-label">Kode Pos <span className="required">*</span></label>
+                        <input
+                          type="text"
+                          placeholder="Contoh: 12120"
+                          className="compact-input"
+                          value={regionForm.kode_pos}
+                          onChange={(e) => handleRegionChange("kode_pos", e.target.value)}
+                          disabled={!selectedRegionIds.districtId}
+                          style={{
+                            cursor: !selectedRegionIds.districtId ? 'not-allowed' : 'text',
+                            backgroundColor: !selectedRegionIds.districtId ? '#f9fafb' : 'white'
+                          }}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    /* === FORM PRODUK NON-FISIK (HANYA SEARCH KECAMATAN) === */
+                    <div className="compact-field" style={{ position: 'relative' }}>
+                      <label className="compact-label">Kecamatan <span className="required">*</span></label>
+                      <input
+                        type="text"
+                        className="compact-input"
+                        placeholder="Ketik untuk mencari kecamatan..."
+                        style={{
+                          cursor: 'text',
+                          backgroundColor: 'white'
+                        }}
+                        readOnly // Read only for preview in admin panel
+                      />
+                      <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                        *Fitur pencarian aktif di halaman publik
+                      </small>
+                    </div>
+                  )}
+
+                  {/* Form Ongkir - Hanya untuk produk Fisik */}
+                  {isProdukFisik && (
+                    <div className="compact-field">
+                      <OngkirCalculator
+                        onSelectOngkir={(info) => {
+                          // Update ongkir di Rincian Pemesanan
+                          const ongkirElement = document.getElementById('rincian-ongkir');
+                          const totalElement = document.getElementById('rincian-total');
+
+                          const formatHarga = (harga) => {
+                            if (!harga || harga === 0) return "0";
+                            return harga.toLocaleString("id-ID");
+                          };
+
+                          // Get harga yang aktif (bundling atau default)
+                          let activeHarga = pengaturanForm.harga || 0;
+                          if (pengaturanForm.isBundling && selectedBundling !== null && pengaturanForm.bundling && pengaturanForm.bundling[selectedBundling]) {
+                            activeHarga = pengaturanForm.bundling[selectedBundling].harga || 0;
                           }
-                        } else if (ongkirElement) {
-                          ongkirElement.textContent = "Rp 0";
-                          // Reset total ke harga aktif saja
+
+                          if (ongkirElement && info && info.cost) {
+                            const ongkir = info.cost;
+
+                            // Update ongkir display
+                            ongkirElement.textContent = `Rp ${formatHarga(ongkir)}`;
+
+                            // Update total (harga aktif + ongkir)
+                            if (totalElement) {
+                              const total = activeHarga + ongkir;
+                              totalElement.textContent = `Rp ${formatHarga(total)}`;
+                            }
+                          } else if (ongkirElement) {
+                            ongkirElement.textContent = "Rp 0";
+                            // Reset total ke harga aktif saja
+                            if (totalElement) {
+                              totalElement.textContent = `Rp ${formatHarga(activeHarga)}`;
+                            }
+                          }
+                        }}
+                        onAddressChange={(address) => {
+                          // Reset ongkir saat alamat berubah
+                          const ongkirElement = document.getElementById('rincian-ongkir');
+                          const totalElement = document.getElementById('rincian-total');
+
+                          const formatHarga = (harga) => {
+                            if (!harga || harga === 0) return "0";
+                            return harga.toLocaleString("id-ID");
+                          };
+
+                          // Get harga yang aktif (bundling atau default)
+                          let activeHarga = pengaturanForm.harga || 0;
+                          if (pengaturanForm.isBundling && selectedBundling !== null && pengaturanForm.bundling && pengaturanForm.bundling[selectedBundling]) {
+                            activeHarga = pengaturanForm.bundling[selectedBundling].harga || 0;
+                          }
+
+                          if (ongkirElement) {
+                            ongkirElement.textContent = "Rp 0";
+                          }
+
                           if (totalElement) {
                             totalElement.textContent = `Rp ${formatHarga(activeHarga)}`;
                           }
-                        }
-                      }}
-                      onAddressChange={(address) => {
-                        // Reset ongkir saat alamat berubah
-                        const ongkirElement = document.getElementById('rincian-ongkir');
-                        const totalElement = document.getElementById('rincian-total');
-                        
+                        }}
+                        defaultCourier="jne"
+                        compact={true}
+                      />
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* Rincian Pesanan - General untuk semua kategori */}
+              <section className="preview-form-section rincian-pesanan-section" aria-label="Rincian Pesanan">
+                <div className="rincian-pesanan-card">
+                  <h3 className="rincian-pesanan-title">RINCIAN PESANAN:</h3>
+                  <div className="rincian-pesanan-item">
+                    <div className="rincian-pesanan-detail">
+                      <div className="rincian-pesanan-name">{pengaturanForm.nama || "Nama Produk"}</div>
+                    </div>
+                    <div className="rincian-pesanan-price">
+                      {(() => {
                         const formatHarga = (harga) => {
                           if (!harga || harga === 0) return "0";
                           return harga.toLocaleString("id-ID");
                         };
-                        
-                        // Get harga yang aktif (bundling atau default)
-                        let activeHarga = pengaturanForm.harga || 0;
+                        // Gunakan harga bundling jika dipilih, jika tidak gunakan harga default
+                        let harga = pengaturanForm.harga || 0;
                         if (pengaturanForm.isBundling && selectedBundling !== null && pengaturanForm.bundling && pengaturanForm.bundling[selectedBundling]) {
-                          activeHarga = pengaturanForm.bundling[selectedBundling].harga || 0;
+                          harga = pengaturanForm.bundling[selectedBundling].harga || 0;
                         }
-                        
-                        if (ongkirElement) {
-                          ongkirElement.textContent = "Rp 0";
-                        }
-                        
-                        if (totalElement) {
-                          totalElement.textContent = `Rp ${formatHarga(activeHarga)}`;
-                        }
-                      }}
-                      defaultCourier="jne"
-                      compact={true}
-                    />
-                  </div>
-                )}
-              </div>
-            </section>
-
-            {/* Rincian Pesanan - General untuk semua kategori */}
-            <section className="preview-form-section rincian-pesanan-section" aria-label="Rincian Pesanan">
-              <div className="rincian-pesanan-card">
-                <h3 className="rincian-pesanan-title">RINCIAN PESANAN:</h3>
-                <div className="rincian-pesanan-item">
-                  <div className="rincian-pesanan-detail">
-                    <div className="rincian-pesanan-name">{pengaturanForm.nama || "Nama Produk"}</div>
-                  </div>
-                  <div className="rincian-pesanan-price">
-                    {(() => {
-                      const formatHarga = (harga) => {
-                        if (!harga || harga === 0) return "0";
-                        return harga.toLocaleString("id-ID");
-                      };
-                      // Gunakan harga bundling jika dipilih, jika tidak gunakan harga default
-                      let harga = pengaturanForm.harga || 0;
-                      if (pengaturanForm.isBundling && selectedBundling !== null && pengaturanForm.bundling && pengaturanForm.bundling[selectedBundling]) {
-                        harga = pengaturanForm.bundling[selectedBundling].harga || 0;
-                      }
-                      return `Rp ${formatHarga(harga)}`;
-                    })()}
-                  </div>
-                </div>
-                {/* Ongkir - Hanya untuk produk Fisik */}
-                {isProdukFisik && (
-                  <>
-                    <div className="rincian-pesanan-item">
-                      <div className="rincian-pesanan-detail">
-                        <div className="rincian-pesanan-name">Ongkos Kirim</div>
-                      </div>
-                      <div className="rincian-pesanan-price" id="rincian-ongkir">
-                        Rp 0
-                      </div>
+                        return `Rp ${formatHarga(harga)}`;
+                      })()}
                     </div>
-                  </>
-                )}
-                <div className="rincian-pesanan-divider"></div>
-                <div className="rincian-pesanan-total">
-                  <span className="rincian-pesanan-total-label">Total</span>
-                  <span className="rincian-pesanan-total-price" id="rincian-total">
-                    {(() => {
-                      const formatHarga = (harga) => {
-                        if (!harga || harga === 0) return "0";
-                        return harga.toLocaleString("id-ID");
-                      };
-                      // Gunakan harga bundling jika dipilih, jika tidak gunakan harga default
-                      let harga = pengaturanForm.harga || 0;
-                      if (pengaturanForm.isBundling && selectedBundling !== null && pengaturanForm.bundling && pengaturanForm.bundling[selectedBundling]) {
-                        harga = pengaturanForm.bundling[selectedBundling].harga || 0;
-                      }
-                      // Untuk produk fisik, ongkir akan ditambahkan saat user pilih ongkir
-                      // Untuk non-fisik, total = harga saja (tidak ada ongkir)
-                      return `Rp ${formatHarga(harga)}`;
-                    })()}
-                  </span>
+                  </div>
+                  {/* Ongkir - Hanya untuk produk Fisik */}
+                  {isProdukFisik && (
+                    <>
+                      <div className="rincian-pesanan-item">
+                        <div className="rincian-pesanan-detail">
+                          <div className="rincian-pesanan-name">Ongkos Kirim</div>
+                        </div>
+                        <div className="rincian-pesanan-price" id="rincian-ongkir">
+                          Rp 0
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  <div className="rincian-pesanan-divider"></div>
+                  <div className="rincian-pesanan-total">
+                    <span className="rincian-pesanan-total-label">Total</span>
+                    <span className="rincian-pesanan-total-price" id="rincian-total">
+                      {(() => {
+                        const formatHarga = (harga) => {
+                          if (!harga || harga === 0) return "0";
+                          return harga.toLocaleString("id-ID");
+                        };
+                        // Gunakan harga bundling jika dipilih, jika tidak gunakan harga default
+                        let harga = pengaturanForm.harga || 0;
+                        if (pengaturanForm.isBundling && selectedBundling !== null && pengaturanForm.bundling && pengaturanForm.bundling[selectedBundling]) {
+                          harga = pengaturanForm.bundling[selectedBundling].harga || 0;
+                        }
+                        // Untuk produk fisik, ongkir akan ditambahkan saat user pilih ongkir
+                        // Untuk non-fisik, total = harga saja (tidak ada ongkir)
+                        return `Rp ${formatHarga(harga)}`;
+                      })()}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </section>
+              </section>
 
               {/* Payment Section - Selalu muncul */}
               <section className="preview-payment-section payment-section" aria-label="Payment methods" style={{ marginBottom: "24px" }}>
                 <h2 className="payment-title" style={{ fontSize: "18px", fontWeight: "600", color: "#000000", marginBottom: "16px" }}>
                   Metode Pembayaran
                 </h2>
-              <div className="payment-options-vertical">
-                <label className="payment-option-row">
-                  <input type="radio" name="payment" value="manual" />
-                  <span className="payment-label">Bank Transfer (Manual)</span>
-                  <div className="payment-icons-inline">
-                    <img className="pay-icon" src="/assets/bca.png" alt="BCA" />
-                  </div>
-                </label>
-                <label className="payment-option-row">
-                  <input type="radio" name="payment" value="ewallet" />
-                  <span className="payment-label">E-Payment</span>
-                  <div className="payment-icons-inline">
-                    <img className="pay-icon" src="/assets/qris.svg" alt="QRIS" />
-                    <img className="pay-icon" src="/assets/dana.png" alt="DANA" />
-                    <img className="pay-icon" src="/assets/ovo.png" alt="OVO" />
-                    <img className="pay-icon" src="/assets/link.png" alt="LinkAja" />
-                  </div>
-                </label>
-                <label className="payment-option-row">
-                  <input type="radio" name="payment" value="cc" />
-                  <span className="payment-label">Credit / Debit Card</span>
-                  <div className="payment-icons-inline">
-                    <img className="pay-icon" src="/assets/visa.svg" alt="Visa" />
-                    <img className="pay-icon" src="/assets/master.png" alt="Mastercard" />
-                    <img className="pay-icon" src="/assets/jcb.png" alt="JCB" />
-                  </div>
-                </label>
-                <label className="payment-option-row">
-                  <input type="radio" name="payment" value="va" />
-                  <span className="payment-label">Virtual Account</span>
-                  <div className="payment-icons-inline">
-                    <img className="pay-icon" src="/assets/bca.png" alt="BCA" />
-                    <img className="pay-icon" src="/assets/mandiri.png" alt="Mandiri" />
-                    <img className="pay-icon" src="/assets/bni.png" alt="BNI" />
-                    <img className="pay-icon" src="/assets/permata.svg" alt="Permata" />
-                  </div>
-                </label>
-              </div>
+                <div className="payment-options-vertical">
+                  <label className="payment-option-row">
+                    <input type="radio" name="payment" value="manual" />
+                    <span className="payment-label">Bank Transfer (Manual)</span>
+                    <div className="payment-icons-inline">
+                      <img className="pay-icon" src="/assets/bca.png" alt="BCA" />
+                    </div>
+                  </label>
+                  <label className="payment-option-row">
+                    <input type="radio" name="payment" value="ewallet" />
+                    <span className="payment-label">E-Payment</span>
+                    <div className="payment-icons-inline">
+                      <img className="pay-icon" src="/assets/qris.svg" alt="QRIS" />
+                      <img className="pay-icon" src="/assets/dana.png" alt="DANA" />
+                      <img className="pay-icon" src="/assets/ovo.png" alt="OVO" />
+                      <img className="pay-icon" src="/assets/link.png" alt="LinkAja" />
+                    </div>
+                  </label>
+                  <label className="payment-option-row">
+                    <input type="radio" name="payment" value="cc" />
+                    <span className="payment-label">Credit / Debit Card</span>
+                    <div className="payment-icons-inline">
+                      <img className="pay-icon" src="/assets/visa.svg" alt="Visa" />
+                      <img className="pay-icon" src="/assets/master.png" alt="Mastercard" />
+                      <img className="pay-icon" src="/assets/jcb.png" alt="JCB" />
+                    </div>
+                  </label>
+                  <label className="payment-option-row">
+                    <input type="radio" name="payment" value="va" />
+                    <span className="payment-label">Virtual Account</span>
+                    <div className="payment-icons-inline">
+                      <img className="pay-icon" src="/assets/bca.png" alt="BCA" />
+                      <img className="pay-icon" src="/assets/mandiri.png" alt="Mandiri" />
+                      <img className="pay-icon" src="/assets/bni.png" alt="BNI" />
+                      <img className="pay-icon" src="/assets/permata.svg" alt="Permata" />
+                    </div>
+                  </label>
+                </div>
               </section>
 
               {/* Button Pesan Sekarang */}
@@ -1476,26 +1490,26 @@ export default function AddProducts3Page() {
         // ✅ ARSITEKTUR BENAR: config.componentId adalah SATU-SATUNYA sumber kebenaran
         // ✅ FALLBACK: Untuk kompatibilitas data lama, generate componentId jika tidak ada
         let sectionComponentId = blockToRender.config?.componentId;
-        
+
         if (!sectionComponentId) {
           // ✅ FALLBACK: Generate componentId untuk data lama yang tidak punya config.componentId
           sectionComponentId = blockToRender.data?.componentId || `section-${blockToRender.id}`;
-          
+
           // ✅ Auto-fix: Update block dengan config.componentId untuk data lama
           if (!blockToRender.config) {
             blockToRender.config = {};
           }
           blockToRender.config.componentId = sectionComponentId;
-          
+
           console.warn(`[SECTION FALLBACK] Section block "${blockToRender.id}" tidak memiliki config.componentId, menggunakan fallback: "${sectionComponentId}"`);
         }
-        
+
         // ✅ ARSITEKTUR BENAR: Filter child berdasarkan parentId === sectionComponentId
         const childComponents = blocks.filter(b => {
           if (!b || !b.type) return false;
           return b.parentId === sectionComponentId;
         });
-        
+
         // ✅ DEBUG: Log untuk tracking identifier
         console.log(`[SECTION RENDER] Section ID: "${sectionComponentId}"`, {
           sectionBlockId: blockToRender.id,
@@ -1510,7 +1524,7 @@ export default function AddProducts3Page() {
               match: b.parentId === sectionComponentId ? "✅ MATCH" : "❌ NO MATCH"
             }))
         });
-        
+
         // ✅ FIX #3: Build section styles from block.style.container, bukan block.data
         const sectionData = blockToRender.data || {};
         const sectionContainerStyle = blockToRender.style?.container || {};
@@ -1518,19 +1532,19 @@ export default function AddProducts3Page() {
           marginRight: `${sectionContainerStyle.margin?.right || sectionContainerStyle.marginRight || sectionData.marginRight || 0}px`,
           marginLeft: `${sectionContainerStyle.margin?.left || sectionContainerStyle.marginLeft || sectionData.marginLeft || 0}px`,
           marginBottom: `${sectionContainerStyle.margin?.bottom || sectionContainerStyle.marginBottom || sectionContainerStyle.marginBetween || sectionData.marginBetween || 16}px`,
-          border: sectionContainerStyle.border?.width 
-            ? `${sectionContainerStyle.border.width}px ${sectionContainerStyle.border.style || 'solid'} ${sectionContainerStyle.border.color || "#000000"}` 
+          border: sectionContainerStyle.border?.width
+            ? `${sectionContainerStyle.border.width}px ${sectionContainerStyle.border.style || 'solid'} ${sectionContainerStyle.border.color || "#000000"}`
             : (sectionData.border ? `${sectionData.border}px solid ${sectionData.borderColor || "#000000"}` : "none"),
           backgroundColor: sectionContainerStyle.background?.color || sectionContainerStyle.backgroundColor || sectionData.backgroundColor || "#ffffff",
           borderRadius: sectionContainerStyle.border?.radius || (sectionData.borderRadius === "none" ? "0" : sectionData.borderRadius || "0"),
           boxShadow: sectionContainerStyle.shadow || (sectionData.boxShadow === "none" ? "none" : sectionData.boxShadow || "none"),
           display: "block",
           width: "100%",
-          padding: sectionContainerStyle.padding 
-            ? `${sectionContainerStyle.padding.top || 0}px ${sectionContainerStyle.padding.right || 0}px ${sectionContainerStyle.padding.bottom || 0}px ${sectionContainerStyle.padding.left || 0}px` 
+          padding: sectionContainerStyle.padding
+            ? `${sectionContainerStyle.padding.top || 0}px ${sectionContainerStyle.padding.right || 0}px ${sectionContainerStyle.padding.bottom || 0}px ${sectionContainerStyle.padding.left || 0}px`
             : (sectionData.padding || "16px"),
         };
-        
+
         return (
           <div className="preview-section" style={sectionStyles}>
             {childComponents.length === 0 ? (
@@ -1543,7 +1557,7 @@ export default function AddProducts3Page() {
                   console.warn("[SECTION] Child block tidak valid:", childBlock);
                   return null;
                 }
-        
+
                 return (
                   <div key={childBlock.id} className="preview-section-child">
                     {renderPreview(childBlock)}
@@ -1552,7 +1566,7 @@ export default function AddProducts3Page() {
               })
             )}
           </div>
-        );        
+        );
       default:
         return <div className="preview-placeholder">{block.type}</div>;
     }
@@ -1753,7 +1767,7 @@ export default function AddProducts3Page() {
   // ==========================================================
   // LOGIC FORM WILAYAH (CASCADING DROPDOWN) - FORM CUSTOMER
   // ==========================================================
-  
+
   // Load provinces
   const loadProvinces = async () => {
     setLoadingRegion(prev => ({ ...prev, provinces: true }));
@@ -1766,7 +1780,7 @@ export default function AddProducts3Page() {
       setLoadingRegion(prev => ({ ...prev, provinces: false }));
     }
   };
-  
+
   // Load cities
   const loadCities = async (provinceId) => {
     setLoadingRegion(prev => ({ ...prev, cities: true }));
@@ -1779,7 +1793,7 @@ export default function AddProducts3Page() {
       setLoadingRegion(prev => ({ ...prev, cities: false }));
     }
   };
-  
+
   // Load districts
   const loadDistricts = async (cityId) => {
     setLoadingRegion(prev => ({ ...prev, districts: true }));
@@ -1792,19 +1806,19 @@ export default function AddProducts3Page() {
       setLoadingRegion(prev => ({ ...prev, districts: false }));
     }
   };
-  
+
   // Handler untuk update region form (HANYA NAMA)
   const handleRegionChange = (field, value, id = null) => {
     if (field === "provinsi") {
       // Konversi value ke string untuk matching yang lebih robust
       const provinceId = String(value || "");
       // Cari province dengan konversi tipe data (handle string/number)
-      const province = regionData.provinces.find(p => 
+      const province = regionData.provinces.find(p =>
         String(p.id) === provinceId || p.id === value || p.id === Number(value)
       );
       setSelectedRegionIds(prev => ({ ...prev, provinceId: value || "", cityId: "", districtId: "" }));
-      setRegionForm(prev => ({ 
-        ...prev, 
+      setRegionForm(prev => ({
+        ...prev,
         provinsi: province?.name || "",
         kabupaten: "",
         kecamatan: "",
@@ -1814,12 +1828,12 @@ export default function AddProducts3Page() {
       // Konversi value ke string untuk matching yang lebih robust
       const cityId = String(value || "");
       // Cari city dengan konversi tipe data (handle string/number)
-      const city = regionData.cities.find(c => 
+      const city = regionData.cities.find(c =>
         String(c.id) === cityId || c.id === value || c.id === Number(value)
       );
       setSelectedRegionIds(prev => ({ ...prev, cityId: value || "", districtId: "" }));
-      setRegionForm(prev => ({ 
-        ...prev, 
+      setRegionForm(prev => ({
+        ...prev,
         kabupaten: city?.name || "",
         kecamatan: "",
         kode_pos: ""
@@ -1828,17 +1842,17 @@ export default function AddProducts3Page() {
       // Konversi value ke string untuk matching yang lebih robust
       const districtId = String(value || "");
       // Cari district dengan konversi tipe data (handle string/number dan id/district_id)
-      const district = regionData.districts.find(d => 
-        String(d.id) === districtId || 
+      const district = regionData.districts.find(d =>
+        String(d.id) === districtId ||
         String(d.district_id) === districtId ||
-        d.id === value || 
+        d.id === value ||
         d.district_id === value ||
         d.id === Number(value) ||
         d.district_id === Number(value)
       );
       setSelectedRegionIds(prev => ({ ...prev, districtId: value || "" }));
-      setRegionForm(prev => ({ 
-        ...prev, 
+      setRegionForm(prev => ({
+        ...prev,
         kecamatan: district?.name || "",
         kode_pos: district?.postal_code || "" // Ambil kode pos dari district jika ada
       }));
@@ -1846,13 +1860,13 @@ export default function AddProducts3Page() {
       setRegionForm(prev => ({ ...prev, kode_pos: value }));
     }
   };
-  
+
   // Load provinces on mount (selalu load untuk form customer)
   useEffect(() => {
     loadProvinces();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  
+
   // Load cities when province selected
   useEffect(() => {
     if (selectedRegionIds.provinceId) {
@@ -1867,7 +1881,7 @@ export default function AddProducts3Page() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRegionIds.provinceId]);
-  
+
   // Load districts when city selected
   useEffect(() => {
     if (selectedRegionIds.cityId) {
@@ -1893,11 +1907,11 @@ export default function AddProducts3Page() {
         // Fetch kategori
         const kategoriRes = await fetch("/api/sales/kategori-produk", { headers });
         const kategoriData = await kategoriRes.json();
-        
+
         const activeCategories = Array.isArray(kategoriData.data)
           ? kategoriData.data.filter((k) => k.status === "1")
           : [];
-        
+
         const kategoriOpts = activeCategories.map((k) => ({
           label: k.nama,
           value: String(k.id),
@@ -1907,12 +1921,12 @@ export default function AddProducts3Page() {
         // Fetch sales list from /api/sales/lead/sales-list
         const salesRes = await fetch("/api/sales/lead/sales-list", { headers });
         const salesJson = await salesRes.json();
-        
+
         const salesOpts = Array.isArray(salesJson.data)
           ? salesJson.data.map((sales) => ({
-              label: sales.nama || sales.name || `Sales ${sales.id}`,
-              value: String(sales.id),
-            }))
+            label: sales.nama || sales.name || `Sales ${sales.id}`,
+            value: String(sales.id),
+          }))
           : [];
         setUserOptions(salesOpts);
       } catch (err) {
@@ -1925,50 +1939,50 @@ export default function AddProducts3Page() {
   // Fungsi untuk generate kode dari nama (slugify) - Single source of truth
   const formatSlug = (text) => {
     if (!text) return "";
-  
+
     return text
       .toLowerCase()
       .replace(/\s+/g, "-")        // ⬅️ spasi DIUBAH dulu
       .replace(/[^a-z0-9-]/g, "")
       .replace(/-+/g, "-");
   };
-  
-  
+
+
   // Handler khusus untuk input kode produk - lebih stabil untuk ketik manual
   const handleKodeChange = (e) => {
     const input = e.target;
     const rawValue = input.value;
-  
+
     const cursorPos = input.selectionStart ?? 0;
-  
+
     const formattedValue = formatSlug(rawValue);
     const url = formattedValue ? `/${formattedValue}` : "";
-  
+
     const beforeCursor = rawValue.slice(0, cursorPos);
     const formattedBeforeCursor = formatSlug(beforeCursor);
-  
+
     const newCursorPos = Math.min(
       formattedBeforeCursor.length,
       formattedValue.length
     );
-  
+
     setPengaturanForm(prev => ({
       ...prev,
       kode: formattedValue,
       url
     }));
   };
-  
+
 
   // Handler untuk update form pengaturan
   const handlePengaturanChange = (key, value) => {
     if (key === "nama") {
       // Nama produk tidak auto-generate kode dan URL
-      setPengaturanForm((prev) => ({ 
-        ...prev, 
+      setPengaturanForm((prev) => ({
+        ...prev,
         nama: value
       }));
-      
+
       // Update nama produk di Rincian Pemesanan
       requestAnimationFrame(() => {
         const namaElement = document.querySelector('.rincian-pesanan-name');
@@ -1980,36 +1994,36 @@ export default function AddProducts3Page() {
       // Auto-format kode menggunakan single source of truth
       const formattedKode = formatSlug(value);
       const url = formattedKode ? `/${formattedKode}` : "";
-      setPengaturanForm((prev) => ({ 
-        ...prev, 
+      setPengaturanForm((prev) => ({
+        ...prev,
         kode: formattedKode,
         url: url
       }));
     } else {
       setPengaturanForm((prev) => ({ ...prev, [key]: value }));
-      
+
       // Update total di Rincian Pemesanan saat harga berubah
       if (key === "harga") {
         requestAnimationFrame(() => {
           const totalElement = document.getElementById('rincian-total');
           const ongkirElement = document.getElementById('rincian-ongkir');
-          
+
           if (totalElement) {
             const harga = value || 0;
             // Hanya hitung ongkir jika produk fisik
-            const ongkir = (pengaturanForm.jenis_produk === "fisik" && ongkirElement) 
-              ? parseInt(ongkirElement.textContent.replace(/[^0-9]/g, '')) || 0 
+            const ongkir = (pengaturanForm.jenis_produk === "fisik" && ongkirElement)
+              ? parseInt(ongkirElement.textContent.replace(/[^0-9]/g, '')) || 0
               : 0;
             const total = harga + ongkir;
-            
+
             const formatHarga = (harga) => {
               if (!harga || harga === 0) return "0";
               return harga.toLocaleString("id-ID");
             };
-            
+
             totalElement.textContent = `Rp ${formatHarga(total)}`;
           }
-          
+
           // Update harga produk di Rincian Pemesanan
           const hargaElement = document.querySelector('.rincian-pesanan-item .rincian-pesanan-price');
           if (hargaElement && !hargaElement.id) {
@@ -2021,24 +2035,24 @@ export default function AddProducts3Page() {
           }
         });
       }
-      
+
       // Reset ongkir saat jenis produk berubah
       if (key === "jenis_produk") {
         requestAnimationFrame(() => {
           const ongkirElement = document.getElementById('rincian-ongkir');
           const totalElement = document.getElementById('rincian-total');
-          
+
           const formatHarga = (harga) => {
             if (!harga || harga === 0) return "0";
             return harga.toLocaleString("id-ID");
           };
-          
+
           // Get harga aktif (bundling atau default)
           let activeHarga = pengaturanForm.harga || 0;
           if (pengaturanForm.isBundling && selectedBundling !== null && pengaturanForm.bundling && pengaturanForm.bundling[selectedBundling]) {
             activeHarga = pengaturanForm.bundling[selectedBundling].harga || 0;
           }
-          
+
           if (value === "non-fisik") {
             // Non-fisik: reset ongkir dan total = harga saja
             if (ongkirElement) {
@@ -2069,7 +2083,7 @@ export default function AddProducts3Page() {
   const transformBlock = (block) => {
     // ✅ FIX: Ambil parentId dari root level block, bukan dari data.parentId
     const { type, data = {}, order, parentId } = block;
-    
+
     // Extract content, style, dan config berdasarkan type
     let content = {};
     let style = {};
@@ -2572,16 +2586,16 @@ export default function AddProducts3Page() {
       pengaturanForm.facebook_pixels.forEach((pixelId, index) => {
         if (pixelId && pixelId.trim()) {
           const events = [];
-          
+
           // Transform Facebook Events
           if (pengaturanForm.facebook_events && pengaturanForm.facebook_events[index]) {
-            const eventNames = Array.isArray(pengaturanForm.facebook_events[index]) 
-              ? pengaturanForm.facebook_events[index] 
+            const eventNames = Array.isArray(pengaturanForm.facebook_events[index])
+              ? pengaturanForm.facebook_events[index]
               : [];
-            
+
             eventNames.forEach((eventName, eventIndex) => {
               const eventParams = pengaturanForm.facebook_event_params?.[index]?.[eventIndex] || {};
-              
+
               // Convert value ke valueSource jika ada
               const params = { ...eventParams };
               if (params.value !== undefined) {
@@ -2597,7 +2611,7 @@ export default function AddProducts3Page() {
                 }
                 delete params.value; // Hapus value hard-coded
               }
-              
+
               events.push({
                 name: eventName,
                 params: {
@@ -2633,13 +2647,13 @@ export default function AddProducts3Page() {
       pengaturanForm.tiktok_pixels.forEach((pixelId, index) => {
         if (pixelId && pixelId.trim()) {
           const events = [];
-          
+
           // Transform TikTok Events
           if (pengaturanForm.tiktok_events && pengaturanForm.tiktok_events[index]) {
-            const eventNames = Array.isArray(pengaturanForm.tiktok_events[index]) 
-              ? pengaturanForm.tiktok_events[index] 
+            const eventNames = Array.isArray(pengaturanForm.tiktok_events[index])
+              ? pengaturanForm.tiktok_events[index]
               : [];
-            
+
             eventNames.forEach((eventName) => {
               events.push({
                 name: eventName,
@@ -2711,7 +2725,7 @@ export default function AddProducts3Page() {
   // Transformasi form untuk landingpage
   const transformForm = () => {
     const isFisik = pengaturanForm.jenis_produk === "fisik";
-    
+
     return {
       type: pengaturanForm.jenis_produk || "non-fisik",
       fields: [
@@ -2868,9 +2882,9 @@ export default function AddProducts3Page() {
 
     try {
       toast.loading("Menyimpan produk...", { id: "save-product" });
-      
+
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      
+
       const response = await fetch("/api/sales/produk", {
         method: "POST",
         headers: {
@@ -2891,7 +2905,7 @@ export default function AddProducts3Page() {
       }
 
       toast.success("Produk berhasil disimpan dan dipublish!", { id: "save-product" });
-      
+
       // Redirect langsung ke halaman products
       router.push("/sales/products");
 
@@ -2986,9 +3000,9 @@ export default function AddProducts3Page() {
 
     try {
       toast.loading("Menyimpan draft...", { id: "save-draft" });
-      
+
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      
+
       // ✅ UNTUK ADD MODE: Gunakan POST (create baru)
       const response = await fetch("/api/sales/produk", {
         method: "POST",
@@ -3019,7 +3033,7 @@ export default function AddProducts3Page() {
       }
 
       toast.success("Draft berhasil disimpan!", { id: "save-draft" });
-      
+
       // Tutup modal dan redirect
       setIsSaving(false);
       setShowExitModal(false);
@@ -3043,7 +3057,7 @@ export default function AddProducts3Page() {
     // ✅ FIX: Komponen bisa digunakan berkali-kali, baik di dalam section maupun di luar section
     // TIDAK perlu filter komponen yang sudah digunakan di section
     // User bebas menambahkan komponen yang sama berkali-kali
-    
+
     return (
       <div className="component-modal-content">
         {Object.entries(COMPONENT_CATEGORIES).map(([key, category]) => (
@@ -3061,12 +3075,12 @@ export default function AddProducts3Page() {
                       onClick={() => handleAddComponent(component.id)}
                       title={component.name}
                     >
-                      <div 
+                      <div
                         className="component-icon"
                         style={{ backgroundColor: "#f3f4f6" }}
                       >
-                        <IconComponent 
-                          size={20} 
+                        <IconComponent
+                          size={20}
                           style={{ color: "#6b7280" }}
                         />
                       </div>
@@ -3127,56 +3141,56 @@ export default function AddProducts3Page() {
           <div className="sidebar-content">
             {activeTab === "konten" ? (
               <>
-            {/* Komponen yang sudah ditambahkan */}
-            {/* ✅ Filter: Jangan tampilkan komponen yang adalah child dari section */}
-            {(() => {
-              // ✅ ARSITEKTUR BENAR: Cari semua section componentIds untuk filter child blocks
-              // Hanya pakai config.componentId, TIDAK ADA fallback
-              const sectionComponentIds = new Set();
-              blocks.forEach(block => {
-                if (block && block.type === 'section' && block.config?.componentId) {
-                  sectionComponentIds.add(block.config.componentId);
-                }
-              });
-              
-              // Filter blocks: jangan tampilkan block yang adalah child dari section
-              const filteredBlocks = blocks.filter(block => {
-                if (!block || !block.type) return false;
-                
-                // ✅ Jangan tampilkan block yang adalah child dari section
-                // Check by parentId
-                if (block.parentId && sectionComponentIds.has(block.parentId)) {
-                  return false; // Ini adalah child dari section, jangan tampilkan di sidebar
-                }
-                
-                // ✅ ARSITEKTUR BENAR: Check by parentId sudah dilakukan di atas, tidak perlu check data.children
-                
-                return true;
-              });
-              
-              return filteredBlocks.map((block, index) => (
-                <div 
-                  key={block.id} 
-                  className="sidebar-component-item"
-                  ref={(el) => {
-                    if (el) {
-                      componentRefs.current[block.id] = el;
+                {/* Komponen yang sudah ditambahkan */}
+                {/* ✅ Filter: Jangan tampilkan komponen yang adalah child dari section */}
+                {(() => {
+                  // ✅ ARSITEKTUR BENAR: Cari semua section componentIds untuk filter child blocks
+                  // Hanya pakai config.componentId, TIDAK ADA fallback
+                  const sectionComponentIds = new Set();
+                  blocks.forEach(block => {
+                    if (block && block.type === 'section' && block.config?.componentId) {
+                      sectionComponentIds.add(block.config.componentId);
                     }
-                  }}
+                  });
+
+                  // Filter blocks: jangan tampilkan block yang adalah child dari section
+                  const filteredBlocks = blocks.filter(block => {
+                    if (!block || !block.type) return false;
+
+                    // ✅ Jangan tampilkan block yang adalah child dari section
+                    // Check by parentId
+                    if (block.parentId && sectionComponentIds.has(block.parentId)) {
+                      return false; // Ini adalah child dari section, jangan tampilkan di sidebar
+                    }
+
+                    // ✅ ARSITEKTUR BENAR: Check by parentId sudah dilakukan di atas, tidak perlu check data.children
+
+                    return true;
+                  });
+
+                  return filteredBlocks.map((block, index) => (
+                    <div
+                      key={block.id}
+                      className="sidebar-component-item"
+                      ref={(el) => {
+                        if (el) {
+                          componentRefs.current[block.id] = el;
+                        }
+                      }}
+                    >
+                      {renderComponent(block, index)}
+                    </div>
+                  ));
+                })()}
+
+                {/* Button Tambah Komponen Baru - Selalu di bawah komponen terakhir */}
+                <button
+                  className="add-component-btn"
+                  onClick={() => setShowComponentModal(true)}
                 >
-                  {renderComponent(block, index)}
-                </div>
-              ));
-            })()}
-            
-            {/* Button Tambah Komponen Baru - Selalu di bawah komponen terakhir */}
-            <button
-              className="add-component-btn"
-              onClick={() => setShowComponentModal(true)}
-            >
-              <span className="add-component-icon">+</span>
-              <span className="add-component-text">Tambah Komponen Baru</span>
-            </button>
+                  <span className="add-component-icon">+</span>
+                  <span className="add-component-text">Tambah Komponen Baru</span>
+                </button>
               </>
             ) : (
               <div className="pengaturan-content">
@@ -3184,7 +3198,7 @@ export default function AddProducts3Page() {
                 <div className="pengaturan-section">
                   <h3 className="pengaturan-section-title">Informasi Dasar</h3>
                   <p className="pengaturan-section-description">Data utama produk yang akan ditampilkan</p>
-                  
+
                   <div className="pengaturan-form-group">
                     <label className="pengaturan-label">
                       Nama Produk <span className="required">*</span>
@@ -3210,7 +3224,7 @@ export default function AddProducts3Page() {
                       onChange={(e) => {
                         const selectedValue = e.value;
                         const finalValue = selectedValue !== null && selectedValue !== undefined && selectedValue !== ""
-                          ? String(selectedValue) 
+                          ? String(selectedValue)
                           : null;
                         handlePengaturanChange("kategori", finalValue);
                         setProductKategori(finalValue ? Number(finalValue) : null);
@@ -3257,7 +3271,7 @@ export default function AddProducts3Page() {
                 <div className="pengaturan-section">
                   <h3 className="pengaturan-section-title">Jenis Produk</h3>
                   <p className="pengaturan-section-description">Tentukan jenis produk untuk menghitung ongkos kirim</p>
-                  
+
                   <div className="pengaturan-form-group">
                     <label className="pengaturan-label">
                       Jenis Produk <span className="required">*</span>
@@ -3281,7 +3295,7 @@ export default function AddProducts3Page() {
                 {/* Harga */}
                 <div className="pengaturan-section">
                   <h3 className="pengaturan-section-title">Harga</h3>
-                  
+
                   <div className="pengaturan-form-group">
                     <label className="pengaturan-label">
                       Harga <span className="required">*</span>
@@ -3451,14 +3465,14 @@ export default function AddProducts3Page() {
                 <div className="pengaturan-section">
                   <h3 className="pengaturan-section-title">SEO & Meta</h3>
                   <p className="pengaturan-section-description">Pengaturan untuk SEO dan meta tag halaman - Optimalkan untuk Google, DuckDuckGo, dan semua search engine</p>
-                  
+
                   <div className="pengaturan-form-group">
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
                       <label className="pengaturan-label">
                         Page Title (Browser Tab Title) <span style={{ color: "#F1A124", fontSize: "12px" }}>⭐ SEO Critical</span>
                       </label>
-                      <span style={{ 
-                        fontSize: "12px", 
+                      <span style={{
+                        fontSize: "12px",
                         color: (pengaturanForm.page_title || "").length > 60 ? "#ef4444" : (pengaturanForm.page_title || "").length >= 50 ? "#10b981" : "#6b7280",
                         fontWeight: "500"
                       }}>
@@ -3477,7 +3491,7 @@ export default function AddProducts3Page() {
                       placeholder="Contoh: BANDUNG - Seminar Ternak Properti | Daftar Sekarang"
                       maxLength={60}
                     />
-                    <small className="pengaturan-hint" style={{ 
+                    <small className="pengaturan-hint" style={{
                       color: (pengaturanForm.page_title || "").length > 60 ? "#ef4444" : "#6b7280",
                       display: "block",
                       marginTop: "4px"
@@ -3502,11 +3516,11 @@ export default function AddProducts3Page() {
                     <label className="pengaturan-label">
                       Background Color
                     </label>
-                    
+
                     {/* Modern Background Color Picker */}
                     <div className="modern-bg-color-picker" ref={bgColorPickerRef}>
                       {/* Current Color Preview */}
-                      <div 
+                      <div
                         className="modern-bg-color-preview"
                         style={{ backgroundColor: pengaturanForm.background_color || "#ffffff" }}
                         onClick={() => setShowBgColorPicker(!showBgColorPicker)}
@@ -3539,9 +3553,8 @@ export default function AddProducts3Page() {
                               {presetBgColors.map((color, idx) => (
                                 <button
                                   key={idx}
-                                  className={`modern-bg-color-preset-item ${
-                                    (pengaturanForm.background_color || "#ffffff") === color.value ? "selected" : ""
-                                  }`}
+                                  className={`modern-bg-color-preset-item ${(pengaturanForm.background_color || "#ffffff") === color.value ? "selected" : ""
+                                    }`}
                                   style={{ backgroundColor: color.value }}
                                   onClick={() => {
                                     handlePengaturanChange("background_color", color.value);
@@ -3586,7 +3599,7 @@ export default function AddProducts3Page() {
                         </div>
                       )}
                     </div>
-                    
+
                     <small className="pengaturan-hint">Pilih warna background untuk halaman landing page</small>
                   </div>
                 </div>
@@ -3657,14 +3670,14 @@ export default function AddProducts3Page() {
                   <p className="pengaturan-section-description" style={{ fontSize: "13px", color: "#6b7280", marginBottom: "16px" }}>
                     Optimalkan untuk Google, DuckDuckGo, Bing, dan semua search engine. Field ini akan digunakan sebagai meta tags di HTML untuk meningkatkan ranking di hasil pencarian.
                   </p>
-                  
+
                   <div className="pengaturan-form-group">
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
                       <label className="pengaturan-label">
                         Judul Tag (SEO Title) <span style={{ color: "#F1A124", fontSize: "12px" }}>⭐ SEO Critical</span>
                       </label>
-                      <span style={{ 
-                        fontSize: "12px", 
+                      <span style={{
+                        fontSize: "12px",
                         color: (pengaturanForm.seo_title || "").length > 60 ? "#ef4444" : (pengaturanForm.seo_title || "").length >= 50 ? "#10b981" : "#6b7280",
                         fontWeight: "500"
                       }}>
@@ -3683,7 +3696,7 @@ export default function AddProducts3Page() {
                       placeholder="Contoh: Seminar Ternak Properti Bandung 2024 - Daftar Sekarang"
                       maxLength={60}
                     />
-                    <small className="pengaturan-hint" style={{ 
+                    <small className="pengaturan-hint" style={{
                       color: (pengaturanForm.seo_title || "").length > 60 ? "#ef4444" : "#6b7280",
                       display: "block",
                       marginTop: "4px"
@@ -3703,8 +3716,8 @@ export default function AddProducts3Page() {
                       <label className="pengaturan-label">
                         Meta Description <span style={{ color: "#F1A124", fontSize: "12px" }}>⭐ SEO Critical</span>
                       </label>
-                      <span style={{ 
-                        fontSize: "12px", 
+                      <span style={{
+                        fontSize: "12px",
                         color: (pengaturanForm.meta_description || "").length > 160 ? "#ef4444" : (pengaturanForm.meta_description || "").length >= 150 ? "#10b981" : "#6b7280",
                         fontWeight: "500"
                       }}>
@@ -3725,7 +3738,7 @@ export default function AddProducts3Page() {
                       style={{ resize: "vertical" }}
                       maxLength={160}
                     />
-                    <small className="pengaturan-hint" style={{ 
+                    <small className="pengaturan-hint" style={{
                       color: (pengaturanForm.meta_description || "").length > 160 ? "#ef4444" : "#6b7280",
                       display: "block",
                       marginTop: "4px"
@@ -3774,7 +3787,7 @@ export default function AddProducts3Page() {
                 {/* Preview Sections */}
                 <div className="pengaturan-section">
                   <h3 className="pengaturan-section-title">Pratinjau</h3>
-                  
+
                   <div className="pengaturan-form-group">
                     <label className="pengaturan-label" style={{ fontSize: "12px", color: "#6b7280", marginBottom: "8px" }}>Pratinjau di Google Search</label>
                     <div style={{
@@ -3885,7 +3898,7 @@ export default function AddProducts3Page() {
                 {/* Settings Toggles */}
                 <div className="pengaturan-section">
                   <h3 className="pengaturan-section-title">Pengaturan</h3>
-                  
+
                   <div className="pengaturan-form-group">
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -3932,7 +3945,7 @@ export default function AddProducts3Page() {
                 {/* Speed Boost Section */}
                 <div className="pengaturan-section">
                   <h3 className="pengaturan-section-title">Speed Boost</h3>
-                  
+
                   <div className="pengaturan-form-group">
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                       <label className="pengaturan-label" style={{ margin: 0 }}>Matikan Custom Font</label>
@@ -3967,7 +3980,7 @@ export default function AddProducts3Page() {
                       + Tambah
                     </button>
                   </div>
-                  
+
                   {(pengaturanForm.facebook_pixels || []).map((pixel, index) => (
                     <div key={index} className="pengaturan-form-group" style={{ marginBottom: "16px", padding: "16px", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
@@ -4001,7 +4014,7 @@ export default function AddProducts3Page() {
                         }}
                         placeholder="Masukkan Facebook Pixel ID"
                       />
-                      
+
                       <div style={{ marginTop: "12px" }}>
                         <label className="pengaturan-label" style={{ fontSize: "14px", marginBottom: "8px" }}>Events Saat Landing Page Terbuka</label>
                         <Chips
@@ -4042,7 +4055,7 @@ export default function AddProducts3Page() {
                       + Tambah
                     </button>
                   </div>
-                  
+
                   {(pengaturanForm.tiktok_pixels || []).map((pixel, index) => (
                     <div key={index} className="pengaturan-form-group" style={{ marginBottom: "16px", padding: "16px", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
@@ -4076,7 +4089,7 @@ export default function AddProducts3Page() {
                         }}
                         placeholder="Masukkan TikTok Pixel ID"
                       />
-                      
+
                       <div style={{ marginTop: "12px" }}>
                         <label className="pengaturan-label" style={{ fontSize: "14px", marginBottom: "8px" }}>Events Saat Landing Page Terbuka</label>
                         <Chips
@@ -4116,7 +4129,7 @@ export default function AddProducts3Page() {
                       + Tambah
                     </button>
                   </div>
-                  
+
                   <div className="pengaturan-form-group">
                     <label className="pengaturan-label">Google Tag Manager</label>
                     <Dropdown
@@ -4197,21 +4210,21 @@ export default function AddProducts3Page() {
 
         {/* Right Canvas - Preview */}
         <div className="page-builder-canvas">
-          <div 
+          <div
             className="canvas-wrapper"
-            style={{ 
+            style={{
               backgroundColor: pengaturanForm.background_color || "#ffffff"
             }}
           >
             {/* Logo - Hardcode di bagian atas center */}
             <div className="canvas-logo-wrapper">
-              <img 
-                src="/assets/logo.png" 
-                alt="Logo" 
+              <img
+                src="/assets/logo.png"
+                alt="Logo"
                 className="canvas-logo"
               />
             </div>
-            
+
             {/* Content Area */}
             <div className="canvas-content-area">
               {/* Placeholder jika belum ada komponen */}
@@ -4220,7 +4233,7 @@ export default function AddProducts3Page() {
                   <p>Klik "Tambah Komponen Baru" untuk memulai</p>
                 </div>
               )}
-              
+
               {/* Preview komponen - hanya render blocks NON-CHILD */}
               {/* ✅ RULE: Child component TIDAK BOLEH dirender oleh root renderer */}
               {/* ✅ Hanya section yang boleh render child blocks */}
@@ -4228,36 +4241,36 @@ export default function AddProducts3Page() {
               {blocks
                 .filter(block => {
                   if (!block || !block.type) return false;
-                  
+
                   // ✅ ARSITEKTUR BENAR: Hanya child yang di-skip (bukan section)
                   // Section boleh punya parentId jika nested, tapi child tidak boleh dirender di root
                   if (block.parentId && block.type !== 'section') {
                     return false;
                   }
-                  
+
                   return true;
                 })
                 .map((block) => (
-                    <div 
-                      key={block.id} 
-                      className="canvas-preview-block"
-                      onClick={() => {
-                        // Scroll ke komponen di sidebar
-                        const componentElement = componentRefs.current[block.id];
-                        if (componentElement) {
-                          componentElement.scrollIntoView({ behavior: "smooth", block: "center" });
-                          // Expand komponen jika collapsed
-                          if (collapsedBlockIds.has(block.id)) {
-                            handleToggleExpand(block.id);
-                          }
+                  <div
+                    key={block.id}
+                    className="canvas-preview-block"
+                    onClick={() => {
+                      // Scroll ke komponen di sidebar
+                      const componentElement = componentRefs.current[block.id];
+                      if (componentElement) {
+                        componentElement.scrollIntoView({ behavior: "smooth", block: "center" });
+                        // Expand komponen jika collapsed
+                        if (collapsedBlockIds.has(block.id)) {
+                          handleToggleExpand(block.id);
                         }
-                      }}
-                      style={{ cursor: "pointer" }}
-                      title="Klik untuk scroll ke komponen di sidebar"
-                    >
-                      {renderPreview(block)}
-                    </div>
-                  ))}
+                      }
+                    }}
+                    style={{ cursor: "pointer" }}
+                    title="Klik untuk scroll ke komponen di sidebar"
+                  >
+                    {renderPreview(block)}
+                  </div>
+                ))}
             </div>
           </div>
         </div>
@@ -4270,22 +4283,22 @@ export default function AddProducts3Page() {
             {/* Header */}
             <div className="simple-modal-header">
               <h2 className="simple-modal-title">Pilih Komponen</h2>
-              <button 
+              <button
                 className="simple-modal-close"
                 onClick={() => setShowComponentModal(false)}
               >
                 <X size={20} />
               </button>
             </div>
-            
+
             {/* Content */}
             <div className="simple-modal-content">
               {renderComponentGrid()}
             </div>
-            
+
             {/* Footer */}
             <div className="simple-modal-footer">
-              <button 
+              <button
                 className="simple-modal-cancel"
                 onClick={() => setShowComponentModal(false)}
               >
@@ -4298,7 +4311,7 @@ export default function AddProducts3Page() {
 
       {/* Modal Konfirmasi Exit */}
       {showExitModal && (
-        <div 
+        <div
           className="exit-confirm-modal-overlay"
           onClick={(e) => {
             // Tutup modal jika klik di overlay (bukan di modal content)
@@ -4319,7 +4332,7 @@ export default function AddProducts3Page() {
             zIndex: 10000,
           }}
         >
-          <div 
+          <div
             className="exit-confirm-modal"
             onClick={(e) => e.stopPropagation()}
             style={{

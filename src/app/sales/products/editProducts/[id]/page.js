@@ -1103,112 +1103,127 @@ export default function EditProductsPage() {
                     <input type="email" placeholder="email@example.com" className="compact-input" />
                   </div>
 
-                  {/* Form Wilayah - Cascading Dropdown (Selalu tampil untuk form customer) */}
-                  {/* Provinsi Dropdown */}
-                  <div className="compact-field">
-                    <label className="compact-label">Provinsi <span className="required">*</span></label>
-                    <select
-                      className="compact-input"
-                      value={selectedRegionIds.provinceId}
-                      onChange={(e) => handleRegionChange("provinsi", e.target.value)}
-                      disabled={loadingRegion.provinces}
-                      style={{
-                        appearance: 'auto',
-                        cursor: loadingRegion.provinces ? 'not-allowed' : 'pointer',
-                        backgroundColor: loadingRegion.provinces ? '#f9fafb' : 'white'
-                      }}
-                    >
-                      <option value="">Pilih Provinsi</option>
-                      {regionData.provinces.map((province) => (
-                        <option key={province.id} value={province.id}>
-                          {province.name}
-                        </option>
-                      ))}
-                    </select>
-                    {loadingRegion.provinces && (
-                      <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
-                        Memuat provinsi...
-                      </small>
-                    )}
-                  </div>
+                  {/* ✅ LOGIC PEMISAHAN FORM: FISIK vs NON-FISIK */}
+                  {isFormBuku ? (
+                    /* === FORM PRODUK FISIK (LENGKAP: PROV -> KOTA -> KEC -> KODEPOS) === */
+                    <>
+                      <div className="compact-field">
+                        <label className="compact-label">Provinsi <span className="required">*</span></label>
+                        <select
+                          className="compact-input"
+                          value={selectedRegionIds.provinceId}
+                          onChange={(e) => handleRegionChange("provinsi", e.target.value)}
+                          disabled={loadingRegion.provinces}
+                          style={{
+                            appearance: 'auto',
+                            cursor: loadingRegion.provinces ? 'not-allowed' : 'pointer',
+                            backgroundColor: loadingRegion.provinces ? '#f9fafb' : 'white'
+                          }}
+                        >
+                          <option value="">Pilih Provinsi</option>
+                          {regionData.provinces.map((province) => (
+                            <option key={province.id} value={province.id}>
+                              {province.name}
+                            </option>
+                          ))}
+                        </select>
+                        {loadingRegion.provinces && (
+                          <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                            Memuat provinsi...
+                          </small>
+                        )}
+                      </div>
 
-                  {/* Kabupaten/Kota Dropdown */}
-                  <div className="compact-field">
-                    <label className="compact-label">Kabupaten/Kota <span className="required">*</span></label>
-                    <select
-                      className="compact-input"
-                      value={selectedRegionIds.cityId}
-                      onChange={(e) => handleRegionChange("kabupaten", e.target.value)}
-                      disabled={!selectedRegionIds.provinceId || loadingRegion.cities}
-                      style={{
-                        appearance: 'auto',
-                        cursor: (!selectedRegionIds.provinceId || loadingRegion.cities) ? 'not-allowed' : 'pointer',
-                        backgroundColor: (!selectedRegionIds.provinceId || loadingRegion.cities) ? '#f9fafb' : 'white'
-                      }}
-                    >
-                      <option value="">Pilih Kabupaten/Kota</option>
-                      {regionData.cities.map((city) => (
-                        <option key={city.id} value={city.id}>
-                          {city.name}
-                        </option>
-                      ))}
-                    </select>
-                    {loadingRegion.cities && (
-                      <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
-                        Memuat kabupaten/kota...
-                      </small>
-                    )}
-                  </div>
+                      <div className="compact-field">
+                        <label className="compact-label">Kabupaten/Kota <span className="required">*</span></label>
+                        <select
+                          className="compact-input"
+                          value={selectedRegionIds.cityId}
+                          onChange={(e) => handleRegionChange("kabupaten", e.target.value)}
+                          disabled={!selectedRegionIds.provinceId || loadingRegion.cities}
+                          style={{
+                            appearance: 'auto',
+                            cursor: (!selectedRegionIds.provinceId || loadingRegion.cities) ? 'not-allowed' : 'pointer',
+                            backgroundColor: (!selectedRegionIds.provinceId || loadingRegion.cities) ? '#f9fafb' : 'white'
+                          }}
+                        >
+                          <option value="">Pilih Kabupaten/Kota</option>
+                          {regionData.cities.map((city) => (
+                            <option key={city.id} value={city.id}>
+                              {city.name}
+                            </option>
+                          ))}
+                        </select>
+                        {loadingRegion.cities && (
+                          <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                            Memuat kabupaten/kota...
+                          </small>
+                        )}
+                      </div>
 
-                  {/* Kecamatan Dropdown */}
-                  <div className="compact-field">
-                    <label className="compact-label">Kecamatan <span className="required">*</span></label>
-                    <select
-                      className="compact-input"
-                      value={selectedRegionIds.districtId}
-                      onChange={(e) => handleRegionChange("kecamatan", e.target.value)}
-                      disabled={!selectedRegionIds.cityId || loadingRegion.districts}
-                      style={{
-                        appearance: 'auto',
-                        cursor: (!selectedRegionIds.cityId || loadingRegion.districts) ? 'not-allowed' : 'pointer',
-                        backgroundColor: (!selectedRegionIds.cityId || loadingRegion.districts) ? '#f9fafb' : 'white'
-                      }}
-                    >
-                      <option value="">Pilih Kecamatan</option>
-                      {regionData.districts.map((district) => (
-                        <option key={district.id || district.district_id} value={district.id || district.district_id}>
-                          {district.name}
-                        </option>
-                      ))}
-                    </select>
-                    {loadingRegion.districts && (
-                      <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
-                        Memuat kecamatan...
-                      </small>
-                    )}
-                  </div>
+                      <div className="compact-field">
+                        <label className="compact-label">Kecamatan <span className="required">*</span></label>
+                        <select
+                          className="compact-input"
+                          value={selectedRegionIds.districtId}
+                          onChange={(e) => handleRegionChange("kecamatan", e.target.value)}
+                          disabled={!selectedRegionIds.cityId || loadingRegion.districts}
+                          style={{
+                            appearance: 'auto',
+                            cursor: (!selectedRegionIds.cityId || loadingRegion.districts) ? 'not-allowed' : 'pointer',
+                            backgroundColor: (!selectedRegionIds.cityId || loadingRegion.districts) ? '#f9fafb' : 'white'
+                          }}
+                        >
+                          <option value="">Pilih Kecamatan</option>
+                          {regionData.districts.map((district) => (
+                            <option key={district.id || district.district_id} value={district.id || district.district_id}>
+                              {district.name}
+                            </option>
+                          ))}
+                        </select>
+                        {loadingRegion.districts && (
+                          <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                            Memuat kecamatan...
+                          </small>
+                        )}
+                      </div>
 
-                  {/* Kode Pos - Auto dari district atau manual input */}
-                  <div className="compact-field">
-                    <label className="compact-label">Kode Pos <span className="required">*</span></label>
-                    <input
-                      type="text"
-                      placeholder="Contoh: 12120"
-                      className="compact-input"
-                      value={regionForm.kode_pos}
-                      onChange={(e) => handleRegionChange("kode_pos", e.target.value)}
-                      disabled={!selectedRegionIds.districtId}
-                      style={{
-                        cursor: !selectedRegionIds.districtId ? 'not-allowed' : 'text',
-                        backgroundColor: !selectedRegionIds.districtId ? '#f9fafb' : 'white'
-                      }}
-                    />
-                    {!selectedRegionIds.districtId && (
+                      <div className="compact-field">
+                        <label className="compact-label">Kode Pos <span className="required">*</span></label>
+                        <input
+                          type="text"
+                          placeholder="Contoh: 12120"
+                          className="compact-input"
+                          value={regionForm.kode_pos}
+                          onChange={(e) => handleRegionChange("kode_pos", e.target.value)}
+                          disabled={!selectedRegionIds.districtId}
+                          style={{
+                            cursor: !selectedRegionIds.districtId ? 'not-allowed' : 'text',
+                            backgroundColor: !selectedRegionIds.districtId ? '#f9fafb' : 'white'
+                          }}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    /* === FORM PRODUK NON-FISIK (HANYA SEARCH KECAMATAN) === */
+                    <div className="compact-field" style={{ position: 'relative' }}>
+                      <label className="compact-label">Kecamatan <span className="required">*</span></label>
+                      <input
+                        type="text"
+                        className="compact-input"
+                        placeholder="Ketik untuk mencari kecamatan..."
+                        style={{
+                          cursor: 'text',
+                          backgroundColor: 'white'
+                        }}
+                        readOnly // Read only for preview in admin panel
+                      />
                       <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
-                        Pilih kecamatan terlebih dahulu
+                        *Fitur pencarian aktif di halaman publik
                       </small>
-                    )}
-                  </div>
+                    </div>
+                  )}
+                  {/* Closing tag for the conditional wrapper if needed, but here we just replaced the block */}
 
                   {/* Form Ongkir - Hanya untuk produk Fisik */}
                   {isProdukFisik && (
