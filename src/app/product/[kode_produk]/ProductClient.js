@@ -59,12 +59,13 @@ function FAQItem({ question, answer }) {
 // ✅ Countdown Component - GENERAL: Styling sesuai gambar (minimalis, dark grey boxes)
 // ✅ Countdown Component - REFACKTOR: Mobile Responsive & Minimalist
 // ✅ Countdown Component - REFACKTOR: Orange Style (Match User Request)
+// ✅ Countdown Component - REFACKTOR: Dark Style (Match User New Request)
 function CountdownComponent({ data = {}, componentId, containerStyle = {} }) {
   const hours = data.hours !== undefined ? data.hours : 0;
   const minutes = data.minutes !== undefined ? data.minutes : 0;
   const seconds = data.seconds !== undefined ? data.seconds : 0;
-  // ✅ UPDATE: Default styling to match image (Orange boxes, white text)
-  const bgColor = data.bgColor || "#FF9900"; // Orange default
+  // ✅ UPDATE: Default styling to match new image (Dark boxes, white text)
+  const bgColor = data.bgColor || "#1F2937"; // Dark Slate default covering the new image style
   const textColor = data.textColor || "#ffffff"; // White text default
 
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
@@ -139,30 +140,30 @@ function CountdownComponent({ data = {}, componentId, containerStyle = {} }) {
   };
 
   const renderNumber = (value) => {
-    // ✅ STYLE: Box Orange & Typography
+    // ✅ STYLE: Box & Typography (Dark Theme)
     const boxStyle = {
       backgroundColor: bgColor,
-      borderRadius: "12px", // Slightly more rounded match image
-      padding: "16px 12px",
+      borderRadius: "12px", // Smooth rounded corners
+      padding: "12px 16px",
       minWidth: "70px",
-      width: "18vw", // Responsive width
-      maxWidth: "100px",
+      width: "15vw", // Responsive width, slightly clearer
+      maxWidth: "90px",
       textAlign: "center",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
       justifyContent: "center",
-      boxShadow: "0 4px 6px rgba(0,0,0,0.1)", // Add slight shadow
-      aspectRatio: "1/1",
+      boxShadow: "0 2px 5px rgba(0,0,0,0.2)", // Subtle shadow
+      aspectRatio: "1.1/1", // Slightly wider than tall
     };
 
     const numberStyle = {
-      fontSize: "clamp(28px, 6vw, 48px)", // Large bold font
-      fontWeight: "800", // Extra bold
+      fontSize: "clamp(28px, 5vw, 42px)", // Readable, bold font
+      fontWeight: "700",
       color: textColor,
-      fontFamily: "'Inter', sans-serif", // Modern sans-serif
+      fontFamily: "'Inter', sans-serif",
       lineHeight: "1",
-      letterSpacing: "1px"
+      letterSpacing: "0.5px"
     };
 
     return (
@@ -185,7 +186,7 @@ function CountdownComponent({ data = {}, componentId, containerStyle = {} }) {
     }}>
       <div style={{
         display: "flex",
-        gap: "12px", // Comfortable gap
+        gap: "12px",
         justifyContent: "center",
         alignItems: "center",
         flexWrap: "nowrap",
@@ -193,19 +194,19 @@ function CountdownComponent({ data = {}, componentId, containerStyle = {} }) {
         {renderNumber(formattedTime.hours)}
 
         <span style={{
-          fontSize: "clamp(28px, 6vw, 42px)",
+          fontSize: "clamp(24px, 5vw, 36px)",
           color: "#374151",
           fontWeight: "bold",
-          marginBottom: "8px" // Adjust vertical alignment
+          marginBottom: "4px"
         }}>:</span>
 
         {renderNumber(formattedTime.minutes)}
 
         <span style={{
-          fontSize: "clamp(28px, 6vw, 42px)",
+          fontSize: "clamp(24px, 5vw, 36px)",
           color: "#374151",
           fontWeight: "bold",
-          marginBottom: "8px"
+          marginBottom: "4px"
         }}>:</span>
 
         {renderNumber(formattedTime.seconds)}
