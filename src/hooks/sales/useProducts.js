@@ -4,9 +4,9 @@
 import { useEffect, useState } from "react";
 
 // ⛔ INI YANG BENER: Pakai lib/products
-import { 
-  getProducts, 
-  deleteProduct, 
+import {
+  getProducts,
+  deleteProduct,
   duplicateProduct,
   updateProductStatus
 } from "@/lib/sales/products";
@@ -25,7 +25,7 @@ export function useProducts() {
       setError(null);
 
       try {
-        const data = await getProducts();
+        const data = await getProducts(false, { disableToast: true });
         setProducts(Array.isArray(data) ? data : []);
         setError(null);
       } catch (err) {

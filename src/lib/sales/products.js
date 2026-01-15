@@ -4,9 +4,9 @@ import { api } from "../api";
 /* =====================================================
    🔍 GET: Ambil semua produk (exclude yang sudah soft-deleted)
    ===================================================== */
-export async function getProducts(includeDeleted = false) {
+export async function getProducts(includeDeleted = false, options = {}) {
   try {
-    const res = await api("/sales/produk", { method: "GET" });
+    const res = await api("/sales/produk", { method: "GET", ...options });
 
     // Check if response has success property
     if (res && res.success === false) {
