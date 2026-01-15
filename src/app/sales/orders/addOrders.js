@@ -21,6 +21,7 @@ export default function AddOrders({ onClose, onAdd }) {
     alamat: "", // Alamat pengiriman (untuk order)
     customer: "",
     produk: "",
+    bundling_id: "", // Field baru untuk bundling
     harga: "",
     ongkir: "",
     total_harga: "",
@@ -28,6 +29,8 @@ export default function AddOrders({ onClose, onAdd }) {
     notif: true,
     status_pembayaran: null, // null/0 untuk Full, 4 untuk Bertahap
   });
+
+  const [selectedProduct, setSelectedProduct] = useState(null); // To store full product object for bundling check
 
   const [showCustomerForm, setShowCustomerForm] = useState(false); // Default hidden
 
@@ -79,7 +82,7 @@ export default function AddOrders({ onClose, onAdd }) {
         per_page: "100", // Ambil lebih banyak hasil untuk search
       });
 
-      const res = await api(`/sales/customer?${params.toString()}`, { method: "GET" });
+      const res = await api(`/sales/customer?${params.toString()}`, { method: "GET", disableToast: true });
 
       if (res?.success && Array.isArray(res.data)) {
         setCustomerResults(res.data);
@@ -99,7 +102,7 @@ export default function AddOrders({ onClose, onAdd }) {
     setProductSearch(keyword);
     if (!keyword.trim()) return setProductResults([]);
 
-    const res = await api("/sales/produk", { method: "GET" });
+    const res = await api("/sales/produk", { method: "GET", disableToast: true });
     if (res?.success && Array.isArray(res.data)) {
       const filtered = res.data.filter((prod) =>
         // Filter hanya produk AKTIF (status === "1" atau status === 1)
@@ -299,9 +302,13 @@ export default function AddOrders({ onClose, onAdd }) {
   const handleSelectProduct = (prod) => {
     const hargaValue = Number(prod.harga) || 0;
     const ongkirValue = parseCurrency(formData.ongkir || "");
+
+    setSelectedProduct(prod);
+
     setFormData((prev) => ({
       ...prev,
       produk: prod.id,
+      bundling_id: "", // Reset bundling when product changes
       harga: hargaValue ? formatCurrency(hargaValue) : "",
       total_harga: (hargaValue + ongkirValue) > 0 ? formatCurrency(hargaValue + ongkirValue) : "",
     }));
@@ -387,6 +394,7 @@ export default function AddOrders({ onClose, onAdd }) {
       ongkir: String(parseCurrency(formData.ongkir) || "0"),
       total_harga: String(parseCurrency(formData.total_harga) || "0"),
       status_pembayaran: formData.status_pembayaran === 4 ? 4 : (formData.status_pembayaran === null ? null : 0),
+      bundling_id: formData.bundling_id || null,
     };
 
     console.log("[ADD_ORDERS] Payload sebelum kirim:", JSON.stringify(payload, null, 2));
@@ -775,17 +783,27 @@ export default function AddOrders({ onClose, onAdd }) {
                   </div>
                 )}
 
-                <label className="orders-field">
-                  Produk (ID)
-                  <input
-                    type="text"
-                    name="produk"
-                    value={formData.produk}
-                    onChange={handleChange}
-                    placeholder="ID produk"
-                    readOnly
-                  />
-                </label>
+                {/* Produk (ID) removed from display, but retained in state */}
+
+                {/* Bundling Selection */}
+                {selectedProduct && selectedProduct.bundling_rel && selectedProduct.bundling_rel.length > 0 && (
+                  <label className="orders-field">
+                    Pilih Bundling
+                    <select
+                      name="bundling_id"
+                      value={formData.bundling_id}
+                      onChange={handleChange}
+                      style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid #d1d5db' }}
+                    >
+                      <option value="">-- Pilih Bundling Option --</option>
+                      {selectedProduct.bundling_rel.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.nama_bundling || b.info_bundling || `Bundle #${b.id}`}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
 
                 <div className="orders-dual-grid">
                   <label className="orders-field">

@@ -69,7 +69,7 @@ const handleResponse = async (res, endpoint, options = {}) => {
 
   // Success response
   if (data?.success === true) {
-    if (config.features.enableToast && data?.message) {
+    if (config.features.enableToast && !options.disableToast && data?.message) {
       toastSuccess(data.message, res.status);
     }
     return {
@@ -82,21 +82,21 @@ const handleResponse = async (res, endpoint, options = {}) => {
 
   // Unauthorized
   if (res.status === 401) {
-    if (config.features.enableToast) {
+    if (config.features.enableToast && !options.disableToast) {
       toastError("⚠️ Sesi kamu berakhir. Silakan login ulang.", res.status);
     }
-    
+
     if (typeof window !== "undefined") {
       localStorage.removeItem("token");
       localStorage.removeItem("customer_token");
       setTimeout(() => {
-        const loginPath = options.useCustomerToken 
-          ? "/customer" 
+        const loginPath = options.useCustomerToken
+          ? "/customer"
           : "/login";
         window.location.href = loginPath;
       }, 1000);
     }
-    
+
     return { success: false, message: "Unauthorized", status: 401 };
   }
 
@@ -111,23 +111,23 @@ const handleResponse = async (res, endpoint, options = {}) => {
         data: data,
         endpoint: endpoint
       });
-      
+
       // Extract validation errors from response
       const validationErrors = data?.errors || data?.error || data?.data?.errors || {};
       const errorMessages = [];
-      
+
       // Laravel-style validation errors
       if (typeof validationErrors === 'object' && !Array.isArray(validationErrors) && Object.keys(validationErrors).length > 0) {
         Object.keys(validationErrors).forEach((field) => {
-          const fieldErrors = Array.isArray(validationErrors[field]) 
-            ? validationErrors[field] 
+          const fieldErrors = Array.isArray(validationErrors[field])
+            ? validationErrors[field]
             : [validationErrors[field]];
           fieldErrors.forEach((err) => {
             if (err) errorMessages.push(`${field}: ${err}`);
           });
         });
       }
-      
+
       // Build error message
       let message;
       if (errorMessages.length > 0) {
@@ -140,16 +140,16 @@ const handleResponse = async (res, endpoint, options = {}) => {
         // Show full response for debugging
         message = `Data yang dikirim tidak valid. Response: ${JSON.stringify(data)}`;
       }
-      
+
       console.error("❌ [422] Error message:", message);
       console.error("❌ [422] Validation errors:", validationErrors);
-      
-      if (config.features.enableToast) {
+
+      if (config.features.enableToast && !options.disableToast) {
         toastError(message, res.status);
       }
-      
-      throw Object.assign(new Error(message), { 
-        status: res.status, 
+
+      throw Object.assign(new Error(message), {
+        status: res.status,
         data,
         endpoint,
         validationErrors: Object.keys(validationErrors).length > 0 ? validationErrors : undefined
@@ -174,14 +174,14 @@ const handleResponse = async (res, endpoint, options = {}) => {
       };
     }
 
-    if (config.features.enableToast) {
+    if (config.features.enableToast && !options.disableToast) {
       toastError(message, res.status);
     }
-    
-    throw Object.assign(new Error(message), { 
-      status: res.status, 
+
+    throw Object.assign(new Error(message), {
+      status: res.status,
       data,
-      endpoint 
+      endpoint
     });
   }
 
@@ -208,11 +208,11 @@ export async function api(endpoint, options = {}) {
     return await handleResponse(res, endpoint, options);
   } catch (err) {
     console.error(`❌ API Error [${endpoint}]:`, err);
-    
-    if (config.features.enableToast) {
+
+    if (config.features.enableToast && !options.disableToast) {
       toastError(err.message || "Terjadi kesalahan", err.status || null);
     }
-    
+
     throw err;
   }
 }
