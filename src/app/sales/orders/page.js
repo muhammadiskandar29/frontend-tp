@@ -1368,10 +1368,13 @@ export default function DaftarPesanan() {
 
                         {/* STICKY LEFT 2: Customer */}
                         <td className="sticky-left-2">
-                          <div className="customer-cell">
+                          <div className="customer-cell" style={{ display: "flex", flexDirection: "column" }}>
                             <span className="customer-name" style={{ fontSize: "0.875rem" }}>{customerNama}</span>
                             <span className="customer-detail">
                               {order.customer_rel?.wa ? `+${order.customer_rel.wa}` : "-"}
+                            </span>
+                            <span className="customer-detail" style={{ fontSize: "0.75rem", marginTop: "2px", color: "#64748b" }}>
+                              Sales: {order.customer_rel?.sales_rel?.nama || order.customer_rel?.sales_nama || "-"}
                             </span>
                           </div>
                         </td>
