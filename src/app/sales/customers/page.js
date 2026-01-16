@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import { getCustomers, deleteCustomer } from "@/lib/sales/customer";
-import { Users, CheckCircle, Filter, ChevronDown } from "lucide-react";
+import { Users, CheckCircle, Filter, ChevronDown, p, XCircle } from "lucide-react";
 import dynamic from "next/dynamic";
 import "@/styles/sales/dashboard-premium.css";
 import "@/styles/sales/admin.css";
@@ -444,30 +444,61 @@ export default function AdminCustomerPage() {
             </div>
             <div className="customers-filters" aria-label="Filter pelanggan" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
               {/* Filter Button */}
-              <button
-                type="button"
-                className="filter-btn-orange"
-                onClick={() => setShowFilterModal(true)}
-                style={{
-                  backgroundColor: "white",
-                  border: "1px solid #fab005",
-                  color: "#fab005",
-                  padding: "8px",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  height: "40px",
-                  width: "40px",
-                  transition: "all 0.2s"
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#fff9db"}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "white"}
-                title="Filter Data"
-              >
-                <Filter size={20} strokeWidth={2.5} />
-              </button>
+              {/* Filter Button */}
+              {verifikasiFilter !== "all" || salesFilter !== "all" ? (
+                <button
+                  type="button"
+                  className="filter-btn-orange active"
+                  onClick={() => {
+                    setVerifikasiFilter("all");
+                    setSalesFilter("all");
+                    setPage(1);
+                  }}
+                  style={{
+                    backgroundColor: "#fff",
+                    border: "1px solid #f97316",
+                    color: "#f97316",
+                    padding: "8px 16px",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    height: "40px",
+                    transition: "all 0.2s",
+                    fontWeight: 600,
+                    fontSize: "0.9rem"
+                  }}
+                >
+                  <XCircle size={18} />
+                  Riset
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="filter-btn-orange"
+                  onClick={() => setShowFilterModal(true)}
+                  style={{
+                    backgroundColor: "white",
+                    border: "1px solid #fab005",
+                    color: "#fab005",
+                    padding: "8px",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    height: "40px",
+                    width: "40px",
+                    transition: "all 0.2s"
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#fff9db"}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "white"}
+                  title="Filter Data"
+                >
+                  <Filter size={20} strokeWidth={2.5} />
+                </button>
+              )}
             </div>
           </div>
         </section>
