@@ -108,28 +108,12 @@ const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran }) =>
   // Helper untuk cek apakah event sudah terkirim (status === "1" atau 1)
   const isSent = (eventType) => {
     // Cari log yang sesuai dengan eventType
-    // Prioritas: Log yang memiliki orderId yang sama dengan order ini
-    let log = followupLogs.find(l => {
+    // Gunakan logic yang lebih loose (per Customer), sesuai referensi followupLog.js
+    // Jika ada log dengan tipe tersebut di customer ini yang statusnya terkirim, maka hijau.
+    const log = followupLogs.find(l => {
       const logEvent = l.follup || l.type || l.follup_rel?.id || l.event;
-      const logOrderId = l.order || l.order_id || l.orderId;
-
-      const isTypeMatch = Number(logEvent) === Number(eventType);
-      const isOrderMatch = logOrderId && Number(logOrderId) === Number(orderId);
-
-      // Strict match orderId untuk event selain Register (5)
-      if (Number(eventType) !== 5) {
-        return isTypeMatch && isOrderMatch;
-      }
-      return isTypeMatch;
+      return Number(logEvent) === Number(eventType);
     });
-
-    // Fallback untuk Register (5) atau jika tidak ketemu dengan match orderId (jika perlu logic lain)
-    if (!log && Number(eventType) === 5) {
-      log = followupLogs.find(l => {
-        const logEvent = l.follup || l.type || l.follup_rel?.id || l.event;
-        return Number(logEvent) === Number(eventType);
-      });
-    }
 
     // Cek status=1 atau '1' (terkirim)
     return log && (log.status === "1" || log.status === 1);
