@@ -141,19 +141,6 @@ export default function AdminCustomerPage() {
         // Filter dan sort data di frontend untuk memastikan filter bekerja dengan benar
         let filteredData = [...result.data];
 
-        // Apply verifikasi filter jika bukan "all" (fallback jika backend tidak memproses filter)
-        if (filters.verifikasi && filters.verifikasi !== "all") {
-          if (filters.verifikasi === "verified") {
-            filteredData = filteredData.filter(
-              (c) => c.verifikasi === "1" || c.verifikasi === true || c.verifikasi === 1
-            );
-          } else if (filters.verifikasi === "unverified") {
-            filteredData = filteredData.filter(
-              (c) => !(c.verifikasi === "1" || c.verifikasi === true || c.verifikasi === 1)
-            );
-          }
-        }
-
         // Sort data dari terbaru ke terlama berdasarkan create_at atau id
         filteredData.sort((a, b) => {
           // Prioritas: create_at jika ada, fallback ke id
