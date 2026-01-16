@@ -103,9 +103,16 @@ export default function AdminCustomerPage() {
           usersJson.data.forEach((u) => {
             const userId = u.user_rel?.id || u.sales_rel?.id || u.user?.id || u.sales?.id || u.id;
             const nama = u.user_rel?.nama || u.sales_rel?.nama || u.user?.nama || u.sales?.nama || u.nama || u.name || `User #${userId}`;
+            // Check division/role - assuming structure has user_rel.role or similar, or checking the array source
+            // Based on context, we only want those explicitly marked as sales
+            const role = u.user_rel?.role || u.role || "";
+
             if (userId) {
               map.set(String(userId), nama);
-              options.push({ id: String(userId), text: nama });
+              // Only add to options if role is sales (case insensitive)
+              if (role.toLowerCase() === 'sales') {
+                options.push({ id: String(userId), text: nama });
+              }
             }
           });
           setUserMap(map);
@@ -143,6 +150,59 @@ export default function AdminCustomerPage() {
       if (result.success && result.data && Array.isArray(result.data)) {
         // Filter dan sort data di frontend untuk memastikan filter bekerja dengan benar
         let filteredData = [...result.data];
+
+        // 🛡️ DOUBLE PROTECTION: Validasi Client-Side
+        // Jika backend bocor/ignore filter, kita filter ulang di sini untuk kepastian UX
+
+        // 1. Filter Verifikasi
+        if (filters.verifikasi && filters.verifikasi !== "all") {
+          // Handle "none" logic if necessary, though simpler to assume valid arrays or strings
+          const wantVerified = Array.isArray(filters.verifikasi)
+            ? filters.verifikasi.includes("verified")
+            : filters.verifikasi === "verified";
+
+          const wantUnverified = Array.isArray(filters.verifikasi)
+            ? filters.verifikasi.includes("unverified")
+            : filters.verifikasi === "unverified";
+
+          // Jika user pilih keduanya (verified & unverified) -> Show All (no filter needed)
+          // Jika user TIDAK pilih keduanya -> Show None
+          // Jika pilih salah satu -> Filter
+
+          if (wantVerified && !wantUnverified) {
+            // Show ONLY Verified
+            filteredData = filteredData.filter(c =>
+              String(c.verifikasi) === "1" || c.verifikasi === true || c.verifikasi === 1
+            );
+          } else if (!wantVerified && wantUnverified) {
+            // Show ONLY Unverified
+            filteredData = filteredData.filter(c =>
+              c.verifikasi === null || c.verifikasi === undefined ||
+              String(c.verifikasi) === "0" || c.verifikasi === false || c.verifikasi === 0
+            );
+          } else if (!wantVerified && !wantUnverified) {
+            // User uncheck both -> Show Empty
+            filteredData = [];
+          }
+        }
+
+        // 2. Filter Sales
+        if (filters.sales_id && filters.sales_id !== "all") {
+          const targetSalesId = String(filters.sales_id);
+          filteredData = filteredData.filter(c => {
+            // Robust check for Sales ID in various possible locations
+            const sId1 = c.sales_id;
+            const sId2 = c.sales_rel?.id;
+            const sId3 = c.sales_rel?.user_id; // Potential alternative structure
+
+            // Compare all potential IDs safely
+            const match1 = sId1 !== undefined && sId1 !== null && String(sId1) === targetSalesId;
+            const match2 = sId2 !== undefined && sId2 !== null && String(sId2) === targetSalesId;
+            const match3 = sId3 !== undefined && sId3 !== null && String(sId3) === targetSalesId;
+
+            return match1 || match2 || match3;
+          });
+        }
 
         // Sort data dari terbaru ke terlama berdasarkan create_at atau id
         filteredData.sort((a, b) => {

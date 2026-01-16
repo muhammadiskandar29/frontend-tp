@@ -6,7 +6,7 @@ import { X } from "lucide-react";
 
 export default function FilterCustomerModal({ onClose, onApply, currentFilters, salesOptions }) {
     const [filterState, setFilterState] = useState({
-        verifikasi: currentFilters.verifikasi || "all",
+        verifikasi: currentFilters.verifikasi === "all" ? ["verified", "unverified"] : (Array.isArray(currentFilters.verifikasi) ? currentFilters.verifikasi : [currentFilters.verifikasi]),
         sales_id: currentFilters.sales_id || "all",
     });
 
@@ -15,8 +15,26 @@ export default function FilterCustomerModal({ onClose, onApply, currentFilters, 
         setFilterState(prev => ({ ...prev, [name]: value }));
     };
 
+    const handleCheckboxChange = (value) => {
+        setFilterState(prev => {
+            const current = [...prev.verifikasi];
+            if (current.includes(value)) {
+                return { ...prev, verifikasi: current.filter(item => item !== value) };
+            } else {
+                return { ...prev, verifikasi: [...current, value] };
+            }
+        });
+    };
+
     const handleApply = () => {
-        onApply(filterState);
+        // Convert array back to "all", "verified", "unverified" or "" for parent logic compatibility
+        // Or keep parent logic flexible. Assuming parent expects "all", "verified", "unverified"
+        let verifikasiValue = "all";
+        if (filterState.verifikasi.length === 2) verifikasiValue = "all";
+        else if (filterState.verifikasi.length === 0) verifikasiValue = "none"; // Should handle this case
+        else verifikasiValue = filterState.verifikasi[0];
+
+        onApply({ ...filterState, verifikasi: verifikasiValue });
         onClose();
     };
 
@@ -35,25 +53,27 @@ export default function FilterCustomerModal({ onClose, onApply, currentFilters, 
                 <div className="modal-body">
                     <div className="form-grid" style={{ gridTemplateColumns: "1fr" }}>
 
-                        {/* Verifikasi Filter */}
+                        {/* Verifikasi Filter - Checkbox */}
                         <div className="form-group">
                             <label>Status Verifikasi</label>
-                            <select
-                                name="verifikasi"
-                                value={filterState.verifikasi}
-                                onChange={handleChange}
-                                style={{
-                                    width: "100%",
-                                    padding: "10px",
-                                    borderRadius: "6px",
-                                    border: "1px solid #d1d5db",
-                                    backgroundColor: "white"
-                                }}
-                            >
-                                <option value="all">Semua Status</option>
-                                <option value="verified">Verified</option>
-                                <option value="unverified">Unverified</option>
-                            </select>
+                            <div style={{ display: "flex", gap: "1rem", marginTop: "0.5rem" }}>
+                                <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", cursor: "pointer" }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={filterState.verifikasi.includes("verified")}
+                                        onChange={() => handleCheckboxChange("verified")}
+                                    />
+                                    Verified
+                                </label>
+                                <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", cursor: "pointer" }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={filterState.verifikasi.includes("unverified")}
+                                        onChange={() => handleCheckboxChange("unverified")}
+                                    />
+                                    Unverified
+                                </label>
+                            </div>
                         </div>
 
                         {/* Sales Filter */}

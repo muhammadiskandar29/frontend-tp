@@ -29,18 +29,18 @@ const formatValue = (value) => {
 // Helper untuk format tanggal lahir dengan pemisah
 const formatTanggalLahir = (tanggal) => {
   if (!tanggal) return "—";
-  
+
   // Jika sudah ada pemisah, biarkan seperti itu
   if (tanggal.includes("-") || tanggal.includes("/")) {
     return tanggal;
   }
-  
+
   // Jika tidak ada pemisah, format menjadi dd-mm-yyyy
   const digits = tanggal.replace(/\D/g, "");
   if (digits.length === 8) {
     return `${digits.slice(0, 2)}-${digits.slice(2, 4)}-${digits.slice(4, 8)}`;
   }
-  
+
   // Jika format tidak sesuai, kembalikan asli
   return tanggal;
 };
@@ -89,32 +89,32 @@ const getOrderStatus = (order) => {
   // Cek dari is_paid
   const isPaidValue = order.is_paid;
   const statusValue = order.status_pembayaran || order.status;
-  
+
   // Normalisasi nilai
-  const isPaid = 
-    isPaidValue === true || 
-    isPaidValue === "1" || 
+  const isPaid =
+    isPaidValue === true ||
+    isPaidValue === "1" ||
     isPaidValue === 1 ||
     statusValue === 2 ||
     statusValue === "2" ||
     statusValue === "paid" ||
     statusValue === "1";
-  
-  const isUnpaid = 
-    isPaidValue === false || 
-    isPaidValue === "0" || 
+
+  const isUnpaid =
+    isPaidValue === false ||
+    isPaidValue === "0" ||
     isPaidValue === 0 ||
     statusValue === "pending" ||
     statusValue === "0" ||
     statusValue === "unpaid";
-  
+
   if (isPaid) {
     return { label: "Paid", className: "status-paid" };
   }
   if (isUnpaid) {
     return { label: "Unpaid", className: "status-unpaid" };
   }
-  
+
   // Default jika tidak jelas
   return { label: "Unpaid", className: "status-unpaid" };
 };
@@ -123,10 +123,10 @@ const getOrderStatus = (order) => {
 const isOrderPaid = (order) => {
   const isPaidValue = order.is_paid;
   const statusValue = order.status_pembayaran || order.status;
-  
+
   return (
-    isPaidValue === true || 
-    isPaidValue === "1" || 
+    isPaidValue === true ||
+    isPaidValue === "1" ||
     isPaidValue === 1 ||
     statusValue === 2 ||
     statusValue === "2" ||
@@ -196,9 +196,9 @@ export default function ViewCustomerModal({ customer, onClose, onEdit, onDelete 
         <div className="modal-body">
           {/* Section Informasi Umum */}
           <div className="info-section" style={{ marginBottom: "2rem" }}>
-            <h3 style={{ 
-              fontSize: "1.25rem", 
-              fontWeight: 600, 
+            <h3 style={{
+              fontSize: "1.25rem",
+              fontWeight: 600,
               marginBottom: "1rem",
               color: "#111827"
             }}>
@@ -283,7 +283,7 @@ export default function ViewCustomerModal({ customer, onClose, onEdit, onDelete 
 
               {/* Alamat - Format Baru (Provinsi, Kabupaten/Kota, Kecamatan, Kode Pos) */}
               {/* Backward compatibility: jika ada alamat lama, tampilkan juga */}
-              {customer.alamat && (!customer.provinsi || !customer.kabupaten || !customer.kecamatan || !customer.kode_pos) && (
+              {customer.alamat && (!customer.provinsi || !customer.kabupaten || !customer.kecamatan) && (
                 <div className="detail-item">
                   <span className="detail-label">Alamat</span>
                   <span className="detail-colon">:</span>
@@ -309,19 +309,15 @@ export default function ViewCustomerModal({ customer, onClose, onEdit, onDelete 
                 <span className="detail-value">{formatValue(customer.kecamatan)}</span>
               </div>
 
-              <div className="detail-item">
-                <span className="detail-label">Kode Pos</span>
-                <span className="detail-colon">:</span>
-                <span className="detail-value">{formatValue(customer.kode_pos)}</span>
-              </div>
+
             </div>
           </div>
 
           {/* Section Order History */}
           <div className="order-history-section">
-            <h3 style={{ 
-              fontSize: "1.25rem", 
-              fontWeight: 600, 
+            <h3 style={{
+              fontSize: "1.25rem",
+              fontWeight: 600,
               marginBottom: "1rem",
               color: "#111827"
             }}>
@@ -381,17 +377,17 @@ export default function ViewCustomerModal({ customer, onClose, onEdit, onDelete 
         </div>
 
         {/* FOOTER dengan 2 button */}
-        <div className="modal-footer" style={{ 
-          display: "flex", 
-          gap: "0.75rem", 
+        <div className="modal-footer" style={{
+          display: "flex",
+          gap: "0.75rem",
           justifyContent: "flex-end",
           padding: "1.5rem",
           borderTop: "1px solid #e5e7eb",
           position: "relative",
           zIndex: 1002
         }}>
-          <button 
-            type="button" 
+          <button
+            type="button"
             className="btn-secondary"
             onClick={() => {
               onEdit?.(customer);
@@ -410,8 +406,8 @@ export default function ViewCustomerModal({ customer, onClose, onEdit, onDelete 
           >
             Edit
           </button>
-          <button 
-            type="button" 
+          <button
+            type="button"
             className="btn-danger"
             onClick={() => {
               onDelete?.(customer);

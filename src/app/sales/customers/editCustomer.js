@@ -45,14 +45,14 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
     kecamatan: customer.kecamatan || "",
     kode_pos: customer.kode_pos || ""
   });
-  
+
   // State untuk cascading dropdown (internal - untuk fetch)
   const [regionData, setRegionData] = useState({
     provinces: [],
     cities: [],
     districts: []
   });
-  
+
   // State untuk selected IDs (internal - hanya untuk fetch, tidak disimpan)
   // Initialize dengan mencari ID dari nama yang ada di customer
   const [selectedRegionIds, setSelectedRegionIds] = useState({
@@ -60,7 +60,7 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
     cityId: "",
     districtId: ""
   });
-  
+
   // Loading states
   const [loadingRegion, setLoadingRegion] = useState({
     provinces: false,
@@ -78,12 +78,12 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
+
     // format tanggal lahir otomatis dd-mm-yyyy dengan pemisah
     if (name === "tanggal_lahir") {
       let digits = value.replace(/\D/g, ""); // hanya angka
       let formatted = "";
-      
+
       if (digits.length > 0) {
         formatted = digits.slice(0, 2); // hari
         if (digits.length > 2) {
@@ -93,14 +93,14 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
           formatted += "-" + digits.slice(4, 8); // tahun (maks 4 digit)
         }
       }
-      
+
       setFormData((prev) => ({
         ...prev,
         [name]: formatted,
       }));
       return;
     }
-    
+
     setFormData((prev) => ({
       ...prev,
       [name]: name === "instagram" ? value.replace(/^@/, "") : value,
@@ -110,7 +110,7 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
   // ==========================================================
   // LOGIC FORM WILAYAH (CASCADING DROPDOWN)
   // ==========================================================
-  
+
   // Load provinces
   const loadProvinces = async () => {
     setLoadingRegion(prev => ({ ...prev, provinces: true }));
@@ -123,11 +123,11 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
       setLoadingRegion(prev => ({ ...prev, provinces: false }));
     }
   };
-  
+
   // Load cities
   const loadCities = async (provinceId) => {
     if (!provinceId) return;
-    
+
     setLoadingRegion(prev => ({ ...prev, cities: true }));
     try {
       const data = await getCities(provinceId);
@@ -138,11 +138,11 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
       setLoadingRegion(prev => ({ ...prev, cities: false }));
     }
   };
-  
+
   // Load districts
   const loadDistricts = async (cityId) => {
     if (!cityId) return;
-    
+
     setLoadingRegion(prev => ({ ...prev, districts: true }));
     try {
       const data = await getDistricts(cityId);
@@ -153,19 +153,19 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
       setLoadingRegion(prev => ({ ...prev, districts: false }));
     }
   };
-  
+
   // Handler untuk update region form (HANYA NAMA)
   const handleRegionChange = (field, value) => {
     if (field === "provinsi") {
       // Konversi value ke string untuk matching yang lebih robust
       const provinceId = String(value || "");
       // Cari province dengan konversi tipe data (handle string/number)
-      const province = regionData.provinces.find(p => 
+      const province = regionData.provinces.find(p =>
         String(p.id) === provinceId || p.id === value || p.id === Number(value)
       );
       setSelectedRegionIds(prev => ({ ...prev, provinceId: value || "", cityId: "", districtId: "" }));
-      setRegionForm(prev => ({ 
-        ...prev, 
+      setRegionForm(prev => ({
+        ...prev,
         provinsi: province?.name || "",
         kabupaten: "",
         kecamatan: "",
@@ -175,12 +175,12 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
       // Konversi value ke string untuk matching yang lebih robust
       const cityId = String(value || "");
       // Cari city dengan konversi tipe data (handle string/number)
-      const city = regionData.cities.find(c => 
+      const city = regionData.cities.find(c =>
         String(c.id) === cityId || c.id === value || c.id === Number(value)
       );
       setSelectedRegionIds(prev => ({ ...prev, cityId: value || "", districtId: "" }));
-      setRegionForm(prev => ({ 
-        ...prev, 
+      setRegionForm(prev => ({
+        ...prev,
         kabupaten: city?.name || "",
         kecamatan: "",
         kode_pos: ""
@@ -189,17 +189,17 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
       // Konversi value ke string untuk matching yang lebih robust
       const districtId = String(value || "");
       // Cari district dengan konversi tipe data (handle string/number dan id/district_id)
-      const district = regionData.districts.find(d => 
-        String(d.id) === districtId || 
+      const district = regionData.districts.find(d =>
+        String(d.id) === districtId ||
         String(d.district_id) === districtId ||
-        d.id === value || 
+        d.id === value ||
         d.district_id === value ||
         d.id === Number(value) ||
         d.district_id === Number(value)
       );
       setSelectedRegionIds(prev => ({ ...prev, districtId: value || "" }));
-      setRegionForm(prev => ({ 
-        ...prev, 
+      setRegionForm(prev => ({
+        ...prev,
         kecamatan: district?.name || "",
         // Ambil kode pos dari district jika ada, jika tidak pertahankan yang sudah ada atau kosongkan
         kode_pos: district?.postal_code || prev.kode_pos || ""
@@ -208,18 +208,18 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
       setRegionForm(prev => ({ ...prev, kode_pos: value }));
     }
   };
-  
+
   // Load provinces on mount
   useEffect(() => {
     loadProvinces();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  
+
   // Initialize province ID dari customer data setelah provinces loaded
   useEffect(() => {
     if (regionData.provinces.length > 0 && regionForm.provinsi && !selectedRegionIds.provinceId) {
       // Cari province dengan case-insensitive dan trim untuk menghindari masalah whitespace
-      const province = regionData.provinces.find(p => 
+      const province = regionData.provinces.find(p =>
         p.name?.trim().toLowerCase() === regionForm.provinsi?.trim().toLowerCase()
       );
       if (province) {
@@ -228,7 +228,7 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [regionData.provinces.length, regionForm.provinsi]);
-  
+
   // Load cities when province selected
   useEffect(() => {
     if (selectedRegionIds.provinceId) {
@@ -244,12 +244,12 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRegionIds.provinceId]);
-  
+
   // Initialize city ID dari customer data setelah cities loaded
   useEffect(() => {
     if (regionData.cities.length > 0 && regionForm.kabupaten && !selectedRegionIds.cityId) {
       // Cari city dengan case-insensitive dan trim untuk menghindari masalah whitespace
-      const city = regionData.cities.find(c => 
+      const city = regionData.cities.find(c =>
         c.name?.trim().toLowerCase() === regionForm.kabupaten?.trim().toLowerCase()
       );
       if (city) {
@@ -258,7 +258,7 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [regionData.cities.length, regionForm.kabupaten]);
-  
+
   // Load districts when city selected
   useEffect(() => {
     if (selectedRegionIds.cityId) {
@@ -274,7 +274,7 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRegionIds.cityId]);
-  
+
   // Initialize district ID dari customer data setelah districts loaded
   useEffect(() => {
     if (regionData.districts.length > 0 && regionForm.kecamatan && !selectedRegionIds.districtId) {
@@ -317,30 +317,30 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
     // SELALU ambil dari regionData berdasarkan selectedRegionIds untuk memastikan data terbaru
     if (selectedRegionIds.provinceId) {
       const provinceId = String(selectedRegionIds.provinceId);
-      const province = regionData.provinces.find(p => 
+      const province = regionData.provinces.find(p =>
         String(p.id) === provinceId || p.id === selectedRegionIds.provinceId || p.id === Number(selectedRegionIds.provinceId)
       );
       if (province?.name) {
         provinsi = province.name.trim();
       }
     }
-    
+
     if (selectedRegionIds.cityId) {
       const cityId = String(selectedRegionIds.cityId);
-      const city = regionData.cities.find(c => 
+      const city = regionData.cities.find(c =>
         String(c.id) === cityId || c.id === selectedRegionIds.cityId || c.id === Number(selectedRegionIds.cityId)
       );
       if (city?.name) {
         kabupaten = city.name.trim();
       }
     }
-    
+
     if (selectedRegionIds.districtId) {
       const districtId = String(selectedRegionIds.districtId);
-      const district = regionData.districts.find(d => 
-        String(d.id) === districtId || 
+      const district = regionData.districts.find(d =>
+        String(d.id) === districtId ||
         String(d.district_id) === districtId ||
-        d.id === selectedRegionIds.districtId || 
+        d.id === selectedRegionIds.districtId ||
         d.district_id === selectedRegionIds.districtId ||
         d.id === Number(selectedRegionIds.districtId) ||
         d.district_id === Number(selectedRegionIds.districtId)
@@ -367,16 +367,7 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
       toastError("Kecamatan tidak ditemukan. Silakan pilih ulang Kecamatan!");
       return;
     }
-    if (!kode_pos) {
-      toastError("Kode Pos wajib diisi! Pilih Kecamatan untuk auto-fill atau isi manual.");
-      return;
-    }
 
-    // Validasi kode pos harus angka
-    if (!/^\d+$/.test(kode_pos)) {
-      toastError("Kode Pos harus berupa angka!");
-      return;
-    }
 
     setLoading(true);
     const token = localStorage.getItem("token");
@@ -552,7 +543,7 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
                   onChange={(e) => handleRegionChange("provinsi", e.target.value)}
                   disabled={loadingRegion.provinces}
                   required
-                  style={{ 
+                  style={{
                     width: "100%",
                     padding: "8px 12px",
                     border: "1px solid #d1d5db",
@@ -584,7 +575,7 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
                   onChange={(e) => handleRegionChange("kabupaten", e.target.value)}
                   disabled={!selectedRegionIds.provinceId || loadingRegion.cities}
                   required
-                  style={{ 
+                  style={{
                     width: "100%",
                     padding: "8px 12px",
                     border: "1px solid #d1d5db",
@@ -616,7 +607,7 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
                   onChange={(e) => handleRegionChange("kecamatan", e.target.value)}
                   disabled={!selectedRegionIds.cityId || loadingRegion.districts}
                   required
-                  style={{ 
+                  style={{
                     width: "100%",
                     padding: "8px 12px",
                     border: "1px solid #d1d5db",
@@ -640,32 +631,7 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
                 )}
               </div>
 
-              <div className="form-group form-group--full form-group--secondary">
-                <label>Kode Pos <span style={{ color: "#ef4444" }}>*</span></label>
-                <input
-                  type="text"
-                  name="kode_pos"
-                  value={regionForm.kode_pos}
-                  onChange={(e) => handleRegionChange("kode_pos", e.target.value)}
-                  disabled={!selectedRegionIds.districtId}
-                  required
-                  placeholder="Contoh: 12120"
-                  style={{ 
-                    width: "100%",
-                    padding: "8px 12px",
-                    border: "1px solid #d1d5db",
-                    borderRadius: "6px",
-                    fontSize: "14px",
-                    cursor: !selectedRegionIds.districtId ? 'not-allowed' : 'text',
-                    backgroundColor: !selectedRegionIds.districtId ? '#f9fafb' : 'white'
-                  }}
-                />
-                {!selectedRegionIds.districtId && (
-                  <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
-                    Pilih kecamatan terlebih dahulu
-                  </small>
-                )}
-              </div>
+
             </div>
           </form>
         </div>
