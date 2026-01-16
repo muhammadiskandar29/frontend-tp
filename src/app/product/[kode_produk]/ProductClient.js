@@ -1610,101 +1610,163 @@ function ProductClient({ initialProductData, initialLandingPage }) {
                       </div>
                     </>
                   ) : (
-                    /* === FORM PRODUK NON-FISIK (HANYA SEARCH KECAMATAN) === */
-                    <div className="compact-field" style={{ position: 'relative' }}>
+                    /* === FORM PRODUK NON-FISIK (HANYA SEARCH KECAMATAN) - UPGRADED DESIGN === */
+                    <div className="compact-field" style={{ position: 'relative', zIndex: 40 }}>
                       <label className="compact-label">Kecamatan <span className="required">*</span></label>
-                      <input
-                        type="text"
-                        className="compact-input"
-                        placeholder="Ketik untuk mencari kecamatan..."
-                        value={districtSearchTerm}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setDistrictSearchTerm(val);
-                          setShowDistrictResults(true);
-                        }}
-                        onFocus={() => {
-                          if (districtSearchTerm.length >= 3) setShowDistrictResults(true);
-                        }}
-                        onBlur={() => {
-                          // Delay hide agar click event pada result bisa tertangkap
-                          setTimeout(() => setShowDistrictResults(false), 200);
-                        }}
-                      />
+                      <div className="search-input-wrapper" style={{ position: 'relative' }}>
+                        <input
+                          type="text"
+                          className="compact-input"
+                          placeholder="Ketik nama kecamatan..."
+                          value={districtSearchTerm}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setDistrictSearchTerm(val);
+                            if (val.length >= 3) {
+                              setShowDistrictResults(true);
+                            }
+                          }}
+                          onFocus={() => {
+                            if (districtSearchTerm.length >= 3) setShowDistrictResults(true);
+                          }}
+                          onBlur={() => {
+                            // Delay hide agar click event pada result bisa tertangkap
+                            setTimeout(() => setShowDistrictResults(false), 200);
+                          }}
+                          style={{ paddingRight: '40px' }} // Space for spinner
+                          autoComplete="off"
+                        />
 
-                      {loadingDistrictSearch && (
-                        <div style={{
-                          position: 'absolute', right: '12px', top: '38px',
-                          fontSize: '12px', color: '#6b7280'
-                        }}>
-                          Mencari...
-                        </div>
-                      )}
+                        {/* Loading Spinner */}
+                        {loadingDistrictSearch && (
+                          <div style={{
+                            position: 'absolute',
+                            right: '12px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            pointerEvents: 'none'
+                          }}>
+                            <div className="animate-spin" style={{
+                              width: '18px',
+                              height: '18px',
+                              border: '2px solid #e5e7eb',
+                              borderTopColor: '#3b82f6',
+                              borderRadius: '50%'
+                            }} />
+                          </div>
+                        )}
+                      </div>
 
                       {/* Search Results Dropdown */}
                       {showDistrictResults && districtSearchResults.length > 0 && (
                         <div className="district-search-results" style={{
                           position: 'absolute',
-                          top: '100%',
+                          top: 'calc(100% + 4px)',
                           left: 0,
                           right: 0,
                           backgroundColor: 'white',
-                          border: '1px solid #d1d5db',
-                          borderRadius: '0 0 6px 6px',
-                          maxHeight: '200px',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px',
+                          maxHeight: '280px',
                           overflowY: 'auto',
-                          zIndex: 50,
-                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                          zIndex: 100,
+                          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)'
                         }}>
-                          {districtSearchResults.map((item, idx) => (
-                            <div
-                              key={item.id || idx}
-                              onClick={() => {
-                                // Set Display Value (Hanya Kecamatan - UX lebih bersih)
-                                setDistrictSearchTerm(item.kecamatan);
+                          {districtSearchResults.map((item, idx) => {
+                            // Generate unique key
+                            const key = item.kode ?
+                              `${item.kode.id_provinsi}-${item.kode.id_kota}-${item.kode.id_kecamatan}` :
+                              `idx-${idx}`;
 
-                                // Set Form Values (AUTO FILL HIDDEN FIELDS)
-                                setFormWilayah(prev => ({
-                                  ...prev,
-                                  provinsi: item.provinsi,
-                                  kabupaten: item.kota, // Map 'kota' from JSON to 'kabupaten' in state
-                                  kecamatan: item.kecamatan,
-                                  kode_pos: "" // Data JSON ini tidak memiliki kodepos
-                                }));
+                            return (
+                              <div
+                                key={key}
+                                onClick={() => {
+                                  // Set Display Value
+                                  setDistrictSearchTerm(item.kecamatan);
 
-                                setShowDistrictResults(false);
-                              }}
-                              style={{
-                                padding: '8px 12px',
-                                fontSize: '14px',
-                                cursor: 'pointer',
-                                borderBottom: '1px solid #f3f4f6',
-                                color: '#1f2937'
-                              }}
-                              onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-                              onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}
-                            >
-                              {item.label}
-                            </div>
-                          ))}
+                                  // Set Form Values
+                                  setFormWilayah(prev => ({
+                                    ...prev,
+                                    provinsi: item.provinsi,
+                                    kabupaten: item.kota,
+                                    kecamatan: item.kecamatan,
+                                    kode_pos: ""
+                                  }));
+
+                                  setShowDistrictResults(false);
+                                }}
+                                style={{
+                                  padding: '12px 16px',
+                                  cursor: 'pointer',
+                                  borderBottom: '1px solid #f3f4f6',
+                                  display: 'flex',
+                                  alignItems: 'flex-start',
+                                  gap: '12px',
+                                  transition: 'background-color 0.2s',
+                                  backgroundColor: 'white'
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f9fafb'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'white'; }}
+                              >
+                                <div style={{
+                                  color: '#9ca3af',
+                                  marginTop: '2px',
+                                  flexShrink: 0
+                                }}>
+                                  <MapPin size={18} />
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                  <span style={{
+                                    fontWeight: '600',
+                                    color: '#1f2937',
+                                    fontSize: '14px',
+                                    lineHeight: '1.4'
+                                  }}>
+                                    {item.kecamatan}
+                                  </span>
+                                  <span style={{
+                                    fontSize: '12px',
+                                    color: '#6b7280',
+                                    marginTop: '2px',
+                                    lineHeight: '1.4'
+                                  }}>
+                                    {item.kota}, {item.provinsi}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
 
+                      {/* Not Found State */}
                       {showDistrictResults && districtSearchResults.length === 0 && districtSearchTerm.length >= 3 && !loadingDistrictSearch && (
                         <div style={{
                           position: 'absolute',
-                          top: '100%',
+                          top: 'calc(100% + 4px)',
                           left: 0,
                           right: 0,
                           backgroundColor: 'white',
-                          border: '1px solid #d1d5db',
-                          borderRadius: '0 0 6px 6px',
-                          padding: '8px 12px',
-                          fontSize: '14px',
-                          color: '#6b7280',
-                          zIndex: 50
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px',
+                          padding: '24px',
+                          textAlign: 'center',
+                          zIndex: 100,
+                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                         }}>
-                          Tidak ditemukan.
+                          <div style={{ color: '#9ca3af', marginBottom: '8px', display: 'flex', justifyContent: 'center' }}>
+                            <MapPin size={24} strokeWidth={1.5} />
+                          </div>
+                          <p style={{ fontWeight: '500', color: '#374151', fontSize: '14px', marginBottom: '4px' }}>
+                            Kecamatan tidak ditemukan
+                          </p>
+                          <p style={{ fontSize: '12px', color: '#6b7280' }}>
+                            Coba periksa kembali ejaan nama kecamatan Anda
+                          </p>
                         </div>
                       )}
                     </div>
