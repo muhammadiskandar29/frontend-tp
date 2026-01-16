@@ -94,16 +94,9 @@ const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran }) =>
         body: JSON.stringify({ customer: Number(customerId) }),
       });
       const data = await res.json();
+      // Simpan semua log customer, filter dilakukan di isSent agar lebih fleksibel
       if (res.ok && Array.isArray(data.data)) {
-        // Filter by order id jika ada field order di log
-        let filtered = data.data;
-        if (orderId) {
-          filtered = data.data.filter(log => {
-            const logOrderId = log.order || log.order_id || log.orderId;
-            return logOrderId && Number(logOrderId) === Number(orderId);
-          });
-        }
-        setFollowupLogs(filtered);
+        setFollowupLogs(data.data);
       }
     } catch (err) {
       console.error("Error fetching followup logs:", err);
@@ -114,10 +107,31 @@ const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran }) =>
 
   // Helper untuk cek apakah event sudah terkirim (status === "1" atau 1)
   const isSent = (eventType) => {
-    const log = followupLogs.find(l => {
+    // Cari log yang sesuai dengan eventType
+    // Prioritas: Log yang memiliki orderId yang sama dengan order ini
+    let log = followupLogs.find(l => {
       const logEvent = l.follup || l.type || l.follup_rel?.id || l.event;
-      return Number(logEvent) === Number(eventType);
+      const logOrderId = l.order || l.order_id || l.orderId;
+
+      const isTypeMatch = Number(logEvent) === Number(eventType);
+      const isOrderMatch = logOrderId && Number(logOrderId) === Number(orderId);
+
+      // Strict match orderId untuk event selain Register (5)
+      if (Number(eventType) !== 5) {
+        return isTypeMatch && isOrderMatch;
+      }
+      return isTypeMatch;
     });
+
+    // Fallback untuk Register (5) atau jika tidak ketemu dengan match orderId (jika perlu logic lain)
+    if (!log && Number(eventType) === 5) {
+      log = followupLogs.find(l => {
+        const logEvent = l.follup || l.type || l.follup_rel?.id || l.event;
+        return Number(logEvent) === Number(eventType);
+      });
+    }
+
+    // Cek status=1 atau '1' (terkirim)
     return log && (log.status === "1" || log.status === 1);
   };
 
