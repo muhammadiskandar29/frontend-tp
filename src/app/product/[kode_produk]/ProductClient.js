@@ -1660,9 +1660,8 @@ function ProductClient({ initialProductData, initialLandingPage }) {
                             <div
                               key={item.id || idx}
                               onClick={() => {
-                                // Set Display Value (Format: Kecamatan, Kota, Provinsi)
-                                const displayVal = `${item.kecamatan}, ${item.kota}, ${item.provinsi}`;
-                                setDistrictSearchTerm(displayVal);
+                                // Set Display Value (Hanya Kecamatan - UX lebih bersih)
+                                setDistrictSearchTerm(item.kecamatan);
 
                                 // Set Form Values (AUTO FILL HIDDEN FIELDS)
                                 setFormWilayah(prev => ({
@@ -1670,7 +1669,7 @@ function ProductClient({ initialProductData, initialLandingPage }) {
                                   provinsi: item.provinsi,
                                   kabupaten: item.kota, // Map 'kota' from JSON to 'kabupaten' in state
                                   kecamatan: item.kecamatan,
-                                  kode_pos: "" // Data JSON ini tidak memiliki kodepos, user bisa input manual jika perlu
+                                  kode_pos: "" // Data JSON ini tidak memiliki kodepos
                                 }));
 
                                 setShowDistrictResults(false);
