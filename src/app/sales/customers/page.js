@@ -106,12 +106,14 @@ export default function AdminCustomerPage() {
             const nama = u.user_rel?.nama || u.sales_rel?.nama || u.user?.nama || u.sales?.nama || u.nama || u.name || `User #${userId}`;
             // Check division/role - assuming structure has user_rel.role or similar, or checking the array source
             // Based on context, we only want those explicitly marked as sales
+            // Updated logic based on user request: Sales is likely Division 3
+            const divisiId = u.user_rel?.divisi_id || u.divisi_id;
             const role = u.user_rel?.role || u.role || "";
 
             if (userId) {
               map.set(String(userId), nama);
-              // Only add to options if role is sales (case insensitive)
-              if (role.toLowerCase() === 'sales') {
+              // Check division 3 OR role 'sales'
+              if (String(divisiId) === '3' || role.toLowerCase() === 'sales') {
                 options.push({ id: String(userId), text: nama });
               }
             }
