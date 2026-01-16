@@ -324,9 +324,14 @@ export default function AdminCustomerPage() {
     setShowEdit(true);
   };
 
-  const handleSuccessEdit = (message) => {
+  const handleSuccessEdit = (message, updatedCustomer) => {
     requestRefresh(message);
     setShowEdit(false);
+
+    // If we have an updated customer object, update the state so modals (like View) reflect changes
+    if (updatedCustomer) {
+      setSelectedCustomer(updatedCustomer);
+    }
   };
 
   // 🔹 Handler delete
@@ -722,15 +727,13 @@ export default function AdminCustomerPage() {
                 setShowEditFromView(false);
                 // Jangan set selectedCustomer ke null, biarkan viewCustomer modal tetap terbuka
               }}
-              onSuccess={(msg) => {
+              onSuccess={(msg, updatedCustomer) => {
                 requestRefresh(msg);
                 setShowEditFromView(false);
-                // Refresh customer data di viewCustomer modal dengan menutup dan membuka lagi
-                if (showView) {
-                  setShowView(false);
-                  setTimeout(() => {
-                    setShowView(true);
-                  }, 100);
+
+                // Update selectedCustomer with new data to refresh View Modal immediately
+                if (updatedCustomer) {
+                  setSelectedCustomer(updatedCustomer);
                 }
               }}
             />

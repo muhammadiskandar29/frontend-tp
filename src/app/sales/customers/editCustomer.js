@@ -396,7 +396,8 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
 
       toastSuccess("Berhasil memperbarui data customer");
       setTimeout(() => {
-        onSuccess(data.message || "Data customer berhasil diperbarui");
+        // Pass the updated customer object as the second argument
+        onSuccess(data.message || "Data customer berhasil diperbarui", data.data);
         onClose();
       }, 1000);
     } catch (err) {
