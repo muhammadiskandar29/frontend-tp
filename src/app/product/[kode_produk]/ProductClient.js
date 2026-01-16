@@ -31,7 +31,7 @@ const QuotaInfoPreview = dynamic(() => import("@/app/sales/products/addProducts3
 });
 import { getProvinces, getCities, getDistricts, calculateDomesticCost } from "@/utils/shippingService";
 import "@/styles/sales/add-products3.css"; // Canvas style
-import "@/styles/ongkir.css";
+import districtData from '@/data/indonesia-districts.json';
 
 // FAQ Component
 function FAQItem({ question, answer }) {
@@ -406,28 +406,32 @@ function ProductClient({ initialProductData, initialLandingPage }) {
   const [showDistrictResults, setShowDistrictResults] = useState(false);
 
   // Debounce search handler for District Search
+  // ✅ SEARCH LOGIC: Client-side filtering dari data JSON (Super Cepat)
   useEffect(() => {
-    const timer = setTimeout(async () => {
-      if (districtSearchTerm.length >= 3 && showDistrictResults) {
-        setLoadingDistrictSearch(true);
-        try {
-          const res = await fetch(`/api/shipping/search?search=${encodeURIComponent(districtSearchTerm)}`);
-          const json = await res.json();
-          if (json.success && Array.isArray(json.data)) {
-            setDistrictSearchResults(json.data);
-          } else {
-            setDistrictSearchResults([]);
-          }
-        } catch (e) {
-          console.error(e);
-          setDistrictSearchResults([]);
-        } finally {
-          setLoadingDistrictSearch(false);
-        }
-      }
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [districtSearchTerm, showDistrictResults]);
+    // Skip jika term kosong atau pendek
+    if (!districtSearchTerm || districtSearchTerm.length < 3) {
+      setDistrictSearchResults([]);
+      return;
+    }
+
+    // Debounce 300ms (Responsive)
+    const timeoutId = setTimeout(() => {
+      setLoadingDistrictSearch(true);
+
+      const lowerTerm = districtSearchTerm.toLowerCase();
+      // Filter dari data lokal (indonesia-districts.json)
+      // Struktur data lokal: { id, kecamatan, kota, provinsi }
+      const results = districtData.filter(item =>
+        (item.kecamatan && item.kecamatan.toLowerCase().includes(lowerTerm))
+      ).slice(0, 50); // Limit 50 results
+
+      setDistrictSearchResults(results);
+      setLoadingDistrictSearch(false);
+      setShowDistrictResults(true); // Pastikan hasil ditampilkan
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [districtSearchTerm]);
 
   // State untuk dropdown wilayah (cascading)
   const [wilayahData, setWilayahData] = useState({
@@ -1656,16 +1660,17 @@ function ProductClient({ initialProductData, initialLandingPage }) {
                             <div
                               key={item.id || idx}
                               onClick={() => {
-                                // Set Display Value
-                                setDistrictSearchTerm(item.label);
+                                // Set Display Value (Format: Kecamatan, Kota, Provinsi)
+                                const displayVal = `${item.kecamatan}, ${item.kota}, ${item.provinsi}`;
+                                setDistrictSearchTerm(displayVal);
 
-                                // Set Form Values
+                                // Set Form Values (AUTO FILL HIDDEN FIELDS)
                                 setFormWilayah(prev => ({
                                   ...prev,
-                                  provinsi: item.province_name,
-                                  kabupaten: item.city_name,
-                                  kecamatan: item.district_name,
-                                  kode_pos: ""
+                                  provinsi: item.provinsi,
+                                  kabupaten: item.kota, // Map 'kota' from JSON to 'kabupaten' in state
+                                  kecamatan: item.kecamatan,
+                                  kode_pos: "" // Data JSON ini tidak memiliki kodepos, user bisa input manual jika perlu
                                 }));
 
                                 setShowDistrictResults(false);
@@ -2313,7 +2318,7 @@ function ProductClient({ initialProductData, initialLandingPage }) {
       custom_value: Array.isArray(customerForm.custom_value)
         ? customerForm.custom_value
         : (customerForm.custom_value ? [customerForm.custom_value] : []),
-      // ✅ Tambahkan bundling_id jika customer memilih bundling
+      // ✅ VERIFIED: bundling_id disertakan jika customer memilih bundling
       ...(bundlingId ? { bundling_id: bundlingId } : {}),
     };
 
