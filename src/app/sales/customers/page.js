@@ -22,6 +22,7 @@ const AddCustomerModal = dynamic(() => import("./addCustomer"), { ssr: false });
 const HistoryCustomerModal = dynamic(() => import("./historyCustomer"), { ssr: false });
 const FollowupLogModal = dynamic(() => import("./followupLog"), { ssr: false });
 const FilterCustomerModal = dynamic(() => import("./filterCustomer"), { ssr: false });
+import CustomerOrderStatsCells from "./CustomerOrderStatsCells";
 
 import { toastSuccess, toastError, toastWarning } from "@/lib/toast";
 
@@ -589,8 +590,8 @@ export default function AdminCustomerPage() {
                         </span>
                       </td>
 
-                      <td>-</td>
-                      <td>-</td>
+                      {/* Stats Cells: Auto Fetch */}
+                      <CustomerOrderStatsCells customerId={cust.id} />
 
                     </tr>
                   ))
