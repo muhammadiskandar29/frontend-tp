@@ -14,7 +14,7 @@ export async function getCustomers(page = 1, per_page = 15, filters = {}) {
     const params = new URLSearchParams();
     params.append("page", page);
     params.append("per_page", per_page);
-    
+
     // Add filter parameters - hanya kirim jika bukan "all"
     if (filters.verifikasi && filters.verifikasi !== "all") {
       // Backend mungkin menerima "1" untuk verified, "0" untuk unverified
@@ -41,7 +41,11 @@ export async function getCustomers(page = 1, per_page = 15, filters = {}) {
     if (filters.search && filters.search.trim()) {
       params.append("search", filters.search.trim());
     }
-    
+
+    if (filters.sales_id && filters.sales_id !== "all") {
+      params.append("sales_id", filters.sales_id);
+    }
+
     const res = await fetch(`${BASE_URL}/sales/customer?${params.toString()}`, { headers });
     if (!res.ok) throw new Error("Gagal mengambil data customer");
 

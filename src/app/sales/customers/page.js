@@ -14,12 +14,14 @@ import "@/styles/sales/leads.css";
 import "@/styles/sales/shared-table.css";
 
 // Lazy load modals
+// Lazy load modals
 const EditCustomerModal = dynamic(() => import("./editCustomer"), { ssr: false });
 const ViewCustomerModal = dynamic(() => import("./viewCustomer"), { ssr: false });
 const DeleteCustomerModal = dynamic(() => import("./deleteCustomer"), { ssr: false });
 const AddCustomerModal = dynamic(() => import("./addCustomer"), { ssr: false });
 const HistoryCustomerModal = dynamic(() => import("./historyCustomer"), { ssr: false });
 const FollowupLogModal = dynamic(() => import("./followupLog"), { ssr: false });
+const FilterCustomerModal = dynamic(() => import("./filterCustomer"), { ssr: false });
 
 import { toastSuccess, toastError, toastWarning } from "@/lib/toast";
 
@@ -58,16 +60,12 @@ export default function AdminCustomerPage() {
   const [showEditFromView, setShowEditFromView] = useState(false);
   const [showDeleteFromView, setShowDeleteFromView] = useState(false);
 
-  // Filter state - hanya verifikasi
-  const [verifikasiFilter, setVerifikasiFilter] = useState("all"); // all | verified | unverified
-  const [showVerifikasiDropdown, setShowVerifikasiDropdown] = useState(false);
+  // Filter state
+  const [verifikasiFilter, setVerifikasiFilter] = useState("all");
+  const [salesFilter, setSalesFilter] = useState("all");
+  const [showFilterModal, setShowFilterModal] = useState(false);
 
-  // Filter options
-  const VERIFIKASI_OPTIONS = [
-    { value: "all", label: "Semua Verifikasi" },
-    { value: "verified", label: "Verified" },
-    { value: "unverified", label: "Unverified" },
-  ];
+  const [salesOptions, setSalesOptions] = useState([]); // List sales untuk dropdown
 
   // Convert filter untuk API (termasuk search)
   const filters = useMemo(() => ({
@@ -75,8 +73,9 @@ export default function AdminCustomerPage() {
     status: "all",
     dateRange: null,
     jenis_kelamin: "all",
-    search: debouncedSearch.trim() || null, // Add search to filters
-  }), [verifikasiFilter, debouncedSearch]);
+    sales_id: salesFilter, // Add sales_id filter
+    search: debouncedSearch.trim() || null,
+  }), [verifikasiFilter, salesFilter, debouncedSearch]);
 
   // Memoize summary statistics untuk performa
   const summaryStats = useMemo(() => {
@@ -99,14 +98,18 @@ export default function AdminCustomerPage() {
 
         if (usersJson.success && Array.isArray(usersJson.data)) {
           const map = new Map();
+          const options = [];
+
           usersJson.data.forEach((u) => {
             const userId = u.user_rel?.id || u.sales_rel?.id || u.user?.id || u.sales?.id || u.id;
             const nama = u.user_rel?.nama || u.sales_rel?.nama || u.user?.nama || u.sales?.nama || u.nama || u.name || `User #${userId}`;
             if (userId) {
               map.set(String(userId), nama);
+              options.push({ id: String(userId), text: nama });
             }
           });
           setUserMap(map);
+          setSalesOptions(options);
         }
       } catch (err) {
         console.error("Error fetching users for Sales mapping:", err);
@@ -204,7 +207,7 @@ export default function AdminCustomerPage() {
     setCustomers([]);
     setHasMore(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, verifikasiFilter]); // Reset when search or filter changes
+  }, [debouncedSearch, verifikasiFilter, salesFilter]); // Reset when search or filter changes
 
   // Fetch data saat page atau filters berubah
   useEffect(() => {
@@ -234,6 +237,7 @@ export default function AdminCustomerPage() {
     setShowAdd(false);
     setShowEditFromView(false);
     setShowDeleteFromView(false);
+    setShowFilterModal(false);
     setSelectedCustomer(null);
   };
 
@@ -313,10 +317,10 @@ export default function AdminCustomerPage() {
     setShowFollowupLog(true);
   };
 
-  // 🔹 Filter handler - verifikasi filter langsung terapkan saat dipilih
-  const handleVerifikasiFilterChange = (value) => {
-    setVerifikasiFilter(value);
-    setShowVerifikasiDropdown(false);
+  // 🔹 Filter handler from Modal
+  const handleFilterApply = (newFilters) => {
+    setVerifikasiFilter(newFilters.verifikasi);
+    setSalesFilter(newFilters.sales_id);
     setPage(1); // Reset to page 1 when filter changes
   };
 
@@ -373,38 +377,37 @@ export default function AdminCustomerPage() {
               <span className="customers-search__icon pi pi-search" />
             </div>
             <div className="customers-filters" aria-label="Filter pelanggan" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              {/* Verifikasi Filter Dropdown */}
-              <div className="leads-filter-dropdown" style={{ position: "relative" }}>
-                <button
-                  type="button"
-                  className={`leads-filter-btn ${verifikasiFilter !== "all" ? "is-active" : ""}`}
-                  onClick={() => {
-                    setShowVerifikasiDropdown(!showVerifikasiDropdown);
-                  }}
-                >
-                  {VERIFIKASI_OPTIONS.find((opt) => opt.value === verifikasiFilter)?.label || "Semua Verifikasi"}
-                  <ChevronDown size={16} style={{ marginLeft: "0.5rem" }} />
-                </button>
-                {showVerifikasiDropdown && (
-                  <div className="leads-filter-dropdown-menu">
-                    {VERIFIKASI_OPTIONS.map((option) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        className={`leads-filter-dropdown-item ${verifikasiFilter === option.value ? "is-selected" : ""}`}
-                        onClick={() => handleVerifikasiFilterChange(option.value)}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {/* Filter Button */}
+              <button
+                type="button"
+                className="filter-btn-orange"
+                onClick={() => setShowFilterModal(true)}
+                style={{
+                  backgroundColor: "white",
+                  border: "1px solid #fab005",
+                  color: "#fab005",
+                  padding: "8px",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  height: "40px",
+                  width: "40px",
+                  transition: "all 0.2s"
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#fff9db"}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "white"}
+                title="Filter Data"
+              >
+                <Filter size={20} strokeWidth={2.5} />
+              </button>
             </div>
           </div>
         </section>
 
         <section className="panel customers-panel">
+
           <div className="panel__header">
             <div>
               <p className="panel__eyebrow">Directory</p>
@@ -732,18 +735,12 @@ export default function AdminCustomerPage() {
           />
         )}
 
-        {/* Close dropdown when clicking outside */}
-        {showVerifikasiDropdown && (
-          <div
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              zIndex: 999,
-            }}
-            onClick={() => setShowVerifikasiDropdown(false)}
+        {showFilterModal && (
+          <FilterCustomerModal
+            onClose={() => setShowFilterModal(false)}
+            onApply={handleFilterApply}
+            currentFilters={{ verifikasi: verifikasiFilter, sales_id: salesFilter }}
+            salesOptions={salesOptions}
           />
         )}
 

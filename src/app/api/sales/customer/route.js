@@ -4,52 +4,57 @@ import { BACKEND_URL } from "@/config/env";
 export async function GET(request) {
   try {
     const authHeader = request.headers.get("authorization");
-    
+
     // Extract query parameters from request
     const { searchParams } = new URL(request.url);
     const page = searchParams.get('page') || '1';
     const perPage = searchParams.get('per_page') || '15';
-    
+
     // Build query parameters for backend
     const backendParams = new URLSearchParams();
     backendParams.append('page', page);
     backendParams.append('per_page', perPage);
-    
+
     // Add filter parameters if present (only if not empty and not "all")
     const verifikasi = searchParams.get('verifikasi');
     if (verifikasi && verifikasi !== 'all' && verifikasi !== '') {
       backendParams.append('verifikasi', verifikasi);
     }
-    
+
     const status = searchParams.get('status');
     if (status && status !== 'all' && status !== '') {
       backendParams.append('status', status);
     }
-    
+
     const jenisKelamin = searchParams.get('jenis_kelamin');
     if (jenisKelamin && jenisKelamin !== 'all' && jenisKelamin !== '') {
       backendParams.append('jenis_kelamin', jenisKelamin);
     }
-    
+
     const dateFrom = searchParams.get('date_from');
     if (dateFrom) {
       backendParams.append('date_from', dateFrom);
     }
-    
+
     const dateTo = searchParams.get('date_to');
     if (dateTo) {
       backendParams.append('date_to', dateTo);
     }
-    
+
     // Add search parameter if provided
     const search = searchParams.get('search');
     if (search && search.trim()) {
       backendParams.append('search', search.trim());
     }
-    
+
+    const salesId = searchParams.get('sales_id');
+    if (salesId && salesId !== 'all' && salesId !== '') {
+      backendParams.append('sales_id', salesId);
+    }
+
     // Build backend URL with query parameters
     const backendUrl = `${BACKEND_URL}/api/sales/customer?${backendParams.toString()}`;
-    
+
     const response = await fetch(backendUrl, {
       method: "GET",
       headers: {
@@ -61,7 +66,7 @@ export async function GET(request) {
     });
 
     const text = await response.text();
-    
+
     // Check if response is HTML
     if (text.trim().startsWith("<!DOCTYPE") || text.trim().startsWith("<html")) {
       return NextResponse.json(
@@ -74,9 +79,9 @@ export async function GET(request) {
         { status: 500 }
       );
     }
-    
+
     let json;
-    
+
     try {
       json = JSON.parse(text);
     } catch (parseError) {
@@ -143,7 +148,7 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const authHeader = request.headers.get("authorization");
-    
+
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return NextResponse.json(
         { success: false, message: "Token tidak ditemukan" },
@@ -166,7 +171,7 @@ export async function POST(request) {
     });
 
     const text = await response.text();
-    
+
     // Check if response is HTML
     if (text.trim().startsWith("<!DOCTYPE") || text.trim().startsWith("<html")) {
       return NextResponse.json(
@@ -180,7 +185,7 @@ export async function POST(request) {
     }
 
     let json;
-    
+
     try {
       json = JSON.parse(text);
     } catch (parseError) {
