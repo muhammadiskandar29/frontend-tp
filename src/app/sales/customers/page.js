@@ -465,7 +465,7 @@ export default function AdminCustomerPage() {
                       <span>REVENUE</span>
                     </div>
                   </th>
-                  <th>SALES</th>
+
                 </tr>
               </thead>
               <tbody>
@@ -483,12 +483,17 @@ export default function AdminCustomerPage() {
 
                       {/* Sticky 2: Nama */}
                       <td className="sticky-left-2">
-                        <span
-                          style={{ color: '#0ea5e9', fontWeight: 600, cursor: 'pointer' }}
-                          onClick={() => handleView(cust)}
-                        >
-                          {cust.nama || "-"}
-                        </span>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span
+                            style={{ color: '#0ea5e9', fontWeight: 600, cursor: 'pointer' }}
+                            onClick={() => handleView(cust)}
+                          >
+                            {cust.nama || "-"}
+                          </span>
+                          <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>
+                            Sales: {cust.sales_rel?.nama || userMap.get(String(cust.sales_id)) || cust.sales_nama || "-"}
+                          </span>
+                        </div>
                       </td>
 
                       <td>{cust.email || "-"}</td>
@@ -531,7 +536,7 @@ export default function AdminCustomerPage() {
 
                       <td>-</td>
                       <td>-</td>
-                      <td>{cust.sales_rel?.nama || userMap.get(String(cust.sales_id)) || cust.sales_nama || "-"}</td>
+
                     </tr>
                   ))
                 ) : (

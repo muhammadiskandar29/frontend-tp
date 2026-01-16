@@ -115,28 +115,6 @@ export default function SalesListPage() {
     return (
         <Layout title="Sales Team Management">
             <div className="dashboard-shell table-shell">
-                {/* Hero / Toolbar */}
-                <section className="dashboard-hero">
-                    <div className="customers-toolbar" style={{ display: 'flex', width: '100%', marginBottom: '1.5rem' }}>
-                        <div className="customers-search" style={{ position: 'relative', maxWidth: '400px', width: '100%' }}>
-                            <input
-                                type="search"
-                                placeholder="Cari nama atau email..."
-                                className="customers-search__input"
-                                style={{
-                                    width: '100%',
-                                    padding: '0.75rem 1rem 0.75rem 0.75rem',
-                                    borderRadius: '0.5rem',
-                                    border: '1px solid #e2e8f0',
-                                    fontSize: '0.875rem'
-                                }}
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                            />
-                        </div>
-                    </div>
-                </section>
-
                 {/* Main Panel & Table */}
                 <section className="panel">
                     <div className="panel__header">
@@ -214,11 +192,7 @@ export default function SalesListPage() {
                                                         fontSize: '0.75rem',
                                                         color: '#475569',
                                                         border: '1px solid #cbd5e1',
-                                                        display: 'inline-block',
-                                                        maxWidth: '200px',
-                                                        overflow: 'hidden',
-                                                        textOverflow: 'ellipsis',
-                                                        whiteSpace: 'nowrap'
+                                                        display: 'inline-block'
                                                     }} title={item.woowa_key}>
                                                         {item.woowa_key}
                                                     </div>
