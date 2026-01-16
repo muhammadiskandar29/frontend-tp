@@ -102,18 +102,15 @@ export default function AdminCustomerPage() {
           const options = [];
 
           usersJson.data.forEach((u) => {
-            const userId = u.user_rel?.id || u.sales_rel?.id || u.user?.id || u.sales?.id || u.id;
-            const nama = u.user_rel?.nama || u.sales_rel?.nama || u.user?.nama || u.sales?.nama || u.nama || u.name || `User #${userId}`;
-            // Check division/role - assuming structure has user_rel.role or similar, or checking the array source
-            // Based on context, we only want those explicitly marked as sales
-            // Updated logic based on user request: Sales is likely Division 3
-            const divisiId = u.user_rel?.divisi_id || u.divisi_id;
-            const role = u.user_rel?.role || u.role || "";
+            // Structure is direct: { id, nama, divisi, ... } based on JSON provided
+            const userId = u.id;
+            const nama = u.nama;
+            const divisiId = u.divisi; // "3" is sales
 
             if (userId) {
               map.set(String(userId), nama);
-              // Check division 3 OR role 'sales'
-              if (String(divisiId) === '3' || role.toLowerCase() === 'sales') {
+              // Check division 3 for Sales
+              if (String(divisiId) === '3') {
                 options.push({ id: String(userId), text: nama });
               }
             }
