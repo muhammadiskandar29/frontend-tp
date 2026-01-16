@@ -443,9 +443,34 @@ export default function AdminCustomerPage() {
               <span className="customers-search__icon pi pi-search" />
             </div>
             <div className="customers-filters" aria-label="Filter pelanggan" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              {/* Filter Button */}
-              {/* Filter Button */}
-              {verifikasiFilter !== "all" || salesFilter !== "all" ? (
+              {/* Filter Button - Always Visible */}
+              <button
+                type="button"
+                className="filter-btn-orange"
+                onClick={() => setShowFilterModal(true)}
+                style={{
+                  backgroundColor: "white",
+                  border: "1px solid #fab005",
+                  color: "#fab005",
+                  padding: "8px",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  height: "40px",
+                  width: "40px",
+                  transition: "all 0.2s"
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#fff9db"}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "white"}
+                title="Filter Data"
+              >
+                <Filter size={20} strokeWidth={2.5} />
+              </button>
+
+              {/* Reset Button - Visible only when filtering */}
+              {(verifikasiFilter !== "all" || salesFilter !== "all") && (
                 <button
                   type="button"
                   className="filter-btn-orange active"
@@ -472,31 +497,6 @@ export default function AdminCustomerPage() {
                 >
                   <XCircle size={18} />
                   Riset
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="filter-btn-orange"
-                  onClick={() => setShowFilterModal(true)}
-                  style={{
-                    backgroundColor: "white",
-                    border: "1px solid #fab005",
-                    color: "#fab005",
-                    padding: "8px",
-                    borderRadius: "8px",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    height: "40px",
-                    width: "40px",
-                    transition: "all 0.2s"
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#fff9db"}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "white"}
-                  title="Filter Data"
-                >
-                  <Filter size={20} strokeWidth={2.5} />
                 </button>
               )}
             </div>
