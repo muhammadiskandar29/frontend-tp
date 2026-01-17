@@ -696,10 +696,10 @@ export default function Dashboard() {
                 <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
-                      <th style={{ background: '#f97316', padding: '0.875rem 1.5rem', textAlign: 'left', fontSize: '0.8rem', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase' }}>CUSTOMER</th>
-                      <th style={{ background: '#f97316', padding: '0.875rem 1.5rem', textAlign: 'left', fontSize: '0.8rem', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase' }}>PRODUK</th>
-                      <th style={{ background: '#f97316', padding: '0.875rem 1.5rem', textAlign: 'left', fontSize: '0.8rem', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase' }}>TOTAL</th>
-                      <th style={{ background: '#f97316', padding: '0.875rem 1.5rem', textAlign: 'left', fontSize: '0.8rem', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase' }}>TANGGAL</th>
+                      <th style={{ background: '#f97316', padding: '0.6rem 0.75rem', textAlign: 'left', fontSize: '0.7rem', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase' }}>CUSTOMER</th>
+                      <th style={{ background: '#f97316', padding: '0.6rem 0.75rem', textAlign: 'left', fontSize: '0.7rem', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase' }}>PRODUK</th>
+                      <th style={{ background: '#f97316', padding: '0.6rem 0.75rem', textAlign: 'left', fontSize: '0.7rem', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase' }}>TOTAL</th>
+                      <th style={{ background: '#f97316', padding: '0.6rem 0.75rem', textAlign: 'left', fontSize: '0.7rem', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase' }}>TANGGAL</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -720,16 +720,16 @@ export default function Dashboard() {
 
                         return (
                           <tr key={idx}>
-                            <td style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #f1f5f9', fontWeight: 500, color: '#334155' }}>
+                            <td style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid #f1f5f9', fontWeight: 500, fontSize: '0.8rem', color: '#334155' }}>
                               {customerName}
                             </td>
-                            <td style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #f1f5f9', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#334155' }}>
+                            <td style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid #f1f5f9', fontSize: '0.8rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#334155' }}>
                               {productName}
                             </td>
-                            <td style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #f1f5f9', fontWeight: 600, color: '#0f172a' }}>
+                            <td style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid #f1f5f9', fontWeight: 600, fontSize: '0.8rem', color: '#0f172a' }}>
                               {formatCurrency(order.total_harga)}
                             </td>
-                            <td style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #f1f5f9', color: '#64748b' }}>
+                            <td style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid #f1f5f9', fontSize: '0.8rem', color: '#64748b' }}>
                               {formatDateTime(order.created_at || order.create_at || order.tanggal_dibuat)}
                             </td>
                           </tr>
