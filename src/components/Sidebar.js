@@ -115,7 +115,7 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
       ];
     }
 
-    // Staff Sales menu (level 2) - hanya Dashboard dan Follow Hari Ini
+    // Staff Sales menu (level 2)
     if (pathname?.startsWith("/sales/staff")) {
       return [
         {
@@ -125,13 +125,15 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
           ],
         },
         {
-          section: "CUSTOMERS",
+          section: "OPERATIONS",
           items: [
-            {
-              label: "Follow Hari Ini",
-              icon: <Calendar size={18} />,
-              href: `${basePath}/crm`,
-            },
+            { label: "Orders", href: `${basePath}/orders`, icon: <ClipboardList size={18} /> },
+          ],
+        },
+        {
+          section: "COMMUNICATION",
+          items: [
+            { label: "Broadcast", href: `${basePath}/broadcast`, icon: <Radio size={18} /> },
           ],
         },
       ];

@@ -564,7 +564,7 @@ export default function DaftarPesanan() {
         });
       }
 
-      const res = await fetch(`/api/sales/order?${params.toString()}`, {
+      const res = await fetch(`/api/sales/order/sales?${params.toString()}`, {
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
