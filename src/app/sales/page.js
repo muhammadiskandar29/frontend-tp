@@ -612,9 +612,11 @@ export default function Dashboard() {
             {!chartHasData && <p className="panel__empty">Belum ada data transaksi untuk periode ini.</p>}
             {!chartHasData && <p className="panel__empty">Belum ada data transaksi untuk periode ini.</p>}
           </article>
+        </section>
 
-          {/* TWO TABLES: FOLLOW UP HISTORY & RECENT ORDERS */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }} className="recent-activity-grid">
+        {/* TWO TABLES: FOLLOW UP HISTORY & RECENT ORDERS */}
+        <section className="dashboard-panels">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', width: '100%' }} className="recent-activity-grid">
 
             <style jsx>{`
                 @media (max-width: 1024px) {
