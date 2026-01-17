@@ -1244,11 +1244,11 @@ export default function DaftarPesanan() {
                   </th>
 
                   {/* Product - Widened */}
-                  <th className="col-product">
+                  {/* <th className="col-product">
                     PRODUK
-                  </th>
+                  </th> */}
 
-                  <th>
+                  {/* <th>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <span>STATUS</span>
                       <span>PEMBAYARAN</span>
@@ -1278,7 +1278,7 @@ export default function DaftarPesanan() {
                       <span>REVENUE</span>
                     </div>
                   </th>
-                  <th>SALES</th>
+                  <th>SALES</th> */}
 
                   {/* Action Column - NON STICKY */}
                   <th></th>
@@ -1332,38 +1332,38 @@ export default function DaftarPesanan() {
                         </td>
 
                         {/* Product - Widened */}
-                        <td className="col-product">
+                        {/* <td className="col-product">
                           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
                             <span style={{ fontSize: "0.875rem", color: "#111827" }}>{produkNama}</span>
                           </div>
-                        </td>
+                        </td> */}
 
                         {/* Status Pembayaran */}
-                        <td>
+                        {/* <td>
                           <span className={`status-badge payment-${statusPembayaranInfo.class}`}>
                             {statusPembayaranInfo.label}
                           </span>
-                        </td>
+                        </td> */}
 
                         {/* Status Order */}
-                        <td>
+                        {/* <td>
                           <span className={`status-badge status-${statusOrderInfo.class}`}>
                             {statusOrderInfo.label}
                           </span>
-                        </td>
+                        </td> */}
 
                         {/* Follow Up Text */}
-                        <td>
+                        {/* <td>
                           <WABubbleChat
                             customerId={order.customer_rel?.id || order.customer}
                             orderId={order.id}
                             orderStatus={statusOrderValue}
                             statusPembayaran={statusPembayaranValue}
                           />
-                        </td>
+                        </td> */}
 
                         {/* Bukti Pembayaran */}
-                        <td style={{ textAlign: 'center' }}>
+                        {/* <td style={{ textAlign: 'center' }}>
                           {buktiUrl ? (
                             <ImageIcon
                               size={20}
@@ -1377,19 +1377,19 @@ export default function DaftarPesanan() {
                           ) : (
                             <span className="no-data">-</span>
                           )}
-                        </td>
+                        </td> */}
 
                         {/* Gross Revenue */}
-                        <td className="revenue-text">
+                        {/* <td className="revenue-text">
                           Rp {Number(order.total_harga || 0).toLocaleString("id-ID")}
-                        </td>
+                        </td> */}
 
                         {/* Sales */}
-                        <td>
+                        {/* <td>
                           <span style={{ fontSize: "0.875rem", color: "#111827" }}>
                             {order.customer_rel?.sales_rel?.nama || order.customer_rel?.sales_nama || "-"}
                           </span>
-                        </td>
+                        </td> */}
 
                         {/* Action Column - NON STICKY */}
                         <td>
@@ -1434,7 +1434,7 @@ export default function DaftarPesanan() {
                   })
                 ) : (
                   <tr>
-                    <td colSpan={10} className="orders-empty">
+                    <td colSpan={2} className="orders-empty">
                       {orders.length ? "Tidak ada hasil pencarian." : "Loading data..."}
                     </td>
                   </tr>

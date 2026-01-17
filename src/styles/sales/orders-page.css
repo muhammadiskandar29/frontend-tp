@@ -1395,3 +1395,7 @@ RESPONSIVE STYLES
     gap: 8px;
     justify-content: flex-end;
 }
+/* Override for hidden columns mode */
+.orders-shell .table-orders {
+    min-width: 0 !important;
+}
