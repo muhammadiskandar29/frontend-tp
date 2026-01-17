@@ -627,41 +627,31 @@ export default function Dashboard() {
               `}</style>
 
             {/* TABLE 1: RECENT FOLLOW UP */}
-            <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-              <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #f1f5f9' }}>
-                <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0 }}>Riwayat Terakhir Follow Up</h3>
+            <div style={{ background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+              <div style={{ padding: '1.25rem 1.5rem' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: '#1e293b' }}>Riwayat Terakhir Follow Up</h3>
               </div>
               <div className="table-wrapper" style={{ margin: 0 }}>
                 <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid #f1f5f9', background: '#f8fafc' }}>
-                      <th style={{ padding: '0.75rem 1.5rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>CUSTOMER</th>
-                      <th style={{ padding: '0.75rem 1.5rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>FOLLOW UP</th>
-                      <th style={{ padding: '0.75rem 1.5rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>TANGGAL</th>
+                    <tr style={{ background: '#f97316' }}>
+                      <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontSize: '0.85rem', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>CUSTOMER</th>
+                      <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontSize: '0.85rem', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>FOLLOW UP</th>
+                      <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontSize: '0.85rem', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>TANGGAL</th>
                     </tr>
                   </thead>
                   <tbody>
                     {recentFollowups.length > 0 ? (
                       recentFollowups.map((log, idx) => (
                         <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                          <td style={{ padding: '0.75rem 1.5rem', fontWeight: 500 }}>
+                          <td style={{ padding: '1rem 1.5rem', fontWeight: 500, color: '#334155' }}>
                             {log.customer_rel?.nama || log.customer_nama || log.customer?.nama || "-"}
                           </td>
-                          <td style={{ padding: '0.75rem 1.5rem' }}>
-                            <span style={{
-                              display: 'inline-block',
-                              padding: '2px 8px',
-                              borderRadius: '4px',
-                              background: '#fff7ed',
-                              color: '#c2410c',
-                              fontSize: '0.75rem',
-                              fontWeight: 600
-                            }}>
-                              {log.type_label || log.type || (log.follup ? `Type ${log.follup}` : "-")}
-                            </span>
+                          <td style={{ padding: '1rem 1.5rem', color: '#334155' }}>
+                            {/* Plain text as requested, no badge */}
+                            {log.type_label || log.type || (log.follup ? `Type ${log.follup}` : "-")}
                           </td>
-                          <td style={{ padding: '0.75rem 1.5rem', color: '#64748b' }}>
-                            {/* Use create_at based on followupLog.js */}
+                          <td style={{ padding: '1rem 1.5rem', color: '#64748b' }}>
                             {formatDateTime(log.create_at || log.created_at)}
                           </td>
                         </tr>
@@ -677,40 +667,39 @@ export default function Dashboard() {
             </div>
 
             {/* TABLE 2: RECENT ORDERS */}
-            <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-              <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #f1f5f9' }}>
-                <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0 }}>Pembelian Terakhir</h3>
+            <div style={{ background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+              <div style={{ padding: '1.25rem 1.5rem' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: '#1e293b' }}>Pembelian Terakhir</h3>
               </div>
               <div className="table-wrapper" style={{ margin: 0 }}>
                 <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid #f1f5f9', background: '#f8fafc' }}>
-                      <th style={{ padding: '0.75rem 1.5rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>CUSTOMER</th>
-                      <th style={{ padding: '0.75rem 1.5rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>PRODUK</th>
-                      <th style={{ padding: '0.75rem 1.5rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>TOTAL</th>
-                      <th style={{ padding: '0.75rem 1.5rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>TANGGAL</th>
+                    <tr style={{ background: '#f97316' }}>
+                      <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontSize: '0.85rem', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>CUSTOMER</th>
+                      <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontSize: '0.85rem', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>PRODUK</th>
+                      <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontSize: '0.85rem', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>TOTAL</th>
+                      <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontSize: '0.85rem', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>TANGGAL</th>
                     </tr>
                   </thead>
                   <tbody>
                     {recentOrders.length > 0 ? (
                       recentOrders.map((order, idx) => {
-                        // Safely access product name
                         const productName = Array.isArray(order.items) && order.items[0]
                           ? order.items[0].nama_produk || order.items[0].nama
                           : (order.produk_nama || "-");
 
                         return (
                           <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                            <td style={{ padding: '0.75rem 1.5rem', fontWeight: 500 }}>
+                            <td style={{ padding: '1rem 1.5rem', fontWeight: 500, color: '#334155' }}>
                               {order.nama_customer || order.customer?.nama || order.nama || "-"}
                             </td>
-                            <td style={{ padding: '0.75rem 1.5rem', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            <td style={{ padding: '1rem 1.5rem', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#334155' }}>
                               {productName}
                             </td>
-                            <td style={{ padding: '0.75rem 1.5rem', fontWeight: 600, color: '#0f172a' }}>
+                            <td style={{ padding: '1rem 1.5rem', fontWeight: 600, color: '#0f172a' }}>
                               {formatCurrency(order.total_harga)}
                             </td>
-                            <td style={{ padding: '0.75rem 1.5rem', color: '#64748b' }}>
+                            <td style={{ padding: '1rem 1.5rem', color: '#64748b' }}>
                               {formatDateTime(order.created_at || order.create_at || order.tanggal_dibuat)}
                             </td>
                           </tr>
