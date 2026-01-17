@@ -24,7 +24,14 @@ export async function GET(request) {
 
     // Build backend URL with query parameters
     let backendUrl = `${BACKEND_URL}/api/sales/order?page=${page}&per_page=${perPage}`;
-    if (search) backendUrl += `&search=${encodeURIComponent(search)}`;
+
+    // Auto-format search to Title Case (e.g. "rahmat" -> "Rahmat") to handle case-sensitive backend
+    if (search) {
+      const formattedSearch = search.replace(/\w\S*/g, (txt) =>
+        txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+      );
+      backendUrl += `&search=${encodeURIComponent(formattedSearch)}`;
+    }
 
     // Append multiple values
     statusOrder.forEach(val => backendUrl += `&status_order=${encodeURIComponent(val)}`);

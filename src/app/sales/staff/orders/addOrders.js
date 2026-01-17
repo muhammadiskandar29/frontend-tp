@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import useOrders from "@/hooks/sales/useOrders";
-import { api } from "@/lib/api"; // supaya handleSearchCustomer & handleSearchProduct ikut pakai api()
+import { api } from "@/lib/api";
+import { getProvinces, getCities, getDistricts } from "@/utils/shippingService";
 import "@/styles/sales/orders.css";
 import "@/styles/sales/pesanan.css";
 
@@ -11,10 +12,16 @@ export default function AddOrders({ onClose, onAdd }) {
     nama: "",
     wa: "",
     email: "",
-    alamat_customer: "", // Alamat customer (untuk data customer)
+    alamat_customer: "", // This will now typically handle the full string for display/legacy
+    detail_alamat: "", // New field for street/detail
+    provinsi: "",
+    kabupaten: "",
+    kecamatan: "",
+    kode_pos: "",
     alamat: "", // Alamat pengiriman (untuk order)
     customer: "",
     produk: "",
+    bundling_id: "", // Field baru untuk bundling
     harga: "",
     ongkir: "",
     total_harga: "",
@@ -23,7 +30,28 @@ export default function AddOrders({ onClose, onAdd }) {
     status_pembayaran: null, // null/0 untuk Full, 4 untuk Bertahap
   });
 
-  const [showCustomerForm, setShowCustomerForm] = useState(true);
+  const [selectedProduct, setSelectedProduct] = useState(null); // To store full product object for bundling check
+
+  const [showCustomerForm, setShowCustomerForm] = useState(false); // Default hidden
+
+  // Region State
+  const [regionData, setRegionData] = useState({
+    provinces: [],
+    cities: [],
+    districts: []
+  });
+
+  const [selectedRegionIds, setSelectedRegionIds] = useState({
+    provinceId: "",
+    cityId: "",
+    districtId: ""
+  });
+
+  const [loadingRegion, setLoadingRegion] = useState({
+    provinces: false,
+    cities: false,
+    districts: false
+  });
   const [customerSearch, setCustomerSearch] = useState("");
   const [productSearch, setProductSearch] = useState("");
   const [customerResults, setCustomerResults] = useState([]);
@@ -32,7 +60,7 @@ export default function AddOrders({ onClose, onAdd }) {
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [message, setMessage] = useState("");
   const { createOrder } = useOrders();
-  
+
   // Debounce untuk search customer
   const [debouncedCustomerSearch, setDebouncedCustomerSearch] = useState("");
 
@@ -51,11 +79,11 @@ export default function AddOrders({ onClose, onAdd }) {
       const params = new URLSearchParams({
         search: searchKeyword,
         page: "1",
-        per_page: "50", // Ambil lebih banyak hasil untuk search (bisa disesuaikan)
+        per_page: "100", // Ambil lebih banyak hasil untuk search
       });
 
-      const res = await api(`/sales/customer?${params.toString()}`, { method: "GET" });
-      
+      const res = await api(`/sales/customer?${params.toString()}`, { method: "GET", disableToast: true });
+
       if (res?.success && Array.isArray(res.data)) {
         setCustomerResults(res.data);
       } else {
@@ -74,7 +102,7 @@ export default function AddOrders({ onClose, onAdd }) {
     setProductSearch(keyword);
     if (!keyword.trim()) return setProductResults([]);
 
-    const res = await api("/sales/produk", { method: "GET" });
+    const res = await api("/sales/produk", { method: "GET", disableToast: true });
     if (res?.success && Array.isArray(res.data)) {
       const filtered = res.data.filter((prod) =>
         // Filter hanya produk AKTIF (status === "1" atau status === 1)
@@ -107,6 +135,98 @@ export default function AddOrders({ onClose, onAdd }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedCustomerSearch]);
 
+  // Load provinces on mount
+  useEffect(() => {
+    const fetchProvinces = async () => {
+      setLoadingRegion(prev => ({ ...prev, provinces: true }));
+      try {
+        const data = await getProvinces();
+        setRegionData(prev => ({ ...prev, provinces: data }));
+      } catch (err) {
+        console.error("Error loading provinces:", err);
+      } finally {
+        setLoadingRegion(prev => ({ ...prev, provinces: false }));
+      }
+    };
+    fetchProvinces();
+  }, []);
+
+  // Load cities when province selected
+  useEffect(() => {
+    if (selectedRegionIds.provinceId) {
+      const fetchCities = async () => {
+        setLoadingRegion(prev => ({ ...prev, cities: true }));
+        try {
+          const data = await getCities(selectedRegionIds.provinceId);
+          setRegionData(prev => ({ ...prev, cities: data }));
+        } catch (err) {
+          console.error("Error loading cities:", err);
+        } finally {
+          setLoadingRegion(prev => ({ ...prev, cities: false }));
+        }
+      };
+      fetchCities();
+      // Reset child selections
+      setRegionData(prev => ({ ...prev, cities: [], districts: [] }));
+    } else {
+      setRegionData(prev => ({ ...prev, cities: [], districts: [] }));
+    }
+  }, [selectedRegionIds.provinceId]);
+
+  // Load districts when city selected
+  useEffect(() => {
+    if (selectedRegionIds.cityId) {
+      const fetchDistricts = async () => {
+        setLoadingRegion(prev => ({ ...prev, districts: true }));
+        try {
+          const data = await getDistricts(selectedRegionIds.cityId);
+          setRegionData(prev => ({ ...prev, districts: data }));
+        } catch (err) {
+          console.error("Error loading districts:", err);
+        } finally {
+          setLoadingRegion(prev => ({ ...prev, districts: false }));
+        }
+      };
+      fetchDistricts();
+      // Reset child selections
+      setRegionData(prev => ({ ...prev, districts: [] }));
+    } else {
+      setRegionData(prev => ({ ...prev, districts: [] }));
+    }
+  }, [selectedRegionIds.cityId]);
+
+  // Handle Region Change
+  const handleRegionChange = (field, value) => {
+    if (field === "provinsi") {
+      const province = regionData.provinces.find(p => String(p.id) === String(value));
+      setSelectedRegionIds(prev => ({ ...prev, provinceId: value, cityId: "", districtId: "" }));
+      setFormData(prev => ({
+        ...prev,
+        provinsi: province?.name || "",
+        kabupaten: "",
+        kecamatan: "",
+        kode_pos: ""
+      }));
+    } else if (field === "kabupaten") {
+      const city = regionData.cities.find(c => String(c.id) === String(value));
+      setSelectedRegionIds(prev => ({ ...prev, cityId: value, districtId: "" }));
+      setFormData(prev => ({
+        ...prev,
+        kabupaten: city?.name || "",
+        kecamatan: "",
+        kode_pos: ""
+      }));
+    } else if (field === "kecamatan") {
+      const district = regionData.districts.find(d => String(d.id) === String(value) || String(d.district_id) === String(value));
+      setSelectedRegionIds(prev => ({ ...prev, districtId: value }));
+      setFormData(prev => ({
+        ...prev,
+        kecamatan: district?.name || "",
+        kode_pos: district?.postal_code || prev.kode_pos || ""
+      }));
+    }
+  };
+
   useEffect(() => {
     if (productSearch.trim().length >= 2) handleSearchProduct(productSearch);
   }, [productSearch]);
@@ -119,13 +239,19 @@ export default function AddOrders({ onClose, onAdd }) {
       nama: cust.nama || "",
       wa: cust.wa || "",
       email: cust.email || "",
-      alamat_customer: cust.alamat || cust.provinsi ? 
-        `${cust.alamat || ""}${cust.provinsi ? `, ${cust.provinsi}` : ""}${cust.kabupaten ? `, ${cust.kabupaten}` : ""}${cust.kecamatan ? `, ${cust.kecamatan}` : ""}${cust.kode_pos ? ` ${cust.kode_pos}` : ""}`.trim() : "",
-      // Jika alamat pengiriman kosong, isi dengan alamat customer
-      alamat: prev.alamat || (cust.alamat || cust.provinsi ? 
-        `${cust.alamat || ""}${cust.provinsi ? `, ${cust.provinsi}` : ""}${cust.kabupaten ? `, ${cust.kabupaten}` : ""}${cust.kecamatan ? `, ${cust.kecamatan}` : ""}${cust.kode_pos ? ` ${cust.kode_pos}` : ""}`.trim() : ""),
+      alamat_customer: cust.alamat || "",
+      // If customer has structured data, you might want to map it back, but existing API likely returns flat 'alamat'
+      // We'll trust the flat address if that's what we have
+      alamat: cust.alamat || "",
+      // Reset form regional fields to empty as we are using existing customer data
+      provinsi: "",
+      kabupaten: "",
+      kecamatan: "",
+      kode_pos: "",
+      detail_alamat: ""
     }));
-    setCustomerSearch(`${cust.nama} | ${cust.wa}`);
+    // Reset search
+    setCustomerSearch("");
     setCustomerResults([]);
     setShowCustomerForm(false);
   };
@@ -138,11 +264,18 @@ export default function AddOrders({ onClose, onAdd }) {
       wa: "",
       email: "",
       alamat_customer: "",
-      // Jangan reset alamat pengiriman, biarkan user isi manual
+      alamat: "",
+      provinsi: "",
+      kabupaten: "",
+      kecamatan: "",
+      kode_pos: "",
+      detail_alamat: ""
     }));
     setCustomerSearch("");
     setCustomerResults([]);
-    setShowCustomerForm(true);
+    // Do not auto show form, let user decide or search again
+    setShowCustomerForm(false);
+    setSelectedRegionIds({ provinceId: "", cityId: "", districtId: "" });
   };
 
   // === Format currency helper ===
@@ -169,9 +302,13 @@ export default function AddOrders({ onClose, onAdd }) {
   const handleSelectProduct = (prod) => {
     const hargaValue = Number(prod.harga) || 0;
     const ongkirValue = parseCurrency(formData.ongkir || "");
+
+    setSelectedProduct(prod);
+
     setFormData((prev) => ({
       ...prev,
       produk: prod.id,
+      bundling_id: "", // Reset bundling when product changes
       harga: hargaValue ? formatCurrency(hargaValue) : "",
       total_harga: (hargaValue + ongkirValue) > 0 ? formatCurrency(hargaValue + ongkirValue) : "",
     }));
@@ -186,16 +323,16 @@ export default function AddOrders({ onClose, onAdd }) {
     if (name === "harga" || name === "ongkir") {
       // Remove all non-numeric characters (including commas)
       const numericValue = value.replace(/\D/g, "");
-      
+
       // Format with thousand separator if has value
       const formattedValue = numericValue ? formatCurrency(numericValue) : "";
-      
+
       // Calculate total - parse both values correctly
       // For the field being edited, use the numericValue directly (already cleaned)
       // For the other field, parse from formData (which may have commas)
       let hargaNum = 0;
       let ongkirNum = 0;
-      
+
       if (name === "harga") {
         hargaNum = numericValue ? Number(numericValue) : 0;
         // Parse ongkir from formData (remove commas and convert to number)
@@ -205,9 +342,9 @@ export default function AddOrders({ onClose, onAdd }) {
         hargaNum = parseCurrency(formData.harga || "");
         ongkirNum = numericValue ? Number(numericValue) : 0;
       }
-      
+
       const total = hargaNum + ongkirNum;
-      
+
       setFormData({
         ...formData,
         [name]: formattedValue,
@@ -226,20 +363,38 @@ export default function AddOrders({ onClose, onAdd }) {
     setLoading(true);
     setMessage("");
 
+    // Construct full address if manual form is used
+    let finalAlamat = formData.alamat_customer;
+
+    // Jika menambah customer baru (showCustomerForm is true) dan field regional terisi
+    if (showCustomerForm && formData.provinsi) {
+      // Construct standard address string: Details, Kecamatan, Kabupaten, Provinsi PostCode
+      const parts = [
+        formData.detail_alamat,
+        formData.kecamatan,
+        formData.kabupaten,
+        formData.provinsi,
+        formData.kode_pos
+      ].filter(Boolean);
+      finalAlamat = parts.join(", ");
+    }
+
     // Validasi alamat (required untuk order)
-    if (!formData.alamat?.trim()) {
-      setMessage("Alamat pengiriman wajib diisi untuk order");
+    if (!finalAlamat?.trim()) {
+      setMessage("Alamat wajib diisi (lengkapi form wilayah atau pilih customer).");
       setLoading(false);
       return;
     }
 
     const payload = {
       ...formData,
+      alamat_customer: finalAlamat,
+      alamat: finalAlamat, // Same as customer address
       harga: String(parseCurrency(formData.harga) || "0"),
       ongkir: String(parseCurrency(formData.ongkir) || "0"),
       total_harga: String(parseCurrency(formData.total_harga) || "0"),
-      // Tambahkan status_pembayaran: null/0 untuk Full, 4 untuk Bertahap
       status_pembayaran: formData.status_pembayaran === 4 ? 4 : (formData.status_pembayaran === null ? null : 0),
+      bundling_id: formData.bundling_id || null,
     };
 
     console.log("[ADD_ORDERS] Payload sebelum kirim:", JSON.stringify(payload, null, 2));
@@ -269,8 +424,12 @@ export default function AddOrders({ onClose, onAdd }) {
   const isSearchActive = customerSearch.trim().length >= 2;
   // Hanya tampilkan "tidak ditemukan" jika search aktif, tidak ada hasil, DAN belum ada customer terpilih
   const noCustomerFound = isSearchActive && customerResults.length === 0 && !hasSelectedCustomer;
-  // Tampilkan form jika: user ingin edit form, belum ada customer terpilih, atau tidak ada hasil search
-  const displayCustomerForm = showCustomerForm || !hasSelectedCustomer || (isSearchActive && customerResults.length === 0);
+
+  // Show search input if no customer selected AND we are NOT showing the form
+  const showSearchInput = !hasSelectedCustomer && !showCustomerForm;
+
+  // Show the form only if explicitly requested or we are editing
+  const displayCustomerForm = showCustomerForm;
 
   return (
     <div
@@ -308,7 +467,10 @@ export default function AddOrders({ onClose, onAdd }) {
                     <h4>Data Customer</h4>
                     <p>Temukan customer atau tambah data baru.</p>
                   </div>
-                  {hasSelectedCustomer && (
+                  {hasSelectedCustomer && !showCustomerForm && (
+                    // Tombol Ganti Customer hanya muncul jika sudah ada yang dipilih daN tidak sedang edit form
+                    // Tapi sebenarnya Reset lebih cocok jika user ingin membatalkan pilihan total
+                    // di sini kita ikuti logic "Change Customer" = Reset
                     <button
                       type="button"
                       className="orders-link-btn"
@@ -319,40 +481,43 @@ export default function AddOrders({ onClose, onAdd }) {
                   )}
                 </div>
 
-                <label className="orders-field">
-                  Cari Customer (Nama / WA / Email)
-                  <div style={{ position: "relative" }}>
-                    <input
-                      type="text"
-                      value={customerSearch}
-                      onChange={(e) => {
-                        setCustomerSearch(e.target.value);
-                        setShowCustomerForm(false);
-                      }}
-                      placeholder="Ketik minimal 2 huruf untuk mencari..."
-                      disabled={loadingSearch}
-                    />
-                    {loadingSearch && (
-                      <div style={{
-                        position: "absolute",
-                        right: "12px",
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        color: "#6b7280",
-                        fontSize: "14px"
-                      }}>
-                        <i className="pi pi-spin pi-spinner"></i>
-                      </div>
-                    )}
-                  </div>
-                  <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
-                    {customerSearch.trim().length > 0 && customerSearch.trim().length < 2 && "Ketik minimal 2 huruf untuk mencari"}
-                    {customerSearch.trim().length >= 2 && !loadingSearch && customerResults.length > 0 && `Ditemukan ${customerResults.length} customer`}
-                    {customerSearch.trim().length >= 2 && !loadingSearch && customerResults.length === 0 && "Tidak ada hasil"}
-                  </small>
-                </label>
+                {showSearchInput && (
+                  <label className="orders-field">
+                    Cari Customer (Nama / WA / Email)
+                    <div style={{ position: "relative" }}>
+                      <input
+                        type="text"
+                        value={customerSearch}
+                        onChange={(e) => {
+                          setCustomerSearch(e.target.value);
+                          // Jika user mengetik manual, berarti dia mungkin mau cari user lain atau buat baru
+                          // Tapi di sini kita biarkan logic default
+                        }}
+                        placeholder="Ketik minimal 2 huruf untuk mencari..."
+                        disabled={loadingSearch}
+                      />
+                      {loadingSearch && (
+                        <div style={{
+                          position: "absolute",
+                          right: "12px",
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          color: "#6b7280",
+                          fontSize: "14px"
+                        }}>
+                          <i className="pi pi-spin pi-spinner"></i>
+                        </div>
+                      )}
+                    </div>
+                    <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                      {customerSearch.trim().length > 0 && customerSearch.trim().length < 2 && "Ketik minimal 2 huruf untuk mencari"}
+                      {customerSearch.trim().length >= 2 && !loadingSearch && customerResults.length > 0 && `Ditemukan ${customerResults.length} customer`}
+                      {customerSearch.trim().length >= 2 && !loadingSearch && customerResults.length === 0 && "Tidak ada hasil"}
+                    </small>
+                  </label>
+                )}
 
-                {customerResults.length > 0 && (
+                {showSearchInput && customerResults.length > 0 && (
                   <div className="orders-suggestion">
                     {customerResults.map((c) => (
                       <button
@@ -378,28 +543,52 @@ export default function AddOrders({ onClose, onAdd }) {
                   </div>
                 )}
 
-                {noCustomerFound && (
-                  <div className="orders-empty-state">
-                    <i className="pi pi-info-circle" style={{ marginRight: "6px" }}></i>
-                    Customer tidak ditemukan. Isi formulir di bawah untuk menambah data baru.
+                {noCustomerFound && showSearchInput && (
+                  <div className="orders-empty-state" style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <i className="pi pi-info-circle" style={{ marginRight: "6px" }}></i>
+                      <span>Customer tidak ditemukan.</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="orders-btn orders-btn--secondary"
+                      onClick={() => setShowCustomerForm(true)}
+                      style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}
+                    >
+                      + Tambah Data Customer Baru
+                    </button>
                   </div>
                 )}
 
-                {/* Customer Selected Card - hanya tampil jika customer sudah dipilih dan tidak dalam mode edit */}
+                {/* Customer Selected Card */}
                 {hasSelectedCustomer && !showCustomerForm && (
                   <div className="customer-selected-card">
-                    <div className="customer-selected-header">
-                      <div>
-                        <span className="customer-selected-label">Customer Terpilih</span>
-                        <strong className="customer-selected-name">{formData.nama || "-"}</strong>
+                    <div className="customer-selected-header" style={{ display: 'block' }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+                        <span className="customer-selected-label" style={{ margin: 0 }}>Customer Terpilih</span>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            type="button"
+                            className="orders-link-btn"
+                            onClick={() => {
+                              setShowCustomerForm(true);
+                              // Pre-fill region logic could be complex if we don't have IDs, so we keep simple for now or clear regions
+                            }}
+                            style={{ fontSize: '0.9rem' }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="orders-link-btn"
+                            onClick={resetCustomerSelection}
+                            style={{ fontSize: '0.9rem', color: '#6b7280' }}
+                          >
+                            Ganti
+                          </button>
+                        </div>
                       </div>
-                      <button
-                        type="button"
-                        className="orders-link-btn"
-                        onClick={() => setShowCustomerForm(true)}
-                      >
-                        Edit
-                      </button>
+                      <strong className="customer-selected-name" style={{ fontSize: '1.1rem' }}>{formData.nama || "-"}</strong>
                     </div>
                     <div className="customer-selected-info">
                       <div className="customer-info-item">
@@ -420,22 +609,24 @@ export default function AddOrders({ onClose, onAdd }) {
                   </div>
                 )}
 
-                {/* Form Customer - tampil jika belum ada customer terpilih atau dalam mode edit */}
+                {/* Form Customer */}
                 {displayCustomerForm && (
                   <div className="customer-form-card">
                     <div className="customer-form-header">
                       <h5>{hasSelectedCustomer ? "Edit Data Customer" : "Data Customer Baru"}</h5>
-                      {hasSelectedCustomer && (
-                        <button
-                          type="button"
-                          className="orders-link-btn"
-                          onClick={() => {
-                            setShowCustomerForm(false);
-                          }}
-                        >
-                          Batal Edit
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        className="orders-link-btn"
+                        onClick={() => {
+                          setShowCustomerForm(false);
+                          if (!hasSelectedCustomer) {
+                            // If canceling creation and no customer selected, ensure we go back to search
+                            setCustomerSearch("");
+                          }
+                        }}
+                      >
+                        Batal
+                      </button>
                     </div>
 
                     <div className="customer-form-fields">
@@ -454,10 +645,10 @@ export default function AddOrders({ onClose, onAdd }) {
                       <div className="orders-dual-grid">
                         <label className="orders-field">
                           WA (gunakan 62) *
-                          <input 
-                            type="text" 
-                            name="wa" 
-                            value={formData.wa} 
+                          <input
+                            type="text"
+                            name="wa"
+                            value={formData.wa}
                             onChange={handleChange}
                             placeholder="6281234567890"
                             required
@@ -475,14 +666,74 @@ export default function AddOrders({ onClose, onAdd }) {
                         </label>
                       </div>
 
+                      {/* Region Dropdown Fields */}
                       <label className="orders-field">
-                        Alamat Customer
-                        <textarea
-                          name="alamat_customer"
-                          rows={2}
-                          value={formData.alamat_customer}
+                        Provinsi *
+                        <select
+                          value={selectedRegionIds.provinceId}
+                          onChange={(e) => handleRegionChange("provinsi", e.target.value)}
+                          disabled={loadingRegion.provinces}
+                          style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid #d1d5db' }}
+                          required
+                        >
+                          <option value="">Pilih Provinsi</option>
+                          {regionData.provinces.map(p => (
+                            <option key={p.id} value={p.id}>{p.name}</option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label className="orders-field">
+                        Kabupaten / Kota *
+                        <select
+                          value={selectedRegionIds.cityId}
+                          onChange={(e) => handleRegionChange("kabupaten", e.target.value)}
+                          disabled={!selectedRegionIds.provinceId || loadingRegion.cities}
+                          style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid #d1d5db' }}
+                          required
+                        >
+                          <option value="">Pilih Kabupaten</option>
+                          {regionData.cities.map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label className="orders-field">
+                        Kecamatan *
+                        <select
+                          value={selectedRegionIds.districtId}
+                          onChange={(e) => handleRegionChange("kecamatan", e.target.value)}
+                          disabled={!selectedRegionIds.cityId || loadingRegion.districts}
+                          style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid #d1d5db' }}
+                          required
+                        >
+                          <option value="">Pilih Kecamatan</option>
+                          {regionData.districts.map(d => (
+                            <option key={d.id} value={d.id}>{d.name}</option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label className="orders-field">
+                        Kode Pos
+                        <input
+                          type="text"
+                          name="kode_pos"
+                          value={formData.kode_pos}
                           onChange={handleChange}
-                          placeholder="Alamat lengkap customer"
+                          placeholder="Kode Pos"
+                        />
+                      </label>
+
+                      <label className="orders-field">
+                        Detail Alamat (Jalan, No. Rumah)
+                        <textarea
+                          name="detail_alamat"
+                          rows={2}
+                          value={formData.detail_alamat}
+                          onChange={handleChange}
+                          placeholder="Jalan, Nomor rumah, RT/RW, Patokan..."
                         />
                       </label>
 
@@ -496,23 +747,7 @@ export default function AddOrders({ onClose, onAdd }) {
                   </div>
                 )}
 
-                {/* Field Alamat Pengiriman - selalu tampil jika ada customer (selected atau form) */}
-                {(hasSelectedCustomer || displayCustomerForm) && (
-                  <label className="orders-field" style={{ marginTop: "16px" }}>
-                    Alamat Pengiriman *
-                    <textarea
-                      name="alamat"
-                      rows={3}
-                      value={formData.alamat}
-                      onChange={handleChange}
-                      placeholder="Alamat lengkap untuk pengiriman order (wajib diisi)"
-                      required
-                    />
-                    <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
-                      Alamat ini digunakan untuk order, bisa berbeda dengan alamat customer
-                    </small>
-                  </label>
-                )}
+
               </section>
 
               <section className="orders-section orders-section--order">
@@ -548,17 +783,27 @@ export default function AddOrders({ onClose, onAdd }) {
                   </div>
                 )}
 
-                <label className="orders-field">
-                  Produk (ID)
-                  <input
-                    type="text"
-                    name="produk"
-                    value={formData.produk}
-                    onChange={handleChange}
-                    placeholder="ID produk"
-                    readOnly
-                  />
-                </label>
+                {/* Produk (ID) removed from display, but retained in state */}
+
+                {/* Bundling Selection */}
+                {selectedProduct && selectedProduct.bundling_rel && selectedProduct.bundling_rel.length > 0 && (
+                  <label className="orders-field">
+                    Pilih Bundling
+                    <select
+                      name="bundling_id"
+                      value={formData.bundling_id}
+                      onChange={handleChange}
+                      style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid #d1d5db' }}
+                    >
+                      <option value="">-- Pilih Bundling Option --</option>
+                      {selectedProduct.bundling_rel.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.nama_bundling || b.info_bundling || `Bundle #${b.id}`}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
 
                 <div className="orders-dual-grid">
                   <label className="orders-field">
@@ -620,11 +865,11 @@ export default function AddOrders({ onClose, onAdd }) {
                       fontSize: "14px",
                       fontWeight: "500",
                     }}>Rp</span>
-                    <input 
-                      type="text" 
-                      name="total_harga" 
-                      value={formData.total_harga ?? ""} 
-                      readOnly 
+                    <input
+                      type="text"
+                      name="total_harga"
+                      value={formData.total_harga ?? ""}
+                      readOnly
                       placeholder="0"
                       style={{ paddingLeft: "40px", background: "#f9fafb" }}
                     />
