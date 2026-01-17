@@ -269,10 +269,10 @@
 
 /* New Status Classes matching STATUS_ORDER_MAP */
 .status-proses {
-    background-color: #e0f2fe;
-    /* Blue 100 */
-    color: #0369a1;
-    /* Blue 700 */
+    background-color: #ffedd5;
+    /* Match Pending Orange */
+    color: #d97706;
+    /* Match Pending Orange */
 }
 
 .status-sukses {

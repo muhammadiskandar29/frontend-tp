@@ -772,8 +772,8 @@ ORDERS STATUS BADGE
 }
 
 .orders-status-badge--proses {
-  background-color: #fef3c7;
-  color: #92400e;
+  background-color: rgba(255, 108, 0, 0.15);
+  color: #c85400;
 }
 
 .orders-status-badge--failed {
