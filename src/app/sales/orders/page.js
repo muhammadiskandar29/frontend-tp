@@ -110,13 +110,22 @@ const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran }) =>
     // Cari log yang sesuai dengan eventType
     // Gunakan logic yang lebih loose (per Customer), sesuai referensi followupLog.js
     // Jika ada log dengan tipe tersebut di customer ini yang statusnya terkirim, maka hijau.
-    const log = followupLogs.find(l => {
-      const logEvent = l.follup || l.type || l.follup_rel?.id || l.event;
+    return followupLogs.some(l => {
+      // Pastikan status sukses (1)
+      if (String(l.status) !== "1") return false;
+
+      // Cek match berdasarkan follup_rel.type (untuk Follow Up 1-4)
+      if (l.follup_rel && l.follup_rel.type) {
+        const typeStr = String(l.follup_rel.type).trim();
+        // Check exact match or "Follow Up X"
+        if (typeStr === String(eventType)) return true;
+        if (typeStr === `Follow Up ${eventType}`) return true;
+      }
+
+      // Fallback check: event field, type field, or direct value
+      const logEvent = l.follup || l.type || l.event;
       return Number(logEvent) === Number(eventType);
     });
-
-    // Cek status=1 atau '1' (terkirim)
-    return log && (log.status === "1" || log.status === 1);
   };
 
   // Helper untuk membuat bubble
