@@ -1483,7 +1483,10 @@ export default function DaftarPesanan() {
                                             <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Order ID</th>
                                             <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Tanggal</th>
                                             <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Produk</th>
-                                            <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Status</th>
+                                            <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Status Pembayaran</th>
+                                            <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Status Order</th>
+                                            <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Follow Up Text</th>
+                                            <th style={{ padding: '10px 16px', textAlign: 'center', fontWeight: 600, color: '#475569' }}>Bukti Pembayaran</th>
                                             <th style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 600, color: '#475569' }}>Total</th>
                                             <th style={{ padding: '10px 16px', textAlign: 'center', fontWeight: 600, color: '#475569' }}>Action</th>
                                           </tr>
@@ -1491,18 +1494,74 @@ export default function DaftarPesanan() {
                                         <tbody>
                                           {group.map((innerOrder) => {
                                             const innerStatusRaw = innerOrder.status_order ?? innerOrder.status;
-                                            const innerStatusInfo = STATUS_ORDER_MAP[innerStatusRaw?.toString()] || { label: "-", class: "default" };
+                                            const innerStatusOrderValue = innerStatusRaw !== undefined && innerStatusRaw !== null
+                                              ? innerStatusRaw.toString()
+                                              : "";
+                                            const innerStatusInfo = STATUS_ORDER_MAP[innerStatusOrderValue] || { label: "-", class: "default" };
+
+                                            // Status Pembayaran Logic
+                                            let innerStatusPembayaranValue = innerOrder.status_pembayaran;
+                                            if (innerStatusPembayaranValue === null || innerStatusPembayaranValue === undefined) {
+                                              innerStatusPembayaranValue = 0;
+                                            } else {
+                                              innerStatusPembayaranValue = Number(innerStatusPembayaranValue);
+                                              if (isNaN(innerStatusPembayaranValue)) {
+                                                innerStatusPembayaranValue = 0;
+                                              }
+                                            }
+                                            const innerStatusPembayaranInfo = STATUS_PEMBAYARAN_MAP[innerStatusPembayaranValue] || STATUS_PEMBAYARAN_MAP[0];
+
+                                            // Bukti Pembayaran Logic
+                                            const innerBuktiPath = getBuktiPembayaran(innerOrder);
+                                            const innerBuktiUrl = buildImageUrl(innerBuktiPath);
 
                                             return (
                                               <tr key={innerOrder.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                                                 <td style={{ padding: '12px 16px', color: '#0f172a', fontWeight: 500 }}>#{innerOrder.id}</td>
                                                 <td style={{ padding: '12px 16px', color: '#64748b' }}>{formatDateOnly(innerOrder.tanggal || innerOrder.create_at)}</td>
                                                 <td style={{ padding: '12px 16px', color: '#334155' }}>{innerOrder.produk_rel?.nama || '-'}</td>
+
+                                                {/* Status Pembayaran */}
+                                                <td style={{ padding: '12px 16px' }}>
+                                                  <span className={`status-badge payment-${innerStatusPembayaranInfo.class}`} style={{ fontSize: '0.7rem', padding: '2px 8px' }}>
+                                                    {innerStatusPembayaranInfo.label}
+                                                  </span>
+                                                </td>
+
+                                                {/* Status Order */}
                                                 <td style={{ padding: '12px 16px' }}>
                                                   <span className={`status-badge status-${innerStatusInfo.class}`} style={{ fontSize: '0.7rem', padding: '2px 8px' }}>
                                                     {innerStatusInfo.label}
                                                   </span>
                                                 </td>
+
+                                                {/* Follow Up Text */}
+                                                <td style={{ padding: '12px 16px' }}>
+                                                  <WABubbleChat
+                                                    customerId={innerOrder.customer_rel?.id || innerOrder.customer}
+                                                    orderId={innerOrder.id}
+                                                    orderStatus={innerStatusOrderValue}
+                                                    statusPembayaran={innerStatusPembayaranValue}
+                                                  />
+                                                </td>
+
+                                                {/* Bukti Pembayaran */}
+                                                <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                                                  {innerBuktiUrl ? (
+                                                    <ImageIcon
+                                                      size={16}
+                                                      className="proof-icon"
+                                                      style={{ cursor: "pointer", margin: "0 auto" }}
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleOpenImageModal(innerBuktiUrl);
+                                                      }}
+                                                    />
+                                                  ) : (
+                                                    <span className="no-data">-</span>
+                                                  )}
+                                                </td>
+
                                                 <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 600, color: '#0f172a' }}>
                                                   Rp {Number(innerOrder.total_harga || 0).toLocaleString("id-ID")}
                                                 </td>
