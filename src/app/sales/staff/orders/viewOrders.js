@@ -495,12 +495,8 @@ export default function ViewOrders({ order, onClose }) {
                         {log.note || log.keterangan || log.pesan || "-"}
                       </div>
 
-                      {/* Footer Info */}
-                      {(log.create_by || log.created_by_rel) && (
-                        <div style={{ fontSize: '0.75rem', color: '#94a3b8', textAlign: 'right', marginTop: '0.5rem', fontStyle: 'italic' }}>
-                          Created by: {creatorName}
-                        </div>
-                      )}
+                      {/* Footer Info - REMOVED */}
+
                     </div>
                   );
                 })}

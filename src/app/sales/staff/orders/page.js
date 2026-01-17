@@ -32,6 +32,7 @@ const AddOrders = dynamic(() => import("./addOrders"), { ssr: false });
 const PaymentHistoryModal = dynamic(() => import("./paymentHistoryModal"), { ssr: false });
 const SendWhatsappModal = dynamic(() => import("./sendWhatsappModal"), { ssr: false });
 const OrderBroadcastModal = dynamic(() => import("./orderBroadcastModal"), { ssr: false });
+const AddFollowUpModal = dynamic(() => import("./addFollowUpModal"), { ssr: false });
 
 // Use Next.js proxy to avoid CORS
 const BASE_URL = "/api";
@@ -389,6 +390,10 @@ export default function DaftarPesanan() {
   // WA Modal State
   const [showWAModal, setShowWAModal] = useState(false);
   const [selectedOrderWA, setSelectedOrderWA] = useState(null);
+
+  // Follow Up Modal State
+  const [showFollowUpModal, setShowFollowUpModal] = useState(false);
+  const [selectedOrderForFollowUp, setSelectedOrderForFollowUp] = useState(null);
 
   const fetchingRef = useRef(false); // Prevent multiple simultaneous fetches
 
@@ -1522,11 +1527,12 @@ export default function DaftarPesanan() {
                                             <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Order ID</th>
                                             <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Tanggal</th>
                                             <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Produk</th>
-                                            <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Status Pembayaran</th>
+                                            {/* Status Pembayaran Removed */}
                                             <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Status Order</th>
                                             <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Follow Up Text</th>
                                             <th style={{ padding: '10px 16px', textAlign: 'center', fontWeight: 600, color: '#475569' }}>Bukti Pembayaran</th>
                                             <th style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 600, color: '#475569' }}>Total</th>
+                                            <th style={{ padding: '10px 16px', textAlign: 'center', fontWeight: 600, color: '#475569' }}>Aksi</th>
                                           </tr>
                                         </thead>
                                         <tbody>
@@ -1567,12 +1573,7 @@ export default function DaftarPesanan() {
                                                   </span>
                                                 </td>
 
-                                                {/* Status Pembayaran */}
-                                                <td style={{ padding: '12px 16px' }}>
-                                                  <span className={`status-badge payment-${innerStatusPembayaranInfo.class}`} style={{ fontSize: '0.7rem', padding: '2px 8px' }}>
-                                                    {innerStatusPembayaranInfo.label}
-                                                  </span>
-                                                </td>
+                                                {/* Status Pembayaran Removed */}
 
                                                 {/* Status Order */}
                                                 <td style={{ padding: '12px 16px' }}>
@@ -1610,6 +1611,45 @@ export default function DaftarPesanan() {
 
                                                 <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 600, color: '#0f172a' }}>
                                                   Rp {Number(innerOrder.total_harga || 0).toLocaleString("id-ID")}
+                                                </td>
+
+                                                {/* Aksi Column */}
+                                                <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                                                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                                                    <button
+                                                      onClick={() => {
+                                                        setSelectedOrderForFollowUp(innerOrder);
+                                                        setShowFollowUpModal(true);
+                                                      }}
+                                                      style={{
+                                                        padding: '0.25rem 0.75rem',
+                                                        fontSize: '0.75rem',
+                                                        fontWeight: 600,
+                                                        color: 'white',
+                                                        background: '#fb8c00', // Orange-ish matching UI style
+                                                        border: 'none',
+                                                        borderRadius: '4px',
+                                                        cursor: 'pointer'
+                                                      }}
+                                                    >
+                                                      Followup
+                                                    </button>
+                                                    <button
+                                                      onClick={() => handleView(innerOrder)} // Reusing handleView which opens ViewOrders
+                                                      style={{
+                                                        padding: '0.25rem 0.75rem',
+                                                        fontSize: '0.75rem',
+                                                        fontWeight: 600,
+                                                        color: 'white',
+                                                        background: '#3b82f6', // Blue
+                                                        border: 'none',
+                                                        borderRadius: '4px',
+                                                        cursor: 'pointer'
+                                                      }}
+                                                    >
+                                                      Detail
+                                                    </button>
+                                                  </div>
                                                 </td>
                                               </tr>
                                             );
@@ -2591,6 +2631,25 @@ export default function DaftarPesanan() {
           onAdd={(data) => {
             // Optional: refresh data or show success toast
             setToast({ show: true, message: `Broadcast berhasil dibuat untuk ${data.total_target} customer`, type: "success" });
+          }}
+        />
+      )}
+
+      {/* Add Follow Up Modal */}
+      {showFollowUpModal && selectedOrderForFollowUp && (
+        <AddFollowUpModal
+          isOpen={showFollowUpModal}
+          orderId={selectedOrderForFollowUp.id}
+          onClose={() => {
+            setShowFollowUpModal(false);
+            setSelectedOrderForFollowUp(null);
+          }}
+          onSuccess={() => {
+            setToast({ show: true, message: "Follow up berhasil disimpan", type: "success" });
+            // Optional: refresh orders logic if needed to update bubbles immediately, 
+            // but bubbles depend on `logs-follup` API which is fetched inside WABubbleChat component.
+            // WABubbleChat inside rows might not auto-update unless we force it.
+            // For now, simple toast is good.
           }}
         />
       )}
