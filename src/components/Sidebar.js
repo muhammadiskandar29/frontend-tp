@@ -130,12 +130,6 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
             { label: "Orders", href: `${basePath}/orders`, icon: <ClipboardList size={18} /> },
           ],
         },
-        {
-          section: "COMMUNICATION",
-          items: [
-            { label: "Broadcast", href: `${basePath}/broadcast`, icon: <Radio size={18} /> },
-          ],
-        },
       ];
     }
 
@@ -173,14 +167,6 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
           section: "CUSTOMERS",
           items: [
             { label: "Customers", href: `${basePath}/customers`, icon: <UserCheck size={18} /> },
-            {
-              label: "CRM",
-              icon: <Tag size={18} />,
-              submenu: [
-                { label: "Leads", href: `${basePath}/leads` },
-                { label: "Follow Up Report", href: `${basePath}/followup/report` },
-              ],
-            },
           ],
         },
         {
@@ -195,12 +181,6 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
                 { label: "Produk", href: `${basePath}/products` },
               ],
             },
-          ],
-        },
-        {
-          section: "COMMUNICATION",
-          items: [
-            { label: "Broadcast", href: `${basePath}/broadcast`, icon: <Radio size={18} /> },
           ],
         },
       ];
