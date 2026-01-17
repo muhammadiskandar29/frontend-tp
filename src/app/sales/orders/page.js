@@ -105,35 +105,21 @@ const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran, prod
     }
   };
 
-  // Helper untuk cek apakah event sudah terkirim (status === "1" atau 1)
+  // Helper untuk cek apakah event sudah terkirim (logic baru: berbasis produk & type, abaikan status)
   const isSent = (eventType) => {
-    // Cari log yang sesuai dengan eventType
-    // Gunakan logic yang lebih loose (per Customer), sesuai referensi followupLog.js
-    // Jika ada log dengan tipe tersebut di customer ini yang statusnya terkirim, maka hijau.
     return followupLogs.some(l => {
-      // Pastikan status sukses (1)
-      if (String(l.status) !== "1") return false;
+      // 1. Harus ada relasi follow up
+      if (!l.follup_rel) return false;
 
-      // 🔹 MATCH PRODUCT ID (Crucial Point)
-      // Jika log memiliki produk_id, ia HARUS COCOK dengan productId dari row ini.
-      // Ini mencegah log follow up Produk A muncul di row Produk B untuk customer yang sama.
-      if (l.follup_rel && l.follup_rel.produk_id) {
-        if (Number(l.follup_rel.produk_id) !== Number(productId)) {
-          return false;
-        }
-      }
+      // 2. Produk harus cocok (Strict)
+      if (Number(l.follup_rel.produk_id) !== Number(productId)) return false;
 
-      // Cek match berdasarkan follup_rel.type (untuk Follow Up 1-4)
-      if (l.follup_rel && l.follup_rel.type) {
-        const typeStr = String(l.follup_rel.type).trim();
-        // Check exact match or "Follow Up X"
-        if (typeStr === String(eventType)) return true;
-        if (typeStr === `Follow Up ${eventType}`) return true;
-      }
+      // 3. Type harus cocok
+      // type hanya dipakai untuk menentukan icon follow up ke-berapa
+      const typeStr = String(l.follup_rel.type || "").trim();
 
-      // Fallback check: event field, type field, or direct value
-      const logEvent = l.follup || l.type || l.event;
-      return Number(logEvent) === Number(eventType);
+      // Support format "1" atau "Follow Up 1"
+      return typeStr === String(eventType) || typeStr === `Follow Up ${eventType}`;
     });
   };
 
