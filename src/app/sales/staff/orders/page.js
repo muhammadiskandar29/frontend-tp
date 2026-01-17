@@ -1419,7 +1419,7 @@ export default function DaftarPesanan() {
 
                             {/* Action Column - NON STICKY */}
                             <td>
-                              <div className="action-group">
+                              <div className="action-group" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.5rem' }}>
                                 {/* WA */}
                                 <button className="action-btn-icon" style={{ color: '#25D366' }} title="WhatsApp">
                                   <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
@@ -1438,7 +1438,6 @@ export default function DaftarPesanan() {
                                 </button>
 
                                 {/* Plus */}
-                                {/* Plus */}
                                 <button className="action-btn-icon" style={{ color: '#6b7280' }} title="Tambah">
                                   <Plus size={16} />
                                 </button>
@@ -1449,7 +1448,19 @@ export default function DaftarPesanan() {
                                     e.stopPropagation();
                                     setActiveDropdown(activeDropdown === custId ? null : custId);
                                   }}
-                                  style={{ marginLeft: 'auto' }}
+                                  style={{
+                                    marginLeft: '0.5rem',
+                                    backgroundColor: '#f1a124',
+                                    color: '#fff',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    padding: '0.4rem 0.75rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 600
+                                  }}
                                 >
                                   <span>{otherCount > 0 ? `Lihat ${otherCount} Order Lain` : "Lihat Order"}</span>
                                   <ChevronDown size={14} strokeWidth={3} className={`transition-transform ${activeDropdown === custId ? 'rotate-180' : ''}`} />
