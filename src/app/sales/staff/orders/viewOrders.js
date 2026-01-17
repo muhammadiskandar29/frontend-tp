@@ -114,37 +114,33 @@ export default function ViewOrders({ order, onClose }) {
 
   // --- FETCH LOGIC: Follow Up ---
   const fetchLogsFollup = useCallback(async () => {
-    if (!order.customer_rel?.id && !order.customer) return;
-    const customerId = Number(order.customer_rel?.id || order.customer);
-    if (!customerId) return;
+    if (!order.id) return;
 
     setLoadingLogs(true);
     setLogsError("");
 
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const res = await fetch("/api/sales/logs-follup", {
-        method: "POST",
+      const res = await fetch(`/api/sales/order/${order.id}/followup`, {
+        method: "GET",
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ customer: customerId }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "Gagal memuat log");
 
       const logsData = Array.isArray(data.data) ? data.data : [];
-      const filteredLogs = logsData.filter(log => Number(log.customer) === customerId);
-      setLogs(filteredLogs);
+      setLogs(logsData);
     } catch (err) {
       setLogsError(err.message);
     } finally {
       setLoadingLogs(false);
     }
-  }, [order.customer, order.customer_rel?.id]);
+  }, [order.id]);
 
   // --- FETCH LOGIC: Payment History ---
   const fetchPaymentHistory = useCallback(async () => {
