@@ -294,6 +294,29 @@ CUSTOMERS BUTTONS (used in orders page)
   color: #fff !important;
 }
 
+.orders-shell .customers-button--secondary {
+  background: var(--orders-white);
+  color: var(--orders-primary);
+  border: 1px solid rgba(255, 108, 0, 0.35);
+  box-shadow: none;
+  outline: none !important;
+}
+
+.orders-shell .customers-button--secondary:hover {
+  background: rgba(255, 108, 0, 0.06);
+  border-color: rgba(255, 108, 0, 0.55);
+}
+
+.orders-shell .customers-button--secondary:active,
+.orders-shell .customers-button--secondary:focus,
+.orders-shell .customers-button--secondary:focus-visible {
+  background: rgba(255, 108, 0, 0.08) !important;
+  border-color: rgba(255, 108, 0, 0.65) !important;
+  color: var(--orders-primary) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(255, 108, 0, 0.2) !important;
+}
+
 /* ===========================
 DASHBOARD SUMMARY & SUMMARY CARD
 =========================== */
@@ -1346,7 +1369,9 @@ RESPONSIVE STYLES
   background-color: #f3f4f6;
   color: #6b7280;
   border-color: #d1d5db;
-}/* Action Buttons New UI */
+}
+
+/* Action Buttons New UI */
 .action-btn-icon {
   width: 34px;
   height: 34px;
@@ -1371,7 +1396,8 @@ RESPONSIVE STYLES
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #1e3a8a; /* Dark Blue */
+  background: #1e3a8a;
+  /* Dark Blue */
   color: white;
   border: none;
   border-radius: 8px;
@@ -1390,12 +1416,13 @@ RESPONSIVE STYLES
 }
 
 .action-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    justify-content: flex-end;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
 }
+
 /* Override for hidden columns mode */
 .orders-shell .table-orders {
-    min-width: 0 !important;
+  min-width: 0 !important;
 }
