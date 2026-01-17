@@ -14,17 +14,20 @@ const STATUS_PEMBAYARAN_MAP = {
 };
 
 // 🔹 Helper untuk formatting date time
+// 🔹 Helper untuk formatting date time
 const formatDateTime = (dateStr) => {
   if (!dateStr) return "-";
   const date = new Date(dateStr.replace(" ", "T"));
   if (Number.isNaN(date.getTime())) return dateStr;
-  return date.toLocaleString("id-ID", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const day = date.getDate();
+  const month = monthNames[date.getMonth()];
+  const year = date.getFullYear();
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+
+  return `${day} ${month} ${year} ${hours}:${minutes}`;
 };
 
 // 🔹 Helper untuk mengambil waktu_pembayaran dari order_payment_rel
@@ -113,15 +116,22 @@ export default function ViewOrders({ order, onClose }) {
   const sisaPembayaran = Number(order.remaining !== undefined ? order.remaining : (totalHarga - totalDibayar));
 
   // --- FETCH LOGIC: Follow Up ---
-  const fetchLogsFollup = useCallback(async () => {
+  const [followupPage, setFollowupPage] = useState(1);
+  const [followupHasMore, setFollowupHasMore] = useState(false);
+
+  const fetchLogsFollup = useCallback(async (page = 1) => {
     if (!order.id) return;
 
-    setLoadingLogs(true);
+    if (page === 1) {
+      setLoadingLogs(true);
+      setLogs([]);
+    }
     setLogsError("");
 
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const res = await fetch(`/api/sales/order/${order.id}/followup`, {
+      // Add pagination params
+      const res = await fetch(`/api/sales/order/${order.id}/followup?page=${page}&per_page=15`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -133,8 +143,18 @@ export default function ViewOrders({ order, onClose }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "Gagal memuat log");
 
-      const logsData = Array.isArray(data.data) ? data.data : [];
-      setLogs(logsData);
+      const newLogs = Array.isArray(data.data) ? data.data : [];
+
+      setLogs(prev => page === 1 ? newLogs : [...prev, ...newLogs]);
+
+      // Check pagination
+      if (data.pagination) {
+        setFollowupHasMore(data.pagination.current_page < data.pagination.last_page);
+        setFollowupPage(data.pagination.current_page);
+      } else {
+        setFollowupHasMore(false);
+      }
+
     } catch (err) {
       setLogsError(err.message);
     } finally {
@@ -180,7 +200,7 @@ export default function ViewOrders({ order, onClose }) {
   // Load data based on active tab
   useEffect(() => {
     if (activeTab === "followup") {
-      fetchLogsFollup();
+      fetchLogsFollup(1);
     } else if (activeTab === "pembayaran") {
       fetchPaymentHistory();
     }
@@ -259,7 +279,7 @@ export default function ViewOrders({ order, onClose }) {
                   </span>
 
                   <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155', marginBottom: '0.5rem', marginTop: '1.5rem' }}>Tanggal Order</h4>
-                  <p style={{ fontSize: '1rem', color: '#1e293b' }}>{order.tanggal || "-"}</p>
+                  <p style={{ fontSize: '1rem', color: '#1e293b' }}>{order.tanggal ? formatDateTime(order.tanggal) : "-"}</p>
 
                   <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155', marginBottom: '0.5rem', marginTop: '1.5rem' }}>Total Dibayar</h4>
                   <p style={{ fontSize: '1rem', fontWeight: 600, color: '#059669' }}>Rp {totalDibayar.toLocaleString("id-ID")}</p>
@@ -425,7 +445,7 @@ export default function ViewOrders({ order, onClose }) {
           {/* === FOLLOW UP TAB === */}
           {activeTab === "followup" && (
             <div className="detail-list fade-in">
-              {loadingLogs && (
+              {loadingLogs && logs.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '2rem' }}>
                   <i className="pi pi-spin pi-spinner" style={{ fontSize: '2rem', color: '#3b82f6' }}></i>
                 </div>
@@ -440,29 +460,70 @@ export default function ViewOrders({ order, onClose }) {
                   Belum ada log follow up.
                 </div>
               )}
-              {!loadingLogs && !logsError && logs.length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {logs.map((log, idx) => {
-                    const statusBadge = getFollowupStatusBadge(log.status);
-                    return (
-                      <div key={log.id || idx} style={{ border: '1px solid #e2e8f0', borderRadius: '0.5rem', padding: '1rem', background: '#fff' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                          <span className={`status-badge ${statusBadge.className}`} style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '999px' }}>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {logs.map((log, idx) => {
+                  const statusBadge = getFollowupStatusBadge(log.status);
+                  const channel = log.channel || "Unknown";
+                  const creatorName = log.created_by_rel?.nama || "System"; // Example accessor
+
+                  return (
+                    <div key={log.id || idx} style={{ border: '1px solid #e2e8f0', borderRadius: '0.5rem', padding: '1rem', background: '#fff' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                          <span className="channel-badge" style={{
+                            fontSize: '0.75rem',
+                            padding: '0.2rem 0.5rem',
+                            borderRadius: '4px',
+                            background: channel.toLowerCase() === 'whatsapp' ? '#dcfce7' : '#f1f5f9',
+                            color: channel.toLowerCase() === 'whatsapp' ? '#166534' : '#475569',
+                            fontWeight: 600,
+                            textTransform: 'uppercase'
+                          }}>
+                            {channel}
+                          </span>
+                          <span className={`status-badge ${statusBadge.className}`} style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
                             {statusBadge.label}
                           </span>
-                          <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{formatDateTime(log.create_at)}</span>
                         </div>
-                        <div style={{ fontSize: '0.9rem', color: '#334155', whiteSpace: 'pre-wrap', background: '#f8fafc', padding: '0.75rem', borderRadius: '0.25rem', marginBottom: '0.5rem' }}>
-                          {log.keterangan || log.pesan || "-"}
-                        </div>
-                        {log.response && (
-                          <div style={{ fontSize: '0.85rem', color: '#059669' }}>
-                            <strong>Response:</strong> {log.response}
-                          </div>
-                        )}
+                        <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                          {log.follow_up_date ? formatDateTime(log.follow_up_date) : formatDateTime(log.create_at)}
+                        </span>
                       </div>
-                    );
-                  })}
+
+                      <div style={{ fontSize: '0.95rem', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: '1.5', background: '#f8fafc', padding: '0.75rem', borderRadius: '0.375rem', marginBottom: '0.5rem' }}>
+                        {log.note || log.keterangan || log.pesan || "-"}
+                      </div>
+
+                      {/* Footer Info */}
+                      {(log.create_by || log.created_by_rel) && (
+                        <div style={{ fontSize: '0.75rem', color: '#94a3b8', textAlign: 'right', marginTop: '0.5rem', fontStyle: 'italic' }}>
+                          Created by: {creatorName}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Load More Button */}
+              {followupHasMore && (
+                <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+                  <button
+                    onClick={() => fetchLogsFollup(followupPage + 1)}
+                    disabled={loadingLogs}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '0.375rem',
+                      background: '#fff',
+                      color: '#475569',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem'
+                    }}
+                  >
+                    {loadingLogs ? 'Memuat...' : 'Muat Lebih Banyak'}
+                  </button>
                 </div>
               )}
             </div>

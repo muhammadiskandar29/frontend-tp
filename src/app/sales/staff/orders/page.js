@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback, memo } from "react";
 import Layout from "@/components/Layout";
 import dynamic from "next/dynamic";
-import { ShoppingCart, Clock, CheckCircle, PartyPopper, XCircle, Filter, ExternalLink, Image as ImageIcon, Mail, Phone, Plus, ChevronDown } from "lucide-react";
+import { ShoppingCart, Clock, CheckCircle, PartyPopper, XCircle, Filter, ExternalLink, Image as ImageIcon, Mail, Phone, Plus, ChevronDown, Send } from "lucide-react";
 import { Calendar } from "primereact/calendar";
 import "primereact/resources/themes/lara-light-cyan/theme.css";
 import "primereact/resources/primereact.min.css";
@@ -31,6 +31,7 @@ const UpdateOrders = dynamic(() => import("./updateOrders"), { ssr: false });
 const AddOrders = dynamic(() => import("./addOrders"), { ssr: false });
 const PaymentHistoryModal = dynamic(() => import("./paymentHistoryModal"), { ssr: false });
 const SendWhatsappModal = dynamic(() => import("./sendWhatsappModal"), { ssr: false });
+const OrderBroadcastModal = dynamic(() => import("./orderBroadcastModal"), { ssr: false });
 
 // Use Next.js proxy to avoid CORS
 const BASE_URL = "/api";
@@ -374,6 +375,7 @@ export default function DaftarPesanan() {
   // State lainnya
   const [statistics, setStatistics] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [showBroadcastModal, setShowBroadcastModal] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showView, setShowView] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -604,8 +606,13 @@ export default function DaftarPesanan() {
             if (approvedPayment && approvedPayment.create_at) {
               // Format create_at dari "2025-12-27 08:57:53" ke format yang diinginkan
               const date = new Date(approvedPayment.create_at);
-              const pad = (n) => n.toString().padStart(2, "0");
-              waktuPembayaran = `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+              const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+              const day = date.getDate();
+              const month = monthNames[date.getMonth()];
+              const year = date.getFullYear();
+              const hours = String(date.getHours()).padStart(2, "0");
+              const minutes = String(date.getMinutes()).padStart(2, "0");
+              waktuPembayaran = `${day} ${month} ${year} ${hours}:${minutes}`;
             } else {
               // Jika tidak ada yang approved, ambil yang terbaru (create_at terakhir)
               const latestPayment = order.order_payment_rel.sort((a, b) => {
@@ -615,8 +622,13 @@ export default function DaftarPesanan() {
               })[0];
               if (latestPayment && latestPayment.create_at) {
                 const date = new Date(latestPayment.create_at);
-                const pad = (n) => n.toString().padStart(2, "0");
-                waktuPembayaran = `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+                const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                const day = date.getDate();
+                const month = monthNames[date.getMonth()];
+                const year = date.getFullYear();
+                const hours = String(date.getHours()).padStart(2, "0");
+                const minutes = String(date.getMinutes()).padStart(2, "0");
+                waktuPembayaran = `${day} ${month} ${year} ${hours}:${minutes}`;
               }
             }
           }
@@ -818,6 +830,7 @@ export default function DaftarPesanan() {
   }, []);
 
   // Format tanggal untuk Order ID: "11 Jan 2026, 22.40"
+  // Format tanggal untuk Order ID: "11 Jan 2026 22:40"
   const formatOrderDate = useCallback((dateString) => {
     if (!dateString) return "-";
     try {
@@ -831,35 +844,24 @@ export default function DaftarPesanan() {
       const hours = String(date.getHours()).padStart(2, "0");
       const minutes = String(date.getMinutes()).padStart(2, "0");
 
-      return `${day} ${month} ${year}, ${hours}.${minutes}`;
+      return `${day} ${month} ${year} ${hours}:${minutes}`;
     } catch {
       return "-";
     }
   }, []);
 
   // Format tanggal hanya menampilkan tanggal tanpa jam (YYYY-MM-DD)
+  // Format tanggal hanya menampilkan tanggal tanpa jam (DD MMM YYYY)
   const formatDateOnly = useCallback((dateString) => {
     if (!dateString) return "-";
     try {
-      // Jika sudah format YYYY-MM-DD, langsung return
-      if (typeof dateString === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-        return dateString;
-      }
-      // Jika ada jam, ambil hanya bagian tanggal
-      if (typeof dateString === "string" && dateString.includes(" ")) {
-        return dateString.split(" ")[0];
-      }
-      // Jika ada T (ISO format), ambil hanya bagian tanggal
-      if (typeof dateString === "string" && dateString.includes("T")) {
-        return dateString.split("T")[0];
-      }
-      // Jika Date object, format ke YYYY-MM-DD
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return "-";
+      const day = date.getDate();
+      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const month = monthNames[date.getMonth()];
       const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const day = String(date.getDate()).padStart(2, "0");
-      return `${year}-${month}-${day}`;
+      return `${day} ${month} ${year}`;
     } catch {
       return "-";
     }
@@ -1163,6 +1165,20 @@ export default function DaftarPesanan() {
               <span className="orders-search__icon pi pi-search" />
             </div>
             <div className="orders-toolbar-buttons">
+              {/* Broadcast Button */}
+              <button
+                type="button"
+                onClick={() => setShowBroadcastModal(true)}
+                className="customers-button customers-button--secondary"
+                title="Broadcast"
+                style={{ gap: '0.5rem' }}
+              >
+                <div style={{ transform: 'rotate(-45deg)', display: 'flex', alignItems: 'center' }}>
+                  <Send size={16} />
+                </div>
+                <span>Broadcast</span>
+              </button>
+
               {/* Filter Icon Button */}
               <button
                 type="button"
@@ -2567,6 +2583,17 @@ export default function DaftarPesanan() {
           setSelectedOrderIdForHistory(null);
         }}
       />
+
+      {/* Broadcast Modal */}
+      {showBroadcastModal && (
+        <OrderBroadcastModal
+          onClose={() => setShowBroadcastModal(false)}
+          onAdd={(data) => {
+            // Optional: refresh data or show success toast
+            setToast({ show: true, message: `Broadcast berhasil dibuat untuk ${data.total_target} customer`, type: "success" });
+          }}
+        />
+      )}
 
       {/* Toast Notification */}
       {

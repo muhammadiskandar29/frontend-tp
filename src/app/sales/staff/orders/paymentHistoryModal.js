@@ -3,6 +3,21 @@
 import { useState, useEffect } from "react";
 import { BACKEND_URL } from "@/config/env";
 
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return "-";
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return "-";
+
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const day = date.getDate();
+  const month = monthNames[date.getMonth()];
+  const year = date.getFullYear();
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+
+  return `${day} ${month} ${year} ${hours}:${minutes}`;
+};
+
 export default function PaymentHistoryModal({ orderId, isOpen, onClose }) {
   const [paymentHistoryData, setPaymentHistoryData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -20,11 +35,11 @@ export default function PaymentHistoryModal({ orderId, isOpen, onClose }) {
 
   const fetchPaymentHistory = async () => {
     if (!orderId) return;
-    
+
     setLoading(true);
     setError("");
     setPaymentHistoryData(null);
-    
+
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -46,7 +61,7 @@ export default function PaymentHistoryModal({ orderId, isOpen, onClose }) {
       }
 
       const json = await res.json();
-      
+
       if (json.success && json.data) {
         setPaymentHistoryData(json.data);
       } else {
@@ -64,8 +79,8 @@ export default function PaymentHistoryModal({ orderId, isOpen, onClose }) {
 
   return (
     <>
-      <div 
-        className="orders-modal-overlay" 
+      <div
+        className="orders-modal-overlay"
         onClick={(e) => e.target === e.currentTarget && onClose()}
         style={{
           position: "fixed",
@@ -81,12 +96,12 @@ export default function PaymentHistoryModal({ orderId, isOpen, onClose }) {
           padding: "1rem"
         }}
       >
-        <div 
-          className="orders-modal-card" 
-          style={{ 
-            width: "min(800px, 95vw)", 
-            maxHeight: "90vh", 
-            display: "flex", 
+        <div
+          className="orders-modal-card"
+          style={{
+            width: "min(800px, 95vw)",
+            maxHeight: "90vh",
+            display: "flex",
             flexDirection: "column",
             position: "relative",
             zIndex: 10000,
@@ -118,10 +133,10 @@ export default function PaymentHistoryModal({ orderId, isOpen, onClose }) {
                 color: "#111827"
               }}>Data Pembayaran Order #{paymentHistoryData?.order?.id || orderId || "-"}</h2>
             </div>
-            <button 
-              className="orders-modal-close" 
-              onClick={onClose} 
-              type="button" 
+            <button
+              className="orders-modal-close"
+              onClick={onClose}
+              type="button"
               aria-label="Tutup modal"
               style={{
                 background: "none",
@@ -152,12 +167,12 @@ export default function PaymentHistoryModal({ orderId, isOpen, onClose }) {
           </div>
 
           {/* Body */}
-          <div 
-            className="orders-modal-body" 
-            style={{ 
-              overflowY: "auto", 
-              flex: 1, 
-              padding: "1.5rem" 
+          <div
+            className="orders-modal-body"
+            style={{
+              overflowY: "auto",
+              flex: 1,
+              padding: "1.5rem"
             }}
           >
             {loading ? (
@@ -247,14 +262,14 @@ export default function PaymentHistoryModal({ orderId, isOpen, onClose }) {
                         // 2 = Data sudah di approve (Approved)
                         // 3 = Data di tolak (Rejected)
                         const paymentStatus = payment.status;
-                        const paymentStatusNum = 
+                        const paymentStatusNum =
                           paymentStatus === null || paymentStatus === undefined
                             ? 1 // Default ke 1 (Pending) jika null/undefined
                             : Number(paymentStatus);
 
                         // Tentukan label dan style berdasarkan payment.status
                         let statusLabel, statusBg, statusColor;
-                        
+
                         if (paymentStatusNum === 2) {
                           // Data sudah di approve
                           statusLabel = "Approved";
@@ -273,64 +288,59 @@ export default function PaymentHistoryModal({ orderId, isOpen, onClose }) {
                         }
 
                         return (
-                        <div key={payment.id || idx} style={{ padding: "1rem", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
-                            <div>
-                              <strong style={{ fontSize: "0.95rem", color: "#111827" }}>Pembayaran ke {payment.payment_ke || idx + 1}</strong>
-                              <div style={{ fontSize: "0.875rem", color: "#6b7280", marginTop: "0.25rem" }}>
-                                {payment.tanggal ? new Date(payment.tanggal).toLocaleString("id-ID", {
-                                  year: "numeric",
-                                  month: "long",
-                                  day: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit"
-                                }) : "-"}
-                              </div>
-                            </div>
-                            <div style={{ textAlign: "right" }}>
-                              <strong style={{ fontSize: "1.1rem", color: "#059669" }}>Rp {Number(payment.amount || 0).toLocaleString("id-ID")}</strong>
-                              <div style={{ fontSize: "0.75rem", marginTop: "0.25rem" }}>
-                                <span
-                                  style={{
-                                    padding: "0.25rem 0.5rem",
-                                    borderRadius: "4px",
-                                    background: statusBg,
-                                    color: statusColor,
-                                    fontWeight: 600,
-                                  }}
-                                >
-                                  {statusLabel}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "0.5rem", fontSize: "0.875rem", marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px solid #e5e7eb" }}>
-                            <div>
-                              <span style={{ color: "#6b7280" }}>Metode:</span>
-                              <strong style={{ display: "block", color: "#111827" }}>{payment.payment_method?.toUpperCase() || "-"}</strong>
-                            </div>
-                            {payment.bukti_pembayaran && (
+                          <div key={payment.id || idx} style={{ padding: "1rem", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
                               <div>
-                                <span style={{ color: "#6b7280" }}>Bukti:</span>
-                                <a 
-                                  href={`${BACKEND_URL}/storage/${payment.bukti_pembayaran}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  style={{ display: "block", color: "#c85400", textDecoration: "underline" }}
-                                >
-                                  Lihat Bukti
-                                </a>
+                                <strong style={{ fontSize: "0.95rem", color: "#111827" }}>Pembayaran ke {payment.payment_ke || idx + 1}</strong>
+                                <div style={{ fontSize: "0.875rem", color: "#6b7280", marginTop: "0.25rem" }}>
+                                  {payment.tanggal ? formatDateTime(payment.tanggal) : "-"}
+                                </div>
                               </div>
-                            )}
-                            {payment.catatan && (
-                              <div style={{ gridColumn: "1 / -1" }}>
-                                <span style={{ color: "#6b7280" }}>Catatan:</span>
-                                <p style={{ margin: "0.25rem 0 0", color: "#111827" }}>{payment.catatan}</p>
+                              <div style={{ textAlign: "right" }}>
+                                <strong style={{ fontSize: "1.1rem", color: "#059669" }}>Rp {Number(payment.amount || 0).toLocaleString("id-ID")}</strong>
+                                <div style={{ fontSize: "0.75rem", marginTop: "0.25rem" }}>
+                                  <span
+                                    style={{
+                                      padding: "0.25rem 0.5rem",
+                                      borderRadius: "4px",
+                                      background: statusBg,
+                                      color: statusColor,
+                                      fontWeight: 600,
+                                    }}
+                                  >
+                                    {statusLabel}
+                                  </span>
+                                </div>
                               </div>
-                            )}
+                            </div>
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "0.5rem", fontSize: "0.875rem", marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px solid #e5e7eb" }}>
+                              <div>
+                                <span style={{ color: "#6b7280" }}>Metode:</span>
+                                <strong style={{ display: "block", color: "#111827" }}>{payment.payment_method?.toUpperCase() || "-"}</strong>
+                              </div>
+                              {payment.bukti_pembayaran && (
+                                <div>
+                                  <span style={{ color: "#6b7280" }}>Bukti:</span>
+                                  <a
+                                    href={`${BACKEND_URL}/storage/${payment.bukti_pembayaran}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ display: "block", color: "#c85400", textDecoration: "underline" }}
+                                  >
+                                    Lihat Bukti
+                                  </a>
+                                </div>
+                              )}
+                              {payment.catatan && (
+                                <div style={{ gridColumn: "1 / -1" }}>
+                                  <span style={{ color: "#6b7280" }}>Catatan:</span>
+                                  <p style={{ margin: "0.25rem 0 0", color: "#111827" }}>{payment.catatan}</p>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      )})}
+                        )
+                      })}
                     </div>
                   ) : (
                     <div style={{ textAlign: "center", padding: "2rem", color: "#6b7280" }}>
@@ -354,9 +364,9 @@ export default function PaymentHistoryModal({ orderId, isOpen, onClose }) {
             justifyContent: "flex-end",
             gap: "0.5rem"
           }}>
-            <button 
-              type="button" 
-              onClick={onClose} 
+            <button
+              type="button"
+              onClick={onClose}
               className="orders-btn orders-btn--primary"
               style={{
                 padding: "0.625rem 1.25rem",
