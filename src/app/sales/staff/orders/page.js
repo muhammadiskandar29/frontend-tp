@@ -1486,7 +1486,6 @@ export default function DaftarPesanan() {
                                             <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Follow Up Text</th>
                                             <th style={{ padding: '10px 16px', textAlign: 'center', fontWeight: 600, color: '#475569' }}>Bukti Pembayaran</th>
                                             <th style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 600, color: '#475569' }}>Total</th>
-                                            <th style={{ padding: '10px 16px', textAlign: 'center', fontWeight: 600, color: '#475569' }}>Action</th>
                                           </tr>
                                         </thead>
                                         <tbody>
@@ -1517,7 +1516,15 @@ export default function DaftarPesanan() {
                                               <tr key={innerOrder.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                                                 <td style={{ padding: '12px 16px', color: '#0f172a', fontWeight: 500 }}>#{innerOrder.id}</td>
                                                 <td style={{ padding: '12px 16px', color: '#64748b' }}>{formatDateOnly(innerOrder.tanggal || innerOrder.create_at)}</td>
-                                                <td style={{ padding: '12px 16px', color: '#334155' }}>{innerOrder.produk_rel?.nama || '-'}</td>
+                                                <td style={{ padding: '12px 16px', color: '#334155' }}>
+                                                  <span
+                                                    onClick={() => handleView(innerOrder)}
+                                                    style={{ cursor: 'pointer', textDecoration: 'underline' }}
+                                                    className="hover:text-blue-600"
+                                                  >
+                                                    {innerOrder.produk_rel?.nama || '-'}
+                                                  </span>
+                                                </td>
 
                                                 {/* Status Pembayaran */}
                                                 <td style={{ padding: '12px 16px' }}>
@@ -1562,27 +1569,6 @@ export default function DaftarPesanan() {
 
                                                 <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 600, color: '#0f172a' }}>
                                                   Rp {Number(innerOrder.total_harga || 0).toLocaleString("id-ID")}
-                                                </td>
-                                                <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                                                  <button
-                                                    onClick={() => {
-                                                      handleEdit(innerOrder);
-                                                    }}
-                                                    style={{
-                                                      background: 'white',
-                                                      border: '1px solid #cbd5e1',
-                                                      borderRadius: '6px',
-                                                      padding: '6px 12px',
-                                                      fontSize: '0.75rem',
-                                                      fontWeight: 500,
-                                                      color: '#334155',
-                                                      cursor: 'pointer',
-                                                      transition: 'all 0.1s'
-                                                    }}
-                                                    className="hover:bg-gray-50 hover:border-blue-500 hover:text-blue-600"
-                                                  >
-                                                    Detail
-                                                  </button>
                                                 </td>
                                               </tr>
                                             );
