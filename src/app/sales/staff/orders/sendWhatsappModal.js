@@ -201,7 +201,7 @@ export default function SendWhatsappModal({ order, isOpen, onClose }) {
                 </div>
 
                 {/* Body */}
-                <div className="orders-modal-body" style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+                <div className="orders-modal-body" style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem", overflowY: "auto", flex: 1 }}>
 
                     {error && (
                         <div style={{ padding: "0.75rem", background: "#fee2e2", color: "#991b1b", borderRadius: "6px", fontSize: "0.875rem" }}>
