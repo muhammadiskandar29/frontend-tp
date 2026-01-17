@@ -1,6 +1,7 @@
 "use client";
 
 import "@/styles/sales/dashboard-premium.css";
+import "@/styles/sales/orders-page.css";
 import Layout from "@/components/Layout";
 import GreetingBanner from "@/components/GreetingBanner";
 import { useState, useEffect, useCallback } from "react";
@@ -13,7 +14,12 @@ import {
   AlertCircle,
   Target,
   Calendar,
+  Wallet,
+  TrendingUp,
+  ArrowRight,
 } from "lucide-react";
+import { getOrders } from "@/lib/sales/orders";
+import Link from "next/link";
 
 const BASE_URL = "/api";
 
@@ -33,6 +39,34 @@ export default function Dashboard() {
     closingTarget: 0,
     closingProgress: 0,
   });
+
+  const [orderStats, setOrderStats] = useState({
+    totalOrders: 0,
+    totalRevenue: 0, // Based on fetched data
+    prosesCount: 0,
+    successCount: 0,
+    upsellingCount: 0,
+    batalCount: 0,
+  });
+
+  const [recentOrders, setRecentOrders] = useState([]);
+
+  // Status mapping matching orders page
+  const STATUS_ORDER_MAP = {
+    "1": { label: "Proses", class: "proses", color: "warning" },
+    "2": { label: "Sukses", class: "sukses", color: "success" },
+    "3": { label: "Failed", class: "failed", color: "danger" },
+    "4": { label: "Upselling", class: "upselling", color: "info" },
+    "N": { label: "Dihapus", class: "dihapus", color: "secondary" },
+  };
+
+  const formatCurrency = (val) => {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(Number(val) || 0);
+  };
 
   // Update time every minute
   useEffect(() => {
@@ -63,6 +97,57 @@ export default function Dashboard() {
           console.error("Error parsing user data:", e);
         }
       }
+
+      // --- NEW: FETCH ORDERS DATA ---
+      try {
+        // Fetch last 100 orders to get a decent sample for statistics
+        const ordersRes = await getOrders(1, 100);
+
+        if (ordersRes && Array.isArray(ordersRes.data)) {
+          const orders = ordersRes.data;
+
+          // Total Orders (from pagination metadata if available, else length)
+          const totalOrders = ordersRes.total || orders.length;
+
+          // Calculate stats from the fetched batch
+          let revenue = 0;
+          let proses = 0;
+          let success = 0;
+          let upselling = 0;
+          let batal = 0;
+
+          orders.forEach(o => {
+            // Sum revenue (only if status is Sukses/Proses/Upselling? Usually Revenue is counted on Success. But let's sum all 'potential' or just 'success'?)
+            // Safest: Sum 'Success' orders for Revenue.
+            // Or sum everything except Cancelled.
+            // Let's sum Success (2) and Upselling (4) [Assuming upselling is a valid state of purchase].
+            if (o.status === "2" || o.status === 2 || o.status === "4" || o.status === 4) {
+              revenue += Number(o.total_harga || 0);
+            }
+
+            const s = String(o.status);
+            if (s === "1") proses++;
+            else if (s === "2") success++;
+            else if (s === "4") upselling++;
+            else if (s === "N" || s === "3") batal++;
+          });
+
+          setOrderStats({
+            totalOrders, // Trusting the API total
+            totalRevenue: revenue,
+            prosesCount: proses,
+            successCount: success,
+            upsellingCount: upselling,
+            batalCount: batal,
+          });
+
+          // Recent 5 orders
+          setRecentOrders(orders.slice(0, 5));
+        }
+      } catch (err) {
+        console.error("Error fetching orders for dashboard:", err);
+      }
+      // ------------------------------
 
       // Fetch leads statistics
       const leadsParams = new URLSearchParams();
@@ -300,9 +385,119 @@ export default function Dashboard() {
     ? Math.min((stats.closingProgress / stats.closingTarget) * 100, 100)
     : 0;
 
+  // New Order Cards
+  const orderCards = [
+    {
+      label: "Total Order",
+      value: orderStats.totalOrders.toLocaleString("id-ID"),
+      icon: <ShoppingCart size={24} />,
+      color: "accent-blue",
+      desc: "All Time"
+    },
+    {
+      label: "Revenue (Est.)",
+      value: formatCurrency(orderStats.totalRevenue),
+      icon: <Wallet size={24} />,
+      color: "accent-emerald",
+      desc: "From Recent 100 Orders"
+    },
+    {
+      label: "Menunggu Proses",
+      value: orderStats.prosesCount.toLocaleString("id-ID"),
+      icon: <Clock size={24} />,
+      color: "accent-orange",
+      desc: "Status: Proses"
+    },
+    {
+      label: "Conversion (Sukses)",
+      value: orderStats.successCount.toLocaleString("id-ID"),
+      icon: <TrendingUp size={24} />,
+      color: "accent-cyan",
+      desc: "Status: Sukses"
+    }
+  ];
+
   return (
     <Layout title="Dashboard" aboveContent={<GreetingBanner />}>
       <div className="dashboard-shell">
+
+        {/* --- ORDERS OVERVIEW (NEW) --- */}
+        <section className="dashboard-panels">
+          <article className="panel panel--summary">
+            <div className="panel__header">
+              <div>
+                <p className="panel__eyebrow">Sales Performance</p>
+                <h3 className="panel__title">Order Overview</h3>
+              </div>
+              <Link href="/sales/staff/orders" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.875rem', color: '#3b82f6', fontWeight: 500, textDecoration: 'none' }}>
+                Lihat Semua Order <ArrowRight size={16} />
+              </Link>
+            </div>
+            <div className="dashboard-summary-horizontal">
+              {orderCards.map((card) => (
+                <article className="summary-card" key={card.label}>
+                  <div className={`summary-card__icon ${card.color}`}>{card.icon}</div>
+                  <div>
+                    <p className="summary-card__label">{card.label}</p>
+                    <p className="summary-card__value">{card.value}</p>
+                    {card.desc && <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>{card.desc}</p>}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </article>
+        </section>
+
+        {/* --- RECENT ORDERS (NEW) --- */}
+        <section className="dashboard-panels">
+          <article className="panel">
+            <div className="panel__header">
+              <div>
+                <h3 className="panel__title">Recent Orders</h3>
+              </div>
+            </div>
+            <div className="table-wrapper">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Customer</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentOrders.length > 0 ? (
+                    recentOrders.map((order, idx) => {
+                      const statusInfo = STATUS_ORDER_MAP[String(order.status)] || { label: "Unknown", class: "default" };
+                      return (
+                        <tr key={idx}>
+                          <td style={{ fontSize: '0.875rem', color: '#4b5563' }}>
+                            {new Date(order.created_at).toLocaleDateString("id-ID", {
+                              day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"
+                            })}
+                          </td>
+                          <td style={{ fontWeight: 500 }}>{order.nama_customer || order.nama || "-"}</td>
+                          <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{formatCurrency(order.total_harga)}</td>
+                          <td>
+                            <span className={`orders-status-badge orders-status-badge--${statusInfo.class}`}>
+                              {statusInfo.label}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan="4" className="table-empty">Belum ada order terbaru.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
         {/* Leads Activity Panel */}
         <section className="dashboard-panels">
           <article className="panel panel--summary">
