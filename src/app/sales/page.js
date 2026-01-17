@@ -220,39 +220,201 @@ export default function Dashboard() {
   const chartHasData = activityTrend.length > 0;
   const staffCardsRef = useRef([]);
 
-  // State for Sales Statistics
-  const [salesStatistics, setSalesStatistics] = useState([]);
-  const [loadingStatistics, setLoadingStatistics] = useState(true);
-
-  // Load Sales Statistics
-  const loadSalesStatistics = useCallback(async () => {
-    setLoadingStatistics(true);
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch("/api/sales/statistics", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  // MOCK DATA (Temporary for UI Validation)
+  const MOCK_DATA = {
+    period: {
+      start_date: "2026-01-01",
+      end_date: "2026-01-31",
+      prev_start_date: "2025-11-30",
+      prev_end_date: "2025-12-31"
+    },
+    statistics: [
+      {
+        sales_id: 21,
+        sales_nama: "eka",
+        sales_email: "eka@tp.com",
+        sales_level: "2",
+        customers: {
+          total: 5,
+          new_this_period: 5,
+          prev_period: 0,
+          growth: 100,
+          growth_formatted: "+100.00%"
         },
-      });
-
-      if (!response.ok) {
-        // Silently fail or log error, don't break dashboard
-        console.error("Gagal memuat statistik sales");
-        return;
+        orders: {
+          total: 8,
+          this_period: 8,
+          prev_period: 0,
+          growth: 100,
+          growth_formatted: "+100.00%"
+        },
+        revenue: {
+          total: 450000,
+          total_formatted: "Rp 450.000",
+          this_period: 450000,
+          this_period_formatted: "Rp 450.000",
+          prev_period: 0,
+          prev_period_formatted: "Rp 0",
+          growth: 100,
+          growth_formatted: "+100.00%"
+        },
+        customers_with_orders: {
+          total: 5,
+          this_period: 5,
+          prev_period: 0,
+          growth: 100,
+          growth_formatted: "+100.00%"
+        },
+        conversion_rates: {
+          customer_to_order: 100,
+          customer_to_order_formatted: "100.00%"
+        },
+        average_order_value: {
+          total: 56250,
+          total_formatted: "Rp 56.250",
+          this_period: 56250,
+          this_period_formatted: "Rp 56.250"
+        }
+      },
+      {
+        sales_id: 17,
+        sales_nama: "Gaga",
+        sales_email: "gaga@gmail.com",
+        sales_level: "2",
+        customers: {
+          total: 0,
+          new_this_period: 0,
+          prev_period: 0,
+          growth: 0,
+          growth_formatted: "+0.00%"
+        },
+        orders: {
+          total: 0,
+          this_period: 0,
+          prev_period: 0,
+          growth: 0,
+          growth_formatted: "+0.00%"
+        },
+        revenue: {
+          total: 0,
+          total_formatted: "Rp 0",
+          this_period: 0,
+          this_period_formatted: "Rp 0",
+          prev_period: 0,
+          prev_period_formatted: "Rp 0",
+          growth: 0,
+          growth_formatted: "+0.00%"
+        },
+        customers_with_orders: {
+          total: 0,
+          this_period: 0,
+          prev_period: 0,
+          growth: 0,
+          growth_formatted: "+0.00%"
+        },
+        conversion_rates: {
+          customer_to_order: 0,
+          customer_to_order_formatted: "0.00%"
+        },
+        average_order_value: {
+          total: 0,
+          total_formatted: "Rp 0",
+          this_period: 0,
+          this_period_formatted: "Rp 0"
+        }
+      },
+      {
+        sales_id: 24,
+        sales_nama: "salsa",
+        sales_email: "caca@tp.com",
+        sales_level: "2",
+        customers: {
+          total: 0,
+          new_this_period: 0,
+          prev_period: 0,
+          growth: 0,
+          growth_formatted: "+0.00%"
+        },
+        orders: {
+          total: 0,
+          this_period: 0,
+          prev_period: 0,
+          growth: 0,
+          growth_formatted: "+0.00%"
+        },
+        revenue: {
+          total: 0,
+          total_formatted: "Rp 0",
+          this_period: 0,
+          this_period_formatted: "Rp 0",
+          prev_period: 0,
+          prev_period_formatted: "Rp 0",
+          growth: 0,
+          growth_formatted: "+0.00%"
+        },
+        customers_with_orders: {
+          total: 0,
+          this_period: 0,
+          prev_period: 0,
+          growth: 0,
+          growth_formatted: "+0.00%"
+        },
+        conversion_rates: {
+          customer_to_order: 0,
+          customer_to_order_formatted: "0.00%"
+        },
+        average_order_value: {
+          total: 0,
+          total_formatted: "Rp 0",
+          this_period: 0,
+          this_period_formatted: "Rp 0"
+        }
       }
+    ]
+  };
 
-      const json = await response.json();
-      if (json.success && json.data?.statistics) {
-        setSalesStatistics(json.data.statistics);
-      }
-    } catch (err) {
-      console.error("Error loading sales statistics:", err);
-    } finally {
-      setLoadingStatistics(false);
-    }
+  // State for Sales Statistics
+  const [salesStatistics, setSalesStatistics] = useState(MOCK_DATA.statistics);
+  const [loadingStatistics, setLoadingStatistics] = useState(false);
+  const [periodInfo, setPeriodInfo] = useState(MOCK_DATA.period);
+
+  // Load Sales Statistics (Mocked)
+  const loadSalesStatistics = useCallback(async () => {
+    // Logic fetch asli dinonaktifkan sementara untuk validasi UI
+    // Jika nanti pakai API, uncomment kode ini:
+    /*
+   setLoadingStatistics(true);
+   try {
+     const token = localStorage.getItem("token");
+     const response = await fetch("/api/sales/statistics", {
+       method: "GET",
+       headers: {
+         "Content-Type": "application/json",
+         "Accept": "application/json",
+         ...(token ? { Authorization: `Bearer ${token}` } : {}),
+       },
+     });
+  
+     if (!response.ok) {
+       console.error("Gagal memuat statistik sales");
+       return;
+     }
+  
+     const json = await response.json();
+     if (json.success && json.data?.statistics) {
+       setSalesStatistics(json.data.statistics);
+       if (json.data.period) setPeriodInfo(json.data.period);
+     }
+   } catch (err) {
+     console.error("Error loading sales statistics:", err);
+   } finally {
+     setLoadingStatistics(false);
+   }
+   */
+    // Menggunakan Mock Data langsung:
+    setSalesStatistics(MOCK_DATA.statistics);
+    setPeriodInfo(MOCK_DATA.period);
+    setLoadingStatistics(false);
   }, []);
 
   useEffect(() => {
@@ -328,7 +490,14 @@ export default function Dashboard() {
             <article className="panel panel--staff">
               <div className="panel__header">
                 <div>
-                  <p className="panel__eyebrow">Data per staff sales</p>
+                  <p className="panel__eyebrow">
+                    Data per staff sales
+                    {periodInfo && (
+                      <span style={{ fontWeight: 'normal', opacity: 0.8, marginLeft: '4px' }}>
+                        ({new Date(periodInfo.start_date).toLocaleDateString("id-ID", { day: '2-digit', month: 'short', year: 'numeric' })} - {new Date(periodInfo.end_date).toLocaleDateString("id-ID", { day: '2-digit', month: 'short', year: 'numeric' })})
+                      </span>
+                    )}
+                  </p>
                   <h3 className="panel__title">Sales Performance</h3>
                 </div>
               </div>
