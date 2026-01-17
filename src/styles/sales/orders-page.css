@@ -1346,4 +1346,52 @@ RESPONSIVE STYLES
   background-color: #f3f4f6;
   color: #6b7280;
   border-color: #d1d5db;
+}/* Action Buttons New UI */
+.action-btn-icon {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.action-btn-icon:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.action-btn-dropdown {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #1e3a8a; /* Dark Blue */
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0 16px;
+  height: 34px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.action-btn-dropdown:hover {
+  background: #172554;
+  transform: translateY(-1px);
+}
+
+.action-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: flex-end;
 }
