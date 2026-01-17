@@ -4,35 +4,43 @@ import { BACKEND_URL } from "@/config/env";
 export async function GET(request) {
   try {
     const authHeader = request.headers.get("authorization");
-    
+
     // Extract query parameters from request
     const { searchParams } = new URL(request.url);
     const page = searchParams.get('page') || '1';
     const perPage = searchParams.get('per_page') || '15';
     const search = searchParams.get('search') || '';
-    const statusOrder = searchParams.get('status_order') || '';
-    const statusPembayaran = searchParams.get('status_pembayaran') || '';
+
+    // Handle multiple values for filters
+    const statusOrder = searchParams.getAll('status_order');
+    const statusPembayaran = searchParams.getAll('status_pembayaran');
+    const produkIds = searchParams.getAll('produk_id');
+
     const sumber = searchParams.get('sumber') || '';
     const tanggalFrom = searchParams.get('tanggal_from') || '';
     const tanggalTo = searchParams.get('tanggal_to') || '';
     const waktuPembayaranFrom = searchParams.get('waktu_pembayaran_from') || '';
     const waktuPembayaranTo = searchParams.get('waktu_pembayaran_to') || '';
-    
+
     // Build backend URL with query parameters
     let backendUrl = `${BACKEND_URL}/api/sales/order?page=${page}&per_page=${perPage}`;
     if (search) backendUrl += `&search=${encodeURIComponent(search)}`;
-    if (statusOrder) backendUrl += `&status_order=${encodeURIComponent(statusOrder)}`;
-    if (statusPembayaran) backendUrl += `&status_pembayaran=${encodeURIComponent(statusPembayaran)}`;
+
+    // Append multiple values
+    statusOrder.forEach(val => backendUrl += `&status_order=${encodeURIComponent(val)}`);
+    statusPembayaran.forEach(val => backendUrl += `&status_pembayaran=${encodeURIComponent(val)}`);
+    produkIds.forEach(val => backendUrl += `&produk_id=${encodeURIComponent(val)}`);
+
     if (sumber) backendUrl += `&sumber=${encodeURIComponent(sumber)}`;
     if (tanggalFrom) backendUrl += `&tanggal_from=${encodeURIComponent(tanggalFrom)}`;
     if (tanggalTo) backendUrl += `&tanggal_to=${encodeURIComponent(tanggalTo)}`;
     if (waktuPembayaranFrom) backendUrl += `&waktu_pembayaran_from=${encodeURIComponent(waktuPembayaranFrom)}`;
     if (waktuPembayaranTo) backendUrl += `&waktu_pembayaran_to=${encodeURIComponent(waktuPembayaranTo)}`;
-    
+
     console.log("🔍 Fetching orders from:", backendUrl);
     console.log("🔑 Auth header present:", !!authHeader);
     console.log("📄 Query params - page:", page, "per_page:", perPage);
-    
+
     const response = await fetch(backendUrl, {
       method: "GET",
       headers: {
@@ -47,12 +55,12 @@ export async function GET(request) {
     console.log("📥 Response status:", response.status);
     console.log("📥 Response headers:", Object.fromEntries(response.headers.entries()));
     console.log("📥 Response text preview:", text.substring(0, 500));
-    
+
     // Check if response is HTML
     if (text.trim().startsWith("<!DOCTYPE") || text.trim().startsWith("<html")) {
       console.error("❌ Backend mengembalikan HTML, bukan JSON!");
       console.error("❌ Full response:", text.substring(0, 1000));
-      
+
       return NextResponse.json(
         {
           success: false,
@@ -63,9 +71,9 @@ export async function GET(request) {
         { status: 500 }
       );
     }
-    
+
     let json;
-    
+
     try {
       json = JSON.parse(text);
     } catch (parseError) {

@@ -618,32 +618,20 @@ export default function DaftarPesanan() {
           }
 
           // LOGIKA STATUS PEMBAYARAN:
-          // - Jika sudah lunas (total_paid >= total_harga), set ke 2 (Paid)
-          // - Jika masih ada remaining (total_paid < total_harga), set ke 4 (DP)
-          // - Status pembayaran harus tetap 4 (DP) sampai remaining = 0
-          // - Perubahan status payment individual (approve/reject) hanya mempengaruhi paymentHistoryModal.js, bukan page.js
+          // Gunakan status dari backend untuk konsistensi dengan filter.
+          // Frontend tidak boleh memaksa ubah status karena akan menyebabkan ketidaksesuaian dengan filter.
+          // Contoh: Filter "Pending", tapi frontend maksa jadi "Paid" -> User bingung.
           let statusPembayaran = order.status_pembayaran;
 
-          if (totalPaid >= totalHarga && totalHarga > 0) {
-            statusPembayaran = 2; // Paid
-          } else if (totalPaid > 0 && totalPaid < totalHarga) {
-            statusPembayaran = 4; // DP (ada pembayaran sebagian)
-          } else {
-            statusPembayaran = order.status_pembayaran ?? 0; // Unpaid / lainnya
+          // Fallback ringan hanya jika null/undefined
+          if (statusPembayaran === null || statusPembayaran === undefined) {
+            if (totalPaid >= totalHarga && totalHarga > 0) statusPembayaran = 2;
+            else if (totalPaid > 0) statusPembayaran = 4;
+            else statusPembayaran = 0;
           }
 
-          // Pastikan status_order tetap "Proses" (1) meskipun ada payment yang di-reject
-          // Status order tidak boleh berubah menjadi "Failed" (3) hanya karena payment di-reject
-          // User masih bisa konfirmasi pembayaran lagi jika payment di-reject
+          // Status Order: Gunakan dari backend
           let statusOrder = order.status_order ?? order.status ?? "1";
-          // Jika status_order adalah "3" (Failed) tapi masih ada remaining atau belum paid, kembalikan ke "1" (Proses)
-          if (statusOrder === "3" || statusOrder === 3) {
-            // Cek apakah order sudah benar-benar failed atau hanya payment yang di-reject
-            // Jika masih ada remaining atau belum paid, kembalikan ke "Proses"
-            if (remaining > 0 || totalPaid < totalHarga || statusPembayaran !== 2) {
-              statusOrder = "1"; // Kembalikan ke "Proses"
-            }
-          }
 
           return {
             ...order,
