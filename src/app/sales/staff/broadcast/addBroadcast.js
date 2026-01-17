@@ -70,7 +70,7 @@ export default function AddBroadcast({ onClose, onAdd }) {
   // State untuk autotext dan emoji
   const [selectedAutotext, setSelectedAutotext] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  
+
   const textareaRef = useRef(null);
 
   // Fetch products and orders data on mount
@@ -390,7 +390,7 @@ export default function AddBroadcast({ onClose, onAdd }) {
         }
 
         const warningMessage = `⚠️ Broadcast berhasil dibuat, tetapi tidak ada customer yang sesuai dengan filter:\n\n${filterInfo.join("\n")}\n\nSilakan kurangi filter atau pilih kombinasi filter yang berbeda.`;
-        
+
         alert(warningMessage);
       } else {
         // Show success message if there are targets
@@ -518,71 +518,46 @@ export default function AddBroadcast({ onClose, onAdd }) {
           </label>
 
           {/* Control Row: Autotext & Emoji */}
-          <div style={{ 
-            display: "flex", 
-            gap: "0.75rem", 
+          <div style={{
+            display: "flex",
+            gap: "0.5rem",
             marginTop: "-0.5rem",
             marginBottom: "1rem",
             flexWrap: "wrap",
-            alignItems: "flex-start",
+            alignItems: "center",
             position: "relative",
           }}>
-            {/* Autotext Group */}
-            <div style={{ 
-              display: "flex", 
-              gap: "0.5rem", 
-              flexWrap: "wrap",
-              alignItems: "center",
-            }}>
-              <select
-                value={selectedAutotext}
-                onChange={(e) => setSelectedAutotext(e.target.value)}
-                style={{
-                  padding: "0.5rem 0.75rem",
-                  border: "1px solid #d1d5db",
-                  borderRadius: "8px",
-                  fontSize: "0.875rem",
-                  background: "#fff",
-                  cursor: "pointer",
-                  outline: "none",
-                  minWidth: "180px",
-                }}
-              >
-                {AUTOTEXT_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+            {/* Autotext Buttons */}
+            {AUTOTEXT_OPTIONS.filter(opt => opt.value).map((option) => (
               <button
+                key={option.value}
                 type="button"
-                onClick={handleInsertAutotext}
-                disabled={!selectedAutotext}
+                onClick={() => insertAtCursor(option.value)}
                 style={{
-                  padding: "0.5rem 1rem",
-                  borderRadius: "8px",
-                  border: "1px solid #d1d5db",
-                  background: selectedAutotext ? "#f1a124" : "#f3f4f6",
-                  color: selectedAutotext ? "#fff" : "#9ca3af",
-                  cursor: selectedAutotext ? "pointer" : "not-allowed",
+                  padding: "0.4rem 0.75rem",
+                  borderRadius: "20px",
+                  border: "1px solid #e5e7eb",
+                  background: "#f9fafb",
+                  color: "#4b5563",
+                  cursor: "pointer",
+                  fontSize: "0.75rem",
                   fontWeight: 500,
-                  fontSize: "0.875rem",
                   transition: "all 0.2s",
                 }}
                 onMouseEnter={(e) => {
-                  if (selectedAutotext) {
-                    e.currentTarget.style.background = "#e69100";
-                  }
+                  e.currentTarget.style.background = "#e5e7eb";
+                  e.currentTarget.style.color = "#1f2937";
                 }}
                 onMouseLeave={(e) => {
-                  if (selectedAutotext) {
-                    e.currentTarget.style.background = "#f1a124";
-                  }
+                  e.currentTarget.style.background = "#f9fafb";
+                  e.currentTarget.style.color = "#4b5563";
                 }}
               >
-                Insert
+                {option.label}
               </button>
-            </div>
+            ))}
+
+            <div style={{ width: "1px", height: "24px", background: "#e5e7eb", margin: "0 0.25rem" }}></div>
 
             {/* Emoji Picker */}
             <div style={{ position: "relative" }}>
@@ -592,16 +567,23 @@ export default function AddBroadcast({ onClose, onAdd }) {
                 style={{
                   padding: "0.5rem 1rem",
                   borderRadius: "8px",
-                  border: `1px solid ${showEmojiPicker ? "#f1a124" : "#d1d5db"}`,
-                  background: showEmojiPicker ? "#fef3e2" : "#fff",
-                  color: showEmojiPicker ? "#f1a124" : "#374151",
+                  border: "none",
+                  background: "#f1a124",
+                  color: "#fff",
                   cursor: "pointer",
-                  fontWeight: 500,
+                  fontWeight: 600,
                   fontSize: "0.875rem",
                   display: "inline-flex",
                   alignItems: "center",
                   gap: "0.5rem",
                   transition: "all 0.2s",
+                  boxShadow: "0 2px 4px rgba(241, 161, 36, 0.3)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#d98e1d";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "#f1a124";
                 }}
               >
                 😊
@@ -685,7 +667,7 @@ export default function AddBroadcast({ onClose, onAdd }) {
                 (Pilih satu atau lebih produk)
               </small>
             </label>
-            
+
             {loading ? (
               <div style={{ padding: "1rem", textAlign: "center", color: "#6b7280" }}>
                 Memuat produk...
@@ -721,7 +703,7 @@ export default function AddBroadcast({ onClose, onAdd }) {
                       setTimeout(() => setShowProdukDropdown(false), 200);
                     }}
                   />
-                  
+
                   {/* Dropdown Hasil Search */}
                   {showProdukDropdown && produkSearchQuery && filteredProducts.length > 0 && (
                     <div
@@ -762,7 +744,7 @@ export default function AddBroadcast({ onClose, onAdd }) {
                       ))}
                     </div>
                   )}
-                  
+
                   {/* Pesan jika tidak ada hasil */}
                   {showProdukDropdown && produkSearchQuery && filteredProducts.length === 0 && (
                     <div
@@ -966,42 +948,42 @@ export default function AddBroadcast({ onClose, onAdd }) {
 
           {/* Info Box: Summary Filter yang Dipilih */}
           {/* Handle null as valid value (Unpaid) - null should be included */}
-          {(formData.target.produk.length > 0 || 
-            formData.target.status_order || 
+          {(formData.target.produk.length > 0 ||
+            formData.target.status_order ||
             (formData.target.status_pembayaran !== undefined && formData.target.status_pembayaran !== "")) && (
-            <div style={{ 
-              marginTop: "1.5rem", 
-              padding: "1rem", 
-              background: "#f0f9ff", 
-              borderRadius: "8px",
-              border: "1px solid #bae6fd"
-            }}>
-              <strong style={{ fontSize: "0.875rem", color: "#0369a1", display: "block", marginBottom: "0.5rem" }}>
-                📋 Filter yang Dipilih:
-              </strong>
-              <div style={{ fontSize: "0.875rem", color: "#0369a1" }}>
-                {formData.target.produk.length > 0 && (
-                  <div style={{ marginBottom: "0.25rem" }}>
-                    • Produk: {formData.target.produk.map((id) => getSelectedProductName(id)).join(", ")}
+              <div style={{
+                marginTop: "1.5rem",
+                padding: "1rem",
+                background: "#f0f9ff",
+                borderRadius: "8px",
+                border: "1px solid #bae6fd"
+              }}>
+                <strong style={{ fontSize: "0.875rem", color: "#0369a1", display: "block", marginBottom: "0.5rem" }}>
+                  📋 Filter yang Dipilih:
+                </strong>
+                <div style={{ fontSize: "0.875rem", color: "#0369a1" }}>
+                  {formData.target.produk.length > 0 && (
+                    <div style={{ marginBottom: "0.25rem" }}>
+                      • Produk: {formData.target.produk.map((id) => getSelectedProductName(id)).join(", ")}
+                    </div>
+                  )}
+                  {formData.target.status_order && (
+                    <div style={{ marginBottom: "0.25rem" }}>
+                      • Status Order: {getStatusOrderLabel(formData.target.status_order)}
+                    </div>
+                  )}
+                  {/* Handle null as valid value (Unpaid) - null should be included */}
+                  {(formData.target.status_pembayaran !== undefined && formData.target.status_pembayaran !== "") && (
+                    <div style={{ marginBottom: "0.25rem" }}>
+                      • Status Pembayaran: {getStatusPembayaranLabel(formData.target.status_pembayaran)}
+                    </div>
+                  )}
+                  <div style={{ marginTop: "0.5rem", paddingTop: "0.5rem", borderTop: "1px solid #bae6fd", fontStyle: "italic" }}>
+                    💡 Semua filter harus terpenuhi (AND logic). Jika tidak ada customer yang match, total_target akan 0.
                   </div>
-                )}
-                {formData.target.status_order && (
-                  <div style={{ marginBottom: "0.25rem" }}>
-                    • Status Order: {getStatusOrderLabel(formData.target.status_order)}
-                  </div>
-                )}
-                {/* Handle null as valid value (Unpaid) - null should be included */}
-                {(formData.target.status_pembayaran !== undefined && formData.target.status_pembayaran !== "") && (
-                  <div style={{ marginBottom: "0.25rem" }}>
-                    • Status Pembayaran: {getStatusPembayaranLabel(formData.target.status_pembayaran)}
-                  </div>
-                )}
-                <div style={{ marginTop: "0.5rem", paddingTop: "0.5rem", borderTop: "1px solid #bae6fd", fontStyle: "italic" }}>
-                  💡 Semua filter harus terpenuhi (AND logic). Jika tidak ada customer yang match, total_target akan 0.
                 </div>
               </div>
-            </div>
-          )}
+            )}
         </form>
 
         <div className="orders-modal-footer">
