@@ -257,9 +257,9 @@ export default function Dashboard() {
         setRecentOrders(ordersRes.data.slice(0, 10));
       }
 
-      // 2. Fetch Recent Followups (Last 7 days to keep it relevant)
+      // 2. Fetch Recent Followups (Last 30 days to ensure data visibility)
       const d = new Date();
-      d.setDate(d.getDate() - 7);
+      d.setDate(d.getDate() - 30);
       const dateFrom = d.toISOString().split("T")[0];
       const dateTo = new Date().toISOString().split("T")[0];
 
@@ -275,7 +275,7 @@ export default function Dashboard() {
         const json = await fpRes.json();
         if (json.success && Array.isArray(json.data)) {
           // Sort by created_at desc
-          const sorted = json.data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+          const sorted = json.data.sort((a, b) => new Date(b.created_at || b.create_at) - new Date(a.created_at || a.create_at));
           setRecentFollowups(sorted.slice(0, 10));
         }
       }
@@ -614,7 +614,15 @@ export default function Dashboard() {
           </article>
 
           {/* TWO TABLES: FOLLOW UP HISTORY & RECENT ORDERS */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }} className="recent-activity-grid">
+
+            <style jsx>{`
+                @media (max-width: 1024px) {
+                  .recent-activity-grid {
+                    grid-template-columns: 1fr !important;
+                  }
+                }
+              `}</style>
 
             {/* TABLE 1: RECENT FOLLOW UP */}
             <article className="panel">
@@ -634,21 +642,26 @@ export default function Dashboard() {
                     {recentFollowups.length > 0 ? (
                       recentFollowups.map((log, idx) => (
                         <tr key={idx}>
-                          <td style={{ fontWeight: 500 }}>{log.customer_nama || log.customer?.nama || "-"}</td>
+                          <td style={{ fontWeight: 500 }}>
+                            {log.customer_rel?.nama || log.customer_nama || log.customer?.nama || "-"}
+                          </td>
                           <td>
                             <span style={{
                               display: 'inline-block',
                               padding: '2px 8px',
                               borderRadius: '4px',
-                              background: '#eff6ff',
-                              color: '#1d4ed8',
+                              background: '#fff7ed',
+                              color: '#c2410c',
                               fontSize: '0.75rem',
                               fontWeight: 600
                             }}>
-                              {log.type_label || log.type || "-"}
+                              {log.type_label || log.type || (log.follup ? `Type ${log.follup}` : "-")}
                             </span>
                           </td>
-                          <td style={{ color: '#64748b' }}>{formatDateTime(log.created_at)}</td>
+                          <td style={{ color: '#64748b' }}>
+                            {/* Use create_at based on followupLog.js */}
+                            {formatDateTime(log.create_at || log.created_at)}
+                          </td>
                         </tr>
                       ))
                     ) : (
@@ -686,14 +699,18 @@ export default function Dashboard() {
 
                         return (
                           <tr key={idx}>
-                            <td style={{ fontWeight: 500 }}>{order.nama_customer || order.nama || "-"}</td>
+                            <td style={{ fontWeight: 500 }}>
+                              {order.nama_customer || order.customer?.nama || order.nama || "-"}
+                            </td>
                             <td style={{ maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                               {productName}
                             </td>
                             <td style={{ fontWeight: 600, color: '#0f172a' }}>
                               {formatCurrency(order.total_harga)}
                             </td>
-                            <td style={{ color: '#64748b' }}>{formatDateTime(order.created_at)}</td>
+                            <td style={{ color: '#64748b' }}>
+                              {formatDateTime(order.created_at || order.create_at || order.tanggal_dibuat)}
+                            </td>
                           </tr>
                         );
                       })

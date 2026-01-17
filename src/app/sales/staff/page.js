@@ -100,8 +100,8 @@ export default function Dashboard() {
 
       // --- NEW: FETCH ORDERS DATA ---
       try {
-        // Fetch last 100 orders to get a decent sample for statistics
-        const ordersRes = await getOrders(1, 100);
+        // Fetch last 100 orders for this specific sales staff
+        const ordersRes = await getOrders(1, 100, currentUserId);
 
         if (ordersRes && Array.isArray(ordersRes.data)) {
           const orders = ordersRes.data;
@@ -141,8 +141,8 @@ export default function Dashboard() {
             batalCount: batal,
           });
 
-          // Recent 5 orders
-          setRecentOrders(orders.slice(0, 5));
+          // Recent 10 orders
+          setRecentOrders(orders.slice(0, 10));
         }
       } catch (err) {
         console.error("Error fetching orders for dashboard:", err);

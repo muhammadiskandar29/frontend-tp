@@ -19,20 +19,24 @@ export async function getOrderStatistics() {
 }
 
 /** 📘 GET Semua Order (Admin) */
-export async function getOrders(page = 1, per_page = 15) {
+export async function getOrders(page = 1, per_page = 15, sales_id = null) {
   try {
     // Build query string for pagination
     const queryParams = new URLSearchParams({
       page: String(page),
       per_page: String(per_page),
     });
-    
+
+    if (sales_id) {
+      queryParams.append("sales_id", String(sales_id));
+    }
+
     const res = await api(`/sales/order?${queryParams.toString()}`, { method: "GET" });
-    
+
     // Logging struktur JSON lengkap sesuai requirement
     console.log("📦 getOrders() - Success:", res.success);
     console.log("📦 getOrders() - Response:", res);
-    
+
     // Handle pagination response format (Laravel pagination)
     if (res.success === true && res.data) {
       // Check if res.data itself has pagination structure (nested)
@@ -46,7 +50,7 @@ export async function getOrders(page = 1, per_page = 15) {
           per_page: res.data.per_page || per_page,
         };
       }
-      
+
       // Check if response has pagination metadata at root level
       if (res.current_page !== undefined || res.last_page !== undefined) {
         // Format: { success: true, data: [...], current_page, last_page, total, per_page }
@@ -58,7 +62,7 @@ export async function getOrders(page = 1, per_page = 15) {
           per_page: res.per_page || per_page,
         };
       }
-      
+
       // Simple array response (no pagination metadata)
       return {
         data: Array.isArray(res.data) ? res.data : [res.data],
@@ -68,7 +72,7 @@ export async function getOrders(page = 1, per_page = 15) {
         per_page: per_page,
       };
     }
-    
+
     // If response is already an array (legacy format)
     if (Array.isArray(res)) {
       return {
@@ -79,7 +83,7 @@ export async function getOrders(page = 1, per_page = 15) {
         per_page: per_page,
       };
     }
-    
+
     // Fallback: return empty
     console.warn("⚠️ getOrders() - Unexpected response format:", res);
     return {
