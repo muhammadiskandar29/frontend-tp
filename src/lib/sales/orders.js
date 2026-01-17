@@ -31,7 +31,10 @@ export async function getOrders(page = 1, per_page = 15, sales_id = null) {
       queryParams.append("sales_id", String(sales_id));
     }
 
-    const res = await api(`/sales/order?${queryParams.toString()}`, { method: "GET" });
+    const res = await api(`/sales/order?${queryParams.toString()}`, {
+      method: "GET",
+      disableToast: true
+    });
 
     // Logging struktur JSON lengkap sesuai requirement
     console.log("📦 getOrders() - Success:", res.success);
