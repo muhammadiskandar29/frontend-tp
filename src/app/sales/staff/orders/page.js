@@ -111,22 +111,37 @@ const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran, prod
   // Berbasis log follow-up, harus cocok Product ID.
 
   const isFollowupSent = (followUpNumber) => {
+    // Validasi dasar
     if (loading) return false;
     if (!productId || !customerWa) return false;
-    if (followupLogs.length === 0) return false;
+    if (!followupLogs || followupLogs.length === 0) return false;
 
     return followupLogs.some(l => {
-      if (!l.follup_rel) return false;
+      // Pastikan relasi utama ada
+      if (!l.follup_rel || !l.customer_rel) return false;
 
-      // 1. Produk harus cocok
+      // 1. Cek WA (Wajib Sama)
+      const logWA = String(l.customer_rel.wa || "").trim();
+      const currentWA = String(customerWa || "").trim();
+      if (logWA !== currentWA) return false;
+
+      // 2. Cek Produk (Wajib Sama)
       if (Number(l.follup_rel.produk_id) !== Number(productId)) return false;
 
-      // 2. Type/Event ID harus cocok (1-4)
-      // Data backend: type = "1 ", "2", dst. Trim & Number untuk safety.
-      if (Number(l.follup_rel.type) !== Number(followUpNumber)) return false;
+      // 3. Cek Type/FollowUp ke-berapa
+      // Strat: Cek field 'type' ATAU field 'nama' untuk menangani variasi data backend (seperti "1 " dengan spasi)
 
-      // 3. WA harus cocok
-      return String(l.customer_rel?.wa) === String(customerWa);
+      // Cara A: Cek field 'type' (misal "1 ")
+      // Menggunakan trim() + Number() agar "1 " terbaca sebagai 1
+      const typeVal = String(l.follup_rel.type || "").trim();
+      const isTypeMatch = (Number(typeVal) === Number(followUpNumber));
+
+      // Cara B: Cek field 'nama' (misal "Follow Up 1")
+      // Backup jika type kosong/rusak
+      const nameVal = String(l.follup_rel.nama || "").toLowerCase();
+      const isNameMatch = nameVal.includes(`follow up ${followUpNumber}`);
+
+      return isTypeMatch || isNameMatch;
     });
   };
 
@@ -1217,7 +1232,7 @@ export default function DaftarPesanan() {
                 onClick={() => setShowBroadcastModal(true)}
                 className="customers-button customers-button--secondary"
                 title="Broadcast"
-                style={{ gap: '0.5rem' }}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}
               >
                 <div style={{ transform: 'rotate(-45deg)', display: 'flex', alignItems: 'center' }}>
                   <Send size={16} />
@@ -1574,7 +1589,7 @@ export default function DaftarPesanan() {
                                             <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Follow Up Text</th>
                                             <th style={{ padding: '10px 16px', textAlign: 'center', fontWeight: 600, color: '#475569' }}>Bukti Pembayaran</th>
                                             <th style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 600, color: '#475569' }}>Total</th>
-                                            <th style={{ padding: '10px 16px', textAlign: 'center', fontWeight: 600, color: '#475569' }}>Aksi</th>
+                                            <th style={{ padding: '10px 16px', textAlign: 'center', fontWeight: 600, color: '#475569' }}></th>
                                           </tr>
                                         </thead>
                                         <tbody>
@@ -1661,41 +1676,65 @@ export default function DaftarPesanan() {
 
                                                 {/* Aksi Column */}
                                                 <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'stretch' }}>
+                                                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                                                    {/* WA */}
                                                     <button
-                                                      onClick={() => {
+                                                      className="action-btn-icon"
+                                                      style={{ color: '#25D366' }}
+                                                      title="WhatsApp"
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedOrderWA(innerOrder);
+                                                        setShowWAModal(true);
+                                                      }}
+                                                    >
+                                                      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                                                      </svg>
+                                                    </button>
+
+                                                    {/* Email */}
+                                                    <button
+                                                      className="action-btn-icon"
+                                                      style={{ color: '#3b82f6' }}
+                                                      title="Email"
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (innerOrder.customer_rel?.email) {
+                                                          window.location.href = `mailto:${innerOrder.customer_rel.email}`;
+                                                        }
+                                                      }}
+                                                    >
+                                                      <Mail size={16} />
+                                                    </button>
+
+                                                    {/* Phone */}
+                                                    <button
+                                                      className="action-btn-icon"
+                                                      style={{ color: '#10b981' }}
+                                                      title="Call"
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (innerOrder.customer_rel?.wa) {
+                                                          window.location.href = `tel:+${innerOrder.customer_rel.wa}`;
+                                                        }
+                                                      }}
+                                                    >
+                                                      <Phone size={16} />
+                                                    </button>
+
+                                                    {/* Plus / Follow Up */}
+                                                    <button
+                                                      className="action-btn-icon"
+                                                      style={{ color: '#6b7280' }}
+                                                      title="Add Follow Up"
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
                                                         setSelectedOrderForFollowUp(innerOrder);
                                                         setShowFollowUpModal(true);
                                                       }}
-                                                      style={{
-                                                        padding: '0.25rem 0.75rem',
-                                                        fontSize: '0.75rem',
-                                                        fontWeight: 600,
-                                                        color: 'white',
-                                                        background: '#fb8c00', // Orange-ish matching UI style
-                                                        border: 'none',
-                                                        borderRadius: '4px',
-                                                        cursor: 'pointer',
-                                                        width: '100%'
-                                                      }}
                                                     >
-                                                      Followup
-                                                    </button>
-                                                    <button
-                                                      onClick={() => handleView(innerOrder)} // Reusing handleView which opens ViewOrders
-                                                      style={{
-                                                        padding: '0.25rem 0.75rem',
-                                                        fontSize: '0.75rem',
-                                                        fontWeight: 600,
-                                                        color: 'white',
-                                                        background: '#3b82f6', // Blue
-                                                        border: 'none',
-                                                        borderRadius: '4px',
-                                                        cursor: 'pointer',
-                                                        width: '100%'
-                                                      }}
-                                                    >
-                                                      Detail
+                                                      <Plus size={16} />
                                                     </button>
                                                   </div>
                                                 </td>

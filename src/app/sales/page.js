@@ -220,56 +220,52 @@ export default function Dashboard() {
   const chartHasData = activityTrend.length > 0;
   const staffCardsRef = useRef([]);
 
-  // Dummy data untuk staff sales dengan data lengkap
-  const staffSalesData = [
-    {
-      name: "Salsa",
-      totalLeads: 45,
-      totalClosing: 28,
-      conversionRate: 62.22,
-      totalRevenue: 125000000,
-      averageDealSize: 4464286,
-      responseTime: "2.5 jam",
-      activeDeals: 12,
-      closedThisMonth: 8,
-      targetAchievement: 87.5,
-      customerSatisfaction: 4.6,
-    },
-    {
-      name: "Budi",
-      totalLeads: 52,
-      totalClosing: 35,
-      conversionRate: 67.31,
-      totalRevenue: 158000000,
-      averageDealSize: 4514286,
-      responseTime: "1.8 jam",
-      activeDeals: 15,
-      closedThisMonth: 10,
-      targetAchievement: 95.2,
-      customerSatisfaction: 4.8,
-    },
-    {
-      name: "Rina",
-      totalLeads: 38,
-      totalClosing: 24,
-      conversionRate: 63.16,
-      totalRevenue: 98000000,
-      averageDealSize: 4083333,
-      responseTime: "3.2 jam",
-      activeDeals: 9,
-      closedThisMonth: 6,
-      targetAchievement: 75.0,
-      customerSatisfaction: 4.4,
-    },
-  ];
+  // State for Sales Statistics
+  const [salesStatistics, setSalesStatistics] = useState([]);
+  const [loadingStatistics, setLoadingStatistics] = useState(true);
+
+  // Load Sales Statistics
+  const loadSalesStatistics = useCallback(async () => {
+    setLoadingStatistics(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch("/api/sales/statistics", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (!response.ok) {
+        // Silently fail or log error, don't break dashboard
+        console.error("Gagal memuat statistik sales");
+        return;
+      }
+
+      const json = await response.json();
+      if (json.success && json.data?.statistics) {
+        setSalesStatistics(json.data.statistics);
+      }
+    } catch (err) {
+      console.error("Error loading sales statistics:", err);
+    } finally {
+      setLoadingStatistics(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSalesStatistics();
+  }, [loadSalesStatistics]);
 
   // Scroll effect untuk staff cards
   useEffect(() => {
-    // Set semua cards sebagai visible secara default
+    if (loadingStatistics || salesStatistics.length === 0) return;
+
+    // Reset visibility just in case
     staffCardsRef.current.forEach((card) => {
-      if (card) {
-        card.classList.add("visible");
-      }
+      if (card) card.classList.remove("visible");
     });
 
     const observerOptions = {
@@ -300,14 +296,14 @@ export default function Dashboard() {
           observer.observe(card);
         }
       });
-    }, 50);
+    }, 100);
 
     return () => {
       staffCardsRef.current.forEach((card) => {
         if (card) observer.unobserve(card);
       });
     };
-  }, []);
+  }, [salesStatistics, loadingStatistics]);
 
   return (
     <Layout title="Dashboard" aboveContent={<GreetingBanner />}>
@@ -338,81 +334,95 @@ export default function Dashboard() {
               </div>
 
               <div className="staff-cards-container">
-                {staffSalesData.map((staff, index) => (
-                  <article
-                    ref={(el) => (staffCardsRef.current[index] = el)}
-                    className="staff-card"
-                    key={staff.name}
-                    data-index={index}
-                  >
-                    <div className="staff-card__header">
-                      <div className="staff-card__avatar">
-                        <User size={24} />
-                      </div>
-                      <div className="staff-card__header-info">
-                        <h4 className="staff-card__name">{staff.name}</h4>
-                        <p className="staff-card__role">Sales Representative</p>
-                      </div>
-                    </div>
-                    
-                    <div className="staff-card__stats">
-                      <div className="staff-card__stat-row">
-                        <div className="staff-card__stat">
-                          <p className="staff-card__stat-label">Total Leads</p>
-                          <p className="staff-card__stat-value">{staff.totalLeads}</p>
+                {loadingStatistics ? (
+                  <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>Loading data performa sales...</div>
+                ) : salesStatistics.length === 0 ? (
+                  <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>Belum ada data sales.</div>
+                ) : (
+                  salesStatistics.map((staff, index) => (
+                    <article
+                      ref={(el) => (staffCardsRef.current[index] = el)}
+                      className="staff-card"
+                      key={staff.sales_id || index}
+                      data-index={index}
+                    >
+                      <div className="staff-card__header">
+                        <div className="staff-card__avatar">
+                          <User size={24} />
                         </div>
-                        <div className="staff-card__stat">
-                          <p className="staff-card__stat-label">Total Closing</p>
-                          <p className="staff-card__stat-value">{staff.totalClosing}</p>
+                        <div className="staff-card__header-info">
+                          <h4 className="staff-card__name">{staff.sales_nama}</h4>
+                          <p className="staff-card__role">
+                            {staff.sales_level === "2" ? "Sales Representative" : "Sales Staff"}
+                          </p>
                         </div>
                       </div>
-                      
-                      <div className="staff-card__stat-row">
-                        <div className="staff-card__stat">
-                          <p className="staff-card__stat-label">Conversion Rate</p>
-                          <p className="staff-card__stat-value">{staff.conversionRate.toFixed(2)}%</p>
+
+                      <div className="staff-card__stats">
+                        <div className="staff-card__stat-row">
+                          <div className="staff-card__stat">
+                            <p className="staff-card__stat-label">Total Leads</p>
+                            <p className="staff-card__stat-value">{staff.customers?.total ?? 0}</p>
+                          </div>
+                          <div className="staff-card__stat">
+                            <p className="staff-card__stat-label">Total Closing</p>
+                            <p className="staff-card__stat-value">{staff.orders?.total ?? 0}</p>
+                          </div>
                         </div>
-                        <div className="staff-card__stat">
-                          <p className="staff-card__stat-label">Total Revenue</p>
-                          <p className="staff-card__stat-value">Rp {staff.totalRevenue.toLocaleString("id-ID")}</p>
+
+                        <div className="staff-card__stat-row">
+                          <div className="staff-card__stat">
+                            <p className="staff-card__stat-label">Conversion Rate</p>
+                            <p className="staff-card__stat-value">
+                              {staff.conversion_rates?.customer_to_order_formatted ?? "0%"}
+                            </p>
+                          </div>
+                          <div className="staff-card__stat">
+                            <p className="staff-card__stat-label">Total Revenue</p>
+                            <p className="staff-card__stat-value">
+                              {staff.revenue?.total_formatted ?? "Rp 0"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="staff-card__stat-row">
+                          <div className="staff-card__stat">
+                            <p className="staff-card__stat-label">Average Deal Size</p>
+                            <p className="staff-card__stat-value">
+                              {staff.average_order_value?.total_formatted ?? "Rp 0"}
+                            </p>
+                          </div>
+                          <div className="staff-card__stat">
+                            <p className="staff-card__stat-label">Response Time</p>
+                            <p className="staff-card__stat-value">-</p>
+                          </div>
+                        </div>
+
+                        <div className="staff-card__stat-row">
+                          <div className="staff-card__stat">
+                            <p className="staff-card__stat-label">Active Deals</p>
+                            <p className="staff-card__stat-value">-</p>
+                          </div>
+                          <div className="staff-card__stat">
+                            <p className="staff-card__stat-label">Closed This Month</p>
+                            <p className="staff-card__stat-value">{staff.orders?.this_period ?? 0}</p>
+                          </div>
+                        </div>
+
+                        <div className="staff-card__stat-row">
+                          <div className="staff-card__stat">
+                            <p className="staff-card__stat-label">Target Achievement</p>
+                            <p className="staff-card__stat-value">-</p>
+                          </div>
+                          <div className="staff-card__stat">
+                            <p className="staff-card__stat-label">Customer Satisfaction</p>
+                            <p className="staff-card__stat-value">-</p>
+                          </div>
                         </div>
                       </div>
-                      
-                      <div className="staff-card__stat-row">
-                        <div className="staff-card__stat">
-                          <p className="staff-card__stat-label">Average Deal Size</p>
-                          <p className="staff-card__stat-value">Rp {staff.averageDealSize.toLocaleString("id-ID")}</p>
-                        </div>
-                        <div className="staff-card__stat">
-                          <p className="staff-card__stat-label">Response Time</p>
-                          <p className="staff-card__stat-value">{staff.responseTime}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="staff-card__stat-row">
-                        <div className="staff-card__stat">
-                          <p className="staff-card__stat-label">Active Deals</p>
-                          <p className="staff-card__stat-value">{staff.activeDeals}</p>
-                        </div>
-                        <div className="staff-card__stat">
-                          <p className="staff-card__stat-label">Closed This Month</p>
-                          <p className="staff-card__stat-value">{staff.closedThisMonth}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="staff-card__stat-row">
-                        <div className="staff-card__stat">
-                          <p className="staff-card__stat-label">Target Achievement</p>
-                          <p className="staff-card__stat-value">{staff.targetAchievement}%</p>
-                        </div>
-                        <div className="staff-card__stat">
-                          <p className="staff-card__stat-label">Customer Satisfaction</p>
-                          <p className="staff-card__stat-value">{staff.customerSatisfaction}/5.0</p>
-                        </div>
-                      </div>
-                    </div>
-                  </article>
-                ))}
+                    </article>
+                  ))
+                )}
               </div>
             </article>
 

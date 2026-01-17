@@ -107,23 +107,40 @@ const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran, prod
 
   // 1. Cek Follow Up (Event 1-4)
   // Berbasis log follow-up, harus cocok Product ID.
+  // 1. Cek Follow Up (Event 1-4)
+  // Berbasis log follow-up, harus cocok Product ID, WA, dan Type/Name
   const isFollowupSent = (followUpNumber) => {
+    // Validasi dasar
     if (loading) return false;
     if (!productId || !customerWa) return false;
-    if (followupLogs.length === 0) return false;
+    if (!followupLogs || followupLogs.length === 0) return false;
 
     return followupLogs.some(l => {
-      if (!l.follup_rel) return false;
+      // Pastikan relasi utama ada
+      if (!l.follup_rel || !l.customer_rel) return false;
 
-      // 1. Produk harus cocok
+      // 1. Cek WA (Wajib Sama)
+      const logWA = String(l.customer_rel.wa || "").trim();
+      const currentWA = String(customerWa || "").trim();
+      if (logWA !== currentWA) return false;
+
+      // 2. Cek Produk (Wajib Sama)
       if (Number(l.follup_rel.produk_id) !== Number(productId)) return false;
 
-      // 2. Type/Event ID harus cocok (1-4)
-      // Data backend: type = "1 ", "2", dst. Trim & Number untuk safety.
-      if (Number(l.follup_rel.type) !== Number(followUpNumber)) return false;
+      // 3. Cek Type/FollowUp ke-berapa
+      // Strat: Cek field 'type' ATAU field 'nama' untuk menangani variasi data backend (seperti "1 " dengan spasi)
 
-      // 3. WA harus cocok
-      return String(l.customer_rel?.wa) === String(customerWa);
+      // Cara A: Cek field 'type' (misal "1 ")
+      // Menggunakan trim() + Number() agar "1 " terbaca sebagai 1
+      const typeVal = String(l.follup_rel.type || "").trim();
+      const isTypeMatch = (Number(typeVal) === Number(followUpNumber));
+
+      // Cara B: Cek field 'nama' (misal "Follow Up 1")
+      // Backup jika type kosong/rusak
+      const nameVal = String(l.follup_rel.nama || "").toLowerCase();
+      const isNameMatch = nameVal.includes(`follow up ${followUpNumber}`);
+
+      return isTypeMatch || isNameMatch;
     });
   };
 
