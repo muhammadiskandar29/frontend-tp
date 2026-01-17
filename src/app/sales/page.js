@@ -627,27 +627,27 @@ export default function Dashboard() {
               `}</style>
 
             {/* TABLE 1: RECENT FOLLOW UP */}
-            <article className="panel">
-              <div className="panel__header">
-                <h3 className="panel__title">Riwayat Terakhir Follow Up</h3>
+            <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+              <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #f1f5f9' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0 }}>Riwayat Terakhir Follow Up</h3>
               </div>
-              <div className="table-wrapper">
-                <table className="data-table">
+              <div className="table-wrapper" style={{ margin: 0 }}>
+                <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr>
-                      <th>CUSTOMER</th>
-                      <th>FOLLOW UP</th>
-                      <th>TANGGAL</th>
+                    <tr style={{ borderBottom: '1px solid #f1f5f9', background: '#f8fafc' }}>
+                      <th style={{ padding: '0.75rem 1.5rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>CUSTOMER</th>
+                      <th style={{ padding: '0.75rem 1.5rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>FOLLOW UP</th>
+                      <th style={{ padding: '0.75rem 1.5rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>TANGGAL</th>
                     </tr>
                   </thead>
                   <tbody>
                     {recentFollowups.length > 0 ? (
                       recentFollowups.map((log, idx) => (
-                        <tr key={idx}>
-                          <td style={{ fontWeight: 500 }}>
+                        <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '0.75rem 1.5rem', fontWeight: 500 }}>
                             {log.customer_rel?.nama || log.customer_nama || log.customer?.nama || "-"}
                           </td>
-                          <td>
+                          <td style={{ padding: '0.75rem 1.5rem' }}>
                             <span style={{
                               display: 'inline-block',
                               padding: '2px 8px',
@@ -660,7 +660,7 @@ export default function Dashboard() {
                               {log.type_label || log.type || (log.follup ? `Type ${log.follup}` : "-")}
                             </span>
                           </td>
-                          <td style={{ color: '#64748b' }}>
+                          <td style={{ padding: '0.75rem 1.5rem', color: '#64748b' }}>
                             {/* Use create_at based on followupLog.js */}
                             {formatDateTime(log.create_at || log.created_at)}
                           </td>
@@ -668,27 +668,27 @@ export default function Dashboard() {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan="3" className="table-empty">Belum ada follow up terbaru.</td>
+                        <td colSpan="3" className="table-empty" style={{ padding: '1.5rem', textAlign: 'center', color: '#94a3b8' }}>Belum ada follow up terbaru.</td>
                       </tr>
                     )}
                   </tbody>
                 </table>
               </div>
-            </article>
+            </div>
 
             {/* TABLE 2: RECENT ORDERS */}
-            <article className="panel">
-              <div className="panel__header">
-                <h3 className="panel__title">Pembelian Terakhir</h3>
+            <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+              <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #f1f5f9' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0 }}>Pembelian Terakhir</h3>
               </div>
-              <div className="table-wrapper">
-                <table className="data-table">
+              <div className="table-wrapper" style={{ margin: 0 }}>
+                <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr>
-                      <th>CUSTOMER</th>
-                      <th>PRODUK</th>
-                      <th>TOTAL</th>
-                      <th>TANGGAL</th>
+                    <tr style={{ borderBottom: '1px solid #f1f5f9', background: '#f8fafc' }}>
+                      <th style={{ padding: '0.75rem 1.5rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>CUSTOMER</th>
+                      <th style={{ padding: '0.75rem 1.5rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>PRODUK</th>
+                      <th style={{ padding: '0.75rem 1.5rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>TOTAL</th>
+                      <th style={{ padding: '0.75rem 1.5rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>TANGGAL</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -700,17 +700,17 @@ export default function Dashboard() {
                           : (order.produk_nama || "-");
 
                         return (
-                          <tr key={idx}>
-                            <td style={{ fontWeight: 500 }}>
+                          <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                            <td style={{ padding: '0.75rem 1.5rem', fontWeight: 500 }}>
                               {order.nama_customer || order.customer?.nama || order.nama || "-"}
                             </td>
-                            <td style={{ maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            <td style={{ padding: '0.75rem 1.5rem', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                               {productName}
                             </td>
-                            <td style={{ fontWeight: 600, color: '#0f172a' }}>
+                            <td style={{ padding: '0.75rem 1.5rem', fontWeight: 600, color: '#0f172a' }}>
                               {formatCurrency(order.total_harga)}
                             </td>
-                            <td style={{ color: '#64748b' }}>
+                            <td style={{ padding: '0.75rem 1.5rem', color: '#64748b' }}>
                               {formatDateTime(order.created_at || order.create_at || order.tanggal_dibuat)}
                             </td>
                           </tr>
@@ -718,14 +718,13 @@ export default function Dashboard() {
                       })
                     ) : (
                       <tr>
-                        <td colSpan="4" className="table-empty">Belum ada order terbaru.</td>
+                        <td colSpan="4" className="table-empty" style={{ padding: '1.5rem', textAlign: 'center', color: '#94a3b8' }}>Belum ada order terbaru.</td>
                       </tr>
                     )}
                   </tbody>
                 </table>
               </div>
-            </article>
-
+            </div>
           </div>
 
         </section>
