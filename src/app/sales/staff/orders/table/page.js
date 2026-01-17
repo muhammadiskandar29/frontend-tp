@@ -95,10 +95,11 @@ const STATUS_PEMBAYARAN_MAP = {
 };
 
 const STATUS_ORDER_MAP = {
-    "1": { label: "Pending", class: "pending" },
+    "1": { label: "Proses", class: "proses" },
     "2": { label: "Sukses", class: "sukses" },
     "3": { label: "Failed", class: "failed" },
-    "4": { label: "Dihapus", class: "dihapus" },
+    "4": { label: "Upselling", class: "upselling" },
+    "N": { label: "Dihapus", class: "dihapus" },
 };
 
 // --- Helper Functions ---

@@ -13,6 +13,14 @@ const STATUS_PEMBAYARAN_MAP = {
   4: { label: "DP", class: "dp" },
 };
 
+const STATUS_ORDER_MAP = {
+  "1": { label: "Proses", class: "proses" },
+  "2": { label: "Sukses", class: "sukses" },
+  "3": { label: "Failed", class: "failed" },
+  "4": { label: "Upselling", class: "upselling" },
+  "N": { label: "Dihapus", class: "dihapus" },
+};
+
 // 🔹 Helper untuk formatting date time
 // 🔹 Helper untuk formatting date time
 const formatDateTime = (dateStr) => {
@@ -274,9 +282,15 @@ export default function ViewOrders({ order, onClose }) {
                   <p style={{ fontSize: '1rem', fontWeight: 500, color: '#1e293b' }}>{order.produk_rel?.nama || "-"}</p>
 
                   <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155', marginBottom: '0.5rem', marginTop: '1.5rem' }}>Status Order</h4>
-                  <span className={`orders-status-badge orders-status-badge--${order.status === 2 || order.status === '2' ? 'paid' : 'pending'}`}>
-                    {order.status === 2 || order.status === '2' ? 'SUKSES' : 'PENDING'}
-                  </span>
+                  {(() => {
+                    const statusVal = String(order.status);
+                    const statusInfo = STATUS_ORDER_MAP[statusVal] || { label: "Pending", class: "pending" };
+                    return (
+                      <span className={`orders-status-badge orders-status-badge--${statusInfo.class}`}>
+                        {statusInfo.label.toUpperCase()}
+                      </span>
+                    );
+                  })()}
 
                   <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155', marginBottom: '0.5rem', marginTop: '1.5rem' }}>Tanggal Order</h4>
                   <p style={{ fontSize: '1rem', color: '#1e293b' }}>{order.tanggal ? formatDateTime(order.tanggal) : "-"}</p>
