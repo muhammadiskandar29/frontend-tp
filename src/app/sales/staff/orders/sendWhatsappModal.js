@@ -9,17 +9,17 @@ const EmojiPicker = dynamic(() => import("emoji-picker-react"), {
 
 const AUTOTEXT_OPTIONS = [
     { label: "Pilih Autotext", value: "" },
-    { label: "{{customer_name}}", value: "{{customer_name}}" },
-    { label: "{{product_name}}", value: "{{product_name}}" },
-    { label: "{{order_date}}", value: "{{order_date}}" },
-    { label: "{{order_total}}", value: "{{order_total}}" },
-    { label: "{{payment_method}}", value: "{{payment_method}}" },
-    { label: "{{payment_time}}", value: "{{payment_time}}" },
-    { label: "{{payment_ke}}", value: "{{payment_ke}}" },
-    { label: "{{amount}}", value: "{{amount}}" },
-    { label: "{{amount_total}}", value: "{{amount_total}}" },
-    { label: "{{amount_remaining}}", value: "{{amount_remaining}}" },
-    { label: "{{amount_remaining_formatted}}", value: "{{amount_remaining_formatted}}" },
+    { label: "Nama Customer", value: "{{customer_name}}" },
+    { label: "Nama Produk", value: "{{product_name}}" },
+    { label: "Tanggal Order", value: "{{order_date}}" },
+    { label: "Total Order", value: "{{order_total}}" },
+    { label: "Metode Pembayaran", value: "{{payment_method}}" },
+    { label: "Waktu Pembayaran", value: "{{payment_time}}" },
+    { label: "Pembayaran Ke", value: "{{payment_ke}}" },
+    { label: "Jumlah Bayar", value: "{{amount}}" },
+    { label: "Total Tagihan", value: "{{amount_total}}" },
+    { label: "Sisa Tagihan", value: "{{amount_remaining}}" },
+    { label: "Sisa Tagihan (Formatted)", value: "{{amount_remaining_formatted}}" },
 ];
 
 export default function SendWhatsappModal({ order, isOpen, onClose }) {

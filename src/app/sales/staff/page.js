@@ -460,10 +460,10 @@ export default function Dashboard() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Date</th>
                     <th>Customer</th>
-                    <th>Total</th>
                     <th>Status</th>
+                    <th>Date</th>
+                    <th style={{ textAlign: "right" }}>Total</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -472,18 +472,23 @@ export default function Dashboard() {
                       const statusInfo = STATUS_ORDER_MAP[String(order.status)] || { label: "Unknown", class: "default" };
                       return (
                         <tr key={idx}>
-                          <td style={{ fontSize: '0.875rem', color: '#4b5563' }}>
-                            {new Date(order.created_at).toLocaleDateString("id-ID", {
-                              day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"
-                            })}
+                          <td style={{ fontWeight: 500 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                              <span style={{ color: 'var(--dash-text-dark)', fontWeight: 600 }}>{order.nama_customer || order.nama || "-"}</span>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--dash-muted)' }}>ID: {order.id_transaksi || order.id}</span>
+                            </div>
                           </td>
-                          <td style={{ fontWeight: 500 }}>{order.nama_customer || order.nama || "-"}</td>
-                          <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{formatCurrency(order.total_harga)}</td>
                           <td>
                             <span className={`orders-status-badge orders-status-badge--${statusInfo.class}`}>
                               {statusInfo.label}
                             </span>
                           </td>
+                          <td style={{ fontSize: '0.875rem', color: '#4b5563' }}>
+                            {new Date(order.created_at).toLocaleDateString("id-ID", {
+                              day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"
+                            })}
+                          </td>
+                          <td style={{ fontFamily: 'monospace', fontWeight: 600, textAlign: "right" }}>{formatCurrency(order.total_harga)}</td>
                         </tr>
                       );
                     })
@@ -498,180 +503,7 @@ export default function Dashboard() {
           </article>
         </section>
 
-        {/* Leads Activity Panel */}
-        <section className="dashboard-panels">
-          <article className="panel panel--summary">
-            <div className="panel__header">
-              <div>
-                <p className="panel__eyebrow">Leads Management</p>
-                <h3 className="panel__title">Leads Activity</h3>
-              </div>
-            </div>
-            <div className="dashboard-summary-horizontal">
-              {leadsCards.map((card) => (
-                <article className="summary-card" key={card.label}>
-                  <div className={`summary-card__icon ${card.color}`}>{card.icon}</div>
-                  <div>
-                    <p className="summary-card__label">{card.label}</p>
-                    <p className="summary-card__value">{card.value}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </article>
-        </section>
 
-        {/* Follow Up Activity Panel */}
-        <section className="dashboard-panels">
-          <article className="panel panel--summary">
-            <div className="panel__header">
-              <div>
-                <p className="panel__eyebrow">Follow Up Tracking</p>
-                <h3 className="panel__title">Follow Up Activity</h3>
-              </div>
-            </div>
-            <div className="dashboard-summary-horizontal">
-              {followUpCards.map((card) => (
-                <article className="summary-card" key={card.label}>
-                  <div className={`summary-card__icon ${card.color}`}>{card.icon}</div>
-                  <div>
-                    <p className="summary-card__label">{card.label}</p>
-                    <p className="summary-card__value">{card.value}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </article>
-        </section>
-
-        {/* Deals & Performance Panel */}
-        <section className="dashboard-panels">
-          <article className="panel panel--summary">
-            <div className="panel__header">
-              <div>
-                <p className="panel__eyebrow">Deals & Performance</p>
-                <h3 className="panel__title">Deals Overview</h3>
-              </div>
-            </div>
-            <div className="dashboard-summary-horizontal">
-              {dealsCards.map((card) => (
-                <article className="summary-card" key={card.label}>
-                  <div className={`summary-card__icon ${card.color}`}>{card.icon}</div>
-                  <div>
-                    <p className="summary-card__label">{card.label}</p>
-                    <p className="summary-card__value">{card.value}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </article>
-        </section>
-
-        {/* Progress Target Panel */}
-        {(stats.monthlyTarget > 0 || stats.closingTarget > 0) && (
-          <section className="dashboard-panels">
-            <article className="panel panel--summary">
-              <div className="panel__header">
-                <div>
-                  <p className="panel__eyebrow">Target Progress</p>
-                  <h3 className="panel__title">Monthly Goals</h3>
-                </div>
-              </div>
-
-              <div style={{ padding: "1.5rem" }}>
-                {stats.monthlyTarget > 0 && (
-                  <div style={{ marginBottom: "1.5rem" }}>
-                    <div style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: "0.5rem"
-                    }}>
-                      <span style={{
-                        fontSize: "0.875rem",
-                        color: "var(--dash-muted)",
-                        fontWeight: 500
-                      }}>
-                        Target Bulanan
-                      </span>
-                      <span style={{
-                        fontSize: "0.875rem",
-                        color: "var(--dash-text-dark)",
-                        fontWeight: 600
-                      }}>
-                        {stats.monthlyProgress.toLocaleString("id-ID")} / {stats.monthlyTarget.toLocaleString("id-ID")}
-                      </span>
-                    </div>
-                    <div style={{
-                      width: "100%",
-                      height: "8px",
-                      background: "var(--dash-border)",
-                      borderRadius: "4px",
-                      overflow: "hidden"
-                    }}>
-                      <div style={{
-                        height: "100%",
-                        width: `${monthlyProgressPercent}%`,
-                        background: monthlyProgressPercent >= 100
-                          ? "linear-gradient(90deg, #10b981 0%, #059669 100%)"
-                          : monthlyProgressPercent >= 75
-                            ? "linear-gradient(90deg, #f59e0b 0%, #d97706 100%)"
-                            : "linear-gradient(90deg, #3b82f6 0%, #2563eb 100%)",
-                        borderRadius: "4px",
-                        transition: "width 0.3s ease"
-                      }} />
-                    </div>
-                  </div>
-                )}
-
-                {stats.closingTarget > 0 && (
-                  <div>
-                    <div style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: "0.5rem"
-                    }}>
-                      <span style={{
-                        fontSize: "0.875rem",
-                        color: "var(--dash-muted)",
-                        fontWeight: 500
-                      }}>
-                        Target Closing
-                      </span>
-                      <span style={{
-                        fontSize: "0.875rem",
-                        color: "var(--dash-text-dark)",
-                        fontWeight: 600
-                      }}>
-                        {stats.closingProgress.toLocaleString("id-ID")} / {stats.closingTarget.toLocaleString("id-ID")}
-                      </span>
-                    </div>
-                    <div style={{
-                      width: "100%",
-                      height: "8px",
-                      background: "var(--dash-border)",
-                      borderRadius: "4px",
-                      overflow: "hidden"
-                    }}>
-                      <div style={{
-                        height: "100%",
-                        width: `${closingProgressPercent}%`,
-                        background: closingProgressPercent >= 100
-                          ? "linear-gradient(90deg, #10b981 0%, #059669 100%)"
-                          : closingProgressPercent >= 75
-                            ? "linear-gradient(90deg, #f59e0b 0%, #d97706 100%)"
-                            : "linear-gradient(90deg, #3b82f6 0%, #2563eb 100%)",
-                        borderRadius: "4px",
-                        transition: "width 0.3s ease"
-                      }} />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </article>
-          </section>
-        )}
       </div>
     </Layout>
   );

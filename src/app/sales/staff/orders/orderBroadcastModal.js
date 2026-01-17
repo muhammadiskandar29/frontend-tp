@@ -37,10 +37,17 @@ const STATUS_PEMBAYARAN_MAP = {
 // Autotext Options untuk variable
 const AUTOTEXT_OPTIONS = [
     { label: "Pilih Variable", value: "" },
-    { label: "{{customer_name}}", value: "{{customer_name}}" },
-    { label: "{{product_name}}", value: "{{product_name}}" },
-    { label: "{{order_date}}", value: "{{order_date}}" },
-    { label: "{{order_total}}", value: "{{order_total}}" },
+    { label: "Nama Customer", value: "{{customer_name}}" },
+    { label: "Nama Produk", value: "{{product_name}}" },
+    { label: "Tanggal Order", value: "{{order_date}}" },
+    { label: "Total Order", value: "{{order_total}}" },
+    { label: "Metode Pembayaran", value: "{{payment_method}}" },
+    { label: "Waktu Pembayaran", value: "{{payment_time}}" },
+    { label: "Pembayaran Ke", value: "{{payment_ke}}" },
+    { label: "Jumlah Bayar", value: "{{amount}}" },
+    { label: "Total Tagihan", value: "{{amount_total}}" },
+    { label: "Sisa Tagihan", value: "{{amount_remaining}}" },
+    { label: "Sisa Tagihan (Formatted)", value: "{{amount_remaining_formatted}}" },
 ];
 
 export default function OrderBroadcastModal({ onClose, onAdd }) {

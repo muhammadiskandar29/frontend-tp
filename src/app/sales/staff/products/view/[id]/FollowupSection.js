@@ -38,10 +38,17 @@ const REDIRECT_TYPE = 9;
 
 const AUTOTEXT_OPTIONS = [
   { label: "Pilih Autotext", value: "" },
-  { label: "{{customer_name}}", value: "{{customer_name}}" },
-  { label: "{{product_name}}", value: "{{product_name}}" },
-  { label: "{{order_date}}", value: "{{order_date}}" },
-  { label: "{{order_total}}", value: "{{order_total}}" },
+  { label: "Nama Customer", value: "{{customer_name}}" },
+  { label: "Nama Produk", value: "{{product_name}}" },
+  { label: "Tanggal Order", value: "{{order_date}}" },
+  { label: "Total Order", value: "{{order_total}}" },
+  { label: "Metode Pembayaran", value: "{{payment_method}}" },
+  { label: "Waktu Pembayaran", value: "{{payment_time}}" },
+  { label: "Pembayaran Ke", value: "{{payment_ke}}" },
+  { label: "Jumlah Bayar", value: "{{amount}}" },
+  { label: "Total Tagihan", value: "{{amount_total}}" },
+  { label: "Sisa Tagihan", value: "{{amount_remaining}}" },
+  { label: "Sisa Tagihan (Formatted)", value: "{{amount_remaining_formatted}}" },
 ];
 
 // Mapping nama dari response ke type
@@ -126,10 +133,10 @@ export default function FollowupSection() {
   // Fetch template follow-up per produk
   useEffect(() => {
     if (!produkId) return;
-    
+
     setLoading(true);
     const token = localStorage.getItem("token");
-    
+
     fetch(`${BASE_URL}/sales/template-follup`, {
       method: "POST",
       headers: {
@@ -173,7 +180,7 @@ export default function FollowupSection() {
       const expectedName = FOLLOWUP_TABS.find((tab) => tab.type === activeType)?.label;
       return t.nama === expectedName;
     });
-    
+
     if (tpl) {
       setText(tpl.text || "");
       const eventVal = tpl.event || "1d-09:00";
@@ -227,7 +234,7 @@ export default function FollowupSection() {
 
     setSaving(true);
     const token = localStorage.getItem("token");
-    
+
     const payload = {
       nama: FOLLOWUP_TABS.find((t) => t.type === activeType)?.label || "",
       produk: produkId,
@@ -249,10 +256,10 @@ export default function FollowupSection() {
         },
         body: JSON.stringify(payload),
       });
-      
+
       const data = await res.json();
       console.log("🟡 [FOLLOWUP] Save response:", data);
-      
+
       if (data.success) {
         // Update lokal array dengan data dari response
         const savedTemplate = {
@@ -262,27 +269,27 @@ export default function FollowupSection() {
           event: eventValue,
           status: autoSend ? "1" : "2",
         };
-        
+
         setTemplates((prev) => {
           // Cari template yang sudah ada berdasarkan type atau nama
           const exists = prev.find((tpl) => {
-            return tpl.type === activeType || 
-                   tpl.nama === savedTemplate.nama ||
-                   tpl.id === savedTemplate.id;
+            return tpl.type === activeType ||
+              tpl.nama === savedTemplate.nama ||
+              tpl.id === savedTemplate.id;
           });
-          
+
           if (exists) {
             return prev.map((tpl) => {
-              const isMatch = tpl.type === activeType || 
-                            tpl.nama === savedTemplate.nama ||
-                            tpl.id === savedTemplate.id;
+              const isMatch = tpl.type === activeType ||
+                tpl.nama === savedTemplate.nama ||
+                tpl.id === savedTemplate.id;
               return isMatch ? savedTemplate : tpl;
             });
           } else {
             return [...prev, savedTemplate];
           }
         });
-        
+
         console.log("✅ [FOLLOWUP] Template saved and updated locally");
         toast.success(data.message || "Template berhasil disimpan!");
       } else {
@@ -390,7 +397,7 @@ export default function FollowupSection() {
           />
           Enable Auto Send
         </label>
-        
+
         {/* Type 1-4: Follow Up dengan settingan jam/hari */}
         {SCHEDULED_TYPES.includes(activeType) && (
           <>
@@ -475,14 +482,14 @@ export default function FollowupSection() {
         )}
       </div>
 
-      <button 
-        className="save-btn" 
+      <button
+        className="save-btn"
         onClick={handleSave}
         disabled={saving || loading}
       >
         {saving ? "Menyimpan..." : "Save"}
       </button>
-      
+
       {loading && (
         <p style={{ textAlign: "center", color: "#666", marginTop: "10px" }}>
           Memuat template...

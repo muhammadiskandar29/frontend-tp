@@ -16,6 +16,7 @@ import {
   PiggyBank,
   User,
 } from "lucide-react";
+import { getOrders } from "@/lib/sales/orders";
 import dynamic from "next/dynamic";
 
 // Lazy load heavy components
@@ -224,6 +225,68 @@ export default function Dashboard() {
   const [salesStatistics, setSalesStatistics] = useState([]);
   const [loadingStatistics, setLoadingStatistics] = useState(true);
   const [periodInfo, setPeriodInfo] = useState(null);
+
+  // State for Recent Activity Lists
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [recentFollowups, setRecentFollowups] = useState([]);
+
+  // Helper formatter
+  const formatCurrency = (val) => {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(Number(val) || 0);
+  };
+
+  const formatDateTime = (dateStr) => {
+    if (!dateStr) return "-";
+    return new Date(dateStr).toLocaleString("id-ID", {
+      day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit"
+    });
+  };
+
+  // Load Recent Activity (Orders & Followups)
+  const loadRecentActivity = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      // 1. Fetch Recent Orders
+      const ordersRes = await getOrders(1, 10);
+      if (ordersRes && Array.isArray(ordersRes.data)) {
+        setRecentOrders(ordersRes.data.slice(0, 10));
+      }
+
+      // 2. Fetch Recent Followups (Last 7 days to keep it relevant)
+      const d = new Date();
+      d.setDate(d.getDate() - 7);
+      const dateFrom = d.toISOString().split("T")[0];
+      const dateTo = new Date().toISOString().split("T")[0];
+
+      const fpRes = await fetch(`/api/sales/logs-follup?date_from=${dateFrom}&date_to=${dateTo}`, {
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        }
+      });
+
+      if (fpRes.ok) {
+        const json = await fpRes.json();
+        if (json.success && Array.isArray(json.data)) {
+          // Sort by created_at desc
+          const sorted = json.data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+          setRecentFollowups(sorted.slice(0, 10));
+        }
+      }
+    } catch (e) {
+      console.error("Ordered/Followup fetch error:", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadRecentActivity();
+  }, [loadRecentActivity]);
 
   // Load Sales Statistics
   const loadSalesStatistics = useCallback(async () => {
@@ -547,7 +610,104 @@ export default function Dashboard() {
               </div>
             )}
             {!chartHasData && <p className="panel__empty">Belum ada data transaksi untuk periode ini.</p>}
+            {!chartHasData && <p className="panel__empty">Belum ada data transaksi untuk periode ini.</p>}
           </article>
+
+          {/* TWO TABLES: FOLLOW UP HISTORY & RECENT ORDERS */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem' }}>
+
+            {/* TABLE 1: RECENT FOLLOW UP */}
+            <article className="panel">
+              <div className="panel__header">
+                <h3 className="panel__title">Riwayat Terakhir Follow Up</h3>
+              </div>
+              <div className="table-wrapper">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>CUSTOMER</th>
+                      <th>FOLLOW UP</th>
+                      <th>TANGGAL</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentFollowups.length > 0 ? (
+                      recentFollowups.map((log, idx) => (
+                        <tr key={idx}>
+                          <td style={{ fontWeight: 500 }}>{log.customer_nama || log.customer?.nama || "-"}</td>
+                          <td>
+                            <span style={{
+                              display: 'inline-block',
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                              background: '#eff6ff',
+                              color: '#1d4ed8',
+                              fontSize: '0.75rem',
+                              fontWeight: 600
+                            }}>
+                              {log.type_label || log.type || "-"}
+                            </span>
+                          </td>
+                          <td style={{ color: '#64748b' }}>{formatDateTime(log.created_at)}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="3" className="table-empty">Belum ada follow up terbaru.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </article>
+
+            {/* TABLE 2: RECENT ORDERS */}
+            <article className="panel">
+              <div className="panel__header">
+                <h3 className="panel__title">Pembelian Terakhir</h3>
+              </div>
+              <div className="table-wrapper">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>CUSTOMER</th>
+                      <th>PRODUK</th>
+                      <th>TOTAL</th>
+                      <th>TANGGAL</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentOrders.length > 0 ? (
+                      recentOrders.map((order, idx) => {
+                        // Safely access product name
+                        const productName = Array.isArray(order.items) && order.items[0]
+                          ? order.items[0].nama_produk || order.items[0].nama
+                          : (order.produk_nama || "-");
+
+                        return (
+                          <tr key={idx}>
+                            <td style={{ fontWeight: 500 }}>{order.nama_customer || order.nama || "-"}</td>
+                            <td style={{ maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {productName}
+                            </td>
+                            <td style={{ fontWeight: 600, color: '#0f172a' }}>
+                              {formatCurrency(order.total_harga)}
+                            </td>
+                            <td style={{ color: '#64748b' }}>{formatDateTime(order.created_at)}</td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan="4" className="table-empty">Belum ada order terbaru.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </article>
+
+          </div>
 
         </section>
       </div>
