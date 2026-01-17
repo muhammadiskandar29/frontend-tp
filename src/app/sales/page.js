@@ -642,19 +642,41 @@ export default function Dashboard() {
                   </thead>
                   <tbody>
                     {recentFollowups.length > 0 ? (
-                      recentFollowups.map((log, idx) => (
-                        <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                          <td style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #f1f5f9', fontWeight: 500, color: '#334155' }}>
-                            {log.customer_rel?.nama || log.customer_nama || log.customer?.nama || "-"}
-                          </td>
-                          <td style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #f1f5f9', color: '#334155' }}>
-                            {log.type_label || log.type || (log.follup ? `Type ${log.follup}` : "-")}
-                          </td>
-                          <td style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #f1f5f9', color: '#64748b' }}>
-                            {formatDateTime(log.create_at || log.created_at)}
-                          </td>
-                        </tr>
-                      ))
+                      recentFollowups.map((log, idx) => {
+                        const typeId = log.follup || log.type;
+                        const typeMap = {
+                          1: "Follow Up 1",
+                          2: "Follow Up 2",
+                          3: "Follow Up 3",
+                          4: "Follow Up 4",
+                          5: "Register",
+                          6: "Proses",
+                          7: "Selesai",
+                          8: "Upselling",
+                          11: "Reminder Trainer",
+                        };
+
+                        let label = typeMap[typeId] || log.type_label;
+
+                        // Fallback handling
+                        if (!label || label === "-") {
+                          label = typeId ? `Type ${typeId}` : "Unknown";
+                        }
+
+                        return (
+                          <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                            <td style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #f1f5f9', fontWeight: 500, color: '#334155' }}>
+                              {log.customer_rel?.nama || log.customer_nama || log.customer?.nama || "-"}
+                            </td>
+                            <td style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #f1f5f9', color: '#334155' }}>
+                              {label}
+                            </td>
+                            <td style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #f1f5f9', color: '#64748b' }}>
+                              {formatDateTime(log.create_at || log.created_at)}
+                            </td>
+                          </tr>
+                        );
+                      })
                     ) : (
                       <tr>
                         <td colSpan="3" className="table-empty" style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>Belum ada follow up terbaru.</td>
