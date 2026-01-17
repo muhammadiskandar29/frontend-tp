@@ -381,6 +381,7 @@ export default function DaftarPesanan() {
   const [selectedOrderIdForHistory, setSelectedOrderIdForHistory] = useState(null);
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedImageUrl, setSelectedImageUrl] = useState(null);
+  const [activeDropdown, setActiveDropdown] = useState(null); // ID customer that has active dropdown
 
   const fetchingRef = useRef(false); // Prevent multiple simultaneous fetches
 
@@ -1440,16 +1441,111 @@ export default function DaftarPesanan() {
                               </button>
 
                               {/* Dropdown */}
-                              <button
-                                className="action-btn-dropdown"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEdit(order);
-                                }}
-                              >
-                                <span>{otherCount > 0 ? `Lihat ${otherCount} Order Lain` : "Lihat Order"}</span>
-                                <ChevronDown size={14} strokeWidth={3} />
-                              </button>
+                              {/* Dropdown Button */}
+                              <div style={{ position: 'relative', marginLeft: 'auto' }}>
+                                <button
+                                  className={`action-btn-dropdown ${activeDropdown === custId ? 'active' : ''}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveDropdown(activeDropdown === custId ? null : custId);
+                                  }}
+                                >
+                                  <span>{otherCount > 0 ? `Lihat ${otherCount} Order Lain` : "Lihat Order"}</span>
+                                  <ChevronDown size={14} strokeWidth={3} className={`transition-transform ${activeDropdown === custId ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                {/* DROPDOWN CONTENT - TABLE */}
+                                {activeDropdown === custId && (
+                                  <div
+                                    onClick={(e) => e.stopPropagation()}
+                                    style={{
+                                      position: 'absolute',
+                                      top: '100%',
+                                      right: 0,
+                                      marginTop: '8px',
+                                      background: 'white',
+                                      border: '1px solid #e2e8f0',
+                                      borderRadius: '12px',
+                                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                                      zIndex: 50,
+                                      minWidth: '600px',
+                                      padding: '16px',
+                                      overflow: 'hidden'
+                                    }}
+                                  >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                      <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600, color: '#1e293b' }}>
+                                        Riwayat Order: {customerNama}
+                                      </h4>
+                                      <button
+                                        onClick={() => setActiveDropdown(null)}
+                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
+                                      >
+                                        <XCircle size={16} />
+                                      </button>
+                                    </div>
+
+                                    <div style={{ overflowX: 'auto' }}>
+                                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                                        <thead>
+                                          <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                                            <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Order ID</th>
+                                            <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Tanggal</th>
+                                            <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Produk</th>
+                                            <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Status</th>
+                                            <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: '#475569' }}>Total</th>
+                                            <th style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 600, color: '#475569' }}>Action</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {group.map((innerOrder) => {
+                                            const innerStatusRaw = innerOrder.status_order ?? innerOrder.status;
+                                            const innerStatusInfo = STATUS_ORDER_MAP[innerStatusRaw?.toString()] || { label: "-", class: "default" };
+
+                                            return (
+                                              <tr key={innerOrder.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                                <td style={{ padding: '8px 12px', color: '#0f172a', fontWeight: 500 }}>#{innerOrder.id}</td>
+                                                <td style={{ padding: '8px 12px', color: '#64748b' }}>{formatDateOnly(innerOrder.tanggal || innerOrder.create_at)}</td>
+                                                <td style={{ padding: '8px 12px', color: '#334155' }}>{innerOrder.produk_rel?.nama || '-'}</td>
+                                                <td style={{ padding: '8px 12px' }}>
+                                                  <span className={`status-badge status-${innerStatusInfo.class}`} style={{ fontSize: '0.7rem', padding: '2px 6px' }}>
+                                                    {innerStatusInfo.label}
+                                                  </span>
+                                                </td>
+                                                <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: '#0f172a' }}>
+                                                  Rp {Number(innerOrder.total_harga || 0).toLocaleString("id-ID")}
+                                                </td>
+                                                <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                                                  <button
+                                                    onClick={() => {
+                                                      setActiveDropdown(null);
+                                                      handleEdit(innerOrder);
+                                                    }}
+                                                    style={{
+                                                      background: 'white',
+                                                      border: '1px solid #cbd5e1',
+                                                      borderRadius: '6px',
+                                                      padding: '4px 8px',
+                                                      fontSize: '0.75rem',
+                                                      fontWeight: 500,
+                                                      color: '#334155',
+                                                      cursor: 'pointer',
+                                                      transition: 'all 0.1s'
+                                                    }}
+                                                    className="hover:bg-gray-50 hover:border-blue-500 hover:text-blue-600"
+                                                  >
+                                                    Detail
+                                                  </button>
+                                                </td>
+                                              </tr>
+                                            );
+                                          })}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </td>
                         </tr>
