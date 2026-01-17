@@ -656,7 +656,7 @@ export default function Dashboard() {
                           11: "Reminder Trainer",
                         };
 
-                        let label = typeMap[typeId] || log.type_label;
+                        let label = log.follup_rel?.nama || log.nama || typeMap[typeId] || log.type_label;
 
                         // Fallback handling
                         if (!label || label === "-") {
