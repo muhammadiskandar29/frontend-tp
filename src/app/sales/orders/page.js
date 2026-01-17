@@ -117,8 +117,9 @@ const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran, prod
       if (Number(l.follup_rel.produk_id) !== Number(productId)) return false;
 
       // 2️⃣ follow up ke-berapa (1–4)
-      // mapping dari follup_rel.id / l.follup
-      if (Number(l.follup) !== Number(followUpNumber)) return false;
+      // mapping dari follup_rel.type (bukan ID)
+      const typeStr = String(l.follup_rel.type || "").trim();
+      if (typeStr !== String(followUpNumber) && typeStr !== `Follow Up ${followUpNumber}`) return false;
 
       // 3️⃣ nomor WA harus sama
       return String(l.customer_rel?.wa) === String(customerWa);
