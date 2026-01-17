@@ -5,19 +5,20 @@ import "@/styles/sales/orders.css";
 
 const CHANNEL_OPTIONS = [
     { label: "WhatsApp", value: "WhatsApp" },
-    { label: "Telepon", value: "Phone" },
+    { label: "Telepon", value: "Telepon" },
     { label: "Email", value: "Email" },
-    { label: "Visit", value: "Visit" },
+    { label: "Meeting", value: "Meeting" },
+    { label: "Lainnya", value: "Lainnya" },
 ];
 
 const TYPE_OPTIONS = [
-    { label: "Follow Up 1", value: "1" },
-    { label: "Follow Up 2", value: "2" },
-    { label: "Follow Up 3", value: "3" },
-    { label: "Follow Up 4", value: "4" },
-    { label: "Closing / Selesai", value: "7" },
-    { label: "Upselling", value: "8" },
-    { label: "Reminder Trainer", value: "11" },
+    { label: "WhatsApp Out", value: "WhatsApp Out" },
+    { label: "Call Out", value: "Call Out" },
+    { label: "Send Price", value: "Send Price" },
+    { label: "Interested", value: "Interested" },
+    { label: "Thinking", value: "Thinking" },
+    { label: "Closed Won", value: "Closed Won" },
+    { label: "Closed Lost", value: "Closed Lost" },
 ];
 
 export default function AddFollowUpModal({ isOpen, onClose, onSuccess, orderId }) {

@@ -1261,13 +1261,13 @@ export default function DaftarPesanan() {
                   <th>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <span>STATUS</span>
-                      <span>PEMBAYARAN</span>
+                      <span>ORDER</span>
                     </div>
                   </th>
                   <th>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <span>STATUS</span>
-                      <span>ORDER</span>
+                      <span>PEMBAYARAN</span>
                     </div>
                   </th>
                   <th>
@@ -1372,17 +1372,17 @@ export default function DaftarPesanan() {
                           </div>
                         </td>
 
-                        {/* Status Pembayaran */}
-                        <td>
-                          <span className={`status-badge payment-${statusPembayaranInfo.class}`}>
-                            {statusPembayaranInfo.label}
-                          </span>
-                        </td>
-
                         {/* Status Order */}
                         <td>
                           <span className={`status-badge status-${statusOrderInfo.class}`}>
                             {statusOrderInfo.label}
+                          </span>
+                        </td>
+
+                        {/* Status Pembayaran */}
+                        <td>
+                          <span className={`status-badge payment-${statusPembayaranInfo.class}`}>
+                            {statusPembayaranInfo.label}
                           </span>
                         </td>
 

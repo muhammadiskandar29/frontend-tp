@@ -1528,7 +1528,8 @@ export default function DaftarPesanan() {
                                             <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Tanggal</th>
                                             <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Produk</th>
                                             {/* Status Pembayaran Removed */}
-                                            <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Status Order</th>
+                                            {/* Status Order Removed */}
+                                            <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Status Pembayaran</th>
                                             <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Follow Up Text</th>
                                             <th style={{ padding: '10px 16px', textAlign: 'center', fontWeight: 600, color: '#475569' }}>Bukti Pembayaran</th>
                                             <th style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 600, color: '#475569' }}>Total</th>
@@ -1575,12 +1576,14 @@ export default function DaftarPesanan() {
 
                                                 {/* Status Pembayaran Removed */}
 
-                                                {/* Status Order */}
+                                                {/* Status Pembayaran */}
                                                 <td style={{ padding: '12px 16px' }}>
-                                                  <span className={`status-badge status-${innerStatusInfo.class}`} style={{ fontSize: '0.7rem', padding: '2px 8px' }}>
-                                                    {innerStatusInfo.label}
+                                                  <span className={`status-badge payment-${innerStatusPembayaranInfo.class}`} style={{ fontSize: '0.7rem', padding: '2px 8px' }}>
+                                                    {innerStatusPembayaranInfo.label}
                                                   </span>
                                                 </td>
+
+                                                {/* Status Order Removed */}
 
                                                 {/* Follow Up Text */}
                                                 <td style={{ padding: '12px 16px' }}>
@@ -1615,7 +1618,7 @@ export default function DaftarPesanan() {
 
                                                 {/* Aksi Column */}
                                                 <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                                                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'stretch' }}>
                                                     <button
                                                       onClick={() => {
                                                         setSelectedOrderForFollowUp(innerOrder);
@@ -1629,7 +1632,8 @@ export default function DaftarPesanan() {
                                                         background: '#fb8c00', // Orange-ish matching UI style
                                                         border: 'none',
                                                         borderRadius: '4px',
-                                                        cursor: 'pointer'
+                                                        cursor: 'pointer',
+                                                        width: '100%'
                                                       }}
                                                     >
                                                       Followup
@@ -1644,7 +1648,8 @@ export default function DaftarPesanan() {
                                                         background: '#3b82f6', // Blue
                                                         border: 'none',
                                                         borderRadius: '4px',
-                                                        cursor: 'pointer'
+                                                        cursor: 'pointer',
+                                                        width: '100%'
                                                       }}
                                                     >
                                                       Detail
