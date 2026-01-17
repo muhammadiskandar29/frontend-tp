@@ -634,10 +634,10 @@ export default function Dashboard() {
               <div className="table-wrapper" style={{ margin: 0 }}>
                 <table className="data-table" style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0' }}>
                   <thead>
-                    <tr style={{ background: '#f97316' }}>
-                      <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontSize: '0.8rem', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase', borderTopLeftRadius: '8px', borderBottomLeftRadius: '8px' }}>CUSTOMER</th>
-                      <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontSize: '0.8rem', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase' }}>FOLLOW UP</th>
-                      <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontSize: '0.8rem', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase', borderTopRightRadius: '8px', borderBottomRightRadius: '8px' }}>TANGGAL</th>
+                    <tr>
+                      <th style={{ background: '#f97316', padding: '0.875rem 1rem', textAlign: 'left', fontSize: '0.8rem', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase', borderTopLeftRadius: '8px', borderBottomLeftRadius: '8px' }}>CUSTOMER</th>
+                      <th style={{ background: '#f97316', padding: '0.875rem 1rem', textAlign: 'left', fontSize: '0.8rem', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase' }}>FOLLOW UP</th>
+                      <th style={{ background: '#f97316', padding: '0.875rem 1rem', textAlign: 'left', fontSize: '0.8rem', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase', borderTopRightRadius: '8px', borderBottomRightRadius: '8px' }}>TANGGAL</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -673,11 +673,11 @@ export default function Dashboard() {
               <div className="table-wrapper" style={{ margin: 0 }}>
                 <table className="data-table" style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0' }}>
                   <thead>
-                    <tr style={{ background: '#f97316' }}>
-                      <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontSize: '0.8rem', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase', borderTopLeftRadius: '8px', borderBottomLeftRadius: '8px' }}>CUSTOMER</th>
-                      <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontSize: '0.8rem', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase' }}>PRODUK</th>
-                      <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontSize: '0.8rem', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase' }}>TOTAL</th>
-                      <th style={{ padding: '0.875rem 1rem', textAlign: 'left', fontSize: '0.8rem', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase', borderTopRightRadius: '8px', borderBottomRightRadius: '8px' }}>TANGGAL</th>
+                    <tr>
+                      <th style={{ background: '#f97316', padding: '0.875rem 1rem', textAlign: 'left', fontSize: '0.8rem', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase', borderTopLeftRadius: '8px', borderBottomLeftRadius: '8px' }}>CUSTOMER</th>
+                      <th style={{ background: '#f97316', padding: '0.875rem 1rem', textAlign: 'left', fontSize: '0.8rem', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase' }}>PRODUK</th>
+                      <th style={{ background: '#f97316', padding: '0.875rem 1rem', textAlign: 'left', fontSize: '0.8rem', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase' }}>TOTAL</th>
+                      <th style={{ background: '#f97316', padding: '0.875rem 1rem', textAlign: 'left', fontSize: '0.8rem', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase', borderTopRightRadius: '8px', borderBottomRightRadius: '8px' }}>TANGGAL</th>
                     </tr>
                   </thead>
                   <tbody>

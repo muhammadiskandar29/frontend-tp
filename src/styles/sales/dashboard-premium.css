@@ -656,7 +656,8 @@ body {
   text-align: left;
   padding: var(--space-3) var(--space-2);
   color: #fff;
-  background-color: #1e293b;
+  background-color: #f97316;
+  /* Update to Orange */
   font-weight: var(--font-semibold);
   font-size: 0.75rem;
   text-transform: uppercase;
@@ -665,10 +666,12 @@ body {
 
 .data-table th:first-child {
   border-top-left-radius: var(--radius-sm);
+  border-bottom-left-radius: var(--radius-sm);
 }
 
 .data-table th:last-child {
   border-top-right-radius: var(--radius-sm);
+  border-bottom-right-radius: var(--radius-sm);
 }
 
 .data-table td {
