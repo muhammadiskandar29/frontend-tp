@@ -1309,6 +1309,7 @@ export default function DaftarPesanan() {
 
                     return displayGroups.map((group, i) => {
                       const order = group[0]; // Display the first/latest order in the group
+                      const custId = order.customer_rel?.id || order.customer || 'unknown';
                       const otherCount = group.length - 1;
 
                       // Handle produk name - dari produk_rel
