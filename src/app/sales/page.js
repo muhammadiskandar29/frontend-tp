@@ -705,14 +705,23 @@ export default function Dashboard() {
                   <tbody>
                     {recentOrders.length > 0 ? (
                       recentOrders.map((order, idx) => {
-                        const productName = Array.isArray(order.items) && order.items[0]
-                          ? order.items[0].nama_produk || order.items[0].nama
-                          : (order.produk_nama || "-");
+                        // Priority: produk_rel.nama -> existing logic
+                        const productName = order.produk_rel?.nama ||
+                          (Array.isArray(order.items) && order.items[0]
+                            ? order.items[0].nama_produk || order.items[0].nama
+                            : (order.produk_nama || "-"));
+
+                        // Priority: customer_rel.nama -> existing logic
+                        const customerName = order.customer_rel?.nama ||
+                          order.nama_customer ||
+                          order.customer?.nama ||
+                          order.nama ||
+                          "-";
 
                         return (
                           <tr key={idx}>
                             <td style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #f1f5f9', fontWeight: 500, color: '#334155' }}>
-                              {order.nama_customer || order.customer?.nama || order.nama || "-"}
+                              {customerName}
                             </td>
                             <td style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #f1f5f9', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#334155' }}>
                               {productName}
