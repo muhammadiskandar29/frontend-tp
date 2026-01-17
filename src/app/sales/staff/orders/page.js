@@ -1286,158 +1286,181 @@ export default function DaftarPesanan() {
               </thead>
               <tbody>
                 {orders.length > 0 ? (
-                  orders.map((order, i) => {
-                    // Handle produk name - dari produk_rel
-                    const produkNama = order.produk_rel?.nama || "-";
+                  (() => {
+                    // Group orders by customer ID to show unique customers only
+                    const groupedOrders = orders.reduce((acc, order) => {
+                      const custId = order.customer_rel?.id || order.customer || 'unknown';
+                      if (!acc[custId]) acc[custId] = [];
+                      acc[custId].push(order);
+                      return acc;
+                    }, {});
 
-                    // Handle customer name - dari customer_rel
-                    const customerNama = order.customer_rel?.nama || "-";
-
-                    // Get Status Order
-                    const statusOrderRaw = order.status_order ?? order.status; // fallback ke order.status jika status_order kosong
-                    const statusOrderValue = statusOrderRaw !== undefined && statusOrderRaw !== null
-                      ? statusOrderRaw.toString()
-                      : "";
-                    const statusOrderInfo = STATUS_ORDER_MAP[statusOrderValue] || { label: "-", class: "default" };
-
-                    // Get Status Pembayaran
-                    let statusPembayaranValue = order.status_pembayaran;
-                    if (statusPembayaranValue === null || statusPembayaranValue === undefined) {
-                      statusPembayaranValue = 0;
-                    } else {
-                      statusPembayaranValue = Number(statusPembayaranValue);
-                      if (isNaN(statusPembayaranValue)) {
-                        statusPembayaranValue = 0;
+                    // Convert to array of groups based on the original order (to maintain sort)
+                    const displayGroups = [];
+                    const seenCustIds = new Set();
+                    orders.forEach(order => {
+                      const custId = order.customer_rel?.id || order.customer || 'unknown';
+                      if (!seenCustIds.has(custId)) {
+                        seenCustIds.add(custId);
+                        displayGroups.push(groupedOrders[custId]);
                       }
-                    }
-                    const statusPembayaranInfo = STATUS_PEMBAYARAN_MAP[statusPembayaranValue] || STATUS_PEMBAYARAN_MAP[0];
+                    });
 
-                    // Get bukti pembayaran
-                    const buktiPembayaranPath = getBuktiPembayaran(order);
-                    const buktiUrl = buildImageUrl(buktiPembayaranPath);
+                    return displayGroups.map((group, i) => {
+                      const order = group[0]; // Display the first/latest order in the group
+                      const otherCount = group.length - 1;
 
-                    return (
-                      <tr key={order.id || `${order.id}-${i}`}>
-                        {/* STICKY LEFT 1: Customer */}
-                        <td className="sticky-left-1">
-                          <div className="customer-cell" style={{ display: "flex", flexDirection: "column" }}>
-                            <span className="customer-name" style={{ fontSize: "0.875rem" }}>{customerNama}</span>
-                            <span className="customer-detail">
-                              {order.customer_rel?.wa ? `+${order.customer_rel.wa}` : "-"}
+                      // Handle produk name - dari produk_rel
+                      const produkNama = order.produk_rel?.nama || "-";
+
+                      // Handle customer name - dari customer_rel
+                      const customerNama = order.customer_rel?.nama || "-";
+
+                      // Get Status Order
+                      const statusOrderRaw = order.status_order ?? order.status; // fallback ke order.status jika status_order kosong
+                      const statusOrderValue = statusOrderRaw !== undefined && statusOrderRaw !== null
+                        ? statusOrderRaw.toString()
+                        : "";
+                      const statusOrderInfo = STATUS_ORDER_MAP[statusOrderValue] || { label: "-", class: "default" };
+
+                      // Get Status Pembayaran
+                      let statusPembayaranValue = order.status_pembayaran;
+                      if (statusPembayaranValue === null || statusPembayaranValue === undefined) {
+                        statusPembayaranValue = 0;
+                      } else {
+                        statusPembayaranValue = Number(statusPembayaranValue);
+                        if (isNaN(statusPembayaranValue)) {
+                          statusPembayaranValue = 0;
+                        }
+                      }
+                      const statusPembayaranInfo = STATUS_PEMBAYARAN_MAP[statusPembayaranValue] || STATUS_PEMBAYARAN_MAP[0];
+
+                      // Get bukti pembayaran
+                      const buktiPembayaranPath = getBuktiPembayaran(order);
+                      const buktiUrl = buildImageUrl(buktiPembayaranPath);
+
+                      return (
+                        <tr key={order.id || `${order.id}-${i}`}>
+                          {/* STICKY LEFT 1: Customer */}
+                          <td className="sticky-left-1">
+                            <div className="customer-cell" style={{ display: "flex", flexDirection: "column" }}>
+                              <span className="customer-name" style={{ fontSize: "0.875rem" }}>{customerNama}</span>
+                              <span className="customer-detail">
+                                {order.customer_rel?.wa ? `+${order.customer_rel.wa}` : "-"}
+                              </span>
+                              <span className="customer-detail" style={{ fontSize: "0.75rem", marginTop: "2px", color: "#64748b" }}>
+                                Email: {order.customer_rel?.email || "-"}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* Product - Widened */}
+                          {/* <td className="col-product">
+                            <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                              <span style={{ fontSize: "0.875rem", color: "#111827" }}>{produkNama}</span>
+                            </div>
+                          </td> */}
+
+                          {/* Status Pembayaran */}
+                          {/* <td>
+                            <span className={`status-badge payment-${statusPembayaranInfo.class}`}>
+                              {statusPembayaranInfo.label}
                             </span>
-                            <span className="customer-detail" style={{ fontSize: "0.75rem", marginTop: "2px", color: "#64748b" }}>
-                              Sales: {order.customer_rel?.sales_rel?.nama || order.customer_rel?.sales_nama || "-"}
+                          </td> */}
+
+                          {/* Status Order */}
+                          {/* <td>
+                            <span className={`status-badge status-${statusOrderInfo.class}`}>
+                              {statusOrderInfo.label}
                             </span>
-                          </div>
-                        </td>
+                          </td> */}
 
-                        {/* Product - Widened */}
-                        {/* <td className="col-product">
-                          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                            <span style={{ fontSize: "0.875rem", color: "#111827" }}>{produkNama}</span>
-                          </div>
-                        </td> */}
-
-                        {/* Status Pembayaran */}
-                        {/* <td>
-                          <span className={`status-badge payment-${statusPembayaranInfo.class}`}>
-                            {statusPembayaranInfo.label}
-                          </span>
-                        </td> */}
-
-                        {/* Status Order */}
-                        {/* <td>
-                          <span className={`status-badge status-${statusOrderInfo.class}`}>
-                            {statusOrderInfo.label}
-                          </span>
-                        </td> */}
-
-                        {/* Follow Up Text */}
-                        {/* <td>
-                          <WABubbleChat
-                            customerId={order.customer_rel?.id || order.customer}
-                            orderId={order.id}
-                            orderStatus={statusOrderValue}
-                            statusPembayaran={statusPembayaranValue}
-                          />
-                        </td> */}
-
-                        {/* Bukti Pembayaran */}
-                        {/* <td style={{ textAlign: 'center' }}>
-                          {buktiUrl ? (
-                            <ImageIcon
-                              size={20}
-                              className="proof-icon"
-                              style={{ cursor: "pointer", margin: "0 auto" }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenImageModal(buktiUrl);
-                              }}
+                          {/* Follow Up Text */}
+                          {/* <td>
+                            <WABubbleChat
+                              customerId={order.customer_rel?.id || order.customer}
+                              orderId={order.id}
+                              orderStatus={statusOrderValue}
+                              statusPembayaran={statusPembayaranValue}
                             />
-                          ) : (
-                            <span className="no-data">-</span>
-                          )}
-                        </td> */}
+                          </td> */}
 
-                        {/* Gross Revenue */}
-                        {/* <td className="revenue-text">
-                          Rp {Number(order.total_harga || 0).toLocaleString("id-ID")}
-                        </td> */}
+                          {/* Bukti Pembayaran */}
+                          {/* <td style={{ textAlign: 'center' }}>
+                            {buktiUrl ? (
+                              <ImageIcon
+                                size={20}
+                                className="proof-icon"
+                                style={{ cursor: "pointer", margin: "0 auto" }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenImageModal(buktiUrl);
+                                }}
+                              />
+                            ) : (
+                              <span className="no-data">-</span>
+                            )}
+                          </td> */}
 
-                        {/* Sales */}
-                        {/* <td>
-                          <span style={{ fontSize: "0.875rem", color: "#111827" }}>
-                            {order.customer_rel?.sales_rel?.nama || order.customer_rel?.sales_nama || "-"}
-                          </span>
-                        </td> */}
+                          {/* Gross Revenue */}
+                          {/* <td className="revenue-text">
+                            Rp {Number(order.total_harga || 0).toLocaleString("id-ID")}
+                          </td> */}
 
-                        {/* Action Column - NON STICKY */}
-                        <td>
-                          <div className="action-group">
-                            {/* WA */}
-                            <button className="action-btn-icon" style={{ color: '#25D366' }} title="WhatsApp">
-                              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                              </svg>
-                            </button>
+                          {/* Sales */}
+                          {/* <td>
+                            <span style={{ fontSize: "0.875rem", color: "#111827" }}>
+                              {order.customer_rel?.sales_rel?.nama || order.customer_rel?.sales_nama || "-"}
+                            </span>
+                          </td> */}
 
-                            {/* Email */}
-                            <button className="action-btn-icon" style={{ color: '#3b82f6' }} title="Email">
-                              <Mail size={16} />
-                            </button>
+                          {/* Action Column - NON STICKY */}
+                          <td>
+                            <div className="action-group">
+                              {/* WA */}
+                              <button className="action-btn-icon" style={{ color: '#25D366' }} title="WhatsApp">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                                </svg>
+                              </button>
 
-                            {/* Phone */}
-                            <button className="action-btn-icon" style={{ color: '#10b981' }} title="Telepon">
-                              <Phone size={16} />
-                            </button>
+                              {/* Email */}
+                              <button className="action-btn-icon" style={{ color: '#3b82f6' }} title="Email">
+                                <Mail size={16} />
+                              </button>
 
-                            {/* Plus */}
-                            <button className="action-btn-icon" style={{ color: '#6b7280' }} title="Tambah">
-                              <Plus size={16} />
-                            </button>
+                              {/* Phone */}
+                              <button className="action-btn-icon" style={{ color: '#10b981' }} title="Telepon">
+                                <Phone size={16} />
+                              </button>
 
-                            {/* Dropdown */}
-                            <button
-                              className="action-btn-dropdown"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEdit(order);
-                              }}
-                            >
-                              <span>1 Order Lain</span>
-                              <ChevronDown size={14} strokeWidth={3} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan={2} className="orders-empty">
-                      {orders.length ? "Tidak ada hasil pencarian." : "Loading data..."}
-                    </td>
-                  </tr>
+                              {/* Plus */}
+                              <button className="action-btn-icon" style={{ color: '#6b7280' }} title="Tambah">
+                                <Plus size={16} />
+                              </button>
+
+                              {/* Dropdown */}
+                              <button
+                                className="action-btn-dropdown"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEdit(order);
+                                }}
+                              >
+                                <span>{otherCount > 0 ? `Lihat ${otherCount} Order Lain` : "Lihat Order"}</span>
+                                <ChevronDown size={14} strokeWidth={3} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    });
+                  })()
+                ) : (<tr>
+                  <td colSpan={2} className="orders-empty">
+                    {orders.length ? "Tidak ada hasil pencarian." : "Loading data..."}
+                  </td>
+                </tr>
                 )}
               </tbody>
             </table>
