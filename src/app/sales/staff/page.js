@@ -490,8 +490,8 @@ export default function Dashboard() {
                               <span style={{ color: 'var(--dash-text-dark)', fontWeight: 600, fontSize: '0.9rem' }}>{customerNama}</span>
                             </div>
                           </td>
-                          <td style={{ padding: '0.75rem', fontSize: '0.85rem', color: '#4b5563' }} title={produkNama}>
-                            {produkNama.length > 13 ? produkNama.substring(0, 13) + "..." : produkNama}
+                          <td style={{ padding: '0.75rem', fontSize: '0.85rem', color: '#4b5563' }}>
+                            {produkNama}
                           </td>
                           <td style={{ fontFamily: 'monospace', fontWeight: 600, textAlign: "left", padding: '0.75rem', fontSize: '0.9rem' }}>
                             {formatCurrency(order.total_harga)}
