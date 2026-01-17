@@ -355,21 +355,89 @@ export default function Dashboard() {
                           <p className="staff-card__role">
                             {staff.sales_level === "2" ? "Sales Representative" : "Sales Staff"}
                           </p>
+                          {staff.sales_email && (
+                            <p className="staff-card__email" style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                              {staff.sales_email}
+                            </p>
+                          )}
                         </div>
                       </div>
 
                       <div className="staff-card__stats">
+                        {/* Customer Stats */}
                         <div className="staff-card__stat-row">
                           <div className="staff-card__stat">
-                            <p className="staff-card__stat-label">Total Leads</p>
+                            <p className="staff-card__stat-label">Total Customers</p>
                             <p className="staff-card__stat-value">{staff.customers?.total ?? 0}</p>
                           </div>
                           <div className="staff-card__stat">
-                            <p className="staff-card__stat-label">Total Closing</p>
-                            <p className="staff-card__stat-value">{staff.orders?.total ?? 0}</p>
+                            <p className="staff-card__stat-label">New (This Period)</p>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <p className="staff-card__stat-value">{staff.customers?.new_this_period ?? 0}</p>
+                              {staff.customers?.growth !== 0 && (
+                                <span style={{
+                                  fontSize: '0.75rem',
+                                  color: staff.customers?.growth > 0 ? '#10b981' : '#ef4444',
+                                  fontWeight: 500
+                                }}>
+                                  {staff.customers?.growth_formatted}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
 
+                        {/* Order Stats */}
+                        <div className="staff-card__stat-row">
+                          <div className="staff-card__stat">
+                            <p className="staff-card__stat-label">Total Orders</p>
+                            <p className="staff-card__stat-value">{staff.orders?.total ?? 0}</p>
+                          </div>
+                          <div className="staff-card__stat">
+                            <p className="staff-card__stat-label">Orders (This Period)</p>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <p className="staff-card__stat-value">{staff.orders?.this_period ?? 0}</p>
+                              {staff.orders?.growth !== 0 && (
+                                <span style={{
+                                  fontSize: '0.75rem',
+                                  color: staff.orders?.growth > 0 ? '#10b981' : '#ef4444',
+                                  fontWeight: 500
+                                }}>
+                                  {staff.orders?.growth_formatted}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Revenue Stats */}
+                        <div className="staff-card__stat-row">
+                          <div className="staff-card__stat">
+                            <p className="staff-card__stat-label">Total Revenue</p>
+                            <p className="staff-card__stat-value" style={{ fontSize: '0.9rem' }}>
+                              {staff.revenue?.total_formatted ?? "Rp 0"}
+                            </p>
+                          </div>
+                          <div className="staff-card__stat">
+                            <p className="staff-card__stat-label">Revenue (This Period)</p>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                              <p className="staff-card__stat-value" style={{ fontSize: '0.9rem' }}>
+                                {staff.revenue?.this_period_formatted ?? "Rp 0"}
+                              </p>
+                              {staff.revenue?.growth !== 0 && (
+                                <span style={{
+                                  fontSize: '0.75rem',
+                                  color: staff.revenue?.growth > 0 ? '#10b981' : '#ef4444',
+                                  fontWeight: 500
+                                }}>
+                                  {staff.revenue?.growth_formatted} vs prev
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Efficiency Stats */}
                         <div className="staff-card__stat-row">
                           <div className="staff-card__stat">
                             <p className="staff-card__stat-label">Conversion Rate</p>
@@ -378,45 +446,10 @@ export default function Dashboard() {
                             </p>
                           </div>
                           <div className="staff-card__stat">
-                            <p className="staff-card__stat-label">Total Revenue</p>
-                            <p className="staff-card__stat-value">
-                              {staff.revenue?.total_formatted ?? "Rp 0"}
+                            <p className="staff-card__stat-label">Avg Order Value</p>
+                            <p className="staff-card__stat-value" style={{ fontSize: '0.9rem' }}>
+                              {staff.average_order_value?.this_period_formatted ?? "Rp 0"}
                             </p>
-                          </div>
-                        </div>
-
-                        <div className="staff-card__stat-row">
-                          <div className="staff-card__stat">
-                            <p className="staff-card__stat-label">Average Deal Size</p>
-                            <p className="staff-card__stat-value">
-                              {staff.average_order_value?.total_formatted ?? "Rp 0"}
-                            </p>
-                          </div>
-                          <div className="staff-card__stat">
-                            <p className="staff-card__stat-label">Response Time</p>
-                            <p className="staff-card__stat-value">-</p>
-                          </div>
-                        </div>
-
-                        <div className="staff-card__stat-row">
-                          <div className="staff-card__stat">
-                            <p className="staff-card__stat-label">Active Deals</p>
-                            <p className="staff-card__stat-value">-</p>
-                          </div>
-                          <div className="staff-card__stat">
-                            <p className="staff-card__stat-label">Closed This Month</p>
-                            <p className="staff-card__stat-value">{staff.orders?.this_period ?? 0}</p>
-                          </div>
-                        </div>
-
-                        <div className="staff-card__stat-row">
-                          <div className="staff-card__stat">
-                            <p className="staff-card__stat-label">Target Achievement</p>
-                            <p className="staff-card__stat-value">-</p>
-                          </div>
-                          <div className="staff-card__stat">
-                            <p className="staff-card__stat-label">Customer Satisfaction</p>
-                            <p className="staff-card__stat-value">-</p>
                           </div>
                         </div>
                       </div>
