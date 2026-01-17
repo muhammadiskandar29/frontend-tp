@@ -69,7 +69,7 @@ const ORDERS_COLUMNS = [
 
 
 // Helper component untuk WA Bubble Chat dengan deteksi status
-const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran }) => {
+const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran, productId }) => {
   const [followupLogs, setFollowupLogs] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -113,6 +113,15 @@ const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran }) =>
     return followupLogs.some(l => {
       // Pastikan status sukses (1)
       if (String(l.status) !== "1") return false;
+
+      // 🔹 MATCH PRODUCT ID (Crucial Point)
+      // Jika log memiliki produk_id, ia HARUS COCOK dengan productId dari row ini.
+      // Ini mencegah log follow up Produk A muncul di row Produk B untuk customer yang sama.
+      if (l.follup_rel && l.follup_rel.produk_id) {
+        if (Number(l.follup_rel.produk_id) !== Number(productId)) {
+          return false;
+        }
+      }
 
       // Cek match berdasarkan follup_rel.type (untuk Follow Up 1-4)
       if (l.follup_rel && l.follup_rel.type) {
@@ -1402,6 +1411,7 @@ export default function DaftarPesanan() {
                             orderId={order.id}
                             orderStatus={statusOrderValue}
                             statusPembayaran={statusPembayaranValue}
+                            productId={order.produk_rel?.id || order.produk_id}
                           />
                         </td>
 
