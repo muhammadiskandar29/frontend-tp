@@ -1342,43 +1342,44 @@ export default function DaftarPesanan() {
                       const buktiUrl = buildImageUrl(buktiPembayaranPath);
 
                       return (
-                        <tr key={order.id || `${order.id}-${i}`}>
-                          {/* STICKY LEFT 1: Customer */}
-                          <td className="sticky-left-1">
-                            <div className="customer-cell" style={{ display: "flex", flexDirection: "column" }}>
-                              <span className="customer-name" style={{ fontSize: "0.875rem" }}>{customerNama}</span>
-                              <span className="customer-detail">
-                                {order.customer_rel?.wa ? `+${order.customer_rel.wa}` : "-"}
-                              </span>
-                              <span className="customer-detail" style={{ fontSize: "0.75rem", marginTop: "2px", color: "#64748b" }}>
-                                Email: {order.customer_rel?.email || "-"}
-                              </span>
-                            </div>
-                          </td>
+                        <React.Fragment key={order.id || `${order.id}-${i}`}>
+                          <tr key={order.id || `${order.id}-${i}`}>
+                            {/* STICKY LEFT 1: Customer */}
+                            <td className="sticky-left-1">
+                              <div className="customer-cell" style={{ display: "flex", flexDirection: "column" }}>
+                                <span className="customer-name" style={{ fontSize: "0.875rem" }}>{customerNama}</span>
+                                <span className="customer-detail">
+                                  {order.customer_rel?.wa ? `+${order.customer_rel.wa}` : "-"}
+                                </span>
+                                <span className="customer-detail" style={{ fontSize: "0.75rem", marginTop: "2px", color: "#64748b" }}>
+                                  Email: {order.customer_rel?.email || "-"}
+                                </span>
+                              </div>
+                            </td>
 
-                          {/* Product - Widened */}
-                          {/* <td className="col-product">
+                            {/* Product - Widened */}
+                            {/* <td className="col-product">
                             <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
                               <span style={{ fontSize: "0.875rem", color: "#111827" }}>{produkNama}</span>
                             </div>
                           </td> */}
 
-                          {/* Status Pembayaran */}
-                          {/* <td>
+                            {/* Status Pembayaran */}
+                            {/* <td>
                             <span className={`status-badge payment-${statusPembayaranInfo.class}`}>
                               {statusPembayaranInfo.label}
                             </span>
                           </td> */}
 
-                          {/* Status Order */}
-                          {/* <td>
+                            {/* Status Order */}
+                            {/* <td>
                             <span className={`status-badge status-${statusOrderInfo.class}`}>
                               {statusOrderInfo.label}
                             </span>
                           </td> */}
 
-                          {/* Follow Up Text */}
-                          {/* <td>
+                            {/* Follow Up Text */}
+                            {/* <td>
                             <WABubbleChat
                               customerId={order.customer_rel?.id || order.customer}
                               orderId={order.id}
@@ -1387,8 +1388,8 @@ export default function DaftarPesanan() {
                             />
                           </td> */}
 
-                          {/* Bukti Pembayaran */}
-                          {/* <td style={{ textAlign: 'center' }}>
+                            {/* Bukti Pembayaran */}
+                            {/* <td style={{ textAlign: 'center' }}>
                             {buktiUrl ? (
                               <ImageIcon
                                 size={20}
@@ -1404,45 +1405,46 @@ export default function DaftarPesanan() {
                             )}
                           </td> */}
 
-                          {/* Gross Revenue */}
-                          {/* <td className="revenue-text">
+                            {/* Gross Revenue */}
+                            {/* <td className="revenue-text">
                             Rp {Number(order.total_harga || 0).toLocaleString("id-ID")}
                           </td> */}
 
-                          {/* Sales */}
-                          {/* <td>
+                            {/* Sales */}
+                            {/* <td>
                             <span style={{ fontSize: "0.875rem", color: "#111827" }}>
                               {order.customer_rel?.sales_rel?.nama || order.customer_rel?.sales_nama || "-"}
                             </span>
                           </td> */}
 
-                          {/* Action Column - NON STICKY */}
-                          <td>
-                            <div className="action-group">
-                              {/* WA */}
-                              <button className="action-btn-icon" style={{ color: '#25D366' }} title="WhatsApp">
-                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                                </svg>
-                              </button>
+                            {/* Action Column - NON STICKY */}
+                            <td>
+                              <div className="action-group">
+                                {/* WA */}
+                                <button className="action-btn-icon" style={{ color: '#25D366' }} title="WhatsApp">
+                                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                                  </svg>
+                                </button>
 
-                              {/* Email */}
-                              <button className="action-btn-icon" style={{ color: '#3b82f6' }} title="Email">
-                                <Mail size={16} />
-                              </button>
+                                {/* Email */}
+                                <button className="action-btn-icon" style={{ color: '#3b82f6' }} title="Email">
+                                  <Mail size={16} />
+                                </button>
 
-                              {/* Phone */}
-                              <button className="action-btn-icon" style={{ color: '#10b981' }} title="Telepon">
-                                <Phone size={16} />
-                              </button>
+                                {/* Phone */}
+                                <button className="action-btn-icon" style={{ color: '#10b981' }} title="Telepon">
+                                  <Phone size={16} />
+                                </button>
 
-                              {/* Plus */}
-                              <button className="action-btn-icon" style={{ color: '#6b7280' }} title="Tambah">
-                                <Plus size={16} />
-                              </button>
+                                {/* Plus */}
+                                {/* Plus */}
+                                <button className="action-btn-icon" style={{ color: '#6b7280' }} title="Tambah">
+                                  <Plus size={16} />
+                                </button>
+                              </div>
 
-                              {/* Dropdown */}
-                              {/* Dropdown Button */}
+                              {/* Dropdown Button (Toggle Row) */}
                               <div style={{ position: 'relative', marginLeft: 'auto' }}>
                                 <button
                                   className={`action-btn-dropdown ${activeDropdown === custId ? 'active' : ''}`}
@@ -1454,48 +1456,36 @@ export default function DaftarPesanan() {
                                   <span>{otherCount > 0 ? `Lihat ${otherCount} Order Lain` : "Lihat Order"}</span>
                                   <ChevronDown size={14} strokeWidth={3} className={`transition-transform ${activeDropdown === custId ? 'rotate-180' : ''}`} />
                                 </button>
-
-                                {/* DROPDOWN CONTENT - TABLE */}
-                                {activeDropdown === custId && (
-                                  <div
-                                    onClick={(e) => e.stopPropagation()}
-                                    style={{
-                                      position: 'absolute',
-                                      top: '100%',
-                                      right: 0,
-                                      marginTop: '8px',
-                                      background: 'white',
-                                      border: '1px solid #e2e8f0',
-                                      borderRadius: '12px',
-                                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-                                      zIndex: 50,
-                                      minWidth: '600px',
-                                      padding: '16px',
-                                      overflow: 'hidden'
-                                    }}
-                                  >
+                              </div>
+                            </td>
+                          </tr>
+                          {/* EXPANDED ROW FOR ORDER HISTORY */}
+                          {
+                            activeDropdown === custId && (
+                              <tr key={`expand-${custId}`} className="expanded-row">
+                                <td colSpan={2} style={{ padding: 0, borderTop: 'none' }}>
+                                  <div style={{
+                                    background: '#f8fafc',
+                                    padding: '16px',
+                                    borderBottom: '1px solid #e2e8f0',
+                                    boxShadow: 'inset 0 4px 6px -4px rgba(0, 0, 0, 0.1)'
+                                  }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                                       <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600, color: '#1e293b' }}>
                                         Riwayat Order: {customerNama}
                                       </h4>
-                                      <button
-                                        onClick={() => setActiveDropdown(null)}
-                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
-                                      >
-                                        <XCircle size={16} />
-                                      </button>
                                     </div>
 
-                                    <div style={{ overflowX: 'auto' }}>
+                                    <div style={{ overflowX: 'auto', background: 'white', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
                                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                                         <thead>
-                                          <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
-                                            <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Order ID</th>
-                                            <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Tanggal</th>
-                                            <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Produk</th>
-                                            <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Status</th>
-                                            <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: '#475569' }}>Total</th>
-                                            <th style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 600, color: '#475569' }}>Action</th>
+                                          <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f1f5f9' }}>
+                                            <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Order ID</th>
+                                            <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Tanggal</th>
+                                            <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Produk</th>
+                                            <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Status</th>
+                                            <th style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 600, color: '#475569' }}>Total</th>
+                                            <th style={{ padding: '10px 16px', textAlign: 'center', fontWeight: 600, color: '#475569' }}>Action</th>
                                           </tr>
                                         </thead>
                                         <tbody>
@@ -1505,28 +1495,27 @@ export default function DaftarPesanan() {
 
                                             return (
                                               <tr key={innerOrder.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                                <td style={{ padding: '8px 12px', color: '#0f172a', fontWeight: 500 }}>#{innerOrder.id}</td>
-                                                <td style={{ padding: '8px 12px', color: '#64748b' }}>{formatDateOnly(innerOrder.tanggal || innerOrder.create_at)}</td>
-                                                <td style={{ padding: '8px 12px', color: '#334155' }}>{innerOrder.produk_rel?.nama || '-'}</td>
-                                                <td style={{ padding: '8px 12px' }}>
-                                                  <span className={`status-badge status-${innerStatusInfo.class}`} style={{ fontSize: '0.7rem', padding: '2px 6px' }}>
+                                                <td style={{ padding: '12px 16px', color: '#0f172a', fontWeight: 500 }}>#{innerOrder.id}</td>
+                                                <td style={{ padding: '12px 16px', color: '#64748b' }}>{formatDateOnly(innerOrder.tanggal || innerOrder.create_at)}</td>
+                                                <td style={{ padding: '12px 16px', color: '#334155' }}>{innerOrder.produk_rel?.nama || '-'}</td>
+                                                <td style={{ padding: '12px 16px' }}>
+                                                  <span className={`status-badge status-${innerStatusInfo.class}`} style={{ fontSize: '0.7rem', padding: '2px 8px' }}>
                                                     {innerStatusInfo.label}
                                                   </span>
                                                 </td>
-                                                <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: '#0f172a' }}>
+                                                <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 600, color: '#0f172a' }}>
                                                   Rp {Number(innerOrder.total_harga || 0).toLocaleString("id-ID")}
                                                 </td>
-                                                <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                                                <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                                                   <button
                                                     onClick={() => {
-                                                      setActiveDropdown(null);
                                                       handleEdit(innerOrder);
                                                     }}
                                                     style={{
                                                       background: 'white',
                                                       border: '1px solid #cbd5e1',
                                                       borderRadius: '6px',
-                                                      padding: '4px 8px',
+                                                      padding: '6px 12px',
                                                       fontSize: '0.75rem',
                                                       fontWeight: 500,
                                                       color: '#334155',
@@ -1545,11 +1534,11 @@ export default function DaftarPesanan() {
                                       </table>
                                     </div>
                                   </div>
-                                )}
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
+                                </td>
+                              </tr>
+                            )
+                          }
+                        </React.Fragment>
                       );
                     });
                   })()
@@ -1641,48 +1630,54 @@ export default function DaftarPesanan() {
           </div>
         </section>
 
-      </div>
+      </div >
 
       {/* MODALS - Render di luar main content untuk memastikan z-index bekerja */}
-      {showAdd && (
-        <AddOrders
-          onClose={() => setShowAdd(false)}
-          onAdd={async () => {
-            setShowAdd(false);
-            // Refresh data and show success message
-            await requestRefresh("Pesanan baru berhasil ditambahkan!");
-          }}
-        />
-      )}
+      {
+        showAdd && (
+          <AddOrders
+            onClose={() => setShowAdd(false)}
+            onAdd={async () => {
+              setShowAdd(false);
+              // Refresh data and show success message
+              await requestRefresh("Pesanan baru berhasil ditambahkan!");
+            }}
+          />
+        )
+      }
 
-      {showView && selectedOrder && (
-        <ViewOrders
-          order={{
-            ...selectedOrder,
-            customer: selectedOrder.customer_rel?.nama || "-",
-          }}
-          onClose={() => {
-            setShowView(false);
-            setSelectedOrder(null);
-          }}
-        />
-      )}
+      {
+        showView && selectedOrder && (
+          <ViewOrders
+            order={{
+              ...selectedOrder,
+              customer: selectedOrder.customer_rel?.nama || "-",
+            }}
+            onClose={() => {
+              setShowView(false);
+              setSelectedOrder(null);
+            }}
+          />
+        )
+      }
 
-      {showEdit && selectedOrder && (
-        <UpdateOrders
-          order={{
-            ...selectedOrder,
-            customer: selectedOrder.customer_rel?.nama || "-",
-          }}
-          onClose={() => {
-            setShowEdit(false);
-            setSelectedOrder(null);
-            requestRefresh(""); // Auto refresh setelah edit
-          }}
-          onSave={handleSuccessEdit}
-          refreshOrders={() => requestRefresh("")}
-        />
-      )}
+      {
+        showEdit && selectedOrder && (
+          <UpdateOrders
+            order={{
+              ...selectedOrder,
+              customer: selectedOrder.customer_rel?.nama || "-",
+            }}
+            onClose={() => {
+              setShowEdit(false);
+              setSelectedOrder(null);
+              requestRefresh(""); // Auto refresh setelah edit
+            }}
+            onSave={handleSuccessEdit}
+            refreshOrders={() => requestRefresh("")}
+          />
+        )
+      }
 
       {/* Payment Details Styles */}
       <style jsx>{`
@@ -1847,191 +1842,269 @@ export default function DaftarPesanan() {
 
       {/* Modal Payment History */}
       {/* Filter Modal */}
-      {showFilterModal && typeof window !== "undefined" && createPortal(
-        <div
-          className="modal-overlay"
-          onClick={() => setShowFilterModal(false)}
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            width: "100vw",
-            height: "100vh",
-            zIndex: 9999,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "rgba(17, 24, 39, 0.55)",
-            backdropFilter: "blur(3px)",
-            margin: 0,
-            padding: "1rem",
-            boxSizing: "border-box",
-            overflowY: "auto",
-            overflowX: "hidden",
-          }}
-          onWheel={(e) => {
-            // Prevent body scroll when scrolling modal content
-            e.stopPropagation();
-          }}
-        >
+      {
+        showFilterModal && typeof window !== "undefined" && createPortal(
           <div
-            className="modal-card"
-            onClick={(e) => e.stopPropagation()}
+            className="modal-overlay"
+            onClick={() => setShowFilterModal(false)}
             style={{
-              maxWidth: "600px",
-              width: "90%",
-              position: "relative",
-              zIndex: 10000,
-              margin: "auto",
-              flexShrink: 0,
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              width: "100vw",
+              height: "100vh",
+              zIndex: 9999,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "rgba(17, 24, 39, 0.55)",
+              backdropFilter: "blur(3px)",
+              margin: 0,
+              padding: "1rem",
+              boxSizing: "border-box",
+              overflowY: "auto",
+              overflowX: "hidden",
+            }}
+            onWheel={(e) => {
+              // Prevent body scroll when scrolling modal content
+              e.stopPropagation();
             }}
           >
-            <div className="modal-header" style={{
-              padding: "1.5rem 1.75rem",
-              borderBottom: "1px solid #e5e7eb",
-              background: "#ffffff"
-            }}>
-              <h3 style={{
-                margin: 0,
-                fontSize: "1.25rem",
-                fontWeight: "700",
-                color: "#111827",
-                letterSpacing: "-0.01em"
+            <div
+              className="modal-card"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                maxWidth: "600px",
+                width: "90%",
+                position: "relative",
+                zIndex: 10000,
+                margin: "auto",
+                flexShrink: 0,
+              }}
+            >
+              <div className="modal-header" style={{
+                padding: "1.5rem 1.75rem",
+                borderBottom: "1px solid #e5e7eb",
+                background: "#ffffff"
               }}>
-                Filter Orders
-              </h3>
-              <button
-                type="button"
-                className="modal-close"
-                onClick={() => setShowFilterModal(false)}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  color: "#6b7280",
-                  cursor: "pointer",
-                  padding: "0.5rem",
-                  borderRadius: "0.5rem",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: "32px",
-                  height: "32px",
-                  transition: "all 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#f3f4f6";
-                  e.currentTarget.style.color = "#111827";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "transparent";
-                  e.currentTarget.style.color = "#6b7280";
-                }}
-              >
-                <i className="pi pi-times" style={{ fontSize: "1.125rem" }} />
-              </button>
-            </div>
-            <div className="modal-body" style={{
-              maxHeight: "70vh",
-              overflowY: "auto",
-              padding: "1.75rem",
-              background: "#ffffff"
-            }}>
-              {/* Produk Filter */}
-              <div style={{ marginBottom: "2rem" }}>
-                <label className="field-label" style={{
-                  marginBottom: "0.875rem",
-                  display: "block",
-                  fontSize: "0.9375rem",
-                  fontWeight: "600",
+                <h3 style={{
+                  margin: 0,
+                  fontSize: "1.25rem",
+                  fontWeight: "700",
                   color: "#111827",
                   letterSpacing: "-0.01em"
                 }}>
-                  Produk
-                </label>
-                <div style={{ position: "relative", marginBottom: "0.875rem" }}>
-                  <input
-                    type="text"
-                    placeholder="Cari produk..."
-                    value={productSearch}
-                    onChange={(e) => setProductSearch(e.target.value)}
-                    className="field-input"
-                    style={{
-                      width: "100%",
-                      padding: "0.875rem 2.75rem 0.875rem 1rem",
+                  Filter Orders
+                </h3>
+                <button
+                  type="button"
+                  className="modal-close"
+                  onClick={() => setShowFilterModal(false)}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "#6b7280",
+                    cursor: "pointer",
+                    padding: "0.5rem",
+                    borderRadius: "0.5rem",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "32px",
+                    height: "32px",
+                    transition: "all 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#f3f4f6";
+                    e.currentTarget.style.color = "#111827";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.color = "#6b7280";
+                  }}
+                >
+                  <i className="pi pi-times" style={{ fontSize: "1.125rem" }} />
+                </button>
+              </div>
+              <div className="modal-body" style={{
+                maxHeight: "70vh",
+                overflowY: "auto",
+                padding: "1.75rem",
+                background: "#ffffff"
+              }}>
+                {/* Produk Filter */}
+                <div style={{ marginBottom: "2rem" }}>
+                  <label className="field-label" style={{
+                    marginBottom: "0.875rem",
+                    display: "block",
+                    fontSize: "0.9375rem",
+                    fontWeight: "600",
+                    color: "#111827",
+                    letterSpacing: "-0.01em"
+                  }}>
+                    Produk
+                  </label>
+                  <div style={{ position: "relative", marginBottom: "0.875rem" }}>
+                    <input
+                      type="text"
+                      placeholder="Cari produk..."
+                      value={productSearch}
+                      onChange={(e) => setProductSearch(e.target.value)}
+                      className="field-input"
+                      style={{
+                        width: "100%",
+                        padding: "0.875rem 2.75rem 0.875rem 1rem",
+                        border: "1.5px solid #e5e7eb",
+                        borderRadius: "0.625rem",
+                        fontSize: "0.9375rem",
+                        background: "#ffffff",
+                        transition: "all 0.2s",
+                        color: "#111827",
+                        boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = "#ff6c00";
+                        e.target.style.boxShadow = "0 0 0 3px rgba(255, 108, 0, 0.1)";
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = "#e5e7eb";
+                        e.target.style.boxShadow = "0 1px 2px rgba(0, 0, 0, 0.05)";
+                      }}
+                    />
+                    <span className="pi pi-search" style={{
+                      position: "absolute",
+                      right: "1rem",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      color: "#9ca3af",
+                      fontSize: "1rem",
+                      pointerEvents: "none",
+                    }} />
+                  </div>
+                  {/* Show selected products first, then search results */}
+                  {(selectedProductsData.length > 0 || productResults.length > 0) && (
+                    <div style={{
+                      marginTop: "0.75rem",
                       border: "1.5px solid #e5e7eb",
                       borderRadius: "0.625rem",
-                      fontSize: "0.9375rem",
+                      maxHeight: "280px",
+                      overflowY: "auto",
                       background: "#ffffff",
-                      transition: "all 0.2s",
-                      color: "#111827",
-                      boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = "#ff6c00";
-                      e.target.style.boxShadow = "0 0 0 3px rgba(255, 108, 0, 0.1)";
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = "#e5e7eb";
-                      e.target.style.boxShadow = "0 1px 2px rgba(0, 0, 0, 0.05)";
-                    }}
-                  />
-                  <span className="pi pi-search" style={{
-                    position: "absolute",
-                    right: "1rem",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    color: "#9ca3af",
-                    fontSize: "1rem",
-                    pointerEvents: "none",
-                  }} />
-                </div>
-                {/* Show selected products first, then search results */}
-                {(selectedProductsData.length > 0 || productResults.length > 0) && (
-                  <div style={{
-                    marginTop: "0.75rem",
-                    border: "1.5px solid #e5e7eb",
-                    borderRadius: "0.625rem",
-                    maxHeight: "280px",
-                    overflowY: "auto",
-                    background: "#ffffff",
-                    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
-                  }}>
-                    {/* Selected products section */}
-                    {selectedProductsData.length > 0 && (
-                      <>
-                        {selectedProductsData.map((prod) => {
-                          const isSelected = selectedProducts.includes(prod.id);
+                      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+                    }}>
+                      {/* Selected products section */}
+                      {selectedProductsData.length > 0 && (
+                        <>
+                          {selectedProductsData.map((prod) => {
+                            const isSelected = selectedProducts.includes(prod.id);
+                            return (
+                              <div
+                                key={`selected-${prod.id}`}
+                                onClick={() => handleToggleProduct(prod)}
+                                style={{
+                                  padding: "0.875rem 1.125rem",
+                                  cursor: "pointer",
+                                  borderBottom: "1px solid #f3f4f6",
+                                  background: isSelected ? "#fff5ed" : "#ffffff",
+                                  borderLeft: isSelected ? "4px solid #ff6c00" : "4px solid transparent",
+                                  transition: "all 0.15s",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "0.75rem",
+                                }}
+                                onMouseEnter={(e) => {
+                                  if (!isSelected) {
+                                    e.currentTarget.style.background = "#f9fafb";
+                                  }
+                                }}
+                                onMouseLeave={(e) => {
+                                  if (!isSelected) {
+                                    e.currentTarget.style.background = "#ffffff";
+                                  }
+                                }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => { }}
+                                  style={{
+                                    width: "18px",
+                                    height: "18px",
+                                    cursor: "pointer",
+                                    accentColor: "#ff6c00",
+                                  }}
+                                />
+                                <span style={{
+                                  color: isSelected ? "#c85400" : "#111827",
+                                  fontWeight: isSelected ? "600" : "500",
+                                  fontSize: "0.9375rem",
+                                  flex: 1,
+                                }}>
+                                  {prod.nama}
+                                </span>
+                                {isSelected && (
+                                  <span style={{
+                                    fontSize: "0.75rem",
+                                    color: "#c85400",
+                                    fontWeight: "600",
+                                    background: "#fff5ed",
+                                    padding: "0.25rem 0.5rem",
+                                    borderRadius: "0.25rem",
+                                  }}>
+                                    Dipilih
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
+                          {productResults.length > 0 && productResults.some(prod => !selectedProducts.includes(prod.id)) && (
+                            <div style={{
+                              padding: "0.5rem 1rem",
+                              background: "#f9fafb",
+                              borderTop: "1px solid #e5e7eb",
+                              borderBottom: "1px solid #e5e7eb",
+                              fontSize: "0.75rem",
+                              color: "#6b7280",
+                              fontWeight: "600",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.05em",
+                            }}>
+                              Hasil Pencarian
+                            </div>
+                          )}
+                        </>
+                      )}
+                      {/* Search results (exclude already selected) */}
+                      {productResults
+                        .filter(prod => !selectedProducts.includes(prod.id))
+                        .map((prod) => {
                           return (
                             <div
-                              key={`selected-${prod.id}`}
+                              key={`result-${prod.id}`}
                               onClick={() => handleToggleProduct(prod)}
                               style={{
                                 padding: "0.875rem 1.125rem",
                                 cursor: "pointer",
                                 borderBottom: "1px solid #f3f4f6",
-                                background: isSelected ? "#fff5ed" : "#ffffff",
-                                borderLeft: isSelected ? "4px solid #ff6c00" : "4px solid transparent",
+                                background: "#ffffff",
+                                borderLeft: "4px solid transparent",
                                 transition: "all 0.15s",
                                 display: "flex",
                                 alignItems: "center",
                                 gap: "0.75rem",
                               }}
                               onMouseEnter={(e) => {
-                                if (!isSelected) {
-                                  e.currentTarget.style.background = "#f9fafb";
-                                }
+                                e.currentTarget.style.background = "#f9fafb";
                               }}
                               onMouseLeave={(e) => {
-                                if (!isSelected) {
-                                  e.currentTarget.style.background = "#ffffff";
-                                }
+                                e.currentTarget.style.background = "#ffffff";
                               }}
                             >
                               <input
                                 type="checkbox"
-                                checked={isSelected}
+                                checked={false}
                                 onChange={() => { }}
                                 style={{
                                   width: "18px",
@@ -2041,442 +2114,368 @@ export default function DaftarPesanan() {
                                 }}
                               />
                               <span style={{
-                                color: isSelected ? "#c85400" : "#111827",
-                                fontWeight: isSelected ? "600" : "500",
+                                color: "#111827",
+                                fontWeight: "500",
                                 fontSize: "0.9375rem",
                                 flex: 1,
                               }}>
                                 {prod.nama}
                               </span>
-                              {isSelected && (
-                                <span style={{
-                                  fontSize: "0.75rem",
-                                  color: "#c85400",
-                                  fontWeight: "600",
-                                  background: "#fff5ed",
-                                  padding: "0.25rem 0.5rem",
-                                  borderRadius: "0.25rem",
-                                }}>
-                                  Dipilih
-                                </span>
-                              )}
                             </div>
                           );
                         })}
-                        {productResults.length > 0 && productResults.some(prod => !selectedProducts.includes(prod.id)) && (
-                          <div style={{
-                            padding: "0.5rem 1rem",
-                            background: "#f9fafb",
-                            borderTop: "1px solid #e5e7eb",
-                            borderBottom: "1px solid #e5e7eb",
-                            fontSize: "0.75rem",
-                            color: "#6b7280",
-                            fontWeight: "600",
-                            textTransform: "uppercase",
-                            letterSpacing: "0.05em",
-                          }}>
-                            Hasil Pencarian
-                          </div>
-                        )}
-                      </>
-                    )}
-                    {/* Search results (exclude already selected) */}
-                    {productResults
-                      .filter(prod => !selectedProducts.includes(prod.id))
-                      .map((prod) => {
-                        return (
-                          <div
-                            key={`result-${prod.id}`}
-                            onClick={() => handleToggleProduct(prod)}
-                            style={{
-                              padding: "0.875rem 1.125rem",
-                              cursor: "pointer",
-                              borderBottom: "1px solid #f3f4f6",
-                              background: "#ffffff",
-                              borderLeft: "4px solid transparent",
-                              transition: "all 0.15s",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "0.75rem",
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.background = "#f9fafb";
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.background = "#ffffff";
-                            }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={false}
-                              onChange={() => { }}
-                              style={{
-                                width: "18px",
-                                height: "18px",
-                                cursor: "pointer",
-                                accentColor: "#ff6c00",
-                              }}
-                            />
-                            <span style={{
-                              color: "#111827",
-                              fontWeight: "500",
-                              fontSize: "0.9375rem",
-                              flex: 1,
-                            }}>
-                              {prod.nama}
-                            </span>
-                          </div>
-                        );
-                      })}
-                  </div>
-                )}
-                {selectedProductsData.length > 0 && (
-                  <div style={{ marginTop: "0.75rem", display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
-                    {selectedProductsData.map((product) => (
-                      <span
-                        key={product.id}
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "0.5rem",
-                          padding: "0.5rem 0.75rem",
-                          background: "#fff5ed",
-                          border: "1px solid #ff6c00",
-                          borderRadius: "0.375rem",
-                          fontSize: "0.8125rem",
-                          color: "#c85400",
-                          fontWeight: "500",
-                        }}
-                      >
-                        {product.nama}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleToggleProduct(product);
-                          }}
+                    </div>
+                  )}
+                  {selectedProductsData.length > 0 && (
+                    <div style={{ marginTop: "0.75rem", display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+                      {selectedProductsData.map((product) => (
+                        <span
+                          key={product.id}
                           style={{
-                            background: "none",
-                            border: "none",
-                            color: "#c85400",
-                            cursor: "pointer",
-                            padding: 0,
-                            margin: 0,
-                            display: "flex",
+                            display: "inline-flex",
                             alignItems: "center",
+                            gap: "0.5rem",
+                            padding: "0.5rem 0.75rem",
+                            background: "#fff5ed",
+                            border: "1px solid #ff6c00",
+                            borderRadius: "0.375rem",
+                            fontSize: "0.8125rem",
+                            color: "#c85400",
+                            fontWeight: "500",
                           }}
                         >
-                          <i className="pi pi-times" style={{ fontSize: "0.75rem" }} />
-                        </button>
-                      </span>
-                    ))}
+                          {product.nama}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleProduct(product);
+                            }}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              color: "#c85400",
+                              cursor: "pointer",
+                              padding: 0,
+                              margin: 0,
+                              display: "flex",
+                              alignItems: "center",
+                            }}
+                          >
+                            <i className="pi pi-times" style={{ fontSize: "0.75rem" }} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Status Order Filter */}
+                <div style={{ marginBottom: "2rem" }}>
+                  <label className="field-label" style={{
+                    marginBottom: "0.875rem",
+                    display: "block",
+                    fontSize: "0.9375rem",
+                    fontWeight: "600",
+                    color: "#111827",
+                    letterSpacing: "-0.01em"
+                  }}>
+                    Status Order
+                  </label>
+                  <div style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.625rem",
+                    background: "#f9fafb",
+                    padding: "0.75rem",
+                    borderRadius: "0.625rem",
+                    border: "1.5px solid #e5e7eb",
+                  }}>
+                    {Object.entries(STATUS_ORDER_MAP).map(([value, { label }]) => {
+                      const isChecked = selectedStatusOrder.includes(value);
+                      return (
+                        <label
+                          key={value}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            cursor: "pointer",
+                            padding: "0.75rem 1rem",
+                            borderRadius: "0.5rem",
+                            background: isChecked ? "#fff5ed" : "transparent",
+                            border: isChecked ? "1.5px solid #ff6c00" : "1.5px solid transparent",
+                            transition: "all 0.15s",
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isChecked) {
+                              e.currentTarget.style.background = "#ffffff";
+                              e.currentTarget.style.borderColor = "#e5e7eb";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isChecked) {
+                              e.currentTarget.style.background = "transparent";
+                              e.currentTarget.style.borderColor = "transparent";
+                            }
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => handleToggleStatusOrder(value)}
+                            style={{
+                              marginRight: "0.75rem",
+                              width: "18px",
+                              height: "18px",
+                              cursor: "pointer",
+                              accentColor: "#ff6c00",
+                            }}
+                          />
+                          <span style={{
+                            color: isChecked ? "#c85400" : "#111827",
+                            fontWeight: isChecked ? "600" : "500",
+                            fontSize: "0.9375rem",
+                          }}>{label}</span>
+                        </label>
+                      );
+                    })}
                   </div>
-                )}
-              </div>
+                </div>
 
-              {/* Status Order Filter */}
-              <div style={{ marginBottom: "2rem" }}>
-                <label className="field-label" style={{
-                  marginBottom: "0.875rem",
-                  display: "block",
-                  fontSize: "0.9375rem",
-                  fontWeight: "600",
-                  color: "#111827",
-                  letterSpacing: "-0.01em"
-                }}>
-                  Status Order
-                </label>
-                <div style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "0.625rem",
-                  background: "#f9fafb",
-                  padding: "0.75rem",
-                  borderRadius: "0.625rem",
-                  border: "1.5px solid #e5e7eb",
-                }}>
-                  {Object.entries(STATUS_ORDER_MAP).map(([value, { label }]) => {
-                    const isChecked = selectedStatusOrder.includes(value);
-                    return (
-                      <label
-                        key={value}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          cursor: "pointer",
-                          padding: "0.75rem 1rem",
-                          borderRadius: "0.5rem",
-                          background: isChecked ? "#fff5ed" : "transparent",
-                          border: isChecked ? "1.5px solid #ff6c00" : "1.5px solid transparent",
-                          transition: "all 0.15s",
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!isChecked) {
-                            e.currentTarget.style.background = "#ffffff";
-                            e.currentTarget.style.borderColor = "#e5e7eb";
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!isChecked) {
-                            e.currentTarget.style.background = "transparent";
-                            e.currentTarget.style.borderColor = "transparent";
-                          }
-                        }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => handleToggleStatusOrder(value)}
+                {/* Status Pembayaran Filter */}
+                <div style={{ marginBottom: "2rem" }}>
+                  <label className="field-label" style={{
+                    marginBottom: "0.875rem",
+                    display: "block",
+                    fontSize: "0.9375rem",
+                    fontWeight: "600",
+                    color: "#111827",
+                    letterSpacing: "-0.01em"
+                  }}>
+                    Status Pembayaran
+                  </label>
+                  <div style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.625rem",
+                    background: "#f9fafb",
+                    padding: "0.75rem",
+                    borderRadius: "0.625rem",
+                    border: "1.5px solid #e5e7eb",
+                  }}>
+                    {Object.entries(STATUS_PEMBAYARAN_MAP).map(([value, { label }]) => {
+                      const isChecked = selectedStatusPembayaran.includes(String(value));
+                      return (
+                        <label
+                          key={value}
                           style={{
-                            marginRight: "0.75rem",
-                            width: "18px",
-                            height: "18px",
+                            display: "flex",
+                            alignItems: "center",
                             cursor: "pointer",
-                            accentColor: "#ff6c00",
+                            padding: "0.75rem 1rem",
+                            borderRadius: "0.5rem",
+                            background: isChecked ? "#fff5ed" : "transparent",
+                            border: isChecked ? "1.5px solid #ff6c00" : "1.5px solid transparent",
+                            transition: "all 0.15s",
                           }}
-                        />
-                        <span style={{
-                          color: isChecked ? "#c85400" : "#111827",
-                          fontWeight: isChecked ? "600" : "500",
-                          fontSize: "0.9375rem",
-                        }}>{label}</span>
-                      </label>
-                    );
-                  })}
+                          onMouseEnter={(e) => {
+                            if (!isChecked) {
+                              e.currentTarget.style.background = "#ffffff";
+                              e.currentTarget.style.borderColor = "#e5e7eb";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isChecked) {
+                              e.currentTarget.style.background = "transparent";
+                              e.currentTarget.style.borderColor = "transparent";
+                            }
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => handleToggleStatusPembayaran(String(value))}
+                            style={{
+                              marginRight: "0.75rem",
+                              width: "18px",
+                              height: "18px",
+                              cursor: "pointer",
+                              accentColor: "#ff6c00",
+                            }}
+                          />
+                          <span style={{
+                            color: isChecked ? "#c85400" : "#111827",
+                            fontWeight: isChecked ? "600" : "500",
+                            fontSize: "0.9375rem",
+                          }}>{label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-
-              {/* Status Pembayaran Filter */}
-              <div style={{ marginBottom: "2rem" }}>
-                <label className="field-label" style={{
-                  marginBottom: "0.875rem",
-                  display: "block",
-                  fontSize: "0.9375rem",
-                  fontWeight: "600",
-                  color: "#111827",
-                  letterSpacing: "-0.01em"
-                }}>
-                  Status Pembayaran
-                </label>
-                <div style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "0.625rem",
-                  background: "#f9fafb",
-                  padding: "0.75rem",
-                  borderRadius: "0.625rem",
-                  border: "1.5px solid #e5e7eb",
-                }}>
-                  {Object.entries(STATUS_PEMBAYARAN_MAP).map(([value, { label }]) => {
-                    const isChecked = selectedStatusPembayaran.includes(String(value));
-                    return (
-                      <label
-                        key={value}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          cursor: "pointer",
-                          padding: "0.75rem 1rem",
-                          borderRadius: "0.5rem",
-                          background: isChecked ? "#fff5ed" : "transparent",
-                          border: isChecked ? "1.5px solid #ff6c00" : "1.5px solid transparent",
-                          transition: "all 0.15s",
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!isChecked) {
-                            e.currentTarget.style.background = "#ffffff";
-                            e.currentTarget.style.borderColor = "#e5e7eb";
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!isChecked) {
-                            e.currentTarget.style.background = "transparent";
-                            e.currentTarget.style.borderColor = "transparent";
-                          }
-                        }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => handleToggleStatusPembayaran(String(value))}
-                          style={{
-                            marginRight: "0.75rem",
-                            width: "18px",
-                            height: "18px",
-                            cursor: "pointer",
-                            accentColor: "#ff6c00",
-                          }}
-                        />
-                        <span style={{
-                          color: isChecked ? "#c85400" : "#111827",
-                          fontWeight: isChecked ? "600" : "500",
-                          fontSize: "0.9375rem",
-                        }}>{label}</span>
-                      </label>
-                    );
-                  })}
-                </div>
+              <div className="modal-footer" style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "0.75rem",
+                padding: "1.5rem 1.75rem",
+                borderTop: "1px solid #e5e7eb",
+                background: "#f9fafb",
+              }}>
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  style={{
+                    padding: "0.75rem 1.5rem",
+                    background: "#ffffff",
+                    border: "1.5px solid #e5e7eb",
+                    borderRadius: "0.625rem",
+                    color: "#374151",
+                    fontWeight: "600",
+                    fontSize: "0.9375rem",
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#f3f4f6";
+                    e.currentTarget.style.borderColor = "#d1d5db";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "#ffffff";
+                    e.currentTarget.style.borderColor = "#e5e7eb";
+                  }}
+                >
+                  <i className="pi pi-times" style={{ fontSize: "0.875rem" }} />
+                  Reset
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowFilterModal(false)}
+                  style={{
+                    padding: "0.75rem 1.5rem",
+                    background: "#ff6c00",
+                    border: "none",
+                    borderRadius: "0.625rem",
+                    color: "#ffffff",
+                    fontWeight: "600",
+                    fontSize: "0.9375rem",
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                    boxShadow: "0 2px 4px rgba(255, 108, 0, 0.2)",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#e55a00";
+                    e.currentTarget.style.boxShadow = "0 4px 8px rgba(255, 108, 0, 0.3)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "#ff6c00";
+                    e.currentTarget.style.boxShadow = "0 2px 4px rgba(255, 108, 0, 0.2)";
+                  }}
+                >
+                  Terapkan
+                </button>
               </div>
             </div>
-            <div className="modal-footer" style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              gap: "0.75rem",
-              padding: "1.5rem 1.75rem",
-              borderTop: "1px solid #e5e7eb",
-              background: "#f9fafb",
-            }}>
-              <button
-                type="button"
-                onClick={handleResetFilters}
-                style={{
-                  padding: "0.75rem 1.5rem",
-                  background: "#ffffff",
-                  border: "1.5px solid #e5e7eb",
-                  borderRadius: "0.625rem",
-                  color: "#374151",
-                  fontWeight: "600",
-                  fontSize: "0.9375rem",
-                  cursor: "pointer",
-                  transition: "all 0.15s",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#f3f4f6";
-                  e.currentTarget.style.borderColor = "#d1d5db";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "#ffffff";
-                  e.currentTarget.style.borderColor = "#e5e7eb";
-                }}
-              >
-                <i className="pi pi-times" style={{ fontSize: "0.875rem" }} />
-                Reset
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowFilterModal(false)}
-                style={{
-                  padding: "0.75rem 1.5rem",
-                  background: "#ff6c00",
-                  border: "none",
-                  borderRadius: "0.625rem",
-                  color: "#ffffff",
-                  fontWeight: "600",
-                  fontSize: "0.9375rem",
-                  cursor: "pointer",
-                  transition: "all 0.15s",
-                  boxShadow: "0 2px 4px rgba(255, 108, 0, 0.2)",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#e55a00";
-                  e.currentTarget.style.boxShadow = "0 4px 8px rgba(255, 108, 0, 0.3)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "#ff6c00";
-                  e.currentTarget.style.boxShadow = "0 2px 4px rgba(255, 108, 0, 0.2)";
-                }}
-              >
-                Terapkan
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+          </div>,
+          document.body
+        )
+      }
 
       {/* Image Modal Overlay */}
-      {showImageModal && selectedImageUrl && typeof window !== "undefined" && createPortal(
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.9)",
-            zIndex: 10000,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "2rem",
-            cursor: "pointer",
-          }}
-          onClick={handleCloseImageModal}
-        >
-          <button
-            onClick={handleCloseImageModal}
-            style={{
-              position: "absolute",
-              top: "1rem",
-              right: "1rem",
-              background: "rgba(255, 255, 255, 0.2)",
-              border: "none",
-              borderRadius: "50%",
-              width: "40px",
-              height: "40px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              color: "#fff",
-              fontSize: "1.5rem",
-              transition: "background 0.2s ease",
-              zIndex: 10001,
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.background = "rgba(255, 255, 255, 0.3)";
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = "rgba(255, 255, 255, 0.2)";
-            }}
-            aria-label="Tutup"
-          >
-            <i className="pi pi-times" />
-          </button>
+      {
+        showImageModal && selectedImageUrl && typeof window !== "undefined" && createPortal(
           <div
             style={{
-              position: "relative",
-              maxWidth: "90%",
-              maxHeight: "90%",
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.9)",
+              zIndex: 10000,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              padding: "2rem",
+              cursor: "pointer",
             }}
-            onClick={(e) => e.stopPropagation()}
+            onClick={handleCloseImageModal}
           >
-            <img
-              src={selectedImageUrl}
-              alt="Bukti Pembayaran - Full Size"
+            <button
+              onClick={handleCloseImageModal}
               style={{
-                maxWidth: "100%",
-                maxHeight: "90vh",
-                objectFit: "contain",
-                borderRadius: "8px",
-                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.5)",
-                cursor: "zoom-in",
+                position: "absolute",
+                top: "1rem",
+                right: "1rem",
+                background: "rgba(255, 255, 255, 0.2)",
+                border: "none",
+                borderRadius: "50%",
+                width: "40px",
+                height: "40px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                color: "#fff",
+                fontSize: "1.5rem",
+                transition: "background 0.2s ease",
+                zIndex: 10001,
               }}
-              onClick={(e) => {
-                // Zoom in/out on click
-                if (e.target.style.transform === "scale(2)") {
-                  e.target.style.transform = "scale(1)";
-                  e.target.style.cursor = "zoom-in";
-                } else {
-                  e.target.style.transform = "scale(2)";
-                  e.target.style.cursor = "zoom-out";
-                }
+              onMouseEnter={(e) => {
+                e.target.style.background = "rgba(255, 255, 255, 0.3)";
               }}
-              onError={(e) => {
-                console.error("Gagal memuat gambar:", selectedImageUrl);
-                e.target.style.display = "none";
+              onMouseLeave={(e) => {
+                e.target.style.background = "rgba(255, 255, 255, 0.2)";
               }}
-            />
-          </div>
-        </div>,
-        document.body
-      )}
+              aria-label="Tutup"
+            >
+              <i className="pi pi-times" />
+            </button>
+            <div
+              style={{
+                position: "relative",
+                maxWidth: "90%",
+                maxHeight: "90%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={selectedImageUrl}
+                alt="Bukti Pembayaran - Full Size"
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "90vh",
+                  objectFit: "contain",
+                  borderRadius: "8px",
+                  boxShadow: "0 8px 32px rgba(0, 0, 0, 0.5)",
+                  cursor: "zoom-in",
+                }}
+                onClick={(e) => {
+                  // Zoom in/out on click
+                  if (e.target.style.transform === "scale(2)") {
+                    e.target.style.transform = "scale(1)";
+                    e.target.style.cursor = "zoom-in";
+                  } else {
+                    e.target.style.transform = "scale(2)";
+                    e.target.style.cursor = "zoom-out";
+                  }
+                }}
+                onError={(e) => {
+                  console.error("Gagal memuat gambar:", selectedImageUrl);
+                  e.target.style.display = "none";
+                }}
+              />
+            </div>
+          </div>,
+          document.body
+        )
+      }
 
       <PaymentHistoryModal
         orderId={selectedOrderIdForHistory}
@@ -2488,39 +2487,41 @@ export default function DaftarPesanan() {
       />
 
       {/* Toast Notification */}
-      {toast.show && (
-        <div className={`toast toast-${toast.type || "success"} toast-show`}>
-          <div className="toast-icon">
-            {toast.type === "error" ? (
+      {
+        toast.show && (
+          <div className={`toast toast-${toast.type || "success"} toast-show`}>
+            <div className="toast-icon">
+              {toast.type === "error" ? (
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : toast.type === "warning" ? (
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              ) : (
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </div>
+            <div className="toast-content">
+              <div className="toast-message">{toast.message}</div>
+            </div>
+            <button
+              className="toast-close"
+              onClick={() => setToast({ show: false, message: "", type: "success" })}
+              aria-label="Close"
+            >
               <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
-            ) : toast.type === "warning" ? (
-              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-            ) : (
-              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-            )}
+            </button>
+            <div className="toast-progress"></div>
           </div>
-          <div className="toast-content">
-            <div className="toast-message">{toast.message}</div>
-          </div>
-          <button
-            className="toast-close"
-            onClick={() => setToast({ show: false, message: "", type: "success" })}
-            aria-label="Close"
-          >
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-          <div className="toast-progress"></div>
-        </div>
-      )}
+        )
+      }
 
-    </Layout>
+    </Layout >
   );
 }
