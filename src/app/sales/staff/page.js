@@ -460,35 +460,47 @@ export default function Dashboard() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Customer</th>
-                    <th>Status</th>
-                    <th>Date</th>
-                    <th style={{ textAlign: "right" }}>Total</th>
+                    <th style={{ textAlign: "left", padding: '0.75rem' }}>Customer</th>
+                    <th style={{ textAlign: "left", padding: '0.75rem' }}>Produk</th>
+                    <th style={{ textAlign: "left", padding: '0.75rem' }}>Total</th>
+                    <th style={{ textAlign: "left", padding: '0.75rem' }}>Date</th>
                   </tr>
                 </thead>
                 <tbody>
                   {recentOrders.length > 0 ? (
                     recentOrders.map((order, idx) => {
-                      const statusInfo = STATUS_ORDER_MAP[String(order.status)] || { label: "Unknown", class: "default" };
+                      // Logic matched from sales/page.js
+                      const produkNama = order.produk_rel?.nama ||
+                        (Array.isArray(order.items) && order.items[0]
+                          ? order.items[0].nama_produk || order.items[0].nama
+                          : (order.produk_nama || "-"));
+
+                      const customerNama = order.customer_rel?.nama ||
+                        order.nama_customer ||
+                        order.customer?.nama ||
+                        order.nama ||
+                        "-";
+
+                      const dateVal = order.created_at || order.create_at || order.tanggal || order.tanggal_dibuat;
+
                       return (
                         <tr key={idx}>
-                          <td style={{ fontWeight: 500 }}>
+                          <td style={{ fontWeight: 500, padding: '0.75rem' }}>
                             <div style={{ display: 'flex', flexDirection: 'column' }}>
-                              <span style={{ color: 'var(--dash-text-dark)', fontWeight: 600 }}>{order.nama_customer || order.nama || "-"}</span>
-                              <span style={{ fontSize: '0.75rem', color: 'var(--dash-muted)' }}>ID: {order.id_transaksi || order.id}</span>
+                              <span style={{ color: 'var(--dash-text-dark)', fontWeight: 600, fontSize: '0.9rem' }}>{customerNama}</span>
                             </div>
                           </td>
-                          <td>
-                            <span className={`orders-status-badge orders-status-badge--${statusInfo.class}`}>
-                              {statusInfo.label}
-                            </span>
+                          <td style={{ padding: '0.75rem', fontSize: '0.85rem', color: '#4b5563' }} title={produkNama}>
+                            {produkNama.length > 13 ? produkNama.substring(0, 13) + "..." : produkNama}
                           </td>
-                          <td style={{ fontSize: '0.875rem', color: '#4b5563' }}>
-                            {new Date(order.created_at).toLocaleDateString("id-ID", {
+                          <td style={{ fontFamily: 'monospace', fontWeight: 600, textAlign: "left", padding: '0.75rem', fontSize: '0.9rem' }}>
+                            {formatCurrency(order.total_harga)}
+                          </td>
+                          <td style={{ fontSize: '0.85rem', color: '#6b7280', padding: '0.75rem' }}>
+                            {dateVal ? new Date(dateVal).toLocaleDateString("id-ID", {
                               day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"
-                            })}
+                            }) : "-"}
                           </td>
-                          <td style={{ fontFamily: 'monospace', fontWeight: 600, textAlign: "right" }}>{formatCurrency(order.total_harga)}</td>
                         </tr>
                       );
                     })

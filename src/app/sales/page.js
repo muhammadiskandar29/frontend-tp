@@ -616,7 +616,7 @@ export default function Dashboard() {
 
         {/* TWO TABLES: FOLLOW UP HISTORY & RECENT ORDERS */}
         <section className="dashboard-panels">
-          <div style={{ display: 'grid', gridTemplateColumns: '500px 1fr', gap: '1.5rem', width: '100%' }} className="recent-activity-grid">
+          <div style={{ display: 'grid', gridTemplateColumns: '475px 1fr', gap: '1.5rem', width: '100%' }} className="recent-activity-grid">
 
             <style jsx>{`
                 @media (max-width: 1024px) {
@@ -723,8 +723,8 @@ export default function Dashboard() {
                             <td style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid #f1f5f9', fontWeight: 500, fontSize: '0.8rem', color: '#334155' }}>
                               {customerName}
                             </td>
-                            <td style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid #f1f5f9', fontSize: '0.8rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#334155' }}>
-                              {productName}
+                            <td style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid #f1f5f9', fontSize: '0.8rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#334155' }} title={productName}>
+                              {productName.length > 13 ? productName.substring(0, 13) + "..." : productName}
                             </td>
                             <td style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid #f1f5f9', fontWeight: 600, fontSize: '0.8rem', color: '#0f172a' }}>
                               {formatCurrency(order.total_harga)}
