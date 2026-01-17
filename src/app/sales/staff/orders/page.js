@@ -1476,7 +1476,7 @@ export default function DaftarPesanan() {
                                     fontWeight: 600
                                   }}
                                 >
-                                  <span>{otherCount > 0 ? `Lihat ${otherCount} Order Lain` : "Lihat Order"}</span>
+                                  <span>Lihat Order</span>
                                   <ChevronDown size={14} strokeWidth={3} className={`transition-transform ${activeDropdown === custId ? 'rotate-180' : ''}`} />
                                 </button>
                               </div>
