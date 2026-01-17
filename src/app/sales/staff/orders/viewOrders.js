@@ -1,70 +1,52 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import "@/styles/sales/orders.css";
 import "@/styles/sales/orders-page.css";
+import { BACKEND_URL } from "@/config/env";
 
 const STATUS_PEMBAYARAN_MAP = {
-  0:    { label: "Unpaid", class: "unpaid" },
+  0: { label: "Unpaid", class: "unpaid" },
   null: { label: "Unpaid", class: "unpaid" },
-  1:    { label: "Pending", class: "pending" },
-  2:    { label: "Paid", class: "paid" },
-  3:    { label: "Ditolak", class: "rejected" },
-  4:    { label: "DP", class: "dp" },
+  1: { label: "Pending", class: "pending" },
+  2: { label: "Paid", class: "paid" },
+  3: { label: "Ditolak", class: "rejected" },
+  4: { label: "DP", class: "dp" },
+};
+
+// 🔹 Helper untuk formatting date time
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return "-";
+  const date = new Date(dateStr.replace(" ", "T"));
+  if (Number.isNaN(date.getTime())) return dateStr;
+  return date.toLocaleString("id-ID", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 };
 
 // 🔹 Helper untuk mengambil waktu_pembayaran dari order_payment_rel
 const getWaktuPembayaran = (order) => {
-  // Jika sudah ada di level order, gunakan itu
   if (order.waktu_pembayaran) {
     return order.waktu_pembayaran;
   }
-  // Ambil dari order_payment_rel jika ada
   if (order.order_payment_rel && Array.isArray(order.order_payment_rel) && order.order_payment_rel.length > 0) {
-    // Cari payment yang statusnya approved (status "2") terlebih dahulu
     const approvedPayment = order.order_payment_rel.find(p => String(p.status).trim() === "2");
     if (approvedPayment && approvedPayment.create_at) {
-      const date = new Date(approvedPayment.create_at);
-      const pad = (n) => n.toString().padStart(2, "0");
-      return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+      return formatDateTime(approvedPayment.create_at);
     }
-    // Jika tidak ada yang approved, ambil yang terbaru
     const latestPayment = order.order_payment_rel.sort((a, b) => {
       const dateA = new Date(a.create_at || 0);
       const dateB = new Date(b.create_at || 0);
       return dateB - dateA;
     })[0];
     if (latestPayment && latestPayment.create_at) {
-      const date = new Date(latestPayment.create_at);
-      const pad = (n) => n.toString().padStart(2, "0");
-      return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+      return formatDateTime(latestPayment.create_at);
     }
   }
   return null;
-};
-
-// 🔹 Helper untuk menentukan status bayar otomatis
-const computeStatusBayar = (order) => {
-  // Cek dari order_payment_rel jika ada
-  if (order.order_payment_rel && Array.isArray(order.order_payment_rel) && order.order_payment_rel.length > 0) {
-    const hasApprovedPayment = order.order_payment_rel.some(p => String(p.status).trim() === "2");
-    if (hasApprovedPayment) {
-      return 1; // Paid
-    }
-    const hasPendingPayment = order.order_payment_rel.some(p => String(p.status).trim() === "1");
-    if (hasPendingPayment) {
-      return 1; // Menunggu
-    }
-  }
-  // Fallback ke logika lama
-  if (
-    order.bukti_pembayaran &&
-    order.bukti_pembayaran !== "" &&
-    order.waktu_pembayaran &&
-    order.waktu_pembayaran !== ""
-  ) {
-    return 1; // Paid
-  }
-  return 0; // Unpaid
 };
 
 // Helper function untuk build image URL via proxy
@@ -76,18 +58,14 @@ const buildImageUrl = (path) => {
 
 // 🔹 Helper untuk mengambil bukti_pembayaran dari order_payment_rel
 const getBuktiPembayaran = (order) => {
-  // Jika sudah ada di level order, gunakan itu
   if (order.bukti_pembayaran) {
     return order.bukti_pembayaran;
   }
-  // Ambil dari order_payment_rel jika ada
   if (order.order_payment_rel && Array.isArray(order.order_payment_rel) && order.order_payment_rel.length > 0) {
-    // Cari payment yang statusnya approved (status "2") terlebih dahulu
     const approvedPayment = order.order_payment_rel.find(p => String(p.status).trim() === "2");
     if (approvedPayment && approvedPayment.bukti_pembayaran) {
       return approvedPayment.bukti_pembayaran;
     }
-    // Jika tidak ada yang approved, ambil yang terbaru
     const latestPayment = order.order_payment_rel.sort((a, b) => {
       const dateA = new Date(a.create_at || 0);
       const dateB = new Date(b.create_at || 0);
@@ -100,20 +78,117 @@ const getBuktiPembayaran = (order) => {
   return null;
 };
 
+const getFollowupStatusBadge = (status) => {
+  if (status === "1" || status === 1 || status === "Y") {
+    return { label: "Terkirim", className: "badge-success" };
+  }
+  if (status === "0" || status === 0 || status === "N") {
+    return { label: "Gagal", className: "badge-danger" };
+  }
+  return { label: "Pending", className: "badge-warning" };
+};
+
 export default function ViewOrders({ order, onClose }) {
   if (!order) return null;
 
+  const [activeTab, setActiveTab] = useState("detail");
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedImageUrl, setSelectedImageUrl] = useState(null);
 
-  // Ambil status pembayaran dari order
+  // Logs State
+  const [logs, setLogs] = useState([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+  const [logsError, setLogsError] = useState("");
+
+  // Payment History State
+  const [paymentHistoryData, setPaymentHistoryData] = useState(null);
+  const [loadingPayment, setLoadingPayment] = useState(false);
+  const [paymentError, setPaymentError] = useState("");
+
+  // Ambil status pembayaran dari order (untuk Detail tab)
   const statusPembayaranValue = order.status_pembayaran ?? 0;
   const statusPembayaranInfo = STATUS_PEMBAYARAN_MAP[statusPembayaranValue] || STATUS_PEMBAYARAN_MAP[0];
-  
-  // Ambil bukti pembayaran dari order_payment_rel
-  const buktiPembayaranPath = getBuktiPembayaran(order);
-  const buktiUrl = buildImageUrl(buktiPembayaranPath);
-  const waktuPembayaran = getWaktuPembayaran(order);
+  const totalHarga = Number(order.total_harga || 0);
+  const totalDibayar = Number(order.total_paid || 0);
+  const sisaPembayaran = Number(order.remaining !== undefined ? order.remaining : (totalHarga - totalDibayar));
+
+  // --- FETCH LOGIC: Follow Up ---
+  const fetchLogsFollup = useCallback(async () => {
+    if (!order.customer_rel?.id && !order.customer) return;
+    const customerId = Number(order.customer_rel?.id || order.customer);
+    if (!customerId) return;
+
+    setLoadingLogs(true);
+    setLogsError("");
+
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const res = await fetch("/api/sales/logs-follup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ customer: customerId }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || "Gagal memuat log");
+
+      const logsData = Array.isArray(data.data) ? data.data : [];
+      const filteredLogs = logsData.filter(log => Number(log.customer) === customerId);
+      setLogs(filteredLogs);
+    } catch (err) {
+      setLogsError(err.message);
+    } finally {
+      setLoadingLogs(false);
+    }
+  }, [order.customer, order.customer_rel?.id]);
+
+  // --- FETCH LOGIC: Payment History ---
+  const fetchPaymentHistory = useCallback(async () => {
+    if (!order.id) return;
+    setLoadingPayment(true);
+    setPaymentError("");
+    setPaymentHistoryData(null);
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("Token tidak ditemukan");
+
+      const res = await fetch(`/api/sales/order-payment/by-order/${order.id}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+      const json = await res.json();
+      if (json.success && json.data) {
+        setPaymentHistoryData(json.data);
+      } else {
+        setPaymentError(json.message || "Gagal memuat riwayat pembayaran");
+      }
+    } catch (err) {
+      console.error("Error fetching payment history:", err);
+      setPaymentError("Terjadi kesalahan saat memuat riwayat pembayaran");
+    } finally {
+      setLoadingPayment(false);
+    }
+  }, [order.id]);
+
+  // Load data based on active tab
+  useEffect(() => {
+    if (activeTab === "followup") {
+      fetchLogsFollup();
+    } else if (activeTab === "pembayaran") {
+      fetchPaymentHistory();
+    }
+  }, [activeTab, fetchLogsFollup, fetchPaymentHistory]);
 
   const handleImageClick = (imageUrl) => {
     if (imageUrl) {
@@ -129,150 +204,274 @@ export default function ViewOrders({ order, onClose }) {
 
   return (
     <div className="modal-overlay">
-      <div className="modal-card">
+      <div className="modal-card" style={{ maxWidth: "800px" }}>
         {/* HEADER */}
-        <div className="modal-header">
-          <h2>Detail Pesanan</h2>
+        <div className="modal-header" style={{ borderBottom: 'none', paddingBottom: 0 }}>
+          <h2>Detail Order</h2>
           <button className="modal-close" onClick={onClose}>
             <i className="pi pi-times"></i>
           </button>
         </div>
 
+        {/* TABS */}
+        <div className="modal-tabs">
+          <button
+            className={`tab-item ${activeTab === "detail" ? "active" : ""}`}
+            onClick={() => setActiveTab("detail")}
+          >
+            Detail
+          </button>
+          <button
+            className={`tab-item ${activeTab === "pembayaran" ? "active" : ""}`}
+            onClick={() => setActiveTab("pembayaran")}
+          >
+            Pembayaran
+          </button>
+          <button
+            className={`tab-item ${activeTab === "followup" ? "active" : ""}`}
+            onClick={() => setActiveTab("followup")}
+          >
+            Follow Up
+          </button>
+        </div>
+        <div className="tabs-divider"></div>
+
         {/* BODY */}
-        <div className="modal-body">
-          <div className="detail-list">
-            {/* Informasi Pelanggan */}
-            <div className="detail-section">
-              <h4 className="detail-section-title">Informasi Pelanggan</h4>
-              <div className="detail-item">
-                <span className="detail-label">Nama</span>
-                <span className="detail-colon">:</span>
-                <span className="detail-value">{order.customer_rel?.nama || "-"}</span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">No. WhatsApp</span>
-                <span className="detail-colon">:</span>
-                <span className="detail-value">{order.customer_rel?.wa || "-"}</span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Alamat</span>
-                <span className="detail-colon">:</span>
-                <span className="detail-value">{order.alamat || "-"}</span>
-              </div>
-            </div>
+        <div className="modal-body" style={{ marginTop: '1rem' }}>
 
-            <div className="detail-section-divider"></div>
+          {/* === DETAIL TAB === */}
+          {activeTab === "detail" && (
+            <div className="detail-list fade-in">
+              <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '0.5rem', marginBottom: '1.5rem' }}>
+                <div style={{ marginBottom: '0.25rem', fontWeight: 600, fontSize: '1.1rem', color: '#1e293b' }}>
+                  {order.customer_rel?.nama || "-"}
+                </div>
+                <div style={{ fontSize: '0.9rem', color: '#64748b', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  <div>Email: {order.customer_rel?.email || "-"}</div>
+                  <div>WhatsApp: {order.customer_rel?.wa || "-"}</div>
+                </div>
+              </div>
 
-            {/* Detail Produk */}
-            <div className="detail-section">
-              <h4 className="detail-section-title">Detail Produk</h4>
-              <div className="detail-item">
-                <span className="detail-label">Nama Produk</span>
-                <span className="detail-colon">:</span>
-                <span className="detail-value">{order.produk_rel?.nama || "-"}</span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Harga</span>
-                <span className="detail-colon">:</span>
-                <span className="detail-value">Rp {Number(order.harga || 0).toLocaleString("id-ID")}</span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Ongkir</span>
-                <span className="detail-colon">:</span>
-                <span className="detail-value">Rp {Number(order.ongkir || 0).toLocaleString("id-ID")}</span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Total Harga</span>
-                <span className="detail-colon">:</span>
-                <span className="detail-value">Rp {Number(order.total_harga || 0).toLocaleString("id-ID")}</span>
-              </div>
-            </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                <div>
+                  <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155', marginBottom: '0.5rem' }}>Produk</h4>
+                  <p style={{ fontSize: '1rem', fontWeight: 500, color: '#1e293b' }}>{order.produk_rel?.nama || "-"}</p>
 
-            <div className="detail-section-divider"></div>
+                  <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155', marginBottom: '0.5rem', marginTop: '1.5rem' }}>Status Order</h4>
+                  <span className={`orders-status-badge orders-status-badge--${order.status === 2 || order.status === '2' ? 'paid' : 'pending'}`}>
+                    {order.status === 2 || order.status === '2' ? 'SUKSES' : 'PENDING'}
+                  </span>
 
-            {/* Informasi Pembayaran */}
-            <div className="detail-section">
-              <h4 className="detail-section-title">Informasi Pembayaran</h4>
-              <div className="detail-item">
-                <span className="detail-label">Status Pembayaran</span>
-                <span className="detail-colon">:</span>
-                <span className="detail-value">
+                  <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155', marginBottom: '0.5rem', marginTop: '1.5rem' }}>Tanggal Order</h4>
+                  <p style={{ fontSize: '1rem', color: '#1e293b' }}>{order.tanggal || "-"}</p>
+
+                  <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155', marginBottom: '0.5rem', marginTop: '1.5rem' }}>Total Dibayar</h4>
+                  <p style={{ fontSize: '1rem', fontWeight: 600, color: '#059669' }}>Rp {totalDibayar.toLocaleString("id-ID")}</p>
+                </div>
+
+                <div>
+                  <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155', marginBottom: '0.5rem' }}>Total Harga</h4>
+                  <p style={{ fontSize: '1rem', fontWeight: 600, color: '#1e293b' }}>Rp {totalHarga.toLocaleString("id-ID")}</p>
+
+                  <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155', marginBottom: '0.5rem', marginTop: '1.5rem' }}>Status Pembayaran</h4>
                   <span className={`orders-status-badge orders-status-badge--${statusPembayaranInfo.class}`}>
                     {statusPembayaranInfo.label}
                   </span>
-                </span>
+
+                  <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155', marginBottom: '0.5rem', marginTop: '1.5rem' }}>Alamat</h4>
+                  <p style={{ fontSize: '0.95rem', color: '#1e293b', lineHeight: '1.5' }}>{order.alamat || "-"}</p>
+
+                  <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155', marginBottom: '0.5rem', marginTop: '1.5rem' }}>Sisa Pembayaran</h4>
+                  <p style={{ fontSize: '1rem', fontWeight: 600, color: sisaPembayaran > 0 ? '#dc2626' : '#059669' }}>
+                    Rp {sisaPembayaran.toLocaleString("id-ID")}
+                  </p>
+                </div>
               </div>
-              <div className="detail-item">
-                <span className="detail-label">Metode Pembayaran</span>
-                <span className="detail-colon">:</span>
-                <span className="detail-value">{order.metode_bayar || "-"}</span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Waktu Pembayaran</span>
-                <span className="detail-colon">:</span>
-                <span className="detail-value">{waktuPembayaran || "-"}</span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Bukti Pembayaran</span>
-                <span className="detail-colon">:</span>
-                <span className="detail-value">
-                  {buktiUrl ? (
-                    <img
-                      src={buktiUrl}
-                      alt={`Bukti Pembayaran ${order.customer_rel?.nama || "-"}`}
-                      onClick={() => handleImageClick(buktiUrl)}
-                      style={{
-                        maxWidth: 150,
-                        maxHeight: 120,
-                        objectFit: "cover",
-                        marginTop: 4,
-                        borderRadius: 6,
-                        border: "1px solid #e5e7eb",
-                        cursor: "pointer",
-                        transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = "scale(1.05)";
-                        e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = "scale(1)";
-                        e.currentTarget.style.boxShadow = "none";
-                      }}
-                      onError={(e) => {
-                        e.target.style.display = "none";
-                        console.error("Gagal memuat gambar:", buktiUrl);
-                      }}
-                    />
-                  ) : (
-                    "-"
+            </div>
+          )}
+
+          {/* === PEMBAYARAN TAB === */}
+          {activeTab === "pembayaran" && (
+            <div className="detail-list fade-in">
+              {loadingPayment ? (
+                <div style={{ textAlign: "center", padding: "3rem" }}>
+                  <i className="pi pi-spin pi-spinner" style={{ fontSize: "2rem", color: "#ff6c00" }} />
+                  <p style={{ marginTop: "1rem", color: "#6b7280" }}>Memuat data...</p>
+                </div>
+              ) : paymentError ? (
+                <div style={{ textAlign: "center", padding: "3rem" }}>
+                  <p style={{ color: "#dc2626" }}>{paymentError}</p>
+                  <button
+                    onClick={fetchPaymentHistory}
+                    style={{
+                      marginTop: "1rem",
+                      padding: "0.5rem 1rem",
+                      background: "#ff6c00",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      fontWeight: 500
+                    }}
+                  >
+                    Coba Lagi
+                  </button>
+                </div>
+              ) : paymentHistoryData ? (
+                <>
+                  {/* Ringkasan */}
+                  {paymentHistoryData.summary && (
+                    <div style={{ marginBottom: "1.5rem", padding: "1rem", background: "#eff6ff", borderRadius: "8px", border: "1px solid #bfdbfe" }}>
+                      <h3 style={{ margin: "0 0 0.75rem", fontSize: "1rem", fontWeight: 600, color: "#111827" }}>Ringkasan</h3>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "0.75rem", fontSize: "0.875rem" }}>
+                        <div>
+                          <span style={{ color: "#6b7280" }}>Total Amount:</span>
+                          <strong style={{ display: "block", color: "#111827" }}>Rp {Number(paymentHistoryData.summary.total_amount || 0).toLocaleString("id-ID")}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: "#6b7280" }}>Total Paid:</span>
+                          <strong style={{ display: "block", color: "#059669" }}>Rp {Number(paymentHistoryData.summary.total_paid || 0).toLocaleString("id-ID")}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: "#6b7280" }}>Remaining:</span>
+                          <strong style={{ display: "block", color: "#dc2626" }}>Rp {Number(paymentHistoryData.summary.remaining || 0).toLocaleString("id-ID")}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: "#6b7280" }}>Jumlah Pembayaran:</span>
+                          <strong style={{ display: "block", color: "#111827" }}>{paymentHistoryData.summary.count_payments || 0}x</strong>
+                        </div>
+                      </div>
+                    </div>
                   )}
-                </span>
-              </div>
-            </div>
 
-            <div className="detail-section-divider"></div>
+                  {/* Daftar Pembayaran */}
+                  <div>
+                    {paymentHistoryData.payments && paymentHistoryData.payments.length > 0 ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                        {paymentHistoryData.payments.map((payment, idx) => {
+                          const paymentStatus = payment.status;
+                          const paymentStatusNum = paymentStatus === null || paymentStatus === undefined ? 1 : Number(paymentStatus);
 
-            {/* Informasi Tambahan */}
-            <div className="detail-section">
-              <h4 className="detail-section-title">Informasi Tambahan</h4>
-              <div className="detail-item">
-                <span className="detail-label">Tanggal Pesanan</span>
-                <span className="detail-colon">:</span>
-                <span className="detail-value">{order.tanggal || "-"}</span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Sumber Pesanan</span>
-                <span className="detail-colon">:</span>
-                <span className="detail-value">{order.sumber || "-"}</span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Order ID</span>
-                <span className="detail-colon">:</span>
-                <span className="detail-value">#{order.id}</span>
-              </div>
+                          let statusLabel, statusBg, statusColor;
+                          if (paymentStatusNum === 2) {
+                            statusLabel = "Approved";
+                            statusBg = "#d1fae5";
+                            statusColor = "#065f46";
+                          } else if (paymentStatusNum === 3) {
+                            statusLabel = "Rejected";
+                            statusBg = "#fee2e2";
+                            statusColor = "#991b1b";
+                          } else {
+                            statusLabel = "Pending";
+                            statusBg = "#fef3c7";
+                            statusColor = "#92400e";
+                          }
+
+                          return (
+                            <div key={payment.id || idx} style={{ padding: "1rem", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
+                                <div>
+                                  <strong style={{ fontSize: "0.95rem", color: "#111827" }}>Pembayaran ke {payment.payment_ke || idx + 1}</strong>
+                                  <div style={{ fontSize: "0.875rem", color: "#6b7280", marginTop: "0.25rem" }}>
+                                    {payment.tanggal ? formatDateTime(payment.tanggal) : "-"}
+                                  </div>
+                                </div>
+                                <div style={{ textAlign: "right" }}>
+                                  <strong style={{ fontSize: "1.1rem", color: "#059669" }}>Rp {Number(payment.amount || 0).toLocaleString("id-ID")}</strong>
+                                  <div style={{ fontSize: "0.75rem", marginTop: "0.25rem" }}>
+                                    <span style={{ padding: "0.25rem 0.5rem", borderRadius: "4px", background: statusBg, color: statusColor, fontWeight: 600 }}>
+                                      {statusLabel}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "0.5rem", fontSize: "0.875rem", marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px solid #e5e7eb" }}>
+                                <div>
+                                  <span style={{ color: "#6b7280" }}>Metode:</span>
+                                  <strong style={{ display: "block", color: "#111827" }}>{payment.payment_method?.toUpperCase() || "-"}</strong>
+                                </div>
+                                {payment.bukti_pembayaran && (
+                                  <div>
+                                    <span style={{ color: "#6b7280" }}>Bukti:</span>
+                                    <a
+                                      href={`${BACKEND_URL}/storage/${payment.bukti_pembayaran}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      style={{ display: "block", color: "#c85400", textDecoration: "underline" }}
+                                    >
+                                      Lihat Bukti
+                                    </a>
+                                  </div>
+                                )}
+                                {payment.catatan && (
+                                  <div style={{ gridColumn: "1 / -1" }}>
+                                    <span style={{ color: "#6b7280" }}>Catatan:</span>
+                                    <p style={{ margin: "0.25rem 0 0", color: "#111827" }}>{payment.catatan}</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div style={{ textAlign: "center", padding: "2rem", color: "#6b7280" }}>
+                        <p>Belum ada riwayat pembayaran</p>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : null}
             </div>
-          </div>
+          )}
+
+          {/* === FOLLOW UP TAB === */}
+          {activeTab === "followup" && (
+            <div className="detail-list fade-in">
+              {loadingLogs && (
+                <div style={{ textAlign: 'center', padding: '2rem' }}>
+                  <i className="pi pi-spin pi-spinner" style={{ fontSize: '2rem', color: '#3b82f6' }}></i>
+                </div>
+              )}
+              {!loadingLogs && logsError && (
+                <div style={{ color: '#dc2626', padding: '1rem', textAlign: 'center' }}>
+                  {logsError}
+                </div>
+              )}
+              {!loadingLogs && !logsError && logs.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+                  Belum ada log follow up.
+                </div>
+              )}
+              {!loadingLogs && !logsError && logs.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {logs.map((log, idx) => {
+                    const statusBadge = getFollowupStatusBadge(log.status);
+                    return (
+                      <div key={log.id || idx} style={{ border: '1px solid #e2e8f0', borderRadius: '0.5rem', padding: '1rem', background: '#fff' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                          <span className={`status-badge ${statusBadge.className}`} style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '999px' }}>
+                            {statusBadge.label}
+                          </span>
+                          <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{formatDateTime(log.create_at)}</span>
+                        </div>
+                        <div style={{ fontSize: '0.9rem', color: '#334155', whiteSpace: 'pre-wrap', background: '#f8fafc', padding: '0.75rem', borderRadius: '0.25rem', marginBottom: '0.5rem' }}>
+                          {log.keterangan || log.pesan || "-"}
+                        </div>
+                        {log.response && (
+                          <div style={{ fontSize: '0.85rem', color: '#059669' }}>
+                            <strong>Response:</strong> {log.response}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
         </div>
       </div>
 
@@ -295,60 +494,92 @@ export default function ViewOrders({ order, onClose }) {
           }}
           onClick={handleCloseImageModal}
         >
-          <div
-            style={{
-              position: "relative",
-              maxWidth: "90%",
-              maxHeight: "90%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
             <img
               src={selectedImageUrl}
-              alt="Bukti Pembayaran - Full Size"
-              style={{
-                maxWidth: "100%",
-                maxHeight: "90vh",
-                objectFit: "contain",
-                borderRadius: "8px",
-                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.5)",
-              }}
+              alt="Full Size"
+              style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
             />
             <button
               onClick={handleCloseImageModal}
               style={{
                 position: "absolute",
-                top: "-2.5rem",
-                right: 0,
-                background: "rgba(255, 255, 255, 0.9)",
+                top: "1rem",
+                right: "1rem",
+                background: "rgba(255, 255, 255, 0.5)",
                 border: "none",
                 borderRadius: "50%",
-                width: "2rem",
-                height: "2rem",
+                width: "3rem",
+                height: "3rem",
+                cursor: "pointer",
+                fontSize: "2rem",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                fontSize: "1.5rem",
-                color: "#374151",
-                fontWeight: "bold",
-                transition: "background 0.2s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(255, 255, 255, 1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(255, 255, 255, 0.9)";
+                justifyContent: "center"
               }}
             >
-              ×
+              &times;
             </button>
           </div>
         </div>
       )}
+
+      {/* Internal Styles for Tabs */}
+      <style jsx>{`
+        .modal-tabs {
+            display: flex;
+            gap: 2rem;
+            padding: 0 1.5rem;
+            margin-top: 1rem;
+        }
+        .tab-item {
+            background: none;
+            border: none;
+            padding: 0.75rem 0;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #64748b;
+            cursor: pointer;
+            position: relative;
+            transition: color 0.2s;
+        }
+        .tab-item.active {
+            color: #10b981; /* Green color match */
+        }
+        .tab-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: #10b981;
+        }
+        .tab-item:hover {
+            color: #334155;
+        }
+        .tabs-divider {
+            height: 1px;
+            background: #e2e8f0;
+            width: 100%;
+            margin-top: 0;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .badge-success { background: #dcfce7; color: #166534; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+      `}</style>
     </div>
   );
 }
