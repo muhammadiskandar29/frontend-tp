@@ -109,10 +109,9 @@ const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran, prod
 
   // 1. Cek Follow Up (Event 1-4)
   // Berbasis log follow-up, harus cocok Product ID.
-  const isFollowupSent = (type) => {
-    // Jika productId undefined/null (misal data produk belum loading), anggap belum terkirim (abu-abu)
-    // Jangan lakukan strict comparison yang akan gagal.
-    if (!productId && productId !== 0) return false;
+
+  const isFollowupSent = (followUpNumber) => {
+    if (!productId || !customerWa) return false;
 
     return followupLogs.some(l => {
       // 1. Harus ada relasi follow up
@@ -121,14 +120,13 @@ const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran, prod
       // 2. Produk harus cocok (Strict)
       if (Number(l.follup_rel.produk_id) !== Number(productId)) return false;
 
-      // 3. Type harus cocok (Normalisasi string)
-      const dbType = String(l.follup_rel.type || "").trim();
-      if (dbType !== String(type) && dbType !== `Follow Up ${type}`) return false;
+      // 3. Follow up ke-berapa (1–4)
+      // mapping dari follup_rel.type (bukan ID)
+      const typeStr = String(l.follup_rel.type || "").trim();
+      if (typeStr !== String(followUpNumber) && typeStr !== `Follow Up ${followUpNumber}`) return false;
 
       // 4. Nomor WA harus cocok (Strict)
-      // Follow-up dianggap terkirim kalau WA tujuan sama dengan WA customer/order ini.
-      if (!l.customer_rel || !customerWa) return false;
-      return String(l.customer_rel.wa) === String(customerWa);
+      return String(l.customer_rel?.wa) === String(customerWa);
     });
   };
 
