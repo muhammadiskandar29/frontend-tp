@@ -1,18 +1,87 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import dynamic from "next/dynamic";
+
+const EmojiPicker = dynamic(() => import("emoji-picker-react"), {
+    ssr: false,
+});
+
+const AUTOTEXT_OPTIONS = [
+    { label: "Pilih Autotext", value: "" },
+    { label: "{{customer_name}}", value: "{{customer_name}}" },
+    { label: "{{product_name}}", value: "{{product_name}}" },
+    { label: "{{order_date}}", value: "{{order_date}}" },
+    { label: "{{order_total}}", value: "{{order_total}}" },
+    { label: "{{payment_method}}", value: "{{payment_method}}" },
+    { label: "{{payment_time}}", value: "{{payment_time}}" },
+    { label: "{{payment_ke}}", value: "{{payment_ke}}" },
+    { label: "{{amount}}", value: "{{amount}}" },
+    { label: "{{amount_total}}", value: "{{amount_total}}" },
+    { label: "{{amount_remaining}}", value: "{{amount_remaining}}" },
+    { label: "{{amount_remaining_formatted}}", value: "{{amount_remaining_formatted}}" },
+];
 
 export default function SendWhatsappModal({ order, isOpen, onClose }) {
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+    const [selectedAutotext, setSelectedAutotext] = useState("");
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const textareaRef = useRef(null);
+
+    // Close emoji picker when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (showEmojiPicker && !event.target.closest('[data-emoji-picker]')) {
+                setShowEmojiPicker(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [showEmojiPicker]);
+
+    const insertAtCursor = (value) => {
+        if (!value) return;
+        const textarea = textareaRef.current;
+        if (!textarea) {
+            setMessage((prev) => (prev || "") + value);
+            return;
+        }
+        const start = textarea.selectionStart ?? textarea.value.length;
+        const end = textarea.selectionEnd ?? textarea.value.length;
+        const before = message.slice(0, start);
+        const after = message.slice(end);
+        const newValue = `${before}${value}${after}`;
+        setMessage(newValue);
+        requestAnimationFrame(() => {
+            const newPos = start + value.length;
+            textarea.focus();
+            textarea.setSelectionRange(newPos, newPos);
+        });
+    };
+
+    const handleInsertAutotext = () => {
+        if (!selectedAutotext) return;
+        insertAtCursor(selectedAutotext);
+        setSelectedAutotext("");
+    };
+
+    const handleEmojiClick = (emojiData) => {
+        const emoji = emojiData?.emoji;
+        if (emoji) {
+            insertAtCursor(emoji);
+        }
+    };
 
     useEffect(() => {
         if (isOpen) {
             setMessage("");
             setError("");
             setSuccess("");
+            setSelectedAutotext("");
+            setShowEmojiPicker(false);
         }
     }, [isOpen]);
 
@@ -164,25 +233,123 @@ export default function SendWhatsappModal({ order, isOpen, onClose }) {
                         </div>
                     </div>
 
-                    {/* Message Input */}
-                    <div>
-                        <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 500, color: "#374151" }}>Pesan</label>
+                    {/* Pesan WhatsApp */}
+                    <div style={{ marginBottom: "1rem" }}>
+                        <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 500, color: "#374151" }}>
+                            Pesan WhatsApp <span style={{ color: "#ef4444" }}>*</span>
+                        </label>
                         <textarea
+                            ref={textareaRef}
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
-                            placeholder="Tulis pesan..."
-                            rows={5}
+                            placeholder="Tulis pesan yang akan dikirim ke customer..."
+                            rows={10}
                             style={{
                                 width: "100%",
                                 padding: "0.75rem",
                                 border: "1px solid #d1d5db",
-                                borderRadius: "6px",
+                                borderRadius: "0.375rem",
                                 fontSize: "0.875rem",
                                 resize: "vertical",
                                 outline: "none",
+                                fontFamily: "inherit",
+                                lineHeight: "1.5"
                             }}
                             required
                         />
+
+                        {/* Autotext and Emoji Controls */}
+                        <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
+                            {/* Autotext */}
+                            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flex: "1", minWidth: "200px" }}>
+                                <select
+                                    value={selectedAutotext}
+                                    onChange={(e) => setSelectedAutotext(e.target.value)}
+                                    style={{
+                                        flex: 1,
+                                        padding: "0.5rem",
+                                        border: "1px solid #d1d5db",
+                                        borderRadius: "0.375rem",
+                                        fontSize: "0.875rem",
+                                        backgroundColor: "#fff",
+                                        color: "#374151",
+                                    }}
+                                >
+                                    {AUTOTEXT_OPTIONS.map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                <button
+                                    type="button"
+                                    onClick={handleInsertAutotext}
+                                    disabled={!selectedAutotext}
+                                    style={{
+                                        padding: "0.5rem 1rem",
+                                        backgroundColor: selectedAutotext ? "#f1a124" : "#e5e7eb",
+                                        color: selectedAutotext ? "white" : "#9ca3af",
+                                        border: "none",
+                                        borderRadius: "0.375rem",
+                                        cursor: selectedAutotext ? "pointer" : "not-allowed",
+                                        fontSize: "0.875rem",
+                                        fontWeight: "500",
+                                        transition: "all 0.2s"
+                                    }}
+                                >
+                                    Insert
+                                </button>
+                            </div>
+
+                            {/* Emoji Picker */}
+                            <div style={{ position: "relative" }} data-emoji-picker>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowEmojiPicker((prev) => !prev)}
+                                    style={{
+                                        padding: "0.5rem 1rem",
+                                        backgroundColor: showEmojiPicker ? "#f1a124" : "#fff",
+                                        color: showEmojiPicker ? "white" : "#374151",
+                                        border: "1px solid #d1d5db",
+                                        borderRadius: "0.375rem",
+                                        cursor: "pointer",
+                                        fontSize: "0.875rem",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "0.5rem",
+                                        fontWeight: 500,
+                                        transition: "all 0.2s"
+                                    }}
+                                >
+                                    <span>😊</span>
+                                    <span>Emoticon</span>
+                                </button>
+                                {showEmojiPicker && (
+                                    <div
+                                        style={{
+                                            position: "absolute",
+                                            bottom: "100%",
+                                            right: 0,
+                                            marginBottom: "0.5rem",
+                                            zIndex: 1000,
+                                            backgroundColor: "#fff",
+                                            borderRadius: "0.5rem",
+                                            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+                                            border: "1px solid #e5e7eb"
+                                        }}
+                                    >
+                                        <EmojiPicker
+                                            onEmojiClick={handleEmojiClick}
+                                            height={320}
+                                            width={280}
+                                            searchDisabled={false}
+                                            previewConfig={{ showPreview: false }}
+                                            skinTonesDisabled
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </div>
 
                 </div>
