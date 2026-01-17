@@ -1352,7 +1352,7 @@ export default function DaftarPesanan() {
                                   {order.customer_rel?.wa ? `+${order.customer_rel.wa}` : "-"}
                                 </span>
                                 <span className="customer-detail" style={{ fontSize: "0.75rem", marginTop: "2px", color: "#64748b" }}>
-                                  Email: {order.customer_rel?.email || "-"}
+                                  {order.customer_rel?.email || "-"}
                                 </span>
                               </div>
                             </td>
@@ -1442,16 +1442,14 @@ export default function DaftarPesanan() {
                                 <button className="action-btn-icon" style={{ color: '#6b7280' }} title="Tambah">
                                   <Plus size={16} />
                                 </button>
-                              </div>
-
-                              {/* Dropdown Button (Toggle Row) */}
-                              <div style={{ position: 'relative', marginLeft: 'auto' }}>
+                                {/* Dropdown Button (Toggle Row) */}
                                 <button
                                   className={`action-btn-dropdown ${activeDropdown === custId ? 'active' : ''}`}
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setActiveDropdown(activeDropdown === custId ? null : custId);
                                   }}
+                                  style={{ marginLeft: 'auto' }}
                                 >
                                   <span>{otherCount > 0 ? `Lihat ${otherCount} Order Lain` : "Lihat Order"}</span>
                                   <ChevronDown size={14} strokeWidth={3} className={`transition-transform ${activeDropdown === custId ? 'rotate-180' : ''}`} />
