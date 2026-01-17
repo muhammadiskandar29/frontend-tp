@@ -240,21 +240,59 @@ export default function AddOrders({ onClose, onAdd }) {
       wa: cust.wa || "",
       email: cust.email || "",
       alamat_customer: cust.alamat || "",
-      // If customer has structured data, you might want to map it back, but existing API likely returns flat 'alamat'
-      // We'll trust the flat address if that's what we have
       alamat: cust.alamat || "",
-      // Reset form regional fields to empty as we are using existing customer data
-      provinsi: "",
-      kabupaten: "",
-      kecamatan: "",
-      kode_pos: "",
-      detail_alamat: ""
+      // Populate fields from customer data (don't clear them)
+      provinsi: cust.provinsi || "",
+      kabupaten: cust.kabupaten || "",
+      kecamatan: cust.kecamatan || "",
+      kode_pos: cust.kode_pos || "",
+      detail_alamat: cust.detail_alamat || ""
     }));
     // Reset search
     setCustomerSearch("");
     setCustomerResults([]);
     setShowCustomerForm(false);
   };
+
+  // === AUTO-MATCH REGIONS (Sync Name -> ID) ===
+  // 1. Match Province
+  useEffect(() => {
+    if (formData.provinsi && !selectedRegionIds.provinceId && regionData.provinces.length > 0) {
+      const match = regionData.provinces.find(p =>
+        p.name.toLowerCase().trim() === formData.provinsi.toLowerCase().trim()
+      );
+      if (match) {
+        console.log("📍 Auto-match Province:", match.name);
+        setSelectedRegionIds(prev => ({ ...prev, provinceId: match.id }));
+      }
+    }
+  }, [formData.provinsi, regionData.provinces, selectedRegionIds.provinceId]);
+
+  // 2. Match City (only after provinceId is set and cities loaded)
+  useEffect(() => {
+    if (formData.kabupaten && !selectedRegionIds.cityId && regionData.cities.length > 0) {
+      const match = regionData.cities.find(c =>
+        c.name.toLowerCase().trim() === formData.kabupaten.toLowerCase().trim()
+      );
+      if (match) {
+        console.log("📍 Auto-match City:", match.name);
+        setSelectedRegionIds(prev => ({ ...prev, cityId: match.id }));
+      }
+    }
+  }, [formData.kabupaten, regionData.cities, selectedRegionIds.cityId]);
+
+  // 3. Match District (only after cityId is set and districts loaded)
+  useEffect(() => {
+    if (formData.kecamatan && !selectedRegionIds.districtId && regionData.districts.length > 0) {
+      const match = regionData.districts.find(d =>
+        d.name.toLowerCase().trim() === formData.kecamatan.toLowerCase().trim()
+      );
+      if (match) {
+        console.log("📍 Auto-match District:", match.name);
+        setSelectedRegionIds(prev => ({ ...prev, districtId: match.id }));
+      }
+    }
+  }, [formData.kecamatan, regionData.districts, selectedRegionIds.districtId]);
 
   const resetCustomerSelection = () => {
     setFormData((prev) => ({
@@ -379,12 +417,12 @@ export default function AddOrders({ onClose, onAdd }) {
       finalAlamat = parts.join(", ");
     }
 
-    // Validasi alamat (required untuk order)
-    if (!finalAlamat?.trim()) {
-      setMessage("Alamat wajib diisi (lengkapi form wilayah atau pilih customer).");
-      setLoading(false);
-      return;
-    }
+    // Validasi alamat (DIHAPUS sesuai request user)
+    // if (!finalAlamat?.trim()) {
+    //   setMessage("Alamat wajib diisi (lengkapi form wilayah atau pilih customer).");
+    //   setLoading(false);
+    //   return;
+    // }
 
     const payload = {
       ...formData,
