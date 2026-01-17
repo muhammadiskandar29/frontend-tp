@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useMemo, useCallback, memo } from "react";
+import React, { useEffect, useState, useRef, useMemo, useCallback, memo } from "react";
 import Layout from "@/components/Layout";
 import dynamic from "next/dynamic";
 import { ShoppingCart, Clock, CheckCircle, PartyPopper, XCircle, Filter, ExternalLink, Image as ImageIcon, Mail, Phone, Plus, ChevronDown } from "lucide-react";
