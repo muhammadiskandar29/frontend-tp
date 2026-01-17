@@ -616,7 +616,7 @@ export default function Dashboard() {
 
         {/* TWO TABLES: FOLLOW UP HISTORY & RECENT ORDERS */}
         <section className="dashboard-panels">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', width: '100%' }} className="recent-activity-grid">
+          <div style={{ display: 'grid', gridTemplateColumns: '350px 1fr', gap: '1.5rem', width: '100%' }} className="recent-activity-grid">
 
             <style jsx>{`
                 @media (max-width: 1024px) {
