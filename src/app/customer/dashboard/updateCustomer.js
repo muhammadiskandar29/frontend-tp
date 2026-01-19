@@ -35,99 +35,6 @@ async function updateCustomer(payload) {
 }
 import { getCustomerSession } from "@/lib/customerAuth";
 
-// Function to normalize region name for matching (case-insensitive, remove extra spaces)
-const normalizeRegionName = (name) => {
-  if (!name || typeof name !== 'string') return "";
-  return name.trim().toLowerCase().replace(/\s+/g, ' ');
-};
-
-// Function to parse alamat string into separate fields
-const parseAlamat = (alamatString) => {
-  if (!alamatString || typeof alamatString !== 'string') {
-    return { provinsi: "", kabupaten: "", kecamatan: "", kode_pos: "" };
-  }
-
-  // Pattern: "PROVINSI, KABUPATEN, kec. KECAMATAN, kode pos KODE_POS"
-  // atau variasi lainnya
-  let provinsi = "";
-  let kabupaten = "";
-  let kecamatan = "";
-  let kode_pos = "";
-
-  // Extract kode pos (format: "kode pos 231" atau "kode pos: 231")
-  const kodePosMatch = alamatString.match(/kode\s*pos[:\s]+(\d+)/i);
-  if (kodePosMatch) {
-    kode_pos = kodePosMatch[1];
-  }
-
-  // Extract kecamatan (format: "kec. ASAKOTA" atau "kecamatan ASAKOTA")
-  // Hapus "kec." atau "kecamatan" dari hasil
-  const kecamatanMatch = alamatString.match(/kec\.?\s*([^,]+)/i);
-  if (kecamatanMatch) {
-    kecamatan = kecamatanMatch[1].trim();
-    // Hapus "kecamatan" jika masih ada di hasil
-    kecamatan = kecamatan.replace(/^kecamatan\s+/i, '').trim();
-  }
-
-  // Split by comma untuk mendapatkan provinsi dan kabupaten
-  const parts = alamatString.split(',').map(p => p.trim());
-  
-  if (parts.length >= 1) {
-    // Bagian pertama biasanya provinsi (bisa ada (NTB) di dalamnya)
-    provinsi = parts[0].replace(/\s*\([^)]+\)\s*/, '').trim(); // Hapus (NTB)
-  }
-  
-  if (parts.length >= 2) {
-    // Bagian kedua biasanya kabupaten (tapi bisa juga kecamatan jika format berbeda)
-    const part2 = parts[1].trim();
-    // Jika part2 tidak mengandung "kec." dan kecamatan belum terisi, maka ini kabupaten
-    if (!part2.match(/kec\.?/i) && !kecamatan) {
-      kabupaten = part2;
-    }
-  }
-
-  return { provinsi, kabupaten, kecamatan, kode_pos };
-};
-
-// Function to check if value is an email (invalid for industri_pekerjaan)
-const isValidIndustriPekerjaan = (value) => {
-  if (!value || typeof value !== 'string') return false;
-  // Check if it's an email pattern
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return !emailPattern.test(value.trim());
-};
-
-// Function to fetch customer data from API
-async function fetchCustomerData() {
-  const token = localStorage.getItem("customer_token");
-
-  if (!token) {
-    throw new Error("Token tidak ditemukan. Silakan login kembali.");
-  }
-
-  try {
-    const response = await fetch("/api/customer/customer", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    const data = await response.json();
-
-    if (!response.ok || data?.success !== true) {
-      throw new Error(data?.message || "Gagal mengambil data customer");
-    }
-
-    return data.data;
-  } catch (error) {
-    console.error("❌ [FETCH_CUSTOMER] Error:", error);
-    throw error;
-  }
-}
-
 const initialFormState = {
   nama_panggilan: "",
   instagram: "",
@@ -276,7 +183,6 @@ export default function UpdateCustomerModal({
   const [formData, setFormData] = useState(initialFormState);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [loadingData, setLoadingData] = useState(false);
 
   // State untuk form wilayah (cascading dropdown)
   const [regionForm, setRegionForm] = useState({
@@ -443,195 +349,86 @@ export default function UpdateCustomerModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRegionIds.cityId]);
 
-  // Fetch customer data dari API saat modal dibuka
+  // Initialize data dari session saat modal dibuka
   useEffect(() => {
     if (!isOpen) return;
 
-    const loadCustomerData = async () => {
-      setLoadingData(true);
-      setError("");
+    try {
+      const session = getCustomerSession();
+      const user = session.user || {};
 
-      try {
-        // Fetch data terbaru dari API
-        const customerData = await fetchCustomerData();
-        console.log("📥 [UPDATE_CUSTOMER] Fetched customer data:", customerData);
+      setFormData((prev) => ({
+        ...prev,
+        nama_panggilan: user.nama_panggilan || user.nama || prev.nama_panggilan,
+        instagram: user.instagram || prev.instagram,
+        profesi: user.profesi || prev.profesi,
+        pendapatan_bln: user.pendapatan_bln || prev.pendapatan_bln,
+        industri_pekerjaan:
+          user.industri_pekerjaan || prev.industri_pekerjaan,
+        jenis_kelamin: user.jenis_kelamin || prev.jenis_kelamin || "l",
+        tanggal_lahir: user.tanggal_lahir
+          ? user.tanggal_lahir.slice(0, 10)
+          : prev.tanggal_lahir,
+        password: "",
+      }));
 
-        // Parse alamat jika ada field alamat (bukan provinsi/kabupaten/kecamatan terpisah)
-        let parsedAlamat = {
-          provinsi: customerData.provinsi || "",
-          kabupaten: customerData.kabupaten || "",
-          kecamatan: customerData.kecamatan || "",
-          kode_pos: customerData.kode_pos || ""
-        };
-
-        // Jika ada field alamat (string gabungan), parse dulu
-        if (customerData.alamat && typeof customerData.alamat === 'string') {
-          const parsed = parseAlamat(customerData.alamat);
-          // Gunakan parsed data jika field individual kosong
-          if (!parsedAlamat.provinsi && parsed.provinsi) parsedAlamat.provinsi = parsed.provinsi;
-          if (!parsedAlamat.kabupaten && parsed.kabupaten) parsedAlamat.kabupaten = parsed.kabupaten;
-          if (!parsedAlamat.kecamatan && parsed.kecamatan) parsedAlamat.kecamatan = parsed.kecamatan;
-          if (!parsedAlamat.kode_pos && parsed.kode_pos) parsedAlamat.kode_pos = parsed.kode_pos;
-        }
-
-        // Validasi industri_pekerjaan - jangan isi jika nilainya email
-        let industriPekerjaanValue = customerData.industri_pekerjaan || "";
-        if (industriPekerjaanValue && !isValidIndustriPekerjaan(industriPekerjaanValue)) {
-          console.warn("⚠️ [UPDATE_CUSTOMER] industri_pekerjaan contains email, clearing it:", industriPekerjaanValue);
-          industriPekerjaanValue = "";
-        }
-
-        // Pre-fill form dengan data yang sudah ada
-        setFormData((prev) => ({
-          ...prev,
-          nama_panggilan: customerData.nama_panggilan || customerData.nama || prev.nama_panggilan || "",
-          instagram: customerData.instagram || prev.instagram || "",
-          profesi: customerData.profesi || prev.profesi || "",
-          pendapatan_bln: customerData.pendapatan_bln || prev.pendapatan_bln || "",
-          industri_pekerjaan: industriPekerjaanValue || "", // ✅ Gunakan value yang sudah divalidasi
-          jenis_kelamin: customerData.jenis_kelamin || prev.jenis_kelamin || "l",
-          tanggal_lahir: customerData.tanggal_lahir
-            ? customerData.tanggal_lahir.slice(0, 10)
-            : prev.tanggal_lahir || "",
-          password: "", // Password selalu kosong untuk keamanan
-        }));
-
-        // Initialize region form dari customer data (dengan parsed alamat)
-        setRegionForm({
-          provinsi: parsedAlamat.provinsi || "",
-          kabupaten: parsedAlamat.kabupaten || "",
-          kecamatan: parsedAlamat.kecamatan || "",
-          kode_pos: parsedAlamat.kode_pos || ""
-        });
-
-        console.log("✅ [UPDATE_CUSTOMER] Form pre-filled with existing data", {
-          parsedAlamat,
-          industri_pekerjaan: industriPekerjaanValue
-        });
-      } catch (error) {
-        console.error("❌ [UPDATE_CUSTOMER] Failed to load customer data:", error);
-        // Fallback ke session data jika API gagal
-        try {
-          const session = getCustomerSession();
-          const user = session.user || {};
-
-          // Parse alamat dari session juga
-          let parsedAlamatSession = {
-            provinsi: user.provinsi || "",
-            kabupaten: user.kabupaten || "",
-            kecamatan: user.kecamatan || "",
-            kode_pos: user.kode_pos || ""
-          };
-
-          if (user.alamat && typeof user.alamat === 'string') {
-            const parsed = parseAlamat(user.alamat);
-            if (!parsedAlamatSession.provinsi && parsed.provinsi) parsedAlamatSession.provinsi = parsed.provinsi;
-            if (!parsedAlamatSession.kabupaten && parsed.kabupaten) parsedAlamatSession.kabupaten = parsed.kabupaten;
-            if (!parsedAlamatSession.kecamatan && parsed.kecamatan) parsedAlamatSession.kecamatan = parsed.kecamatan;
-            if (!parsedAlamatSession.kode_pos && parsed.kode_pos) parsedAlamatSession.kode_pos = parsed.kode_pos;
-          }
-
-          // Validasi industri_pekerjaan dari session juga
-          let industriPekerjaanSession = user.industri_pekerjaan || "";
-          if (industriPekerjaanSession && !isValidIndustriPekerjaan(industriPekerjaanSession)) {
-            console.warn("⚠️ [UPDATE_CUSTOMER] Session industri_pekerjaan contains email, clearing it:", industriPekerjaanSession);
-            industriPekerjaanSession = "";
-          }
-
-          setFormData((prev) => ({
-            ...prev,
-            nama_panggilan: user.nama_panggilan || user.nama || prev.nama_panggilan || "",
-            instagram: user.instagram || prev.instagram || "",
-            profesi: user.profesi || prev.profesi || "",
-            pendapatan_bln: user.pendapatan_bln || prev.pendapatan_bln || "",
-            industri_pekerjaan: industriPekerjaanSession || "", // ✅ Gunakan value yang sudah divalidasi
-            jenis_kelamin: user.jenis_kelamin || prev.jenis_kelamin || "l",
-            tanggal_lahir: user.tanggal_lahir
-              ? user.tanggal_lahir.slice(0, 10)
-              : prev.tanggal_lahir || "",
-            password: "",
-          }));
-
-          setRegionForm({
-            provinsi: parsedAlamatSession.provinsi || "",
-            kabupaten: parsedAlamatSession.kabupaten || "",
-            kecamatan: parsedAlamatSession.kecamatan || "",
-            kode_pos: parsedAlamatSession.kode_pos || ""
-          });
-        } catch (sessionError) {
-          console.error("[UPDATE_CUSTOMER] Failed to load session:", sessionError);
-        }
-      } finally {
-        setLoadingData(false);
-      }
-    };
-
-    loadCustomerData();
+      // Initialize region form dari user data
+      setRegionForm({
+        provinsi: user.provinsi || "",
+        kabupaten: user.kabupaten || "",
+        kecamatan: user.kecamatan || "",
+        kode_pos: user.kode_pos || ""
+      });
+    } catch (error) {
+      console.error("[UPDATE_CUSTOMER] Failed to load session:", error);
+    }
   }, [isOpen]);
 
   // Initialize province ID dari user data setelah provinces loaded
   useEffect(() => {
-    if (regionData.provinces.length > 0 && regionForm.provinsi) {
-      const normalizedProvinsi = normalizeRegionName(regionForm.provinsi);
+    if (regionData.provinces.length > 0 && regionForm.provinsi && !selectedRegionIds.provinceId) {
       // Cari province dengan case-insensitive dan trim untuk menghindari masalah whitespace
-      const province = regionData.provinces.find(p => {
-        const normalizedProvinceName = normalizeRegionName(p.name);
-        return normalizedProvinceName === normalizedProvinsi;
-      });
-      if (province && selectedRegionIds.provinceId !== province.id) {
-        console.log("🔵 [UPDATE_CUSTOMER] Setting province ID:", province.id, "for province:", province.name, "matched with:", regionForm.provinsi);
+      const province = regionData.provinces.find(p => 
+        p.name?.trim().toLowerCase() === regionForm.provinsi?.trim().toLowerCase()
+      );
+      if (province) {
         setSelectedRegionIds(prev => ({ ...prev, provinceId: province.id }));
-      } else if (!province && regionForm.provinsi) {
-        console.warn("⚠️ [UPDATE_CUSTOMER] Province not found:", regionForm.provinsi, "Available provinces:", regionData.provinces.map(p => p.name).slice(0, 5));
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [regionData.provinces, regionForm.provinsi]);
+  }, [regionData.provinces.length, regionForm.provinsi]);
   
   // Initialize city ID dari user data setelah cities loaded
   useEffect(() => {
-    if (regionData.cities.length > 0 && regionForm.kabupaten && selectedRegionIds.provinceId) {
-      const normalizedKabupaten = normalizeRegionName(regionForm.kabupaten);
+    if (regionData.cities.length > 0 && regionForm.kabupaten && !selectedRegionIds.cityId) {
       // Cari city dengan case-insensitive dan trim untuk menghindari masalah whitespace
-      const city = regionData.cities.find(c => {
-        const normalizedCityName = normalizeRegionName(c.name);
-        return normalizedCityName === normalizedKabupaten;
-      });
-      if (city && selectedRegionIds.cityId !== city.id) {
-        console.log("🔵 [UPDATE_CUSTOMER] Setting city ID:", city.id, "for city:", city.name, "matched with:", regionForm.kabupaten);
+      const city = regionData.cities.find(c => 
+        c.name?.trim().toLowerCase() === regionForm.kabupaten?.trim().toLowerCase()
+      );
+      if (city) {
         setSelectedRegionIds(prev => ({ ...prev, cityId: city.id }));
-      } else if (!city && regionForm.kabupaten) {
-        console.warn("⚠️ [UPDATE_CUSTOMER] City not found:", regionForm.kabupaten, "Available cities:", regionData.cities.map(c => c.name).slice(0, 5));
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [regionData.cities, regionForm.kabupaten, selectedRegionIds.provinceId]);
+  }, [regionData.cities.length, regionForm.kabupaten]);
   
   // Initialize district ID dari user data setelah districts loaded
   useEffect(() => {
-    if (regionData.districts.length > 0 && regionForm.kecamatan && selectedRegionIds.cityId) {
-      const normalizedKecamatan = normalizeRegionName(regionForm.kecamatan);
+    if (regionData.districts.length > 0 && regionForm.kecamatan && !selectedRegionIds.districtId) {
       // Cari district dengan case-insensitive dan trim untuk menghindari masalah whitespace
-      const district = regionData.districts.find(d => {
-        const normalizedDistrictName = normalizeRegionName(d.name);
-        return normalizedDistrictName === normalizedKecamatan;
-      });
+      const district = regionData.districts.find(d => 
+        d.name?.trim().toLowerCase() === regionForm.kecamatan?.trim().toLowerCase()
+      );
       if (district) {
-        const districtId = district.id || district.district_id;
-        if (selectedRegionIds.districtId !== districtId) {
-          console.log("🔵 [UPDATE_CUSTOMER] Setting district ID:", districtId, "for district:", district.name, "matched with:", regionForm.kecamatan);
-          setSelectedRegionIds(prev => ({ ...prev, districtId: districtId }));
-        }
+        setSelectedRegionIds(prev => ({ ...prev, districtId: district.id || district.district_id }));
         // Pastikan kode_pos terisi jika ada di district atau pertahankan yang sudah ada
         if (district.postal_code && !regionForm.kode_pos) {
           setRegionForm(prev => ({ ...prev, kode_pos: district.postal_code }));
         }
-      } else if (!district && regionForm.kecamatan) {
-        console.warn("⚠️ [UPDATE_CUSTOMER] District not found:", regionForm.kecamatan, "Available districts:", regionData.districts.map(d => d.name).slice(0, 5));
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [regionData.districts, regionForm.kecamatan, selectedRegionIds.cityId]);
+  }, [regionData.districts.length, regionForm.kecamatan]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -840,13 +637,6 @@ export default function UpdateCustomerModal({
           </div>
         </div>
 
-        {/* Loading indicator saat fetch data */}
-        {loadingData && (
-          <div className="loading-banner">
-            <span>⏳</span> Memuat data customer...
-          </div>
-        )}
-
         {/* Error message */}
         {error && (
           <div className="error-banner">
@@ -1049,10 +839,10 @@ export default function UpdateCustomerModal({
             <button
               type="submit"
               className="customer-btn customer-btn--primary"
-              disabled={loading || loadingData}
+              disabled={loading}
               style={{ width: "100%" }}
             >
-              {loading ? "Menyimpan..." : loadingData ? "Memuat data..." : "Simpan Data"}
+              {loading ? "Menyimpan..." : "Simpan Data"}
             </button>
           </div>
         </form>
@@ -1324,18 +1114,6 @@ export default function UpdateCustomerModal({
           border-bottom: 1px solid #fecaca;
           font-size: 14px;
           color: #dc2626;
-          font-weight: 500;
-        }
-
-        .loading-banner {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 12px 24px;
-          background: #eff6ff;
-          border-bottom: 1px solid #bfdbfe;
-          font-size: 14px;
-          color: #1e40af;
           font-weight: 500;
         }
 

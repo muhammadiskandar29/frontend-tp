@@ -8,7 +8,6 @@ import HeroSection from "./components/HeroSection";
 import StatsSection from "./components/StatsSection";
 import OrdersSection from "./components/OrdersSection";
 import ProductsSection from "./components/ProductsSection";
-import OnboardingStepper from "./components/OnboardingStepper";
 import QuickActions from "./components/QuickActions";
 import { useDashboardData } from "./hooks/useDashboardData";
 import { useProducts } from "./hooks/useProducts";
@@ -20,27 +19,27 @@ export default function DashboardPage() {
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [updateModalReason, setUpdateModalReason] = useState("password");
   const [currentTime, setCurrentTime] = useState(() => Date.now());
-
-  const {
-    stats,
-    activeOrders,
-    customerInfo,
+  
+  const { 
+    stats, 
+    activeOrders, 
+    customerInfo, 
     unpaidCount,
-    loading: dashboardLoading,
+    loading: dashboardLoading, 
     error: dashboardError,
-    refetch: refetchDashboard
+    refetch: refetchDashboard 
   } = useDashboardData();
-
+  
   const { products, loading: productsLoading } = useProducts();
 
   // Fungsi untuk mengecek apakah data customer sudah lengkap
   const isCustomerDataComplete = (customer) => {
     if (!customer) return false;
-
+    
     // Field required: nama_panggilan dan profesi
     const hasNamaPanggilan = customer.nama_panggilan && customer.nama_panggilan.trim() !== "";
     const hasProfesi = customer.profesi && customer.profesi.trim() !== "";
-
+    
     return hasNamaPanggilan && hasProfesi;
   };
 
@@ -83,7 +82,7 @@ export default function DashboardPage() {
     const session = getCustomerSession();
     if (session.user) {
       const verifikasiFromResponse = data?.verifikasi !== undefined ? data.verifikasi : "1";
-
+      
       const updatedUser = {
         ...session.user,
         ...data,
@@ -93,7 +92,7 @@ export default function DashboardPage() {
       };
 
       localStorage.setItem("customer_user", JSON.stringify(updatedUser));
-
+      
       // Cek apakah data sudah lengkap setelah update
       if (isCustomerDataComplete(updatedUser)) {
         localStorage.removeItem("customer_show_update_modal");
@@ -108,25 +107,6 @@ export default function DashboardPage() {
     refetchDashboard();
   };
 
-  // Calculate verification status at component level
-  const session = getCustomerSession();
-  const sessionUser = session?.user || {};
-
-  // Menggunakan logika simpel yang sama dengan sales/customers/page.js
-  const isVerified =
-    customerInfo?.verifikasi === "1" ||
-    customerInfo?.verifikasi === true ||
-    sessionUser?.verifikasi === "1" ||
-    sessionUser?.verifikasi === true;
-
-  // Toast for unverified users (One-time check per load)
-  useEffect(() => {
-    if (!dashboardLoading && customerInfo && !isVerified) {
-      // Optional: Add a toast if the user wants it explicit
-      // toast.error("Akun Anda belum diverifikasi. Silakan cek OTP.", { id: "verify-toast" }); // Prevents duplicate toasts
-    }
-  }, [dashboardLoading, customerInfo, isVerified]);
-
   return (
     <CustomerLayout>
       {/* Modal Update Data Customer */}
@@ -134,6 +114,7 @@ export default function DashboardPage() {
         <UpdateCustomerModal
           isOpen={showUpdateModal}
           onClose={() => {
+            // Modal bisa ditutup kapan saja, tapi akan muncul lagi saat login jika data belum lengkap
             setShowUpdateModal(false);
             localStorage.removeItem("customer_show_update_modal");
             toast.info("Anda bisa melengkapi data nanti. Modal akan muncul lagi saat login berikutnya jika data belum lengkap.");
@@ -150,41 +131,9 @@ export default function DashboardPage() {
       )}
 
       <div className="customer-dashboard">
-
-        {/* Verification Alert (Top Level) */}
-        {!dashboardLoading && !isVerified && (
-          <div className="customer-dashboard__hero-card" style={{ background: "#FEF2F2", border: "1px solid #FCA5A5", marginBottom: "1.5rem" }}>
-            <div className="hero-verification-alert">
-              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
-                <div style={{ color: "#DC2626", fontSize: "1.25rem" }}>⚠️</div>
-                <p style={{ margin: 0, color: "#991B1B", fontWeight: 600, fontSize: "1rem" }}>
-                  Akun Anda belum diverifikasi. Silakan verifikasi OTP terlebih dahulu.
-                </p>
-              </div>
-              <button
-                onClick={() => router.push("/customer/otp")}
-                className="btn-primary"
-                style={{
-                  backgroundColor: "#DC2626",
-                  color: "white",
-                  padding: "0.6rem 1.25rem",
-                  borderRadius: "8px",
-                  fontSize: "0.95rem",
-                  fontWeight: 600,
-                  border: "none",
-                  cursor: "pointer",
-                  boxShadow: "0 2px 4px rgba(220, 38, 38, 0.2)"
-                }}
-              >
-                Verifikasi Sekarang
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Hero Section */}
-        <HeroSection
-          customerInfo={customerInfo}
+        <HeroSection 
+          customerInfo={customerInfo} 
           isLoading={dashboardLoading}
         />
 
@@ -192,75 +141,22 @@ export default function DashboardPage() {
         {!dashboardLoading && dashboardError && (
           <div className="dashboard-error-alert">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}>
-              <path d="M10 18C14.4183 18 18 14.4183 18 10C18 5.58172 14.4183 2 10 2C5.58172 2 2 5.58172 2 10C2 14.4183 5.58172 18 10 18Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M10 6V10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M10 14H10.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M10 18C14.4183 18 18 14.4183 18 10C18 5.58172 14.4183 2 10 2C5.58172 2 2 5.58172 2 10C2 14.4183 5.58172 18 10 18Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M10 6V10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M10 14H10.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
             <span>{dashboardError}</span>
           </div>
         )}
 
-        {/* Onboarding Stepper */}
-        {!dashboardLoading && (
-          <OnboardingStepper
-            currentStep={(() => {
-              // Priority 1: Payment Check
-              // If there are unpaid orders, or NO orders at all (and no paid ones), step is 1.
-              // Logic: Must clear unpaid bills first.
-              if (unpaidCount > 0) return 1;
-
-              // Priority 2: Profile Check
-              if (!isCustomerDataComplete(customerInfo)) return 2;
-
-              // Priority 3: Join Class (Verification)
-              if (customerInfo?.verifikasi !== "1") return 3;
-
-              // Priority 4: Start Learning (Active)
-              return 4;
-            })()}
-            steps={[
-              {
-                id: 'payment',
-                title: 'Selesaikan Pembayaran',
-                description: 'Bayar tagihan order Anda',
-                isCompleted: unpaidCount === 0 && (activeOrders.length > 0 || customerInfo?.keanggotaan !== 'basic')
-              },
-              {
-                id: 'profile',
-                title: 'Lengkapi Data',
-                description: 'Isi data diri profile Anda',
-                isCompleted: isCustomerDataComplete(customerInfo)
-              },
-              {
-                id: 'join',
-                title: 'Gabung Kelas',
-                description: 'Verifikasi akun & akses grup',
-                isCompleted: customerInfo?.verifikasi === "1"
-              },
-              {
-                id: 'learning',
-                title: 'Mulai Belajar',
-                description: 'Akses materi pembelajaran',
-                isCompleted: false // Always active when reached
-              }
-            ]}
-          />
-        )}
-
         {/* Quick Actions */}
-        <QuickActions
-          unpaidCount={unpaidCount}
-          onProfileClick={() => {
-            setUpdateModalReason("data");
-            setShowUpdateModal(true);
-          }}
-        />
+        <QuickActions unpaidCount={unpaidCount} />
 
         {/* Stats Section */}
         <StatsSection stats={stats} isLoading={dashboardLoading} />
 
         {/* Orders Section */}
-        <OrdersSection
+        <OrdersSection 
           orders={activeOrders}
           isLoading={dashboardLoading}
           currentTime={currentTime}
@@ -268,7 +164,7 @@ export default function DashboardPage() {
 
         {/* Products Section */}
         {products.length > 0 && (
-          <ProductsSection
+          <ProductsSection 
             products={products}
             isLoading={productsLoading}
           />

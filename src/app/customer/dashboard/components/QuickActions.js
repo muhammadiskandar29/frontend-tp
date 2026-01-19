@@ -2,14 +2,14 @@
 
 import { useRouter } from "next/navigation";
 
-export default function QuickActions({ unpaidCount = 0, onProfileClick }) {
+export default function QuickActions({ unpaidCount = 0 }) {
   const router = useRouter();
 
   const actions = [
     {
       id: 'payment',
       label: 'Pembayaran',
-      description: unpaidCount > 0
+      description: unpaidCount > 0 
         ? `${unpaidCount} order menunggu pembayaran`
         : 'Lengkapi pembayaran order',
       icon: '💳',
@@ -24,9 +24,8 @@ export default function QuickActions({ unpaidCount = 0, onProfileClick }) {
       icon: '👤',
       href: '#',
       onClick: () => {
-        if (onProfileClick) {
-          onProfileClick();
-        }
+        // Open profile modal or navigate
+        console.log('Open profile');
       },
     },
     {
@@ -68,14 +67,14 @@ export default function QuickActions({ unpaidCount = 0, onProfileClick }) {
               </div>
               <p>{action.description}</p>
             </div>
-            <svg
+            <svg 
               className="quick-action-card__arrow"
-              width="20"
-              height="20"
-              viewBox="0 0 20 20"
+              width="20" 
+              height="20" 
+              viewBox="0 0 20 20" 
               fill="none"
             >
-              <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
         ))}

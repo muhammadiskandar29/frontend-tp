@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { getCustomerSession } from "@/lib/customerAuth";
-import { fetchCustomerDashboard, fetchCustomerProfile } from "@/lib/customerDashboard";
+import { fetchCustomerDashboard } from "@/lib/customerDashboard";
 
 export function useDashboardData() {
   const router = useRouter();
@@ -33,7 +33,7 @@ export function useDashboardData() {
     if (!value) return null;
     const direct = Date.parse(value);
     if (!Number.isNaN(direct)) return new Date(direct);
-
+    
     const match = /^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2}))?$/.exec(value.trim());
     if (match) {
       const [, dd, mm, yyyy, hh = "00", min = "00"] = match;
@@ -61,7 +61,7 @@ export function useDashboardData() {
         if (!nama) return "Produk";
         return nama.charAt(0).toUpperCase() + nama.slice(1);
       };
-
+      
       const typeLabel = formatKategori(kategoriNama);
       const schedule =
         order.webinar?.start_time_formatted ||
@@ -81,10 +81,10 @@ export function useDashboardData() {
       const actionLabel = getActionLabel(kategoriNama);
       const startDate = getOrderStartDate(order);
       const statusPembayaran = order.status_pembayaran || order.status_pembayaran_id;
-
+      
       // Order dianggap terbayar jika status_pembayaran === 2 (Paid/Sukses)
       const isPaid = statusPembayaran === 2 || statusPembayaran === "2";
-
+      
       return {
         id: order.id,
         type: typeLabel,
@@ -115,60 +115,47 @@ export function useDashboardData() {
     setError("");
 
     try {
-      // Fetch Dashboard AND Profile in parallel for accuracy
-      const [dashboardData, profileData] = await Promise.all([
-        fetchCustomerDashboard(session.token).catch(e => ({})), // Fallback empty object if fails
-        fetchCustomerProfile(session.token).catch(e => null)
-      ]);
+      const data = await fetchCustomerDashboard(session.token);
+      const customerData = data.customer || null;
 
-      console.log("📦 [DASHBOARD] Fetch Data:", { dashboardData, profileData });
-
-      // Determine Customer Data: Profile Data > Dashboard Customer > Session
-      // Profile data is usually more accurate for 'verifikasi' status
-      const customerFromDashboard = dashboardData?.customer || (dashboardData?.id ? dashboardData : null);
-
-      const sessionUser = session.user || {};
-
-      // Merge Strategy: Profile (Highest) > Dashboard > Session (Lowest)
-      const finalCustomerData = {
-        ...sessionUser,
-        ...customerFromDashboard,
-        ...profileData
-      };
-
-      // Ensure verifikasi is captured correctly
-      // Note: "1", 1, true are considered verified.
-      // If profileData exists, its verifikasi is the source of truth.
-      if (profileData && profileData.verifikasi !== undefined) {
-        finalCustomerData.verifikasi = profileData.verifikasi;
+      // Sync customer data to localStorage
+      if (customerData) {
+        const existingUser = session.user || {};
+        const updatedUser = {
+          ...existingUser,
+          ...customerData,
+          nama_panggilan: customerData.nama_panggilan || existingUser.nama_panggilan,
+          profesi: customerData.profesi || existingUser.profesi,
+          verifikasi: customerData.verifikasi !== undefined 
+            ? customerData.verifikasi 
+            : (existingUser.verifikasi !== undefined ? existingUser.verifikasi : "0"),
+        };
+        localStorage.setItem("customer_user", JSON.stringify(updatedUser));
+        setDashboardData(prev => ({ ...prev, customerInfo: updatedUser }));
       }
-
-      // Sync merged customer data to localStorage
-      localStorage.setItem("customer_user", JSON.stringify(finalCustomerData));
 
       // Update stats
       const newStats = [
-        { id: "total", label: "Total Order", value: dashboardData?.statistik?.total_order ?? 0, icon: "📦" },
-        { id: "active", label: "Order Aktif", value: dashboardData?.statistik?.order_aktif ?? 0, icon: "✅" },
+        { id: "total", label: "Total Order", value: data?.statistik?.total_order ?? 0, icon: "📦" },
+        { id: "active", label: "Order Aktif", value: data?.statistik?.order_aktif ?? 0, icon: "✅" },
       ];
 
-      // Kumpulkan semua order
+      // Kumpulkan semua order dari berbagai sumber
       const allOrders = [
-        ...(dashboardData?.orders_aktif || []),
-        ...(dashboardData?.orders_pending || []),
-        ...(dashboardData?.order_proses || []),
-        ...(dashboardData?.orders_proses || []),
-        ...(dashboardData?.orders || []),
+        ...(data?.orders_aktif || []),
+        ...(data?.orders_pending || []),
+        ...(data?.order_proses || []),
+        ...(data?.orders_proses || []),
       ];
 
-      // Order Duplication Check
+      // Order Aktif: semua order (tidak peduli status pembayaran)
+      // Filter untuk menghindari duplikat berdasarkan ID
       const uniqueOrders = allOrders.filter((order, index, self) =>
         index === self.findIndex((o) => o.id === order.id)
       );
-
       const activeOrders = uniqueOrders;
 
-      // Unpaid calculation
+      // Get unpaid orders for count (status_pembayaran belum 2)
       const unpaidOrders = uniqueOrders.filter((order) => {
         const statusPembayaran = order.status_pembayaran || order.status_pembayaran_id;
         return statusPembayaran !== 2 && statusPembayaran !== "2";
@@ -179,7 +166,7 @@ export function useDashboardData() {
       setDashboardData({
         stats: newStats,
         activeOrders: adaptOrders(activeOrders),
-        customerInfo: finalCustomerData,
+        customerInfo: customerData || session.user,
         unpaidCount,
       });
     } catch (error) {
