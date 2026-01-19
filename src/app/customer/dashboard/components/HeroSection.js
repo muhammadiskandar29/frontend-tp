@@ -1,15 +1,16 @@
 "use client";
 
 import { toast } from "react-hot-toast";
+import { useRouter } from "next/navigation";
 import { getCustomerSession } from "@/lib/customerAuth";
 
 export default function HeroSection({ customerInfo, isLoading }) {
+  const router = useRouter();
   const customerName = customerInfo?.nama_panggilan || customerInfo?.nama || "Member";
   const fullName = customerInfo?.nama || customerInfo?.nama_panggilan || "Member Name";
 
   const verifStatus = customerInfo?.verifikasi;
   const isVerified = String(verifStatus) === "1";
-
 
   const memberId = customerInfo?.memberID || customerInfo?.id || customerInfo?.customer_id || "0";
 
@@ -25,10 +26,9 @@ export default function HeroSection({ customerInfo, isLoading }) {
             <div className="hero-content-wrapper" style={{
               display: "flex",
               justifyContent: "space-between",
-              alignItems: "center", // Changed to center to better align text and card vertically, or use flex-start if strictly top needed
+              alignItems: "center",
               gap: "2rem",
-              flexWrap: "wrap" // On mobile, card filters to top? No, usually text top. wrap-reverse puts last item (card) on top? No.
-              // Let's stick to flex-wrap and normal order.
+              flexWrap: "wrap"
             }}>
 
               {/* Left Side: Greeting */}
@@ -71,7 +71,7 @@ export default function HeroSection({ customerInfo, isLoading }) {
                     flexDirection: "column",
                     justifyContent: "space-between"
                   }}>
-                    {/* Background Pattern Overlay (Optional - simplified for now) */}
+                    {/* Background Pattern Overlay */}
                     <div style={{
                       position: 'absolute',
                       top: '-50%',
@@ -201,56 +201,7 @@ export default function HeroSection({ customerInfo, isLoading }) {
                   </p>
                 </div>
                 <button
-                  onClick={async () => {
-                    try {
-                      const session = getCustomerSession();
-                      const token = session.token;
-
-                      if (!token) {
-                        toast.error("Sesi tidak valid. Silakan login ulang.");
-                        return;
-                      }
-
-                      if (!customerInfo?.wa) {
-                        toast.error("Nomor WhatsApp tidak ditemukan.");
-                        return;
-                      }
-
-                      let waNumber = customerInfo.wa.trim();
-                      if (waNumber.startsWith("0")) {
-                        waNumber = "62" + waNumber.substring(1);
-                      } else if (!waNumber.startsWith("62")) {
-                        waNumber = "62" + waNumber;
-                      }
-
-                      const payload = {
-                        customer_id: customerInfo.id || customerInfo.customer_id,
-                        wa: waNumber,
-                      };
-
-                      const toastId = toast.loading("Mengirim OTP...");
-
-                      const response = await fetch("/api/customer/otp/send", {
-                        method: "POST",
-                        headers: {
-                          "Content-Type": "application/json",
-                          Authorization: `Bearer ${token}`,
-                        },
-                        body: JSON.stringify(payload),
-                      });
-
-                      const data = await response.json();
-
-                      if (response.ok && data.success) {
-                        toast.success("OTP berhasil dikirim ke WhatsApp Anda!", { id: toastId });
-                      } else {
-                        toast.error(data.message || "Gagal mengirim OTP.", { id: toastId });
-                      }
-                    } catch (error) {
-                      console.error("OTP Error:", error);
-                      toast.error("Terjadi kesalahan saat mengirim OTP.");
-                    }
-                  }}
+                  onClick={() => router.push("/customer/otp")}
                   className="btn-primary"
                   style={{
                     backgroundColor: "#DC2626",
