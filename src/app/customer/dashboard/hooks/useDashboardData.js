@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { getCustomerSession } from "@/lib/customerAuth";
-import { fetchCustomerDashboard } from "@/lib/customerDashboard";
+import { fetchCustomerDashboard, fetchCustomerProfile } from "@/lib/customerDashboard";
 
 export function useDashboardData() {
   const router = useRouter();
@@ -115,68 +115,60 @@ export function useDashboardData() {
     setError("");
 
     try {
-      const data = await fetchCustomerDashboard(session.token);
-      console.log("📦 [DASHBOARD] Fetch Data:", data);
-      const customerData = data.customer || null;
+      // Fetch Dashboard AND Profile in parallel for accuracy
+      const [dashboardData, profileData] = await Promise.all([
+        fetchCustomerDashboard(session.token).catch(e => ({})), // Fallback empty object if fails
+        fetchCustomerProfile(session.token).catch(e => null)
+      ]);
 
-      // Sync customer data to localStorage
-      if (customerData) {
-        const existingUser = session.user || {};
-        const updatedUser = {
-          ...existingUser,
-          ...customerData,
-          nama_panggilan: customerData.nama_panggilan || existingUser.nama_panggilan,
-          profesi: customerData.profesi || existingUser.profesi,
-          verifikasi: customerData.verifikasi !== undefined
-            ? customerData.verifikasi
-            : (existingUser.verifikasi !== undefined ? existingUser.verifikasi : "0"),
-        };
-        localStorage.setItem("customer_user", JSON.stringify(updatedUser));
-        setDashboardData(prev => ({ ...prev, customerInfo: updatedUser }));
+      console.log("📦 [DASHBOARD] Fetch Data:", { dashboardData, profileData });
+
+      // Determine Customer Data: Profile Data > Dashboard Customer > Session
+      // Profile data is usually more accurate for 'verifikasi' status
+      const customerFromDashboard = dashboardData?.customer || (dashboardData?.id ? dashboardData : null);
+
+      const sessionUser = session.user || {};
+
+      // Merge Strategy: Profile (Highest) > Dashboard > Session (Lowest)
+      const finalCustomerData = {
+        ...sessionUser,
+        ...customerFromDashboard,
+        ...profileData
+      };
+
+      // Ensure verifikasi is captured correctly
+      // Note: "1", 1, true are considered verified.
+      // If profileData exists, its verifikasi is the source of truth.
+      if (profileData && profileData.verifikasi !== undefined) {
+        finalCustomerData.verifikasi = profileData.verifikasi;
       }
+
+      // Sync merged customer data to localStorage
+      localStorage.setItem("customer_user", JSON.stringify(finalCustomerData));
 
       // Update stats
       const newStats = [
-        { id: "total", label: "Total Order", value: data?.statistik?.total_order ?? 0, icon: "📦" },
-        { id: "active", label: "Order Aktif", value: data?.statistik?.order_aktif ?? 0, icon: "✅" },
+        { id: "total", label: "Total Order", value: dashboardData?.statistik?.total_order ?? 0, icon: "📦" },
+        { id: "active", label: "Order Aktif", value: dashboardData?.statistik?.order_aktif ?? 0, icon: "✅" },
       ];
 
-      // Kumpulkan semua order dari berbagai sumber
+      // Kumpulkan semua order
       const allOrders = [
-        ...(data?.orders_aktif || []),
-        ...(data?.orders_pending || []),
-        ...(data?.order_proses || []),
-        ...(data?.orders_proses || []),
-        // Tambahkan juga dari field lain yang mungkin ada
-        ...(data?.orders || []),
+        ...(dashboardData?.orders_aktif || []),
+        ...(dashboardData?.orders_pending || []),
+        ...(dashboardData?.order_proses || []),
+        ...(dashboardData?.orders_proses || []),
+        ...(dashboardData?.orders || []),
       ];
 
-      console.log("📦 [DASHBOARD] Raw orders data:", {
-        orders_aktif: data?.orders_aktif?.length || 0,
-        orders_pending: data?.orders_pending?.length || 0,
-        order_proses: data?.order_proses?.length || 0,
-        orders_proses: data?.orders_proses?.length || 0,
-        orders: data?.orders?.length || 0,
-        total_before_dedup: allOrders.length
-      });
-
-      // Order Aktif: semua order (tidak peduli status pembayaran)
-      // Filter untuk menghindari duplikat berdasarkan ID
+      // Order Duplication Check
       const uniqueOrders = allOrders.filter((order, index, self) =>
         index === self.findIndex((o) => o.id === order.id)
       );
 
-      console.log("📦 [DASHBOARD] Unique orders:", uniqueOrders.length);
-      console.log("📦 [DASHBOARD] Sample orders:", uniqueOrders.slice(0, 3).map(o => ({
-        id: o.id,
-        produk_nama: o.produk_nama,
-        status_pembayaran: o.status_pembayaran || o.status_pembayaran_id,
-        total_harga: o.total_harga
-      })));
-
       const activeOrders = uniqueOrders;
 
-      // Get unpaid orders for count (status_pembayaran belum 2)
+      // Unpaid calculation
       const unpaidOrders = uniqueOrders.filter((order) => {
         const statusPembayaran = order.status_pembayaran || order.status_pembayaran_id;
         return statusPembayaran !== 2 && statusPembayaran !== "2";
@@ -187,7 +179,7 @@ export function useDashboardData() {
       setDashboardData({
         stats: newStats,
         activeOrders: adaptOrders(activeOrders),
-        customerInfo: customerData || session.user,
+        customerInfo: finalCustomerData,
         unpaidCount,
       });
     } catch (error) {

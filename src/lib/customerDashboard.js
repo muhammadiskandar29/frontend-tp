@@ -38,18 +38,42 @@ export async function fetchCustomerDashboard(tokenFromCaller) {
     }
 
     if (!response.ok || data?.success !== true) {
-      const message = data?.message || "Gagal memuat data dashboard customer.";
-      console.error("❌ [CUSTOMER_DASHBOARD] Request failed:", message);
-      toast.error(message);
-      throw new Error(message);
+      // Jangan throw error fatal untuk dashboard, mungkin user baru
+      console.warn("⚠️ [CUSTOMER_DASHBOARD] Dashboard data fetch warning:", data?.message);
     }
 
-    return data.data;
+    return data?.data || {};
   } catch (error) {
     console.error("❌ [CUSTOMER_DASHBOARD] Error:", error);
-    const message = error?.message || "Gagal memuat data dashboard customer.";
-    toast.error(message);
-    throw new Error(message);
+    throw error;
   }
 }
 
+// Function baru untuk fetch profile specific (Status Verifikasi lebih akurat)
+export async function fetchCustomerProfile(tokenFromCaller) {
+  const token = tokenFromCaller || localStorage.getItem("customer_token");
+
+  if (!token) return null;
+
+  const url = buildUrl("/customer"); // /api/customer/customer
+
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    return data?.data || null;
+  } catch (error) {
+    console.error("❌ [CUSTOMER_PROFILE] Error:", error);
+    return null;
+  }
+}
