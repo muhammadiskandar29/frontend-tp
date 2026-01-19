@@ -84,14 +84,13 @@ const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran, prod
     setLoading(true);
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const res = await fetch("/api/sales/logs-follup", {
-        method: "POST",
+      const res = await fetch(`/api/sales/logs-follup?customer=${Number(customerId)}`, {
+        method: "GET",
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ customer: Number(customerId) }),
       });
       const data = await res.json();
       // Simpan semua log customer, filter dilakukan di isSent agar lebih fleksibel
