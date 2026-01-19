@@ -1512,6 +1512,13 @@ export default function DaftarPesanan() {
                                             </span>
                                           </td>
 
+                                          {/* Status Order */}
+                                          <td style={{ padding: '12px 16px' }}>
+                                            <span className={`status-badge orders-status-badge--${innerStatusOrderInfo.class}`} style={{ fontSize: '0.7rem', padding: '2px 8px' }}>
+                                              {innerStatusOrderInfo.label}
+                                            </span>
+                                          </td>
+
                                           {/* Follow Up Text */}
                                           <td style={{ padding: '12px 16px' }}>
                                             <WABubbleChat
