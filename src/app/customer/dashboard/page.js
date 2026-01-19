@@ -112,22 +112,12 @@ export default function DashboardPage() {
   const session = getCustomerSession();
   const sessionUser = session?.user || {};
 
-  const isVerified = (() => {
-    const candidates = [
-      customerInfo?.verifikasi,
-      customerInfo?.data?.verifikasi,
-      sessionUser?.verifikasi,
-      sessionUser?.data?.verifikasi
-    ];
-
-    // console.log("🔍 [DASHBOARD] Verification Candidates:", candidates);
-
-    return candidates.some(val => {
-      if (val === undefined || val === null) return false;
-      const s = String(val).trim().toLowerCase();
-      return s === "1" || s === "true";
-    });
-  })();
+  // Menggunakan logika simpel yang sama dengan sales/customers/page.js
+  const isVerified =
+    customerInfo?.verifikasi === "1" ||
+    customerInfo?.verifikasi === true ||
+    sessionUser?.verifikasi === "1" ||
+    sessionUser?.verifikasi === true;
 
   // Toast for unverified users (One-time check per load)
   useEffect(() => {
