@@ -11,23 +11,50 @@ export default function HeroSection({ customerInfo, isLoading }) {
       <div className="customer-dashboard__hero-content">
         <div className="customer-dashboard__hero-card">
           <div className="hero-greeting">
-            <p className="customer-dashboard__subtitle">
-              Kelola dan akses semua order Anda di satu tempat
-            </p>
-            <h1>
-              {isLoading ? (
-                "Selamat Datang!"
-              ) : (
-                <>
-                  Selamat Datang,{" "}
-                  <span className="hero-name">{customerName}!</span>
-                </>
-              )}
-            </h1>
+            {isLoading ? (
+              <div className="member-card skeleton" style={{ background: "#e5e7eb", height: "300px" }}></div>
+            ) : (
+              <div className="member-card">
+                <div className="member-card__top">
+                  <div className="member-card__brand">TERNAK PROPERTI</div>
+                  <div className="member-card__qr">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+                      <path d="M3 3h6v6H3V3zm2 2v2h2V5H5zm8-2h6v6h-6V3zm2 2v2h2V5H15zM3 13h6v6H3v-6zm2 2v2h2v-2H5zm13-2h3v2h-3v-2zm-3 0h2v3h-2v-3zm3 3h3v3h-3v-3zm-3 3h2v3h-2v-3z" fill="currentColor" fillRule="evenodd" clipRule="evenodd" style={{ color: '#000' }} />
+                    </svg>
+                  </div>
+                </div>
+
+                <div className="member-card__body">
+                  <div className="member-card__label">MEMBER ID</div>
+                  <div className="member-card__number">
+                    {(() => {
+                      const id = customerInfo?.id || customerInfo?.customer_id || "0";
+                      const str = String(id).padStart(12, '0');
+                      // Format: 0000 0000 0000
+                      return str.match(/.{1,4}/g).join(' ');
+                    })()}
+                  </div>
+                </div>
+
+                <div className="member-card__footer">
+                  <div>
+                    <div className="member-card__label">CARDHOLDER</div>
+                    <div className="member-card__holder-name">
+                      {customerName}
+                    </div>
+                  </div>
+
+                  <div className="member-card__status">
+                    <div className="member-card__label">MEMBER</div>
+                    <div className="member-card__status-value">BASIC</div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {(!customerInfo?.verifikasi || customerInfo?.verifikasi == "0") ? (
-            <div className="hero-verification-alert" style={{ marginTop: "1.5rem", padding: "1rem", backgroundColor: "#FEF2F2", border: "1px solid #FECACA", borderRadius: "8px" }}>
+            <div className="hero-verification-alert" style={{ marginTop: "1.5rem" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
                 <div style={{ color: "#DC2626" }}>⚠️</div>
                 <p style={{ margin: 0, color: "#991B1B", fontWeight: 500 }}>
