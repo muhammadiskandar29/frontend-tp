@@ -6,10 +6,20 @@ import { getCustomerSession } from "@/lib/customerAuth";
 
 export default function HeroSection({ customerInfo, isLoading }) {
   const router = useRouter();
-  const customerName = customerInfo?.nama_panggilan || customerInfo?.nama || "Member";
-  const fullName = customerInfo?.nama || customerInfo?.nama_panggilan || "Member Name";
 
-  const verifStatus = customerInfo?.verifikasi;
+  // Ambil session data sebagai fallback jika customerInfo dari prop belum ready/lengkap
+  const session = getCustomerSession();
+  const sessionUser = session?.user || {};
+
+  // Merge data: prioritas prop (API terbaru) > session (Local Storage)
+  const effectiveInfo = { ...sessionUser, ...customerInfo };
+
+  const customerName = effectiveInfo?.nama_panggilan || effectiveInfo?.nama || "Member";
+  const fullName = effectiveInfo?.nama || effectiveInfo?.nama_panggilan || "Member Name";
+
+  // Cek status verifikasi dari berbagai sumber yang mungkin
+  const verifStatus = effectiveInfo?.verifikasi;
+  // Pastikan pengecekan string/number aman
   const isVerified = String(verifStatus) === "1";
 
   console.log("HeroSection customerInfo:", customerInfo);
