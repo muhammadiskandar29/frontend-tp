@@ -1,3 +1,4 @@
+@import './stepper.css';
 /* ============================================
    PREMIUM SAAS DESIGN SYSTEM
    Enterprise-Grade, Professional, Sellable
@@ -2304,6 +2305,5 @@
   background-position: center;
   opacity: 0.15;
   mix-blend-mode: overlay;
-}
 
-@import './stepper.css';
+}

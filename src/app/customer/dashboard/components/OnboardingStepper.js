@@ -1,6 +1,6 @@
 "use client";
 
-import "@/styles/customer/stepper.css";
+
 
 export default function OnboardingStepper({
     currentStep = 1,
