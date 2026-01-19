@@ -1322,49 +1322,23 @@ export default function DaftarPesanan() {
               <thead>
                 <tr>
                   {/* STICKY LEFT 1: Customer */}
-                  <th className="sticky-left-1">
+                  <th className="sticky-left-1" style={{ width: '30%' }}>
                     CUSTOMER
                   </th>
 
-                  {/* Product - Widened */}
-                  <th className="col-product">
-                    PRODUK
-                  </th>
+                  {/* Other columns hidden to keep list clean as requested */}
+                  <th className="col-product" style={{ display: 'none' }}>PRODUK</th>
+                  <th style={{ display: 'none' }}>STATUS</th>
+                  <th style={{ display: 'none' }}>STATUS ORDER</th>
+                  <th style={{ display: 'none' }}>FOLLOW UP</th>
+                  <th style={{ display: 'none' }}>BUKTI</th>
+                  <th style={{ display: 'none' }}>GROSS</th>
+                  <th style={{ display: 'none' }}>SALES</th>
 
-                  <th>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span>STATUS</span>
-                      <span>PEMBAYARAN</span>
-                    </div>
+                  {/* Action Column - Right aligned */}
+                  <th style={{ width: '70%', textAlign: 'right' }}>
+                    AKSI / HISTORI
                   </th>
-                  <th>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span>STATUS</span>
-                      <span>ORDER</span>
-                    </div>
-                  </th>
-                  <th>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span>FOLLOW UP</span>
-                      <span>TEXT</span>
-                    </div>
-                  </th>
-                  <th style={{ textAlign: 'center' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <span>BUKTI</span>
-                      <span>PEMBAYARAN</span>
-                    </div>
-                  </th>
-                  <th>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span>GROSS</span>
-                      <span>REVENUE</span>
-                    </div>
-                  </th>
-                  <th>SALES</th>
-
-                  {/* Action Column - NON STICKY */}
-                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -1390,127 +1364,50 @@ export default function DaftarPesanan() {
                     });
 
                     return displayGroups.map((group, i) => {
-                      const order = group[0]; // Display the first/latest order in the group
-                      const custId = order.customer_rel?.id || order.customer || 'unknown';
+                      const latestOrder = group[0]; // Display the first/latest order in the group
+                      const custId = latestOrder.customer_rel?.id || latestOrder.customer || 'unknown';
                       const otherCount = group.length - 1;
+                      const customerNama = latestOrder.customer_rel?.nama || "-";
 
-                      // Handle produk name - dari produk_rel
-                      const produkNama = order.produk_rel?.nama || "-";
-
-                      // Handle customer name - dari customer_rel
-                      const customerNama = order.customer_rel?.nama || "-";
-
-                      // Get Status Order
-                      const statusOrderRaw = order.status_order ?? order.status; // fallback ke order.status jika status_order kosong
-                      const statusOrderValue = statusOrderRaw !== undefined && statusOrderRaw !== null
-                        ? statusOrderRaw.toString()
-                        : "";
-                      const statusOrderInfo = STATUS_ORDER_MAP[statusOrderValue] || { label: "-", class: "default" };
-
-                      // Get Status Pembayaran
-                      let statusPembayaranValue = order.status_pembayaran;
-                      if (statusPembayaranValue === null || statusPembayaranValue === undefined) {
-                        statusPembayaranValue = 0;
-                      } else {
-                        statusPembayaranValue = Number(statusPembayaranValue);
-                        if (isNaN(statusPembayaranValue)) {
-                          statusPembayaranValue = 0;
-                        }
-                      }
-                      const statusPembayaranInfo = STATUS_PEMBAYARAN_MAP[statusPembayaranValue] || STATUS_PEMBAYARAN_MAP[0];
-
-                      // Get bukti pembayaran
-                      const buktiPembayaranPath = getBuktiPembayaran(order);
-                      const buktiUrl = buildImageUrl(buktiPembayaranPath);
+                      const isExpanded = activeDropdown === custId;
+                      // Show latest order ALWAYS. Show rest ONLY if expanded.
+                      const ordersToShow = isExpanded ? group : [latestOrder];
 
                       return (
-                        <React.Fragment key={order.id || `${order.id}-${i}`}>
-                          <tr key={order.id || `${order.id}-${i}`}>
+                        <React.Fragment key={latestOrder.id || `${latestOrder.id}-${i}`}>
+                          {/* 1. Main Customer Row (Clean) */}
+                          <tr key={`main-${custId}`} style={{ borderBottom: 'none' }}>
                             {/* STICKY LEFT 1: Customer */}
-                            <td className="sticky-left-1">
+                            <td className="sticky-left-1" style={{ borderBottom: 'none' }}>
                               <div className="customer-cell" style={{ display: "flex", flexDirection: "column" }}>
-                                <span className="customer-name" style={{ fontSize: "0.875rem" }}>{customerNama}</span>
+                                <span className="customer-name" style={{ fontSize: "1rem", fontWeight: 700 }}>{customerNama}</span>
                                 <span className="customer-detail">
-                                  {order.customer_rel?.wa ? `+${order.customer_rel.wa}` : "-"}
+                                  {latestOrder.customer_rel?.wa ? `+${latestOrder.customer_rel.wa}` : "-"}
                                 </span>
-                                <span className="customer-detail" style={{ fontSize: "0.75rem", marginTop: "2px", color: "#64748b" }}>
-                                  {order.customer_rel?.email || "-"}
+                                <span className="customer-detail" style={{ fontSize: "0.85rem", marginTop: "2px", color: "#64748b" }}>
+                                  {latestOrder.customer_rel?.email || "-"}
                                 </span>
                               </div>
                             </td>
 
-                            {/* Product - Widened */}
-                            <td className="col-product">
-                              <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                                <span style={{ fontSize: "0.875rem", color: "#111827" }}>{produkNama}</span>
-                              </div>
-                            </td>
+                            {/* Hidden Columns */}
+                            <td style={{ display: 'none' }}></td>
+                            <td style={{ display: 'none' }}></td>
+                            <td style={{ display: 'none' }}></td>
+                            <td style={{ display: 'none' }}></td>
+                            <td style={{ display: 'none' }}></td>
+                            <td style={{ display: 'none' }}></td>
+                            <td style={{ display: 'none' }}></td>
 
-                            {/* Status Pembayaran */}
-                            <td>
-                              <span className={`status-badge payment-${statusPembayaranInfo.class}`}>
-                                {statusPembayaranInfo.label}
-                              </span>
-                            </td>
-
-                            {/* Status Order */}
-                            <td>
-                              <span className={`status-badge status-${statusOrderInfo.class}`}>
-                                {statusOrderInfo.label}
-                              </span>
-                            </td>
-
-                            {/* Follow Up Text */}
-                            <td>
-                              <WABubbleChat
-                                customerId={order.customer_rel?.id || order.customer}
-                                orderId={order.id}
-                                orderStatus={statusOrderValue}
-                                statusPembayaran={statusPembayaranValue}
-                                productId={order.produk_rel?.id || order.produk_id}
-                                customerWa={order.customer_rel?.wa}
-                              />
-                            </td>
-
-                            {/* Bukti Pembayaran */}
-                            <td style={{ textAlign: 'center' }}>
-                              {buktiUrl ? (
-                                <ImageIcon
-                                  size={20}
-                                  className="proof-icon"
-                                  style={{ cursor: "pointer", margin: "0 auto" }}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleOpenImageModal(buktiUrl);
-                                  }}
-                                />
-                              ) : (
-                                <span className="no-data">-</span>
-                              )}
-                            </td>
-
-                            {/* Gross Revenue */}
-                            <td className="revenue-text">
-                              Rp {Number(order.total_harga || 0).toLocaleString("id-ID")}
-                            </td>
-
-                            {/* Sales */}
-                            <td>
-                              <span style={{ fontSize: "0.875rem", color: "#111827" }}>
-                                {order.customer_rel?.sales_rel?.nama || order.customer_rel?.sales_nama || "-"}
-                              </span>
-                            </td>
-
-                            {/* Action Column - NON STICKY */}
-                            <td>
+                            {/* Action Column */}
+                            <td style={{ textAlign: 'right', verticalAlign: 'middle', borderBottom: 'none' }}>
                               <div className="action-group" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.5rem' }}>
-                                {/* Dropdown Button (Toggle Row) - Only show if has history */}
-                                {group.length > 1 && (
+                                {otherCount > 0 && (
                                   <button
-                                    className={`action-btn-dropdown ${activeDropdown === custId ? 'active' : ''}`}
+                                    className={`action-btn-dropdown ${isExpanded ? 'active' : ''}`}
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      setActiveDropdown(activeDropdown === custId ? null : custId);
+                                      setActiveDropdown(isExpanded ? null : custId);
                                     }}
                                     style={{
                                       marginLeft: '0.5rem',
@@ -1518,180 +1415,181 @@ export default function DaftarPesanan() {
                                       color: '#fff',
                                       border: 'none',
                                       borderRadius: '6px',
-                                      padding: '0.4rem 0.75rem',
+                                      padding: '0.5rem 1rem',
                                       display: 'flex',
                                       alignItems: 'center',
                                       gap: '0.5rem',
                                       fontSize: '0.8rem',
-                                      fontWeight: 600
+                                      fontWeight: 600,
+                                      cursor: 'pointer'
                                     }}
                                   >
-                                    <span>Lihat Order Lainnya ({otherCount})</span>
-                                    <ChevronDown size={14} strokeWidth={3} className={`transition-transform ${activeDropdown === custId ? 'rotate-180' : ''}`} />
+                                    <span>{isExpanded ? "Tutup Order Lainnya" : `Lihat Order Lainnya (${otherCount})`}</span>
+                                    <ChevronDown size={14} strokeWidth={3} className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                                   </button>
                                 )}
                               </div>
                             </td>
                           </tr>
-                          {/* EXPANDED ROW FOR ORDER HISTORY */}
-                          {
-                            activeDropdown === custId && group.length > 1 && (
-                              <tr key={`expand-${custId}`} className="expanded-row">
-                                <td colSpan={9} style={{ padding: 0, borderTop: 'none' }}>
-                                  <div style={{
-                                    background: '#f8fafc',
-                                    padding: '16px',
-                                    borderBottom: '1px solid #e2e8f0',
-                                    boxShadow: 'inset 0 4px 6px -4px rgba(0, 0, 0, 0.1)'
-                                  }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                                      <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600, color: '#1e293b' }}>
-                                        Riwayat Order Lainnya: {customerNama}
-                                      </h4>
-                                    </div>
 
-                                    <div style={{ overflowX: 'auto', background: 'white', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-                                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-                                        <thead>
-                                          <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f1f5f9' }}>
-                                            <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Order ID</th>
-                                            <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Tanggal</th>
-                                            <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Produk</th>
-                                            {/* Status Pembayaran Removed */}
-                                            {/* Status Order Removed */}
-                                            <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Status Pembayaran</th>
-                                            <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Follow Up Text</th>
-                                            <th style={{ padding: '10px 16px', textAlign: 'center', fontWeight: 600, color: '#475569' }}>Bukti Pembayaran</th>
-                                            <th style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 600, color: '#475569' }}>Total</th>
-                                            <th style={{ padding: '10px 16px', textAlign: 'center', fontWeight: 600, color: '#475569' }}>Followup</th>
-                                          </tr>
-                                        </thead>
-                                        <tbody>
-                                          {group.slice(1).map((innerOrder) => {
-                                            const innerStatusRaw = innerOrder.status_order ?? innerOrder.status;
-                                            const innerStatusOrderValue = innerStatusRaw !== undefined && innerStatusRaw !== null
-                                              ? innerStatusRaw.toString()
-                                              : "";
-                                            const innerStatusInfo = STATUS_ORDER_MAP[innerStatusOrderValue] || { label: "-", class: "default" };
+                          {/* 2. Detail Row (Always Visible) - Contains Nested Table */}
+                          <tr key={`detail-${custId}`}>
+                            <td colSpan={2} style={{ padding: '0 0 1.5rem 0', borderTop: 'none' }}>
+                              <div style={{
+                                marginLeft: '1rem',
+                                marginRight: '1rem',
+                                background: 'white',
+                                borderRadius: '8px',
+                                border: '1px solid #e2e8f0',
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                                overflow: 'hidden'
+                              }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                                  <thead style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                                    <tr>
+                                      <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: '#475569', width: '12%' }}>Order ID</th>
+                                      <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: '#475569', width: '15%' }}>Tanggal</th>
+                                      <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: '#475569', width: '20%' }}>Produk</th>
+                                      <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Status Pembayaran</th>
+                                      <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Follow Up</th>
+                                      <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 600, color: '#475569' }}>Bukti</th>
+                                      <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 600, color: '#475569' }}>Total</th>
+                                      <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 600, color: '#475569' }}>Aksi</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {ordersToShow.map((innerOrder, idx) => {
+                                      // Determine if it's the latest order (first in group)
+                                      const isLatest = innerOrder.id === latestOrder.id;
 
-                                            // Status Pembayaran Logic
-                                            let innerStatusPembayaranValue = innerOrder.status_pembayaran;
-                                            if (innerStatusPembayaranValue === null || innerStatusPembayaranValue === undefined) {
-                                              innerStatusPembayaranValue = 0;
-                                            } else {
-                                              innerStatusPembayaranValue = Number(innerStatusPembayaranValue);
-                                              if (isNaN(innerStatusPembayaranValue)) {
-                                                innerStatusPembayaranValue = 0;
-                                              }
-                                            }
-                                            const innerStatusPembayaranInfo = STATUS_PEMBAYARAN_MAP[innerStatusPembayaranValue] || STATUS_PEMBAYARAN_MAP[0];
+                                      const innerStatusRaw = innerOrder.status_order ?? innerOrder.status;
+                                      const innerStatusOrderValue = innerStatusRaw !== undefined && innerStatusRaw !== null
+                                        ? innerStatusRaw.toString()
+                                        : "";
+                                      const innerStatusInfo = STATUS_ORDER_MAP[innerStatusOrderValue] || { label: "-", class: "default" };
 
-                                            // Bukti Pembayaran Logic
-                                            const innerBuktiPath = getBuktiPembayaran(innerOrder);
-                                            const innerBuktiUrl = buildImageUrl(innerBuktiPath);
+                                      // Status Pembayaran Logic
+                                      let innerStatusPembayaranValue = innerOrder.status_pembayaran;
+                                      if (innerStatusPembayaranValue === null || innerStatusPembayaranValue === undefined) {
+                                        innerStatusPembayaranValue = 0;
+                                      } else {
+                                        innerStatusPembayaranValue = Number(innerStatusPembayaranValue);
+                                        if (isNaN(innerStatusPembayaranValue)) {
+                                          innerStatusPembayaranValue = 0;
+                                        }
+                                      }
+                                      const innerStatusPembayaranInfo = STATUS_PEMBAYARAN_MAP[innerStatusPembayaranValue] || STATUS_PEMBAYARAN_MAP[0];
 
-                                            return (
-                                              <tr key={innerOrder.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                                <td style={{ padding: '12px 16px', color: '#0f172a', fontWeight: 500 }}>#{innerOrder.id}</td>
-                                                <td style={{ padding: '12px 16px', color: '#64748b' }}>{formatDateOnly(innerOrder.tanggal || innerOrder.create_at)}</td>
-                                                <td style={{ padding: '12px 16px', color: '#334155' }}>
-                                                  <span
-                                                    onClick={() => handleView(innerOrder)}
-                                                    style={{ cursor: 'pointer', textDecoration: 'underline' }}
-                                                    className="hover:text-blue-600"
-                                                  >
-                                                    {innerOrder.produk_rel?.nama || '-'}
-                                                  </span>
-                                                </td>
+                                      // Bukti Pembayaran Logic
+                                      const innerBuktiPath = getBuktiPembayaran(innerOrder);
+                                      const innerBuktiUrl = buildImageUrl(innerBuktiPath);
 
-                                                {/* Status Pembayaran Removed */}
+                                      return (
+                                        <tr key={innerOrder.id} style={{
+                                          borderBottom: idx < ordersToShow.length - 1 ? '1px solid #f1f5f9' : 'none',
+                                          background: isLatest ? '#fff' : '#fcfcfc'
+                                        }}>
+                                          <td style={{ padding: '12px 16px', color: '#0f172a', fontWeight: 500 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                              #{innerOrder.id}
+                                              {isLatest && <span style={{ fontSize: '10px', background: '#e0f2fe', color: '#0369a1', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>TERBARU</span>}
+                                            </div>
+                                          </td>
+                                          <td style={{ padding: '12px 16px', color: '#64748b' }}>{formatDateOnly(innerOrder.tanggal || innerOrder.create_at)}</td>
+                                          <td style={{ padding: '12px 16px', color: '#334155' }}>
+                                            <span
+                                              onClick={() => handleView(innerOrder)}
+                                              style={{ cursor: 'pointer', textDecoration: 'underline' }}
+                                              className="hover:text-blue-600"
+                                            >
+                                              {innerOrder.produk_rel?.nama || '-'}
+                                            </span>
+                                          </td>
 
-                                                {/* Status Pembayaran */}
-                                                <td style={{ padding: '12px 16px' }}>
-                                                  <span className={`status-badge payment-${innerStatusPembayaranInfo.class}`} style={{ fontSize: '0.7rem', padding: '2px 8px' }}>
-                                                    {innerStatusPembayaranInfo.label}
-                                                  </span>
-                                                </td>
+                                          {/* Status Pembayaran */}
+                                          <td style={{ padding: '12px 16px' }}>
+                                            <span className={`status-badge payment-${innerStatusPembayaranInfo.class}`} style={{ fontSize: '0.7rem', padding: '2px 8px' }}>
+                                              {innerStatusPembayaranInfo.label}
+                                            </span>
+                                          </td>
 
-                                                {/* Status Order Removed */}
+                                          {/* Follow Up Text */}
+                                          <td style={{ padding: '12px 16px' }}>
+                                            <WABubbleChat
+                                              customerId={innerOrder.customer_rel?.id || innerOrder.customer}
+                                              orderId={innerOrder.id}
+                                              orderStatus={innerStatusOrderValue}
+                                              statusPembayaran={innerStatusPembayaranValue}
+                                              productId={innerOrder.produk_rel?.id || innerOrder.produk_id}
+                                              customerWa={innerOrder.customer_rel?.wa}
+                                            />
+                                          </td>
 
-                                                {/* Follow Up Text */}
-                                                <td style={{ padding: '12px 16px' }}>
-                                                  <WABubbleChat
-                                                    customerId={innerOrder.customer_rel?.id || innerOrder.customer}
-                                                    orderId={innerOrder.id}
-                                                    orderStatus={innerStatusOrderValue}
-                                                    statusPembayaran={innerStatusPembayaranValue}
-                                                    productId={innerOrder.produk_rel?.id || innerOrder.produk_id}
-                                                    customerWa={innerOrder.customer_rel?.wa}
-                                                  />
-                                                </td>
+                                          {/* Bukti Pembayaran */}
+                                          <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                                            {innerBuktiUrl ? (
+                                              <ImageIcon
+                                                size={16}
+                                                className="proof-icon"
+                                                style={{ cursor: "pointer", margin: "0 auto" }}
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleOpenImageModal(innerBuktiUrl);
+                                                }}
+                                              />
+                                            ) : (
+                                              <span className="no-data">-</span>
+                                            )}
+                                          </td>
 
-                                                {/* Bukti Pembayaran */}
-                                                <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                                                  {innerBuktiUrl ? (
-                                                    <ImageIcon
-                                                      size={16}
-                                                      className="proof-icon"
-                                                      style={{ cursor: "pointer", margin: "0 auto" }}
-                                                      onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleOpenImageModal(innerBuktiUrl);
-                                                      }}
-                                                    />
-                                                  ) : (
-                                                    <span className="no-data">-</span>
-                                                  )}
-                                                </td>
+                                          {/* Total */}
+                                          <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 600, color: '#0f172a' }}>
+                                            Rp {Number(innerOrder.total_harga || 0).toLocaleString("id-ID")}
+                                          </td>
 
-                                                <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 600, color: '#0f172a' }}>
-                                                  Rp {Number(innerOrder.total_harga || 0).toLocaleString("id-ID")}
-                                                </td>
-
-                                                {/* Aksi Column */}
-                                                <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                                                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                                                    {/* WA */}
-                                                    <button
-                                                      className="action-btn-icon"
-                                                      style={{ color: '#25D366' }}
-                                                      title="WhatsApp"
-                                                      onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setSelectedOrderWA(innerOrder);
-                                                        setShowWAModal(true);
-                                                      }}
-                                                    >
-                                                      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                                                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                                                      </svg>
-                                                    </button>
+                                          {/* Aksi Column */}
+                                          <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                                            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                                              {/* WA */}
+                                              <button
+                                                className="action-btn-icon"
+                                                style={{ color: '#25D366' }}
+                                                title="WhatsApp"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  setSelectedOrderWA(innerOrder);
+                                                  setShowWAModal(true);
+                                                }}
+                                              >
+                                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                                                </svg>
+                                              </button>
 
 
-                                                  </div>
-                                                </td>
-                                              </tr>
-                                            );
-                                          })}
-                                        </tbody>
-                                      </table>
-                                    </div>
-                                  </div>
-                                </td>
-                              </tr>
-                            )
-                          }
+                                            </div>
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </td>
+                          </tr>
                         </React.Fragment>
                       );
                     });
                   })()
-                ) : (<tr>
-                  <td colSpan={2} className="orders-empty">
-                    {orders.length ? "Tidak ada hasil pencarian." : "Loading data..."}
-                  </td>
-                </tr>
+                ) : (
+                  <tr>
+                    <td colSpan={2} className="orders-empty">
+                      {orders.length ? "Tidak ada hasil pencarian." : "Loading data..."}
+                    </td>
+                  </tr>
                 )}
               </tbody>
+
             </table>
           </div>
 
@@ -2644,34 +2542,38 @@ export default function DaftarPesanan() {
       />
 
       {/* Broadcast Modal */}
-      {showBroadcastModal && (
-        <OrderBroadcastModal
-          onClose={() => setShowBroadcastModal(false)}
-          onAdd={(data) => {
-            // Optional: refresh data or show success toast
-            setToast({ show: true, message: `Broadcast berhasil dibuat untuk ${data.total_target} customer`, type: "success" });
-          }}
-        />
-      )}
+      {
+        showBroadcastModal && (
+          <OrderBroadcastModal
+            onClose={() => setShowBroadcastModal(false)}
+            onAdd={(data) => {
+              // Optional: refresh data or show success toast
+              setToast({ show: true, message: `Broadcast berhasil dibuat untuk ${data.total_target} customer`, type: "success" });
+            }}
+          />
+        )
+      }
 
       {/* Add Follow Up Modal */}
-      {showFollowUpModal && selectedOrderForFollowUp && (
-        <AddFollowUpModal
-          isOpen={showFollowUpModal}
-          orderId={selectedOrderForFollowUp.id}
-          onClose={() => {
-            setShowFollowUpModal(false);
-            setSelectedOrderForFollowUp(null);
-          }}
-          onSuccess={() => {
-            setToast({ show: true, message: "Follow up berhasil disimpan", type: "success" });
-            // Optional: refresh orders logic if needed to update bubbles immediately, 
-            // but bubbles depend on `logs-follup` API which is fetched inside WABubbleChat component.
-            // WABubbleChat inside rows might not auto-update unless we force it.
-            // For now, simple toast is good.
-          }}
-        />
-      )}
+      {
+        showFollowUpModal && selectedOrderForFollowUp && (
+          <AddFollowUpModal
+            isOpen={showFollowUpModal}
+            orderId={selectedOrderForFollowUp.id}
+            onClose={() => {
+              setShowFollowUpModal(false);
+              setSelectedOrderForFollowUp(null);
+            }}
+            onSuccess={() => {
+              setToast({ show: true, message: "Follow up berhasil disimpan", type: "success" });
+              // Optional: refresh orders logic if needed to update bubbles immediately, 
+              // but bubbles depend on `logs-follup` API which is fetched inside WABubbleChat component.
+              // WABubbleChat inside rows might not auto-update unless we force it.
+              // For now, simple toast is good.
+            }}
+          />
+        )
+      }
 
       {/* Toast Notification */}
       {
