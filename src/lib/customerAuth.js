@@ -18,14 +18,14 @@ function handleUnauthorized() {
 export async function customerFetch(endpoint, options = {}) {
   const token = localStorage.getItem("customer_token");
   const url = buildUrl(endpoint);
-  
+
   console.log("🔵 [CUSTOMER_FETCH] URL:", url);
   console.log("🔵 [CUSTOMER_FETCH] Method:", options.method || "GET");
-  
+
   const headers = {
     Accept: "application/json",
     ...(options.body instanceof FormData
-      ? {} 
+      ? {}
       : { "Content-Type": "application/json" }),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options.headers,
@@ -83,7 +83,7 @@ export async function customerFetch(endpoint, options = {}) {
 export async function loginCustomer(payload) {
   console.log("🔵 [LOGIN_CUSTOMER] Starting loginCustomer...");
   console.log("🔵 [LOGIN_CUSTOMER] Payload:", { email: payload?.email, password: "***" });
-  
+
   if (!payload?.email || !payload?.password) {
     console.error("❌ [LOGIN_CUSTOMER] Missing email or password");
     throw new Error("Email dan password wajib diisi.");
@@ -137,13 +137,13 @@ export async function loginCustomer(payload) {
       } else {
         console.error("❌ [LOGIN_CUSTOMER] No token in response!");
       }
-      
+
       // Simpan user data jika ada
       if (data?.user) {
         localStorage.setItem("customer_user", JSON.stringify(data.user));
         console.log("✅ [LOGIN_CUSTOMER] User data stored:", data.user);
       }
-      
+
       // Cek apakah login berhasil (ada token dan success = true)
       if (data?.success === true && data?.token) {
         console.log("✅ [LOGIN_CUSTOMER] Login successful!");
@@ -153,7 +153,7 @@ export async function loginCustomer(payload) {
         const verifikasiValue = data?.user?.verifikasi;
         const isVerified = verifikasiValue === 1 || verifikasiValue === "1" || verifikasiValue === true;
         const needsVerification = !isVerified;
-        
+
         console.log("🔵 [LOGIN_CUSTOMER] Verification check:");
         console.log("🔵 [LOGIN_CUSTOMER] verifikasi value:", verifikasiValue);
         console.log("🔵 [LOGIN_CUSTOMER] verifikasi type:", typeof verifikasiValue);
@@ -172,7 +172,7 @@ export async function loginCustomer(payload) {
         console.warn("⚠️ [LOGIN_CUSTOMER] Response OK but no token or success=false");
         console.warn("⚠️ [LOGIN_CUSTOMER] data.success:", data?.success);
         console.warn("⚠️ [LOGIN_CUSTOMER] data.token exists:", !!data?.token);
-        
+
         const errorMessage = data?.message || "Email atau password salah.";
         toast.error(errorMessage);
         return {
@@ -193,7 +193,7 @@ export async function loginCustomer(payload) {
   } catch (error) {
     console.error("❌ [LOGIN_CUSTOMER] Error caught:", error);
     console.error("❌ [LOGIN_CUSTOMER] Error message:", error.message);
-    
+
     toast.error(error.message || "Login gagal.");
 
     return {
@@ -204,6 +204,14 @@ export async function loginCustomer(payload) {
 }
 
 export function getCustomerSession() {
+  if (typeof window === "undefined") {
+    return {
+      token: null,
+      user: null,
+      isAuthenticated: false,
+    };
+  }
+
   const token = localStorage.getItem("customer_token");
   const raw = localStorage.getItem("customer_user");
   let user = null;
@@ -284,9 +292,9 @@ export async function verifyCustomerOTP(customerId, otp) {
   console.log("🔵 [VERIFY_OTP] Verifying OTP...");
   console.log("🔵 [VERIFY_OTP] Customer ID:", customerId);
   console.log("🔵 [VERIFY_OTP] OTP:", otp);
-  
+
   const token = localStorage.getItem("customer_token");
-  
+
   try {
     const response = await fetch(`${OTP_BASE_URL}/otp/verify`, {
       method: "POST",
@@ -307,7 +315,7 @@ export async function verifyCustomerOTP(customerId, otp) {
     if (response.ok && data?.success === true) {
       console.log("✅ [VERIFY_OTP] OTP verified successfully");
       console.log("✅ [VERIFY_OTP] Response data:", data.data);
-      
+
       // Update user data dengan verifikasi = 1 dari response
       const currentUser = getCustomerSession().user;
       if (currentUser && data?.data) {
@@ -320,7 +328,7 @@ export async function verifyCustomerOTP(customerId, otp) {
         localStorage.setItem("customer_user", JSON.stringify(updatedUserData));
         console.log("✅ [VERIFY_OTP] User data updated with verification status:", updatedUserData);
       }
-      
+
       toast.success(data?.message || "OTP valid, akun telah diverifikasi");
       return {
         success: true,
@@ -347,10 +355,10 @@ export async function verifyCustomerOTP(customerId, otp) {
 
 export async function resendCustomerOTP(customerId, wa) {
   console.log("🔵 [RESEND_OTP] Resending OTP...");
-  
+
   // Ambil token dari localStorage
   const token = localStorage.getItem("customer_token");
-  
+
   if (!token) {
     console.error("❌ [RESEND_OTP] No token found");
     toast.error("Token tidak ditemukan. Silakan login kembali.");
@@ -359,7 +367,7 @@ export async function resendCustomerOTP(customerId, wa) {
       message: "Token tidak ditemukan. Silakan login kembali.",
     };
   }
-  
+
   try {
     const response = await fetch(`${OTP_BASE_URL}/otp/resend`, {
       method: "POST",
