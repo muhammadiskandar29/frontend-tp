@@ -7,23 +7,53 @@ import { getCustomerSession } from "@/lib/customerAuth";
 export default function HeroSection({ customerInfo, isLoading }) {
   const router = useRouter();
 
-  // Ambil session data sebagai fallback jika customerInfo dari prop belum ready/lengkap
+  // 1. Ambil Session Data (Fallback/Source of Truth local)
   const session = getCustomerSession();
   const sessionUser = session?.user || {};
 
-  // Merge data: prioritas prop (API terbaru) > session (Local Storage)
-  const effectiveInfo = { ...sessionUser, ...customerInfo };
+  // 2. Helper untuk cek status verifikasi
+  const checkIsVerified = (data) => {
+    if (!data) return false;
 
-  const customerName = effectiveInfo?.nama_panggilan || effectiveInfo?.nama || "Member";
-  const fullName = effectiveInfo?.nama || effectiveInfo?.nama_panggilan || "Member Name";
+    // Cek path langsung dan nested .data
+    // Ambil value, cari yang tidak undefined/null
+    let val = data.verifikasi;
+    if (val === undefined && data.data) val = data.data.verifikasi;
 
-  // Cek status verifikasi dari berbagai sumber yang mungkin
-  const verifStatus = effectiveInfo?.verifikasi;
-  // Pastikan pengecekan string/number aman
-  const isVerified = String(verifStatus) === "1";
+    if (val === undefined || val === null) return false;
 
-  console.log("HeroSection customerInfo:", customerInfo);
-  const memberId = customerInfo?.memberID || customerInfo?.member_id || customerInfo?.id || customerInfo?.customer_id || "0";
+    // Normalisasi value menjadi string lowercase
+    const sVal = String(val).toLowerCase();
+
+    // Return true jika 1, "1", true, "true"
+    return sVal === "1" || sVal === "true";
+  };
+
+  // 3. Cek Status dari kedua sumber (Props & Session)
+  const propVerified = checkIsVerified(customerInfo);
+  const sessionVerified = checkIsVerified(sessionUser);
+
+  // 4. Logika Gabungan: Jika SALAH SATU verified, maka user verified.
+  // Ini menangani kasus API stale (Dashboard belum update tapi Session sudah)
+  // atau Session stale (Local belum update tapi API sudah)
+  const isVerified = propVerified || sessionVerified;
+
+  // Debugging log
+  console.log("🔍 [HERO] Verification Debug:", {
+    propVerified,
+    sessionVerified,
+    result: isVerified,
+    rawProp: customerInfo?.verifikasi,
+    rawSession: sessionUser?.verifikasi
+  });
+
+  // 5. Data Display - Merge (Prop wins for display names)
+  const displayInfo = { ...sessionUser, ...customerInfo };
+  const customerName = displayInfo?.nama_panggilan || displayInfo?.nama || "Member";
+  const fullName = displayInfo?.nama || displayInfo?.nama_panggilan || "Member Name";
+
+  const memberId = displayInfo?.memberID || displayInfo?.member_id || displayInfo?.id ||
+    displayInfo?.customer_id || "0";
 
   return (
     <div className="customer-dashboard__hero-wrapper">
@@ -144,7 +174,7 @@ export default function HeroSection({ customerInfo, isLoading }) {
                       }}>
                         {(() => {
                           const str = String(memberId).padStart(12, '0');
-                          return str.match(/.{1,4}/g).join(' ');
+                          return str.match(/.{1,4}/g)?.join(' ') || str;
                         })()}
                       </div>
                     </div>
