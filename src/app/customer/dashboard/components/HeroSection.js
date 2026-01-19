@@ -1,13 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, Check, Info, CreditCard, ShieldCheck, ShieldAlert } from "lucide-react";
-import Link from "next/link";
+import { Copy, Check, Info } from "lucide-react";
+import Image from "next/image";
 
 export default function HeroSection({ customerInfo, isLoading }) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
+  const [origin, setOrigin] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setOrigin(window.location.origin);
+    }
+  }, []);
 
   const handleCopyId = () => {
     if (customerInfo?.id) {
@@ -26,7 +33,7 @@ export default function HeroSection({ customerInfo, isLoading }) {
             <div className="skeleton-loader" style={{ width: '300px', height: '40px', marginBottom: '1rem' }} />
             <div className="skeleton-loader" style={{ width: '100%', height: '60px' }} />
           </div>
-          <div className="hero-member-card skeleton-loader" style={{ width: '100%', height: '220px', borderRadius: '16px' }} />
+          <div className="hero-member-card skeleton-loader" style={{ width: '100%', height: '240px', borderRadius: '16px' }} />
         </div>
       </header>
     );
@@ -34,12 +41,14 @@ export default function HeroSection({ customerInfo, isLoading }) {
 
   // Get data safely
   const displayName = customerInfo?.nama_panggilan || customerInfo?.nama || "Member";
-  const memberId = customerInfo?.id ? String(customerInfo.id).padStart(6, '0') : "-";
-  const email = customerInfo?.email || "-";
-  const phone = customerInfo?.no_hp || customerInfo?.wa || "-";
+  const memberId = customerInfo?.id ? String(customerInfo.id).padStart(6, '0') : "000000";
+  const membershipType = customerInfo?.keanggotaan || "BASIC";
 
-  // Verification logic matches DashboardPage (strict check)
-  const isVerified = customerInfo?.verifikasi === "1" || customerInfo?.verifikasi === true;
+
+
+  // QR Data
+  const qrData = `${origin}/member/${customerInfo?.id}`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrData)}&bgcolor=FFFFFF&color=000000&margin=0`;
 
   return (
     <header className="customer-dashboard__hero">
@@ -52,73 +61,61 @@ export default function HeroSection({ customerInfo, isLoading }) {
             Halo, <span className="hero-name-highlight">{displayName}</span>
           </h1>
           <p className="hero-subtitle">
-            Selamat datang kembali! Berikut adalah ringkasan aktivitas dan status keanggotaan Anda.
+            Selamat datang kembali! Berikut adalah kartu keanggotaan digital Anda.
           </p>
+
+
         </div>
 
         {/* RIGHT COLUMN: MEMBER CARD */}
         <div className="hero-card-wrapper">
-          <div className={`member-card ${isVerified ? 'card-verified' : 'card-unverified-theme'}`}>
+          <div className="ternak-card">
 
-            {/* Background Texture */}
-            <div className="card-texture"></div>
+            {/* Background Illustration (Housing Rows) */}
+            <div className="ternak-card__bg">
+              {/* Simple CSS shape skyline mimicking property rows */}
+              <svg className="skyline-svg" viewBox="0 0 400 200" preserveAspectRatio="none">
+                <path d="M0,200 L0,150 L30,120 L60,150 L60,140 L90,110 L120,140 L120,100 L160,140 L200,100 L240,140 L240,120 L270,90 L300,120 L330,90 L360,120 L400,80 L400,200 Z" fill="#2d2d2d" opacity="0.3" />
+                <path d="M20,200 L20,170 L50,140 L80,170 L110,140 L140,170 L170,140 L200,170 L230,140 L260,170 L290,140 L320,170 L350,140 L380,170 L400,150 L400,200 Z" fill="#383838" opacity="0.4" />
+              </svg>
+            </div>
 
-            <div className="member-card__header">
-              <div className="member-card__brand">
-                <CreditCard size={20} className="brand-icon" />
-                <span className="brand-name">MEMBER CARD</span>
+            {/* TOP ROW */}
+            <div className="ternak-card__top">
+              <div className="ternak-card__brand">
+                <h2 className="brand-title">TERNAK PROPERTI</h2>
+                <span className="brand-subtitle">MEMBERSHIP</span>
               </div>
-              <div className={`member-status-badge ${isVerified ? 'verified' : 'unverified'}`}>
-                {isVerified ? (
-                  <>
-                    <ShieldCheck size={14} strokeWidth={2.5} /> VERIFIED
-                  </>
-                ) : (
-                  <>
-                    <ShieldAlert size={14} strokeWidth={2.5} /> UNVERIFIED
-                  </>
-                )}
+
+              <div className="ternak-card__qr">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={qrUrl} alt="Member QR" className="qr-image" />
               </div>
             </div>
 
-            <div className="member-card__body">
-              <div className="member-info-group">
-                <label>Nama Lengkap</label>
-                <div className="info-value reset-text" title={customerInfo?.nama || displayName}>
-                  {customerInfo?.nama || displayName}
-                </div>
-              </div>
-
-              <div className="member-info-row">
-                <div className="member-info-group">
-                  <label>Member ID</label>
-                  <div className="info-value id-value">
-                    <span>{memberId}</span>
-                    <button
-                      onClick={handleCopyId}
-                      className="copy-btn"
-                      title="Salin ID"
-                    >
-                      {copied ? <Check size={14} /> : <Copy size={14} />}
+            {/* BOTTOM ROW */}
+            <div className="ternak-card__bottom">
+              <div className="ternak-card__info-left">
+                <div className="info-group">
+                  <label>MEMBER ID</label>
+                  <div className="value-row">
+                    <span className="id-text">{memberId}</span>
+                    <button onClick={handleCopyId} className="copy-icon-btn">
+                      {copied ? <Check size={12} /> : <Copy size={12} />}
                     </button>
                   </div>
                 </div>
-                <div className="member-info-group">
-                  <label>Bergabung Sejak</label>
-                  <div className="info-value">
-                    {customerInfo?.create_at || customerInfo?.created_at
-                      ? new Date(customerInfo.create_at || customerInfo.created_at).getFullYear()
-                      : "-"}
-                  </div>
+                <div className="info-group mt-2">
+                  <label>CARDHOLDER</label>
+                  <div className="holder-name">{customerInfo?.nama || displayName}</div>
                 </div>
               </div>
-            </div>
 
-            <div className="member-card__footer">
-              <div className="contact-info">
-                <span className="info-item">{email}</span>
-                <span className="info-separator">•</span>
-                <span className="info-item">{phone}</span>
+              <div className="ternak-card__info-right">
+                <label className="align-right">MEMBER</label>
+                <div className="membership-badge">
+                  {membershipType}
+                </div>
               </div>
             </div>
 
@@ -141,14 +138,16 @@ export default function HeroSection({ customerInfo, isLoading }) {
         @media (min-width: 900px) {
           .hero-content {
             display: grid;
-            grid-template-columns: 1fr 420px; /* Text takes space, Card fixed width */
+            grid-template-columns: 1fr 400px;
             gap: 4rem;
-            align-items: start; /* Align tops */
+            align-items: flex-start;
           }
         }
 
         .hero-text {
-          padding-top: 1rem; /* Slight offset visually */
+          padding-top: 0;
+          display: flex;
+          flex-direction: column;
         }
 
         .hero-eyebrow {
@@ -170,7 +169,7 @@ export default function HeroSection({ customerInfo, isLoading }) {
         }
 
         .hero-name-highlight {
-          color: #0ea5e9; /* Sky blue matching design */
+          color: #f59e0b; /* Gold/Orange */
         }
 
         .hero-subtitle {
@@ -178,192 +177,175 @@ export default function HeroSection({ customerInfo, isLoading }) {
           font-size: 1.125rem;
           line-height: 1.6;
           max-width: 90%;
+          margin-bottom: 1.5rem;
         }
 
-        /* MEMBER CARD STYLES */
+
+
+        /* --- TERNAK CARD DESIGN --- */
         .hero-card-wrapper {
           width: 100%;
           display: flex;
           justify-content: center;
-          align-items: flex-start;
         }
 
-        .member-card {
+        .ternak-card {
           width: 100%;
-          max-width: 420px;
-          min-height: 240px;
+          max-width: 400px;
+          aspect-ratio: 1.586; /* Credit Card Ratio */
+          background: #111;
           border-radius: 20px;
-          padding: 1.75rem;
-          color: white;
           position: relative;
           overflow: hidden;
-          box-shadow: 0 20px 40px -10px rgba(249, 115, 22, 0.4); /* Orange shadow */
+          padding: 1.5rem;
           display: flex;
           flex-direction: column;
           justify-content: space-between;
-          background: linear-gradient(135deg, #fb923c 0%, #ea580c 40%, #c2410c 100%); /* Orange Gradient */
-          transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        
-        .member-card:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 25px 50px -12px rgba(249, 115, 22, 0.5);
-        }
-        
-        .card-texture {
-          position: absolute;
-          top: 0; left: 0; right: 0; bottom: 0;
-          background-image: 
-            radial-gradient(circle at 100% 0%, rgba(255,255,255,0.15) 0%, transparent 30%),
-            radial-gradient(circle at 0% 100%, rgba(0,0,0,0.1) 0%, transparent 30%);
-          pointer-events: none;
+          box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+          color: #fff;
+          border: 1px solid #333;
         }
 
-        .member-card__header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 2rem;
+        /* Background Illustration */
+        .ternak-card__bg {
+          position: absolute;
+          inset: 0;
+          z-index: 0;
+          overflow: hidden;
+          background: linear-gradient(135deg, #1a1a1a 0%, #000 100%);
+        }
+
+        .skyline-svg {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          z-index: 1;
+        }
+
+        /* Top Section */
+        .ternak-card__top {
           position: relative;
           z-index: 2;
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
         }
 
-        .member-card__brand {
+        .brand-title {
+          font-family: sans-serif; 
+          font-weight: 800;
+          font-size: 1.5rem;
+          line-height: 1;
+          margin: 0;
+          background: linear-gradient(45deg, #fff, #fbbf24);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          letter-spacing: -0.02em;
+          text-transform: uppercase;
+        }
+
+        .brand-subtitle {
+          font-size: 0.75rem;
+          letter-spacing: 0.3em;
+          color: #fbbf24; /* Amber-400 */
+          text-transform: uppercase;
+          font-weight: 600;
+          display: block;
+          margin-top: 4px;
+        }
+
+        .ternak-card__qr {
+          background: #fff;
+          padding: 4px;
+          border-radius: 8px;
+          width: 60px;
+          height: 60px;
           display: flex;
           align-items: center;
-          gap: 0.75rem;
-          background: rgba(0,0,0,0.1);
-          padding: 0.5rem 0.75rem;
-          border-radius: 12px;
-          backdrop-filter: blur(4px);
-        }
-        
-        .brand-icon {
-          color: rgba(255,255,255,0.9);
+          justify-content: center;
         }
 
-        .brand-name {
-          font-size: 0.7rem;
-          font-weight: 800;
-          letter-spacing: 0.15em;
-          color: rgba(255, 255, 255, 0.95);
+        .qr-image {
+          width: 100%;
+          height: 100%;
+          display: block;
         }
 
-        .member-status-badge {
-          font-size: 0.65rem;
-          font-weight: 800;
-          padding: 0.35rem 0.75rem;
-          border-radius: 9999px;
-          letter-spacing: 0.05em;
+        /* Bottom Section */
+        .ternak-card__bottom {
+          position: relative;
+          z-index: 2;
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+          margin-top: auto;
+        }
+
+        .info-group label {
+          font-size: 0.6rem;
+          color: #666;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          font-weight: 700;
+          display: block;
+          margin-bottom: 2px;
+        }
+
+        .value-row {
           display: flex;
           align-items: center;
           gap: 6px;
-          text-transform: uppercase;
-          background: rgba(255,255,255,0.15);
-          backdrop-filter: blur(4px);
-          border: 1px solid rgba(255,255,255,0.2);
-          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-        }
-        
-        .member-status-badge.unverified {
-             background: rgba(220, 38, 38, 0.25);
-             border-color: rgba(254, 202, 202, 0.4);
-             color: #fee2e2;
         }
 
-        .member-card__body {
-          position: relative;
-          z-index: 2;
-          flex: 1;
-        }
-
-        .member-info-group {
-          margin-bottom: 1.25rem;
-        }
-
-        .member-info-group label {
-          display: block;
-          font-size: 0.65rem;
-          text-transform: uppercase;
-          letter-spacing: 0.1em;
-          color: rgba(255, 255, 255, 0.7);
-          margin-bottom: 0.35rem;
-          font-weight: 600;
-        }
-
-        .info-value {
-          font-size: 1.125rem;
-          font-weight: 700;
-          color: white;
-          text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .reset-text {
-             font-size: 1.5rem;
-             white-space: nowrap;
-             overflow: hidden;
-             text-overflow: ellipsis;
-             max-width: 100%;
-        }
-
-        .member-info-row {
-          display: grid;
-          grid-template-columns: 1.5fr 1fr;
-          gap: 1rem;
-          margin-top: 1rem;
-        }
-
-        .id-value {
+        .id-text {
           font-family: 'Courier New', monospace;
-          letter-spacing: 0.15em;
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          background: rgba(255,255,255,0.1);
-          width: fit-content;
-          padding: 0.25rem 0.5rem;
-          border-radius: 6px;
+          font-size: 1rem;
+          color: #fbbf24;
+          font-weight: 700;
+          letter-spacing: 0.1em;
         }
 
-        .copy-btn {
+        .copy-icon-btn {
           background: none;
           border: none;
-          color: rgba(255, 255, 255, 0.7);
+          color: #666;
           cursor: pointer;
-          padding: 2px;
-          transition: all 0.2s;
-          display: flex;
-          align-items: center;
+          padding: 0;
         }
+        .copy-icon-btn:hover { color: #fbbf24; }
 
-        .copy-btn:hover {
-          color: white;
-          transform: scale(1.1);
-        }
-
-        .member-card__footer {
-          margin-top: 1.5rem;
-          padding-top: 1rem;
-          border-top: 1px solid rgba(255, 255, 255, 0.2);
-          position: relative;
-          z-index: 2;
-        }
-
-        .contact-info {
-          font-size: 0.75rem;
-          color: rgba(255, 255, 255, 0.8);
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.75rem;
-          align-items: center;
-          font-weight: 500;
-        }
-
-        .info-separator {
-          opacity: 0.5;
+        .holder-name {
+          font-size: 1rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          line-height: 1.2;
+          max-width: 180px;
+          color: #fff;
+          word-wrap: break-word;
         }
         
-        /* Loading skeleton overrides */
+        .mt-2 { margin-top: 0.75rem; }
+
+        .ternak-card__info-right {
+          text-align: right;
+        }
+
+        .align-right {
+          text-align: right;
+        }
+
+        .membership-badge {
+          font-size: 1.25rem;
+          font-weight: 900;
+          color: #fbbf24;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+          font-style: italic;
+        }
+        
         .skeleton-loader {
             background: #e2e8f0;
             border-radius: 8px;
