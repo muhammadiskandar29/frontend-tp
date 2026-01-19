@@ -204,14 +204,6 @@ export async function loginCustomer(payload) {
 }
 
 export function getCustomerSession() {
-  if (typeof window === "undefined") {
-    return {
-      token: null,
-      user: null,
-      isAuthenticated: false,
-    };
-  }
-
   const token = localStorage.getItem("customer_token");
   const raw = localStorage.getItem("customer_user");
   let user = null;
