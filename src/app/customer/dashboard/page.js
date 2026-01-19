@@ -19,27 +19,27 @@ export default function DashboardPage() {
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [updateModalReason, setUpdateModalReason] = useState("password");
   const [currentTime, setCurrentTime] = useState(() => Date.now());
-  
-  const { 
-    stats, 
-    activeOrders, 
-    customerInfo, 
+
+  const {
+    stats,
+    activeOrders,
+    customerInfo,
     unpaidCount,
-    loading: dashboardLoading, 
+    loading: dashboardLoading,
     error: dashboardError,
-    refetch: refetchDashboard 
+    refetch: refetchDashboard
   } = useDashboardData();
-  
+
   const { products, loading: productsLoading } = useProducts();
 
   // Fungsi untuk mengecek apakah data customer sudah lengkap
   const isCustomerDataComplete = (customer) => {
     if (!customer) return false;
-    
+
     // Field required: nama_panggilan dan profesi
     const hasNamaPanggilan = customer.nama_panggilan && customer.nama_panggilan.trim() !== "";
     const hasProfesi = customer.profesi && customer.profesi.trim() !== "";
-    
+
     return hasNamaPanggilan && hasProfesi;
   };
 
@@ -82,7 +82,7 @@ export default function DashboardPage() {
     const session = getCustomerSession();
     if (session.user) {
       const verifikasiFromResponse = data?.verifikasi !== undefined ? data.verifikasi : "1";
-      
+
       const updatedUser = {
         ...session.user,
         ...data,
@@ -92,7 +92,7 @@ export default function DashboardPage() {
       };
 
       localStorage.setItem("customer_user", JSON.stringify(updatedUser));
-      
+
       // Cek apakah data sudah lengkap setelah update
       if (isCustomerDataComplete(updatedUser)) {
         localStorage.removeItem("customer_show_update_modal");
@@ -132,8 +132,8 @@ export default function DashboardPage() {
 
       <div className="customer-dashboard">
         {/* Hero Section */}
-        <HeroSection 
-          customerInfo={customerInfo} 
+        <HeroSection
+          customerInfo={customerInfo}
           isLoading={dashboardLoading}
         />
 
@@ -141,22 +141,28 @@ export default function DashboardPage() {
         {!dashboardLoading && dashboardError && (
           <div className="dashboard-error-alert">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}>
-              <path d="M10 18C14.4183 18 18 14.4183 18 10C18 5.58172 14.4183 2 10 2C5.58172 2 2 5.58172 2 10C2 14.4183 5.58172 18 10 18Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M10 6V10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M10 14H10.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M10 18C14.4183 18 18 14.4183 18 10C18 5.58172 14.4183 2 10 2C5.58172 2 2 5.58172 2 10C2 14.4183 5.58172 18 10 18Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M10 6V10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M10 14H10.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             <span>{dashboardError}</span>
           </div>
         )}
 
         {/* Quick Actions */}
-        <QuickActions unpaidCount={unpaidCount} />
+        <QuickActions
+          unpaidCount={unpaidCount}
+          onProfileClick={() => {
+            setUpdateModalReason("data");
+            setShowUpdateModal(true);
+          }}
+        />
 
         {/* Stats Section */}
         <StatsSection stats={stats} isLoading={dashboardLoading} />
 
         {/* Orders Section */}
-        <OrdersSection 
+        <OrdersSection
           orders={activeOrders}
           isLoading={dashboardLoading}
           currentTime={currentTime}
@@ -164,7 +170,7 @@ export default function DashboardPage() {
 
         {/* Products Section */}
         {products.length > 0 && (
-          <ProductsSection 
+          <ProductsSection
             products={products}
             isLoading={productsLoading}
           />
