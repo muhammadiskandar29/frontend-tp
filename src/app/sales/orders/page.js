@@ -108,21 +108,21 @@ const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran, prod
   // 1. Cek Follow Up (Event 1-4)
   // Berbasis log follow-up, harus cocok Product ID.
   // 1. Cek Follow Up (Event 1-4)
-  // Berbasis log follow-up, harus cocok Product ID, WA, dan Type/Name
+  // Berbasis log follow-up, harus cocok Product ID dan Type dari database
   const isFollowupSent = (followUpNumber) => {
     if (loading) return false;
     if (!productId) return false;
     if (!followupLogs || followupLogs.length === 0) return false;
 
     return followupLogs.some(l => {
+      // Pastikan relasi utama ada
       if (!l.follup_rel) return false;
 
-      // 1. Produk harus sama
+      // 1. Cek Produk (Wajib Sama)
       if (Number(l.follup_rel.produk_id) !== Number(productId)) return false;
 
-      // 2. Follow Up ke-X = TERKIRIM
-      const nama = String(l.follup_rel.nama || "").toLowerCase();
-      return nama.includes(`follow up ${followUpNumber}`);
+      // 2. Cek Type
+      return Number(l.follup_rel.type) === Number(followUpNumber);
     });
   };
 
