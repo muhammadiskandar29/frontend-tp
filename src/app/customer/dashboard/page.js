@@ -8,6 +8,7 @@ import HeroSection from "./components/HeroSection";
 import StatsSection from "./components/StatsSection";
 import OrdersSection from "./components/OrdersSection";
 import ProductsSection from "./components/ProductsSection";
+import OnboardingStepper from "./components/OnboardingStepper";
 import QuickActions from "./components/QuickActions";
 import { useDashboardData } from "./hooks/useDashboardData";
 import { useProducts } from "./hooks/useProducts";
@@ -147,6 +148,53 @@ export default function DashboardPage() {
             </svg>
             <span>{dashboardError}</span>
           </div>
+        )}
+
+        {/* Onboarding Stepper */}
+        {!dashboardLoading && (
+          <OnboardingStepper
+            currentStep={(() => {
+              // Priority 1: Payment Check
+              // If there are unpaid orders, or NO orders at all (and no paid ones), step is 1.
+              // Logic: Must clear unpaid bills first.
+              if (unpaidCount > 0) return 1;
+
+              // Priority 2: Profile Check
+              if (!isCustomerDataComplete(customerInfo)) return 2;
+
+              // Priority 3: Join Class (Verification)
+              if (customerInfo?.verifikasi !== "1") return 3;
+
+              // Priority 4: Start Learning (Active)
+              return 4;
+            })()}
+            steps={[
+              {
+                id: 'payment',
+                title: 'Selesaikan Pembayaran',
+                description: 'Bayar tagihan order Anda',
+                isCompleted: unpaidCount === 0 && (activeOrders.length > 0 || customerInfo?.keanggotaan !== 'basic')
+              },
+              {
+                id: 'profile',
+                title: 'Lengkapi Data',
+                description: 'Isi data diri profile Anda',
+                isCompleted: isCustomerDataComplete(customerInfo)
+              },
+              {
+                id: 'join',
+                title: 'Gabung Kelas',
+                description: 'Verifikasi akun & akses grup',
+                isCompleted: customerInfo?.verifikasi === "1"
+              },
+              {
+                id: 'learning',
+                title: 'Mulai Belajar',
+                description: 'Akses materi pembelajaran',
+                isCompleted: false // Always active when reached
+              }
+            ]}
+          />
         )}
 
         {/* Quick Actions */}
