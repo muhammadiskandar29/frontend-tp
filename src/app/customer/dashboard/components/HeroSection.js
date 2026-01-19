@@ -215,35 +215,7 @@ export default function HeroSection({ customerInfo, isLoading }) {
 
 
           {/* Bottom Section: Verification Alert (Only if Unverified) */}
-          {!isVerified && !isLoading && (
-            <div className="customer-dashboard__hero-card" style={{ background: "#FEF2F2", border: "1px solid #FCA5A5" }}>
-              <div className="hero-verification-alert">
-                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
-                  <div style={{ color: "#DC2626", fontSize: "1.25rem" }}>⚠️</div>
-                  <p style={{ margin: 0, color: "#991B1B", fontWeight: 600, fontSize: "1rem" }}>
-                    Akun Anda belum diverifikasi. Silakan verifikasi OTP terlebih dahulu.
-                  </p>
-                </div>
-                <button
-                  onClick={() => router.push("/customer/otp")}
-                  className="btn-primary"
-                  style={{
-                    backgroundColor: "#DC2626",
-                    color: "white",
-                    padding: "0.6rem 1.25rem",
-                    borderRadius: "8px",
-                    fontSize: "0.95rem",
-                    fontWeight: 600,
-                    border: "none",
-                    cursor: "pointer",
-                    boxShadow: "0 2px 4px rgba(220, 38, 38, 0.2)"
-                  }}
-                >
-                  Verifikasi Sekarang
-                </button>
-              </div>
-            </div>
-          )}
+
 
         </div>
       </div>
