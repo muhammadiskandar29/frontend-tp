@@ -118,6 +118,15 @@ const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran, prod
       // Pastikan relasi utama ada
       if (!l.follup_rel) return false;
 
+      console.log("DEBUG WA Bubble:", {
+        followUpNumber,
+        productId_from_component: productId,
+        type_from_log: l.follup_rel.type,
+        produkId_from_log: l.follup_rel.produk_id,
+        isTypeMatch: Number(l.follup_rel.type) === Number(followUpNumber),
+        isProductMatch: Number(l.follup_rel.produk_id) === Number(productId)
+      });
+
       // 1. Cek Produk (Wajib Sama)
       if (Number(l.follup_rel.produk_id) !== Number(productId)) return false;
 
