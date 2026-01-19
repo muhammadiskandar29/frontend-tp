@@ -15,19 +15,12 @@ const formatCurrency = (value) => {
 };
 
 // Helper logic status Paid (disamakan dengan viewCustomer.js)
+// Helper logic status Paid (Strict check on status_pembayaran)
 const isOrderPaid = (order) => {
-    const isPaidValue = order.is_paid;
-    const statusValue = order.status_pembayaran || order.status;
-
-    return (
-        isPaidValue === true ||
-        isPaidValue === "1" ||
-        isPaidValue === 1 ||
-        statusValue === 2 ||
-        statusValue === "2" ||
-        statusValue === "paid" ||
-        statusValue === "1"
-    );
+    // Logic ketat: Hanya status_pembayaran '2' atau 'paid' yang dianggap paid.
+    // Null dianggap unpaid.
+    const statusBayar = order.status_pembayaran;
+    return statusBayar == "2" || statusBayar === 2 || statusBayar == "paid";
 };
 
 export default function CustomerOrderStatsCells({ customerId }) {
