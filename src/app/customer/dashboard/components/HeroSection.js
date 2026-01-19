@@ -7,47 +7,30 @@ import { getCustomerSession } from "@/lib/customerAuth";
 export default function HeroSection({ customerInfo, isLoading }) {
   const router = useRouter();
 
-  // 1. Ambil Session Data (Fallback/Source of Truth local)
   const session = getCustomerSession();
   const sessionUser = session?.user || {};
 
-  // 2. Helper untuk cek status verifikasi
-  const checkIsVerified = (data) => {
-    if (!data) return false;
+  // Logic Verification "Aggressive"
+  // Cek semua kemungkinan sumber data verifikasi
+  const isVerified = (() => {
+    const candidates = [
+      customerInfo?.verifikasi,
+      customerInfo?.data?.verifikasi, // Jaga-jaga nested data
+      sessionUser?.verifikasi,
+      sessionUser?.data?.verifikasi
+    ];
 
-    // Cek path langsung dan nested .data
-    // Ambil value, cari yang tidak undefined/null
-    let val = data.verifikasi;
-    if (val === undefined && data.data) val = data.data.verifikasi;
+    // Debugging (Temporary - uncomment if needed)
+    // console.log("🔍 [HERO Debug] Verif Candidates:", candidates);
 
-    if (val === undefined || val === null) return false;
+    return candidates.some(val => {
+      if (val === undefined || val === null) return false;
+      const s = String(val).trim().toLowerCase();
+      // Terima 1, "1", true, "true" sebagai verified
+      return s === "1" || s === "true";
+    });
+  })();
 
-    // Normalisasi value menjadi string lowercase
-    const sVal = String(val).toLowerCase();
-
-    // Return true jika 1, "1", true, "true"
-    return sVal === "1" || sVal === "true";
-  };
-
-  // 3. Cek Status dari kedua sumber (Props & Session)
-  const propVerified = checkIsVerified(customerInfo);
-  const sessionVerified = checkIsVerified(sessionUser);
-
-  // 4. Logika Gabungan: Jika SALAH SATU verified, maka user verified.
-  // Ini menangani kasus API stale (Dashboard belum update tapi Session sudah)
-  // atau Session stale (Local belum update tapi API sudah)
-  const isVerified = propVerified || sessionVerified;
-
-  // Debugging log
-  console.log("🔍 [HERO] Verification Debug:", {
-    propVerified,
-    sessionVerified,
-    result: isVerified,
-    rawProp: customerInfo?.verifikasi,
-    rawSession: sessionUser?.verifikasi
-  });
-
-  // 5. Data Display - Merge (Prop wins for display names)
   const displayInfo = { ...sessionUser, ...customerInfo };
   const customerName = displayInfo?.nama_panggilan || displayInfo?.nama || "Member";
   const fullName = displayInfo?.nama || displayInfo?.nama_panggilan || "Member Name";
