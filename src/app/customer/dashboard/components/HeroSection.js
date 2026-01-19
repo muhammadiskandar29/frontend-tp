@@ -12,7 +12,8 @@ export default function HeroSection({ customerInfo, isLoading }) {
   const verifStatus = customerInfo?.verifikasi;
   const isVerified = String(verifStatus) === "1";
 
-  const memberId = customerInfo?.memberID || customerInfo?.id || customerInfo?.customer_id || "0";
+  console.log("HeroSection customerInfo:", customerInfo);
+  const memberId = customerInfo?.memberID || customerInfo?.member_id || customerInfo?.id || customerInfo?.customer_id || "0";
 
   return (
     <div className="customer-dashboard__hero-wrapper">

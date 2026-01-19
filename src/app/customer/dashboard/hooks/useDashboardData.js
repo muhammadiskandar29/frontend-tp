@@ -33,7 +33,7 @@ export function useDashboardData() {
     if (!value) return null;
     const direct = Date.parse(value);
     if (!Number.isNaN(direct)) return new Date(direct);
-    
+
     const match = /^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2}))?$/.exec(value.trim());
     if (match) {
       const [, dd, mm, yyyy, hh = "00", min = "00"] = match;
@@ -61,7 +61,7 @@ export function useDashboardData() {
         if (!nama) return "Produk";
         return nama.charAt(0).toUpperCase() + nama.slice(1);
       };
-      
+
       const typeLabel = formatKategori(kategoriNama);
       const schedule =
         order.webinar?.start_time_formatted ||
@@ -81,10 +81,10 @@ export function useDashboardData() {
       const actionLabel = getActionLabel(kategoriNama);
       const startDate = getOrderStartDate(order);
       const statusPembayaran = order.status_pembayaran || order.status_pembayaran_id;
-      
+
       // Order dianggap terbayar jika status_pembayaran === 2 (Paid/Sukses)
       const isPaid = statusPembayaran === 2 || statusPembayaran === "2";
-      
+
       return {
         id: order.id,
         type: typeLabel,
@@ -116,6 +116,7 @@ export function useDashboardData() {
 
     try {
       const data = await fetchCustomerDashboard(session.token);
+      console.log("📦 [DASHBOARD] Fetch Data:", data);
       const customerData = data.customer || null;
 
       // Sync customer data to localStorage
@@ -126,8 +127,8 @@ export function useDashboardData() {
           ...customerData,
           nama_panggilan: customerData.nama_panggilan || existingUser.nama_panggilan,
           profesi: customerData.profesi || existingUser.profesi,
-          verifikasi: customerData.verifikasi !== undefined 
-            ? customerData.verifikasi 
+          verifikasi: customerData.verifikasi !== undefined
+            ? customerData.verifikasi
             : (existingUser.verifikasi !== undefined ? existingUser.verifikasi : "0"),
         };
         localStorage.setItem("customer_user", JSON.stringify(updatedUser));
@@ -164,7 +165,7 @@ export function useDashboardData() {
       const uniqueOrders = allOrders.filter((order, index, self) =>
         index === self.findIndex((o) => o.id === order.id)
       );
-      
+
       console.log("📦 [DASHBOARD] Unique orders:", uniqueOrders.length);
       console.log("📦 [DASHBOARD] Sample orders:", uniqueOrders.slice(0, 3).map(o => ({
         id: o.id,
