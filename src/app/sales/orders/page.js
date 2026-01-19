@@ -110,40 +110,21 @@ const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran, prod
   // 1. Cek Follow Up (Event 1-4)
   // Berbasis log follow-up, harus cocok Product ID, WA, dan Type/Name
   const isFollowupSent = (followUpNumber) => {
-    // Validasi dasar
     if (loading) return false;
-    if (!productId || !customerWa) return false;
+    if (!productId) return false;
     if (!followupLogs || followupLogs.length === 0) return false;
 
     return followupLogs.some(l => {
-      // Pastikan relasi utama ada
-      if (!l.follup_rel || !l.customer_rel) return false;
+      if (!l.follup_rel) return false;
 
-      // 1. Cek WA (Wajib Sama)
-      const logWA = String(l.customer_rel.wa || "").trim();
-      const currentWA = String(customerWa || "").trim();
-      if (logWA !== currentWA) return false;
-
-      // 2. Cek Produk (Wajib Sama)
+      // 1. Produk harus sama
       if (Number(l.follup_rel.produk_id) !== Number(productId)) return false;
 
-      // 3. Cek Type/FollowUp ke-berapa
-      // Strat: Cek field 'type' ATAU field 'nama' untuk menangani variasi data backend (seperti "1 " dengan spasi)
-
-      // Cara A: Cek field 'type' (misal "1 ")
-      // Menggunakan trim() + Number() agar "1 " terbaca sebagai 1
-      const typeVal = String(l.follup_rel.type || "").trim();
-      const isTypeMatch = (Number(typeVal) === Number(followUpNumber));
-
-      // Cara B: Cek field 'nama' (misal "Follow Up 1")
-      // Backup jika type kosong/rusak
-      const nameVal = String(l.follup_rel.nama || "").toLowerCase();
-      const isNameMatch = nameVal.includes(`follow up ${followUpNumber}`);
-
-      return isTypeMatch || isNameMatch;
+      // 2. Follow Up ke-X = TERKIRIM
+      const nama = String(l.follup_rel.nama || "").toLowerCase();
+      return nama.includes(`follow up ${followUpNumber}`);
     });
   };
-
 
 
   // 2. Cek System Events (Event 5-8)
