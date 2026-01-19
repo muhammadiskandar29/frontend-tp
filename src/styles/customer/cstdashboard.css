@@ -2265,3 +2265,44 @@
     height: 48px;
   }
 }
+
+/* ============================================
+   MEMBER CARD - ORANGE OVERRIDE
+   ============================================ */
+.member-card {
+  background: linear-gradient(135deg, #ff6c00 0%, #ff8533 100%) !important;
+  box-shadow: 0 20px 25px -5px rgba(255, 108, 0, 0.4), 0 8px 10px -6px rgba(255, 108, 0, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  min-height: 280px;
+}
+
+.member-card__holder-name {
+  white-space: normal !important;
+  line-height: 1.2 !important;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.member-card__qr {
+  border: 2px solid rgba(255, 255, 255, 0.8) !important;
+  width: 64px !important;
+  height: 64px !important;
+}
+
+.member-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url('/assets/cstbg.png');
+  background-size: cover;
+  background-position: center;
+  opacity: 0.15;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
