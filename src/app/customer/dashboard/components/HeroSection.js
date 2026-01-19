@@ -7,10 +7,9 @@ export default function HeroSection({ customerInfo, isLoading }) {
   const customerName = customerInfo?.nama_panggilan || customerInfo?.nama || "Member";
   const fullName = customerInfo?.nama || customerInfo?.nama_panggilan || "Member Name";
 
-  // Logic verifikasi: Jika 1 atau "1" maka sudah verified (TIDAK TAMPIL alert)
-  // Jika null atau 0 atau undefined, maka TAMPIL alert
   const verifStatus = customerInfo?.verifikasi;
-  const isVerified = verifStatus === 1 || verifStatus === "1" || verifStatus === true;
+  const isVerified = String(verifStatus) === "1";
+
 
   const memberId = customerInfo?.memberID || customerInfo?.id || customerInfo?.customer_id || "0";
 
