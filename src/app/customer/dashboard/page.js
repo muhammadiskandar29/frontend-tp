@@ -108,6 +108,35 @@ export default function DashboardPage() {
     refetchDashboard();
   };
 
+  // Calculate verification status at component level
+  const session = getCustomerSession();
+  const sessionUser = session?.user || {};
+
+  const isVerified = (() => {
+    const candidates = [
+      customerInfo?.verifikasi,
+      customerInfo?.data?.verifikasi,
+      sessionUser?.verifikasi,
+      sessionUser?.data?.verifikasi
+    ];
+
+    // console.log("🔍 [DASHBOARD] Verification Candidates:", candidates);
+
+    return candidates.some(val => {
+      if (val === undefined || val === null) return false;
+      const s = String(val).trim().toLowerCase();
+      return s === "1" || s === "true";
+    });
+  })();
+
+  // Toast for unverified users (One-time check per load)
+  useEffect(() => {
+    if (!dashboardLoading && customerInfo && !isVerified) {
+      // Optional: Add a toast if the user wants it explicit
+      // toast.error("Akun Anda belum diverifikasi. Silakan cek OTP.", { id: "verify-toast" }); // Prevents duplicate toasts
+    }
+  }, [dashboardLoading, customerInfo, isVerified]);
+
   return (
     <CustomerLayout>
       {/* Modal Update Data Customer */}
@@ -115,7 +144,6 @@ export default function DashboardPage() {
         <UpdateCustomerModal
           isOpen={showUpdateModal}
           onClose={() => {
-            // Modal bisa ditutup kapan saja, tapi akan muncul lagi saat login jika data belum lengkap
             setShowUpdateModal(false);
             localStorage.removeItem("customer_show_update_modal");
             toast.info("Anda bisa melengkapi data nanti. Modal akan muncul lagi saat login berikutnya jika data belum lengkap.");
@@ -134,59 +162,35 @@ export default function DashboardPage() {
       <div className="customer-dashboard">
 
         {/* Verification Alert (Top Level) */}
-        {(() => {
-          // Logic Verification "Aggressive" di tingkat Page
-          // Kita cek customerInfo (dari API) dan session (Local Storage)
-          const session = getCustomerSession();
-          const sessionUser = session?.user || {};
-
-          const candidates = [
-            customerInfo?.verifikasi,
-            customerInfo?.data?.verifikasi,
-            sessionUser?.verifikasi,
-            sessionUser?.data?.verifikasi
-          ];
-
-          const isVerified = candidates.some(val => {
-            if (val === undefined || val === null) return false;
-            const s = String(val).trim().toLowerCase();
-            return s === "1" || s === "true";
-          });
-
-          // Tampilkan alert hanya jika loading selesai DAN tidak terverifikasi
-          if (!dashboardLoading && !isVerified) {
-            return (
-              <div className="customer-dashboard__hero-card" style={{ background: "#FEF2F2", border: "1px solid #FCA5A5", marginBottom: "1.5rem" }}>
-                <div className="hero-verification-alert">
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
-                    <div style={{ color: "#DC2626", fontSize: "1.25rem" }}>⚠️</div>
-                    <p style={{ margin: 0, color: "#991B1B", fontWeight: 600, fontSize: "1rem" }}>
-                      Akun Anda belum diverifikasi. Silakan verifikasi OTP terlebih dahulu.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => router.push("/customer/otp")}
-                    className="btn-primary"
-                    style={{
-                      backgroundColor: "#DC2626",
-                      color: "white",
-                      padding: "0.6rem 1.25rem",
-                      borderRadius: "8px",
-                      fontSize: "0.95rem",
-                      fontWeight: 600,
-                      border: "none",
-                      cursor: "pointer",
-                      boxShadow: "0 2px 4px rgba(220, 38, 38, 0.2)"
-                    }}
-                  >
-                    Verifikasi Sekarang
-                  </button>
-                </div>
+        {!dashboardLoading && !isVerified && (
+          <div className="customer-dashboard__hero-card" style={{ background: "#FEF2F2", border: "1px solid #FCA5A5", marginBottom: "1.5rem" }}>
+            <div className="hero-verification-alert">
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                <div style={{ color: "#DC2626", fontSize: "1.25rem" }}>⚠️</div>
+                <p style={{ margin: 0, color: "#991B1B", fontWeight: 600, fontSize: "1rem" }}>
+                  Akun Anda belum diverifikasi. Silakan verifikasi OTP terlebih dahulu.
+                </p>
               </div>
-            );
-          }
-          return null;
-        })()}
+              <button
+                onClick={() => router.push("/customer/otp")}
+                className="btn-primary"
+                style={{
+                  backgroundColor: "#DC2626",
+                  color: "white",
+                  padding: "0.6rem 1.25rem",
+                  borderRadius: "8px",
+                  fontSize: "0.95rem",
+                  fontWeight: 600,
+                  border: "none",
+                  cursor: "pointer",
+                  boxShadow: "0 2px 4px rgba(220, 38, 38, 0.2)"
+                }}
+              >
+                Verifikasi Sekarang
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Hero Section */}
         <HeroSection
