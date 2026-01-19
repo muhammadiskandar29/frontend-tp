@@ -149,121 +149,52 @@ export default function Dashboard() {
       }
       // ------------------------------
 
-      // Fetch leads statistics
-      const leadsParams = new URLSearchParams();
-      if (currentUserId) {
-        leadsParams.append("sales_id", currentUserId.toString());
-      }
+      // Fetch sales statistics (Replacing old leads/dashboard fetch)
+      try {
+        const statsRes = await fetch(`${BASE_URL}/sales/statistics`, {
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-      const leadsRes = await fetch(`${BASE_URL}/sales/lead?${leadsParams.toString()}`, {
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+        if (statsRes.ok) {
+          const statsJson = await statsRes.json();
+          if (statsJson.success && Array.isArray(statsJson.data?.statistics)) {
+            // Filter by current logged-in Sales ID
+            const myStats = statsJson.data.statistics.find(
+              (s) => Number(s.sales_id) === Number(currentUserId)
+            );
 
-      if (leadsRes.ok) {
-        const leadsData = await leadsRes.json();
-        if (leadsData.success && leadsData.data) {
-          const leads = Array.isArray(leadsData.data) ? leadsData.data : [];
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
+            if (myStats) {
+              // Update orderStats with real data from Statistics API
+              setOrderStats({
+                totalOrders: myStats.orders?.total || 0,
+                totalRevenue: myStats.revenue?.total || 0,
+                // We map specific counts to 0 since this API doesn't provide breakdown by status
+                prosesCount: 0,
+                successCount: 0,
+                upsellingCount: 0,
+                batalCount: 0,
+                // Additional data
+                totalCustomers: myStats.customers?.total || 0,
+                conversionRate: myStats.conversion_rates?.customer_to_order || 0,
+                avgOrderValue: myStats.average_order_value?.total || 0
+              });
 
-          const thisMonth = new Date();
-          thisMonth.setDate(1);
-          thisMonth.setHours(0, 0, 0, 0);
-
-          // Calculate statistics
-          const leadsAssignedToday = leads.filter(lead => {
-            if (!lead.created_at) return false;
-            const leadDate = new Date(lead.created_at);
-            leadDate.setHours(0, 0, 0, 0);
-            return leadDate.getTime() === today.getTime();
-          }).length;
-
-          const leadsAssignedThisMonth = leads.filter(lead => {
-            if (!lead.created_at) return false;
-            const leadDate = new Date(lead.created_at);
-            return leadDate >= thisMonth;
-          }).length;
-
-          // Active deals (leads with status CONTACTED, QUALIFIED, or CONVERTED)
-          const activeDeals = leads.filter(lead => {
-            const status = lead.status?.toUpperCase();
-            return status === "CONTACTED" || status === "QUALIFIED" || status === "CONVERTED";
-          }).length;
-
-          // Closed this month (CONVERTED leads this month)
-          const closedThisMonth = leads.filter(lead => {
-            if (lead.status?.toUpperCase() !== "CONVERTED") return false;
-            if (!lead.updated_at) return false;
-            const leadDate = new Date(lead.updated_at);
-            return leadDate >= thisMonth;
-          }).length;
-
-          // Overdue follow-ups (leads with follow_up_date in the past and status not CONVERTED/LOST)
-          const followUpOverdue = leads.filter(lead => {
-            if (!lead.follow_up_date) return false;
-            const followUpDate = new Date(lead.follow_up_date);
-            const status = lead.status?.toUpperCase();
-            return followUpDate < today && status !== "CONVERTED" && status !== "LOST";
-          }).length;
-
-          setStats(prev => ({
-            ...prev,
-            leadsAssignedToday,
-            leadsAssignedThisMonth,
-            activeDeals,
-            closedThisMonth,
-            followUpOverdue,
-          }));
-        }
-      }
-
-      // Fetch dashboard statistics if available
-      const dashboardRes = await fetch(`${BASE_URL}/sales/dashboard`, {
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (dashboardRes.ok) {
-        const dashboardData = await dashboardRes.json();
-        if (dashboardData.success && dashboardData.data) {
-          const data = dashboardData.data;
-
-          // Extract follow-up done today if available
-          // This would need to come from follow-up logs API
-          // For now, we'll set it to 0 and can be enhanced later
-
-          // Extract target and progress if available
-          if (data.monthly_target) {
-            setStats(prev => ({
-              ...prev,
-              monthlyTarget: data.monthly_target,
-              monthlyProgress: data.monthly_progress || 0,
-            }));
-          }
-
-          if (data.closing_target) {
-            setStats(prev => ({
-              ...prev,
-              closingTarget: data.closing_target,
-              closingProgress: data.closing_progress || 0,
-            }));
-          }
-
-          // Average response time
-          if (data.avg_response_time) {
-            setStats(prev => ({
-              ...prev,
-              avgResponseTime: data.avg_response_time,
-            }));
+              // Update general stats if needed
+              setStats(prev => ({
+                ...prev,
+                // Map 'new customers this period' as a proxy for 'leads today' or similar
+                leadsAssignedThisMonth: myStats.customers?.new_this_period || 0,
+                activeDeals: myStats.customers_with_orders?.total || 0,
+              }));
+            }
           }
         }
+      } catch (err) {
+        console.error("Error fetching statistics:", err);
       }
 
       // Fetch follow-up done today from follow-up logs
@@ -386,34 +317,42 @@ export default function Dashboard() {
     : 0;
 
   // New Order Cards
+  // New Order Cards
   const orderCards = [
     {
-      label: "Total Order",
-      value: orderStats.totalOrders.toLocaleString("id-ID"),
-      icon: <ShoppingCart size={24} />,
-      color: "accent-blue",
-      desc: "All Time"
-    },
-    {
-      label: "Revenue (Est.)",
+      label: "Total Revenue",
       value: formatCurrency(orderStats.totalRevenue),
       icon: <Wallet size={24} />,
       color: "accent-emerald",
-      desc: "From Recent 100 Orders"
+      desc: "Total Pendapatan"
     },
     {
-      label: "Menunggu Proses",
-      value: orderStats.prosesCount.toLocaleString("id-ID"),
-      icon: <Clock size={24} />,
+      label: "Total Orders",
+      value: (orderStats.totalOrders || 0).toLocaleString("id-ID"),
+      icon: <ShoppingCart size={24} />,
+      color: "accent-blue",
+      desc: "Total Pesanan"
+    },
+    {
+      label: "Total Customers",
+      value: (orderStats.totalCustomers || 0).toLocaleString("id-ID"),
+      icon: <User size={24} />,
       color: "accent-orange",
-      desc: "Status: Proses"
+      desc: "Base Pelanggan"
     },
     {
-      label: "Conversion (Sukses)",
-      value: orderStats.successCount.toLocaleString("id-ID"),
+      label: "Conversion Rate",
+      value: `${(orderStats.conversionRate || 0).toFixed(2)}%`,
       icon: <TrendingUp size={24} />,
       color: "accent-cyan",
-      desc: "Status: Sukses"
+      desc: "Customer to Order"
+    },
+    {
+      label: "Avg. Order Value",
+      value: formatCurrency(orderStats.avgOrderValue || 0),
+      icon: <Target size={24} />,
+      color: "accent-purple",
+      desc: "Rata-rata Transaksi"
     }
   ];
 

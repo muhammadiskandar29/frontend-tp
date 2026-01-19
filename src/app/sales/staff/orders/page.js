@@ -112,35 +112,18 @@ const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran, prod
   const isFollowupSent = (followUpNumber) => {
     // Validasi dasar
     if (loading) return false;
-    if (!productId || !customerWa) return false;
+    if (!productId) return false;
     if (!followupLogs || followupLogs.length === 0) return false;
 
     return followupLogs.some(l => {
       // Pastikan relasi utama ada
-      if (!l.follup_rel || !l.customer_rel) return false;
+      if (!l.follup_rel) return false;
 
-      // 1. Cek WA (Wajib Sama)
-      const logWA = String(l.customer_rel.wa || "").trim();
-      const currentWA = String(customerWa || "").trim();
-      if (logWA !== currentWA) return false;
-
-      // 2. Cek Produk (Wajib Sama)
+      // 1. Cek Produk (Wajib Sama)
       if (Number(l.follup_rel.produk_id) !== Number(productId)) return false;
 
-      // 3. Cek Type/FollowUp ke-berapa
-      // Strat: Cek field 'type' ATAU field 'nama' untuk menangani variasi data backend (seperti "1 " dengan spasi)
-
-      // Cara A: Cek field 'type' (misal "1 ")
-      // Menggunakan trim() + Number() agar "1 " terbaca sebagai 1
-      const typeVal = String(l.follup_rel.type || "").trim();
-      const isTypeMatch = (Number(typeVal) === Number(followUpNumber));
-
-      // Cara B: Cek field 'nama' (misal "Follow Up 1")
-      // Backup jika type kosong/rusak
-      const nameVal = String(l.follup_rel.nama || "").toLowerCase();
-      const isNameMatch = nameVal.includes(`follow up ${followUpNumber}`);
-
-      return isTypeMatch || isNameMatch;
+      // 2. Cek Type
+      return Number(l.follup_rel.type) === Number(followUpNumber);
     });
   };
 
@@ -1461,11 +1444,7 @@ export default function DaftarPesanan() {
                                       // Determine if it's the latest order (first in group)
                                       const isLatest = innerOrder.id === latestOrder.id;
 
-                                      const innerStatusRaw = innerOrder.status_order ?? innerOrder.status;
-                                      const innerStatusOrderValue = innerStatusRaw !== undefined && innerStatusRaw !== null
-                                        ? innerStatusRaw.toString()
-                                        : "";
-                                      const innerStatusInfo = STATUS_ORDER_MAP[innerStatusOrderValue] || { label: "-", class: "default" };
+
 
                                       // Status Pembayaran Logic
                                       let innerStatusPembayaranValue = innerOrder.status_pembayaran;
@@ -1478,6 +1457,11 @@ export default function DaftarPesanan() {
                                         }
                                       }
                                       const innerStatusPembayaranInfo = STATUS_PEMBAYARAN_MAP[innerStatusPembayaranValue] || STATUS_PEMBAYARAN_MAP[0];
+
+                                      // Status Order Logic
+                                      // Fixed: Defined innerStatusOrderInfo
+                                      const innerStatusOrderValue = String(innerOrder.status_order ?? innerOrder.status ?? "1");
+                                      const innerStatusOrderInfo = STATUS_ORDER_MAP[innerStatusOrderValue] || STATUS_ORDER_MAP["1"];
 
                                       // Bukti Pembayaran Logic
                                       const innerBuktiPath = getBuktiPembayaran(innerOrder);
