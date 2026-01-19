@@ -1327,11 +1327,11 @@ export default function DaftarPesanan() {
                   </th>
 
                   {/* Product - Widened */}
-                  {/* <th className="col-product">
+                  <th className="col-product">
                     PRODUK
-                  </th> */}
+                  </th>
 
-                  {/* <th>
+                  <th>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <span>STATUS</span>
                       <span>PEMBAYARAN</span>
@@ -1361,7 +1361,7 @@ export default function DaftarPesanan() {
                       <span>REVENUE</span>
                     </div>
                   </th>
-                  <th>SALES</th> */}
+                  <th>SALES</th>
 
                   {/* Action Column - NON STICKY */}
                   <th></th>
@@ -1440,101 +1440,104 @@ export default function DaftarPesanan() {
                             </td>
 
                             {/* Product - Widened */}
-                            {/* <td className="col-product">
-                            <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                              <span style={{ fontSize: "0.875rem", color: "#111827" }}>{produkNama}</span>
-                            </div>
-                          </td> */}
+                            <td className="col-product">
+                              <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                                <span style={{ fontSize: "0.875rem", color: "#111827" }}>{produkNama}</span>
+                              </div>
+                            </td>
 
                             {/* Status Pembayaran */}
-                            {/* <td>
-                            <span className={`status-badge payment-${statusPembayaranInfo.class}`}>
-                              {statusPembayaranInfo.label}
-                            </span>
-                          </td> */}
+                            <td>
+                              <span className={`status-badge payment-${statusPembayaranInfo.class}`}>
+                                {statusPembayaranInfo.label}
+                              </span>
+                            </td>
 
                             {/* Status Order */}
-                            {/* <td>
-                            <span className={`status-badge status-${statusOrderInfo.class}`}>
-                              {statusOrderInfo.label}
-                            </span>
-                          </td> */}
+                            <td>
+                              <span className={`status-badge status-${statusOrderInfo.class}`}>
+                                {statusOrderInfo.label}
+                              </span>
+                            </td>
 
                             {/* Follow Up Text */}
-                            {/* <td>
-                            <WABubbleChat
-                              customerId={order.customer_rel?.id || order.customer}
-                              orderId={order.id}
-                              orderStatus={statusOrderValue}
-                              statusPembayaran={statusPembayaranValue}
-                            />
-                          </td> */}
+                            <td>
+                              <WABubbleChat
+                                customerId={order.customer_rel?.id || order.customer}
+                                orderId={order.id}
+                                orderStatus={statusOrderValue}
+                                statusPembayaran={statusPembayaranValue}
+                                productId={order.produk_rel?.id || order.produk_id}
+                                customerWa={order.customer_rel?.wa}
+                              />
+                            </td>
 
                             {/* Bukti Pembayaran */}
-                            {/* <td style={{ textAlign: 'center' }}>
-                            {buktiUrl ? (
-                              <ImageIcon
-                                size={20}
-                                className="proof-icon"
-                                style={{ cursor: "pointer", margin: "0 auto" }}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleOpenImageModal(buktiUrl);
-                                }}
-                              />
-                            ) : (
-                              <span className="no-data">-</span>
-                            )}
-                          </td> */}
+                            <td style={{ textAlign: 'center' }}>
+                              {buktiUrl ? (
+                                <ImageIcon
+                                  size={20}
+                                  className="proof-icon"
+                                  style={{ cursor: "pointer", margin: "0 auto" }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenImageModal(buktiUrl);
+                                  }}
+                                />
+                              ) : (
+                                <span className="no-data">-</span>
+                              )}
+                            </td>
 
                             {/* Gross Revenue */}
-                            {/* <td className="revenue-text">
-                            Rp {Number(order.total_harga || 0).toLocaleString("id-ID")}
-                          </td> */}
+                            <td className="revenue-text">
+                              Rp {Number(order.total_harga || 0).toLocaleString("id-ID")}
+                            </td>
 
                             {/* Sales */}
-                            {/* <td>
-                            <span style={{ fontSize: "0.875rem", color: "#111827" }}>
-                              {order.customer_rel?.sales_rel?.nama || order.customer_rel?.sales_nama || "-"}
-                            </span>
-                          </td> */}
+                            <td>
+                              <span style={{ fontSize: "0.875rem", color: "#111827" }}>
+                                {order.customer_rel?.sales_rel?.nama || order.customer_rel?.sales_nama || "-"}
+                              </span>
+                            </td>
 
                             {/* Action Column - NON STICKY */}
                             <td>
                               <div className="action-group" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.5rem' }}>
-
-                                {/* Dropdown Button (Toggle Row) */}
-                                <button
-                                  className={`action-btn-dropdown ${activeDropdown === custId ? 'active' : ''}`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setActiveDropdown(activeDropdown === custId ? null : custId);
-                                  }}
-                                  style={{
-                                    marginLeft: '0.5rem',
-                                    backgroundColor: '#f1a124',
-                                    color: '#fff',
-                                    border: 'none',
-                                    borderRadius: '6px',
-                                    padding: '0.4rem 0.75rem',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.5rem',
-                                    fontSize: '0.8rem',
-                                    fontWeight: 600
-                                  }}
-                                >
-                                  <span>Lihat Order</span>
-                                  <ChevronDown size={14} strokeWidth={3} className={`transition-transform ${activeDropdown === custId ? 'rotate-180' : ''}`} />
-                                </button>
+                                {/* Dropdown Button (Toggle Row) - Only show if has history */}
+                                {group.length > 1 && (
+                                  <button
+                                    className={`action-btn-dropdown ${activeDropdown === custId ? 'active' : ''}`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveDropdown(activeDropdown === custId ? null : custId);
+                                    }}
+                                    style={{
+                                      marginLeft: '0.5rem',
+                                      backgroundColor: '#f1a124',
+                                      color: '#fff',
+                                      border: 'none',
+                                      borderRadius: '6px',
+                                      padding: '0.4rem 0.75rem',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '0.5rem',
+                                      fontSize: '0.8rem',
+                                      fontWeight: 600
+                                    }}
+                                  >
+                                    <span>Lihat Order Lainnya ({otherCount})</span>
+                                    <ChevronDown size={14} strokeWidth={3} className={`transition-transform ${activeDropdown === custId ? 'rotate-180' : ''}`} />
+                                  </button>
+                                )}
                               </div>
                             </td>
                           </tr>
                           {/* EXPANDED ROW FOR ORDER HISTORY */}
                           {
-                            activeDropdown === custId && (
+                            activeDropdown === custId && group.length > 1 && (
                               <tr key={`expand-${custId}`} className="expanded-row">
-                                <td colSpan={2} style={{ padding: 0, borderTop: 'none' }}>
+                                <td colSpan={9} style={{ padding: 0, borderTop: 'none' }}>
                                   <div style={{
                                     background: '#f8fafc',
                                     padding: '16px',
@@ -1543,7 +1546,7 @@ export default function DaftarPesanan() {
                                   }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                                       <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600, color: '#1e293b' }}>
-                                        Riwayat Order: {customerNama}
+                                        Riwayat Order Lainnya: {customerNama}
                                       </h4>
                                     </div>
 
@@ -1564,7 +1567,7 @@ export default function DaftarPesanan() {
                                           </tr>
                                         </thead>
                                         <tbody>
-                                          {group.map((innerOrder) => {
+                                          {group.slice(1).map((innerOrder) => {
                                             const innerStatusRaw = innerOrder.status_order ?? innerOrder.status;
                                             const innerStatusOrderValue = innerStatusRaw !== undefined && innerStatusRaw !== null
                                               ? innerStatusRaw.toString()
