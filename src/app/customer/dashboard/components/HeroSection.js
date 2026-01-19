@@ -23,21 +23,28 @@ export default function HeroSection({ customerInfo, isLoading }) {
 
           {/* Top Section: Greeting & Member Card */}
           <div className="customer-dashboard__hero-card">
-            <div className="hero-content-wrapper" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: "2rem", flexWrap: "wrap" }}>
+            <div className="hero-content-wrapper" style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center", // Changed to center to better align text and card vertically, or use flex-start if strictly top needed
+              gap: "2rem",
+              flexWrap: "wrap" // On mobile, card filters to top? No, usually text top. wrap-reverse puts last item (card) on top? No.
+              // Let's stick to flex-wrap and normal order.
+            }}>
 
               {/* Left Side: Greeting */}
-              <div className="hero-text-section" style={{ flex: 1, minWidth: "300px" }}>
+              <div className="hero-text-section" style={{ flex: 1, minWidth: "300px", alignSelf: "flex-start", paddingTop: "1rem" }}>
                 <div className="hero-greeting">
-                  <p className="customer-dashboard__subtitle">
+                  <p className="customer-dashboard__subtitle" style={{ fontSize: "1.1rem", marginBottom: "0.5rem", color: "#64748b" }}>
                     Kelola dan akses semua order Anda di satu tempat
                   </p>
-                  <h1>
+                  <h1 style={{ fontSize: "2rem", lineHeight: "1.2" }}>
                     {isLoading ? (
                       "Selamat Datang!"
                     ) : (
                       <>
-                        Selamat Datang,{" "}
-                        <span className="hero-name">{customerName}!</span>
+                        Selamat Datang, <br />
+                        <span className="hero-name" style={{ color: "#f97316" }}>{customerName}!</span>
                       </>
                     )}
                   </h1>
@@ -47,69 +54,83 @@ export default function HeroSection({ customerInfo, isLoading }) {
               {/* Right Side: Member Card */}
               <div className="hero-card-section" style={{ flexShrink: 0 }}>
                 {isLoading ? (
-                  <div className="member-card skeleton" style={{ background: "#e5e7eb", height: "240px", width: "380px" }}></div>
+                  <div className="member-card skeleton" style={{ background: "#e5e7eb", height: "240px", width: "400px", borderRadius: "20px" }}></div>
                 ) : (
                   <div className="member-card" style={{
-                    background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)", // Dark Blue Gradient
-                    borderRadius: "16px",
-                    padding: "1.5rem",
+                    background: "linear-gradient(135deg, #FF881B 0%, #FF512F 100%)", // Vibrant Orange Gradient
+                    borderRadius: "20px",
+                    padding: "1.75rem",
                     color: "white",
                     position: "relative",
                     overflow: "hidden",
-                    boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
-                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    boxShadow: "0 20px 25px -5px rgba(255, 110, 48, 0.4), 0 8px 10px -6px rgba(255, 110, 48, 0.2)",
+                    border: "1px solid rgba(255, 255, 255, 0.2)",
                     width: "100%",
-                    maxWidth: "400px", // Adjusted width
-                    minHeight: "240px",
+                    maxWidth: "420px",
+                    minHeight: "250px",
                     display: "flex",
                     flexDirection: "column",
                     justifyContent: "space-between"
                   }}>
+                    {/* Background Pattern Overlay (Optional - simplified for now) */}
+                    <div style={{
+                      position: 'absolute',
+                      top: '-50%',
+                      left: '-50%',
+                      width: '200%',
+                      height: '200%',
+                      background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 60%)',
+                      pointerEvents: 'none',
+                      transform: 'rotate(-15deg)'
+                    }} />
+
                     {/* Top Row */}
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", position: "relative", zIndex: 1 }}>
                       <div style={{
-                        fontFamily: "sans-serif",
+                        fontFamily: "'Inter', sans-serif",
                         fontWeight: "700",
-                        fontSize: "1.25rem",
+                        fontSize: "1.35rem",
                         textTransform: "uppercase",
-                        letterSpacing: "0.05em"
+                        letterSpacing: "0.05em",
+                        textShadow: "0 2px 4px rgba(0,0,0,0.1)"
                       }}>
                         TERNAK PROPERTI
                       </div>
                       <a href={`/member/${memberId}`} target="_blank" rel="noopener noreferrer" style={{
-                        background: "#fbbf24", // Yellow/Gold background for QR
-                        padding: "4px",
-                        borderRadius: "8px",
-                        width: "56px",
-                        height: "56px",
+                        background: "#FDE047", // Yellow-400 equivalent
+                        padding: "6px",
+                        borderRadius: "10px",
+                        width: "52px",
+                        height: "52px",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        boxShadow: "0 0 15px rgba(251, 191, 36, 0.5)" // Glow effect
+                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)"
                       }} title="Scan or Click to view details">
-                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
-                          <path d="M3 3h6v6H3V3zm2 2v2h2V5H5zm8-2h6v6h-6V3zm2 2v2h2V5H15zM3 13h6v6H3v-6zm2 2v2h2v-2H5zm13-2h3v2h-3v-2zm-3 0h2v3h-2v-3zm3 3h3v3h-3v-3zm-3 3h2v3h-2v-3z" fill="#000" fillRule="evenodd" clipRule="evenodd" />
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+                          <path d="M3 3h6v6H3V3zm2 2v2h2V5H5zm8-2h6v6h-6V3zm2 2v2h2V5H15zM3 13h6v6H3v-6zm2 2v2h2v-2H5zm13-2h3v2h-3v-2zm-3 0h2v3h-2v-3zm3 3h3v3h-3v-3zm-3 3h2v3h-2v-3z" fill="#1F2937" fillRule="evenodd" clipRule="evenodd" />
                         </svg>
                       </a>
                     </div>
 
                     {/* Middle Row: Member ID */}
-                    <div style={{ marginTop: "auto", marginBottom: "1.5rem" }}>
+                    <div style={{ marginTop: "auto", marginBottom: "1.5rem", position: "relative", zIndex: 1 }}>
                       <div style={{
-                        fontSize: "0.65rem",
+                        fontSize: "0.7rem",
                         textTransform: "uppercase",
-                        letterSpacing: "0.1em",
-                        color: "rgba(255, 255, 255, 0.6)",
-                        marginBottom: "0.25rem",
+                        letterSpacing: "0.15em",
+                        color: "rgba(255, 255, 255, 0.8)",
+                        marginBottom: "0.35rem",
                         fontWeight: "600"
                       }}>MEMBER ID</div>
                       <div style={{
-                        fontFamily: "monospace",
-                        fontSize: "1.5rem",
-                        letterSpacing: "0.15em",
-                        fontWeight: "600",
+                        fontFamily: "'Courier New', monospace",
+                        fontSize: "1.6rem",
+                        letterSpacing: "0.1rem",
+                        fontWeight: "700",
                         display: "flex",
-                        gap: "0.75rem"
+                        gap: "0.75rem",
+                        textShadow: "0 2px 2px rgba(0,0,0,0.1)"
                       }}>
                         {(() => {
                           const str = String(memberId).padStart(12, '0');
@@ -119,24 +140,25 @@ export default function HeroSection({ customerInfo, isLoading }) {
                     </div>
 
                     {/* Bottom Row: Cardholder & Status */}
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", position: "relative", zIndex: 1 }}>
                       <div style={{ maxWidth: "65%" }}>
                         <div style={{
-                          fontSize: "0.65rem",
+                          fontSize: "0.7rem",
                           textTransform: "uppercase",
-                          letterSpacing: "0.1em",
-                          color: "rgba(255, 255, 255, 0.6)",
+                          letterSpacing: "0.15em",
+                          color: "rgba(255, 255, 255, 0.8)",
                           marginBottom: "0.25rem",
                           fontWeight: "600"
                         }}>CARDHOLDER</div>
                         <div style={{
-                          fontSize: "1rem",
+                          fontSize: "1.1rem",
                           fontWeight: "700",
                           textTransform: "uppercase",
                           letterSpacing: "0.05em",
                           whiteSpace: "nowrap",
                           overflow: "hidden",
-                          textOverflow: "ellipsis"
+                          textOverflow: "ellipsis",
+                          textShadow: "0 1px 2px rgba(0,0,0,0.1)"
                         }}>
                           {fullName}
                         </div>
@@ -144,19 +166,20 @@ export default function HeroSection({ customerInfo, isLoading }) {
 
                       <div style={{ textAlign: "right" }}>
                         <div style={{
-                          fontSize: "0.65rem",
+                          fontSize: "0.7rem",
                           textTransform: "uppercase",
-                          letterSpacing: "0.1em",
-                          color: "rgba(255, 255, 255, 0.6)",
+                          letterSpacing: "0.15em",
+                          color: "rgba(255, 255, 255, 0.8)",
                           marginBottom: "0.25rem",
                           fontWeight: "600"
                         }}>MEMBER</div>
                         <div style={{
-                          color: "#fbbf24", // Gold color for status
+                          color: "#FDE047", // Yellow-300
                           fontWeight: "800",
-                          fontSize: "1rem",
+                          fontSize: "1.1rem",
                           letterSpacing: "0.1em",
-                          textTransform: "uppercase"
+                          textTransform: "uppercase",
+                          textShadow: "0 1px 2px rgba(0,0,0,0.2)"
                         }}>BASIC</div>
                       </div>
                     </div>
@@ -166,6 +189,7 @@ export default function HeroSection({ customerInfo, isLoading }) {
 
             </div>
           </div>
+
 
           {/* Bottom Section: Verification Alert (Only if Unverified) */}
           {!isVerified && !isLoading && (
