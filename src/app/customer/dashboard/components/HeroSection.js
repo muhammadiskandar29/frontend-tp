@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, Check, Info } from "lucide-react";
+import { Copy, Check, Info, CreditCard, ShieldCheck, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 
 export default function HeroSection({ customerInfo, isLoading }) {
@@ -21,8 +21,12 @@ export default function HeroSection({ customerInfo, isLoading }) {
     return (
       <header className="customer-dashboard__hero">
         <div className="hero-content">
-          <div className="hero-greeting skeleton-loader" style={{ width: '60%', height: '40px', marginBottom: '1rem' }} />
-          <div className="hero-member-card skeleton-loader" style={{ width: '100%', height: '200px' }} />
+          <div className="hero-text">
+            <div className="skeleton-loader" style={{ width: '150px', height: '20px', marginBottom: '1rem' }} />
+            <div className="skeleton-loader" style={{ width: '300px', height: '40px', marginBottom: '1rem' }} />
+            <div className="skeleton-loader" style={{ width: '100%', height: '60px' }} />
+          </div>
+          <div className="hero-member-card skeleton-loader" style={{ width: '100%', height: '220px', borderRadius: '16px' }} />
         </div>
       </header>
     );
@@ -33,20 +37,15 @@ export default function HeroSection({ customerInfo, isLoading }) {
   const memberId = customerInfo?.id ? String(customerInfo.id).padStart(6, '0') : "-";
   const email = customerInfo?.email || "-";
   const phone = customerInfo?.no_hp || customerInfo?.wa || "-";
-  const status = customerInfo?.status === "1" ? "Active" : "Inactive";
-  const joinDate = customerInfo?.create_at || customerInfo?.created_at
-    ? new Date(customerInfo.create_at || customerInfo.created_at).toLocaleDateString("id-ID", {
-      day: 'numeric', month: 'long', year: 'numeric'
-    })
-    : "-";
 
-  // Verification status check (matching page logic)
-  // Logic: unverified if specifically 0, false, or null. Verified if 1 or true.
+  // Verification logic matches DashboardPage (strict check)
   const isVerified = customerInfo?.verifikasi === "1" || customerInfo?.verifikasi === true;
 
   return (
     <header className="customer-dashboard__hero">
       <div className="hero-content">
+
+        {/* LEFT COLUMN: TEXT */}
         <div className="hero-text">
           <p className="hero-eyebrow">Dashboard Member</p>
           <h1 className="hero-title">
@@ -57,21 +56,27 @@ export default function HeroSection({ customerInfo, isLoading }) {
           </p>
         </div>
 
-        {/* MEMBER CARD */}
+        {/* RIGHT COLUMN: MEMBER CARD */}
         <div className="hero-card-wrapper">
-          <div className="member-card">
+          <div className={`member-card ${isVerified ? 'card-verified' : 'card-unverified-theme'}`}>
+
+            {/* Background Texture */}
+            <div className="card-texture"></div>
+
             <div className="member-card__header">
               <div className="member-card__brand">
-                <span className="brand-logo">🔹</span>
+                <CreditCard size={20} className="brand-icon" />
                 <span className="brand-name">MEMBER CARD</span>
               </div>
               <div className={`member-status-badge ${isVerified ? 'verified' : 'unverified'}`}>
                 {isVerified ? (
                   <>
-                    <Check size={12} strokeWidth={3} /> VERIFIED
+                    <ShieldCheck size={14} strokeWidth={2.5} /> VERIFIED
                   </>
                 ) : (
-                  <>UNVERIFIED</>
+                  <>
+                    <ShieldAlert size={14} strokeWidth={2.5} /> UNVERIFIED
+                  </>
                 )}
               </div>
             </div>
@@ -79,7 +84,9 @@ export default function HeroSection({ customerInfo, isLoading }) {
             <div className="member-card__body">
               <div className="member-info-group">
                 <label>Nama Lengkap</label>
-                <div className="info-value reset-text">{customerInfo?.nama || displayName}</div>
+                <div className="info-value reset-text" title={customerInfo?.nama || displayName}>
+                  {customerInfo?.nama || displayName}
+                </div>
               </div>
 
               <div className="member-info-row">
@@ -98,7 +105,11 @@ export default function HeroSection({ customerInfo, isLoading }) {
                 </div>
                 <div className="member-info-group">
                   <label>Bergabung Sejak</label>
-                  <div className="info-value date-value">{joinDate}</div>
+                  <div className="info-value">
+                    {customerInfo?.create_at || customerInfo?.created_at
+                      ? new Date(customerInfo.create_at || customerInfo.created_at).getFullYear()
+                      : "-"}
+                  </div>
                 </div>
               </div>
             </div>
@@ -111,32 +122,33 @@ export default function HeroSection({ customerInfo, isLoading }) {
               </div>
             </div>
 
-            {/* Decorative Patterns */}
-            <div className="card-pattern pattern-1"></div>
-            <div className="card-pattern pattern-2"></div>
           </div>
         </div>
       </div>
 
       <style jsx>{`
         .customer-dashboard__hero {
+          margin-bottom: 2rem;
+          width: 100%;
+        }
+        
+        .hero-content {
           display: flex;
           flex-direction: column;
           gap: 2rem;
-          margin-bottom: 2rem;
         }
-        
-        @media (min-width: 768px) {
+
+        @media (min-width: 900px) {
           .hero-content {
             display: grid;
-            grid-template-columns: 1.2fr 1fr;
-            gap: 3rem;
-            align-items: center;
+            grid-template-columns: 1fr 420px; /* Text takes space, Card fixed width */
+            gap: 4rem;
+            align-items: start; /* Align tops */
           }
         }
 
         .hero-text {
-          flex: 1;
+          padding-top: 1rem; /* Slight offset visually */
         }
 
         .hero-eyebrow {
@@ -144,194 +156,223 @@ export default function HeroSection({ customerInfo, isLoading }) {
           text-transform: uppercase;
           letter-spacing: 0.05em;
           color: #64748b;
-          margin-bottom: 0.5rem;
-          font-weight: 600;
+          margin-bottom: 0.75rem;
+          font-weight: 700;
         }
 
         .hero-title {
-          font-size: 2rem;
-          font-weight: 700;
+          font-size: 2.5rem;
+          font-weight: 800;
           color: #0f172a;
-          margin-bottom: 0.75rem;
-          line-height: 1.2;
+          margin-bottom: 1rem;
+          line-height: 1.1;
+          letter-spacing: -0.02em;
         }
 
         .hero-name-highlight {
-          background: linear-gradient(120deg, #2563eb, #06b6d4);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
+          color: #0ea5e9; /* Sky blue matching design */
         }
 
         .hero-subtitle {
           color: #64748b;
-          font-size: 1rem;
+          font-size: 1.125rem;
           line-height: 1.6;
-          max-width: 500px;
+          max-width: 90%;
         }
 
         /* MEMBER CARD STYLES */
+        .hero-card-wrapper {
+          width: 100%;
+          display: flex;
+          justify-content: center;
+          align-items: flex-start;
+        }
+
         .member-card {
-          background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-          border-radius: 16px;
-          padding: 1.5rem;
+          width: 100%;
+          max-width: 420px;
+          min-height: 240px;
+          border-radius: 20px;
+          padding: 1.75rem;
           color: white;
           position: relative;
           overflow: hidden;
-          box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.3), 0 8px 10px -6px rgba(15, 23, 42, 0.2);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          min-height: 220px;
+          box-shadow: 0 20px 40px -10px rgba(249, 115, 22, 0.4); /* Orange shadow */
           display: flex;
           flex-direction: column;
           justify-content: space-between;
-          transition: transform 0.3s ease;
+          background: linear-gradient(135deg, #fb923c 0%, #ea580c 40%, #c2410c 100%); /* Orange Gradient */
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
-
+        
         .member-card:hover {
           transform: translateY(-5px);
+          box-shadow: 0 25px 50px -12px rgba(249, 115, 22, 0.5);
+        }
+        
+        .card-texture {
+          position: absolute;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background-image: 
+            radial-gradient(circle at 100% 0%, rgba(255,255,255,0.15) 0%, transparent 30%),
+            radial-gradient(circle at 0% 100%, rgba(0,0,0,0.1) 0%, transparent 30%);
+          pointer-events: none;
         }
 
         .member-card__header {
           display: flex;
           justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 1.5rem;
+          align-items: center;
+          margin-bottom: 2rem;
           position: relative;
           z-index: 2;
         }
 
-        .brand-logo {
-          font-size: 1.25rem;
-          margin-right: 0.5rem;
+        .member-card__brand {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          background: rgba(0,0,0,0.1);
+          padding: 0.5rem 0.75rem;
+          border-radius: 12px;
+          backdrop-filter: blur(4px);
+        }
+        
+        .brand-icon {
+          color: rgba(255,255,255,0.9);
         }
 
         .brand-name {
-          font-size: 0.75rem;
-          font-weight: 700;
-          letter-spacing: 0.1em;
-          color: rgba(255, 255, 255, 0.8);
+          font-size: 0.7rem;
+          font-weight: 800;
+          letter-spacing: 0.15em;
+          color: rgba(255, 255, 255, 0.95);
         }
 
         .member-status-badge {
           font-size: 0.65rem;
-          font-weight: 700;
-          padding: 0.25rem 0.6rem;
+          font-weight: 800;
+          padding: 0.35rem 0.75rem;
           border-radius: 9999px;
           letter-spacing: 0.05em;
           display: flex;
           align-items: center;
-          gap: 4px;
+          gap: 6px;
+          text-transform: uppercase;
+          background: rgba(255,255,255,0.15);
+          backdrop-filter: blur(4px);
+          border: 1px solid rgba(255,255,255,0.2);
+          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
         }
-
-        .member-status-badge.verified {
-          background: rgba(34, 197, 94, 0.2);
-          color: #4ade80;
-          border: 1px solid rgba(34, 197, 94, 0.4);
-        }
-
+        
         .member-status-badge.unverified {
-          background: rgba(239, 68, 68, 0.2);
-          color: #f87171;
-          border: 1px solid rgba(239, 68, 68, 0.4);
+             background: rgba(220, 38, 38, 0.25);
+             border-color: rgba(254, 202, 202, 0.4);
+             color: #fee2e2;
         }
 
         .member-card__body {
           position: relative;
           z-index: 2;
+          flex: 1;
         }
 
         .member-info-group {
-          margin-bottom: 1rem;
+          margin-bottom: 1.25rem;
         }
 
         .member-info-group label {
           display: block;
           font-size: 0.65rem;
           text-transform: uppercase;
-          letter-spacing: 0.05em;
-          color: rgba(255, 255, 255, 0.5);
-          margin-bottom: 0.25rem;
+          letter-spacing: 0.1em;
+          color: rgba(255, 255, 255, 0.7);
+          margin-bottom: 0.35rem;
+          font-weight: 600;
         }
 
         .info-value {
-          font-size: 1rem;
-          font-weight: 600;
-          color: #ffffff;
+          font-size: 1.125rem;
+          font-weight: 700;
+          color: white;
+          text-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         
         .reset-text {
-             font-size: 1.125rem;
-             letter-spacing: 0.01em;
+             font-size: 1.5rem;
+             white-space: nowrap;
+             overflow: hidden;
+             text-overflow: ellipsis;
+             max-width: 100%;
         }
 
         .member-info-row {
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: 1.5fr 1fr;
           gap: 1rem;
+          margin-top: 1rem;
         }
 
         .id-value {
           font-family: 'Courier New', monospace;
-          letter-spacing: 0.1em;
+          letter-spacing: 0.15em;
           display: flex;
           align-items: center;
-          gap: 0.5rem;
+          gap: 0.75rem;
+          background: rgba(255,255,255,0.1);
+          width: fit-content;
+          padding: 0.25rem 0.5rem;
+          border-radius: 6px;
         }
 
         .copy-btn {
           background: none;
           border: none;
-          color: rgba(255, 255, 255, 0.5);
+          color: rgba(255, 255, 255, 0.7);
           cursor: pointer;
           padding: 2px;
-          transition: color 0.2s;
+          transition: all 0.2s;
+          display: flex;
+          align-items: center;
         }
 
         .copy-btn:hover {
           color: white;
+          transform: scale(1.1);
         }
 
         .member-card__footer {
-          margin-top: auto;
+          margin-top: 1.5rem;
           padding-top: 1rem;
-          border-top: 1px solid rgba(255, 255, 255, 0.1);
+          border-top: 1px solid rgba(255, 255, 255, 0.2);
           position: relative;
           z-index: 2;
         }
 
         .contact-info {
           font-size: 0.75rem;
-          color: rgba(255, 255, 255, 0.6);
+          color: rgba(255, 255, 255, 0.8);
           display: flex;
           flex-wrap: wrap;
-          gap: 0.5rem;
+          gap: 0.75rem;
           align-items: center;
+          font-weight: 500;
         }
 
         .info-separator {
           opacity: 0.5;
         }
-
-        .card-pattern {
-          position: absolute;
-          border-radius: 50%;
-          filter: blur(40px);
-          z-index: 1;
+        
+        /* Loading skeleton overrides */
+        .skeleton-loader {
+            background: #e2e8f0;
+            border-radius: 8px;
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
-
-        .pattern-1 {
-          width: 150px;
-          height: 150px;
-          background: rgba(37, 99, 235, 0.3);
-          top: -50px;
-          right: -50px;
-        }
-
-        .pattern-2 {
-          width: 120px;
-          height: 120px;
-          background: rgba(6, 182, 212, 0.2);
-          bottom: -30px;
-          left: -30px;
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
         }
       `}</style>
     </header>
