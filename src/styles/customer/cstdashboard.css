@@ -2304,6 +2304,6 @@
   background-position: center;
   opacity: 0.15;
   mix-blend-mode: overlay;
-  pointer-events: none;
-}.  
- 
+}
+
+@import './stepper.css';
