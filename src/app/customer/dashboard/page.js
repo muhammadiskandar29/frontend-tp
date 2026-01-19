@@ -33,8 +33,18 @@ export default function DashboardPage() {
 
   const { products, loading: productsLoading } = useProducts();
 
-  // Verification status logic
-  const isVerified = customerInfo?.verifikasi === "1" || customerInfo?.verifikasi === true;
+  // Verification status logic:
+  // API customer/dashboard might be missing 'verifikasi' field.
+  // We merge/check with session storage to get the accurate status.
+  const session = getCustomerSession();
+  const sessionVerifikasi = session?.user?.verifikasi;
+
+  // Prioritize API if exists (in case it updated), otherwise fallback to session
+  const verifikasiValue = customerInfo?.hasOwnProperty('verifikasi')
+    ? customerInfo.verifikasi
+    : sessionVerifikasi;
+
+  const isVerified = String(verifikasiValue) === "1" || verifikasiValue === true || verifikasiValue === 1;
 
   // Fungsi untuk mengecek apakah data customer sudah lengkap
   const isCustomerDataComplete = (customer) => {
@@ -60,12 +70,15 @@ export default function DashboardPage() {
       return;
     }
 
+    // Combine info for completeness check
+    const combinedInfo = { ...session?.user, ...customerInfo };
+
     // Cek apakah data customer sudah lengkap
-    if (customerInfo && !isCustomerDataComplete(customerInfo)) {
+    if (customerInfo && !isCustomerDataComplete(combinedInfo)) {
       console.log("[DASHBOARD] Customer data incomplete, showing modal");
       setShowUpdateModal(true);
       setUpdateModalReason("data");
-    } else if (customerInfo && isCustomerDataComplete(customerInfo)) {
+    } else if (customerInfo && isCustomerDataComplete(combinedInfo)) {
       // Data sudah lengkap, pastikan modal tertutup
       if (showUpdateModal) {
         setShowUpdateModal(false);

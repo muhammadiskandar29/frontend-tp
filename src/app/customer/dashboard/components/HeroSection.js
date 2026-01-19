@@ -41,7 +41,7 @@ export default function HeroSection({ customerInfo, isLoading }) {
 
   // Get data safely
   const displayName = customerInfo?.nama_panggilan || customerInfo?.nama || "Member";
-  const memberId = customerInfo?.id ? String(customerInfo.id).padStart(6, '0') : "000000";
+  const memberId = customerInfo?.memberID || (customerInfo?.id ? String(customerInfo.id).padStart(6, '0') : "000000");
   const membershipType = customerInfo?.keanggotaan || "BASIC";
 
 
