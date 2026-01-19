@@ -149,9 +149,9 @@ export default function Dashboard() {
       }
       // ------------------------------
 
-      // Fetch sales statistics (Replacing old leads/dashboard fetch)
+      // Fetch sales statistics (Replacing old fetch)
       try {
-        const statsRes = await fetch(`${BASE_URL}/sales/statistics`, {
+        const statsRes = await fetch(`${BASE_URL}/sales/order/statistic-per-sales`, {
           headers: {
             "Content-Type": "application/json",
             Accept: "application/json",
@@ -161,35 +161,30 @@ export default function Dashboard() {
 
         if (statsRes.ok) {
           const statsJson = await statsRes.json();
-          if (statsJson.success && Array.isArray(statsJson.data?.statistics)) {
+          if (statsJson.success && Array.isArray(statsJson.data)) {
             // Filter by current logged-in Sales ID
-            const myStats = statsJson.data.statistics.find(
+            const myStats = statsJson.data.find(
               (s) => Number(s.sales_id) === Number(currentUserId)
             );
 
             if (myStats) {
-              // Update orderStats with real data from Statistics API
-              setOrderStats({
-                totalOrders: myStats.orders?.total || 0,
-                totalRevenue: myStats.revenue?.total || 0,
-                // We map specific counts to 0 since this API doesn't provide breakdown by status
-                prosesCount: 0,
-                successCount: 0,
-                upsellingCount: 0,
-                batalCount: 0,
-                // Additional data
-                totalCustomers: myStats.customers?.total || 0,
-                conversionRate: myStats.conversion_rates?.customer_to_order || 0,
-                avgOrderValue: myStats.average_order_value?.total || 0
-              });
+              const totalOrd = Number(myStats.total_order || 0);
+              const sukses = Number(myStats.total_order_sudah_diapprove || 0);
 
-              // Update general stats if needed
-              setStats(prev => ({
-                ...prev,
-                // Map 'new customers this period' as a proxy for 'leads today' or similar
-                leadsAssignedThisMonth: myStats.customers?.new_this_period || 0,
-                activeDeals: myStats.customers_with_orders?.total || 0,
-              }));
+              setOrderStats({
+                totalOrders: totalOrd,
+                totalRevenue: Number(myStats.revenue || 0),
+                prosesCount: Number(myStats.total_order_menunggu || 0),
+                successCount: sukses,
+                upsellingCount: 0,
+                batalCount: Number(myStats.total_order_ditolak || 0),
+                unpaidCount: Number(myStats.total_order_unpaid || 0),
+
+                // Calculated / Missing fields
+                totalCustomers: 0,
+                conversionRate: totalOrd > 0 ? (sukses / totalOrd * 100) : 0,
+                avgOrderValue: 0
+              });
             }
           }
         }
@@ -334,25 +329,25 @@ export default function Dashboard() {
       desc: "Total Pesanan"
     },
     {
-      label: "Total Customers",
-      value: (orderStats.totalCustomers || 0).toLocaleString("id-ID"),
-      icon: <User size={24} />,
-      color: "accent-orange",
-      desc: "Base Pelanggan"
+      label: "Unpaid Orders",
+      value: (orderStats.unpaidCount || 0).toLocaleString("id-ID"),
+      icon: <AlertCircle size={24} />,
+      color: "accent-red",
+      desc: "Belum Dibayar"
     },
     {
       label: "Conversion Rate",
       value: `${(orderStats.conversionRate || 0).toFixed(2)}%`,
       icon: <TrendingUp size={24} />,
       color: "accent-cyan",
-      desc: "Customer to Order"
+      desc: "Success / Total"
     },
     {
-      label: "Avg. Order Value",
-      value: formatCurrency(orderStats.avgOrderValue || 0),
-      icon: <Target size={24} />,
-      color: "accent-purple",
-      desc: "Rata-rata Transaksi"
+      label: "Pending Orders",
+      value: (orderStats.prosesCount || 0).toLocaleString("id-ID"),
+      icon: <Clock size={24} />,
+      color: "accent-orange",
+      desc: "Menunggu Proses"
     }
   ];
 

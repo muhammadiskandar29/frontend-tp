@@ -544,9 +544,45 @@ export default function DaftarPesanan() {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const stats = await getOrderStatistics();
-      if (stats) {
-        setStatistics(stats);
+      const userStr = localStorage.getItem("user");
+      let currentUserId = null;
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          currentUserId = user.id;
+        } catch (e) {
+          console.error("Error parsing user:", e);
+        }
+      }
+
+      if (!currentUserId) return;
+
+      // Gunakan endpoint statistic per sales
+      const res = await fetch(`${BASE_URL}/sales/order/statistic-per-sales`, {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        }
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          // Filter stats untuk sales yang sedang login
+          const myStats = json.data.find(s => Number(s.sales_id) === Number(currentUserId));
+          if (myStats) {
+            setStatistics(myStats);
+          } else {
+            // Jika tidak ditemukan, set 0
+            setStatistics({
+              total_order: 0,
+              total_order_unpaid: 0,
+              total_order_menunggu: 0,
+              total_order_sudah_diapprove: 0,
+              total_order_ditolak: 0
+            });
+          }
+        }
       }
     } catch (err) {
       console.error("Error loading statistics:", err);
@@ -1496,12 +1532,7 @@ export default function DaftarPesanan() {
                                             </span>
                                           </td>
 
-                                          {/* Status Order */}
-                                          <td style={{ padding: '12px 16px' }}>
-                                            <span className={`status-badge orders-status-badge--${innerStatusOrderInfo.class}`} style={{ fontSize: '0.7rem', padding: '2px 8px' }}>
-                                              {innerStatusOrderInfo.label}
-                                            </span>
-                                          </td>
+
 
                                           {/* Follow Up Text */}
                                           <td style={{ padding: '12px 16px' }}>

@@ -28,7 +28,7 @@ function BankTransferPageContent() {
       try {
         const orderData = JSON.parse(storedOrder);
         console.log("[PAYMENT] Order data from localStorage:", orderData);
-        
+
         // Prioritaskan localStorage untuk downPayment dan orderId
         if (orderData.downPayment) {
           setDownPayment(orderData.downPayment);
@@ -38,7 +38,7 @@ function BankTransferPageContent() {
           setDownPayment(downPaymentFromQuery);
           setIsWorkshop(true);
         }
-        
+
         if (orderData.orderId) {
           setOrderId(orderData.orderId);
           console.log("[PAYMENT] Using orderId from localStorage:", orderData.orderId);
@@ -129,7 +129,7 @@ function BankTransferPageContent() {
 
     // Ambil amount: untuk workshop pakai downPayment, untuk non-workshop pakai total harga
     let amountToUse = null;
-    
+
     if (isWorkshop || downPayment) {
       // Workshop: pakai downPayment
       amountToUse = downPayment;
@@ -163,12 +163,12 @@ function BankTransferPageContent() {
         }
       }
     }
-    
+
     const amountValue = parseFloat(amountToUse || "0");
     if (!amountValue || amountValue <= 0) {
       return setErrorMsg(
-        isWorkshop || downPayment 
-          ? "Jumlah pembayaran tidak valid. Pastikan down payment sudah diisi." 
+        isWorkshop || downPayment
+          ? "Jumlah pembayaran tidak valid. Pastikan down payment sudah diisi."
           : "Jumlah pembayaran tidak valid. Pastikan total harga sudah diisi."
       );
     }
@@ -183,14 +183,16 @@ function BankTransferPageContent() {
 
       // Build FormData sesuai API spec
       const formData = new FormData();
-      
+
       if (bukti?.file) {
         formData.append("bukti_pembayaran", bukti.file);
       }
-      
+
       formData.append("waktu_pembayaran", waktuPembayaran);
-      formData.append("metode_bayar", via);
-      formData.append("metode_pembayaran", via); // Kompatibilitas
+      // Sesuai dokumentasi backend: metode_pembayaran
+      // Jika via='manual', kita kirim 'Transfer Bank' agar sesuai contoh, atau biarkan via jika sudah benar.
+      // User request example shows: "metode_pembayaran": "Transfer Bank"
+      formData.append("metode_pembayaran", via === "manual" ? "Transfer Bank" : via);
       formData.append("amount", String(amountValue));
 
       // Ambil customer token jika ada
@@ -198,7 +200,7 @@ function BankTransferPageContent() {
       const headers = {
         Accept: "application/json",
       };
-      
+
       // Jika ada customer token, gunakan untuk autentikasi
       if (customerToken) {
         headers.Authorization = `Bearer ${customerToken}`;
@@ -207,14 +209,14 @@ function BankTransferPageContent() {
       console.log("🔍 [PAYMENT] Submitting payment confirmation:", {
         orderId: finalOrderId,
         amount: amountValue,
-        metode_bayar: via,
+        metode_pembayaran: via === "manual" ? "Transfer Bank" : via,
         waktu_pembayaran,
         hasBukti: !!bukti?.file,
         hasToken: !!customerToken
       });
 
-      // Submit ke API order-konfirmasi
-      const response = await fetch(`/api/sales/order-konfirmasi/${finalOrderId}`, {
+      // Submit ke API baru: /api/customer/order/{id}/upload-bukti-pembayaran
+      const response = await fetch(`/api/customer/order/${finalOrderId}/upload-bukti-pembayaran`, {
         method: "POST",
         headers,
         body: formData,
@@ -223,7 +225,7 @@ function BankTransferPageContent() {
       const data = await response.json().catch(() => ({}));
 
       const isSuccess = response.ok && (
-        data.success === true || 
+        data.success === true ||
         (data.message && data.message.toLowerCase().includes("sukses"))
       );
 
@@ -234,7 +236,7 @@ function BankTransferPageContent() {
       }
 
       toast.success("Bukti pembayaran berhasil dikirim! Tim kami akan memverifikasi pembayaran Anda.");
-      
+
       // Redirect ke dashboard atau halaman sukses
       setTimeout(() => {
         window.location.href = "/customer/dashboard";
@@ -273,8 +275,8 @@ function BankTransferPageContent() {
           <div className="payment-icon">💳</div>
           <h1>Pembayaran Bank Transfer</h1>
           <p className="payment-subtitle">
-            {isWorkshop 
-              ? "Silakan transfer sesuai jumlah pembayaran pertama (Down Payment)" 
+            {isWorkshop
+              ? "Silakan transfer sesuai jumlah pembayaran pertama (Down Payment)"
               : "Silakan transfer sesuai total tagihan"}
           </p>
         </div>
@@ -314,14 +316,14 @@ function BankTransferPageContent() {
             <img src={rekeningBCA.logo} alt={rekeningBCA.bank} className="bank-logo-large" />
             <h3>Rekening Tujuan</h3>
           </div>
-          
+
           <div className="rekening-content">
             <div className="rekening-item">
               <span className="rekening-label">Nomor Rekening</span>
               <div className="rekening-number-wrapper">
                 <span className="rekening-number">{rekeningBCA.nomor}</span>
-                <button 
-                  className="copy-btn" 
+                <button
+                  className="copy-btn"
                   onClick={() => copyToClipboard(rekeningBCA.nomor)}
                   title="Salin nomor rekening"
                 >
@@ -329,7 +331,7 @@ function BankTransferPageContent() {
                 </button>
               </div>
             </div>
-            
+
             <div className="rekening-item">
               <span className="rekening-label">Atas Nama</span>
               <span className="rekening-name">{rekeningBCA.atasNama}</span>
@@ -340,111 +342,111 @@ function BankTransferPageContent() {
         {/* Form Upload Bukti Pembayaran - SELALU TAMPILKAN untuk semua kasus */}
         <div className="instruksi-card" style={{ marginTop: "24px" }}>
           <h3 className="instruksi-title">📤 Upload Bukti Pembayaran</h3>
-            <form onSubmit={handleKonfirmasiPembayaran}>
-              <div style={{ marginBottom: "16px" }}>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  id="bukti-upload"
-                  style={{ display: "none" }}
-                />
-                <label 
-                  htmlFor="bukti-upload" 
-                  style={{
-                    display: "block",
-                    padding: "24px",
-                    border: "2px dashed #d1d5db",
-                    borderRadius: "12px",
-                    textAlign: "center",
-                    cursor: "pointer",
-                    background: bukti?.url ? "transparent" : "#f9fafb",
-                    transition: "all 0.2s"
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!bukti?.url) e.target.style.background = "#f3f4f6";
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!bukti?.url) e.target.style.background = "#f9fafb";
-                  }}
-                >
-                  {bukti?.url ? (
-                    <div>
-                      <img 
-                        src={bukti.url} 
-                        alt="Preview" 
-                        style={{
-                          maxWidth: "100%",
-                          maxHeight: "300px",
-                          borderRadius: "8px",
-                          marginBottom: "12px"
-                        }}
-                      />
-                      <p style={{ color: "#059669", fontSize: "14px", margin: 0 }}>
-                        ✓ {bukti.name}
-                      </p>
-                      <p style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px" }}>
-                        Klik untuk ganti gambar
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      <span style={{ fontSize: "48px", display: "block", marginBottom: "12px" }}>📷</span>
-                      <span style={{ display: "block", color: "#374151", fontWeight: 500, marginBottom: "4px" }}>
-                        Klik untuk upload bukti pembayaran
-                      </span>
-                      <span style={{ display: "block", color: "#6b7280", fontSize: "14px" }}>
-                        PNG, JPG maksimal 5MB
-                      </span>
-                    </>
-                  )}
-                </label>
-              </div>
-
-              {errorMsg && (
-                <div style={{
-                  padding: "12px",
-                  background: "#fee2e2",
-                  border: "1px solid #fca5a5",
-                  borderRadius: "8px",
-                  color: "#dc2626",
-                  fontSize: "14px",
-                  marginBottom: "16px"
-                }}>
-                  ⚠️ {errorMsg}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={submitting || !bukti?.file}
+          <form onSubmit={handleKonfirmasiPembayaran}>
+            <div style={{ marginBottom: "16px" }}>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                id="bukti-upload"
+                style={{ display: "none" }}
+              />
+              <label
+                htmlFor="bukti-upload"
                 style={{
-                  width: "100%",
-                  padding: "14px",
-                  background: submitting || !bukti?.file ? "#d1d5db" : "#ff6c00",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "16px",
-                  fontWeight: 600,
-                  cursor: submitting || !bukti?.file ? "not-allowed" : "pointer",
+                  display: "block",
+                  padding: "24px",
+                  border: "2px dashed #d1d5db",
+                  borderRadius: "12px",
+                  textAlign: "center",
+                  cursor: "pointer",
+                  background: bukti?.url ? "transparent" : "#f9fafb",
                   transition: "all 0.2s"
                 }}
                 onMouseEnter={(e) => {
-                  if (!submitting && bukti?.file) {
-                    e.target.style.background = "#c85400";
-                  }
+                  if (!bukti?.url) e.target.style.background = "#f3f4f6";
                 }}
                 onMouseLeave={(e) => {
-                  if (!submitting && bukti?.file) {
-                    e.target.style.background = "#ff6c00";
-                  }
+                  if (!bukti?.url) e.target.style.background = "#f9fafb";
                 }}
               >
-                {submitting ? "Memproses..." : "Konfirmasi Pembayaran"}
-              </button>
-            </form>
-          </div>
+                {bukti?.url ? (
+                  <div>
+                    <img
+                      src={bukti.url}
+                      alt="Preview"
+                      style={{
+                        maxWidth: "100%",
+                        maxHeight: "300px",
+                        borderRadius: "8px",
+                        marginBottom: "12px"
+                      }}
+                    />
+                    <p style={{ color: "#059669", fontSize: "14px", margin: 0 }}>
+                      ✓ {bukti.name}
+                    </p>
+                    <p style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px" }}>
+                      Klik untuk ganti gambar
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <span style={{ fontSize: "48px", display: "block", marginBottom: "12px" }}>📷</span>
+                    <span style={{ display: "block", color: "#374151", fontWeight: 500, marginBottom: "4px" }}>
+                      Klik untuk upload bukti pembayaran
+                    </span>
+                    <span style={{ display: "block", color: "#6b7280", fontSize: "14px" }}>
+                      PNG, JPG maksimal 5MB
+                    </span>
+                  </>
+                )}
+              </label>
+            </div>
+
+            {errorMsg && (
+              <div style={{
+                padding: "12px",
+                background: "#fee2e2",
+                border: "1px solid #fca5a5",
+                borderRadius: "8px",
+                color: "#dc2626",
+                fontSize: "14px",
+                marginBottom: "16px"
+              }}>
+                ⚠️ {errorMsg}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={submitting || !bukti?.file}
+              style={{
+                width: "100%",
+                padding: "14px",
+                background: submitting || !bukti?.file ? "#d1d5db" : "#ff6c00",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                fontSize: "16px",
+                fontWeight: 600,
+                cursor: submitting || !bukti?.file ? "not-allowed" : "pointer",
+                transition: "all 0.2s"
+              }}
+              onMouseEnter={(e) => {
+                if (!submitting && bukti?.file) {
+                  e.target.style.background = "#c85400";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!submitting && bukti?.file) {
+                  e.target.style.background = "#ff6c00";
+                }
+              }}
+            >
+              {submitting ? "Memproses..." : "Konfirmasi Pembayaran"}
+            </button>
+          </form>
+        </div>
 
         {/* Instruksi Card */}
         <div className="instruksi-card">
@@ -452,7 +454,7 @@ function BankTransferPageContent() {
           <ul className="instruksi-list">
             <li>
               <span className="instruksi-icon">✓</span>
-              {isWorkshop 
+              {isWorkshop
                 ? "Transfer sesuai jumlah pembayaran pertama (Down Payment) yang tertera di atas"
                 : "Transfer sesuai total tagihan agar proses verifikasi lebih cepat"}
             </li>
@@ -488,7 +490,7 @@ function BankTransferPageContent() {
         {/* Info Box */}
         <div className="info-box">
           <p className="info-text">
-            💡 <strong>Tips:</strong> {isWorkshop 
+            💡 <strong>Tips:</strong> {isWorkshop
               ? "Setelah transfer, upload bukti pembayaran di atas untuk mempercepat proses verifikasi."
               : "Setelah transfer, upload bukti pembayaran di atas untuk mempercepat proses verifikasi. Tim kami akan memverifikasi pembayaran Anda maksimal 1×24 jam."}
           </p>
@@ -502,11 +504,11 @@ function BankTransferPageContent() {
 export default function BankTransferPage() {
   return (
     <Suspense fallback={
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        minHeight: '100vh' 
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '100vh'
       }}>
         <p>Loading...</p>
       </div>
