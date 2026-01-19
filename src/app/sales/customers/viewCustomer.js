@@ -85,54 +85,27 @@ const formatDateTime = (dateStr) => {
 };
 
 // Fungsi untuk menentukan status pesanan (paid/unpaid)
+// Fungsi untuk menentukan status pesanan (paid/unpaid)
 const getOrderStatus = (order) => {
-  // Cek dari is_paid
-  const isPaidValue = order.is_paid;
-  const statusValue = order.status_pembayaran || order.status;
+  // Prioritas cek status_pembayaran
+  // Jika status_pembayaran null, berarti unpaid (sesuai contoh data user)
+  // "status_pembayaran": "2" -> Paid
+  // "status_pembayaran": null -> Unpaid
 
-  // Normalisasi nilai
-  const isPaid =
-    isPaidValue === true ||
-    isPaidValue === "1" ||
-    isPaidValue === 1 ||
-    statusValue === 2 ||
-    statusValue === "2" ||
-    statusValue === "paid" ||
-    statusValue === "1";
+  const statusBayar = order.status_pembayaran;
 
-  const isUnpaid =
-    isPaidValue === false ||
-    isPaidValue === "0" ||
-    isPaidValue === 0 ||
-    statusValue === "pending" ||
-    statusValue === "0" ||
-    statusValue === "unpaid";
-
-  if (isPaid) {
+  if (statusBayar == "2" || statusBayar === 2 || statusBayar == "paid") {
     return { label: "Paid", className: "status-paid" };
   }
-  if (isUnpaid) {
-    return { label: "Unpaid", className: "status-unpaid" };
-  }
 
-  // Default jika tidak jelas
+  // Jika null atau status lain, anggap unpaid
   return { label: "Unpaid", className: "status-unpaid" };
 };
 
 // Helper untuk check apakah order sudah paid
 const isOrderPaid = (order) => {
-  const isPaidValue = order.is_paid;
-  const statusValue = order.status_pembayaran || order.status;
-
-  return (
-    isPaidValue === true ||
-    isPaidValue === "1" ||
-    isPaidValue === 1 ||
-    statusValue === 2 ||
-    statusValue === "2" ||
-    statusValue === "paid" ||
-    statusValue === "1"
-  );
+  const statusBayar = order.status_pembayaran;
+  return statusBayar == "2" || statusBayar === 2 || statusBayar == "paid";
 };
 
 export default function ViewCustomerModal({ customer, onClose, onEdit, onDelete }) {
