@@ -250,26 +250,7 @@ export default function UpdateCustomerModal({
       return;
     }
 
-    // Validasi Manual untuk semua field yang required
-    let isValid = true;
-    for (const section of SECTION_CONFIG) {
-      for (const field of section.fields) {
-        // Skip password validation here, handled separately
-        if (field.name === "password") continue;
 
-        if (field.required) {
-          const value = formData[field.name];
-          if (!value || (typeof value === 'string' && !value.trim())) {
-            setError(`Field ${field.label} wajib diisi!`);
-            isValid = false;
-            break;
-          }
-        }
-      }
-      if (!isValid) break;
-    }
-
-    if (!isValid) return;
 
     setLoading(true);
     try {
