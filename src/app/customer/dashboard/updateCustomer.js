@@ -61,6 +61,7 @@ const SECTION_CONFIG = [
         name: "instagram",
         label: "Instagram",
         placeholder: "@username",
+        required: true,
       },
     ],
   },
@@ -91,12 +92,14 @@ const SECTION_CONFIG = [
           { value: "90-100jt", label: "90 - 100 Juta" },
           { value: ">100jt", label: "> 100 Juta" },
         ],
+        required: true,
       },
       {
         name: "industri_pekerjaan",
         label: "Industri Pekerjaan",
         placeholder: "Contoh: Teknologi, Properti, dll",
         fullWidth: true,
+        required: true,
       },
     ],
   },
@@ -111,11 +114,13 @@ const SECTION_CONFIG = [
           { value: "l", label: "Laki-laki" },
           { value: "p", label: "Perempuan" },
         ],
+        required: true,
       },
       {
         name: "tanggal_lahir",
         label: "Tanggal Lahir",
         type: "date",
+        required: true,
       },
     ],
   },
@@ -143,7 +148,7 @@ const SECTION_CONFIG = [
         type: "password",
         placeholder: "Masukkan password baru (min. 6 karakter)",
         note: "Isi jika ingin mengganti password",
-        required: false,
+        required: false, // Ditangani secara dinamis
         fullWidth: true,
       },
     ],
@@ -245,12 +250,38 @@ export default function UpdateCustomerModal({
       return;
     }
 
+    // Validasi Manual untuk semua field yang required
+    let isValid = true;
+    for (const section of SECTION_CONFIG) {
+      for (const field of section.fields) {
+        // Skip password validation here, handled separately
+        if (field.name === "password") continue;
+
+        if (field.required) {
+          const value = formData[field.name];
+          if (!value || (typeof value === 'string' && !value.trim())) {
+            setError(`Field ${field.label} wajib diisi!`);
+            isValid = false;
+            break;
+          }
+        }
+      }
+      if (!isValid) break;
+    }
+
+    if (!isValid) return;
+
     setLoading(true);
     try {
       // Prepare payload 
       const payload = {
         ...formData
       };
+
+      // Hapus password kosong agar tidak dikirim ke backend (backend akan menolak password kosong/null)
+      if (!payload.password || payload.password.trim() === "") {
+        delete payload.password;
+      }
 
       console.log("📤 [UPDATE_CUSTOMER] Sending payload:", payload);
       const result = await updateCustomer(payload);
