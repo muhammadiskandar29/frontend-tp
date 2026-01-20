@@ -1,10 +1,63 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Info, ShieldAlert, ShieldCheck } from "lucide-react";
+import { toast } from "react-hot-toast";
+import { getCustomerSession } from "@/lib/customerAuth";
+import CryptoJS from "crypto-js";
 
 export default function VerificationCard({ isVerified }) {
     const router = useRouter();
+    const [loading, setLoading] = useState(false);
+
+    const handleVerify = async () => {
+        setLoading(true);
+        try {
+            const session = getCustomerSession();
+            if (!session || !session.user) {
+                toast.error("Sesi tidak valid. Silakan login kembali.");
+                router.push("/customer");
+                return;
+            }
+
+            const customer = session.user;
+            const secret = 'superkeyy023Ad_8!jf983hfFj';
+            const timestamp = Math.floor(Date.now() / 1000).toString();
+            const hash = CryptoJS.HmacSHA256(timestamp, secret).toString(CryptoJS.enc.Hex);
+
+            const payload = {
+                customer_id: customer.id,
+                wa: customer.wa
+            };
+
+            const res = await fetch("/api/otp/send", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-API-Timestamp": timestamp,
+                    "X-API-Hash": hash
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                toast.success("OTP berhasil dikirim ke WhatsApp!");
+                // Simpan ID OTP jika perlu, atau langsung navigasi
+                router.push('/customer/otp');
+            } else {
+                toast.error(data.message || "Gagal mengirim OTP.");
+            }
+
+        } catch (error) {
+            console.error("OTP Error:", error);
+            toast.error("Terjadi kesalahan saat mengirim OTP.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     if (isVerified === null || isVerified === undefined) return null;
 
@@ -19,10 +72,11 @@ export default function VerificationCard({ isVerified }) {
                     <h3 className="status-value">{isVerified ? "TERVERIFIKASI" : "BELUM VERIFIKASI"}</h3>
                     {!isVerified && (
                         <button
-                            onClick={() => router.push('/customer/otp')}
+                            onClick={handleVerify}
+                            disabled={loading}
                             className="verify-now-btn"
                         >
-                            Verifikasi Sekarang &rarr;
+                            {loading ? "Mengirim OTP..." : <>Verifikasi Sekarang &rarr;</>}
                         </button>
                     )}
                 </div>

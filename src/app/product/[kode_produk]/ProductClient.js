@@ -29,11 +29,12 @@ const ImageSliderPreview = dynamic(() => import("@/app/sales/products/addProduct
 const QuotaInfoPreview = dynamic(() => import("@/app/sales/products/addProducts3/components/QuotaInfoPreview"), {
   ssr: false
 });
-import { getProvinces, getCities, getDistricts, calculateDomesticCost } from "@/utils/shippingService";
-import "@/styles/sales/add-products3.css"; // Canvas style
-import districtData from '@/data/indonesia-districts.json';
+import { useAddressData } from "./hooks/useAddressData";
+import { useShippingCalculator } from "./hooks/useShippingCalculator";
+import { usePriceCalculator } from "./hooks/usePriceCalculator";
+import { useProductForm } from "./hooks/useProductForm";
 
-// FAQ Component
+// FAQ Component & Countdown Component (Keep as is)
 function FAQItem({ question, answer }) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -56,10 +57,10 @@ function FAQItem({ question, answer }) {
   );
 }
 
-// ✅ Countdown Component - GENERAL: Styling sesuai gambar (minimalis, dark grey boxes)
-// ✅ Countdown Component - REFACKTOR: Mobile Responsive & Minimalist
-// ✅ Countdown Component - REFACKTOR: Orange Style (Match User Request)
-// ✅ Countdown Component - REFACKTOR: Dark Style (Match User New Request)
+
+
+// ✅ NORMALISASI DATA (Helper function) - Keep as is
+
 function CountdownComponent({ data = {}, componentId, containerStyle = {} }) {
   const hours = data.hours !== undefined ? data.hours : 0;
   const minutes = data.minutes !== undefined ? data.minutes : 0;
@@ -359,28 +360,86 @@ function ProductClient({ initialProductData, initialLandingPage }) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const [paymentMethod, setPaymentMethod] = useState("");
-  // ✅ Initialize with server data if available
-  const [productData, setProductData] = useState(initialProductData || null);
-  const [landingpage, setLandingpage] = useState(initialLandingPage || null);
-  // ✅ If initial data exists, we are not loading
-  const [loading, setLoading] = useState(!initialProductData);
-  const [submitting, setSubmitting] = useState(false);
-  const [testimoniIndices, setTestimoniIndices] = useState({});
-  const [selectedBundling, setSelectedBundling] = useState(null); // State untuk bundling yang dipilih
-
   const sumber = searchParams.get("utm_sumber") || "website";
 
-  const [customerForm, setCustomerForm] = useState({
-    nama: "",
-    wa: "",
-    email: "",
-    alamat: "",
-    custom_value: [],
+  // Data State
+  const [productData, setProductData] = useState(initialProductData || null);
+  const [landingpage, setLandingpage] = useState(initialLandingPage || null);
+  const [loading, setLoading] = useState(!initialProductData);
+  const [testimoniIndices, setTestimoniIndices] = useState({});
+
+  // -- HOOKS INTEGRATION --
+
+  // 1. Address Logic & Data
+  const {
+    wilayahData,
+    selectedWilayahIds, setSelectedWilayahIds,
+    loadingWilayah,
+    districtSearchTerm, setDistrictSearchTerm,
+    districtSearchResults, setDistrictSearchResults,
+    loadingDistrictSearch,
+    showDistrictResults, setShowDistrictResults
+  } = useAddressData();
+
+  // 2. Shipping Logic
+  const {
+    ongkir, setOngkir,
+    ongkirInfo, setOngkirInfo,
+    costResults, setCostResults,
+    loadingCost,
+    selectedCourier, setSelectedCourier,
+    handleCalculateOngkir: _handleCalculateOngkir,
+    selectShippingService
+  } = useShippingCalculator();
+
+  // 3. Form Logic (Orchestrator)
+  const {
+    customerForm, setCustomerForm,
+    formWilayah, setFormWilayah,
+    paymentMethod, setPaymentMethod,
+    selectedBundling, setSelectedBundling,
+    submitting, setSubmitting,
+    alamatLengkap,
+    handleSubmit: _handleSubmit, // Renamed to wrap
+    handleSaveDraft: _handleSaveDraft, // Renamed (optional, can use directly if no args change)
+    isFormValid
+  } = useProductForm({
+    productData,
+    shippingState: { ongkir, ongkirInfo },
+    addressState: { selectedWilayahIds },
+    sumber
   });
 
-  const [ongkir, setOngkir] = useState(0);
-  const [ongkirInfo, setOngkirInfo] = useState({ courier: '', service: '' });
+  // 4. Price Calculation Logic
+  const {
+    basePrice,
+    totalPrice: calculateTotal, // Maps to 'calculateTotal' variable used in JSX
+    isKategoriBuku: _isKategoriBuku,
+    productKategoriId
+  } = usePriceCalculator(productData, ongkir, selectedBundling);
+
+  // -- ADAPTERS / WRAPPERS --
+
+  // Wrapper for 'isKategoriBuku' (hook returns callback, we can assign it)
+  const isKategoriBuku = _isKategoriBuku;
+
+  // Wrapper for handleSubmit to inject calculated price values
+  const handleSubmit = async () => {
+    await _handleSubmit({
+      totalHarga: calculateTotal,
+      hargaProduk: basePrice,
+      isKategoriBuku: isKategoriBuku()
+    });
+  };
+
+  // Wrapper for handleSaveDraft (if needed)
+  const handleSaveDraft = _handleSaveDraft;
+
+  // Wrapper for handleCalculateOngkir (to match existing signature if needed)
+  const handleCalculateOngkir = _handleCalculateOngkir;
+
+  // Legacy state for OngkirCalculator component (if strictly needed by old component props)
+  // We keep it to be safe, though likely redundant with formWilayah
   const [ongkirAddress, setOngkirAddress] = useState({
     provinsi: "",
     kota: "",
@@ -389,138 +448,17 @@ function ProductClient({ initialProductData, initialLandingPage }) {
     kelurahan: "",
     kode_pos: "",
   });
-  const [alamatLengkap, setAlamatLengkap] = useState("");
 
-  // State untuk form wilayah (untuk produk fisik)
-  const [formWilayah, setFormWilayah] = useState({
-    provinsi: "",
-    kabupaten: "",
-    kecamatan: "",
-    kode_pos: "",
-  });
-
-  // State untuk search kecamatan (Produk Non-Fisik)
-  const [districtSearchTerm, setDistrictSearchTerm] = useState("");
-  const [districtSearchResults, setDistrictSearchResults] = useState([]);
-  const [loadingDistrictSearch, setLoadingDistrictSearch] = useState(false);
-  const [showDistrictResults, setShowDistrictResults] = useState(false);
-
-  // Debounce search handler for District Search
-  // ✅ SEARCH LOGIC: Client-side filtering dari data JSON (Super Cepat)
-  useEffect(() => {
-    // Skip jika term kosong atau pendek
-    if (!districtSearchTerm || districtSearchTerm.length < 3) {
-      setDistrictSearchResults([]);
-      return;
-    }
-
-    // Debounce 300ms (Responsive)
-    const timeoutId = setTimeout(() => {
-      setLoadingDistrictSearch(true);
-
-      const lowerTerm = districtSearchTerm.toLowerCase();
-      // Filter dari data lokal (indonesia-districts.json)
-      // Struktur data lokal: { id, kecamatan, kota, provinsi }
-      const results = districtData.filter(item =>
-        (item.kecamatan && item.kecamatan.toLowerCase().includes(lowerTerm))
-      ).slice(0, 50); // Limit 50 results
-
-      setDistrictSearchResults(results);
-      setLoadingDistrictSearch(false);
-      setShowDistrictResults(true); // Pastikan hasil ditampilkan
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
-  }, [districtSearchTerm]);
-
-  // State untuk dropdown wilayah (cascading)
-  const [wilayahData, setWilayahData] = useState({
-    provinces: [],
-    cities: [],
-    districts: []
-  });
-
-  const [selectedWilayahIds, setSelectedWilayahIds] = useState({
-    provinceId: "",
-    cityId: "",
-    districtId: ""
-  });
-
-  const [loadingWilayah, setLoadingWilayah] = useState({
-    provinces: false,
-    cities: false,
-    districts: false
-  });
-
-  const [selectedCourier, setSelectedCourier] = useState("jne");
-  const [costResults, setCostResults] = useState([]);
-  const [loadingCost, setLoadingCost] = useState(false);
-
-  // Courier options
-  const couriers = [
-    { value: "jne", label: "JNE" },
-    { value: "sicepat", label: "SiCepat" },
-    { value: "jnt", label: "JNT" },
-    { value: "ninja", label: "Ninja Express" },
-    { value: "anteraja", label: "AnterAja" },
-    { value: "tiki", label: "TIKI" },
-    { value: "pos", label: "POS Indonesia" },
-    { value: "lion", label: "Lion Parcel" },
-    { value: "wahana", label: "Wahana" },
-    { value: "ide", label: "IDE" },
-    { value: "sap", label: "SAP Express" },
-    { value: "ncs", label: "NCS" },
-  ];
-
-  const ORIGIN_DISTRICT_ID = 6204; // Kelapa Dua, Kabupaten Tangerang
-  const DEFAULT_WEIGHT = 1000; // 1kg dalam gram
-
+  // Formatting Helper
   const formatPrice = (price) => {
     if (!price) return "0";
     const numPrice = typeof price === "string" ? parseInt(price.replace(/[^\d]/g, "")) : price;
     return (isNaN(numPrice) ? 0 : numPrice).toLocaleString("id-ID");
   };
 
-  // ✅ FIX: Memoize getKategoriId untuk menghindari React error #310
-  const getKategoriId = useCallback(() => {
-    if (!productData) return null;
-    const kategoriId = productData.kategori_id
-      || (productData.kategori_rel?.id ? Number(productData.kategori_rel.id) : null)
-      || (productData.kategori ? Number(productData.kategori) : null);
-    return kategoriId;
-  }, [productData]);
+  // Helper for Kategori ID (Hook version)
+  const getKategoriId = useCallback(() => productKategoriId, [productKategoriId]);
 
-  const isKategoriBuku = () => {
-    const kategoriId = getKategoriId();
-    return kategoriId === 4; // Kategori Buku (4)
-  };
-
-  // ✅ Hitung total secara reactive dengan useMemo - auto update jika ada bundling atau tidak
-  // ✅ FIX: Gunakan primitive values untuk dependency yang lebih stabil
-  const productHarga = productData?.harga || 0;
-  const productKategoriId = productData?.kategori_id
-    || (productData?.kategori_rel?.id ? Number(productData.kategori_rel.id) : null)
-    || (productData?.kategori ? Number(productData.kategori) : null);
-
-  const calculateTotal = useMemo(() => {
-    if (!productData) return 0;
-
-    // ✅ Parse harga dengan benar (handle string dan number)
-    let basePrice = 0;
-    if (productHarga) {
-      if (typeof productHarga === 'string') {
-        basePrice = parseInt(productHarga.replace(/[^\d]/g, "")) || 0;
-      } else {
-        basePrice = parseInt(productHarga) || 0;
-      }
-    }
-
-    const isFormBuku = productKategoriId === 4; // Kategori Buku (4)
-    const shippingCost = isFormBuku ? ongkir : 0;
-    const total = basePrice + shippingCost;
-
-    return total;
-  }, [productHarga, productKategoriId, ongkir]); // ✅ Gunakan primitive values untuk dependency yang lebih stabil
 
   // FAQ Mapping
   const getFAQByKategori = (kategoriId) => {
@@ -2215,399 +2153,24 @@ function ProductClient({ initialProductData, initialLandingPage }) {
     }
   };
 
-  // ✅ Fungsi untuk cek apakah form sudah valid (bisa submit)
-  const isFormValid = () => {
-    // ✅ Validasi bundling: jika ada bundling, harus dipilih dulu
-    const bundlingData = productData?.bundling && Array.isArray(productData.bundling) ? productData.bundling : [];
-    const isBundling = bundlingData && bundlingData.length > 0;
 
-    if (isBundling && selectedBundling === null) {
-      return false; // Bundling belum dipilih
-    }
 
-    // ✅ Validasi form data: nama, email, wa wajib
-    if (!customerForm.nama || !customerForm.email || !customerForm.wa) {
-      return false; // Form data belum lengkap
-    }
-
-    // ✅ Validasi metode pembayaran
-    if (!paymentMethod) {
-      return false; // Metode pembayaran belum dipilih
-    }
-
-    const isFisik = isKategoriBuku();
-
-    // ✅ Validasi ongkir untuk produk fisik
-    if (isFisik && (!ongkir || ongkir === 0)) {
-      return false; // Ongkir belum dihitung
-    }
-
-    // ✅ Validasi formWilayah
-    if (isFisik) {
-      // Produk fisik: wajib lengkap (provinsi, kabupaten, kecamatan, kode_pos)
-      if (!formWilayah.provinsi || !formWilayah.kabupaten || !formWilayah.kecamatan || !formWilayah.kode_pos) {
-        return false; // Alamat belum lengkap
-      }
-      // Validasi kode pos harus angka
-      if (!/^\d+$/.test(formWilayah.kode_pos)) {
-        return false; // Kode pos tidak valid
-      }
-    } else {
-      // Produk non-fisik: minimal provinsi, kabupaten, dan kecamatan
-      if (!formWilayah.provinsi || !formWilayah.kabupaten || !formWilayah.kecamatan) {
-        return false; // Alamat belum lengkap
-      }
-    }
-
-    return true; // Semua valid
-  };
-
-  // ✅ Fungsi untuk mendapatkan pesan error validasi
-  const getValidationError = () => {
-    const bundlingData = productData?.bundling && Array.isArray(productData.bundling) ? productData.bundling : [];
-    const isBundling = bundlingData && bundlingData.length > 0;
-
-    if (isBundling && selectedBundling === null) {
-      return "Silakan pilih paket terlebih dahulu";
-    }
-
-    if (!customerForm.nama || !customerForm.email || !customerForm.wa) {
-      return "Silakan lengkapi data yang diperlukan (Nama, Email, WhatsApp)";
-    }
-
-    if (!paymentMethod) {
-      return "Silakan pilih metode pembayaran";
-    }
-
-    const isFisik = isKategoriBuku();
-
-    if (isFisik && (!ongkir || ongkir === 0)) {
-      return "Silakan hitung ongkir terlebih dahulu";
-    }
-
-    if (isFisik) {
-      if (!formWilayah.provinsi || !formWilayah.kabupaten || !formWilayah.kecamatan || !formWilayah.kode_pos) {
-        return "Silakan lengkapi alamat lengkap (Provinsi, Kabupaten/Kota, Kecamatan, Kode Pos)";
-      }
-      if (!/^\d+$/.test(formWilayah.kode_pos)) {
-        return "Kode Pos harus berupa angka!";
-      }
-    } else {
-      if (!formWilayah.provinsi || !formWilayah.kabupaten || !formWilayah.kecamatan) {
-        return "Silakan lengkapi alamat (minimal Provinsi, Kabupaten/Kota, Kecamatan)";
-      }
-    }
-
-    return null;
-  };
-
-  // Handle Submit
-  const handleSubmit = async () => {
-    if (submitting) return;
-
-    // ✅ Validasi menggunakan fungsi helper
-    if (!isFormValid()) {
-      const errorMessage = getValidationError();
-      if (errorMessage) {
-        return toast.error(errorMessage);
-      }
-      return toast.error("Silakan lengkapi semua data yang diperlukan");
-    }
-
-    setSubmitting(true);
-
-    if (!productData) {
-      return toast.error("Data produk tidak valid");
-    }
-
-    // ✅ Ambil harga dari bundling yang dipilih jika ada, jika tidak gunakan harga default
-    let hargaProduk = parseInt(productData.harga || '0', 10);
-    const bundlingData = productData?.bundling && Array.isArray(productData.bundling) ? productData.bundling : [];
-    if (selectedBundling !== null && bundlingData && bundlingData.length > 0 && bundlingData[selectedBundling]) {
-      const selectedBundlingItem = bundlingData[selectedBundling];
-      hargaProduk = parseInt(selectedBundlingItem.harga || productData.harga || '0', 10);
-    }
-
-    const ongkirValue = isKategoriBuku() ? (ongkir || 0) : 0;
-
-    const totalHarga = isKategoriBuku()
-      ? hargaProduk + ongkirValue
-      : hargaProduk;
-
-    // ✅ Validasi formWilayah berdasarkan jenis produk
-    const isFisik = isKategoriBuku();
-    if (isFisik) {
-      // Untuk produk fisik, wajib lengkap
-      if (!formWilayah.provinsi || !formWilayah.kabupaten || !formWilayah.kecamatan || !formWilayah.kode_pos) {
-        setSubmitting(false);
-        return toast.error("Silakan lengkapi alamat lengkap (Provinsi, Kabupaten/Kota, Kecamatan, Kode Pos)");
-      }
-    } else {
-      // ✅ Untuk produk non-fisik, minimal provinsi, kabupaten, dan kecamatan
-      if (!formWilayah.provinsi || !formWilayah.kabupaten || !formWilayah.kecamatan) {
-        setSubmitting(false);
-        return toast.error("Silakan lengkapi alamat (minimal Provinsi, Kabupaten/Kota, dan Kecamatan)");
-      }
-    }
-
-    // ✅ Ambil bundling_id jika customer memilih bundling
-    let bundlingId = null;
-    if (selectedBundling !== null && bundlingData && bundlingData.length > 0 && bundlingData[selectedBundling]) {
-      const selectedBundlingItem = bundlingData[selectedBundling];
-      // Ambil id dari bundling yang dipilih (dari bundling_rel)
-      bundlingId = selectedBundlingItem.id || null;
-    }
-
-    // ✅ Format request: sama seperti addCustomer.js - tanpa alamat, gunakan field terpisah
-    const payload = {
-      nama: customerForm.nama,
-      wa: customerForm.wa,
-      email: customerForm.email,
-      // Field alamat dikosongkan karena kita pakai breakdown wilayah
-      // Backend akan menampung provinsi, kabupaten, kecamatan, kode_pos
-      alamat: '',
-      provinsi: formWilayah.provinsi || null,
-      kabupaten: formWilayah.kabupaten || null,
-      kecamatan: formWilayah.kecamatan || null,
-      kode_pos: formWilayah.kode_pos || null,
-      produk: parseInt(productData.id, 10),
-      harga: String(hargaProduk),
-      ongkir: String(ongkirValue),
-      total_harga: String(totalHarga),
-      metode_bayar: paymentMethod,
-      sumber: sumber || 'website',
-      custom_value: Array.isArray(customerForm.custom_value)
-        ? customerForm.custom_value
-        : (customerForm.custom_value ? [customerForm.custom_value] : []),
-      // ✅ VERIFIED: bundling_id disertakan jika customer memilih bundling
-      ...(bundlingId ? { bundling_id: bundlingId } : {}),
-    };
-
-    try {
-      const response = await fetch("/api/order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const order = await response.json();
-
-      if (!response.ok || !order?.success) {
-        const errorMessage = order?.message || order?.error || "Gagal membuat order";
-        throw new Error(errorMessage);
-      }
-
-      const orderResponseData = order?.data?.order || order?.data || {};
-      const orderId = orderResponseData?.id;
-
-      let customerId = null;
-      const rawCustomer = orderResponseData?.customer || orderResponseData?.customer_id || orderResponseData?.id_customer;
-
-      if (typeof rawCustomer === 'object' && rawCustomer !== null) {
-        customerId = rawCustomer.id || rawCustomer.customer_id;
-      } else if (typeof rawCustomer === 'number' || typeof rawCustomer === 'string') {
-        customerId = rawCustomer;
-      }
-
-      const totalHargaFinal = isKategoriBuku()
-        ? hargaProduk + ongkirValue
-        : hargaProduk;
-
-      const pendingOrder = {
-        orderId: orderId,
-        customerId: customerId,
-        nama: customerForm.nama,
-        wa: customerForm.wa,
-        email: customerForm.email,
-        productName: productData.nama || "Produk",
-        totalHarga: String(totalHargaFinal),
-        paymentMethod: paymentMethod,
-        landingUrl: window.location.pathname,
-      };
-
-      localStorage.setItem("pending_order", JSON.stringify(pendingOrder));
-
-      if (customerId) {
-        toast.success("Kode OTP telah dikirim ke WhatsApp Anda!");
-      } else {
-        toast.success("Order berhasil! Lanjut ke pembayaran...");
-      }
-
-      // ✅ OPTIMASI SPEED: Langsung redirect tanpa delay
-      router.push("/verify-order");
-
-    } catch (err) {
-      console.error("[SUBMIT ERROR]", err);
-      toast.error(err.message || "Terjadi kesalahan. Silakan coba lagi.");
-      setSubmitting(false);
-    }
-  };
+  // handleSubmit logic moved to hooks and wrapper above.
 
   // Handle Save Draft - Fix untuk error "handleSaveDraft is not defined"
-  const handleSaveDraft = useCallback(async () => {
-    // Save form data to localStorage as draft
-    try {
-      const draftData = {
-        customerForm,
-        formWilayah,
-        selectedWilayahIds,
-        paymentMethod,
-        selectedBundling,
-        ongkir,
-        ongkirInfo,
-        timestamp: Date.now(),
-      };
+  // handleSaveDraft wrapper defined above
 
-      localStorage.setItem("order_draft", JSON.stringify(draftData));
-      toast.success("Draft berhasil disimpan");
-    } catch (err) {
-      console.error("[SAVE DRAFT ERROR]", err);
-      toast.error("Gagal menyimpan draft");
-    }
-  }, [customerForm, formWilayah, selectedWilayahIds, paymentMethod, selectedBundling, ongkir, ongkirInfo]);
+  // window.handleSaveDraft exposure logic moved to hook
 
-  // ✅ Make handleSaveDraft available globally (for HTML/embed blocks that might call it)
+  // Province loading logic moved to useAddressData hook
+
+
+  // ✅ BRIDGE: Trigger Ongkir Calculation when District Changes (for Physical Products)
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      window.handleSaveDraft = handleSaveDraft;
+    if (selectedWilayahIds.districtId) {
+      handleCalculateOngkir(selectedWilayahIds.districtId);
     }
-    return () => {
-      if (typeof window !== 'undefined') {
-        delete window.handleSaveDraft;
-      }
-    };
-  }, [handleSaveDraft]);
-
-  // ✅ Load provinces di background (tidak blocking render)
-  useEffect(() => {
-    if (!productData) return;
-
-    let isCancelled = false;
-
-    async function loadProvincesData() {
-      setLoadingWilayah(prev => ({ ...prev, provinces: true }));
-
-      try {
-        const data = await getProvinces();
-
-        if (isCancelled) return;
-
-        // ✅ Cek apakah data valid (array tidak kosong)
-        if (data && Array.isArray(data) && data.length > 0) {
-          setWilayahData(prev => ({ ...prev, provinces: data }));
-        }
-      } catch (err) {
-        console.error("[PROVINCES] Error loading provinces:", err);
-      } finally {
-        if (!isCancelled) {
-          setLoadingWilayah(prev => ({ ...prev, provinces: false }));
-        }
-      }
-    }
-
-    // ✅ Load di background tanpa blocking
-    loadProvincesData();
-
-    // ✅ Cleanup function
-    return () => {
-      isCancelled = true;
-    };
-  }, [productData]);
-
-  // Load cities when province selected
-  useEffect(() => {
-    if (!productData) return;
-
-    if (!selectedWilayahIds.provinceId) {
-      setWilayahData(prev => ({ ...prev, cities: [], districts: [] }));
-      setSelectedWilayahIds(prev => ({ ...prev, cityId: "", districtId: "" }));
-      return;
-    }
-
-    async function loadCitiesData() {
-      setLoadingWilayah(prev => ({ ...prev, cities: true }));
-      try {
-        const data = await getCities(selectedWilayahIds.provinceId);
-        setWilayahData(prev => ({ ...prev, cities: data, districts: [] }));
-        setSelectedWilayahIds(prev => ({ ...prev, cityId: "", districtId: "" }));
-      } catch (err) {
-        console.error("Load cities error:", err);
-      } finally {
-        setLoadingWilayah(prev => ({ ...prev, cities: false }));
-      }
-    }
-    loadCitiesData();
-  }, [selectedWilayahIds.provinceId, productData]);
-
-  // Load districts when city selected
-  useEffect(() => {
-    if (!productData) return;
-
-    if (!selectedWilayahIds.cityId) {
-      setWilayahData(prev => ({ ...prev, districts: [] }));
-      setSelectedWilayahIds(prev => ({ ...prev, districtId: "" }));
-      return;
-    }
-
-    async function loadDistrictsData() {
-      setLoadingWilayah(prev => ({ ...prev, districts: true }));
-      try {
-        const data = await getDistricts(selectedWilayahIds.cityId);
-        setWilayahData(prev => ({ ...prev, districts: data }));
-        setSelectedWilayahIds(prev => ({ ...prev, districtId: "" }));
-      } catch (err) {
-        console.error("Load districts error:", err);
-      } finally {
-        setLoadingWilayah(prev => ({ ...prev, districts: false }));
-      }
-    }
-    loadDistrictsData();
-  }, [selectedWilayahIds.cityId, productData]);
-
-  // Calculate cost when district and courier selected (hanya untuk produk fisik)
-  useEffect(() => {
-    if (!productData) return;
-    const kategoriId = getKategoriId();
-    const isBuku = kategoriId === 4;
-    if (!isBuku) return; // Hanya untuk produk fisik
-
-    if (!selectedWilayahIds.districtId || !selectedCourier) {
-      setCostResults([]);
-      setOngkir(0);
-      return;
-    }
-
-    async function calculateShippingCost() {
-      setLoadingCost(true);
-      try {
-        const results = await calculateDomesticCost({
-          origin: ORIGIN_DISTRICT_ID,
-          destination: Number(selectedWilayahIds.districtId),
-          weight: DEFAULT_WEIGHT,
-          courier: selectedCourier
-        });
-
-        setCostResults(results);
-
-        // Auto select first result
-        if (results && results.length > 0) {
-          const firstResult = results[0];
-          setOngkir(firstResult.cost || 0);
-          setOngkirInfo({
-            courier: firstResult.courier || selectedCourier,
-            service: firstResult.service || ""
-          });
-        }
-      } catch (err) {
-        console.error("Calculate cost error:", err);
-        setCostResults([]);
-        setOngkir(0);
-      } finally {
-        setLoadingCost(false);
-      }
-    }
-    calculateShippingCost();
-  }, [selectedWilayahIds.districtId, selectedCourier, productData]);
+  }, [selectedWilayahIds.districtId, handleCalculateOngkir]);
 
   // ✅ OPTIMASI: Fetch Data dari Backend dengan non-blocking approach
   useEffect(() => {
