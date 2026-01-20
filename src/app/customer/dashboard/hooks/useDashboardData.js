@@ -127,9 +127,11 @@ export function useDashboardData() {
             "Authorization": `Bearer ${session.token}`,
             "Content-Type": "application/json",
             "Accept": "application/json"
-          }
+          },
+          body: JSON.stringify({})
         });
         const profileJson = await profileRes.json();
+        console.log("[DASHBOARD] Profile POST Response:", profileJson); // Debug log
         if (profileJson.success && profileJson.data) {
           profileData = profileJson.data;
         }

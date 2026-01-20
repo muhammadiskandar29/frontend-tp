@@ -44,7 +44,9 @@ export default function DashboardPage() {
     ? customerInfo.verifikasi
     : sessionVerifikasi;
 
-  const isVerified = String(verifikasiValue) === "1" || verifikasiValue === true || verifikasiValue === 1;
+  // Debug verification status
+  console.log("[DASHBOARD] Verif Check:", { api: customerInfo?.verifikasi, session: sessionVerifikasi, final: verifikasiValue });
+  const isVerified = Number(verifikasiValue) === 1 || verifikasiValue === true || String(verifikasiValue) === "1";
 
   // Fungsi untuk mengecek apakah data customer sudah lengkap
   const isCustomerDataComplete = (customer) => {
