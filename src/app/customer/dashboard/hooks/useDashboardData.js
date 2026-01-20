@@ -33,7 +33,7 @@ export function useDashboardData() {
     if (!value) return null;
     const direct = Date.parse(value);
     if (!Number.isNaN(direct)) return new Date(direct);
-    
+
     const match = /^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2}))?$/.exec(value.trim());
     if (match) {
       const [, dd, mm, yyyy, hh = "00", min = "00"] = match;
@@ -61,7 +61,7 @@ export function useDashboardData() {
         if (!nama) return "Produk";
         return nama.charAt(0).toUpperCase() + nama.slice(1);
       };
-      
+
       const typeLabel = formatKategori(kategoriNama);
       const schedule =
         order.webinar?.start_time_formatted ||
@@ -81,10 +81,10 @@ export function useDashboardData() {
       const actionLabel = getActionLabel(kategoriNama);
       const startDate = getOrderStartDate(order);
       const statusPembayaran = order.status_pembayaran || order.status_pembayaran_id;
-      
+
       // Order dianggap terbayar jika status_pembayaran === 2 (Paid/Sukses)
       const isPaid = statusPembayaran === 2 || statusPembayaran === "2";
-      
+
       return {
         id: order.id,
         type: typeLabel,
@@ -115,8 +115,37 @@ export function useDashboardData() {
     setError("");
 
     try {
+      // 1. Fetch Dashboard Data (Stats & Orders)
       const data = await fetchCustomerDashboard(session.token);
-      const customerData = data.customer || null;
+
+      // 2. Fetch Detailed Profile Data (for Verifikasi status)
+      let profileData = null;
+      try {
+        const profileRes = await fetch("/api/customer/customer", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${session.token}`,
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          }
+        });
+        const profileJson = await profileRes.json();
+        if (profileJson.success && profileJson.data) {
+          profileData = profileJson.data;
+        }
+      } catch (err) {
+        console.warn("[DASHBOARD] Failed to fetch detailed profile:", err);
+      }
+
+      // Merge data: Priority to Profile Data (most complete) -> Dashboard Data -> Session
+      const baseCustomerData = data.customer || {};
+
+      const mergedCustomerData = {
+        ...baseCustomerData, // Data from dashboard API
+        ...(profileData || {}), // Data from profile API (overwrites dashboard if exists)
+      };
+
+      const customerData = Object.keys(mergedCustomerData).length > 0 ? mergedCustomerData : null;
 
       // Sync customer data to localStorage
       if (customerData) {
@@ -124,11 +153,10 @@ export function useDashboardData() {
         const updatedUser = {
           ...existingUser,
           ...customerData,
-          nama_panggilan: customerData.nama_panggilan || existingUser.nama_panggilan,
-          profesi: customerData.profesi || existingUser.profesi,
-          verifikasi: customerData.verifikasi !== undefined 
-            ? customerData.verifikasi 
-            : (existingUser.verifikasi !== undefined ? existingUser.verifikasi : "0"),
+          // Explicitly preserve verifikasi if present in new data, else keep existing
+          verifikasi: customerData.verifikasi !== undefined
+            ? customerData.verifikasi
+            : existingUser.verifikasi,
         };
         localStorage.setItem("customer_user", JSON.stringify(updatedUser));
         setDashboardData(prev => ({ ...prev, customerInfo: updatedUser }));
