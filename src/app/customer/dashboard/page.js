@@ -107,6 +107,7 @@ export default function DashboardPage() {
         ...data,
         nama_panggilan: data?.nama_panggilan || session.user.nama_panggilan,
         profesi: data?.profesi || session.user.profesi,
+        wa: data?.wa || session.user.wa, // Fix: Ensure WA is not overwritten with null
         verifikasi: verifikasiFromResponse,
       };
 
@@ -132,12 +133,7 @@ export default function DashboardPage() {
       {showUpdateModal && (
         <UpdateCustomerModal
           isOpen={showUpdateModal}
-          onClose={() => {
-            // Modal bisa ditutup kapan saja, tapi akan muncul lagi saat login jika data belum lengkap
-            setShowUpdateModal(false);
-            localStorage.removeItem("customer_show_update_modal");
-            toast.info("Anda bisa melengkapi data nanti. Modal akan muncul lagi saat login berikutnya jika data belum lengkap.");
-          }}
+          onClose={() => setShowUpdateModal(false)}
           onSuccess={handleUpdateSuccess}
           title={
             updateModalReason === "password"
