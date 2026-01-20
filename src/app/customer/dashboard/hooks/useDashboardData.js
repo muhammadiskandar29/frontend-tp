@@ -118,26 +118,7 @@ export function useDashboardData() {
       // 1. Fetch Dashboard Data (Stats & Orders)
       const data = await fetchCustomerDashboard(session.token);
 
-      // 2. Fetch Detailed Profile Data (for Verifikasi status)
-      let profileData = null;
-      try {
-        const profileRes = await fetch("/api/customer/customer", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${session.token}`,
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-          },
-          body: JSON.stringify({})
-        });
-        const profileJson = await profileRes.json();
-        console.log("[DASHBOARD] Profile POST Response:", profileJson); // Debug log
-        if (profileJson.success && profileJson.data) {
-          profileData = profileJson.data;
-        }
-      } catch (err) {
-        console.warn("[DASHBOARD] Failed to fetch detailed profile:", err);
-      }
+
 
       // Merge data: Priority to Profile Data (most complete) -> Dashboard Data -> Session
       const baseCustomerData = data.customer || {};
