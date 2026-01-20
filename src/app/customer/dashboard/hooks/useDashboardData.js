@@ -120,15 +120,7 @@ export function useDashboardData() {
 
 
 
-      // Merge data: Priority to Profile Data (most complete) -> Dashboard Data -> Session
-      const baseCustomerData = data.customer || {};
-
-      const mergedCustomerData = {
-        ...baseCustomerData, // Data from dashboard API
-        ...(profileData || {}), // Data from profile API (overwrites dashboard if exists)
-      };
-
-      const customerData = Object.keys(mergedCustomerData).length > 0 ? mergedCustomerData : null;
+      const customerData = data.customer || null;
 
       // Sync customer data to localStorage
       if (customerData) {
