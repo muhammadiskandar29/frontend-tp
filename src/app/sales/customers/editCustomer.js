@@ -1,24 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import "@/styles/sales/customer.css";
 import { toastSuccess, toastError } from "@/lib/toast";
-import { getProvinces, getCities, getDistricts } from "@/utils/shippingService";
 
 // Use Next.js proxy to avoid CORS
 const BASE_URL = "/api";
 
-// Helper untuk format tanggal lahir dengan pemisah
+// Helper untuk format tanggal lahir dengan pemisah untuk input date
 const formatTanggalLahirForInput = (tanggal) => {
   if (!tanggal) return "";
-  // Jika sudah ada pemisah, biarkan seperti itu
-  if (tanggal.includes("-") || tanggal.includes("/")) {
+  // Jika formatnya sudah YYYY-MM-DD (dari API/DB biasanya begini jika tipe DATE)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(tanggal)) {
     return tanggal;
   }
-  // Jika tidak ada pemisah, format menjadi dd-mm-yyyy
-  const digits = tanggal.replace(/\D/g, "");
-  if (digits.length === 8) {
-    return `${digits.slice(0, 2)}-${digits.slice(2, 4)}-${digits.slice(4, 8)}`;
+  // Jika formatnya DD-MM-YYYY (custom format frontend)
+  if (/^\d{2}-\d{2}-\d{4}$/.test(tanggal)) {
+    const [day, month, year] = tanggal.split("-");
+    return `${year}-${month}-${day}`;
   }
   return tanggal;
 };
@@ -35,42 +34,27 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
     industri_pekerjaan: customer.industri_pekerjaan || "",
     jenis_kelamin: customer.jenis_kelamin || "l",
     tanggal_lahir: formatTanggalLahirForInput(customer.tanggal_lahir || ""),
-  });
-
-  // State untuk form wilayah (cascading dropdown)
-  // Initialize dari customer data jika ada, atau kosong jika tidak
-  const [regionForm, setRegionForm] = useState({
     provinsi: customer.provinsi || "",
     kabupaten: customer.kabupaten || "",
     kecamatan: customer.kecamatan || "",
     kode_pos: customer.kode_pos || ""
   });
 
-  // State untuk cascading dropdown (internal - untuk fetch)
-  const [regionData, setRegionData] = useState({
-    provinces: [],
-    cities: [],
-    districts: []
-  });
-
-  // State untuk selected IDs (internal - hanya untuk fetch, tidak disimpan)
-  // Initialize dengan mencari ID dari nama yang ada di customer
-  const [selectedRegionIds, setSelectedRegionIds] = useState({
-    provinceId: "",
-    cityId: "",
-    districtId: ""
-  });
-
-  // Loading states
-  const [loadingRegion, setLoadingRegion] = useState({
-    provinces: false,
-    cities: false,
-    districts: false
-  });
-
   const [loading, setLoading] = useState(false);
 
-  // 🔹 Validasi WA minimal 10 digit
+  // Search Region State
+  // Initialize search term with existing address if available
+  const initialSearchTerm = customer.kecamatan
+    ? `${customer.kecamatan}, ${customer.kabupaten}, ${customer.provinsi}`
+    : "";
+
+  const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
+  const [searchResults, setSearchResults] = useState([]);
+  const [showResults, setShowResults] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const searchTimeout = useRef(null);
+
+  // Validasi WA minimal 10 digit
   const validatePhone = (phone) => {
     const digitsOnly = phone.replace(/\D/g, "");
     return digitsOnly.length >= 10;
@@ -79,212 +63,64 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // format tanggal lahir otomatis dd-mm-yyyy dengan pemisah
-    if (name === "tanggal_lahir") {
-      let digits = value.replace(/\D/g, ""); // hanya angka
-      let formatted = "";
-
-      if (digits.length > 0) {
-        formatted = digits.slice(0, 2); // hari
-        if (digits.length > 2) {
-          formatted += "-" + digits.slice(2, 4); // bulan
-        }
-        if (digits.length > 4) {
-          formatted += "-" + digits.slice(4, 8); // tahun (maks 4 digit)
-        }
-      }
-
-      setFormData((prev) => ({
-        ...prev,
-        [name]: formatted,
-      }));
+    // Instagram auto-format
+    if (name === "instagram") {
+      let val = value;
+      if (val && !val.startsWith("@")) val = "@" + val.replace(/^@+/, "");
+      setFormData({ ...formData, instagram: val });
       return;
     }
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: name === "instagram" ? value.replace(/^@/, "") : value,
-    }));
+    setFormData({ ...formData, [name]: value });
   };
 
-  // ==========================================================
-  // LOGIC FORM WILAYAH (CASCADING DROPDOWN)
-  // ==========================================================
+  // Region Search Handler
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
 
-  // Load provinces
-  const loadProvinces = async () => {
-    setLoadingRegion(prev => ({ ...prev, provinces: true }));
-    try {
-      const data = await getProvinces();
-      setRegionData(prev => ({ ...prev, provinces: data }));
-    } catch (err) {
-      console.error("Load provinces error:", err);
-    } finally {
-      setLoadingRegion(prev => ({ ...prev, provinces: false }));
+    // Reset region fields if search changes manually specific logic could typically clear 
+    // the region data here, but for edit mode, we might want to keep old data until new selection?
+    // Let's behave like addCustomer: typing clears specific "valid" state implicitly unless re-selected.
+    // But to keep it simple: we just update search term. Selection overwrites formData.
+
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+
+    if (value.length < 3) {
+      setSearchResults([]);
+      setShowResults(false);
+      return;
     }
+
+    setIsSearching(true);
+    searchTimeout.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/region/search?q=${encodeURIComponent(value)}`);
+        const data = await res.json();
+        if (data.success) {
+          setSearchResults(data.data);
+          setShowResults(true);
+        }
+      } catch (err) {
+        // Silent error
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300); // Fast debounce
   };
 
-  // Load cities
-  const loadCities = async (provinceId) => {
-    if (!provinceId) return;
-
-    setLoadingRegion(prev => ({ ...prev, cities: true }));
-    try {
-      const data = await getCities(provinceId);
-      setRegionData(prev => ({ ...prev, cities: data }));
-    } catch (err) {
-      console.error("Load cities error:", err);
-    } finally {
-      setLoadingRegion(prev => ({ ...prev, cities: false }));
-    }
+  const handleSelectRegion = (item) => {
+    setFormData({
+      ...formData,
+      provinsi: item.provinsi,
+      kabupaten: item.kota,
+      kecamatan: item.kecamatan,
+      // Kode pos set empty as per requirement to remove it, or use item data if needed in backend
+      kode_pos: ""
+    });
+    setSearchTerm(`${item.kecamatan}, ${item.kota}, ${item.provinsi}`);
+    setShowResults(false);
   };
-
-  // Load districts
-  const loadDistricts = async (cityId) => {
-    if (!cityId) return;
-
-    setLoadingRegion(prev => ({ ...prev, districts: true }));
-    try {
-      const data = await getDistricts(cityId);
-      setRegionData(prev => ({ ...prev, districts: data }));
-    } catch (err) {
-      console.error("Load districts error:", err);
-    } finally {
-      setLoadingRegion(prev => ({ ...prev, districts: false }));
-    }
-  };
-
-  // Handler untuk update region form (HANYA NAMA)
-  const handleRegionChange = (field, value) => {
-    if (field === "provinsi") {
-      // Konversi value ke string untuk matching yang lebih robust
-      const provinceId = String(value || "");
-      // Cari province dengan konversi tipe data (handle string/number)
-      const province = regionData.provinces.find(p =>
-        String(p.id) === provinceId || p.id === value || p.id === Number(value)
-      );
-      setSelectedRegionIds(prev => ({ ...prev, provinceId: value || "", cityId: "", districtId: "" }));
-      setRegionForm(prev => ({
-        ...prev,
-        provinsi: province?.name || "",
-        kabupaten: "",
-        kecamatan: "",
-        kode_pos: ""
-      }));
-    } else if (field === "kabupaten") {
-      // Konversi value ke string untuk matching yang lebih robust
-      const cityId = String(value || "");
-      // Cari city dengan konversi tipe data (handle string/number)
-      const city = regionData.cities.find(c =>
-        String(c.id) === cityId || c.id === value || c.id === Number(value)
-      );
-      setSelectedRegionIds(prev => ({ ...prev, cityId: value || "", districtId: "" }));
-      setRegionForm(prev => ({
-        ...prev,
-        kabupaten: city?.name || "",
-        kecamatan: "",
-        kode_pos: ""
-      }));
-    } else if (field === "kecamatan") {
-      // Konversi value ke string untuk matching yang lebih robust
-      const districtId = String(value || "");
-      // Cari district dengan konversi tipe data (handle string/number dan id/district_id)
-      const district = regionData.districts.find(d =>
-        String(d.id) === districtId ||
-        String(d.district_id) === districtId ||
-        d.id === value ||
-        d.district_id === value ||
-        d.id === Number(value) ||
-        d.district_id === Number(value)
-      );
-      setSelectedRegionIds(prev => ({ ...prev, districtId: value || "" }));
-      setRegionForm(prev => ({
-        ...prev,
-        kecamatan: district?.name || "",
-        // Ambil kode pos dari district jika ada, jika tidak pertahankan yang sudah ada atau kosongkan
-        kode_pos: district?.postal_code || prev.kode_pos || ""
-      }));
-    } else if (field === "kode_pos") {
-      setRegionForm(prev => ({ ...prev, kode_pos: value }));
-    }
-  };
-
-  // Load provinces on mount
-  useEffect(() => {
-    loadProvinces();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Initialize province ID dari customer data setelah provinces loaded
-  useEffect(() => {
-    if (regionData.provinces.length > 0 && regionForm.provinsi && !selectedRegionIds.provinceId) {
-      // Cari province dengan case-insensitive dan trim untuk menghindari masalah whitespace
-      const province = regionData.provinces.find(p =>
-        p.name?.trim().toLowerCase() === regionForm.provinsi?.trim().toLowerCase()
-      );
-      if (province) {
-        setSelectedRegionIds(prev => ({ ...prev, provinceId: province.id }));
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [regionData.provinces.length, regionForm.provinsi]);
-
-  // Load cities when province selected
-  useEffect(() => {
-    if (selectedRegionIds.provinceId) {
-      loadCities(selectedRegionIds.provinceId);
-      // Reset child selections jika provinsi berubah
-      if (selectedRegionIds.cityId) {
-        setSelectedRegionIds(prev => ({ ...prev, cityId: "", districtId: "" }));
-        setRegionForm(prev => ({ ...prev, kabupaten: "", kecamatan: "", kode_pos: "" }));
-      }
-    } else {
-      setRegionData(prev => ({ ...prev, cities: [], districts: [] }));
-      setSelectedRegionIds(prev => ({ ...prev, cityId: "", districtId: "" }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedRegionIds.provinceId]);
-
-  // Initialize city ID dari customer data setelah cities loaded
-  useEffect(() => {
-    if (regionData.cities.length > 0 && regionForm.kabupaten && !selectedRegionIds.cityId) {
-      // Cari city dengan case-insensitive dan trim untuk menghindari masalah whitespace
-      const city = regionData.cities.find(c =>
-        c.name?.trim().toLowerCase() === regionForm.kabupaten?.trim().toLowerCase()
-      );
-      if (city) {
-        setSelectedRegionIds(prev => ({ ...prev, cityId: city.id }));
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [regionData.cities.length, regionForm.kabupaten]);
-
-  // Load districts when city selected
-  useEffect(() => {
-    if (selectedRegionIds.cityId) {
-      loadDistricts(selectedRegionIds.cityId);
-      // Reset child selections jika city berubah
-      if (selectedRegionIds.districtId) {
-        setSelectedRegionIds(prev => ({ ...prev, districtId: "" }));
-        setRegionForm(prev => ({ ...prev, kecamatan: "", kode_pos: "" }));
-      }
-    } else {
-      setRegionData(prev => ({ ...prev, districts: [] }));
-      setSelectedRegionIds(prev => ({ ...prev, districtId: "" }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedRegionIds.cityId]);
-
-  // Initialize district ID dari customer data setelah districts loaded
-  useEffect(() => {
-    if (regionData.districts.length > 0 && regionForm.kecamatan && !selectedRegionIds.districtId) {
-      const district = regionData.districts.find(d => d.name === regionForm.kecamatan);
-      if (district) {
-        setSelectedRegionIds(prev => ({ ...prev, districtId: district.id || district.district_id }));
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [regionData.districts.length, regionForm.kecamatan]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -294,92 +130,32 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
       return;
     }
 
-    // Validasi selectedRegionIds terlebih dahulu (ini yang langsung dari dropdown)
-    if (!selectedRegionIds.provinceId) {
-      toastError("Pilih Provinsi terlebih dahulu!");
-      return;
-    }
-    if (!selectedRegionIds.cityId) {
-      toastError("Pilih Kabupaten/Kota terlebih dahulu!");
-      return;
-    }
-    if (!selectedRegionIds.districtId) {
-      toastError("Pilih Kecamatan terlebih dahulu!");
+    // Validate Region
+    if (!formData.provinsi || !formData.kabupaten || !formData.kecamatan) {
+      toastError("Mohon cari dan pilih Kecamatan/Kota dari list!");
       return;
     }
 
-    // Ambil nama dari regionData berdasarkan selectedRegionIds (selalu ambil dari regionData untuk memastikan)
-    let provinsi = regionForm.provinsi?.trim() || "";
-    let kabupaten = regionForm.kabupaten?.trim() || "";
-    let kecamatan = regionForm.kecamatan?.trim() || "";
-    let kode_pos = regionForm.kode_pos?.trim() || "";
-
-    // SELALU ambil dari regionData berdasarkan selectedRegionIds untuk memastikan data terbaru
-    if (selectedRegionIds.provinceId) {
-      const provinceId = String(selectedRegionIds.provinceId);
-      const province = regionData.provinces.find(p =>
-        String(p.id) === provinceId || p.id === selectedRegionIds.provinceId || p.id === Number(selectedRegionIds.provinceId)
-      );
-      if (province?.name) {
-        provinsi = province.name.trim();
+    // Convert YYYY-MM-DD to DD-MM-YYYY for Backend (if changed)
+    let finalTanggalLahir = formData.tanggal_lahir;
+    if (finalTanggalLahir && finalTanggalLahir.includes("-")) {
+      const parts = finalTanggalLahir.split("-");
+      // Check if format is YYYY-MM-DD
+      if (parts[0].length === 4) {
+        const [year, month, day] = parts;
+        finalTanggalLahir = `${day}-${month}-${year}`;
       }
     }
-
-    if (selectedRegionIds.cityId) {
-      const cityId = String(selectedRegionIds.cityId);
-      const city = regionData.cities.find(c =>
-        String(c.id) === cityId || c.id === selectedRegionIds.cityId || c.id === Number(selectedRegionIds.cityId)
-      );
-      if (city?.name) {
-        kabupaten = city.name.trim();
-      }
-    }
-
-    if (selectedRegionIds.districtId) {
-      const districtId = String(selectedRegionIds.districtId);
-      const district = regionData.districts.find(d =>
-        String(d.id) === districtId ||
-        String(d.district_id) === districtId ||
-        d.id === selectedRegionIds.districtId ||
-        d.district_id === selectedRegionIds.districtId ||
-        d.id === Number(selectedRegionIds.districtId) ||
-        d.district_id === Number(selectedRegionIds.districtId)
-      );
-      if (district?.name) {
-        kecamatan = district.name.trim();
-      }
-      // Ambil kode pos juga jika belum terisi
-      if (!kode_pos && district?.postal_code) {
-        kode_pos = String(district.postal_code).trim();
-      }
-    }
-
-    // Validasi final - pastikan semua nama terisi
-    if (!provinsi) {
-      toastError("Provinsi tidak ditemukan. Silakan pilih ulang Provinsi!");
-      return;
-    }
-    if (!kabupaten) {
-      toastError("Kabupaten/Kota tidak ditemukan. Silakan pilih ulang Kabupaten/Kota!");
-      return;
-    }
-    if (!kecamatan) {
-      toastError("Kecamatan tidak ditemukan. Silakan pilih ulang Kecamatan!");
-      return;
-    }
-
 
     setLoading(true);
     const token = localStorage.getItem("token");
 
     try {
-      // Prepare payload dengan format alamat baru - pastikan semua string
+      // Prepare payload
       const payload = {
         ...formData,
-        provinsi: provinsi,
-        kabupaten: kabupaten,
-        kecamatan: kecamatan,
-        kode_pos: kode_pos,
+        kode_pos: "", // Enforce empty string
+        tanggal_lahir: finalTanggalLahir
       };
 
       const res = await fetch(`${BASE_URL}/sales/customer/${customer.id}`, {
@@ -392,11 +168,10 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
       });
 
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.message);
+      if (!res.ok || !data.success) throw new Error(data.message || "Gagal memperbarui data");
 
       toastSuccess("Berhasil memperbarui data customer");
       setTimeout(() => {
-        // Pass the updated customer object as the second argument
         onSuccess(data.message || "Data customer berhasil diperbarui", data.data);
         onClose();
       }, 1000);
@@ -461,13 +236,7 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
                 <label>Instagram</label>
                 <input
                   name="instagram"
-                  value={
-                    formData.instagram
-                      ? formData.instagram.startsWith("@")
-                        ? formData.instagram
-                        : `@${formData.instagram}`
-                      : ""
-                  }
+                  value={formData.instagram}
                   onChange={handleChange}
                   placeholder="@username"
                 />
@@ -525,113 +294,100 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
             <div className="form-section">
               <div className="form-group form-group--full form-group--secondary">
                 <label>Tanggal Lahir</label>
+                {/* Gunakan type="date" native agar konsisten dengan addCustomer */}
                 <input
+                  type="date"
                   name="tanggal_lahir"
                   value={formData.tanggal_lahir}
                   onChange={handleChange}
                   placeholder="dd-mm-yyyy"
-                  maxLength="10"
-                  type="text"
                 />
               </div>
 
-              {/* Form Wilayah - Cascading Dropdown */}
-              <div className="form-group form-group--full form-group--secondary">
-                <label>Provinsi <span style={{ color: "#ef4444" }}>*</span></label>
-                <select
-                  name="provinsi"
-                  value={selectedRegionIds.provinceId}
-                  onChange={(e) => handleRegionChange("provinsi", e.target.value)}
-                  disabled={loadingRegion.provinces}
-                  required
-                  style={{
+              {/* SINGLE REGION SEARCH - Smart Search (Sat Set) */}
+              <div className="form-group form-group--full form-group--secondary" style={{ position: 'relative' }}>
+                <label>Cari Kecamatan / Kota <span style={{ color: "#ef4444" }}>*</span></label>
+                <div style={{ position: "relative" }}>
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={handleSearchChange}
+                    placeholder="Ketik nama kecamatan atau kota..."
+                    className={isSearching ? "loading-input" : ""}
+                    autoComplete="off"
+                    style={{
+                      width: "100%",
+                      padding: "8px 12px",
+                      border: "1px solid #d1d5db",
+                      borderRadius: "6px",
+                      paddingRight: "30px"
+                    }}
+                  />
+                  {isSearching && (
+                    <div style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)" }}>
+                      <i className="pi pi-spin pi-spinner" style={{ color: "#9ca3af" }}></i>
+                    </div>
+                  )}
+                </div>
+
+                {/* Search Results Dropdown */}
+                {showResults && searchResults.length > 0 && (
+                  <div className="search-results-dropdown" style={{
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
                     width: "100%",
-                    padding: "8px 12px",
-                    border: "1px solid #d1d5db",
-                    borderRadius: "6px",
-                    fontSize: "14px",
-                    cursor: loadingRegion.provinces ? 'not-allowed' : 'pointer',
-                    backgroundColor: loadingRegion.provinces ? '#f9fafb' : 'white'
-                  }}
-                >
-                  <option value="">Pilih Provinsi</option>
-                  {regionData.provinces.map((province) => (
-                    <option key={province.id} value={province.id}>
-                      {province.name}
-                    </option>
-                  ))}
-                </select>
-                {loadingRegion.provinces && (
-                  <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
-                    Memuat provinsi...
-                  </small>
+                    zIndex: 1000,
+                    background: "white",
+                    maxHeight: "200px",
+                    overflowY: "auto",
+                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "0 0 6px 6px"
+                  }}>
+                    {searchResults.map((item, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => handleSelectRegion(item)}
+                        style={{ padding: "10px 15px", cursor: "pointer", borderBottom: "1px solid #f3f4f6" }}
+                        onMouseEnter={(e) => e.target.style.background = "#f9fafb"}
+                        onMouseLeave={(e) => e.target.style.background = "white"}
+                      >
+                        <div style={{ fontWeight: "600", fontSize: "14px", color: "#1f2937" }}>{item.kecamatan}</div>
+                        <div style={{ fontSize: "12px", color: "#6b7280" }}>{item.kota}, {item.provinsi}</div>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
 
-              <div className="form-group form-group--full form-group--secondary">
-                <label>Kabupaten/Kota <span style={{ color: "#ef4444" }}>*</span></label>
-                <select
-                  name="kabupaten"
-                  value={selectedRegionIds.cityId}
-                  onChange={(e) => handleRegionChange("kabupaten", e.target.value)}
-                  disabled={!selectedRegionIds.provinceId || loadingRegion.cities}
-                  required
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    border: "1px solid #d1d5db",
-                    borderRadius: "6px",
-                    fontSize: "14px",
-                    cursor: (!selectedRegionIds.provinceId || loadingRegion.cities) ? 'not-allowed' : 'pointer',
-                    backgroundColor: (!selectedRegionIds.provinceId || loadingRegion.cities) ? '#f9fafb' : 'white'
-                  }}
-                >
-                  <option value="">Pilih Kabupaten/Kota</option>
-                  {regionData.cities.map((city) => (
-                    <option key={city.id} value={city.id}>
-                      {city.name}
-                    </option>
-                  ))}
-                </select>
-                {loadingRegion.cities && (
-                  <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
-                    Memuat kabupaten/kota...
-                  </small>
-                )}
+              {/* Readonly Fields for Verification */}
+              <div className="form-group form-group--secondary">
+                <label>Provinsi</label>
+                <input
+                  value={formData.provinsi}
+                  readOnly
+                  style={{ backgroundColor: "#f3f4f6", cursor: "not-allowed", border: "1px solid #e5e7eb" }}
+                />
               </div>
 
-              <div className="form-group form-group--full form-group--secondary">
-                <label>Kecamatan <span style={{ color: "#ef4444" }}>*</span></label>
-                <select
-                  name="kecamatan"
-                  value={selectedRegionIds.districtId}
-                  onChange={(e) => handleRegionChange("kecamatan", e.target.value)}
-                  disabled={!selectedRegionIds.cityId || loadingRegion.districts}
-                  required
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    border: "1px solid #d1d5db",
-                    borderRadius: "6px",
-                    fontSize: "14px",
-                    cursor: (!selectedRegionIds.cityId || loadingRegion.districts) ? 'not-allowed' : 'pointer',
-                    backgroundColor: (!selectedRegionIds.cityId || loadingRegion.districts) ? '#f9fafb' : 'white'
-                  }}
-                >
-                  <option value="">Pilih Kecamatan</option>
-                  {regionData.districts.map((district) => (
-                    <option key={district.id || district.district_id} value={district.id || district.district_id}>
-                      {district.name}
-                    </option>
-                  ))}
-                </select>
-                {loadingRegion.districts && (
-                  <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
-                    Memuat kecamatan...
-                  </small>
-                )}
+              <div className="form-group form-group--secondary">
+                <label>Kabupaten/Kota</label>
+                <input
+                  value={formData.kabupaten}
+                  readOnly
+                  style={{ backgroundColor: "#f3f4f6", cursor: "not-allowed", border: "1px solid #e5e7eb" }}
+                />
               </div>
 
+              <div className="form-group form-group--secondary">
+                <label>Kecamatan</label>
+                <input
+                  value={formData.kecamatan}
+                  readOnly
+                  style={{ backgroundColor: "#f3f4f6", cursor: "not-allowed", border: "1px solid #e5e7eb" }}
+                />
+              </div>
 
             </div>
           </form>
