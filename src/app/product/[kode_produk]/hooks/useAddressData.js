@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { getProvinces, getCities, getDistricts } from "@/utils/shippingService";
 
 /**
@@ -107,19 +107,24 @@ export function useAddressData() {
         return () => { isMounted = false; };
     }, [selectedWilayahIds.cityId]);
 
-    // Search Logic with Debounce
-    useEffect(() => {
-        // Skip if term is short
-        if (!districtSearchTerm || districtSearchTerm.length < 3) {
+    const searchTimeout = useRef(null);
+
+    // Search Logic with Debounce (Manual Handler)
+    const handleDistrictSearch = (term) => {
+        setDistrictSearchTerm(term);
+
+        if (searchTimeout.current) clearTimeout(searchTimeout.current);
+
+        if (!term || term.length < 3) {
             setDistrictSearchResults([]);
+            setShowDistrictResults(false);
             return;
         }
 
-        const timeoutId = setTimeout(async () => {
+        searchTimeout.current = setTimeout(async () => {
             setLoadingDistrictSearch(true);
             try {
-                // ✅ NEW: Fetch to server-side API instead of local filtering
-                const res = await fetch(`/api/region/search?q=${encodeURIComponent(districtSearchTerm)}`);
+                const res = await fetch(`/api/region/search?q=${encodeURIComponent(term)}`);
                 const data = await res.json();
 
                 if (data.success) {
@@ -134,10 +139,8 @@ export function useAddressData() {
             } finally {
                 setLoadingDistrictSearch(false);
             }
-        }, 500); // 500ms Debounce (Optimized)
-
-        return () => clearTimeout(timeoutId);
-    }, [districtSearchTerm]);
+        }, 500);
+    };
 
     return {
         // Cascading Data
@@ -149,6 +152,7 @@ export function useAddressData() {
         // Search Data
         districtSearchTerm,
         setDistrictSearchTerm,
+        handleDistrictSearch,
         districtSearchResults,
         setDistrictSearchResults, // Exposed in case we need to manual clear
         loadingDistrictSearch,

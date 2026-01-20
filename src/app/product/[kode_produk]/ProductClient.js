@@ -377,6 +377,7 @@ function ProductClient({ initialProductData, initialLandingPage }) {
     selectedWilayahIds, setSelectedWilayahIds,
     loadingWilayah,
     districtSearchTerm, setDistrictSearchTerm,
+    handleDistrictSearch,
     districtSearchResults, setDistrictSearchResults,
     loadingDistrictSearch,
     showDistrictResults, setShowDistrictResults
@@ -1559,11 +1560,7 @@ function ProductClient({ initialProductData, initialLandingPage }) {
                           placeholder="Ketik nama kecamatan..."
                           value={districtSearchTerm}
                           onChange={(e) => {
-                            const val = e.target.value;
-                            setDistrictSearchTerm(val);
-                            if (val.length >= 3) {
-                              setShowDistrictResults(true);
-                            }
+                            handleDistrictSearch(e.target.value);
                           }}
                           onFocus={() => {
                             if (districtSearchTerm.length >= 3) setShowDistrictResults(true);
