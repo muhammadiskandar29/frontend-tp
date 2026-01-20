@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useMemo, useCallback, Suspense } from "rea
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import Script from "next/script";
+import "@/styles/sales/add-products3.css";
 
 import dynamic from "next/dynamic";
 import Image from "next/image";
