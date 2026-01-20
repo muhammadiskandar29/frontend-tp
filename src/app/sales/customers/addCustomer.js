@@ -33,7 +33,6 @@ export default function AddCustomerModal({ onClose, onSuccess }) {
   const [showResults, setShowResults] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const searchTimeout = useRef(null);
-  const kodePosRef = useRef(null); // Ref untuk auto-focus
 
   const validatePhone = (phone) => {
     const digitsOnly = phone.replace(/\D/g, "");
@@ -98,11 +97,6 @@ export default function AddCustomerModal({ onClose, onSuccess }) {
     });
     setSearchTerm(`${item.kecamatan}, ${item.kota}, ${item.provinsi}`);
     setShowResults(false);
-
-    // Auto focus to Kode Pos
-    setTimeout(() => {
-      if (kodePosRef.current) kodePosRef.current.focus();
-    }, 100);
   };
 
   const handleSubmit = async (e) => {
@@ -116,11 +110,6 @@ export default function AddCustomerModal({ onClose, onSuccess }) {
     // Validate Region
     if (!formData.provinsi || !formData.kabupaten || !formData.kecamatan) {
       toastError("Mohon cari dan pilih Kecamatan/Kota dari list!");
-      return;
-    }
-
-    if (!formData.kode_pos) {
-      toastError("Kode Pos wajib diisi!");
       return;
     }
 
@@ -139,6 +128,7 @@ export default function AddCustomerModal({ onClose, onSuccess }) {
     try {
       const payload = {
         ...formData,
+        kode_pos: "", // Set empty string as user removed the input
         tanggal_lahir: finalTanggalLahir
       };
 
@@ -268,18 +258,7 @@ export default function AddCustomerModal({ onClose, onSuccess }) {
               <input value={formData.kecamatan} readOnly style={{ backgroundColor: "#f3f4f6", cursor: "not-allowed" }} placeholder="Otomatis terisi" />
             </div>
 
-            <div className="form-group">
-              <label>Kode Pos <span style={{ color: "#ef4444" }}>*</span></label>
-              <input
-                name="kode_pos"
-                value={formData.kode_pos}
-                onChange={handleChange}
-                required
-                placeholder="Isi Kode Pos"
-                inputMode="numeric"
-                ref={kodePosRef}
-              />
-            </div>
+
 
 
 
