@@ -176,7 +176,13 @@ export default function DashboardPage() {
         )}
 
         {/* Quick Actions */}
-        <QuickActions unpaidCount={unpaidCount} />
+        <QuickActions
+          unpaidCount={unpaidCount}
+          onUpdateProfile={() => {
+            setShowUpdateModal(true);
+            setUpdateModalReason("data");
+          }}
+        />
 
         {/* Stats Section */}
         <StatsSection stats={stats} isLoading={dashboardLoading} />

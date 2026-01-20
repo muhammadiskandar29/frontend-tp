@@ -11,6 +11,7 @@ export default function PaymentPage() {
   const router = useRouter();
   const [unpaidOrders, setUnpaidOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hasHistory, setHasHistory] = useState(false);
   const [error, setError] = useState("");
   const [customerInfo, setCustomerInfo] = useState(null);
 
@@ -42,12 +43,12 @@ export default function PaymentPage() {
 
     try {
       const data = await fetchCustomerDashboard(session.token);
-      
+
       // Simpan customer info untuk digunakan saat pembayaran
       if (data?.customer) {
         setCustomerInfo(data.customer);
       }
-      
+
       // Kumpulkan semua order dari berbagai sumber
       const allOrders = [
         ...(data?.orders_aktif || []),
@@ -66,7 +67,7 @@ export default function PaymentPage() {
         const statusPembayaran = order.status_pembayaran || order.status_pembayaran_id;
         return statusPembayaran !== 2 && statusPembayaran !== "2";
       });
-      
+
       // Ambil data order dari localStorage (dari verify-order) untuk melengkapi data
       const storedOrderData = localStorage.getItem("customer_order_data");
       let localStorageOrderData = null;
@@ -78,14 +79,14 @@ export default function PaymentPage() {
           console.error("[PAYMENT] Error parsing stored order data:", e);
         }
       }
-      
+
       // Format orders untuk ditampilkan
       const formattedOrders = unpaidOrdersList.map((order) => {
         // Cek apakah order ini sesuai dengan order dari localStorage (berdasarkan orderId)
-        const isMatchingOrder = localStorageOrderData && 
-          (localStorageOrderData.orderId === order.id || 
-           localStorageOrderData.orderId === String(order.id));
-        
+        const isMatchingOrder = localStorageOrderData &&
+          (localStorageOrderData.orderId === order.id ||
+            localStorageOrderData.orderId === String(order.id));
+
         // Gabungkan data dari API dengan data dari localStorage
         // Prioritaskan data dari localStorage untuk metode pembayaran dan order ID
         return {
@@ -95,7 +96,7 @@ export default function PaymentPage() {
           totalHarga: order.total_harga || order.total_harga_formatted || localStorageOrderData?.totalHarga || "0",
           status: "Menunggu Pembayaran",
           // Prioritaskan metode pembayaran dari localStorage jika ada
-          paymentMethod: isMatchingOrder 
+          paymentMethod: isMatchingOrder
             ? (localStorageOrderData.paymentMethod || order.metode_bayar || "manual")
             : (order.metode_bayar || "manual"),
           tanggalOrder: order.tanggal_order || "-",
@@ -109,15 +110,16 @@ export default function PaymentPage() {
       });
 
       setUnpaidOrders(formattedOrders);
-      
+      setHasHistory(uniqueOrders.length > 0);
+
       // Hapus data dari localStorage jika semua order sudah terbayar
       // atau jika order dari localStorage sudah tidak ada di unpaid orders
       if (localStorageOrderData && unpaidOrdersList.length > 0) {
-        const orderStillUnpaid = unpaidOrdersList.some(order => 
-          order.id === localStorageOrderData.orderId || 
+        const orderStillUnpaid = unpaidOrdersList.some(order =>
+          order.id === localStorageOrderData.orderId ||
           String(order.id) === String(localStorageOrderData.orderId)
         );
-        
+
         if (!orderStillUnpaid) {
           // Order sudah terbayar, hapus data dari localStorage
           console.log("[PAYMENT] Order sudah terbayar, removing from localStorage");
@@ -144,14 +146,14 @@ export default function PaymentPage() {
 
   const handleContinuePayment = async (order) => {
     const { paymentMethod, productName, totalHarga, nama, email, orderId } = order;
-    
+
     // Jika metode pembayaran adalah E-Payment (ewallet, cc, va), panggil Midtrans
     if (paymentMethod === "ewallet" || paymentMethod === "cc" || paymentMethod === "va") {
       // Ambil data customer dari session sebagai fallback
       const session = getCustomerSession();
       const finalNama = nama || customerInfo?.nama || customerInfo?.nama_lengkap || session?.user?.nama || "";
       const finalEmail = email || customerInfo?.email || session?.user?.email || "";
-      
+
       // Validasi data yang diperlukan
       if (!finalNama || !finalEmail) {
         toast.error("Data customer tidak lengkap. Silakan lengkapi profil Anda terlebih dahulu.");
@@ -175,7 +177,7 @@ export default function PaymentPage() {
 
       try {
         setLoading(true);
-        
+
         // Tentukan endpoint berdasarkan metode pembayaran
         let endpoint = "";
         if (paymentMethod === "ewallet") {
@@ -219,7 +221,7 @@ export default function PaymentPage() {
           if (orderId) {
             sessionStorage.setItem("midtrans_order_id", String(orderId));
           }
-          
+
           // Simpan snap_token dan order_id dari Midtrans jika ada
           if (data.snap_token) {
             sessionStorage.setItem("midtrans_snap_token", data.snap_token);
@@ -227,18 +229,18 @@ export default function PaymentPage() {
           if (data.order_id) {
             sessionStorage.setItem("midtrans_order_id_midtrans", data.order_id);
           }
-          
+
           // Buka Midtrans gateway di tab baru sesuai dokumentasi
           console.log("[PAYMENT] Opening Midtrans in new tab:", data.redirect_url);
           window.open(data.redirect_url, "_blank");
-          
+
           // Tampilkan toast info
           toast.success("Halaman pembayaran Midtrans dibuka di tab baru");
         } else {
           // Jika tidak ada redirect_url atau success false, tampilkan error
           console.error("[PAYMENT] Midtrans tidak mengembalikan redirect_url atau success false:", data);
           toast.error(data.message || "Gagal membuat transaksi pembayaran");
-          
+
           // Fallback: redirect ke payment page manual
           const query = new URLSearchParams({
             product: productName || "",
@@ -251,7 +253,7 @@ export default function PaymentPage() {
       } catch (error) {
         console.error("[PAYMENT] Error calling Midtrans:", error);
         toast.error("Terjadi kesalahan saat memproses pembayaran. Silakan coba lagi.");
-        
+
         // Fallback: redirect ke payment page manual
         const query = new URLSearchParams({
           product: productName || "",
@@ -293,9 +295,9 @@ export default function PaymentPage() {
         {error && (
           <div className="payment-error">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M12 8V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M12 16H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M12 8V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M12 16H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             <p>{error}</p>
           </div>
@@ -303,14 +305,46 @@ export default function PaymentPage() {
 
         {!loading && !error && unpaidOrders.length === 0 && (
           <div className="payment-empty">
-            <div className="payment-empty__icon">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M22 11.08V12C21.9988 14.1564 21.3005 16.2547 20.0093 17.9818C18.7182 19.7088 16.9033 20.9725 14.8354 21.5839C12.7674 22.1953 10.5573 22.1219 8.53447 21.3746C6.51168 20.6273 4.78465 19.2461 3.61096 17.4371C2.43727 15.628 1.87979 13.4881 2.02168 11.3363C2.16356 9.18455 2.99721 7.13631 4.39828 5.49706C5.79935 3.85781 7.69279 2.71537 9.79619 2.24013C11.8996 1.7649 14.1003 1.98232 16.07 2.85999" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M22 4L12 14.01L9 11.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+            <div className="payment-empty__icon" style={{
+              color: hasHistory ? '#16a34a' : '#6b7280',
+              backgroundColor: hasHistory ? '#dcfce7' : '#f3f4f6'
+            }}>
+              {hasHistory ? (
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M22 11.08V12C21.9988 14.1564 21.3005 16.2547 20.0093 17.9818C18.7182 19.7088 16.9033 20.9725 14.8354 21.5839C12.7674 22.1953 10.5573 22.1219 8.53447 21.3746C6.51168 20.6273 4.78465 19.2461 3.61096 17.4371C2.43727 15.628 1.87979 13.4881 2.02168 11.3363C2.16356 9.18455 2.99721 7.13631 4.39828 5.49706C5.79935 3.85781 7.69279 2.71537 9.79619 2.24013C11.8996 1.7649 14.1003 1.98232 16.07 2.85999" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M22 4L12 14.01L9 11.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              ) : (
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 8v4" />
+                  <path d="M12 16h.01" />
+                </svg>
+              )}
             </div>
-            <h2>Semua pembayaran sudah selesai</h2>
-            <p>Tidak ada order yang menunggu pembayaran saat ini.</p>
+            <h2>{hasHistory ? "Semua pembayaran sudah selesai" : "Belum Ada Transaksi"}</h2>
+            <p>{hasHistory ? "Tidak ada order yang menunggu pembayaran saat ini." : "Anda belum melakukan transaksi apapun."}</p>
+            {!hasHistory && (
+              <button
+                onClick={() => router.push('/')}
+                style={{
+                  marginTop: '1.5rem',
+                  padding: '0.75rem 1.5rem',
+                  background: '#dc2626',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  fontSize: '0.95rem'
+                }}
+              >
+                Lihat Katalog Produk
+              </button>
+            )}
           </div>
         )}
 
@@ -353,9 +387,9 @@ export default function PaymentPage() {
                   >
                     {loading ? (
                       <>
-                        <div className="loading-spinner" style={{ 
-                          width: '16px', 
-                          height: '16px', 
+                        <div className="loading-spinner" style={{
+                          width: '16px',
+                          height: '16px',
                           marginRight: '8px',
                           display: 'inline-block'
                         }}></div>
@@ -364,7 +398,7 @@ export default function PaymentPage() {
                     ) : (
                       <>
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '8px' }}>
-                          <path d="M4.16667 10H15.8333M15.8333 10L11.6667 5.83333M15.8333 10L11.6667 14.1667" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M4.16667 10H15.8333M15.8333 10L11.6667 5.83333M15.8333 10L11.6667 14.1667" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                         Lanjutkan Pembayaran
                       </>
