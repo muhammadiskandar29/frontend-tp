@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getProvinces, getCities, getDistricts } from "@/utils/shippingService";
+
 // Update customer menggunakan endpoint /api/customer/customer
 async function updateCustomer(payload) {
   const token = localStorage.getItem("customer_token");
@@ -44,6 +44,7 @@ const initialFormState = {
   jenis_kelamin: "l",
   tanggal_lahir: "",
   password: "",
+  alamat: "",
 };
 
 const SECTION_CONFIG = [
@@ -122,36 +123,13 @@ const SECTION_CONFIG = [
     title: "Alamat",
     fields: [
       {
-        name: "provinsi",
-        label: "Provinsi",
-        type: "region_select",
-        fieldType: "provinsi",
+        name: "alamat",
+        label: "Alamat Lengkap",
+        type: "textarea",
+        placeholder: "Masukkan alamat lengkap Anda...",
         required: true,
         fullWidth: true,
-      },
-      {
-        name: "kabupaten",
-        label: "Kabupaten/Kota",
-        type: "region_select",
-        fieldType: "kabupaten",
-        required: true,
-        fullWidth: true,
-      },
-      {
-        name: "kecamatan",
-        label: "Kecamatan",
-        type: "region_select",
-        fieldType: "kecamatan",
-        required: true,
-        fullWidth: true,
-      },
-      {
-        name: "kode_pos",
-        label: "Kode Pos",
-        type: "region_input",
-        fieldType: "kode_pos",
-        required: true,
-        placeholder: "Contoh: 12120",
+        rows: 3,
       },
     ],
   },
@@ -184,170 +162,7 @@ export default function UpdateCustomerModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // State untuk form wilayah (cascading dropdown)
-  const [regionForm, setRegionForm] = useState({
-    provinsi: "",
-    kabupaten: "",
-    kecamatan: "",
-    kode_pos: ""
-  });
-  
-  // State untuk cascading dropdown (internal - untuk fetch)
-  const [regionData, setRegionData] = useState({
-    provinces: [],
-    cities: [],
-    districts: []
-  });
-  
-  // State untuk selected IDs (internal - hanya untuk fetch, tidak disimpan)
-  const [selectedRegionIds, setSelectedRegionIds] = useState({
-    provinceId: "",
-    cityId: "",
-    districtId: ""
-  });
-  
-  // Loading states
-  const [loadingRegion, setLoadingRegion] = useState({
-    provinces: false,
-    cities: false,
-    districts: false
-  });
 
-  // Load provinces
-  const loadProvinces = async () => {
-    setLoadingRegion(prev => ({ ...prev, provinces: true }));
-    try {
-      const data = await getProvinces();
-      setRegionData(prev => ({ ...prev, provinces: data }));
-    } catch (err) {
-      console.error("Load provinces error:", err);
-    } finally {
-      setLoadingRegion(prev => ({ ...prev, provinces: false }));
-    }
-  };
-  
-  // Load cities
-  const loadCities = async (provinceId) => {
-    if (!provinceId) return;
-    
-    setLoadingRegion(prev => ({ ...prev, cities: true }));
-    try {
-      const data = await getCities(provinceId);
-      setRegionData(prev => ({ ...prev, cities: data }));
-    } catch (err) {
-      console.error("Load cities error:", err);
-    } finally {
-      setLoadingRegion(prev => ({ ...prev, cities: false }));
-    }
-  };
-  
-  // Load districts
-  const loadDistricts = async (cityId) => {
-    if (!cityId) return;
-    
-    setLoadingRegion(prev => ({ ...prev, districts: true }));
-    try {
-      const data = await getDistricts(cityId);
-      setRegionData(prev => ({ ...prev, districts: data }));
-    } catch (err) {
-      console.error("Load districts error:", err);
-    } finally {
-      setLoadingRegion(prev => ({ ...prev, districts: false }));
-    }
-  };
-  
-  // Handler untuk update region form (HANYA NAMA)
-  const handleRegionChange = (field, value) => {
-    if (field === "provinsi") {
-      // Konversi value ke string untuk matching yang lebih robust
-      const provinceId = String(value || "");
-      // Cari province dengan konversi tipe data (handle string/number)
-      const province = regionData.provinces.find(p => 
-        String(p.id) === provinceId || p.id === value || p.id === Number(value)
-      );
-      setSelectedRegionIds(prev => ({ ...prev, provinceId: value || "", cityId: "", districtId: "" }));
-      setRegionForm(prev => ({ 
-        ...prev, 
-        provinsi: province?.name || "",
-        kabupaten: "",
-        kecamatan: "",
-        kode_pos: ""
-      }));
-    } else if (field === "kabupaten") {
-      // Konversi value ke string untuk matching yang lebih robust
-      const cityId = String(value || "");
-      // Cari city dengan konversi tipe data (handle string/number)
-      const city = regionData.cities.find(c => 
-        String(c.id) === cityId || c.id === value || c.id === Number(value)
-      );
-      setSelectedRegionIds(prev => ({ ...prev, cityId: value || "", districtId: "" }));
-      setRegionForm(prev => ({ 
-        ...prev, 
-        kabupaten: city?.name || "",
-        kecamatan: "",
-        kode_pos: ""
-      }));
-    } else if (field === "kecamatan") {
-      // Konversi value ke string untuk matching yang lebih robust
-      const districtId = String(value || "");
-      // Cari district dengan konversi tipe data (handle string/number dan id/district_id)
-      const district = regionData.districts.find(d => 
-        String(d.id) === districtId || 
-        String(d.district_id) === districtId ||
-        d.id === value || 
-        d.district_id === value ||
-        d.id === Number(value) ||
-        d.district_id === Number(value)
-      );
-      setSelectedRegionIds(prev => ({ ...prev, districtId: value || "" }));
-      setRegionForm(prev => ({ 
-        ...prev, 
-        kecamatan: district?.name || "",
-        // Ambil kode pos dari district jika ada, jika tidak pertahankan yang sudah ada atau kosongkan
-        kode_pos: district?.postal_code || prev.kode_pos || ""
-      }));
-    } else if (field === "kode_pos") {
-      setRegionForm(prev => ({ ...prev, kode_pos: value }));
-    }
-  };
-
-  // Load provinces on mount
-  useEffect(() => {
-    if (isOpen) {
-      loadProvinces();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]);
-
-  // Load cities when province selected
-  useEffect(() => {
-    if (selectedRegionIds.provinceId) {
-      loadCities(selectedRegionIds.provinceId);
-      // Reset child selections
-      setSelectedRegionIds(prev => ({ ...prev, cityId: "", districtId: "" }));
-      setRegionForm(prev => ({ ...prev, kabupaten: "", kecamatan: "", kode_pos: "" }));
-      setRegionData(prev => ({ ...prev, cities: [], districts: [] }));
-    } else {
-      setRegionData(prev => ({ ...prev, cities: [], districts: [] }));
-      setSelectedRegionIds(prev => ({ ...prev, cityId: "", districtId: "" }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedRegionIds.provinceId]);
-  
-  // Load districts when city selected
-  useEffect(() => {
-    if (selectedRegionIds.cityId) {
-      loadDistricts(selectedRegionIds.cityId);
-      // Reset child selections
-      setSelectedRegionIds(prev => ({ ...prev, districtId: "" }));
-      setRegionForm(prev => ({ ...prev, kecamatan: "", kode_pos: "" }));
-      setRegionData(prev => ({ ...prev, districts: [] }));
-    } else {
-      setRegionData(prev => ({ ...prev, districts: [] }));
-      setSelectedRegionIds(prev => ({ ...prev, districtId: "" }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedRegionIds.cityId]);
 
   // Initialize data dari session saat modal dibuka
   useEffect(() => {
@@ -370,65 +185,12 @@ export default function UpdateCustomerModal({
           ? user.tanggal_lahir.slice(0, 10)
           : prev.tanggal_lahir,
         password: "",
+        alamat: user.alamat || prev.alamat,
       }));
-
-      // Initialize region form dari user data
-      setRegionForm({
-        provinsi: user.provinsi || "",
-        kabupaten: user.kabupaten || "",
-        kecamatan: user.kecamatan || "",
-        kode_pos: user.kode_pos || ""
-      });
     } catch (error) {
       console.error("[UPDATE_CUSTOMER] Failed to load session:", error);
     }
   }, [isOpen]);
-
-  // Initialize province ID dari user data setelah provinces loaded
-  useEffect(() => {
-    if (regionData.provinces.length > 0 && regionForm.provinsi && !selectedRegionIds.provinceId) {
-      // Cari province dengan case-insensitive dan trim untuk menghindari masalah whitespace
-      const province = regionData.provinces.find(p => 
-        p.name?.trim().toLowerCase() === regionForm.provinsi?.trim().toLowerCase()
-      );
-      if (province) {
-        setSelectedRegionIds(prev => ({ ...prev, provinceId: province.id }));
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [regionData.provinces.length, regionForm.provinsi]);
-  
-  // Initialize city ID dari user data setelah cities loaded
-  useEffect(() => {
-    if (regionData.cities.length > 0 && regionForm.kabupaten && !selectedRegionIds.cityId) {
-      // Cari city dengan case-insensitive dan trim untuk menghindari masalah whitespace
-      const city = regionData.cities.find(c => 
-        c.name?.trim().toLowerCase() === regionForm.kabupaten?.trim().toLowerCase()
-      );
-      if (city) {
-        setSelectedRegionIds(prev => ({ ...prev, cityId: city.id }));
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [regionData.cities.length, regionForm.kabupaten]);
-  
-  // Initialize district ID dari user data setelah districts loaded
-  useEffect(() => {
-    if (regionData.districts.length > 0 && regionForm.kecamatan && !selectedRegionIds.districtId) {
-      // Cari district dengan case-insensitive dan trim untuk menghindari masalah whitespace
-      const district = regionData.districts.find(d => 
-        d.name?.trim().toLowerCase() === regionForm.kecamatan?.trim().toLowerCase()
-      );
-      if (district) {
-        setSelectedRegionIds(prev => ({ ...prev, districtId: district.id || district.district_id }));
-        // Pastikan kode_pos terisi jika ada di district atau pertahankan yang sudah ada
-        if (district.postal_code && !regionForm.kode_pos) {
-          setRegionForm(prev => ({ ...prev, kode_pos: district.postal_code }));
-        }
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [regionData.districts.length, regionForm.kecamatan]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -456,105 +218,23 @@ export default function UpdateCustomerModal({
       return;
     }
 
-    // Validasi selectedRegionIds terlebih dahulu (ini yang langsung dari dropdown)
-    if (!selectedRegionIds.provinceId) {
-      setError("Pilih Provinsi terlebih dahulu!");
-      return;
-    }
-    if (!selectedRegionIds.cityId) {
-      setError("Pilih Kabupaten/Kota terlebih dahulu!");
-      return;
-    }
-    if (!selectedRegionIds.districtId) {
-      setError("Pilih Kecamatan terlebih dahulu!");
-      return;
-    }
-
-    // Ambil nama dari regionData berdasarkan selectedRegionIds (selalu ambil dari regionData untuk memastikan)
-    let provinsi = regionForm.provinsi?.trim() || "";
-    let kabupaten = regionForm.kabupaten?.trim() || "";
-    let kecamatan = regionForm.kecamatan?.trim() || "";
-    let kode_pos = regionForm.kode_pos?.trim() || "";
-
-    // SELALU ambil dari regionData berdasarkan selectedRegionIds untuk memastikan data terbaru
-    if (selectedRegionIds.provinceId) {
-      const provinceId = String(selectedRegionIds.provinceId);
-      const province = regionData.provinces.find(p => 
-        String(p.id) === provinceId || p.id === selectedRegionIds.provinceId || p.id === Number(selectedRegionIds.provinceId)
-      );
-      if (province?.name) {
-        provinsi = province.name.trim();
-      }
-    }
-    
-    if (selectedRegionIds.cityId) {
-      const cityId = String(selectedRegionIds.cityId);
-      const city = regionData.cities.find(c => 
-        String(c.id) === cityId || c.id === selectedRegionIds.cityId || c.id === Number(selectedRegionIds.cityId)
-      );
-      if (city?.name) {
-        kabupaten = city.name.trim();
-      }
-    }
-    
-    if (selectedRegionIds.districtId) {
-      const districtId = String(selectedRegionIds.districtId);
-      const district = regionData.districts.find(d => 
-        String(d.id) === districtId || 
-        String(d.district_id) === districtId ||
-        d.id === selectedRegionIds.districtId || 
-        d.district_id === selectedRegionIds.districtId ||
-        d.id === Number(selectedRegionIds.districtId) ||
-        d.district_id === Number(selectedRegionIds.districtId)
-      );
-      if (district?.name) {
-        kecamatan = district.name.trim();
-      }
-      // Ambil kode pos juga jika belum terisi
-      if (!kode_pos && district?.postal_code) {
-        kode_pos = String(district.postal_code).trim();
-      }
-    }
-
-    // Validasi final - pastikan semua nama terisi
-    if (!provinsi) {
-      setError("Provinsi tidak ditemukan. Silakan pilih ulang Provinsi!");
-      return;
-    }
-    if (!kabupaten) {
-      setError("Kabupaten/Kota tidak ditemukan. Silakan pilih ulang Kabupaten/Kota!");
-      return;
-    }
-    if (!kecamatan) {
-      setError("Kecamatan tidak ditemukan. Silakan pilih ulang Kecamatan!");
-      return;
-    }
-    if (!kode_pos) {
-      setError("Kode Pos wajib diisi! Pilih Kecamatan untuk auto-fill atau isi manual.");
-      return;
-    }
-
-    // Validasi kode pos harus angka
-    if (!/^\d+$/.test(kode_pos)) {
-      setError("Kode Pos harus berupa angka!");
+    // Validasi: Alamat wajib diisi
+    if (!formData.alamat?.trim()) {
+      setError("Alamat lengkap wajib diisi");
       return;
     }
 
     setLoading(true);
     try {
-      // Prepare payload dengan format alamat baru - pastikan semua string
+      // Prepare payload 
       const payload = {
-        ...formData,
-        provinsi: provinsi,
-        kabupaten: kabupaten,
-        kecamatan: kecamatan,
-        kode_pos: kode_pos,
+        ...formData
       };
 
       console.log("📤 [UPDATE_CUSTOMER] Sending payload:", payload);
       const result = await updateCustomer(payload);
       console.log("📥 [UPDATE_CUSTOMER] API Response:", result);
-      
+
       if (typeof onSuccess === "function") {
         // Kirim data dari API response, atau fallback ke formData jika API tidak return data lengkap
         const successData = {
@@ -569,17 +249,6 @@ export default function UpdateCustomerModal({
         onClose();
       }
       setFormData(initialFormState);
-      setRegionForm({
-        provinsi: "",
-        kabupaten: "",
-        kecamatan: "",
-        kode_pos: ""
-      });
-      setSelectedRegionIds({
-        provinceId: "",
-        cityId: "",
-        districtId: ""
-      });
     } catch (error) {
       setError(error.message || "Gagal menyimpan data. Silakan coba lagi.");
     } finally {
@@ -597,7 +266,7 @@ export default function UpdateCustomerModal({
   };
 
   return (
-    <div 
+    <div
       className="customer-modal-overlay"
       onClick={handleOverlayClick}
       style={{ cursor: allowClose ? "pointer" : "default" }}
@@ -618,7 +287,7 @@ export default function UpdateCustomerModal({
                 disabled={loading}
               >
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
             )}
@@ -630,7 +299,7 @@ export default function UpdateCustomerModal({
           <div>
             <strong>{requirePassword ? "Keamanan Akun" : "Lengkapi Data Anda"}</strong>
             <p>
-              {requirePassword 
+              {requirePassword
                 ? "Untuk keamanan akun Anda, silakan buat password baru sebelum melanjutkan."
                 : "Silakan lengkapi data profil Anda untuk pengalaman yang lebih baik."}
             </p>
@@ -648,25 +317,68 @@ export default function UpdateCustomerModal({
           {SECTION_CONFIG.map((section) => {
             // Skip password section jika tidak requirePassword dan section adalah password section
             // Tapi tetap tampilkan dengan note bahwa opsional
-            
-            return (
-            <div className="form-section" key={section.title}>
-              <div className="section-header">
-                <h3 className="section-title">
-                  {section.title}
-                  {section.isPasswordSection && !requirePassword && (
-                    <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: "normal", marginLeft: "8px" }}>
-                      (Opsional)
-                    </span>
-                  )}
-                </h3>
-              </div>
 
-              <div className="customer-grid">
-                {section.fields.map((field) => {
-                  // Handle region fields (provinsi, kabupaten, kecamatan, kode_pos)
-                  if (field.type === "region_select" || field.type === "region_input") {
-                    const isRequired = field.required;
+            return (
+              <div className="form-section" key={section.title}>
+                <div className="section-header">
+                  <h3 className="section-title">
+                    {section.title}
+                    {section.isPasswordSection && !requirePassword && (
+                      <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: "normal", marginLeft: "8px" }}>
+                        (Opsional)
+                      </span>
+                    )}
+                  </h3>
+                </div>
+
+                <div className="customer-grid">
+                  {section.fields.map((field) => {
+                    if (field.type === "textarea") {
+                      const value = formData[field.name] ?? "";
+                      const isRequired = field.required;
+                      const fieldClass = [
+                        "form-field",
+                        field.fullWidth ? "customer-grid__full" : "",
+                      ].filter(Boolean).join(" ");
+
+                      return (
+                        <label className={fieldClass} key={field.name}>
+                          <span className="field-label">
+                            {field.label}
+                            {isRequired ? <span className="required"> *</span> : null}
+                          </span>
+                          <textarea
+                            name={field.name}
+                            value={value}
+                            onChange={handleChange}
+                            placeholder={field.placeholder}
+                            required={isRequired}
+                            rows={field.rows || 3}
+                          />
+                        </label>
+                      );
+                    }
+
+                    // Handle regular fields
+                    const value = formData[field.name] ?? "";
+
+                    // Override required untuk password field berdasarkan requirePassword prop
+                    const isRequired = field.name === "password"
+                      ? requirePassword
+                      : field.required;
+
+                    const baseProps = {
+                      name: field.name,
+                      value,
+                      onChange: handleChange,
+                      placeholder: field.placeholder,
+                      required: isRequired,
+                    };
+
+                    if (field.type === "textarea") {
+                      baseProps.rows = field.rows || 3;
+                    }
+
                     const fieldClass = [
                       "form-field",
                       field.fullWidth ? "customer-grid__full" : "",
@@ -674,164 +386,42 @@ export default function UpdateCustomerModal({
                       .filter(Boolean)
                       .join(" ");
 
-                    if (field.type === "region_select") {
-                      let options = [];
-                      let value = "";
-                      let disabled = false;
-                      let loading = false;
+                    return (
+                      <label className={fieldClass} key={field.name}>
+                        <span className="field-label">
+                          {field.label}
+                          {isRequired ? (
+                            <span className="required"> *</span>
+                          ) : null}
+                        </span>
 
-                      if (field.fieldType === "provinsi") {
-                        options = regionData.provinces;
-                        value = selectedRegionIds.provinceId;
-                        loading = loadingRegion.provinces;
-                      } else if (field.fieldType === "kabupaten") {
-                        options = regionData.cities;
-                        value = selectedRegionIds.cityId;
-                        disabled = !selectedRegionIds.provinceId;
-                        loading = loadingRegion.cities;
-                      } else if (field.fieldType === "kecamatan") {
-                        options = regionData.districts;
-                        value = selectedRegionIds.districtId;
-                        disabled = !selectedRegionIds.cityId;
-                        loading = loadingRegion.districts;
-                      }
-
-                      return (
-                        <label className={fieldClass} key={field.name}>
-                          <span className="field-label">
-                            {field.label}
-                            {isRequired ? (
-                              <span className="required"> *</span>
-                            ) : null}
-                          </span>
-                          <select
-                            value={value}
-                            onChange={(e) => handleRegionChange(field.fieldType, e.target.value)}
-                            disabled={disabled || loading}
-                            required={isRequired}
-                            style={{
-                              cursor: (disabled || loading) ? 'not-allowed' : 'pointer',
-                              backgroundColor: (disabled || loading) ? '#f9fafb' : 'white'
-                            }}
-                          >
-                            <option value="">
-                              {field.fieldType === "provinsi" ? "Pilih Provinsi" :
-                               field.fieldType === "kabupaten" ? "Pilih Kabupaten/Kota" :
-                               "Pilih Kecamatan"}
-                            </option>
-                            {options.map((item) => (
-                              <option key={item.id || item.district_id} value={item.id || item.district_id}>
-                                {item.name}
+                        {field.type === "select" ? (
+                          <select {...baseProps}>
+                            {field.options?.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
                               </option>
                             ))}
                           </select>
-                          {loading && (
-                            <p className="field-hint" style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.25rem" }}>
-                              Memuat...
-                            </p>
-                          )}
-                          {disabled && !loading && (
-                            <p className="field-hint" style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.25rem" }}>
-                              {field.fieldType === "kabupaten" ? "Pilih Provinsi terlebih dahulu" :
-                               field.fieldType === "kecamatan" ? "Pilih Kabupaten/Kota terlebih dahulu" : ""}
-                            </p>
-                          )}
-                        </label>
-                      );
-                    } else if (field.type === "region_input" && field.fieldType === "kode_pos") {
-                      return (
-                        <label className={fieldClass} key={field.name}>
-                          <span className="field-label">
-                            {field.label}
-                            {isRequired ? (
-                              <span className="required"> *</span>
-                            ) : null}
-                          </span>
-                          <input
-                            type="text"
-                            value={regionForm.kode_pos}
-                            onChange={(e) => handleRegionChange("kode_pos", e.target.value)}
-                            disabled={!selectedRegionIds.districtId}
-                            required={isRequired}
-                            placeholder={field.placeholder}
-                            style={{
-                              cursor: !selectedRegionIds.districtId ? 'not-allowed' : 'text',
-                              backgroundColor: !selectedRegionIds.districtId ? '#f9fafb' : 'white'
-                            }}
-                          />
-                          {!selectedRegionIds.districtId && (
-                            <p className="field-hint" style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.25rem" }}>
-                              Pilih kecamatan terlebih dahulu
-                            </p>
-                          )}
-                        </label>
-                      );
-                    }
-                  }
+                        ) : field.type === "textarea" ? (
+                          <textarea {...baseProps} />
+                        ) : (
+                          <input type={field.type || "text"} {...baseProps} />
+                        )}
 
-                  // Handle regular fields
-                  const value = formData[field.name] ?? "";
-                  
-                  // Override required untuk password field berdasarkan requirePassword prop
-                  const isRequired = field.name === "password" 
-                    ? requirePassword 
-                    : field.required;
-                  
-                  const baseProps = {
-                    name: field.name,
-                    value,
-                    onChange: handleChange,
-                    placeholder: field.placeholder,
-                    required: isRequired,
-                  };
-
-                  if (field.type === "textarea") {
-                    baseProps.rows = field.rows || 3;
-                  }
-
-                  const fieldClass = [
-                    "form-field",
-                    field.fullWidth ? "customer-grid__full" : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ");
-
-                  return (
-                    <label className={fieldClass} key={field.name}>
-                      <span className="field-label">
-                        {field.label}
-                        {isRequired ? (
-                          <span className="required"> *</span>
-                        ) : null}
-                      </span>
-
-                      {field.type === "select" ? (
-                        <select {...baseProps}>
-                          {field.options?.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      ) : field.type === "textarea" ? (
-                        <textarea {...baseProps} />
-                      ) : (
-                        <input type={field.type || "text"} {...baseProps} />
-                      )}
-
-                      {field.note && (
-                        <p className="field-hint">
-                          {field.name === "password" && !requirePassword 
-                            ? "Kosongkan jika tidak ingin mengganti password"
-                            : field.note}
-                        </p>
-                      )}
-                    </label>
-                  );
-                })}
+                        {field.note && (
+                          <p className="field-hint">
+                            {field.name === "password" && !requirePassword
+                              ? "Kosongkan jika tidak ingin mengganti password"
+                              : field.note}
+                          </p>
+                        )}
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          );
+            );
           })}
 
           <div className="customer-modal__footer">
