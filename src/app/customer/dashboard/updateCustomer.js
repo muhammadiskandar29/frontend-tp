@@ -164,31 +164,52 @@ export default function UpdateCustomerModal({
 
 
 
-  // Initialize data dari session saat modal dibuka
-  useEffect(() => {
-    if (!isOpen) return;
-
+  // Fetch customer data from API
+  const fetchCustomerDetail = async () => {
     try {
-      const session = getCustomerSession();
-      const user = session.user || {};
+      const token = localStorage.getItem("customer_token");
+      if (!token) return;
 
-      setFormData((prev) => ({
-        ...prev,
-        nama_panggilan: user.nama_panggilan || user.nama || prev.nama_panggilan,
-        instagram: user.instagram || prev.instagram,
-        profesi: user.profesi || prev.profesi,
-        pendapatan_bln: user.pendapatan_bln || prev.pendapatan_bln,
-        industri_pekerjaan:
-          user.industri_pekerjaan || prev.industri_pekerjaan,
-        jenis_kelamin: user.jenis_kelamin || prev.jenis_kelamin || "l",
-        tanggal_lahir: user.tanggal_lahir
-          ? user.tanggal_lahir.slice(0, 10)
-          : prev.tanggal_lahir,
-        password: "",
-        alamat: user.alamat || prev.alamat,
-      }));
+      // Gunakan endpoint yang diminta user (via proxy Next.js jika sudah disetup, atau langsung)
+      // Disarankan menggunakan proxy /api/customer/customer/detail agar tidak CORS jika beda domain
+      // Tapi karena user kasih full URL IP, kita coba fetch relative path dulu asumsi ada proxy rewrites
+      // atau fetch langsung jika memang backend allow CORS.
+      // Aman-nya: gunakan path relative yang di-proxy-kan ke backend.
+      const response = await fetch("/api/customer/customer/detail", {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Accept": "application/json",
+        },
+      });
+
+      const data = await response.json();
+      if (response.ok && data.success && data.data) {
+        const user = data.data;
+        console.log("📥 [UPDATE_CUSTOMER] Fetched detail:", user);
+
+        setFormData((prev) => ({
+          ...prev,
+          nama_panggilan: user.nama_panggilan || user.nama || prev.nama_panggilan,
+          instagram: user.instagram || prev.instagram,
+          profesi: user.profesi || prev.profesi,
+          pendapatan_bln: user.pendapatan_bln || prev.pendapatan_bln,
+          industri_pekerjaan: user.industri_pekerjaan || prev.industri_pekerjaan,
+          jenis_kelamin: user.jenis_kelamin || prev.jenis_kelamin || "l",
+          tanggal_lahir: user.tanggal_lahir ? user.tanggal_lahir.slice(0, 10) : prev.tanggal_lahir,
+          password: "",
+          alamat: user.alamat || prev.alamat,
+        }));
+      }
     } catch (error) {
-      console.error("[UPDATE_CUSTOMER] Failed to load session:", error);
+      console.error("[UPDATE_CUSTOMER] Failed to fetch customer detail:", error);
+    }
+  };
+
+  // Initialize data saat modal dibuka
+  useEffect(() => {
+    if (isOpen) {
+      fetchCustomerDetail();
     }
   }, [isOpen]);
 
