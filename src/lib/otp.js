@@ -1,7 +1,7 @@
 import crypto from "crypto";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL; 
-const SECRET_KEY = "superkeyy023Ad_8!jf983hfFj";
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+const SECRET_KEY = process.env.NEXT_PUBLIC_OTP_SECRET_KEY;
 
 export async function sendOTP({ customer_id, wa }) {
   try {

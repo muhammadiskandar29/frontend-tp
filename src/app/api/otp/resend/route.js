@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import CryptoJS from "crypto-js";
 
-const SECRET_KEY = "superkeyy023Ad_8!jf983hfFj";
+const SECRET_KEY = process.env.NEXT_PUBLIC_OTP_SECRET_KEY;
 
 import { BACKEND_URL } from "@/config/env";
 

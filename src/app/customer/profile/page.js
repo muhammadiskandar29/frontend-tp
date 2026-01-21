@@ -62,7 +62,7 @@ function ChangeWAModal({ isOpen, onClose, customerId }) {
         try {
             isSubmitting.current = true;
             setLoading(true);
-            const secret = 'superkeyy023Ad_8!jf983hfFj';
+            const secret = process.env.NEXT_PUBLIC_OTP_SECRET_KEY;
             const timestamp = Math.floor(Date.now() / 1000).toString();
             // Create HMAC SHA256 signature
             const hash = CryptoJS.HmacSHA256(timestamp, secret).toString(CryptoJS.enc.Hex);

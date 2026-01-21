@@ -29,7 +29,7 @@ export default function VerificationCard({ isVerified }) {
             }
 
             const customer = session.user;
-            const secret = 'superkeyy023Ad_8!jf983hfFj';
+            const secret = process.env.NEXT_PUBLIC_OTP_SECRET_KEY;
             const timestamp = Math.floor(Date.now() / 1000).toString();
             const hash = CryptoJS.HmacSHA256(timestamp, secret).toString(CryptoJS.enc.Hex);
 
