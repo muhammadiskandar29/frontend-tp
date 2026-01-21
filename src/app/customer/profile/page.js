@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Save, Smartphone, User, Briefcase, MapPin, Loader2, Shield } from "lucide-react";
 import toast from "react-hot-toast";
+import CryptoJS from "crypto-js";
 import CustomerLayout from "@/components/customer/CustomerLayout";
 
 // Helper function untuk update data
@@ -38,10 +39,179 @@ async function updateCustomerService(payload) {
     }
 }
 
+function ChangeWAModal({ isOpen, onClose, customerId }) {
+    const router = useRouter();
+    const [wa, setWa] = useState("");
+    const [loading, setLoading] = useState(false);
+
+    if (!isOpen) return null;
+
+    const handleSave = async (e) => {
+        e.preventDefault();
+        if (!wa) return toast.error("Nomor WhatsApp wajib diisi");
+
+        // Basic validation (must be digits, preferably starting with 62 or 08)
+        const cleanWa = wa.replace(/\D/g, '');
+        if (cleanWa.length < 9) return toast.error("Nomor WhatsApp tidak valid");
+
+        try {
+            setLoading(true);
+            const secret = 'superkeyy023Ad_8!jf983hfFj';
+            const timestamp = Math.floor(Date.now() / 1000).toString();
+            // Create HMAC SHA256 signature
+            const hash = CryptoJS.HmacSHA256(timestamp, secret).toString(CryptoJS.enc.Hex);
+
+            const res = await fetch("/api/otp/update-wa", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-API-Timestamp": timestamp,
+                    "X-API-Hash": hash
+                },
+                body: JSON.stringify({
+                    customer_id: customerId,
+                    wa: cleanWa
+                })
+            });
+
+            const json = await res.json();
+
+            if (json.success) {
+                toast.success(json.message || "Nomor berhasil diubah. Silakan verifikasi OTP.");
+
+                // Update local session: Set verified to 0 and update phone
+                const storedUser = localStorage.getItem("customer_user");
+                if (storedUser) {
+                    const currentUser = JSON.parse(storedUser);
+                    const updatedUser = {
+                        ...currentUser,
+                        ...json.data.customer, // This should contain the new 'phone'
+                        // IMPORTANT: Set verification to 0 so OTP page stays active
+                        verifikasi: 0
+                    };
+                    localStorage.setItem("customer_user", JSON.stringify(updatedUser));
+                    console.log("Updated local user for re-verification:", updatedUser);
+                }
+
+                onClose();
+                // Redirect to OTP page
+                router.push("/customer/otp");
+            } else {
+                toast.error(json.message || "Gagal mengubah nomor");
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error("Terjadi kesalahan sistem saat menghubungi server");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="modal-overlay">
+            <div className="modal-content">
+                <div className="modal-header">
+                    <h3>Ubah Nomor WhatsApp</h3>
+                    <button onClick={onClose} className="close-btn">&times;</button>
+                </div>
+                <div className="modal-body">
+                    <p className="modal-desc">
+                        Masukkan nomor WhatsApp baru Anda. Kami akan mengirimkan kode OTP untuk verifikasi.
+                    </p>
+                    <div className="form-group">
+                        <label>Nomor WhatsApp Baru</label>
+                        <input
+                            type="text"
+                            className="form-input"
+                            placeholder="Contoh: 62812345678"
+                            value={wa}
+                            onChange={e => setWa(e.target.value.replace(/\D/g, ''))}
+                        />
+                    </div>
+                </div>
+                <div className="modal-footer">
+                    <button type="button" onClick={onClose} className="btn-cancel" disabled={loading}>Batal</button>
+                    <button type="button" onClick={handleSave} className="save-btn" disabled={loading}>
+                        {loading ? "Memproses..." : "Simpan dan Verifikasi"}
+                    </button>
+                </div>
+            </div>
+
+            <style jsx>{`
+                .modal-overlay {
+                    position: fixed;
+                    top: 0; left: 0; right: 0; bottom: 0;
+                    background: rgba(0,0,0,0.5);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 9999;
+                    padding: 20px;
+                }
+                .modal-content {
+                    background: white;
+                    border-radius: 16px;
+                    width: 100%;
+                    max-width: 450px;
+                    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+                    overflow: hidden;
+                }
+                .modal-header {
+                    padding: 20px;
+                    border-bottom: 1px solid #e2e8f0;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+                .modal-header h3 {
+                    margin: 0;
+                    font-size: 18px;
+                    font-weight: 700;
+                    color: #1e293b;
+                }
+                .close-btn {
+                    background: none;
+                    border: none;
+                    font-size: 24px;
+                    color: #94a3b8;
+                    cursor: pointer;
+                }
+                .modal-body {
+                    padding: 24px;
+                }
+                .modal-desc {
+                    margin-bottom: 20px;
+                    color: #64748b;
+                    font-size: 14px;
+                    line-height: 1.5;
+                }
+                .modal-footer {
+                    padding: 20px;
+                    border-top: 1px solid #e2e8f0;
+                    display: flex;
+                    justify-content: flex-end;
+                    gap: 12px;
+                    background: #f8fafc;
+                }
+                .btn-cancel {
+                    padding: 10px 20px;
+                    border: 1px solid #cbd5e1;
+                    background: white;
+                    border-radius: 8px;
+                    color: #475569;
+                    font-weight: 500;
+                    cursor: pointer;
+                }
+            `}</style>
+        </div>
+    );
+}
+
 export default function CustomerProfilePage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [showWaModal, setShowWaModal] = useState(false);
 
     const [formData, setFormData] = useState({
         // Identitas & Akun
@@ -176,12 +346,7 @@ export default function CustomerProfilePage() {
     };
 
     const handleChangeWA = () => {
-        toast((t) => (
-            <span>
-                Fitur ubah nomor WhatsApp akan menghubungi admin.
-                <button onClick={() => toast.dismiss(t.id)} style={{ marginLeft: '8px', border: '1px solid #333', padding: '2px 5px', borderRadius: '4px' }}>Dismiss</button>
-            </span>
-        ), { icon: 'ℹ️' });
+        setShowWaModal(true);
     };
 
     if (loading) {
@@ -440,6 +605,12 @@ export default function CustomerProfilePage() {
                             </button>
                         </div>
                     </form>
+
+                    <ChangeWAModal
+                        isOpen={showWaModal}
+                        onClose={() => setShowWaModal(false)}
+                        customerId={formData.customer_id}
+                    />
                 </div>
 
                 <style jsx>{`

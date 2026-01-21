@@ -126,8 +126,11 @@ export function useDashboardData() {
           method: "GET",
           headers: {
             "Authorization": `Bearer ${session.token}`,
-            "Accept": "application/json"
-          }
+            "Accept": "application/json",
+            "Pragma": "no-cache",
+            "Cache-Control": "no-cache"
+          },
+          cache: "no-store" // Disable Next.js caching
         });
         const detailJson = await detailRes.json();
         if (detailJson.success && detailJson.data) {

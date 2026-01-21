@@ -171,7 +171,7 @@ export default function OrderBroadcastModal({ onClose, onAdd }) {
                             })
                             .map((value) => ({
                                 value,
-                                label: STATUS_PEMBAYARAN_MAP[value] || value
+                                label: STATUS_PEMBAYARAN_MAP[value]?.label || value
                             }));
 
                         setStatusOrderOptions(statusOrderOpts);
@@ -423,7 +423,7 @@ export default function OrderBroadcastModal({ onClose, onAdd }) {
     };
 
     const getStatusPembayaranLabel = (value) => {
-        return STATUS_PEMBAYARAN_MAP[value] || value;
+        return STATUS_PEMBAYARAN_MAP[value]?.label || value;
     };
 
     // Check estimated target count (optional helper function)
