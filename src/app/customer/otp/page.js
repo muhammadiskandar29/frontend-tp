@@ -44,7 +44,7 @@ export default function CustomerOTPPage() {
 
     try {
       console.log("🔵 [OTP] Auto-sending OTP on page load...");
-      
+
       // Format nomor WA (pastikan format 62xxxxxxxxxx)
       let formattedWa = waNumber.trim();
       if (formattedWa.startsWith("0")) {
@@ -54,12 +54,12 @@ export default function CustomerOTPPage() {
       }
 
       const token = localStorage.getItem("customer_token");
-      
+
       if (!token) {
         console.error("❌ [OTP] No token found for auto-send");
         return;
       }
-      
+
       const response = await fetch("/api/customer/otp/send", {
         method: "POST",
         headers: {
@@ -75,7 +75,7 @@ export default function CustomerOTPPage() {
 
       const result = await response.json();
       console.log("[OTP] Auto-send response:", result);
-      
+
       if (result.success) {
         setMessage("Kode OTP telah dikirim ke WhatsApp Anda!");
         toast.success("OTP terkirim!");
@@ -95,28 +95,28 @@ export default function CustomerOTPPage() {
       router.replace("/customer");
       return;
     }
-    
+
     // Cek apakah user sudah verifikasi
     const isVerified = session.user.verifikasi === 1 || session.user.verifikasi === "1";
     console.log("🔵 [OTP] User verification status:", isVerified);
     console.log("🔵 [OTP] User verifikasi value:", session.user.verifikasi);
-    
+
     // Jika sudah verifikasi, langsung ke dashboard
     if (isVerified) {
       console.log("✅ [OTP] User already verified, redirecting to dashboard");
       router.replace("/customer/dashboard");
       return;
     }
-    
+
     const customerIdValue = session.user.id;
     const waNumber = session.user.wa || session.user.phone;
-    
+
     setCustomerId(customerIdValue);
     setWa(waNumber);
     console.log("🔵 [OTP] Customer ID:", customerIdValue);
     console.log("🔵 [OTP] WA:", waNumber);
     resetOtpTimer();
-    
+
     // Auto-send OTP ketika halaman dimuat
     if (customerIdValue && waNumber) {
       autoSendOTP(customerIdValue, waNumber);
@@ -172,7 +172,7 @@ export default function CustomerOTPPage() {
       setMessage("Masukkan 6 digit kode OTP.");
       return;
     }
-    
+
     if (!customerId) {
       setMessage("Data customer tidak ditemukan. Silakan login kembali.");
       return;
@@ -183,7 +183,7 @@ export default function CustomerOTPPage() {
 
     try {
       console.log("🔵 [OTP] Verifying OTP...");
-      
+
       const token = localStorage.getItem("customer_token");
       const response = await fetch("/api/customer/otp/verify", {
         method: "POST",
@@ -200,13 +200,13 @@ export default function CustomerOTPPage() {
 
       const result = await response.json();
       console.log("[OTP] Verify response:", result);
-      
+
       if (result.success) {
         setMessage("Verifikasi berhasil!");
         setTimerActive(false);
         toast.success("Verifikasi berhasil!");
         localStorage.setItem("customer_show_update_modal", "1");
-        
+
         // Update user data di localStorage dengan data dari response API
         const session = getCustomerSession();
         if (session.user && result.data) {
@@ -224,7 +224,7 @@ export default function CustomerOTPPage() {
           localStorage.setItem("customer_user", JSON.stringify(session.user));
           console.log("✅ [OTP] User data updated (fallback):", session.user);
         }
-        
+
         // Redirect ke dashboard setelah verifikasi berhasil
         setTimeout(() => {
           router.replace("/customer/dashboard");
@@ -251,7 +251,7 @@ export default function CustomerOTPPage() {
 
     try {
       console.log("🔵 [OTP] Resending OTP...");
-      
+
       // Format nomor WA (pastikan format 62xxxxxxxxxx)
       let waNumber = wa.trim();
       if (waNumber.startsWith("0")) {
@@ -261,14 +261,14 @@ export default function CustomerOTPPage() {
       }
 
       const token = localStorage.getItem("customer_token");
-      
+
       if (!token) {
         setMessage("Token tidak ditemukan. Silakan login kembali.");
         toast.error("Token tidak ditemukan. Silakan login kembali.");
         setResending(false);
         return;
       }
-      
+
       const response = await fetch("/api/customer/otp/resend", {
         method: "POST",
         headers: {
@@ -284,7 +284,7 @@ export default function CustomerOTPPage() {
 
       const result = await response.json();
       console.log("[OTP] Resend response:", result);
-      
+
       if (result.success) {
         setMessage("Kode OTP baru telah dikirim ke WhatsApp Anda!");
         toast.success("OTP terkirim!");
@@ -320,102 +320,303 @@ export default function CustomerOTPPage() {
   };
 
   return (
-    <div className="otp-container">
-      <div className="otp-box">
-        <div className="otp-header">
-          <span className="otp-icon"></span>
-          <h1 className="otp-title">Verifikasi</h1>
-        </div>
-        
-        <p className="otp-desc">
-          Masukkan 6 digit kode OTP yang telah dikirim ke WhatsApp
-          {wa && (
-            <strong> ({wa.replace(/(\d{2})(\d{3})(\d{4})(\d+)/, "+$1 $2-$3-$4")})</strong>
-          )}
-        </p>
+    <div className="otp-page">
+      <div className="otp-container">
 
-        <div className="otp-timer">
-          <span></span>
-          <span>
-            OTP berlaku {timeLeft > 0 ? `${formatTimeLeft()}` : "(kedaluwarsa)"}
-          </span>
+        {/* Brand / Logo */}
+        <div className="otp-brand">
+          <img src="/assets/logo.png" alt="Logo" className="otp-logo" />
         </div>
 
-        <form onSubmit={handleSubmit} className="otp-form">
-          <div className="otp-input-group" onPaste={handlePaste}>
-            {otp.map((digit, i) => (
-              <input
-                key={i}
-                type="text"
-                inputMode="numeric"
-                maxLength="1"
-                value={digit}
-                onChange={(e) => handleChange(e, i)}
-                onKeyDown={(e) => handleKeyDown(e, i)}
-                ref={(el) => (inputs.current[i] = el)}
-                className="otp-input"
-                autoComplete="off"
-              />
-            ))}
+        <div className="otp-card">
+          <div className="otp-header">
+            <div className="otp-icon-wrapper">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" fill="#F0FDF4" stroke="#22C55E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M9 12L11 14L15 10" stroke="#22C55E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <h1 className="otp-title">Verifikasi WhatsApp</h1>
+            <p className="otp-subtitle">
+              Kami telah mengirimkan 6 digit kode ke WhatsApp
+              {wa && <span className="otp-wa-number"><br />{wa.replace(/(\d{2})(\d{3})(\d{4})(\d+)/, "+$1 $2-$3-$4")}</span>}
+            </p>
           </div>
 
-          {message && (
-            <p className={`otp-message ${message.includes("berhasil") ? "success" : "error"}`}>
-              {message}
-            </p>
-          )}
+          <form onSubmit={handleSubmit} className="otp-form">
+            <div className="otp-inputs" onPaste={handlePaste}>
+              {otp.map((digit, i) => (
+                <input
+                  key={i}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength="1"
+                  value={digit}
+                  onChange={(e) => handleChange(e, i)}
+                  onKeyDown={(e) => handleKeyDown(e, i)}
+                  ref={(el) => (inputs.current[i] = el)}
+                  className={`otp-input-field ${digit ? 'filled' : ''}`}
+                  autoComplete="one-time-code"
+                />
+              ))}
+            </div>
 
-          <button 
-            type="submit" 
-            className="otp-btn" 
-            disabled={loading || timeLeft === 0}
-          >
-            {loading ? "Memverifikasi..." : "Verifikasi"}
-          </button>
+            {/* Timer & Message */}
+            <div className="otp-status">
+              {message ? (
+                <p className={`status-message ${message.includes("berhasil") ? "success" : "error"}`}>
+                  {message}
+                </p>
+              ) : (
+                <p className="timer-text">
+                  Kode berlaku selama <span className="timer-value">{timeLeft > 0 ? formatTimeLeft() : "00:00"}</span>
+                </p>
+              )}
+            </div>
 
-          <p
-            className="otp-resend"
-            onClick={!resending ? handleResend : undefined}
-            style={{
-              cursor: resending ? "not-allowed" : "pointer",
-              opacity: resending ? 0.6 : 1,
-            }}
-          >
-            {resending ? "Mengirim ulang..." : "Kirim ulang kode OTP"}
-          </p>
-        </form>
+            <button
+              type="submit"
+              className="otp-submit-btn"
+              disabled={loading || timeLeft === 0}
+            >
+              {loading ? (
+                <span className="flex-center gap-2">
+                  <span className="spinner"></span> Memverifikasi...
+                </span>
+              ) : "Verifikasi Sekarang"}
+            </button>
+          </form>
+
+          <div className="otp-footer">
+            <p>Tidak menerima kode?</p>
+            <button
+              className="resend-btn"
+              onClick={!resending ? handleResend : undefined}
+              disabled={resending || timerActive}
+            >
+              {resending ? "Mengirim ulang..." : "Kirim Ulang OTP"}
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Extra Styles */}
       <style jsx>{`
+        .otp-page {
+          min-height: 100vh;
+          background-color: #f8fafc;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 1rem;
+          font-family: 'Inter', sans-serif;
+        }
+
+        .otp-container {
+          width: 100%;
+          max-width: 440px;
+          display: flex;
+          flex-direction: column;
+          gap: 2rem;
+        }
+
+        .otp-brand {
+          display: flex;
+          justify-content: center;
+        }
+
+        .otp-logo {
+          height: 48px;
+          object-fit: contain;
+        }
+
+        .otp-card {
+          background: #ffffff;
+          padding: 2.5rem 2rem;
+          border-radius: 20px;
+          box-shadow: 0 10px 40px -10px rgba(0,0,0,0.08);
+          border: 1px solid #f1f5f9;
+        }
+
         .otp-header {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          margin-bottom: 8px;
+          text-align: center;
+          margin-bottom: 2rem;
         }
 
-        .otp-icon {
-          font-size: 32px;
+        .otp-icon-wrapper {
+          display: inline-flex;
+          margin-bottom: 1.5rem;
         }
 
-        .otp-timer {
+        .otp-title {
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #0f172a;
+          margin: 0 0 0.5rem 0;
+          letter-spacing: -0.025em;
+        }
+
+        .otp-subtitle {
+          font-size: 0.9375rem;
+          color: #64748b;
+          line-height: 1.5;
+          margin: 0;
+        }
+
+        .otp-wa-number {
+          display: block;
+          font-weight: 600;
+          color: #1e293b;
+          margin-top: 4px;
+        }
+
+        .otp-inputs {
           display: flex;
-          align-items: center;
+          gap: 12px;
           justify-content: center;
-          gap: 6px;
-          font-size: 14px;
+          margin-bottom: 1.5rem;
+        }
+
+        .otp-input-field {
+          width: 48px;
+          height: 56px;
+          border: 1.5px solid #e2e8f0;
+          border-radius: 12px;
+          font-size: 1.5rem;
+          font-weight: 600;
+          text-align: center;
+          color: #0f172a;
+          background: #f8fafc;
+          transition: all 0.2s ease;
+          outline: none;
+        }
+
+        .otp-input-field:focus {
+          border-color: #f1a124;
+          background: #fff;
+          box-shadow: 0 0 0 4px rgba(241, 161, 36, 0.1);
+          transform: translateY(-2px);
+        }
+
+        .otp-input-field.filled {
+          background: #fff;
+          border-color: #cbd5e1;
+        }
+
+        .otp-status {
+          min-height: 24px;
+          text-align: center;
+          margin-bottom: 1.5rem;
+          font-size: 0.875rem;
+        }
+
+        .timer-text {
+          color: #64748b;
+        }
+
+        .timer-value {
           color: #ef4444;
-          margin-bottom: 16px;
+          font-weight: 600;
+          font-variant-numeric: tabular-nums;
         }
 
-        .otp-message.success {
-          color: #16a34a;
+        .status-message {
+          font-weight: 500;
+        }
+        .status-message.success { color: #16a34a; }
+        .status-message.error { color: #dc2626; }
+
+        .otp-submit-btn {
+          width: 100%;
+          padding: 0.875rem;
+          background: linear-gradient(135deg, #f1a124 0%, #d97706 100%);
+          color: white;
+          border: none;
+          border-radius: 12px;
+          font-size: 1rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+          box-shadow: 0 4px 6px -1px rgba(241, 161, 36, 0.2);
         }
 
-        .otp-message.error {
-          color: #dc2626;
+        .otp-submit-btn:hover:not(:disabled) {
+          transform: translateY(-1px);
+          box-shadow: 0 6px 12px -1px rgba(241, 161, 36, 0.3);
+        }
+
+        .otp-submit-btn:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+          background: #cbd5e1;
+          box-shadow: none;
+        }
+
+        .otp-footer {
+          margin-top: 1.5rem;
+          padding-top: 1.5rem;
+          border-top: 1px solid #f1f5f9;
+          text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.875rem;
+          color: #64748b;
+        }
+
+        .otp-footer p {
+           margin: 0;
+        }
+
+        .resend-btn {
+          background: none;
+          border: none;
+          color: #f1a124;
+          font-weight: 600;
+          font-size: 0.875rem;
+          cursor: pointer;
+          padding: 4px 8px;
+          border-radius: 6px;
+          transition: all 0.2s;
+        }
+
+        .resend-btn:hover:not(:disabled) {
+          background: #fff8eb;
+        }
+
+        .resend-btn:disabled {
+          color: #94a3b8;
+          cursor: not-allowed;
+        }
+        
+        .flex-center {
+           display: flex;
+           align-items: center;
+           justify-content: center;
+        }
+        
+        .spinner {
+           width: 16px; 
+           height: 16px;
+           border: 2px solid rgba(255,255,255,0.3);
+           border-top-color: white;
+           border-radius: 50%;
+           animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+           to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 480px) {
+           .otp-card {
+              padding: 2rem 1.5rem;
+           }
+           .otp-input-field {
+              width: 40px;
+              height: 48px;
+              font-size: 1.25rem;
+           }
         }
       `}</style>
     </div>
