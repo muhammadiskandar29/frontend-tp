@@ -70,21 +70,22 @@ const ORDERS_COLUMNS = [
 
 // Helper component untuk WA Bubble Chat dengan deteksi status
 const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran, productId, customerWa }) => {
-  const [followupLogs, setFollowupLogs] = useState([]);
+  const [orderLogs, setOrderLogs] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!customerId) return;
-    fetchFollowupLogs();
+    if (!orderId) return;
+    fetchOrderLogs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customerId]);
+  }, [orderId]);
 
-  const fetchFollowupLogs = async () => {
-    if (!customerId) return;
+  const fetchOrderLogs = async () => {
+    if (!orderId) return;
     setLoading(true);
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const res = await fetch(`/api/sales/logs-follup?customer=${Number(customerId)}`, {
+      // Gunakan endpoint logs per order yang lebih spesifik
+      const res = await fetch(`/api/sales/order/${orderId}/logs-follup`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -92,88 +93,82 @@ const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran, prod
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
-      const data = await res.json();
-      // Simpan semua log customer, filter dilakukan di isSent agar lebih fleksibel
-      if (res.ok && Array.isArray(data.data)) {
-        setFollowupLogs(data.data);
+      const json = await res.json();
+      if (res.ok && json.success && Array.isArray(json.data)) {
+        setOrderLogs(json.data);
+      } else {
+        setOrderLogs([]);
       }
     } catch (err) {
-      console.error("Error fetching followup logs:", err);
+      console.error("Error fetching order logs:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  // 1. Cek Follow Up (Event 1-4)
-  // Berbasis log follow-up, harus cocok Product ID.
-  // 1. Cek Follow Up (Event 1-4)
-  // Berbasis log follow-up, harus cocok Product ID dan Type dari database
-  const isFollowupSent = (followUpNumber) => {
-    if (loading) return false;
-    if (!productId) return false;
-    if (!followupLogs || followupLogs.length === 0) return false;
+  // 1. Cek Follow Up Manual (1-4) & Auto Events dari Log
+  // Logika: cek apakah ada log dengan type yang sesuai
+  const isLogExists = (checkType) => {
+    if (loading || !orderLogs || orderLogs.length === 0) return false;
 
-    return followupLogs.some(l => {
-      // Pastikan relasi utama ada
-      if (!l.follup_rel) return false;
+    return orderLogs.some(log => {
+      // Normalisasi type ke string lower case untuk comparison aman
+      const logType = String(log.type || "").toLowerCase();
+      const target = String(checkType).toLowerCase();
 
-      console.log("DEBUG WA Bubble:", {
-        followUpNumber,
-        productId_from_component: productId,
-        type_from_log: l.follup_rel.type,
-        produkId_from_log: l.follup_rel.produk_id,
-        isTypeMatch: Number(l.follup_rel.type) === Number(followUpNumber),
-        isProductMatch: Number(l.follup_rel.produk_id) === Number(productId)
-      });
+      // Cek exact match type
+      if (logType === target) return true;
 
-      // 1. Cek Produk (Wajib Sama)
-      if (Number(l.follup_rel.produk_id) !== Number(productId)) return false;
+      // Cek mapping angka type dari follup_rel (jika ada)
+      // Type 1, 2, 3, 4 biasanya dari follup_rel.type
+      if (log.follup_rel && String(log.follup_rel.type) === target) return true;
 
-      // 2. Cek Type
-      return Number(l.follup_rel.type) === Number(followUpNumber);
+      return false;
     });
   };
 
-
-  // 2. Cek System Events (Event 5-8)
-  // Berbasis status order/pembayaran, BUKAN log follow-up.
+  // 2. Cek System Events (Event 6-8)
+  // Berbasis status order/pembayaran (Logic Existing)
   const isSystemEventActive = (eventType) => {
     const evt = Number(eventType);
     switch (evt) {
-      case 5:
-        // Event 5: Register (Order Created)
-        // Selalu true karena order row ini sudah ada.
+      case 5: // Register / Order Dibuat -> Cek Log "order dibuat" atau selalu true
         return true;
-      case 6:
-        // Event 6: Proses (Pembayaran Diterima / Paid)
+      case 6: // Proses / Paid
         return Number(statusPembayaran) === 2;
-      case 7:
-        // Event 7: Selesai (Order Sukses)
+      case 7: // Selesai / Sukses
         return Number(orderStatus) === 2;
-      case 8:
-        // Event 8: UPS (Upselling)
+      case 8: // Upselling
         return Number(orderStatus) === 4;
       default:
         return false;
     }
   };
 
-  // 3. Router Status Checker
-  const checkStatus = (eventType) => {
-    const e = Number(eventType);
-    if (e >= 1 && e <= 4) return isFollowupSent(e);
-    if (e >= 5 && e <= 8) return isSystemEventActive(e);
+  // Logic khusus untuk bubble W (Register / Order Dibuat)
+  // Cek apakah ada log "order dibuat" ATAU event 5
+  const isWAActive = () => {
+    // Priority: Cek log "order dibuat"
+    if (isLogExists("order dibuat")) return true;
+    // Fallback: Default Active (karena order row ini ada)
+    return true;
+  };
+
+  // Logic khusus untuk bubble P (Pembayaran / Upload Pembayaran)
+  // Bisa dari statusPembayaran=2 ATAU ada log "upload pembayaran"
+  const isPaymentActive = () => {
+    if (isLogExists("upload pembayaran")) return true;
+    if (isSystemEventActive(6)) return true;
     return false;
   };
 
-  // Helper untuk membuat bubble
-  const createBubble = (content, eventType) => {
-    const isActive = checkStatus(eventType);
-    const bgColor = isActive ? "#25D366" : "#E5E7EB"; // Hijau jika aktif, Abu jika tidak
+  // Helper utk create bubble UI
+  const createBubble = (content, isActive, key) => {
+    const bgColor = isActive ? "#25D366" : "#E5E7EB";
     const textColor = isActive ? "white" : "#6B7280";
 
     return (
-      <div key={`bubble-${eventType}`} style={{
+      <div key={key} style={{
         position: "relative",
         background: bgColor,
         borderRadius: "7px 7px 7px 0",
@@ -194,11 +189,12 @@ const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran, prod
 
   const bubbles = [];
 
-  // WA icon bubble (Event 5 - Register) -> Selalu Green (Active)
+  // 1. Bubble WA Logo (Order Dibuat / Register)
+  // Icon WA khusus
   bubbles.push(
     <div key="wa-logo" style={{
       position: "relative",
-      background: checkStatus(5) ? "#25D366" : "#E5E7EB",
+      background: isWAActive() ? "#25D366" : "#E5E7EB",
       borderRadius: "7px 7px 7px 0",
       width: "28px",
       height: "24px",
@@ -208,33 +204,37 @@ const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran, prod
       padding: "2px 4px",
       flexShrink: 0
     }}>
-      <svg viewBox="0 0 24 24" width="16" height="16" fill={checkStatus(5) ? "white" : "#6B7280"}>
+      <svg viewBox="0 0 24 24" width="16" height="16" fill={isWAActive() ? "white" : "#6B7280"}>
         <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
       </svg>
     </div>
   );
 
-  // W bubble (event 5 = Register)
-  bubbles.push(createBubble("W", 5));
+  // 2. Bubble "W" (Register) - Jika Icon WA sudah ada, apakah ini perlu?
+  // User request: "W bubble (hijau)"
+  bubbles.push(createBubble("W", isWAActive(), "bubble-w"));
 
-  // Bubble 1-4 (Followup 1-4)
+  // 3. Bubble Follow Up 1-4
   for (let i = 1; i <= 4; i++) {
-    bubbles.push(createBubble(i.toString(), i));
+    // Cek apakah ada log dengan type "1", "2", dst
+    const isActive = isLogExists(i);
+    bubbles.push(createBubble(i.toString(), isActive, `bubble-${i}`));
   }
 
-  // P bubble (event 6 = Proses/Pembayaran Diterima) - hanya tampil jika aktif (isSystemEventActive(6))
-  if (isSystemEventActive(6)) {
-    bubbles.push(createBubble("P", 6));
+  // 4. Bubble P (Proses / Upload Pembayaran)
+  // Tampil jika Active
+  if (isPaymentActive()) {
+    bubbles.push(createBubble("P", true, "bubble-p"));
   }
 
-  // 7 bubble (Selesai) - hanya tampil jika aktif (isSystemEventActive(7))
+  // 5. Bubble 7 (Selesai)
   if (isSystemEventActive(7)) {
-    bubbles.push(createBubble("7", 7));
+    bubbles.push(createBubble("7", true, "bubble-7"));
   }
 
-  // 8 bubble (Upselling) - hanya tampil jika aktif (isSystemEventActive(8))
+  // 6. Bubble 8 (Upselling)
   if (isSystemEventActive(8)) {
-    bubbles.push(createBubble("8", 8));
+    bubbles.push(createBubble("8", true, "bubble-8"));
   }
 
   return (

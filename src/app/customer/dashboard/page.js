@@ -52,11 +52,12 @@ export default function DashboardPage() {
   const isCustomerDataComplete = (customer) => {
     if (!customer) return false;
 
-    // Field required: nama_panggilan dan profesi
+    // Field required: nama_panggilan, profesi, dan ALAMAT (baru)
     const hasNamaPanggilan = customer.nama_panggilan && customer.nama_panggilan.trim() !== "";
     const hasProfesi = customer.profesi && customer.profesi.trim() !== "";
+    const hasAlamat = customer.alamat && customer.alamat.trim() !== "";
 
-    return hasNamaPanggilan && hasProfesi;
+    return hasNamaPanggilan && hasProfesi && hasAlamat;
   };
 
   // Cek apakah modal harus ditampilkan

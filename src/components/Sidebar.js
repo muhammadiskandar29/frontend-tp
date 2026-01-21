@@ -183,6 +183,12 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
             },
           ],
         },
+        {
+          section: "REPORTS",
+          items: [
+            { label: "Follow Up Logs", href: `${basePath}/followup/report`, icon: <Activity size={18} /> },
+          ],
+        },
       ];
 
       // Add Sales List for Leader (level 1)

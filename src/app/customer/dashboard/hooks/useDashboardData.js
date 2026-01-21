@@ -9,8 +9,8 @@ export function useDashboardData() {
   const router = useRouter();
   const [dashboardData, setDashboardData] = useState({
     stats: [
-      { id: "total", label: "Total Order", value: 0, icon: "📦" },
-      { id: "active", label: "Order Aktif", value: 0, icon: "✅" },
+      { id: "total", label: "Total Order", value: 0 },
+      { id: "active", label: "Order Aktif", value: 0 },
     ],
     activeOrders: [],
     customerInfo: null,
@@ -118,12 +118,34 @@ export function useDashboardData() {
       // 1. Fetch Dashboard Data (Stats & Orders)
       const data = await fetchCustomerDashboard(session.token);
 
+      // 2. Fetch Fresh Customer Detail (GET)
+      // Ini penting untuk memastikan data 'alamat' dll terbaru, karena dashboard stats mungkin cache
+      let freshProfile = null;
+      try {
+        const detailRes = await fetch("/api/customer/customer/detail", {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${session.token}`,
+            "Accept": "application/json"
+          }
+        });
+        const detailJson = await detailRes.json();
+        if (detailJson.success && detailJson.data) {
+          freshProfile = detailJson.data;
+        }
+      } catch (err) {
+        console.warn("[DASHBOARD] Failed to fetch fresh detail:", err);
+      }
 
-
-      const customerData = data.customer || null;
+      // Merge: Dashboard Data < Fresh Profile
+      // Profile detail menang karena dia source of truth untuk field form
+      const customerData = {
+        ...(data.customer || {}),
+        ...(freshProfile || {})
+      };
 
       // Sync customer data to localStorage
-      if (customerData) {
+      if (Object.keys(customerData).length > 0) {
         const existingUser = session.user || {};
         const updatedUser = {
           ...existingUser,
@@ -139,8 +161,8 @@ export function useDashboardData() {
 
       // Update stats
       const newStats = [
-        { id: "total", label: "Total Order", value: data?.statistik?.total_order ?? 0, icon: "📦" },
-        { id: "active", label: "Order Aktif", value: data?.statistik?.order_aktif ?? 0, icon: "✅" },
+        { id: "total", label: "Total Order", value: data?.statistik?.total_order ?? 0 },
+        { id: "active", label: "Order Aktif", value: data?.statistik?.order_aktif ?? 0 },
       ];
 
       // Kumpulkan semua order dari berbagai sumber

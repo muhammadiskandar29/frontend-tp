@@ -2,12 +2,63 @@
 import { useSearchParams } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
 import { toast } from "react-hot-toast";
-import "@/styles/transfer.css";
+// import "@/styles/transfer.css"; // Styles replaced by professional scoped CSS below
 
 import { getCustomerSession } from "@/lib/customerAuth";
 import { fetchCustomerDashboard } from "@/lib/customerDashboard";
 
-// ✅ FIX: Pisahkan komponen yang menggunakan useSearchParams untuk Suspense boundary
+// --- ICONS (Professional SVGs) ---
+const Icons = {
+  CreditCard: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="5" width="20" height="14" rx="2" />
+      <line x1="2" y1="10" x2="22" y2="10" />
+    </svg>
+  ),
+  Upload: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="17 8 12 3 7 8" />
+      <line x1="12" y1="3" x2="12" y2="15" />
+    </svg>
+  ),
+  CheckCircle: () => (
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+      <polyline points="22 4 12 14.01 9 11.01" />
+    </svg>
+  ),
+  Clock: () => (
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </svg>
+  ),
+  Copy: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2-2v1" />
+    </svg>
+  ),
+  ArrowLeft: () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="19" y1="12" x2="5" y2="12" />
+      <polyline points="12 19 5 12 12 5" />
+    </svg>
+  ),
+  WhatsApp: () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+    </svg>
+  ),
+  Lock: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  )
+};
+
 function BankTransferPageContent() {
   const params = useSearchParams();
   const product = params.get("product");
@@ -15,7 +66,6 @@ function BankTransferPageContent() {
   const downPaymentFromQuery = params.get("down_payment");
   const orderIdFromQuery = params.get("order_id");
   const via = params.get("via") || "manual";
-  const sumber = params.get("sumber") || "website";
 
   const [bukti, setBukti] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -78,19 +128,16 @@ function BankTransferPageContent() {
     }
   }, [orderId]);
 
-  // Cek dari localStorage sebagai fallback - PRIORITAS localStorage
+  // Cek dari localStorage sebagai fallback
   useEffect(() => {
     const storedOrder = localStorage.getItem("pending_order");
     if (storedOrder) {
       try {
         const orderData = JSON.parse(storedOrder);
-        console.log("[PAYMENT] Order data from localStorage:", orderData);
-
         // Prioritaskan localStorage untuk downPayment dan orderId
         if (orderData.downPayment) {
           setDownPayment(orderData.downPayment);
           setIsWorkshop(true);
-          console.log("[PAYMENT] Using downPayment from localStorage:", orderData.downPayment);
         } else if (downPaymentFromQuery) {
           setDownPayment(downPaymentFromQuery);
           setIsWorkshop(true);
@@ -98,7 +145,6 @@ function BankTransferPageContent() {
 
         if (orderData.orderId) {
           setOrderId(orderData.orderId);
-          console.log("[PAYMENT] Using orderId from localStorage:", orderData.orderId);
         } else if (orderIdFromQuery) {
           setOrderId(orderIdFromQuery);
         }
@@ -106,7 +152,6 @@ function BankTransferPageContent() {
         console.error("[PAYMENT] Error parsing stored order:", e);
       }
     } else {
-      // Jika tidak ada di localStorage, gunakan dari query param
       if (downPaymentFromQuery) {
         setDownPayment(downPaymentFromQuery);
         setIsWorkshop(true);
@@ -126,7 +171,6 @@ function BankTransferPageContent() {
     }
   }, [downPayment]);
 
-  // Nomor rekening BCA (bisa dipindahkan ke env)
   const rekeningBCA = {
     bank: "BCA",
     logo: "/assets/bca.png",
@@ -134,19 +178,15 @@ function BankTransferPageContent() {
     atasNama: "PT Dukung Dunia Akademi",
   };
 
-  // Nomor WhatsApp admin (bisa dipindahkan ke env)
-  const adminWA = "6281234567890"; // Format: 62xxxxxxxxxx (tanpa +)
+  const adminWA = "6281234567890";
 
-  // Handle file upload bukti pembayaran
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Validasi ukuran file (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         toast.error("Ukuran file maksimal 5MB");
         return;
       }
-      // Validasi tipe file (hanya image)
       if (!file.type.startsWith("image/")) {
         toast.error("File harus berupa gambar");
         return;
@@ -157,12 +197,10 @@ function BankTransferPageContent() {
     }
   };
 
-  // Handle submit konfirmasi pembayaran
   const handleKonfirmasiPembayaran = async (e) => {
     e.preventDefault();
     setErrorMsg("");
 
-    // Cek orderId dari state atau localStorage
     let finalOrderId = orderId;
     if (!finalOrderId) {
       const storedOrder = localStorage.getItem("pending_order");
@@ -170,109 +208,60 @@ function BankTransferPageContent() {
         try {
           const orderData = JSON.parse(storedOrder);
           finalOrderId = orderData.orderId;
-        } catch (e) {
-          console.error("[PAYMENT] Error parsing stored order:", e);
-        }
+        } catch (e) { }
       }
     }
 
-    if (!finalOrderId) {
-      return setErrorMsg("Order ID tidak ditemukan. Silakan refresh halaman atau hubungi customer service.");
-    }
+    if (!finalOrderId) return setErrorMsg("Order ID tidak valid. Refresh halaman.");
+    if (!bukti?.file) return setErrorMsg("Upload bukti pembayaran terlebih dahulu.");
 
-    if (!bukti?.file) {
-      return setErrorMsg("Harap upload bukti pembayaran terlebih dahulu.");
-    }
-
-    // Ambil amount: untuk workshop pakai downPayment, untuk non-workshop pakai total harga
+    // Determine amount
     let amountToUse = null;
-
     if (isWorkshop || downPayment) {
-      // Workshop: pakai downPayment
       amountToUse = downPayment;
       if (!amountToUse || parseFloat(amountToUse) <= 0) {
-        // Cek dari localStorage sebagai fallback
         const storedOrder = localStorage.getItem("pending_order");
         if (storedOrder) {
           try {
-            const orderData = JSON.parse(storedOrder);
-            amountToUse = orderData.downPayment;
-            console.log("[PAYMENT] Using downPayment from localStorage:", amountToUse);
-          } catch (e) {
-            console.error("[PAYMENT] Error parsing stored order for amount:", e);
-          }
+            amountToUse = JSON.parse(storedOrder).downPayment;
+          } catch (e) { }
         }
       }
     } else {
-      // Non-workshop: pakai total harga
       amountToUse = harga;
       if (!amountToUse || parseFloat(amountToUse) <= 0) {
-        // Cek dari localStorage sebagai fallback
         const storedOrder = localStorage.getItem("pending_order");
         if (storedOrder) {
           try {
-            const orderData = JSON.parse(storedOrder);
-            amountToUse = orderData.total_harga || orderData.harga;
-            console.log("[PAYMENT] Using total harga from localStorage:", amountToUse);
-          } catch (e) {
-            console.error("[PAYMENT] Error parsing stored order for amount:", e);
-          }
+            const od = JSON.parse(storedOrder);
+            amountToUse = od.total_harga || od.harga;
+          } catch (e) { }
         }
       }
     }
 
     const amountValue = parseFloat(amountToUse || "0");
     if (!amountValue || amountValue <= 0) {
-      return setErrorMsg(
-        isWorkshop || downPayment
-          ? "Jumlah pembayaran tidak valid. Pastikan down payment sudah diisi."
-          : "Jumlah pembayaran tidak valid. Pastikan total harga sudah diisi."
-      );
+      return setErrorMsg("Jumlah pembayaran tidak valid.");
     }
 
     setSubmitting(true);
 
     try {
-      // Format waktu: dd-mm-yyyy HH:mm:ss
       const now = new Date();
       const pad = (n) => n.toString().padStart(2, "0");
       const waktuPembayaran = `${pad(now.getDate())}-${pad(now.getMonth() + 1)}-${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 
-      // Build FormData sesuai API spec
       const formData = new FormData();
-
-      if (bukti?.file) {
-        formData.append("bukti_pembayaran", bukti.file);
-      }
-
+      formData.append("bukti_pembayaran", bukti.file);
       formData.append("waktu_pembayaran", waktuPembayaran);
-      // Sesuai dokumentasi backend: metode_pembayaran
-      // Jika via='manual', kita kirim 'Transfer Bank' agar sesuai contoh, atau biarkan via jika sudah benar.
-      // User request example shows: "metode_pembayaran": "Transfer Bank"
       formData.append("metode_pembayaran", via === "manual" ? "Transfer Bank" : via);
       formData.append("amount", String(amountValue));
 
-      // Ambil customer token jika ada
       const customerToken = localStorage.getItem("customer_token");
-      const headers = {
-        Accept: "application/json",
-      };
+      const headers = { Accept: "application/json" };
+      if (customerToken) headers.Authorization = `Bearer ${customerToken}`;
 
-      // Jika ada customer token, gunakan untuk autentikasi
-      if (customerToken) {
-        headers.Authorization = `Bearer ${customerToken}`;
-      }
-
-      console.log("🔍 [PAYMENT] Submitting payment confirmation:", {
-        orderId: finalOrderId,
-        amount: amountValue,
-        metode_pembayaran: via === "manual" ? "Transfer Bank" : via,
-        waktu_pembayaran,
-        hasBukti: !!bukti?.file,
-        hasToken: !!customerToken
-      });
-
-      // Submit ke API baru: /api/customer/order/{id}/upload-bukti-pembayaran
       const response = await fetch(`/api/customer/order/${finalOrderId}/upload-bukti-pembayaran`, {
         method: "POST",
         headers,
@@ -280,11 +269,7 @@ function BankTransferPageContent() {
       });
 
       const data = await response.json().catch(() => ({}));
-
-      const isSuccess = response.ok && (
-        data.success === true ||
-        (data.message && data.message.toLowerCase().includes("sukses"))
-      );
+      const isSuccess = response.ok && (data.success === true || (data.message && data.message.toLowerCase().includes("sukses")));
 
       if (!isSuccess) {
         const errMsg = data?.message || data?.error || "Gagal konfirmasi pembayaran";
@@ -292,307 +277,549 @@ function BankTransferPageContent() {
         return setErrorMsg(errMsg);
       }
 
-      toast.success("Bukti pembayaran berhasil dikirim! Tim kami akan memverifikasi pembayaran Anda.");
-
-      // Redirect ke dashboard atau halaman sukses
+      toast.success("Bukti berhasil dikirim!");
       setTimeout(() => {
         window.location.href = "/customer/dashboard";
       }, 2000);
 
     } catch (err) {
-      console.error("❌ [PAYMENT] Error:", err);
-      setErrorMsg("Terjadi kesalahan saat mengirim bukti pembayaran. Silakan coba lagi.");
+      console.error("error:", err);
+      setErrorMsg("Terjadi kesalahan sistem.");
       setSubmitting(false);
     }
   };
 
   const handleSudahTransfer = () => {
     const message = encodeURIComponent(
-      `Halo, saya sudah melakukan transfer untuk:\n\n` +
-      `Produk: ${product || "Produk"}\n` +
-      `Harga: Rp ${Number(harga || 0).toLocaleString("id-ID")}` +
-      (isWorkshop ? `\nDown Payment: Rp ${Number(downPayment || 0).toLocaleString("id-ID")}` : "")
+      `Halo, saya konfirmasi transfer:\n` +
+      `Order ID: ${orderId}\n` +
+      `Produk: ${product || "-"}\n` +
+      `Nominal: Rp ${Number(isWorkshop ? downPayment : harga).toLocaleString("id-ID")}`
     );
     window.open(`https://wa.me/${adminWA}?text=${message}`, "_blank");
   };
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text).then(() => {
-      toast.success("Nomor rekening berhasil disalin!");
-    }).catch(() => {
-      alert("Gagal menyalin. Silakan salin manual: " + text);
-    });
+      toast.success("Disalin!");
+    }).catch(() => toast.error("Gagal menyalin"));
   };
 
+  // --- RENDER HELPERS ---
+  const displayAmount = Number((isWorkshop ? downPayment : harga) || 0);
+
   return (
-    <div className="payment-page">
-      <div className="payment-container">
-        {/* Header */}
-        <div className="payment-header">
-          <div className="payment-icon">💳</div>
-          <h1>Pembayaran Bank Transfer</h1>
-          <p className="payment-subtitle">
-            {isWorkshop
-              ? "Silakan transfer sesuai jumlah pembayaran pertama (Down Payment)"
-              : "Silakan transfer sesuai total tagihan"}
-          </p>
-        </div>
-
-        {/* Product Info Card */}
-        {product && (
-          <div className="product-card">
-            <div className="product-icon">📦</div>
-            <div className="product-details">
-              <p className="product-label">Produk</p>
-              <p className="product-name">{product}</p>
-            </div>
+    <div className="saas-payment-page">
+      <div className="saas-container">
+        {/* Simplified Header */}
+        <header className="saas-header">
+          <div className="saas-header__content">
+            <h1 className="saas-title">Penyelesaian Pembayaran</h1>
+            <p className="saas-subtitle">Lakukan transfer dan konfirmasi pesanan Anda.</p>
           </div>
-        )}
+        </header>
 
-        {/* Total Tagihan Card */}
-        <div className="total-card">
-          <p className="total-label">Total Tagihan</p>
-          <p className="total-amount">Rp {Number(harga || 0).toLocaleString("id-ID")}</p>
-        </div>
-
-        {/* Total Pembayaran Pertama (untuk Workshop) - TAMPILKAN jika ada downPayment */}
-        {(isWorkshop || downPayment) && (
-          <div className="total-card" style={{ background: "#fef3c7", border: "2px solid #f59e0b" }}>
-            <p className="total-label" style={{ color: "#92400e", fontWeight: 600 }}>
-              Total Pembayaran Pertama (Down Payment)
-            </p>
-            <p className="total-amount" style={{ color: "#92400e", fontSize: "1.5rem" }}>
-              Rp {Number(downPayment || 0).toLocaleString("id-ID")}
-            </p>
-          </div>
-        )}
-
-        {/* Rekening BCA Card */}
-        <div className="rekening-card">
-          <div className="rekening-header">
-            <img src={rekeningBCA.logo} alt={rekeningBCA.bank} className="bank-logo-large" />
-            <h3>Rekening Tujuan</h3>
-          </div>
-
-          <div className="rekening-content">
-            <div className="rekening-item">
-              <span className="rekening-label">Nomor Rekening</span>
-              <div className="rekening-number-wrapper">
-                <span className="rekening-number">{rekeningBCA.nomor}</span>
-                <button
-                  className="copy-btn"
-                  onClick={() => copyToClipboard(rekeningBCA.nomor)}
-                  title="Salin nomor rekening"
-                >
-                  📋
-                </button>
+        <main className="saas-grid">
+          {/* LEFT COLUMN: Payment Details & Instructions */}
+          <section className="saas-col-left">
+            {/* Amount Card */}
+            <div className="pro-card highlight-card">
+              <div className="amount-label-row">
+                <span className="amount-label">Total Tagihan {isWorkshop && "(Down Payment)"}</span>
+                <span className="payment-status-badge">Menunggu Transfer</span>
               </div>
-            </div>
-
-            <div className="rekening-item">
-              <span className="rekening-label">Atas Nama</span>
-              <span className="rekening-name">{rekeningBCA.atasNama}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Form Upload Bukti Pembayaran - SELALU TAMPILKAN untuk semua kasus */}
-        <div className="instruksi-card" style={{ marginTop: "24px" }}>
-          <h3 className="instruksi-title">📤 Upload Bukti Pembayaran</h3>
-          <form onSubmit={handleKonfirmasiPembayaran}>
-            {paymentStatus === "paid" ? (
-              <div style={{ textAlign: "center", padding: "2rem", background: "#ecfdf5", borderRadius: "12px", border: "1px solid #10b981" }}>
-                <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>✅</div>
-                <h3 style={{ color: "#059669", marginBottom: "0.5rem" }}>Pembayaran Lunas</h3>
-                <p style={{ color: "#065f46" }}>Terima kasih! Pembayaran Anda telah kami terima.</p>
-                <button
-                  type="button"
-                  onClick={() => window.location.href = "/customer/dashboard"}
-                  style={{
-                    marginTop: "1rem",
-                    padding: "10px 20px",
-                    background: "#059669",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "6px",
-                    cursor: "pointer",
-                    fontWeight: 600
-                  }}
-                >
-                  Kembali ke Dashboard
-                </button>
+              <div className="amount-value">
+                <span className="currency">Rp</span>
+                {displayAmount.toLocaleString("id-ID")}
               </div>
-            ) : paymentStatus === "pending_validation" ? (
-              <div style={{ textAlign: "center", padding: "2rem", background: "#fefce8", borderRadius: "12px", border: "1px solid #eab308" }}>
-                <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>⏳</div>
-                <h3 style={{ color: "#ca8a04", marginBottom: "0.5rem" }}>Menunggu Validasi Finance</h3>
-                <p style={{ color: "#854d0e" }}>
-                  Bukti pembayaran sudah diterima. Sedang divalidasi oleh Finance (maksimal 1x24 jam).
-                </p>
-                <div style={{ marginTop: "1.5rem", padding: "1rem", background: "#fff", borderRadius: "8px", border: "1px dashed #ca8a04" }}>
-                  <p style={{ fontSize: "0.9rem", color: "#666", margin: 0 }}>
-                    Anda tidak perlu mengupload bukti transfer lagi.
-                  </p>
+              {product && <div className="order-ref">Order Ref: {orderId || "Pending"} • {product}</div>}
+            </div>
+
+            {/* Bank Details */}
+            <div className="pro-card bank-details-card">
+              <div className="card-header">
+                <h3 className="card-title">Transfer ke Rekening</h3>
+                <div className="secure-badge"><Icons.Lock /> Secure</div>
+              </div>
+
+              <div className="bank-account-box">
+                <div className="bank-logo-area">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={rekeningBCA.logo} alt="BCA" className="bank-logo-img" />
                 </div>
-              </div>
-            ) : (
-              <>
-                <div style={{ marginBottom: "16px" }}>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    id="bukti-upload"
-                    style={{ display: "none" }}
-                    disabled={paymentStatus === "pending_validation" || paymentStatus === "paid"}
-                  />
-                  <label
-                    htmlFor="bukti-upload"
-                    style={{
-                      display: "block",
-                      padding: "24px",
-                      border: "2px dashed #d1d5db",
-                      borderRadius: "12px",
-                      textAlign: "center",
-                      cursor: "pointer",
-                      background: bukti?.url ? "transparent" : "#f9fafb",
-                      transition: "all 0.2s"
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!bukti?.url) e.target.style.background = "#f3f4f6";
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!bukti?.url) e.target.style.background = "#f9fafb";
-                    }}
-                  >
-                    {bukti?.url ? (
-                      <div>
-                        <img
-                          src={bukti.url}
-                          alt="Preview"
-                          style={{
-                            maxWidth: "100%",
-                            maxHeight: "300px",
-                            borderRadius: "8px",
-                            marginBottom: "12px"
-                          }}
-                        />
-                        <p style={{ color: "#059669", fontSize: "14px", margin: 0 }}>
-                          ✓ {bukti.name}
-                        </p>
-                        <p style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px" }}>
-                          Klik untuk ganti gambar
-                        </p>
-                      </div>
-                    ) : (
-                      <>
-                        <span style={{ fontSize: "48px", display: "block", marginBottom: "12px" }}>📷</span>
-                        <span style={{ display: "block", color: "#374151", fontWeight: 500, marginBottom: "4px" }}>
-                          Klik untuk upload bukti pembayaran
-                        </span>
-                        <span style={{ display: "block", color: "#6b7280", fontSize: "14px" }}>
-                          PNG, JPG maksimal 5MB
-                        </span>
-                      </>
-                    )}
-                  </label>
-                </div>
-
-                {errorMsg && (
-                  <div style={{
-                    padding: "12px",
-                    background: "#fee2e2",
-                    border: "1px solid #fca5a5",
-                    borderRadius: "8px",
-                    color: "#dc2626",
-                    fontSize: "14px",
-                    marginBottom: "16px"
-                  }}>
-                    ⚠️ {errorMsg}
+                <div className="bank-info-area">
+                  <div className="bank-account-number">
+                    {rekeningBCA.nomor}
+                    <button className="icon-btn" onClick={() => copyToClipboard(rekeningBCA.nomor)}>
+                      <Icons.Copy />
+                    </button>
                   </div>
+                  <div className="bank-account-name">{rekeningBCA.atasNama}</div>
+                </div>
+              </div>
+
+              <div className="instructions-list">
+                <div className="instruction-step">
+                  <span className="step-num">1</span>
+                  <p>Transfer tepat <strong>Rp {displayAmount.toLocaleString("id-ID")}</strong> ke rekening di atas.</p>
+                </div>
+                <div className="instruction-step">
+                  <span className="step-num">2</span>
+                  <p>Simpan bukti transfer (screenshot/foto).</p>
+                </div>
+                <div className="instruction-step">
+                  <span className="step-num">3</span>
+                  <p>Upload bukti tersebut di form konfirmasi di samping.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* RIGHT COLUMN: Upload & Actions */}
+          <section className="saas-col-right">
+            <div className="pro-card upload-card">
+              <h3 className="card-title mb-4">Konfirmasi Pembayaran</h3>
+
+              <form onSubmit={handleKonfirmasiPembayaran}>
+                {paymentStatus === "paid" ? (
+                  <div className="status-state success">
+                    <Icons.CheckCircle />
+                    <h3>Pembayaran Sukses</h3>
+                    <p>Pesanan Anda telah dikonfirmasi.</p>
+                    <button type="button" className="btn-primary full-width mt-4" onClick={() => window.location.href = "/customer/dashboard"}>
+                      Ke Dashboard
+                    </button>
+                  </div>
+                ) : paymentStatus === "pending_validation" ? (
+                  <div className="status-state pending">
+                    <Icons.Clock />
+                    <h3>Menunggu Validasi</h3>
+                    <p>Tim kami sedang memverifikasi pembayaran Anda (max 24 jam).</p>
+                    <button type="button" className="btn-secondary full-width mt-4" onClick={() => window.location.href = "/customer/dashboard"}>
+                      Cek Status di Dashboard
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="upload-field">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        id="file-upload-styled"
+                        className="hidden-input"
+                      />
+                      <label htmlFor="file-upload-styled" className={`dropzone ${bukti?.url ? 'has-file' : ''}`}>
+                        {bukti?.url ? (
+                          <div className="file-preview">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={bukti.url} alt="Proof" className="proof-img" />
+                            <div className="file-info">
+                              <span className="filename">{bukti.name}</span>
+                              <span className="change-text">Ganti Dokumen</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="empty-state">
+                            <div className="upload-icon-circle"><Icons.Upload /></div>
+                            <span className="upload-cta">Klik untuk upload bukti</span>
+                            <span className="upload-hint">JPG, PNG max 5MB</span>
+                          </div>
+                        )}
+                      </label>
+                    </div>
+
+                    {errorMsg && <div className="error-message">{errorMsg}</div>}
+
+                    <div className="action-buttons">
+                      <button
+                        type="submit"
+                        className={`btn-primary full-width ${submitting ? 'loading' : ''}`}
+                        disabled={submitting || !bukti?.file}
+                      >
+                        {submitting ? "Memproses..." : "Kirim Konfirmasi"}
+                      </button>
+
+                      <button type="button" className="btn-text full-width mt-2" onClick={handleSudahTransfer}>
+                        <span className="whatsApp-icon"><Icons.WhatsApp /></span>
+                        Bantuan via WhatsApp
+                      </button>
+                    </div>
+                  </>
                 )}
-
-                <button
-                  type="submit"
-                  disabled={submitting || !bukti?.file}
-                  style={{
-                    width: "100%",
-                    padding: "14px",
-                    background: submitting || !bukti?.file ? "#d1d5db" : "#ff6c00",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "8px",
-                    fontSize: "16px",
-                    fontWeight: 600,
-                    cursor: submitting || !bukti?.file ? "not-allowed" : "pointer",
-                    transition: "all 0.2s"
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!submitting && bukti?.file) {
-                      e.target.style.background = "#c85400";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!submitting && bukti?.file) {
-                      e.target.style.background = "#ff6c00";
-                    }
-                  }}
-                >
-                  {submitting ? "Memproses..." : "Konfirmasi Pembayaran"}
-                </button>
-              </>
-            )}
-          </form>
-        </div>
-
-        {/* Instruksi Card */}
-        <div className="instruksi-card">
-          <h3 className="instruksi-title">📋 Instruksi Pembayaran</h3>
-          <ul className="instruksi-list">
-            <li>
-              <span className="instruksi-icon">✓</span>
-              {isWorkshop
-                ? "Transfer sesuai jumlah pembayaran pertama (Down Payment) yang tertera di atas"
-                : "Transfer sesuai total tagihan agar proses verifikasi lebih cepat"}
-            </li>
-            <li>
-              <span className="instruksi-icon">✓</span>
-              Upload bukti pembayaran setelah melakukan transfer untuk mempercepat proses verifikasi
-            </li>
-            <li>
-              <span className="instruksi-icon">✓</span>
-              Sales kami akan menghubungi Anda untuk follow-up pembayaran
-            </li>
-            <li>
-              <span className="instruksi-icon">✓</span>
-              Pastikan nomor rekening dan nominal transfer sudah benar
-            </li>
-          </ul>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="action-section">
-          <button className="btn-primary" onClick={handleSudahTransfer}>
-            <span className="btn-icon">💬</span>
-            <span>Hubungi Sales via WhatsApp</span>
-          </button>
-          <button
-            className="btn-secondary"
-            onClick={() => window.history.back()}
-          >
-            Kembali
-          </button>
-        </div>
-
-        {/* Info Box */}
-        <div className="info-box">
-          <p className="info-text">
-            💡 <strong>Tips:</strong> {isWorkshop
-              ? "Setelah transfer, upload bukti pembayaran di atas untuk mempercepat proses verifikasi."
-              : "Setelah transfer, upload bukti pembayaran di atas untuk mempercepat proses verifikasi. Tim kami akan memverifikasi pembayaran Anda maksimal 1×24 jam."}
-          </p>
-        </div>
+              </form>
+            </div>
+          </section>
+        </main>
       </div>
+
+      <style jsx>{`
+        /* --- RESET & VARS --- */
+        .saas-payment-page {
+          min-height: 100vh;
+          background-color: #f8fafc;
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          color: #0f172a;
+          display: flex;
+          justify-content: center;
+          padding: 2rem 1rem;
+        }
+
+        .saas-container {
+          width: 100%;
+          max-width: 960px;
+        }
+
+        /* --- HEADER --- */
+        .saas-header {
+          margin-bottom: 2.5rem;
+          text-align: center;
+        }
+        .saas-title {
+          font-size: 1.75rem;
+          font-weight: 700;
+          color: #1e293b;
+          letter-spacing: -0.025em;
+          margin: 0 0 0.5rem 0;
+        }
+        .saas-subtitle {
+          color: #64748b;
+          font-size: 1rem;
+        }
+
+        /* --- GRID --- */
+        .saas-grid {
+          display: grid;
+          grid-template-columns: 1.2fr 1fr;
+          gap: 2rem;
+          align-items: start;
+        }
+        
+        @media (max-width: 768px) {
+          .saas-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        /* --- CARDS --- */
+        .pro-card {
+          background: #ffffff;
+          border-radius: 16px;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+          padding: 1.5rem;
+          margin-bottom: 1.5rem;
+        }
+
+        .highlight-card {
+          background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+          color: #ffffff;
+          border: none;
+        }
+
+        /* --- LEFT COL STYLE --- */
+        .amount-label-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 0.75rem;
+        }
+        .amount-label {
+          font-size: 0.875rem;
+          opacity: 0.8;
+          font-weight: 500;
+        }
+        .payment-status-badge {
+          background: rgba(255,255,255,0.2);
+          padding: 4px 8px;
+          border-radius: 99px;
+          font-size: 0.75rem;
+          font-weight: 600;
+        }
+        .amount-value {
+          font-size: 2.5rem;
+          font-weight: 700;
+          letter-spacing: -0.03em;
+          line-height: 1;
+          margin-bottom: 1rem;
+        }
+        .currency {
+          font-size: 1.5rem;
+          opacity: 0.6;
+          margin-right: 4px;
+          font-weight: 500;
+        }
+        .order-ref {
+          font-size: 0.875rem;
+          opacity: 0.6;
+          padding-top: 1rem;
+          border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* BANK CARD */
+        .card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1.5rem;
+        }
+        .card-title {
+          font-size: 1.125rem;
+          font-weight: 600;
+          color: #0f172a;
+          margin: 0;
+        }
+        .secure-badge {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 0.75rem;
+          color: #10b981;
+          font-weight: 600;
+          background: #ecfdf5;
+          padding: 4px 8px;
+          border-radius: 6px;
+        }
+        
+        .bank-account-box {
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          padding: 1rem;
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          margin-bottom: 1.5rem;
+        }
+        .bank-logo-area {
+          width: 60px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #fff;
+          border-radius: 6px;
+          padding: 4px;
+          border: 1px solid #f1f5f9;
+        }
+        .bank-logo-img {
+          max-width: 100%;
+          max-height: 100%;
+        }
+        .bank-info-area {
+          flex: 1;
+        }
+        .bank-account-number {
+          font-family: 'Courier New', monospace;
+          font-weight: 700;
+          font-size: 1.1rem;
+          color: #334155;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .bank-account-name {
+          font-size: 0.875rem;
+          color: #64748b;
+        }
+        
+        .instructions-list {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+        .instruction-step {
+          display: flex;
+          gap: 12px;
+          font-size: 0.935rem;
+          color: #475569;
+          line-height: 1.5;
+        }
+        .step-num {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 24px;
+          height: 24px;
+          background: #f1f5f9;
+          color: #64748b;
+          font-weight: 600;
+          font-size: 0.75rem;
+          border-radius: 50%;
+          flex-shrink: 0;
+        }
+
+        /* --- RIGHT COL (UPLOAD) --- */
+        .mb-4 { margin-bottom: 1rem; }
+        .mt-4 { margin-top: 1rem; }
+        .mt-2 { margin-top: 0.5rem; }
+
+        .dropzone {
+          display: block;
+          width: 100%;
+          border: 2px dashed #cbd5e1;
+          border-radius: 12px;
+          padding: 2rem;
+          text-align: center;
+          transition: all 0.2s;
+          cursor: pointer;
+          background: #f8fafc;
+        }
+        .dropzone:hover {
+          border-color: #94a3b8;
+          background: #f1f5f9;
+        }
+        .dropzone.has-file {
+          border-style: solid;
+          border-color: #e2e8f0;
+          background: #fff;
+          padding: 1rem;
+        }
+
+        .upload-icon-circle {
+          width: 48px;
+          height: 48px;
+          background: #e0f2fe;
+          color: #0284c7;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto 12px auto;
+        }
+        
+        .upload-cta {
+          display: block;
+          font-weight: 600;
+          color: #0f172a;
+          margin-bottom: 4px;
+        }
+        .upload-hint {
+          display: block;
+          font-size: 0.875rem;
+          color: #94a3b8;
+        }
+        
+        .hidden-input { display: none; }
+
+        .file-preview {
+          text-align: center;
+        }
+        .proof-img {
+          max-height: 200px;
+          border-radius: 8px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          margin-bottom: 12px;
+        }
+        .filename {
+          display: block;
+          font-size: 0.875rem;
+          font-weight: 500;
+          color: #334155;
+        }
+        .change-text {
+          font-size: 0.75rem;
+          color: #2563eb;
+          font-weight: 500;
+        }
+
+        .icon-btn {
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: #64748b;
+          padding: 4px;
+          display: inline-flex;
+          border-radius: 4px;
+        }
+        .icon-btn:hover { background: #e2e8f0; color: #0f172a; }
+
+        /* BUTTONS */
+        .btn-primary {
+          background: #2563eb;
+          color: white;
+          border: none;
+          padding: 0.875rem 1.5rem;
+          border-radius: 10px;
+          font-weight: 600;
+          font-size: 1rem;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+        }
+        .btn-primary:hover:not(:disabled) {
+          background: #1d4ed8;
+          transform: translateY(-1px);
+        }
+        .btn-primary:disabled {
+          background: #94a3b8;
+          cursor: not-allowed;
+        }
+        .btn-primary.loading {
+          opacity: 0.8;
+        }
+
+        .btn-secondary {
+          background: #white;
+          border: 1px solid #e2e8f0;
+          color: #475569;
+          padding: 0.75rem 1.5rem;
+          border-radius: 10px;
+          font-weight: 600;
+          cursor: pointer;
+          display: block;
+          text-align: center;
+          text-decoration: none;
+        }
+        .btn-secondary:hover {
+          background: #f8fafc;
+          border-color: #cbd5e1;
+        }
+        
+        .btn-text {
+          background: none;
+          border: none;
+          color: #64748b;
+          font-size: 0.875rem;
+          font-weight: 500;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+        }
+        .btn-text:hover { color: #0f172a; }
+        
+        .full-width { width: 100%; }
+
+        .error-message {
+          margin-top: 1rem;
+          padding: 0.75rem;
+          background: #fef2f2;
+          color: #ef4444;
+          border-radius: 8px;
+          font-size: 0.875rem;
+          border: 1px solid #fecaca;
+        }
+
+        /* STATUS STATES */
+        .status-state {
+          text-align: center;
+          padding: 2rem 0;
+        }
+        .status-state h3 {
+          margin: 1rem 0 0.5rem 0;
+          color: #0f172a;
+        }
+        .status-state p {
+          color: #64748b;
+          font-size: 0.935rem;
+          margin: 0;
+        }
+      `}</style>
     </div>
   );
 }
@@ -601,13 +828,8 @@ function BankTransferPageContent() {
 export default function BankTransferPage() {
   return (
     <Suspense fallback={
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh'
-      }}>
-        <p>Loading...</p>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', color: '#64748b' }}>
+        Loading Payment...
       </div>
     }>
       <BankTransferPageContent />
