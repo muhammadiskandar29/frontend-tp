@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback, memo } from "react";
 import Layout from "@/components/Layout";
 import dynamic from "next/dynamic";
-import { ShoppingCart, Clock, CheckCircle, PartyPopper, XCircle, Filter, ExternalLink, Image as ImageIcon, Mail, Phone, Plus, ChevronDown, Send } from "lucide-react";
+import { ShoppingCart, Clock, CheckCircle, PartyPopper, XCircle, X, Filter, ExternalLink, Image as ImageIcon, Mail, Phone, Plus, ChevronDown, Send } from "lucide-react";
 import { Calendar } from "primereact/calendar";
 import "primereact/resources/themes/lara-light-cyan/theme.css";
 import "primereact/resources/primereact.min.css";
@@ -69,23 +69,22 @@ const ORDERS_COLUMNS = [
 
 
 // Helper component untuk WA Bubble Chat dengan deteksi status
-// Helper component untuk WA Bubble Chat dengan deteksi status
-const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran, productId, customerWa }) => {
-  const [followupLogs, setFollowupLogs] = useState([]);
+const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran, productId, customerWa, onOpenTimeline }) => {
+  const [orderLogs, setOrderLogs] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!customerId) return;
-    fetchFollowupLogs();
+    if (!orderId) return;
+    fetchOrderLogs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customerId]);
+  }, [orderId]);
 
-  const fetchFollowupLogs = async () => {
-    if (!customerId) return;
+  const fetchOrderLogs = async () => {
+    if (!orderId) return;
     setLoading(true);
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const res = await fetch(`/api/sales/logs-follup?customer=${Number(customerId)}`, {
+      const res = await fetch(`/api/sales/order/${orderId}/logs-follup`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -93,78 +92,56 @@ const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran, prod
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
-      const data = await res.json();
-      // Simpan semua log customer, filter dilakukan di isSent agar lebih fleksibel
-      if (res.ok && Array.isArray(data.data)) {
-        setFollowupLogs(data.data);
+      const json = await res.json();
+      if (res.ok && json.success) {
+        const logs = Array.isArray(json.data) ? json.data : (json.data?.logs || []);
+        setOrderLogs(logs);
+      } else {
+        setOrderLogs([]);
       }
     } catch (err) {
-      console.error("Error fetching followup logs:", err);
+      console.error("Error fetching order logs:", err);
+      setOrderLogs([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // 1. Cek Follow Up (Event 1-4)
-  // Berbasis log follow-up, harus cocok Product ID.
+  /**
+   * Cek apakah log dengan type tertentu sukses (status "1")
+   */
+  const isLogSuccess = (checkType) => {
+    if (loading || !orderLogs || orderLogs.length === 0) return false;
 
-  const isFollowupSent = (followUpNumber) => {
-    // Validasi dasar
-    if (loading) return false;
-    if (!productId) return false;
-    if (!followupLogs || followupLogs.length === 0) return false;
+    const targets = Array.isArray(checkType)
+      ? checkType.map(t => String(t).toLowerCase())
+      : [String(checkType).toLowerCase()];
 
-    return followupLogs.some(l => {
-      // Pastikan relasi utama ada
-      if (!l.follup_rel) return false;
+    return orderLogs.some(log => {
+      const logType = String(log.type || "").toLowerCase();
+      const isSuccess = String(log.status) === "1";
 
-      // 1. Cek Produk (Wajib Sama)
-      if (Number(l.follup_rel.produk_id) !== Number(productId)) return false;
-
-      // 2. Cek Type
-      return Number(l.follup_rel.type) === Number(followUpNumber);
+      if (!isSuccess) return false;
+      if (targets.includes(logType)) return true;
+      if (log.follup_rel && targets.includes(String(log.follup_rel.type).toLowerCase())) return true;
+      return false;
     });
   };
 
-  // 2. Cek System Events (Event 5-8)
-  // Berbasis status order/pembayaran, BUKAN log follow-up.
-  const isSystemEventActive = (eventType) => {
-    const evt = Number(eventType);
-    switch (evt) {
-      case 5:
-        // Event 5: Register (Order Created)
-        // Selalu true karena order row ini sudah ada.
-        return true;
-      case 6:
-        // Event 6: Proses (Pembayaran Diterima / Paid)
-        return Number(statusPembayaran) === 2;
-      case 7:
-        // Event 7: Selesai (Order Sukses)
-        return Number(orderStatus) === 2;
-      case 8:
-        // Event 8: UPS (Upselling)
-        return Number(orderStatus) === 4;
-      default:
-        return false;
-    }
-  };
+  // Status mapping logic
+  const isWAActive = () => isLogSuccess(["order dibuat", "register", "5"]);
+  const isFollupActive = (num) => isLogSuccess(num);
+  const isPaymentActive = () => isLogSuccess(["upload pembayaran", "proses", "6"]) || Number(statusPembayaran) === 2;
+  const isSelesaiActive = () => isLogSuccess(["7", "selesai"]) || Number(orderStatus) === 2;
+  const isUpsellingActive = () => isLogSuccess(["8", "upselling"]) || Number(orderStatus) === 4;
 
-  // 3. Router Status Checker
-  const checkStatus = (eventType) => {
-    const e = Number(eventType);
-    if (e >= 1 && e <= 4) return isFollowupSent(e);
-    if (e >= 5 && e <= 8) return isSystemEventActive(e);
-    return false;
-  };
-
-  // Helper untuk membuat bubble
-  const createBubble = (content, eventType) => {
-    const isActive = checkStatus(eventType);
-    const bgColor = isActive ? "#25D366" : "#E5E7EB"; // Hijau jika aktif, Abu jika tidak
+  // Helper utk create bubble UI
+  const createBubble = (content, isActive, key, isWAIcon = false, title = "") => {
+    const bgColor = isActive ? "#25D366" : "#E5E7EB";
     const textColor = isActive ? "white" : "#6B7280";
 
     return (
-      <div key={`bubble-${eventType}`} style={{
+      <div key={key} title={title} style={{
         position: "relative",
         background: bgColor,
         borderRadius: "7px 7px 7px 0",
@@ -176,70 +153,56 @@ const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran, prod
         fontSize: "13px",
         color: textColor,
         fontWeight: "bold",
-        flexShrink: 0
+        flexShrink: 0,
+        cursor: "pointer"
       }}>
-        {content}
+        {isWAIcon ? (
+          <svg viewBox="0 0 24 24" width="16" height="16" fill={textColor}>
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+          </svg>
+        ) : (
+          content
+        )}
       </div>
     );
   };
 
   const bubbles = [];
+  const activeW = isWAActive();
+  bubbles.push(createBubble(null, activeW, "wa-logo", true, activeW ? "Order Dibuat (Sukses)" : "Order Dibuat"));
+  bubbles.push(createBubble("W", activeW, "bubble-w", false, activeW ? "Register (Sukses)" : "Register"));
 
-  // WA icon bubble (Event 5 - Register) -> Selalu Green (Active)
-  bubbles.push(
-    <div key="wa-logo" style={{
-      position: "relative",
-      background: checkStatus(5) ? "#25D366" : "#E5E7EB",
-      borderRadius: "7px 7px 7px 0",
-      width: "28px",
-      height: "24px",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "2px 4px",
-      flexShrink: 0
-    }}>
-      <svg viewBox="0 0 24 24" width="16" height="16" fill={checkStatus(5) ? "white" : "#6B7280"}>
-        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-      </svg>
-    </div>
-  );
-
-  // W bubble (event 5 = Register)
-  bubbles.push(createBubble("W", 5));
-
-  // Bubble 1-4 (Followup 1-4)
   for (let i = 1; i <= 4; i++) {
-    bubbles.push(createBubble(i.toString(), i));
+    const active = isFollupActive(i);
+    bubbles.push(createBubble(i.toString(), active, `bubble-${i}`, false, `Follow Up ${i} ${active ? '(Sukses)' : ''}`));
   }
 
-  // P bubble (event 6 = Proses/Pembayaran Diterima) - hanya tampil jika aktif (isSystemEventActive(6))
-  if (isSystemEventActive(6)) {
-    bubbles.push(createBubble("P", 6));
-  }
+  const activeP = isPaymentActive();
+  bubbles.push(createBubble("P", activeP, "bubble-p", false, activeP ? "Pembayaran Terdeteksi / Sukses" : "Pembayaran"));
 
-  // 7 bubble (Selesai) - hanya tampil jika aktif (isSystemEventActive(7))
-  if (isSystemEventActive(7)) {
-    bubbles.push(createBubble("7", 7));
-  }
+  const active7 = isSelesaiActive();
+  bubbles.push(createBubble("7", active7, "bubble-7", false, active7 ? "Order Selesai / Sukses" : "Selesai"));
 
-  // 8 bubble (Upselling) - hanya tampil jika aktif (isSystemEventActive(8))
-  if (isSystemEventActive(8)) {
-    bubbles.push(createBubble("8", 8));
-  }
+  const active8 = isUpsellingActive();
+  bubbles.push(createBubble("8", active8, "bubble-8", false, active8 ? "Upselling Sukses" : "Upselling"));
 
   return (
-    <div style={{
-      display: "flex",
-      alignItems: "center",
-      gap: "4px",
-      padding: "4px 8px",
-      background: "#FEF3C7",
-      borderRadius: "8px",
-      flexWrap: "nowrap",
-      width: "100%",
-      overflow: "visible"
-    }}>
+    <div
+      onClick={onOpenTimeline}
+      className="wa-bubble-container"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "4px",
+        padding: "4px 8px",
+        background: "#FEF3C7",
+        borderRadius: "8px",
+        flexWrap: "nowrap",
+        width: "fit-content",
+        overflow: "visible",
+        cursor: "pointer",
+        transition: "transform 0.2s ease"
+      }}>
       {bubbles}
     </div>
   );
@@ -431,6 +394,12 @@ export default function DaftarPesanan() {
   // Follow Up Modal State
   const [showFollowUpModal, setShowFollowUpModal] = useState(false);
   const [selectedOrderForFollowUp, setSelectedOrderForFollowUp] = useState(null);
+
+  // Timeline Modal State
+  const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false);
+  const [selectedTimelineLog, setSelectedTimelineLog] = useState(null);
+  const [timelineLogs, setTimelineLogs] = useState([]);
+  const [loadingTimeline, setLoadingTimeline] = useState(false);
 
   const fetchingRef = useRef(false); // Prevent multiple simultaneous fetches
 
@@ -922,7 +891,24 @@ export default function DaftarPesanan() {
       const hours = String(date.getHours()).padStart(2, "0");
       const minutes = String(date.getMinutes()).padStart(2, "0");
 
-      return `${day} ${month} ${year} ${hours}:${minutes}`;
+      return `${day} ${month} ${year}, ${hours}.${minutes}`;
+    } catch {
+      return "-";
+    }
+  }, []);
+
+  // Format tanggal & jam lengkap untuk timeline
+  const formatDateTime = useCallback((dateString) => {
+    if (!dateString) return "-";
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "-";
+      const d = String(date.getDate()).padStart(2, '0');
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const y = date.getFullYear();
+      const h = String(date.getHours()).padStart(2, '0');
+      const min = String(date.getMinutes()).padStart(2, '0');
+      return `${d}-${m}-${y} ${h}:${min}`;
     } catch {
       return "-";
     }
@@ -1014,6 +1000,45 @@ export default function DaftarPesanan() {
       setSelectedOrderIdForHistory(order.id);
       setShowPaymentHistory(true);
     }
+  };
+
+  const handleOpenTimeline = async (order) => {
+    setSelectedTimelineLog({
+      orderId: order.id,
+      customerName: order.customer_rel?.nama || "-",
+      customerPhone: order.customer_rel?.wa || "-"
+    });
+    setIsTimelineModalOpen(true);
+    setLoadingTimeline(true);
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const res = await fetch(`/api/sales/order/${order.id}/logs-follup`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      const json = await res.json();
+      if (res.ok && json.success) {
+        const logs = Array.isArray(json.data) ? json.data : (json.data?.logs || []);
+        setTimelineLogs(logs);
+      } else {
+        setTimelineLogs([]);
+      }
+    } catch (err) {
+      console.error("Error fetching timeline logs:", err);
+      setTimelineLogs([]);
+    } finally {
+      setLoadingTimeline(false);
+    }
+  };
+
+  const closeTimelineModal = () => {
+    setIsTimelineModalOpen(false);
+    setSelectedTimelineLog(null);
+    setTimelineLogs([]);
   };
 
   const handleSuccessEdit = async (updatedFromForm) => {
@@ -1542,6 +1567,7 @@ export default function DaftarPesanan() {
                                               statusPembayaran={innerStatusPembayaranValue}
                                               productId={innerOrder.produk_rel?.id || innerOrder.produk_id}
                                               customerWa={innerOrder.customer_rel?.wa}
+                                              onOpenTimeline={() => handleOpenTimeline(innerOrder)}
                                             />
                                           </td>
 
@@ -1660,7 +1686,8 @@ export default function DaftarPesanan() {
                   Page {paginationInfo?.current_page || page} of {paginationInfo?.last_page || "?"}
                   {paginationInfo?.total && ` (${paginationInfo.total} total)`}
                 </span>
-              )}
+              )
+              }
             </div>
 
             {/* Next Button */}
@@ -2631,6 +2658,250 @@ export default function DaftarPesanan() {
         )
       }
 
-    </Layout >
+      {/* Timeline Modal */}
+      {isTimelineModalOpen && selectedTimelineLog && (
+        <>
+          <div className="modal-overlay" onClick={closeTimelineModal}>
+            <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <div>
+                  <h3 className="modal-title">Timeline Customer</h3>
+                  <p className="modal-subtitle">
+                    {selectedTimelineLog.customerName} • {selectedTimelineLog.customerPhone}
+                  </p>
+                </div>
+                <button onClick={closeTimelineModal} className="close-btn"><X size={20} /></button>
+              </div>
+
+              <div className="modal-body">
+                {loadingTimeline ? (
+                  <div className="loading-state">
+                    <i className="pi pi-spin pi-spinner" style={{ fontSize: '2rem', color: '#ff6c00' }}></i>
+                    <p>Memuat timeline...</p>
+                  </div>
+                ) : timelineLogs.length === 0 ? (
+                  <div className="empty-state">
+                    <p>Tidak ada data timeline untuk ID Order ini.</p>
+                    {!selectedTimelineLog.orderId && <p style={{ fontSize: '0.8rem', color: '#ef4444' }}>Warning: Log ini tidak memiliki Order ID.</p>}
+                  </div>
+                ) : (
+                  <div className="timeline-wrapper">
+                    {timelineLogs.map((item, idx) => {
+                      const isLatest = idx === timelineLogs.length - 1;
+
+                      // Keterangan Cleanup
+                      let noteContent = item.keterangan || "Tidak ada keterangan";
+                      try {
+                        const messageMatch = noteContent.match(/Pesan:\s*(.*?)\s*(?:Response:|(?={"code":))/s);
+                        if (messageMatch && messageMatch[1]) {
+                          noteContent = `Pesan: ${messageMatch[1].trim()}`;
+                        }
+                      } catch (e) {
+                      }
+
+                      return (
+                        <div className="timeline-item" key={idx}>
+                          <div className="timeline-connector">
+                            <div className="timeline-dot"></div>
+                            {!isLatest && <div className="timeline-line"></div>}
+                          </div>
+                          <div className="timeline-content">
+                            <div className="timeline-header">
+                              <span className="timeline-type">
+                                {item.follup_rel?.nama || item.type_label || `Event ${item.type}`}
+                              </span>
+                              <time className="timeline-time">
+                                {formatDateTime(item.created_at || item.create_at)}
+                              </time>
+                            </div>
+                            <div className="timeline-card">
+                              <p className="timeline-note">
+                                {noteContent}
+                              </p>
+                              {item.produk_rel?.nama && (
+                                <div className="timeline-product">
+                                  <ExternalLink size={12} style={{ marginRight: 4 }} />
+                                  {item.produk_rel.nama}
+                                </div>
+                              )}
+                              <div className="timeline-status-row">
+                                {item.status !== null && (
+                                  <span className={`status-badge status-${item.status == 1 ? 'sent' : item.status == 0 ? 'failed' : 'pending'}`}>
+                                    {item.status == 1 ? 'Terkirim' : item.status == 0 ? 'Gagal' : 'Pending'}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <style jsx>{`
+                .modal-overlay {
+                    position: fixed;
+                    top: 0; left: 0; right: 0; bottom: 0;
+                    background: rgba(0,0,0,0.5);
+                    z-index: 10000;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    backdrop-filter: blur(4px);
+                }
+                .modal-container {
+                    background: white;
+                    width: 90%;
+                    max-width: 600px;
+                    max-height: 90vh;
+                    border-radius: 16px;
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+                    display: flex;
+                    flex-direction: column;
+                    overflow: hidden;
+                    animation: slideUp 0.3s ease-out;
+                }
+                @keyframes slideUp {
+                    from { transform: translateY(20px); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
+                }
+                .modal-header {
+                    padding: 1.5rem;
+                    border-bottom: 1px solid #e2e8f0;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    background: #f8fafc;
+                }
+                .modal-title {
+                    margin: 0;
+                    font-size: 1.25rem;
+                    font-weight: 700;
+                    color: #0f172a;
+                }
+                .modal-subtitle {
+                    margin: 4px 0 0 0;
+                    font-size: 0.9rem;
+                    color: #64748b;
+                }
+                .close-btn {
+                    background: none;
+                    border: none;
+                    color: #94a3b8;
+                    cursor: pointer;
+                    padding: 4px;
+                    border-radius: 4px;
+                }
+                .close-btn:hover { background: #e2e8f0; color: #ef4444; }
+                
+                .modal-body {
+                    padding: 1.5rem;
+                    overflow-y: auto;
+                    flex: 1;
+                }
+                
+                .loading-state, .empty-state {
+                    text-align: center;
+                    padding: 2rem;
+                    color: #64748b;
+                }
+                
+                /* TIMELINE STYLES */
+                .timeline-wrapper {
+                    padding-left: 0.5rem;
+                }
+                .timeline-item {
+                    display: flex;
+                    gap: 1rem;
+                    position: relative;
+                    padding-bottom: 1.5rem;
+                }
+                .timeline-connector {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    width: 24px;
+                    flex-shrink: 0;
+                }
+                .timeline-dot {
+                    width: 12px;
+                    height: 12px;
+                    background: #ff6c00;
+                    border-radius: 50%;
+                    box-shadow: 0 0 0 4px #fff8f1;
+                    z-index: 2;
+                }
+                .timeline-line {
+                    flex: 1;
+                    width: 2px;
+                    background: #e2e8f0;
+                    margin-top: 4px;
+                    min-height: 40px;
+                }
+                .timeline-content {
+                    flex: 1;
+                }
+                .timeline-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 8px;
+                }
+                .timeline-type {
+                    font-weight: 600;
+                    color: #1e293b;
+                    font-size: 0.95rem;
+                }
+                .timeline-time {
+                    font-size: 0.8rem;
+                    color: #94a3b8;
+                }
+                .timeline-card {
+                    background: #f8fafc;
+                    border: 1px solid #cbd5e1;
+                    border-radius: 8px;
+                    padding: 12px;
+                }
+                .timeline-note {
+                    margin: 0 0 8px 0;
+                    color: #334155;
+                    font-size: 0.9rem;
+                    line-height: 1.5;
+                    overflow-wrap: break-word;
+                    word-break: break-word;
+                }
+                .timeline-product {
+                    display: inline-flex;
+                    align-items: center;
+                    font-size: 0.8rem;
+                    color: #2563eb;
+                    background: #eff6ff;
+                    padding: 2px 8px;
+                    border-radius: 4px;
+                    margin-bottom: 8px;
+                }
+                .status-badge {
+                    display: inline-block;
+                    font-size: 0.75rem;
+                    padding: 2px 8px;
+                    border-radius: 99px;
+                    font-weight: 600;
+                }
+                .status-sent { background: #d1fae5; color: #059669; }
+                .status-failed { background: #fee2e2; color: #dc2626; }
+                .status-pending { background: #fef3c7; color: #d97706; }
+
+                .wa-bubble-container:hover {
+                    transform: scale(1.02);
+                }
+            `}</style>
+        </>
+      )}
+
+    </Layout>
   );
 }
