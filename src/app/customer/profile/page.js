@@ -490,6 +490,11 @@ export default function CustomerProfilePage() {
             width: fit-content;
         }
 
+        .input-icon-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
         .prefix-icon {
             position: absolute;
             left: 12px;
@@ -498,6 +503,8 @@ export default function CustomerProfilePage() {
             color: #64748b;
             font-weight: 600;
             font-size: 14px;
+            pointer-events: none;
+            z-index: 10;
         }
         
         .pl-8 { padding-left: 32px !important; }

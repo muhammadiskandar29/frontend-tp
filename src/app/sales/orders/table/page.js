@@ -243,14 +243,14 @@ export default function TableExperiment() {
                                         <td>{produkNama}</td>
 
                                         <td>
-                                            <span className={`status-badge payment-${statusPembayaranInfo.class}`}>
-                                                {statusPembayaranInfo.label}
+                                            <span className={`status-badge payment-${statusPembayaranInfo?.class || 'default'}`}>
+                                                {statusPembayaranInfo?.label || order.status_pembayaran}
                                             </span>
                                         </td>
 
                                         <td>
-                                            <span className={`status-badge status-${statusOrderInfo.class}`}>
-                                                {statusOrderInfo.label}
+                                            <span className={`status-badge status-${statusOrderInfo?.class || 'default'}`}>
+                                                {statusOrderInfo?.label || order.status_order}
                                             </span>
                                         </td>
 

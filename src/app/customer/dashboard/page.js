@@ -75,16 +75,32 @@ export default function DashboardPage() {
 
     // Combine info for completeness check
     const combinedInfo = { ...session?.user, ...customerInfo };
+    console.log("[DASHBOARD] Checking Data Completeness:", combinedInfo);
 
     // Cek apakah data customer sudah lengkap
-    if (customerInfo && !isCustomerDataComplete(combinedInfo)) {
-      console.log("[DASHBOARD] Customer data incomplete, showing modal");
-      setShowUpdateModal(true);
-      setUpdateModalReason("data");
-    } else if (customerInfo && isCustomerDataComplete(combinedInfo)) {
-      // Data sudah lengkap, pastikan modal tertutup
+    const isComplete = isCustomerDataComplete(combinedInfo);
+
+    // Jika data sudah lengkap (terutama alamat), hapus flag force show
+    if (isComplete) {
+      if (localStorage.getItem("customer_show_update_modal")) {
+        localStorage.removeItem("customer_show_update_modal");
+      }
       if (showUpdateModal) {
         setShowUpdateModal(false);
+      }
+    } else {
+      // Jika belum lengkap, cek apakah perlu dipaksa muncul atau karena flag
+      // Prioritas: Jika alamat kosong -> Munculkan
+      console.log("[DASHBOARD] Customer data incomplete (missing info), showing modal");
+      // Hanya munculkan jika belum muncul, untuk menghindari loop jika user menutup
+      // Tapi logic user bilang "selalu muncul".
+      // Kita gunakan logic: jika flag ada ATAU data tidak lengkap -> Show
+      // TAPI user bilang "jika alamat sudah terisi, jangan ditampilkan lagi".
+      // Jadi kita harus strict: Completeness check is king.
+
+      if (!showUpdateModal) {
+        setShowUpdateModal(true);
+        setUpdateModalReason("data");
       }
     }
   }, [customerInfo, dashboardLoading]);

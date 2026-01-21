@@ -12,8 +12,8 @@ const BASE_URL = "/api";
 const STATUS_PEMBAYARAN_MAP = {
   0: { label: "Unpaid", class: "unpaid" },
   null: { label: "Unpaid", class: "unpaid" },
-  1: { label: "Waiting Approval", class: "pending" }, // Menunggu approve finance
-  2: { label: "Paid", class: "paid" },             // Finance approved
+  1: { label: "Waiting Approval", class: "pending" },
+  2: { label: "Paid", class: "paid" },
   3: { label: "Rejected", class: "rejected" },
   4: { label: "Partial Payment", class: "partial" },
 };

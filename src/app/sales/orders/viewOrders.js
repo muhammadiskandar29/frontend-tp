@@ -205,8 +205,8 @@ export default function ViewOrders({ order, onClose }) {
                 <span className="detail-label">Status Pembayaran</span>
                 <span className="detail-colon">:</span>
                 <span className="detail-value">
-                  <span className={`orders-status-badge orders-status-badge--${statusPembayaranInfo.class}`}>
-                    {statusPembayaranInfo.label}
+                  <span className={`orders-status-badge orders-status-badge--${statusPembayaranInfo?.class || 'default'}`}>
+                    {statusPembayaranInfo?.label || order.status_pembayaran}
                   </span>
                 </span>
               </div>
