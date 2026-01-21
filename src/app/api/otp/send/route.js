@@ -27,12 +27,18 @@ export async function POST(request) {
       wa: String(body.wa),
     };
 
+    // Ambil headers auth dari request
+    const timestamp = request.headers.get("X-API-Timestamp");
+    const hash = request.headers.get("X-API-Hash");
+
     // Forward ke backend
     const response = await fetch(`${BACKEND_URL}/api/otp/send`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
+        "X-API-Timestamp": timestamp || "",
+        "X-API-Hash": hash || "",
       },
       body: JSON.stringify(payload),
     });

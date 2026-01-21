@@ -61,7 +61,7 @@ export default function FollowupReportPage() {
           return {
             id: item.id,
             // Try different possible paths for order_id
-            orderId: item.order_id || item.follup_rel?.order_id || item.id_order,
+            orderId: item.order_id || item.order || item.order_rel?.id || item.follup_rel?.order_id || item.id_order,
             customerName: item.customer_rel?.nama || "-",
             customerPhone: item.customer_rel?.wa || "-",
             customerEmail: item.customer_rel?.email || "-",
@@ -108,9 +108,18 @@ export default function FollowupReportPage() {
         });
         const json = await res.json();
 
-        if (json.success && Array.isArray(json.data)) {
+        let fetchedLogs = [];
+        if (json.success) {
+          if (Array.isArray(json.data)) {
+            fetchedLogs = json.data;
+          } else if (json.data && Array.isArray(json.data.logs)) {
+            fetchedLogs = json.data.logs;
+          }
+        }
+
+        if (fetchedLogs.length > 0) {
           // Sort by Date ASC (Earlier first) for timeline
-          const sorted = json.data.sort((a, b) => new Date(a.created_at || a.create_at) - new Date(b.created_at || b.create_at));
+          const sorted = fetchedLogs.sort((a, b) => new Date(a.created_at || a.create_at) - new Date(b.created_at || b.create_at));
           setTimelineLogs(sorted);
         } else {
           console.warn("Failed to fetch timeline or empty data", json);
