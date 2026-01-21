@@ -8,7 +8,7 @@ import CustomerLayout from "@/components/customer/CustomerLayout";
 
 // Helper function untuk update data
 async function updateCustomerService(payload) {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("customer_token");
 
     if (!token) {
         throw new Error("Token tidak ditemukan. Silakan login kembali.");
@@ -61,7 +61,7 @@ export default function CustomerProfilePage() {
     useEffect(() => {
         async function fetchDetail() {
             try {
-                const token = localStorage.getItem("token");
+                const token = localStorage.getItem("customer_token");
                 if (!token) {
                     router.push("/customer/auth/login");
                     return;
