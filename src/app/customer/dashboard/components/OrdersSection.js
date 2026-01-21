@@ -6,7 +6,9 @@ export default function OrdersSection({
   orders,
   isLoading,
   currentTime,
-  onOrderAction
+  onOrderAction,
+  onPaymentAction,
+  isPaymentLoading
 }) {
   const router = useRouter();
 
@@ -183,13 +185,36 @@ export default function OrdersSection({
                 ) : (
                   <button
                     className="order-action"
-                    onClick={() => handleOrderClick(order)}
-                    style={{ width: "100%", justifyContent: "center" }}
+                    onClick={() => onPaymentAction && onPaymentAction(order)}
+                    disabled={isPaymentLoading}
+                    style={{
+                      width: "100%",
+                      justifyContent: "center",
+                      background: isPaymentLoading ? '#94a3b8' : '#dc2626',
+                      cursor: isPaymentLoading ? 'not-allowed' : 'pointer'
+                    }}
                   >
-                    <span>Lanjutkan Pembayaran</span>
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                      <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+                    {isPaymentLoading ? (
+                      <>
+                        <div className="loading-spinner--mini" style={{
+                          width: '16px',
+                          height: '16px',
+                          border: '2px solid rgba(255,255,255,0.3)',
+                          borderTopColor: '#fff',
+                          borderRadius: '50%',
+                          animation: 'spin 0.8s linear infinite',
+                          marginRight: '8px'
+                        }}></div>
+                        <span>Memproses...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Lanjutkan Pembayaran</span>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                          <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </>
+                    )}
                   </button>
                 )}
               </div>

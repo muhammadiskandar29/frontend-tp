@@ -112,6 +112,8 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, []);
 
+  const [paymentLoading, setPaymentLoading] = useState(false);
+
   const handleUpdateSuccess = (data) => {
     console.log("[DASHBOARD] Update success, data received:", data);
 
@@ -142,6 +144,117 @@ export default function DashboardPage() {
     }
 
     refetchDashboard();
+  };
+
+  const handleContinuePayment = async (order) => {
+    const { paymentMethod, title: productName, total_harga: totalHarga, id: orderId } = order;
+
+    // Jika metode pembayaran adalah E-Payment (ewallet, cc, va), panggil Midtrans
+    if (paymentMethod === "ewallet" || paymentMethod === "cc" || paymentMethod === "va") {
+      // Ambil data customer dari session sebagai fallback
+      const session = getCustomerSession();
+      const finalNama = customerInfo?.nama || customerInfo?.nama_lengkap || session?.user?.nama || "";
+      const finalEmail = customerInfo?.email || session?.user?.email || "";
+
+      // Validasi data yang diperlukan
+      if (!finalNama || !finalEmail) {
+        toast.error("Data customer tidak lengkap. Silakan lengkapi profil Anda terlebih dahulu.");
+        setShowUpdateModal(true);
+        setUpdateModalReason("data");
+        return;
+      }
+
+      // Parse total harga
+      let amount = 0;
+      if (typeof totalHarga === "string") {
+        const numericValue = totalHarga.replace(/\D/g, "");
+        amount = parseInt(numericValue, 10) || 0;
+      } else {
+        amount = parseInt(totalHarga, 10) || 0;
+      }
+
+      if (amount <= 0) {
+        toast.error("Jumlah pembayaran tidak valid.");
+        return;
+      }
+
+      try {
+        setPaymentLoading(true);
+
+        // Tentukan endpoint berdasarkan metode pembayaran
+        let endpoint = "";
+        if (paymentMethod === "ewallet") {
+          endpoint = "/api/midtrans/create-snap-ewallet";
+        } else if (paymentMethod === "cc") {
+          endpoint = "/api/midtrans/create-snap-cc";
+        } else if (paymentMethod === "va") {
+          endpoint = "/api/midtrans/create-snap-va";
+        }
+
+        console.log("[DASHBOARD] Calling Midtrans API:", {
+          endpoint,
+          name: finalNama,
+          email: finalEmail,
+          amount,
+          product_name: productName,
+          order_id: orderId,
+        });
+
+        // Panggil API Midtrans
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: finalNama,
+            email: finalEmail,
+            amount: amount,
+            product_name: productName,
+            order_id: orderId,
+          }),
+        });
+
+        const data = await response.json();
+        console.log("[DASHBOARD] Midtrans response:", data);
+
+        if (data.success === true && data.redirect_url) {
+          if (orderId) {
+            sessionStorage.setItem("midtrans_order_id", String(orderId));
+          }
+          if (data.snap_token) {
+            sessionStorage.setItem("midtrans_snap_token", data.snap_token);
+          }
+
+          toast.success("Halaman pembayaran Midtrans dibuka...");
+          window.open(data.redirect_url, "_blank");
+        } else {
+          toast.error(data.message || "Gagal membuat transaksi pembayaran");
+          // Fallback
+          const query = new URLSearchParams({
+            product: productName || "",
+            harga: totalHarga || "0",
+            via: "manual",
+            sumber: "dashboard",
+          });
+          router.push(`/payment?${query.toString()}`);
+        }
+      } catch (error) {
+        console.error("[DASHBOARD] Error calling Midtrans:", error);
+        toast.error("Terjadi kesalahan saat memproses pembayaran.");
+      } finally {
+        setPaymentLoading(false);
+      }
+    } else {
+      // Manual transfer
+      const query = new URLSearchParams({
+        product: productName || "",
+        harga: totalHarga || "0",
+        via: "manual",
+        sumber: "dashboard",
+      });
+      router.push(`/payment?${query.toString()}`);
+    }
   };
 
   return (
@@ -205,6 +318,8 @@ export default function DashboardPage() {
           orders={activeOrders}
           isLoading={dashboardLoading}
           currentTime={currentTime}
+          onPaymentAction={handleContinuePayment}
+          isPaymentLoading={paymentLoading}
         />
 
         {/* Products Section */}
@@ -215,6 +330,11 @@ export default function DashboardPage() {
           />
         )}
       </div>
+      <style jsx global>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </CustomerLayout>
   );
 }

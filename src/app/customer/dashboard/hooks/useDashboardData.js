@@ -91,6 +91,7 @@ export function useDashboardData() {
         title: order.produk_nama || "Produk Tanpa Nama",
         slug: order.ebook_url || order.produk_kode || order.kategori_nama || "-",
         total: order.total_harga_formatted || formatCurrency(order.total_harga),
+        total_harga: order.total_harga, // Simpan raw number untuk perhitungan
         kategoriNama: kategoriNama,
         orderDate: order.tanggal_order || "-",
         schedule,
@@ -98,6 +99,7 @@ export function useDashboardData() {
         startDate,
         isPaid,
         statusPembayaran,
+        paymentMethod: order.metode_bayar || "manual",
       };
     });
 
