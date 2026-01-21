@@ -37,7 +37,7 @@ export default function BroadcastPage() {
         return;
       }
 
-      const res = await fetch("/api/sales/broadcast", {
+      const res = await fetch("/api/sales/broadcast/my-broadcast", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
