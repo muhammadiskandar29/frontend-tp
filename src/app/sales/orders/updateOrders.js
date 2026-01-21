@@ -745,10 +745,6 @@ export default function UpdateOrders({ order, onClose, onSave }) {
 
             {/* Footer */}
             <div className="modal-footer" style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-              <button type="button" onClick={onClose} className="btn-cancel" disabled={submitting}>
-                Batal
-              </button>
-
               <div style={{ marginLeft: "auto", display: "flex", gap: "10px" }}>
                 <button
                   type="button"

@@ -514,33 +514,23 @@ export default function DaftarPesanan() {
         }
       }
 
-      if (!currentUserId) {
-        console.warn("⚠️ [STATISTICS] No currentUserId found in localStorage");
-        return;
-      }
-
       // Gunakan helper getOrderStatisticPerSales
       const data = await getOrderStatisticPerSales();
       console.log("📊 [STATISTICS] Raw data from API:", data);
 
-      if (data && Array.isArray(data)) {
-        // Filter stats untuk sales yang sedang login
-        const myStats = data.find(s => Number(s.sales_id) === Number(currentUserId));
-        if (myStats) {
-          console.log("✅ [STATISTICS] Match found for ID", currentUserId, ":", myStats);
-          setStatistics(myStats);
-        } else {
-          console.warn("⚠️ [STATISTICS] No stats match for sales ID:", currentUserId, " (Available IDs:", data.map(s => s.sales_id).join(", ") + ")");
-          setStatistics({
-            total_order: 0,
-            total_order_unpaid: 0,
-            total_order_menunggu: 0,
-            total_order_sudah_diapprove: 0,
-            total_order_ditolak: 0
-          });
-        }
+      if (data && Array.isArray(data) && data.length > 0) {
+        // PRIORITAS: Ambil element pertama sesuai format [data][0][nama_field_nya]
+        // Jika ada sales_id, pastikan cocok, tapi jika tidak ada, ambil saja yang pertama (untuk Staff)
+        const matchedStats = data.find(s => currentUserId && Number(s.sales_id) === Number(currentUserId));
+        const myStats = matchedStats || data[0];
+
+        console.log("✅ [STATISTICS] Final stats used:", myStats);
+        setStatistics(myStats);
+      } else if (data && typeof data === 'object' && !Array.isArray(data)) {
+        // Handle jika data ternyata bukan array tapi object langsung
+        setStatistics(data);
       } else {
-        console.error("❌ [STATISTICS] Data is not an array:", data);
+        console.warn("⚠️ [STATISTICS] No stats found or invalid format:", data);
         setStatistics({
           total_order: 0,
           total_order_unpaid: 0,
