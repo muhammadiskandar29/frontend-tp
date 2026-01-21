@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Info, ShieldAlert, ShieldCheck } from "lucide-react";
 import { toast } from "react-hot-toast";
@@ -10,9 +10,16 @@ import CryptoJS from "crypto-js";
 export default function VerificationCard({ isVerified }) {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
+    const isSubmitting = useRef(false);
 
-    const handleVerify = async () => {
+    const handleVerify = async (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+
+        if (loading || isSubmitting.current) return;
+
+        isSubmitting.current = true;
         setLoading(true);
+
         try {
             const session = getCustomerSession();
             if (!session || !session.user) {
@@ -55,6 +62,7 @@ export default function VerificationCard({ isVerified }) {
             console.error("OTP Error:", error);
             toast.error("Terjadi kesalahan saat mengirim OTP.");
         } finally {
+            isSubmitting.current = false;
             setLoading(false);
         }
     };
@@ -72,6 +80,7 @@ export default function VerificationCard({ isVerified }) {
                     <h3 className="status-value">{isVerified ? "TERVERIFIKASI" : "BELUM VERIFIKASI"}</h3>
                     {!isVerified && (
                         <button
+                            type="button"
                             onClick={handleVerify}
                             disabled={loading}
                             className="verify-now-btn"

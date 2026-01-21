@@ -32,10 +32,8 @@ export default function QuickActions({ unpaidCount = 0, onUpdateProfile }) {
           <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       ),
-      href: '#',
-      onClick: () => {
-        if (onUpdateProfile) onUpdateProfile();
-      },
+      href: '/customer/profile',
+      onClick: null,
     },
     {
       id: 'help',

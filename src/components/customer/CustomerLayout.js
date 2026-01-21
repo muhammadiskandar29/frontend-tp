@@ -9,6 +9,7 @@ import "@/styles/customer/cstdashboard.css";
 const navLinks = [
   { label: "Home", href: "/customer/dashboard" },
   { label: "Pembayaran", href: "/customer/dashboard/payment" },
+  { label: "Profile", href: "/customer/profile" },
 ];
 
 export default function CustomerLayout({ children }) {
@@ -21,13 +22,13 @@ export default function CustomerLayout({ children }) {
   useEffect(() => {
     console.log("🔵 [CUSTOMER_LAYOUT] Checking authentication...");
     const session = getCustomerSession();
-    
+
     console.log("🔵 [CUSTOMER_LAYOUT] Session:", {
       isAuthenticated: session.isAuthenticated,
       hasToken: !!session.token,
       user: session.user
     });
-    
+
     // Set customer info untuk ditampilkan di navbar
     if (session.user) {
       const customerName = session.user.nama_panggilan || session.user.nama || "User";
@@ -41,7 +42,7 @@ export default function CustomerLayout({ children }) {
           .slice(0, 2)
       });
     }
-    
+
     // Tampilkan debug log dari localStorage jika ada
     const debugLog = localStorage.getItem("customer_login_debug");
     if (debugLog) {
@@ -52,11 +53,11 @@ export default function CustomerLayout({ children }) {
         console.error("Failed to parse debug log:", e);
       }
     }
-    
+
     // Cek apakah ada user data (untuk kasus needsVerification - tidak ada token tapi ada user)
     const hasUserData = !!session.user;
     const hasToken = !!session.token;
-    
+
     // Allow access jika:
     // 1. Ada token (normal login)
     // 2. Ada user data meskipun tidak ada token (untuk kasus needsVerification)
@@ -64,7 +65,7 @@ export default function CustomerLayout({ children }) {
       console.error("❌ [CUSTOMER_LAYOUT] No token and no user data, redirecting to login...");
       console.error("❌ [CUSTOMER_LAYOUT] Token from localStorage:", localStorage.getItem("customer_token"));
       console.error("❌ [CUSTOMER_LAYOUT] User from localStorage:", localStorage.getItem("customer_user"));
-      
+
       // Simpan info ke localStorage untuk debugging
       const debugInfo = {
         timestamp: new Date().toISOString(),
@@ -79,11 +80,11 @@ export default function CustomerLayout({ children }) {
         localStorageUser: localStorage.getItem("customer_user")
       };
       localStorage.setItem("customer_layout_debug", JSON.stringify(debugInfo));
-      
+
       // Alert untuk debugging
       console.warn("⚠️ [CUSTOMER_LAYOUT DEBUG] Check localStorage.getItem('customer_layout_debug') for details");
       console.warn("⚠️ [CUSTOMER_LAYOUT DEBUG] Full debug info:", debugInfo);
-      
+
       // Delay sedikit sebelum redirect agar console log bisa dilihat
       setTimeout(() => {
         router.replace("/customer");
@@ -108,11 +109,11 @@ export default function CustomerLayout({ children }) {
         setDropdownOpen(false);
       }
     };
-    
+
     if (dropdownOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
-    
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
@@ -137,7 +138,7 @@ export default function CustomerLayout({ children }) {
 
         <nav className="customer-navbar__nav">
           {navLinks.map((link) => {
-            const isActive = pathname === link.href || 
+            const isActive = pathname === link.href ||
               (link.href === "/customer/dashboard/payment" && pathname?.includes("/payment"));
             return (
               <Link
@@ -152,7 +153,7 @@ export default function CustomerLayout({ children }) {
         </nav>
 
         <div className="customer-navbar__right">
-          <div 
+          <div
             className="customer-navbar__profile"
             onClick={() => setDropdownOpen(!dropdownOpen)}
             onKeyDown={(e) => {
@@ -166,25 +167,25 @@ export default function CustomerLayout({ children }) {
           >
             <div className="customer-navbar__avatar">{customerInfo?.initials || "U"}</div>
             <span className="customer-navbar__name">{customerInfo?.name || "User"}</span>
-            <svg 
+            <svg
               className={`customer-navbar__dropdown-icon ${dropdownOpen ? 'open' : ''}`}
-              width="12" 
-              height="12" 
-              viewBox="0 0 12 12" 
-              fill="none" 
+              width="12"
+              height="12"
+              viewBox="0 0 12 12"
+              fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
-              <path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            
+
             {dropdownOpen && (
               <div className="customer-navbar__dropdown">
-                <button 
+                <button
                   className="customer-navbar__dropdown-item"
                   onClick={handleLogout}
                 >
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '8px', display: 'inline-block', verticalAlign: 'middle' }}>
-                    <path d="M6 14H3.333C2.979 14 2.639 13.86 2.389 13.61C2.139 13.36 2 13.02 2 12.667V3.333C2 2.979 2.139 2.639 2.389 2.389C2.639 2.139 2.979 2 3.333 2H6M11 11.333L14.333 8M14.333 8L11 4.667M14.333 8H6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M6 14H3.333C2.979 14 2.639 13.86 2.389 13.61C2.139 13.36 2 13.02 2 12.667V3.333C2 2.979 2.139 2.639 2.389 2.389C2.639 2.139 2.979 2 3.333 2H6M11 11.333L14.333 8M14.333 8L11 4.667M14.333 8H6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                   Keluar
                 </button>
