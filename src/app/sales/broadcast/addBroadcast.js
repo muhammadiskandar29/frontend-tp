@@ -25,13 +25,12 @@ const STATUS_ORDER_MAP = {
 
 // Status Pembayaran Mapping
 const STATUS_PEMBAYARAN_MAP = {
-  null: "Unpaid",
-  0: "Unpaid",
-
-  1: "Pending",
-  2: "Paid",
-  3: "Ditolak",
-  4: "DP",
+  0: { label: "Unpaid", class: "unpaid" },
+  null: { label: "Unpaid", class: "unpaid" },
+  1: { label: "Waiting Approval", class: "pending" }, // Menunggu approve finance
+  2: { label: "Paid", class: "paid" },             // Finance approved
+  3: { label: "Rejected", class: "rejected" },
+  4: { label: "Partial Payment", class: "partial" },
 };
 
 // Autotext Options untuk variable
@@ -70,7 +69,7 @@ export default function AddBroadcast({ onClose, onAdd }) {
   // State untuk autotext dan emoji
   const [selectedAutotext, setSelectedAutotext] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  
+
   const textareaRef = useRef(null);
 
   // Fetch products and orders data on mount
@@ -390,7 +389,7 @@ export default function AddBroadcast({ onClose, onAdd }) {
         }
 
         const warningMessage = `⚠️ Broadcast berhasil dibuat, tetapi tidak ada customer yang sesuai dengan filter:\n\n${filterInfo.join("\n")}\n\nSilakan kurangi filter atau pilih kombinasi filter yang berbeda.`;
-        
+
         alert(warningMessage);
       } else {
         // Show success message if there are targets
@@ -518,9 +517,9 @@ export default function AddBroadcast({ onClose, onAdd }) {
           </label>
 
           {/* Control Row: Autotext & Emoji */}
-          <div style={{ 
-            display: "flex", 
-            gap: "0.75rem", 
+          <div style={{
+            display: "flex",
+            gap: "0.75rem",
             marginTop: "-0.5rem",
             marginBottom: "1rem",
             flexWrap: "wrap",
@@ -528,9 +527,9 @@ export default function AddBroadcast({ onClose, onAdd }) {
             position: "relative",
           }}>
             {/* Autotext Group */}
-            <div style={{ 
-              display: "flex", 
-              gap: "0.5rem", 
+            <div style={{
+              display: "flex",
+              gap: "0.5rem",
               flexWrap: "wrap",
               alignItems: "center",
             }}>
@@ -685,7 +684,7 @@ export default function AddBroadcast({ onClose, onAdd }) {
                 (Pilih satu atau lebih produk)
               </small>
             </label>
-            
+
             {loading ? (
               <div style={{ padding: "1rem", textAlign: "center", color: "#6b7280" }}>
                 Memuat produk...
@@ -721,7 +720,7 @@ export default function AddBroadcast({ onClose, onAdd }) {
                       setTimeout(() => setShowProdukDropdown(false), 200);
                     }}
                   />
-                  
+
                   {/* Dropdown Hasil Search */}
                   {showProdukDropdown && produkSearchQuery && filteredProducts.length > 0 && (
                     <div
@@ -762,7 +761,7 @@ export default function AddBroadcast({ onClose, onAdd }) {
                       ))}
                     </div>
                   )}
-                  
+
                   {/* Pesan jika tidak ada hasil */}
                   {showProdukDropdown && produkSearchQuery && filteredProducts.length === 0 && (
                     <div
@@ -966,42 +965,42 @@ export default function AddBroadcast({ onClose, onAdd }) {
 
           {/* Info Box: Summary Filter yang Dipilih */}
           {/* Handle null as valid value (Unpaid) - null should be included */}
-          {(formData.target.produk.length > 0 || 
-            formData.target.status_order || 
+          {(formData.target.produk.length > 0 ||
+            formData.target.status_order ||
             (formData.target.status_pembayaran !== undefined && formData.target.status_pembayaran !== "")) && (
-            <div style={{ 
-              marginTop: "1.5rem", 
-              padding: "1rem", 
-              background: "#f0f9ff", 
-              borderRadius: "8px",
-              border: "1px solid #bae6fd"
-            }}>
-              <strong style={{ fontSize: "0.875rem", color: "#0369a1", display: "block", marginBottom: "0.5rem" }}>
-                📋 Filter yang Dipilih:
-              </strong>
-              <div style={{ fontSize: "0.875rem", color: "#0369a1" }}>
-                {formData.target.produk.length > 0 && (
-                  <div style={{ marginBottom: "0.25rem" }}>
-                    • Produk: {formData.target.produk.map((id) => getSelectedProductName(id)).join(", ")}
+              <div style={{
+                marginTop: "1.5rem",
+                padding: "1rem",
+                background: "#f0f9ff",
+                borderRadius: "8px",
+                border: "1px solid #bae6fd"
+              }}>
+                <strong style={{ fontSize: "0.875rem", color: "#0369a1", display: "block", marginBottom: "0.5rem" }}>
+                  📋 Filter yang Dipilih:
+                </strong>
+                <div style={{ fontSize: "0.875rem", color: "#0369a1" }}>
+                  {formData.target.produk.length > 0 && (
+                    <div style={{ marginBottom: "0.25rem" }}>
+                      • Produk: {formData.target.produk.map((id) => getSelectedProductName(id)).join(", ")}
+                    </div>
+                  )}
+                  {formData.target.status_order && (
+                    <div style={{ marginBottom: "0.25rem" }}>
+                      • Status Order: {getStatusOrderLabel(formData.target.status_order)}
+                    </div>
+                  )}
+                  {/* Handle null as valid value (Unpaid) - null should be included */}
+                  {(formData.target.status_pembayaran !== undefined && formData.target.status_pembayaran !== "") && (
+                    <div style={{ marginBottom: "0.25rem" }}>
+                      • Status Pembayaran: {getStatusPembayaranLabel(formData.target.status_pembayaran)}
+                    </div>
+                  )}
+                  <div style={{ marginTop: "0.5rem", paddingTop: "0.5rem", borderTop: "1px solid #bae6fd", fontStyle: "italic" }}>
+                    💡 Semua filter harus terpenuhi (AND logic). Jika tidak ada customer yang match, total_target akan 0.
                   </div>
-                )}
-                {formData.target.status_order && (
-                  <div style={{ marginBottom: "0.25rem" }}>
-                    • Status Order: {getStatusOrderLabel(formData.target.status_order)}
-                  </div>
-                )}
-                {/* Handle null as valid value (Unpaid) - null should be included */}
-                {(formData.target.status_pembayaran !== undefined && formData.target.status_pembayaran !== "") && (
-                  <div style={{ marginBottom: "0.25rem" }}>
-                    • Status Pembayaran: {getStatusPembayaranLabel(formData.target.status_pembayaran)}
-                  </div>
-                )}
-                <div style={{ marginTop: "0.5rem", paddingTop: "0.5rem", borderTop: "1px solid #bae6fd", fontStyle: "italic" }}>
-                  💡 Semua filter harus terpenuhi (AND logic). Jika tidak ada customer yang match, total_target akan 0.
                 </div>
               </div>
-            </div>
-          )}
+            )}
         </form>
 
         <div className="orders-modal-footer">

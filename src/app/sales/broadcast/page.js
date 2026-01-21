@@ -90,7 +90,7 @@ export default function BroadcastPage() {
     if (status?.trim() === "1" && broadcast?.sent_to_queue > 0) {
       return "Sedang Diproses";
     }
-    
+
     const statusMap = {
       "1": "Draft",
       "2": "Terjadwal",
@@ -105,7 +105,7 @@ export default function BroadcastPage() {
     if (status?.trim() === "1" && broadcast?.sent_to_queue > 0) {
       return "processing";
     }
-    
+
     const statusMap = {
       "1": "pending",
       "2": "pending",
@@ -126,17 +126,16 @@ export default function BroadcastPage() {
 
   // Status Pembayaran Mapping
   const STATUS_PEMBAYARAN_MAP = {
-    null: "Unpaid",
-    0: "Unpaid",
-    1: "Pending",
-    2: "Paid",
-    3: "Ditolak",
-    4: "DP",
+    0: { label: "Unpaid", class: "unpaid" },
+    null: { label: "Unpaid", class: "unpaid" },
+    1: { label: "Waiting Approval", class: "pending" }, // Menunggu approve finance
+    2: { label: "Paid", class: "paid" },             // Finance approved
+    3: { label: "Rejected", class: "rejected" },
+    4: { label: "Partial Payment", class: "partial" },
   };
-
   // Fetch products untuk mendapatkan nama produk
   const [products, setProducts] = useState([]);
-  
+
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -195,7 +194,7 @@ export default function BroadcastPage() {
     }
 
     const parts = [];
-    
+
     // Format Produk
     if (targetData.produk) {
       const produkList = Array.isArray(targetData.produk) ? targetData.produk : [targetData.produk];
@@ -221,8 +220,8 @@ export default function BroadcastPage() {
 
     // Format Status Order
     if (targetData.status_order !== undefined && targetData.status_order !== null && targetData.status_order !== "") {
-      const statusOrderList = Array.isArray(targetData.status_order) 
-        ? targetData.status_order 
+      const statusOrderList = Array.isArray(targetData.status_order)
+        ? targetData.status_order
         : [targetData.status_order];
       const validStatus = statusOrderList.filter(s => s !== null && s !== undefined && s !== "");
       if (validStatus.length > 0) {
@@ -431,11 +430,11 @@ export default function BroadcastPage() {
               <h3 className="panel__title">Broadcast List</h3>
             </div>
             <button
-                type="button"
-                className="customers-button customers-button--primary"
-                onClick={() => setShowAddBroadcast(true)}
-              >
-                + Tambah Broadcast
+              type="button"
+              className="customers-button customers-button--primary"
+              onClick={() => setShowAddBroadcast(true)}
+            >
+              + Tambah Broadcast
             </button>
           </div>
 

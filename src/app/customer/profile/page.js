@@ -44,17 +44,37 @@ export default function CustomerProfilePage() {
     const [saving, setSaving] = useState(false);
 
     const [formData, setFormData] = useState({
+        // Identitas & Akun
+        memberID: "",
+        keanggotaan: "",
+        nama: "", // Nama Lengkap
         nama_panggilan: "",
-        instagram: "",
-        profesi: "",
-        pendapatan_bln: "",
-        industri_pekerjaan: "",
+        email: "",
+        wa: "",
+        sapaan: "",
+
+        // Data Diri
         jenis_kelamin: "l",
         tanggal_lahir: "",
+
+        // Pekerjaan
+        profesi: "",
+        industri_pekerjaan: "",
+        pendapatan_bln: "",
+
+        // Media Sosial
+        instagram: "",
+
+        // Alamat
         alamat: "",
+        provinsi: "",
+        kabupaten: "",
+        kecamatan: "",
+        kode_pos: "",
+
+        // Keamanan
+        password: "",
         customer_id: null,
-        wa: "",
-        password: "", // Untuk reset password jika diisi
     });
 
     // Fetch data
@@ -78,18 +98,35 @@ export default function CustomerProfilePage() {
 
                 if (json.success && json.data) {
                     const user = json.data;
+                    console.log("Profile Data:", user); // Debug
+
                     setFormData(prev => ({
                         ...prev,
-                        nama_panggilan: user.nama_panggilan || user.nama || "",
-                        instagram: user.instagram || "",
-                        profesi: user.profesi || "",
-                        pendapatan_bln: user.pendapatan_bln || "",
-                        industri_pekerjaan: user.industri_pekerjaan || "",
+                        customer_id: user.id,
+
+                        // Mapping fields
+                        memberID: user.memberID || "-",
+                        keanggotaan: user.keanggotaan || "Basic",
+                        nama: user.nama || "",
+                        nama_panggilan: user.nama_panggilan || "",
+                        email: user.email || "",
+                        wa: user.phone || user.wa || "",
+                        sapaan: user.sapaan || "",
+
                         jenis_kelamin: user.jenis_kelamin || "l",
                         tanggal_lahir: user.tanggal_lahir ? user.tanggal_lahir.slice(0, 10) : "",
+
+                        profesi: user.profesi || "",
+                        industri_pekerjaan: user.industri_pekerjaan || "",
+                        pendapatan_bln: user.pendapatan_bln || "",
+
+                        instagram: user.instagram || "",
+
                         alamat: user.alamat || "",
-                        customer_id: user.id,
-                        wa: user.phone || user.wa || "", // Handling different field names
+                        provinsi: user.provinsi || "",
+                        kabupaten: user.kabupaten || "",
+                        kecamatan: user.kecamatan || "",
+                        kode_pos: user.kode_pos || "",
                     }));
                 }
             } catch (err) {
@@ -121,13 +158,15 @@ export default function CustomerProfilePage() {
 
         try {
             // Hapus password jika kosong agar tidak terupdate
+            // Hapus field readonly/system agar tidak dikirim balik jika backend strict (opsional, tergantung backend)
             const payload = { ...formData };
             if (!payload.password) delete payload.password;
 
+            // Kita asumsikan backend ignored field yg tidak ada di database, atau kita filter manual
+            // Biasanya aman kirim semua, backend yg filter.
+
             await updateCustomerService(payload);
             toast.success("Profile berhasil diperbarui");
-
-            // Refresh page or redirection if needed
             router.refresh();
         } catch (err) {
             toast.error(err.message || "Gagal menyimpan perubahan");
@@ -137,7 +176,6 @@ export default function CustomerProfilePage() {
     };
 
     const handleChangeWA = () => {
-        // Implementasi logika ubah WA, bisa redirect ke halaman khusus atau modal
         toast((t) => (
             <span>
                 Fitur ubah nomor WhatsApp akan menghubungi admin.
@@ -169,49 +207,72 @@ export default function CustomerProfilePage() {
                 <div className="profile-container">
                     <form onSubmit={handleSubmit}>
 
-                        {/* Section: Akun & Keamanan */}
+                        {/* GROUP 1: Informasi Akun (Read Only Mostly) */}
                         <section className="form-section">
-                            <h3 className="section-title"><Shield size={18} /> Akun & Keamanan</h3>
-                            <div className="form-grid">
-                                {/* WA Field */}
-                                <div className="form-group full-width">
+                            <h3 className="section-title"><Shield size={18} /> Informasi Akun</h3>
+                            <div className="info-cards-grid">
+                                <div className="info-card">
+                                    <span className="info-label">Member ID</span>
+                                    <span className="info-value text-mono">{formData.memberID}</span>
+                                </div>
+                                <div className="info-card">
+                                    <span className="info-label">Keanggotaan</span>
+                                    <span className="info-badge">{formData.keanggotaan.toUpperCase()}</span>
+                                </div>
+                            </div>
+
+                            <div className="form-grid mt-4">
+                                <div className="form-group">
+                                    <label>Email</label>
+                                    <input
+                                        type="email"
+                                        value={formData.email}
+                                        disabled
+                                        className="input-disabled"
+                                    />
+                                </div>
+                                <div className="form-group">
                                     <label>Nomor WhatsApp</label>
                                     <div className="input-with-action">
-                                        <div className="input-icon-wrapper">
-                                            <Smartphone size={18} className="text-gray-400" />
-                                            <input
-                                                type="text"
-                                                value={formData.wa}
-                                                disabled
-                                                className="input-disabled pl-10"
-                                            />
-                                        </div>
+                                        <input
+                                            type="text"
+                                            value={formData.wa}
+                                            disabled
+                                            className="input-disabled"
+                                        />
                                         <button type="button" onClick={handleChangeWA} className="action-btn">
-                                            Ubah No WA
+                                            Ubah
                                         </button>
                                     </div>
-                                    <p className="field-note">Nomor WhatsApp digunakan untuk login dan notifikasi.</p>
-                                </div>
-
-                                {/* Password */}
-                                <div className="form-group full-width">
-                                    <label>Password Baru (Opsional)</label>
-                                    <input
-                                        type="password"
-                                        name="password"
-                                        value={formData.password}
-                                        onChange={handleChange}
-                                        placeholder="Isi jika ingin mengubah password"
-                                        className="form-input"
-                                    />
                                 </div>
                             </div>
                         </section>
 
-                        {/* Section: Data Diri */}
+                        {/* GROUP 2: Data Pribadi */}
                         <section className="form-section">
-                            <h3 className="section-title"><User size={18} /> Data Diri</h3>
+                            <h3 className="section-title"><User size={18} /> Data Pribadi</h3>
                             <div className="form-grid">
+                                <div className="form-group">
+                                    <label>Sapaan (Gelar)</label>
+                                    <select name="sapaan" value={formData.sapaan || ""} onChange={handleChange} className="form-input">
+                                        <option value="">- Pilih -</option>
+                                        <option value="Bapak">Bapak</option>
+                                        <option value="Ibu">Ibu</option>
+                                        <option value="Sdr">Saudara (Sdr)</option>
+                                        <option value="Sdri">Saudari (Sdri)</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>Nama Lengkap</label>
+                                    <input
+                                        type="text"
+                                        name="nama"
+                                        value={formData.nama}
+                                        onChange={handleChange}
+                                        className="form-input"
+                                        placeholder="Nama Lengkap sesuai identitas"
+                                    />
+                                </div>
                                 <div className="form-group">
                                     <label>Nama Panggilan <span className="text-red-500">*</span></label>
                                     <input
@@ -223,20 +284,6 @@ export default function CustomerProfilePage() {
                                         className="form-input"
                                     />
                                 </div>
-
-                                <div className="form-group">
-                                    <label>Instagram <span className="text-red-500">*</span></label>
-                                    <input
-                                        type="text"
-                                        name="instagram"
-                                        value={formData.instagram}
-                                        onChange={handleChange}
-                                        placeholder="@username"
-                                        required
-                                        className="form-input"
-                                    />
-                                </div>
-
                                 <div className="form-group">
                                     <label>Jenis Kelamin</label>
                                     <select
@@ -249,7 +296,6 @@ export default function CustomerProfilePage() {
                                         <option value="p">Perempuan</option>
                                     </select>
                                 </div>
-
                                 <div className="form-group">
                                     <label>Tanggal Lahir</label>
                                     <input
@@ -260,46 +306,53 @@ export default function CustomerProfilePage() {
                                         className="form-input"
                                     />
                                 </div>
+                                <div className="form-group">
+                                    <label>Instagram</label>
+                                    <div className="input-icon-wrapper">
+                                        <span className="prefix-icon">@</span>
+                                        <input
+                                            type="text"
+                                            name="instagram"
+                                            value={formData.instagram.replace('@', '')}
+                                            onChange={handleChange}
+                                            className="form-input pl-8"
+                                            placeholder="username"
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </section>
 
-                        {/* Section: Pekerjaan */}
+                        {/* GROUP 3: Pekerjaan */}
                         <section className="form-section">
                             <h3 className="section-title"><Briefcase size={18} /> Pekerjaan & Profesi</h3>
                             <div className="form-grid">
                                 <div className="form-group">
-                                    <label>Profesi <span className="text-red-500">*</span></label>
+                                    <label>Profesi</label>
                                     <input
                                         type="text"
                                         name="profesi"
                                         value={formData.profesi}
                                         onChange={handleChange}
-                                        placeholder="Contoh: Karyawan Swasta"
-                                        required
                                         className="form-input"
                                     />
                                 </div>
-
                                 <div className="form-group">
-                                    <label>Industri Pekerjaan <span className="text-red-500">*</span></label>
+                                    <label>Industri Pekerjaan</label>
                                     <input
                                         type="text"
                                         name="industri_pekerjaan"
                                         value={formData.industri_pekerjaan}
                                         onChange={handleChange}
-                                        placeholder="Contoh: Teknologi"
-                                        required
                                         className="form-input"
                                     />
                                 </div>
-
                                 <div className="form-group full-width">
-                                    <label>Pendapatan per Bulan <span className="text-red-500">*</span></label>
+                                    <label>Pendapatan per Bulan</label>
                                     <select
                                         name="pendapatan_bln"
                                         value={formData.pendapatan_bln}
                                         onChange={handleChange}
-                                        required
                                         className="form-input"
                                     >
                                         <option value="">Pilih Range Pendapatan</option>
@@ -318,22 +371,60 @@ export default function CustomerProfilePage() {
                             </div>
                         </section>
 
-                        {/* Section: Alamat */}
+                        {/* GROUP 4: Alamat & Lokasi */}
                         <section className="form-section">
-                            <h3 className="section-title"><MapPin size={18} /> Alamat Lengkap</h3>
-                            <div className="form-group">
-                                <textarea
-                                    name="alamat"
-                                    value={formData.alamat}
-                                    onChange={handleChange}
-                                    rows={3}
-                                    className="form-textarea"
-                                    placeholder="Masukkan alamat lengkap..."
-                                />
+                            <h3 className="section-title"><MapPin size={18} /> Alamat & Domisili</h3>
+                            <div className="form-grid">
+                                <div className="form-group">
+                                    <label>Provinsi</label>
+                                    <input type="text" name="provinsi" value={formData.provinsi} onChange={handleChange} className="form-input" placeholder="Nama Provinsi" />
+                                </div>
+                                <div className="form-group">
+                                    <label>Kabupaten / Kota</label>
+                                    <input type="text" name="kabupaten" value={formData.kabupaten} onChange={handleChange} className="form-input" placeholder="Nama Kabupaten/Kota" />
+                                </div>
+                                <div className="form-group">
+                                    <label>Kecamatan</label>
+                                    <input type="text" name="kecamatan" value={formData.kecamatan} onChange={handleChange} className="form-input" placeholder="Nama Kecamatan" />
+                                </div>
+                                <div className="form-group">
+                                    <label>Kode Pos</label>
+                                    <input type="text" name="kode_pos" value={formData.kode_pos} onChange={handleChange} className="form-input" placeholder="12345" />
+                                </div>
+                                <div className="form-group full-width">
+                                    <label>Alamat Lengkap</label>
+                                    <textarea
+                                        name="alamat"
+                                        value={formData.alamat}
+                                        onChange={handleChange}
+                                        rows={3}
+                                        className="form-textarea"
+                                        placeholder="Nama Jalan, No Rumah, RT/RW..."
+                                    />
+                                </div>
                             </div>
                         </section>
 
-                        <div className="form-actions">
+                        {/* GROUP 5: Keamanan Password */}
+                        <section className="form-section">
+                            <h3 className="section-title" style={{ color: '#ef4444' }}><Shield size={18} /> Ubah Password</h3>
+                            <div className="form-grid">
+                                <div className="form-group full-width">
+                                    <label>Password Baru</label>
+                                    <input
+                                        type="password"
+                                        name="password"
+                                        value={formData.password}
+                                        onChange={handleChange}
+                                        placeholder="Kosongkan jika tidak ingin mengubah password"
+                                        className="form-input"
+                                    />
+                                    <p className="field-note">Minimal 6 karakter.</p>
+                                </div>
+                            </div>
+                        </section>
+
+                        <div className="form-actions sticky-bottom">
                             <button type="submit" className="save-btn" disabled={saving}>
                                 {saving ? (
                                     <>
@@ -348,11 +439,75 @@ export default function CustomerProfilePage() {
                                 )}
                             </button>
                         </div>
-
                     </form>
                 </div>
 
                 <style jsx>{`
+        .info-cards-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .info-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 16px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .text-mono {
+            font-family: 'Monaco', 'Consolas', monospace;
+            letter-spacing: -0.5px;
+        }
+
+        .info-badge {
+            display: inline-block;
+            background: #dbeafe;
+            color: #1e40af;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            width: fit-content;
+        }
+
+        .prefix-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .pl-8 { padding-left: 32px !important; }
+        .pl-10 { padding-left: 40px !important; }
+        .mt-4 { margin-top: 16px; }
+
+        @media (max-width: 640px) {
+            .info-cards-grid { grid-template-columns: 1fr; }
+        }
+
         .profile-page {
             max-width: 800px;
             margin: 0 auto;
@@ -361,6 +516,7 @@ export default function CustomerProfilePage() {
             background-color: #f8fafc;
             color: #1e293b;
             font-family: 'Inter', sans-serif;
+            padding-bottom: 100px; 
         }
 
         .profile-loading {
@@ -477,6 +633,7 @@ export default function CustomerProfilePage() {
             background-color: #f1f5f9;
             color: #64748b;
             cursor: not-allowed;
+            border-color: #e2e8f0;
         }
 
         .input-with-action {
@@ -484,23 +641,6 @@ export default function CustomerProfilePage() {
             gap: 8px;
         }
         
-        .input-icon-wrapper {
-            position: relative;
-            flex: 1;
-        }
-
-        .input-icon-wrapper svg {
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #94a3b8;
-        }
-
-        .input-icon-wrapper .input-disabled {
-            padding-left: 40px;
-        }
-
         .action-btn {
             white-space: nowrap;
             padding: 0 16px;
@@ -528,6 +668,18 @@ export default function CustomerProfilePage() {
             margin-top: 32px;
             display: flex;
             justify-content: flex-end;
+            border-top: 1px solid #f1f5f9;
+            padding-top: 24px;
+        }
+        
+        .sticky-bottom {
+            position: sticky;
+            bottom: 0;
+            background: white;
+            padding: 16px 0;
+            margin-top: 0;
+            border-top: 1px solid #e2e8f0;
+            z-index: 10;
         }
 
         .save-btn {
@@ -537,7 +689,7 @@ export default function CustomerProfilePage() {
             background: linear-gradient(135deg, #f1a124 0%, #d97706 100%);
             color: white;
             border: none;
-            padding: 12px 24px;
+            padding: 12px 32px;
             border-radius: 10px;
             font-weight: 600;
             font-size: 16px;

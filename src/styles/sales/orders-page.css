@@ -752,33 +752,61 @@ ORDERS STATUS BADGE
 }
 
 .orders-status-badge--unpaid {
-  background-color: #fef2f2;
-  color: #b91c1c;
+  background-color: #ffe6e6;
+  color: #c92a2a;
+}
+
+.orders-status-badge--pending {
+  background-color: #fff3bf;
+  color: #d9480f;
 }
 
 .orders-status-badge--paid {
-  background-color: #dcfce7;
-  color: #166534;
+  background-color: #d3f9d8;
+  color: #2b8a3e;
 }
 
-.orders-status-badge--sukses {
-  background-color: #e0f2fe;
-  color: #0369a1;
+.orders-status-badge--rejected {
+  background-color: #ffe3e3;
+  color: #c92a2a;
+  text-decoration: line-through;
 }
 
-.orders-status-badge--gagal {
-  background-color: #fee2e2;
-  color: #991b1b;
+.orders-status-badge--partial {
+  background-color: #e7f5ff;
+  color: #1971c2;
 }
 
-.orders-status-badge--proses {
-  background-color: rgba(255, 108, 0, 0.15);
-  color: #c85400;
+.orders-status-badge--success {
+  background-color: #d3f9d8;
+  color: #2b8a3e;
 }
 
 .orders-status-badge--failed {
-  background-color: #fee2e2;
-  color: #991b1b;
+  background-color: #ffe3e3;
+  color: #c92a2a;
+}
+
+.orders-status-badge--completed {
+  background-color: #d0ebff;
+  color: #1864ab;
+}
+
+.orders-status-badge--deleted {
+  background-color: #f1f3f5;
+  color: #868e96;
+  font-style: italic;
+}
+
+/* Legacy/Fallback supports */
+.orders-status-badge--proses {
+  background-color: #fff3bf;
+  color: #d9480f;
+}
+
+.orders-status-badge--sukses {
+  background-color: #d3f9d8;
+  color: #2b8a3e;
 }
 
 .orders-status-badge--upselling {
@@ -787,8 +815,8 @@ ORDERS STATUS BADGE
 }
 
 .orders-status-badge--dihapus {
-  background-color: #f3f4f6;
-  color: #6b7280;
+  background-color: #f1f3f5;
+  color: #868e96;
 }
 
 .orders-status-badge--default {
@@ -796,11 +824,7 @@ ORDERS STATUS BADGE
   color: #6b7280;
 }
 
-.orders-status-badge--processing {
-  background-color: #fef3c7;
-  color: #92400e;
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
+
 
 .orders-status-badge--pending {
   background-color: rgba(255, 108, 0, 0.15);

@@ -25,13 +25,12 @@ const STATUS_ORDER_MAP = {
 
 // Status Pembayaran Mapping
 const STATUS_PEMBAYARAN_MAP = {
-    null: "Unpaid",
-    0: "Unpaid",
-
-    1: "Pending",
-    2: "Paid",
-    3: "Ditolak",
-    4: "DP",
+    0: { label: "Unpaid", class: "unpaid" },
+    null: { label: "Unpaid", class: "unpaid" },
+    1: { label: "Waiting Approval", class: "pending" }, // Menunggu approve finance
+    2: { label: "Paid", class: "paid" },             // Finance approved
+    3: { label: "Rejected", class: "rejected" },
+    4: { label: "Partial Payment", class: "partial" },
 };
 
 // Autotext Options untuk variable

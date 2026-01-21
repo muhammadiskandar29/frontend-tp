@@ -10,30 +10,38 @@ import { createPortal } from "react-dom";
 const BASE_URL = "/api";
 
 const STATUS_PEMBAYARAN_MAP = {
-  0:    { label: "Unpaid", class: "unpaid" },
+  0: { label: "Unpaid", class: "unpaid" },
   null: { label: "Unpaid", class: "unpaid" },
-  1:    { label: "Pending", class: "pending" },
-  2:    { label: "Paid", class: "paid" },
-  3:    { label: "Ditolak", class: "rejected" },
-  4:    { label: "DP", class: "dp" },
+  1: { label: "Waiting Approval", class: "pending" }, // Menunggu approve finance
+  2: { label: "Paid", class: "paid" },             // Finance approved
+  3: { label: "Rejected", class: "rejected" },
+  4: { label: "Partial Payment", class: "partial" },
+};
+
+const STATUS_ORDER_MAP = {
+  "1": { label: "Pending", class: "pending" },
+  "2": { label: "Success", class: "success" },
+  "3": { label: "Failed", class: "failed" },
+  "4": { label: "Completed", class: "completed" },
+  "N": { label: "Deleted", class: "deleted" },
 };
 
 // Helper function to clean order data
 const cleanOrderData = (orderData) => {
   if (!orderData) return {};
-  
+
   const cleaned = { ...orderData };
-  
+
   // Ensure customer is an ID, not an object
   if (cleaned.customer && typeof cleaned.customer === "object") {
     cleaned.customer = cleaned.customer.id || cleaned.customer_rel?.id || null;
   }
-  
+
   // Ensure produk is an ID, not an object
   if (cleaned.produk && typeof cleaned.produk === "object") {
     cleaned.produk = cleaned.produk.id || cleaned.produk_rel?.id || null;
   }
-  
+
   return cleaned;
 };
 
@@ -231,7 +239,7 @@ export default function UpdateOrders({ order, onClose, onSave }) {
       const totalHarga = Number(updatedOrder.total_harga || order?.total_harga || 0);
       const totalPaid = Number(updatedOrder.total_paid || order?.total_paid || 0);
       const remaining = totalHarga - totalPaid;
-      
+
       if (amountValue > remaining) {
         return setErrorMsg(`Jumlah pembayaran tidak boleh melebihi sisa yang harus dibayar (Rp ${remaining.toLocaleString("id-ID")})`);
       }
@@ -247,26 +255,26 @@ export default function UpdateOrders({ order, onClose, onSave }) {
 
       // Build FormData sesuai API spec
       const formData = new FormData();
-      
+
       // Pastikan semua field dikirim dengan benar
       // Backend mengharapkan field name sesuai dengan database column
       if (bukti?.file) {
         formData.append("bukti_pembayaran", bukti.file);
       }
-      
+
       // Pastikan waktu_pembayaran selalu dikirim (tidak boleh null atau empty)
       if (waktuPembayaran && waktuPembayaran.trim() !== "") {
         formData.append("waktu_pembayaran", waktuPembayaran);
       } else {
         console.error("❌ [KONFIRMASI] waktu_pembayaran kosong atau tidak valid!");
       }
-      
+
       // Backend mengharapkan metode_bayar (bukan metode_pembayaran) sesuai dengan database column
       if (metodeBayar && metodeBayar.trim() !== "") {
         formData.append("metode_bayar", metodeBayar); // Gunakan metode_bayar sesuai database
         formData.append("metode_pembayaran", metodeBayar); // Juga kirim metode_pembayaran untuk kompatibilitas
       }
-      
+
       formData.append("amount", String(amountValue));
 
       // Log untuk debugging - pastikan semua field ada
@@ -290,7 +298,7 @@ export default function UpdateOrders({ order, onClose, onSave }) {
 
       const res = await fetch(url, {
         method: "POST",
-        headers: { 
+        headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
         },
@@ -301,7 +309,7 @@ export default function UpdateOrders({ order, onClose, onSave }) {
 
       // Cek sukses: bisa dari success field, atau dari message yang mengandung "Sukses"
       const isSuccess = res.ok && (
-        data.success === true || 
+        data.success === true ||
         (data.message && data.message.toLowerCase().includes("sukses"))
       );
 
@@ -317,18 +325,18 @@ export default function UpdateOrders({ order, onClose, onSave }) {
       // Update local state dengan data dari backend
       const newTotalPaid = konfirmasiOrder.total_paid !== undefined ? konfirmasiOrder.total_paid : (order.total_paid || 0);
       const totalHarga = Number(updatedOrder.total_harga || order?.total_harga || 0);
-      const newRemaining = konfirmasiOrder.remaining !== undefined 
+      const newRemaining = konfirmasiOrder.remaining !== undefined
         ? Number(konfirmasiOrder.remaining)
         : (totalHarga - newTotalPaid);
       const isFullyPaid = newTotalPaid >= totalHarga;
-      
+
       // LOGIKA STATUS PEMBAYARAN setelah konfirmasi pembayaran:
       // - Jika sudah lunas (total_paid >= total_harga), set ke 2 (Paid)
       // - Jika masih ada remaining (total_paid < total_harga), set ke 4 (DP)
       // - Status pembayaran di page.js harus tetap 4 (DP) sampai remaining = 0
       // - Perubahan status payment individual (approve/reject) hanya mempengaruhi paymentHistoryModal.js, bukan page.js
       let newStatusPembayaran;
-      
+
       if (isFullyPaid) {
         // Jika sudah lunas, set ke 2 (Paid)
         newStatusPembayaran = 2;
@@ -356,7 +364,7 @@ export default function UpdateOrders({ order, onClose, onSave }) {
       };
 
       setUpdatedOrder(finalOrder);
-      
+
       // Update parent component
       onSave(finalOrder);
       setShowKonfirmasiModal(false);
@@ -371,20 +379,20 @@ export default function UpdateOrders({ order, onClose, onSave }) {
         setIsDP(true);
       } else {
         // Jika sudah lunas atau bukan DP, reset semua
-        setBukti((prev) => ({ 
-          ...prev, 
-          existing: true, 
-          url: konfirmasiOrder.bukti_pembayaran || bukti.name 
+        setBukti((prev) => ({
+          ...prev,
+          existing: true,
+          url: konfirmasiOrder.bukti_pembayaran || bukti.name
         }));
         setAmount("");
         setIsDP(false);
       }
 
       // Tampilkan toast sukses
-      const successMessage = isFullyPaid 
-        ? "Pembayaran berhasil dikonfirmasi! Order sudah lunas." 
+      const successMessage = isFullyPaid
+        ? "Pembayaran berhasil dikonfirmasi! Order sudah lunas."
         : `Pembayaran berhasil dikonfirmasi! Sisa yang harus dibayar: Rp ${newRemaining.toLocaleString("id-ID")}`;
-      
+
       setErrorMsg("");
       // Success handled by onSave callback
 
@@ -405,46 +413,46 @@ export default function UpdateOrders({ order, onClose, onSave }) {
   };
 
 
-const handleSubmitUpdate = async (e) => {
-  e.preventDefault();
+  const handleSubmitUpdate = async (e) => {
+    e.preventDefault();
 
-  try {
-    const token = localStorage.getItem("token");
+    try {
+      const token = localStorage.getItem("token");
 
-    // Pastikan semua field yang diperlukan dikirim sesuai API spec
-    const payload = {
-      alamat: updatedOrder.alamat ?? order?.alamat ?? "",
-      harga: String(updatedOrder.harga ?? order?.harga ?? ""),
-      ongkir: String(updatedOrder.ongkir ?? order?.ongkir ?? ""),
-      total_harga: String(updatedOrder.total_harga ?? order?.total_harga ?? ""),
-      waktu_pembayaran: getWaktuPembayaran(updatedOrder || order) || updatedOrder?.waktu_pembayaran || order?.waktu_pembayaran || null,
-      bukti_pembayaran: updatedOrder.bukti_pembayaran ?? order?.bukti_pembayaran ?? null,
-      metode_bayar: metodeBayar || order?.metode_bayar || null,
-      sumber: updatedOrder.sumber ?? order?.sumber ?? "",
-    };
+      // Pastikan semua field yang diperlukan dikirim sesuai API spec
+      const payload = {
+        alamat: updatedOrder.alamat ?? order?.alamat ?? "",
+        harga: String(updatedOrder.harga ?? order?.harga ?? ""),
+        ongkir: String(updatedOrder.ongkir ?? order?.ongkir ?? ""),
+        total_harga: String(updatedOrder.total_harga ?? order?.total_harga ?? ""),
+        waktu_pembayaran: getWaktuPembayaran(updatedOrder || order) || updatedOrder?.waktu_pembayaran || order?.waktu_pembayaran || null,
+        bukti_pembayaran: updatedOrder.bukti_pembayaran ?? order?.bukti_pembayaran ?? null,
+        metode_bayar: metodeBayar || order?.metode_bayar || null,
+        sumber: updatedOrder.sumber ?? order?.sumber ?? "",
+      };
 
-    // Log untuk debugging
-    console.log("🔍 [UPDATE ORDER] Payload yang dikirim:", payload);
+      // Log untuk debugging
+      console.log("🔍 [UPDATE ORDER] Payload yang dikirim:", payload);
 
-    const res = await fetch(`${BASE_URL}/sales/order/${order.id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        Accept: "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
+      const res = await fetch(`${BASE_URL}/sales/order/${order.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
 
-    const json = await res.json();
-    const newOrder = json.data;   // ⬅️ full data
+      const json = await res.json();
+      const newOrder = json.data;   // ⬅️ full data
 
-    onSave(newOrder);             // ⬅️ langsung update parent
-    onClose();
-  } catch (err) {
-    console.error("❌ [UPDATE ORDER] Error:", err);
-  }
-};
+      onSave(newOrder);             // ⬅️ langsung update parent
+      onClose();
+    } catch (err) {
+      console.error("❌ [UPDATE ORDER] Error:", err);
+    }
+  };
 
 
 
@@ -473,7 +481,7 @@ const handleSubmitUpdate = async (e) => {
               {/* KOLOM KIRI - Informasi Order */}
               <div className="update-orders-section">
                 <h4 className="detail-section-title">Informasi Order</h4>
-                
+
                 <div className="detail-list">
                   <div className="detail-item">
                     <span className="detail-label">Customer</span>
@@ -634,49 +642,49 @@ const handleSubmitUpdate = async (e) => {
                           Rp{" "}
                           {Number(
                             updatedOrder.remaining ??
-                              order?.remaining ??
-                              (Number(updatedOrder.total_harga ?? order?.total_harga ?? 0) -
-                                Number(updatedOrder.total_paid ?? order?.total_paid ?? 0))
+                            order?.remaining ??
+                            (Number(updatedOrder.total_harga ?? order?.total_harga ?? 0) -
+                              Number(updatedOrder.total_paid ?? order?.total_paid ?? 0))
                           ).toLocaleString("id-ID")}
                         </strong>
                       </div>
                     </div>
                   </div>
                 )}
-                  
+
                 {/* Button Konfirmasi Pembayaran */}
                 <button
-  type="button"
-  className="btn-konfirmasi"
-  disabled={!metodeBayar}
-  onClick={() => {
-    const statusPembayaran = computedStatus();
-    const totalHarga =
-      updatedOrder.total_harga || order?.total_harga || 0;
+                  type="button"
+                  className="btn-konfirmasi"
+                  disabled={!metodeBayar}
+                  onClick={() => {
+                    const statusPembayaran = computedStatus();
+                    const totalHarga =
+                      updatedOrder.total_harga || order?.total_harga || 0;
 
-    // DP (status 4) → input manual
-    if (statusPembayaran === 4) {
-      setAmount("");
-      setIsDP(true);
-    } else {
-      // selain DP → auto isi total
-      setAmount(totalHarga > 0 ? formatCurrency(totalHarga) : "");
-      setIsDP(false);
-    }
+                    // DP (status 4) → input manual
+                    if (statusPembayaran === 4) {
+                      setAmount("");
+                      setIsDP(true);
+                    } else {
+                      // selain DP → auto isi total
+                      setAmount(totalHarga > 0 ? formatCurrency(totalHarga) : "");
+                      setIsDP(false);
+                    }
 
-    // 🔥 APAPUN STATUSNYA, MODAL HARUS BUKA
-    setShowKonfirmasiModal(true);
-  }}
-  style={{
-    width: "100%",
-    marginBottom: "16px",
-  }}
->
-  <i className="pi pi-check-circle" />
-  {computedStatus() === 4
-    ? "Konfirmasi Pembayaran Lanjutan"
-    : "Konfirmasi Pembayaran"}
-</button>
+                    // 🔥 APAPUN STATUSNYA, MODAL HARUS BUKA
+                    setShowKonfirmasiModal(true);
+                  }}
+                  style={{
+                    width: "100%",
+                    marginBottom: "16px",
+                  }}
+                >
+                  <i className="pi pi-check-circle" />
+                  {computedStatus() === 4
+                    ? "Konfirmasi Pembayaran Lanjutan"
+                    : "Konfirmasi Pembayaran"}
+                </button>
 
 
                 {/* Bukti Pembayaran Preview */}
@@ -1069,8 +1077,8 @@ const handleSubmitUpdate = async (e) => {
                 >
                   Batal
                 </button>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className="orders-btn orders-btn--success"
                   disabled={submitting}
                 >

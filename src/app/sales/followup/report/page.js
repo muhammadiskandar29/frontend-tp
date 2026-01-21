@@ -31,7 +31,7 @@ const getLogStatus = (item) => {
   return "pending";
 };
 
-const COLUMNS = ["#", "Customer", "Event", "Produk", "Status", "Keterangan", "Waktu"];
+const COLUMNS = ["#", "Customer", "Tipe", "Status", "Keterangan", "Waktu"];
 
 export default function FollowupReportPage() {
   const [logs, setLogs] = useState([]);
@@ -283,8 +283,7 @@ export default function FollowupReportPage() {
                           <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{log.customerPhone}</span>
                         </div>
                       </div>
-                      <div className="customers-table__cell"><span className="cell-text">{log.event}</span></div>
-                      <div className="customers-table__cell"><span className="cell-text cell-text--truncate" title={log.produk}>{log.produk}</span></div>
+                      <div className="customers-table__cell"><span className="cell-text">{log.type}</span></div>
                       <div className="customers-table__cell"><span className={`followup-status-badge followup-status-badge--${log.status}`}>{log.statusLabel}</span></div>
                       <div className="customers-table__cell"><span className="cell-text cell-text--truncate cell-text--muted" title={log.keterangan}>{log.keterangan}</span></div>
                       <div className="customers-table__cell"><span className="cell-text cell-text--muted">{formatDateTime(log.waktu)}</span></div>

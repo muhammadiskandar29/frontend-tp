@@ -7,18 +7,18 @@ import { BACKEND_URL } from "@/config/env";
 const STATUS_PEMBAYARAN_MAP = {
   0: { label: "Unpaid", class: "unpaid" },
   null: { label: "Unpaid", class: "unpaid" },
-  1: { label: "Pending", class: "pending" },
-  2: { label: "Paid", class: "paid" },
-  3: { label: "Ditolak", class: "rejected" },
-  4: { label: "DP", class: "dp" },
+  1: { label: "Waiting Approval", class: "pending" }, // Menunggu approve finance
+  2: { label: "Paid", class: "paid" },             // Finance approved
+  3: { label: "Rejected", class: "rejected" },
+  4: { label: "Partial Payment", class: "partial" },
 };
 
 const STATUS_ORDER_MAP = {
-  "1": { label: "Proses", class: "proses" },
-  "2": { label: "Sukses", class: "sukses" },
+  "1": { label: "Pending", class: "pending" },
+  "2": { label: "Success", class: "success" },
   "3": { label: "Failed", class: "failed" },
-  "4": { label: "Upselling", class: "upselling" },
-  "N": { label: "Dihapus", class: "dihapus" },
+  "4": { label: "Completed", class: "completed" },
+  "N": { label: "Deleted", class: "deleted" },
 };
 
 // 🔹 Helper untuk formatting date time
