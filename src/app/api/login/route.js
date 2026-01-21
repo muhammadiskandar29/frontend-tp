@@ -14,7 +14,7 @@ const corsHeaders = {
 export async function POST(request) {
   const startTime = Date.now();
   const requestId = `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  
+
   // Log immediately when function is called
   console.log('[LOGIN_PROXY] ========== LOGIN REQUEST STARTED ==========');
   console.log('[LOGIN_PROXY] Request ID:', requestId);
@@ -22,7 +22,7 @@ export async function POST(request) {
   console.log('[LOGIN_PROXY] Environment:', process.env.NODE_ENV);
   console.log('[LOGIN_PROXY] Vercel:', !!process.env.VERCEL);
   console.log('[LOGIN_PROXY] Vercel Region:', process.env.VERCEL_REGION || 'unknown');
-  
+
   try {
     // Parse request body with error handling
     let body;
@@ -33,32 +33,32 @@ export async function POST(request) {
     } catch (parseError) {
       console.error('[LOGIN_PROXY] ❌ Failed to parse request body:', parseError);
       return NextResponse.json(
-        { 
-          success: false, 
+        {
+          success: false,
           message: 'Invalid request body. Email and password are required.',
           error: 'InvalidRequestBody'
         },
         { status: 400, headers: corsHeaders }
       );
     }
-    
+
     // Validate required fields
     if (!body.email || !body.password) {
       console.error('[LOGIN_PROXY] ❌ Missing required fields:', { hasEmail: !!body.email, hasPassword: !!body.password });
       return NextResponse.json(
-        { 
-          success: false, 
+        {
+          success: false,
           message: 'Email dan password wajib diisi.',
           error: 'MissingFields'
         },
         { status: 400, headers: corsHeaders }
       );
     }
-    
+
     const backendUrl = getBackendUrl('/login');
     console.log('[LOGIN_PROXY] Backend URL:', backendUrl);
     console.log('[LOGIN_PROXY] Request ID:', requestId);
-    
+
     // Create AbortController for timeout - increase to 30 seconds for Vercel
     const controller = new AbortController();
     const timeoutDuration = 30000; // 30 seconds timeout for Vercel serverless
@@ -66,7 +66,7 @@ export async function POST(request) {
       console.error('[LOGIN_PROXY] ⏱️ Timeout triggered after', timeoutDuration, 'ms');
       controller.abort();
     }, timeoutDuration);
-    
+
     let response;
     try {
       const fetchStartTime = Date.now();
@@ -74,7 +74,7 @@ export async function POST(request) {
       console.log('[LOGIN_PROXY] Request ID:', requestId);
       console.log('[LOGIN_PROXY] Backend URL:', backendUrl);
       console.log('[LOGIN_PROXY] Timeout:', timeoutDuration, 'ms');
-      
+
       // Make the fetch request
       response = await fetch(backendUrl, {
         method: 'POST',
@@ -89,19 +89,19 @@ export async function POST(request) {
         // Don't use keepalive in serverless
         keepalive: false,
       });
-      
+
       const fetchDuration = Date.now() - fetchStartTime;
       console.log('[LOGIN_PROXY] ✅ Fetch completed in', fetchDuration, 'ms');
       console.log('[LOGIN_PROXY] Request ID:', requestId);
       console.log('[LOGIN_PROXY] Response status:', response.status, response.statusText);
       console.log('[LOGIN_PROXY] Response ok:', response.ok);
       console.log('[LOGIN_PROXY] Response headers:', Object.fromEntries(response.headers.entries()));
-      
+
       clearTimeout(timeoutId);
     } catch (fetchError) {
       clearTimeout(timeoutId);
       const fetchDuration = Date.now() - startTime;
-      
+
       console.error('[LOGIN_PROXY] ❌ ========== FETCH ERROR ==========');
       console.error('[LOGIN_PROXY] Request ID:', requestId);
       console.error('[LOGIN_PROXY] Error after', fetchDuration, 'ms');
@@ -114,14 +114,14 @@ export async function POST(request) {
       }
       console.error('[LOGIN_PROXY] Backend URL attempted:', backendUrl);
       console.error('[LOGIN_PROXY] ====================================');
-      
+
       // Handle timeout
       if (fetchError.name === 'AbortError') {
         console.error('[LOGIN_PROXY] ⏱️ Request timeout after', timeoutDuration, 'ms');
         return NextResponse.json(
-          { 
-            success: false, 
-            message: `Request timeout. Server tidak merespons dalam ${timeoutDuration/1000} detik. Pastikan backend dapat diakses dari Vercel server.`,
+          {
+            success: false,
+            message: `Request timeout. Server tidak merespons dalam ${timeoutDuration / 1000} detik. Pastikan backend dapat diakses dari Vercel server.`,
             error: 'TimeoutError',
             backendUrl: backendUrl,
             duration: fetchDuration
@@ -129,14 +129,13 @@ export async function POST(request) {
           { status: 504, headers: corsHeaders }
         );
       }
-      
+
       // Handle network errors
       if (fetchError.message?.includes('fetch') || fetchError.name === 'TypeError') {
-        console.error('[LOGIN_PROXY] 🌐 Network error - Backend mungkin tidak dapat diakses dari Vercel');
         return NextResponse.json(
-          { 
-            success: false, 
-            message: 'Tidak dapat terhubung ke server backend. Pastikan backend berjalan di http://3.105.234.181:8000 dan dapat diakses dari Vercel server (bukan hanya dari browser).',
+          {
+            success: false,
+            message: `Tidak dapat terhubung ke server backend. Pastikan backend berjalan di ${backendUrl} dan dapat diakses dari Vercel server (bukan hanya dari browser).`,
             error: 'NetworkError',
             backendUrl: backendUrl,
             hint: 'Backend mungkin memblokir request dari Vercel IP. Cek firewall/security group backend.'
@@ -144,7 +143,7 @@ export async function POST(request) {
           { status: 503, headers: corsHeaders }
         );
       }
-      
+
       throw fetchError;
     }
 
@@ -157,10 +156,10 @@ export async function POST(request) {
       } catch {
         errorData = { message: `HTTP ${response.status} ${response.statusText}` };
       }
-      
+
       return NextResponse.json(
-        { 
-          success: false, 
+        {
+          success: false,
           message: errorData?.message || 'Login gagal',
           error: errorData
         },
@@ -174,8 +173,8 @@ export async function POST(request) {
     } catch (parseError) {
       console.error('[LOGIN_PROXY] Failed to parse response as JSON:', parseError);
       return NextResponse.json(
-        { 
-          success: false, 
+        {
+          success: false,
           message: 'Server mengembalikan response yang tidak valid.',
           error: 'InvalidResponse'
         },
@@ -188,8 +187,8 @@ export async function POST(request) {
     console.log('[LOGIN_PROXY] ✅ ========== LOGIN SUCCESS ==========');
     console.log('[LOGIN_PROXY] Request ID:', requestId);
     console.log('[LOGIN_PROXY] Total duration:', totalDuration, 'ms');
-    console.log('[LOGIN_PROXY] Response data:', { 
-      success: data?.success, 
+    console.log('[LOGIN_PROXY] Response data:', {
+      success: data?.success,
       hasToken: !!data?.token,
       hasUser: !!data?.user,
       userId: data?.user?.id,
@@ -216,10 +215,10 @@ export async function POST(request) {
     }
     console.error('[LOGIN_PROXY] Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
     console.error('[LOGIN_PROXY] ========================================');
-    
+
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         message: 'Gagal terhubung ke server. Coba lagi nanti.',
         error: error?.message || 'Unknown error',
         errorType: error?.name || typeof error,

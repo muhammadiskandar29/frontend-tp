@@ -8,6 +8,7 @@ import "@/styles/sales/add-products3.css";
 
 import dynamic from "next/dynamic";
 import Image from "next/image";
+import { buildImageUrl } from "@/lib/image";
 // ✅ OPTIMASI: Tree-shake lucide-react - import icons yang digunakan secara dinamis
 // Icons digunakan dalam iconMap untuk list component, jadi tetap perlu di-import
 import {
@@ -911,7 +912,7 @@ function ProductClient({ initialProductData, initialLandingPage }) {
           <div style={imageContainerStyle}>
             <div style={imageWrapperStyle}>
               <Image
-                src={imageData.src}
+                src={buildImageUrl(imageData.src)}
                 alt={imageData.alt || ""}
                 width={625}
                 height={625}
@@ -924,7 +925,7 @@ function ProductClient({ initialProductData, initialLandingPage }) {
                   objectPosition: "center",
                   display: "block",
                 }}
-                unoptimized={imageData.src?.startsWith('http') && !imageData.src?.includes(process.env.NEXT_PUBLIC_BASE_URL || '')}
+                unoptimized={true}
               />
             </div>
             {imageData.caption && <p className="preview-caption">{imageData.caption}</p>}
@@ -1056,7 +1057,7 @@ function ProductClient({ initialProductData, initialLandingPage }) {
                           {item.gambar ? (
                             <div className="testi-avatar-wrapper-new">
                               <Image
-                                src={item.gambar}
+                                src={buildImageUrl(item.gambar)}
                                 alt={`Foto ${item.nama}`}
                                 width={48}
                                 height={48}
@@ -1064,7 +1065,7 @@ function ProductClient({ initialProductData, initialLandingPage }) {
                                 itemProp="author"
                                 loading="lazy"
                                 style={{ objectFit: 'cover', borderRadius: '50%' }}
-                                unoptimized={item.gambar?.startsWith('http') && !item.gambar?.includes(process.env.NEXT_PUBLIC_BASE_URL || '')}
+                                unoptimized={true}
                               />
                             </div>
                           ) : (
@@ -2303,7 +2304,7 @@ function ProductClient({ initialProductData, initialLandingPage }) {
     ? landingpage.find(item => item.type === 'settings')
     : null;
 
-  const logoUrl = settings?.logo || '/assets/logo.png';
+  const logoUrl = buildImageUrl(settings?.logo) || '/assets/logo.png';
   const backgroundColor = settings?.background_color || '#ffffff';
 
   // ✅ MOVED UP: SEO & Scripts Management

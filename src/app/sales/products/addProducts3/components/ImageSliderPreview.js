@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { buildImageUrl } from "@/lib/image";
 
 export default function ImageSliderPreview({ data = {} }) {
   const images = data.images || [];
@@ -10,7 +11,7 @@ export default function ImageSliderPreview({ data = {} }) {
   const showCaption = data.showCaption || false;
   const showDots = data.showDots !== undefined ? data.showDots : true;
   const showArrows = data.showArrows !== undefined ? data.showArrows : true;
-  
+
   // Advanced settings
   const alignment = data.alignment || "center";
   const imageWidth = data.imageWidth || 100;
@@ -123,7 +124,7 @@ export default function ImageSliderPreview({ data = {} }) {
         {sliderType === "banner" && currentImage.link ? (
           <a href={currentImage.link} style={{ display: "block", width: "100%", height: "100%" }}>
             <img
-              src={currentImage.src}
+              src={buildImageUrl(currentImage.src)}
               alt={currentImage.alt || ""}
               style={{
                 width: "100%",
@@ -135,7 +136,7 @@ export default function ImageSliderPreview({ data = {} }) {
           </a>
         ) : (
           <img
-            src={currentImage.src}
+            src={buildImageUrl(currentImage.src)}
             alt={currentImage.alt || ""}
             style={{
               width: "100%",
@@ -145,7 +146,7 @@ export default function ImageSliderPreview({ data = {} }) {
             }}
           />
         )}
-        
+
         {/* Caption */}
         {showCaption && currentImage.caption && (
           <div style={{
@@ -194,7 +195,7 @@ export default function ImageSliderPreview({ data = {} }) {
           ))}
         </div>
       )}
-      
+
       {/* Slider Arrows */}
       {images.length > 1 && showArrows && (
         <>

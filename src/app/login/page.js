@@ -33,13 +33,13 @@ function LoginPageContent() {
       // ✅ FIX: Gunakan getDivisionHome berdasarkan user data, bukan hardcode /admin
       const userData = localStorage.getItem('user');
       let targetRoute = null;
-      
+
       if (userData) {
         try {
           const parsedUser = JSON.parse(userData);
           const userDivisi = parsedUser?.divisi;
           const userLevel = parsedUser?.level ? Number(parsedUser.level) : null;
-          
+
           // ✅ Gunakan getDivisionHome untuk mendapatkan route yang benar
           // Sales level 1 → /sales
           // Sales level 2 → /sales/staff
@@ -48,7 +48,7 @@ function LoginPageContent() {
           // Admin → /admin
           // dll
           targetRoute = getDivisionHome(userDivisi, userLevel);
-          
+
           console.log('[Login] User sudah login, redirect ke:', {
             divisi: userDivisi,
             level: userLevel,
@@ -69,7 +69,7 @@ function LoginPageContent() {
           targetRoute = divisionHome;
         }
       }
-      
+
       // ✅ FIX: Jika fallback gagal (tidak ada targetRoute), clear dan redirect ke login
       if (!targetRoute) {
         console.warn('[Login] Tidak dapat menentukan route, clear session dan redirect ke login');
@@ -77,7 +77,7 @@ function LoginPageContent() {
         // Tidak perlu redirect karena sudah di halaman login
         return;
       }
-      
+
       router.replace(targetRoute);
     }
   }, [router]);
@@ -90,8 +90,8 @@ function LoginPageContent() {
       if (
         event.reason instanceof TypeError &&
         (event.reason.message === "Failed to fetch" ||
-         event.reason.message === "NetworkError when attempting to fetch resource" ||
-         event.reason.message?.includes("fetch"))
+          event.reason.message === "NetworkError when attempting to fetch resource" ||
+          event.reason.message?.includes("fetch"))
       ) {
         // Prevent default error logging for network errors on page load
         event.preventDefault();
@@ -105,8 +105,8 @@ function LoginPageContent() {
       if (
         event.error instanceof TypeError &&
         (event.error.message === "Failed to fetch" ||
-         event.error.message === "NetworkError when attempting to fetch resource" ||
-         event.error.message?.includes("fetch"))
+          event.error.message === "NetworkError when attempting to fetch resource" ||
+          event.error.message?.includes("fetch"))
       ) {
         // Prevent default error logging for network errors on page load
         event.preventDefault();
@@ -143,14 +143,14 @@ function LoginPageContent() {
       // Create AbortController for timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout (slightly longer than server)
-      
+
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
         signal: controller.signal,
       });
-      
+
       clearTimeout(timeoutId);
 
       let data;
@@ -166,14 +166,14 @@ function LoginPageContent() {
       // Check if response is ok
       if (!response.ok) {
         let errorMessage = data?.message || `HTTP ${response.status}: ${data?.error || 'Login gagal'}`;
-        
+
         // Add helpful hints for specific error codes
         if (response.status === 504) {
           errorMessage += ' (Timeout - Backend mungkin tidak dapat diakses dari Vercel server)';
         } else if (response.status === 503) {
           errorMessage += ' (Network Error - Cek firewall/security group backend)';
         }
-        
+
         setErrorMsg(errorMessage);
         setShowError(true);
         return;
@@ -209,7 +209,7 @@ function LoginPageContent() {
       } else {
         // No token in response
         const errorMessage = data?.message || 'Email atau password salah.';
-        
+
         // If email not found, check if it might be a sync issue
         if (errorMessage.includes('tidak terdaftar') || errorMessage.includes('Email tidak terdaftar')) {
           setErrorMsg(
@@ -227,31 +227,31 @@ function LoginPageContent() {
       if (hasAttemptedLogin) {
         // Only log non-network errors to avoid console spam
         if (
-          !(error instanceof TypeError && 
-            (error.message === "Failed to fetch" || 
-             error.message === "NetworkError when attempting to fetch resource" ||
-             error.message.includes("fetch")))
+          !(error instanceof TypeError &&
+            (error.message === "Failed to fetch" ||
+              error.message === "NetworkError when attempting to fetch resource" ||
+              error.message.includes("fetch")))
         ) {
           console.error('Login error:', error);
         }
       }
       // If hasAttemptedLogin is false, don't log anything (suppress errors on page load)
-      
+
       // Handle timeout errors
       if (error.name === 'AbortError' || error?.message?.includes('timeout')) {
         setErrorMsg('Request timeout. Server tidak merespons. Jika backend berjalan di Postman, pastikan backend dapat diakses dari Vercel server (bukan hanya dari browser). Cek firewall/security group backend.');
         setShowError(true);
         return;
       }
-      
+
       // Handle network errors specifically
       if (
-        error instanceof TypeError && 
-        (error.message === "Failed to fetch" || 
-         error.message === "NetworkError when attempting to fetch resource" ||
-         error.message.includes("fetch"))
+        error instanceof TypeError &&
+        (error.message === "Failed to fetch" ||
+          error.message === "NetworkError when attempting to fetch resource" ||
+          error.message.includes("fetch"))
       ) {
-        setErrorMsg('Tidak dapat terhubung ke server. Backend mungkin memblokir request dari Vercel. Pastikan backend di http://3.105.234.181:8000 dapat diakses dari Vercel server (bukan hanya dari browser/Postman).');
+        setErrorMsg('Tidak dapat terhubung ke server. Backend mungkin memblokir request dari Vercel. Pastikan server backend dapat diakses dari Vercel server (bukan hanya dari browser/Postman).');
       } else {
         // Use error message from API response if available
         const errorMessage = error?.message || data?.message || 'Gagal terhubung ke server. Coba lagi nanti.';
@@ -275,75 +275,75 @@ function LoginPageContent() {
             <img src="/assets/logo.png" alt="Logo" className="login-logo__img" />
           </div>
           <h3>Welcome to One Dashboard</h3>
-        <p>Sign in to your account</p>
+          <p>Sign in to your account</p>
 
           {showError && <div className="login-alert">{errorMsg}</div>}
 
-        <form onSubmit={handleLogin} className="login-form" autoComplete="off" data-form-type="other">
+          <form onSubmit={handleLogin} className="login-form" autoComplete="off" data-form-type="other">
             <div className="login-form-group">
               <label>Email</label>
-            <input
-              id="email"
+              <input
+                id="email"
                 type="email"
                 name="email"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                if (showError) setShowError(false);
-              }}
-              placeholder="admin@gmail.com"
-              required
-              autoComplete="email"
-            />
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (showError) setShowError(false);
+                }}
+                placeholder="admin@gmail.com"
+                required
+                autoComplete="email"
+              />
             </div>
 
             <div className="login-form-group">
               <label>Password</label>
               <div className="login-password-wrapper">
-              <input
-              id="password"
+                <input
+                  id="password"
                   type={showPasswordField ? 'text' : 'password'}
                   name="password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                if (showError) setShowError(false);
-              }}
-              placeholder="••••••••"
-              required
-                autoComplete="current-password"
-                data-1p-ignore
-                data-lpignore="true"
-                data-form-type="other"
-              />
-              <button
-                type="button"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (showError) setShowError(false);
+                  }}
+                  placeholder="••••••••"
+                  required
+                  autoComplete="current-password"
+                  data-1p-ignore
+                  data-lpignore="true"
+                  data-form-type="other"
+                />
+                <button
+                  type="button"
                   className="login-password-toggle"
-                onClick={() => setShowPasswordField((prev) => !prev)}
-                aria-label={showPasswordField ? 'Hide password' : 'Show password'}
-              >
-                {showPasswordField ? 'Hide' : 'Show'}
-              </button>
-            </div>
+                  onClick={() => setShowPasswordField((prev) => !prev)}
+                  aria-label={showPasswordField ? 'Hide password' : 'Show password'}
+                >
+                  {showPasswordField ? 'Hide' : 'Show'}
+                </button>
+              </div>
             </div>
 
             <div className="login-remember-forgot">
               <label>
-              <input
-                id="remember"
-                type="checkbox"
-                checked={checked}
-                onChange={(e) => setChecked(e.target.checked)}
-              />
+                <input
+                  id="remember"
+                  type="checkbox"
+                  checked={checked}
+                  onChange={(e) => setChecked(e.target.checked)}
+                />
                 Remember me
-            </label>
+              </label>
               <a href="mailto:support@onedashboard.id">Forgot password?</a>
-          </div>
+            </div>
 
             <button type="submit" className="login-btn-signin" disabled={isSubmitting}>
-            {isSubmitting ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
+              {isSubmitting ? 'Signing in...' : 'Sign In'}
+            </button>
+          </form>
 
           <p className="login-footer">{helperMessage}</p>
         </div>
@@ -370,11 +370,11 @@ function LoginPageContent() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        minHeight: '100vh' 
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '100vh'
       }}>
         <p>Loading...</p>
       </div>
