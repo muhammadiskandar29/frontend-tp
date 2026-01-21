@@ -17,9 +17,8 @@ import {
   Wallet,
   TrendingUp,
   ArrowRight,
-  XCircle,
 } from "lucide-react";
-import { getOrders, getOrderStatisticPerSales } from "@/lib/sales/orders";
+import { getOrders } from "@/lib/sales/orders";
 import Link from "next/link";
 
 const BASE_URL = "/api";
@@ -43,12 +42,11 @@ export default function Dashboard() {
 
   const [orderStats, setOrderStats] = useState({
     totalOrders: 0,
-    unpaidCount: 0,
-    pendingCount: 0,
+    totalRevenue: 0, // Based on fetched data
+    prosesCount: 0,
     successCount: 0,
-    rejectedCount: 0,
-    revenue: 0,
-    totalRevenue: 0,
+    upsellingCount: 0,
+    batalCount: 0,
   });
 
   const [recentOrders, setRecentOrders] = useState([]);
@@ -102,9 +100,49 @@ export default function Dashboard() {
 
       // --- NEW: FETCH ORDERS DATA ---
       try {
-        const ordersRes = await getOrders(1, 10, currentUserId);
+        // Fetch last 100 orders for this specific sales staff
+        const ordersRes = await getOrders(1, 100, currentUserId);
+
         if (ordersRes && Array.isArray(ordersRes.data)) {
-          setRecentOrders(ordersRes.data);
+          const orders = ordersRes.data;
+
+          // Total Orders (from pagination metadata if available, else length)
+          const totalOrders = ordersRes.total || orders.length;
+
+          // Calculate stats from the fetched batch
+          let revenue = 0;
+          let proses = 0;
+          let success = 0;
+          let upselling = 0;
+          let batal = 0;
+
+          orders.forEach(o => {
+            // Sum revenue (only if status is Sukses/Proses/Upselling? Usually Revenue is counted on Success. But let's sum all 'potential' or just 'success'?)
+            // Safest: Sum 'Success' orders for Revenue.
+            // Or sum everything except Cancelled.
+            // Let's sum Success (2) and Upselling (4) [Assuming upselling is a valid state of purchase].
+            if (o.status === "2" || o.status === 2 || o.status === "4" || o.status === 4) {
+              revenue += Number(o.total_harga || 0);
+            }
+
+            const s = String(o.status);
+            if (s === "1") proses++;
+            else if (s === "2") success++;
+            else if (s === "4") upselling++;
+            else if (s === "N" || s === "3") batal++;
+          });
+
+          setOrderStats({
+            totalOrders, // Trusting the API total
+            totalRevenue: revenue,
+            prosesCount: proses,
+            successCount: success,
+            upsellingCount: upselling,
+            batalCount: batal,
+          });
+
+          // Recent 10 orders
+          setRecentOrders(orders.slice(0, 10));
         }
       } catch (err) {
         console.error("Error fetching orders for dashboard:", err);
@@ -113,26 +151,41 @@ export default function Dashboard() {
 
       // Fetch sales statistics (Replacing old fetch)
       try {
-        const statsData = await getOrderStatisticPerSales();
-        if (statsData && Array.isArray(statsData)) {
-          // Filter by current logged-in Sales ID
-          const myStats = statsData.find(
-            (s) => Number(s.sales_id) === Number(currentUserId)
-          );
+        const statsRes = await fetch(`${BASE_URL}/sales/order/statistic-per-sales`, {
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-          if (myStats) {
-            console.log("📊 [STATISTICS] Found my stats:", myStats);
-            setOrderStats({
-              totalOrders: Number(myStats.total_order || 0),
-              unpaidCount: Number(myStats.total_order_unpaid || 0),
-              pendingCount: Number(myStats.total_order_menunggu || 0),
-              successCount: Number(myStats.total_order_sudah_diapprove || 0),
-              rejectedCount: Number(myStats.total_order_ditolak || 0),
-              revenue: Number(myStats.revenue || 0),
-              totalRevenue: Number(myStats.total_revenue || 0),
-            });
-          } else {
-            console.warn("⚠️ [STATISTICS] No stats found for sales ID:", currentUserId);
+        if (statsRes.ok) {
+          const statsJson = await statsRes.json();
+          if (statsJson.success && Array.isArray(statsJson.data)) {
+            // Filter by current logged-in Sales ID
+            const myStats = statsJson.data.find(
+              (s) => Number(s.sales_id) === Number(currentUserId)
+            );
+
+            if (myStats) {
+              const totalOrd = Number(myStats.total_order || 0);
+              const sukses = Number(myStats.total_order_sudah_diapprove || 0);
+
+              setOrderStats({
+                totalOrders: totalOrd,
+                totalRevenue: Number(myStats.revenue || 0),
+                prosesCount: Number(myStats.total_order_menunggu || 0),
+                successCount: sukses,
+                upsellingCount: 0,
+                batalCount: Number(myStats.total_order_ditolak || 0),
+                unpaidCount: Number(myStats.total_order_unpaid || 0),
+
+                // Calculated / Missing fields
+                totalCustomers: 0,
+                conversionRate: totalOrd > 0 ? (sukses / totalOrd * 100) : 0,
+                avgOrderValue: 0
+              });
+            }
           }
         }
       } catch (err) {
@@ -258,69 +311,73 @@ export default function Dashboard() {
     ? Math.min((stats.closingProgress / stats.closingTarget) * 100, 100)
     : 0;
 
+  // New Order Cards
+  // New Order Cards
+  const orderCards = [
+    {
+      label: "Total Revenue",
+      value: formatCurrency(orderStats.totalRevenue),
+      icon: <Wallet size={24} />,
+      color: "accent-emerald",
+      desc: "Total Pendapatan"
+    },
+    {
+      label: "Total Orders",
+      value: (orderStats.totalOrders || 0).toLocaleString("id-ID"),
+      icon: <ShoppingCart size={24} />,
+      color: "accent-blue",
+      desc: "Total Pesanan"
+    },
+    {
+      label: "Unpaid Orders",
+      value: (orderStats.unpaidCount || 0).toLocaleString("id-ID"),
+      icon: <AlertCircle size={24} />,
+      color: "accent-red",
+      desc: "Belum Dibayar"
+    },
+    {
+      label: "Conversion Rate",
+      value: `${(orderStats.conversionRate || 0).toFixed(2)}%`,
+      icon: <TrendingUp size={24} />,
+      color: "accent-cyan",
+      desc: "Success / Total"
+    },
+    {
+      label: "Pending Orders",
+      value: (orderStats.prosesCount || 0).toLocaleString("id-ID"),
+      icon: <Clock size={24} />,
+      color: "accent-orange",
+      desc: "Menunggu Proses"
+    }
+  ];
+
   return (
     <Layout title="Dashboard" aboveContent={<GreetingBanner />}>
       <div className="dashboard-shell">
 
         {/* --- ORDERS OVERVIEW (NEW) --- */}
-        <section className="orders-summary">
-          <article className="summary-card summary-card--combined">
-            <div className="summary-card__column">
-              <div className="summary-card__icon accent-orange">
-                <ShoppingCart size={22} />
-              </div>
+        <section className="dashboard-panels">
+          <article className="panel panel--summary">
+            <div className="panel__header">
               <div>
-                <p className="summary-card__label">Total orders</p>
-                <p className="summary-card__value">{(orderStats.totalOrders || 0).toLocaleString("id-ID")}</p>
+                <p className="panel__eyebrow">Sales Performance</p>
+                <h3 className="panel__title">Order Overview</h3>
               </div>
+              <Link href="/sales/staff/orders" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.875rem', color: '#3b82f6', fontWeight: 500, textDecoration: 'none' }}>
+                Lihat Semua Order <ArrowRight size={16} />
+              </Link>
             </div>
-
-            <div className="summary-card__divider"></div>
-
-            <div className="summary-card__column">
-              <div className="summary-card__icon accent-orange">
-                <Clock size={22} />
-              </div>
-              <div>
-                <p className="summary-card__label">Unpaid</p>
-                <p className="summary-card__value">{(orderStats.unpaidCount || 0).toLocaleString("id-ID")}</p>
-              </div>
-            </div>
-
-            <div className="summary-card__divider"></div>
-
-            <div className="summary-card__column">
-              <div className="summary-card__icon accent-orange">
-                <Clock size={22} />
-              </div>
-              <div>
-                <p className="summary-card__label">Pending</p>
-                <p className="summary-card__value">{(orderStats.pendingCount || 0).toLocaleString("id-ID")}</p>
-              </div>
-            </div>
-
-            <div className="summary-card__divider"></div>
-
-            <div className="summary-card__column">
-              <div className="summary-card__icon accent-orange">
-                <CheckCircle size={22} />
-              </div>
-              <div>
-                <p className="summary-card__label">Sukses</p>
-                <p className="summary-card__value">{(orderStats.successCount || 0).toLocaleString("id-ID")}</p>
-              </div>
-            </div>
-
-            <div className="summary-card__divider"></div>
-
-            <div className="summary-card__column">
-              <div className="summary-card__icon accent-orange">
-                <XCircle size={22} />
-              </div>
-              <div>
-                <p className="summary-card__label">Ditolak</p>
-                <p className="summary-card__value">{(orderStats.rejectedCount || 0).toLocaleString("id-ID")}</p>
-              </div>
+            <div className="dashboard-summary-horizontal">
+              {orderCards.map((card) => (
+                <article className="summary-card" key={card.label}>
+                  <div className={`summary-card__icon ${card.color}`}>{card.icon}</div>
+                  <div>
+                    <p className="summary-card__label">{card.label}</p>
+                    <p className="summary-card__value">{card.value}</p>
+                    {card.desc && <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>{card.desc}</p>}
+                  </div>
+                </article>
+              ))}
             </div>
           </article>
         </section>
@@ -393,7 +450,7 @@ export default function Dashboard() {
         </section>
 
 
-      </div >
-    </Layout >
+      </div>
+    </Layout>
   );
 }
