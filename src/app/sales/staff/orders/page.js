@@ -180,12 +180,6 @@ const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran, prod
   const activeP = isPaymentActive();
   bubbles.push(createBubble("P", activeP, "bubble-p", false, activeP ? "Pembayaran Terdeteksi / Sukses" : "Pembayaran"));
 
-  const active7 = isSelesaiActive();
-  bubbles.push(createBubble("7", active7, "bubble-7", false, active7 ? "Order Selesai / Sukses" : "Selesai"));
-
-  const active8 = isUpsellingActive();
-  bubbles.push(createBubble("8", active8, "bubble-8", false, active8 ? "Upselling Sukses" : "Upselling"));
-
   return (
     <div
       onClick={onOpenTimeline}
