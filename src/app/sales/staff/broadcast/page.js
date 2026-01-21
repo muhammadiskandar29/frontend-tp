@@ -182,9 +182,10 @@ export default function BroadcastPage() {
   // Helper function untuk mendapatkan label status pembayaran
   const getStatusPembayaranLabel = (status) => {
     if (Array.isArray(status)) {
-      return status.map(s => STATUS_PEMBAYARAN_MAP[s] || s).join(", ");
+      return status.map(s => STATUS_PEMBAYARAN_MAP[s]?.label || s).join(", ");
     }
-    return STATUS_PEMBAYARAN_MAP[status] || status || "-";
+    const mapped = STATUS_PEMBAYARAN_MAP[status];
+    return mapped?.label || status || "-";
   };
 
   // Format target untuk ditampilkan
@@ -250,7 +251,7 @@ export default function BroadcastPage() {
         : [targetData.status_pembayaran];
       const validStatus = statusPembayaranList.filter(s => s !== null && s !== undefined && s !== "");
       if (validStatus.length > 0) {
-        const statusLabels = validStatus.map(s => STATUS_PEMBAYARAN_MAP[s] || s || "Unpaid");
+        const statusLabels = validStatus.map(s => STATUS_PEMBAYARAN_MAP[s]?.label || s || "Unpaid");
         parts.push(
           <div key="status_pembayaran" style={{ marginBottom: statusLabels.length > 1 ? "0.5rem" : "0.25rem" }}>
             <strong>Status Pembayaran:</strong>
