@@ -454,6 +454,38 @@ export default function UpdateOrders({ order, onClose, onSave }) {
     }
   };
 
+  const handleReject = async () => {
+    if (!order?.id) return;
+    if (!confirm("Apakah Anda yakin ingin menolak pesanan ini?")) return;
+
+    setSubmitting(true);
+    setErrorMsg("");
+
+    try {
+      const token = localStorage.getItem("customer_token") || localStorage.getItem("token");
+      const res = await fetch(`${BASE_URL}/sales/order/${order.id}/reject`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      });
+
+      const json = await res.json();
+      if (res.ok && json.success) {
+        onSave(json.data || { ...order, status_order: "3" });
+        onClose();
+      } else {
+        setErrorMsg(json.message || "Gagal menolak pesanan");
+      }
+    } catch (err) {
+      console.error("❌ [REJECT ORDER] Error:", err);
+      setErrorMsg("Terjadi kesalahan saat menolak pesanan.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
 
 
   // Helper untuk build URL gambar via proxy
@@ -712,13 +744,24 @@ export default function UpdateOrders({ order, onClose, onSave }) {
             )}
 
             {/* Footer */}
-            <div className="modal-footer">
-              <button type="button" onClick={onClose} className="btn-cancel">
+            <div className="modal-footer" style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+              <button type="button" onClick={onClose} className="btn-cancel" disabled={submitting}>
                 Batal
               </button>
-              <button type="submit" className="btn-save">
-                Simpan Perubahan
-              </button>
+
+              <div style={{ marginLeft: "auto", display: "flex", gap: "10px" }}>
+                <button
+                  type="button"
+                  onClick={handleReject}
+                  className="btn-reject"
+                  disabled={submitting}
+                >
+                  {submitting ? "Memproses..." : "Reject Order"}
+                </button>
+                <button type="submit" className="btn-save" disabled={submitting}>
+                  {submitting ? "Menyimpan..." : "Simpan Perubahan"}
+                </button>
+              </div>
             </div>
           </form>
         </div>
@@ -961,6 +1004,28 @@ export default function UpdateOrders({ order, onClose, onSave }) {
           max-height: 180px;
           border-radius: 8px;
           object-fit: contain;
+        }
+
+        .btn-reject {
+          padding: 10px 20px;
+          background: #fee2e2;
+          color: #dc2626;
+          border: 1px solid #fecaca;
+          border-radius: 12px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .btn-reject:hover:not(:disabled) {
+          background: #fecaca;
+          color: #b91c1c;
+        }
+
+        .btn-reject:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
         }
 
         @media (max-width: 768px) {

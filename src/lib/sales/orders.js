@@ -18,6 +18,20 @@ export async function getOrderStatistics() {
   }
 }
 
+/** 📊 GET Order Statistics Per Sales */
+export async function getOrderStatisticPerSales() {
+  try {
+    const res = await api("/sales/order/statistic-per-sales", { method: "GET" });
+    if (res.success && res.data) {
+      return res.data;
+    }
+    return null;
+  } catch (error) {
+    console.error("❌ getOrderStatisticPerSales() - Error:", error);
+    return null;
+  }
+}
+
 /** 📘 GET Semua Order (Admin) */
 export async function getOrders(page = 1, per_page = 15, sales_id = null) {
   try {

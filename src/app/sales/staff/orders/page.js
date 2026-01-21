@@ -8,7 +8,7 @@ import { Calendar } from "primereact/calendar";
 import "primereact/resources/themes/lara-light-cyan/theme.css";
 import "primereact/resources/primereact.min.css";
 import "@/styles/sales/orders-page.css";
-import { getOrders, updateOrderAdmin, getOrderStatistics } from "@/lib/sales/orders";
+import { getOrders, updateOrderAdmin, getOrderStatistics, getOrderStatisticPerSales } from "@/lib/sales/orders";
 import { api } from "@/lib/api";
 import { createPortal } from "react-dom";
 
@@ -31,7 +31,6 @@ const UpdateOrders = dynamic(() => import("./updateOrders"), { ssr: false });
 const AddOrders = dynamic(() => import("./addOrders"), { ssr: false });
 const PaymentHistoryModal = dynamic(() => import("./paymentHistoryModal"), { ssr: false });
 const SendWhatsappModal = dynamic(() => import("./sendWhatsappModal"), { ssr: false });
-const OrderBroadcastModal = dynamic(() => import("./orderBroadcastModal"), { ssr: false });
 const AddFollowUpModal = dynamic(() => import("./addFollowUpModal"), { ssr: false });
 
 // Use Next.js proxy to avoid CORS
@@ -369,7 +368,6 @@ export default function DaftarPesanan() {
   // State lainnya
   const [statistics, setStatistics] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
-  const [showBroadcastModal, setShowBroadcastModal] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showView, setShowView] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -518,31 +516,24 @@ export default function DaftarPesanan() {
 
       if (!currentUserId) return;
 
-      // Gunakan endpoint statistic per sales
-      const res = await fetch(`${BASE_URL}/sales/order/statistic-per-sales`, {
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        }
-      });
+      // Gunakan helper getOrderStatisticPerSales
+      const data = await getOrderStatisticPerSales();
 
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success && Array.isArray(json.data)) {
-          // Filter stats untuk sales yang sedang login
-          const myStats = json.data.find(s => Number(s.sales_id) === Number(currentUserId));
-          if (myStats) {
-            setStatistics(myStats);
-          } else {
-            // Jika tidak ditemukan, set 0
-            setStatistics({
-              total_order: 0,
-              total_order_unpaid: 0,
-              total_order_menunggu: 0,
-              total_order_sudah_diapprove: 0,
-              total_order_ditolak: 0
-            });
-          }
+      if (data && Array.isArray(data)) {
+        // Filter stats untuk sales yang sedang login
+        const myStats = data.find(s => Number(s.sales_id) === Number(currentUserId));
+        if (myStats) {
+          console.log("📊 [STATISTICS] Found my stats:", myStats);
+          setStatistics(myStats);
+        } else {
+          console.warn("⚠️ [STATISTICS] No stats found for sales ID:", currentUserId);
+          setStatistics({
+            total_order: 0,
+            total_order_unpaid: 0,
+            total_order_menunggu: 0,
+            total_order_sudah_diapprove: 0,
+            total_order_ditolak: 0
+          });
         }
       }
     } catch (err) {
@@ -1261,19 +1252,6 @@ export default function DaftarPesanan() {
               <span className="orders-search__icon pi pi-search" />
             </div>
             <div className="orders-toolbar-buttons">
-              {/* Broadcast Button */}
-              <button
-                type="button"
-                onClick={() => setShowBroadcastModal(true)}
-                className="customers-button customers-button--secondary"
-                title="Broadcast"
-                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}
-              >
-                <div style={{ transform: 'rotate(-45deg)', display: 'flex', alignItems: 'center' }}>
-                  <Send size={16} />
-                </div>
-                <span>Broadcast</span>
-              </button>
 
               {/* Filter Icon Button */}
               <button

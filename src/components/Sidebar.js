@@ -128,6 +128,7 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
           section: "OPERATIONS",
           items: [
             { label: "Orders", href: `${basePath}/orders`, icon: <ClipboardList size={18} /> },
+            { label: "Broadcast", href: `${basePath}/broadcast`, icon: <Radio size={18} /> },
           ],
         },
       ];
@@ -191,14 +192,25 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
         },
       ];
 
-      // Add Sales List for Leader (level 1)
+      // Add Sales List and Broadcast for Leader (level 1)
       if (isLeader) {
+        // Add Team Management section
         salesItems.splice(3, 0, {
           section: "TEAM MANAGEMENT",
           items: [
             { label: "Sales List", href: `${basePath}/sales-list`, icon: <Users size={18} /> }
           ]
         });
+
+        // Add Broadcast to OPERATIONS
+        const opsSection = salesItems.find(s => s.section === "OPERATIONS");
+        if (opsSection) {
+          opsSection.items.push({
+            label: "Broadcast",
+            href: `${basePath}/broadcast`,
+            icon: <Radio size={18} />
+          });
+        }
       }
 
       return salesItems;

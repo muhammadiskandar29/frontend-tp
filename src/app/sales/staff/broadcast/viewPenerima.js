@@ -172,17 +172,6 @@ export default function ViewPenerima({ broadcast, onClose }) {
             </div>
           )}
         </div>
-
-        {/* Footer */}
-        <div className="orders-modal-footer">
-          <button
-            className="orders-btn orders-btn--ghost"
-            onClick={onClose}
-            type="button"
-          >
-            Tutup
-          </button>
-        </div>
       </div>
     </div>
   );

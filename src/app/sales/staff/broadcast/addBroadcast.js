@@ -353,7 +353,7 @@ export default function AddBroadcast({ onClose, onAdd }) {
       console.log("📤 [BROADCAST] Target status_order:", requestBody.target.status_order);
       console.log("📤 [BROADCAST] Target status_pembayaran:", requestBody.target.status_pembayaran);
 
-      const res = await fetch("/api/sales/broadcast", {
+      const res = await fetch("/api/sales/broadcast/per-sales", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -519,44 +519,69 @@ export default function AddBroadcast({ onClose, onAdd }) {
           {/* Control Row: Autotext & Emoji */}
           <div style={{
             display: "flex",
-            gap: "0.5rem",
+            gap: "0.75rem",
             marginTop: "-0.5rem",
             marginBottom: "1rem",
             flexWrap: "wrap",
-            alignItems: "center",
+            alignItems: "flex-start",
             position: "relative",
           }}>
-            {/* Autotext Buttons */}
-            {AUTOTEXT_OPTIONS.filter(opt => opt.value).map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => insertAtCursor(option.value)}
+            {/* Autotext Group */}
+            <div style={{
+              display: "flex",
+              gap: "0.5rem",
+              flexWrap: "wrap",
+              alignItems: "center",
+            }}>
+              <select
+                value={selectedAutotext}
+                onChange={(e) => setSelectedAutotext(e.target.value)}
                 style={{
-                  padding: "0.4rem 0.75rem",
-                  borderRadius: "20px",
-                  border: "1px solid #e5e7eb",
-                  background: "#f9fafb",
-                  color: "#4b5563",
+                  padding: "0.5rem 0.75rem",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "8px",
+                  fontSize: "0.875rem",
+                  background: "#fff",
                   cursor: "pointer",
-                  fontSize: "0.75rem",
+                  outline: "none",
+                  minWidth: "180px",
+                }}
+              >
+                {AUTOTEXT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleInsertAutotext}
+                disabled={!selectedAutotext}
+                style={{
+                  padding: "0.5rem 1rem",
+                  borderRadius: "8px",
+                  border: "1px solid #d1d5db",
+                  background: selectedAutotext ? "#f1a124" : "#f3f4f6",
+                  color: selectedAutotext ? "#fff" : "#9ca3af",
+                  cursor: selectedAutotext ? "pointer" : "not-allowed",
                   fontWeight: 500,
+                  fontSize: "0.875rem",
                   transition: "all 0.2s",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#e5e7eb";
-                  e.currentTarget.style.color = "#1f2937";
+                  if (selectedAutotext) {
+                    e.currentTarget.style.background = "#e69100";
+                  }
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "#f9fafb";
-                  e.currentTarget.style.color = "#4b5563";
+                  if (selectedAutotext) {
+                    e.currentTarget.style.background = "#f1a124";
+                  }
                 }}
               >
-                {option.label}
+                Insert
               </button>
-            ))}
-
-            <div style={{ width: "1px", height: "24px", background: "#e5e7eb", margin: "0 0.25rem" }}></div>
+            </div>
 
             {/* Emoji Picker */}
             <div style={{ position: "relative" }}>
@@ -566,23 +591,16 @@ export default function AddBroadcast({ onClose, onAdd }) {
                 style={{
                   padding: "0.5rem 1rem",
                   borderRadius: "8px",
-                  border: "none",
-                  background: "#f1a124",
-                  color: "#fff",
+                  border: `1px solid ${showEmojiPicker ? "#f1a124" : "#d1d5db"}`,
+                  background: showEmojiPicker ? "#fef3e2" : "#fff",
+                  color: showEmojiPicker ? "#f1a124" : "#374151",
                   cursor: "pointer",
-                  fontWeight: 600,
+                  fontWeight: 500,
                   fontSize: "0.875rem",
                   display: "inline-flex",
                   alignItems: "center",
                   gap: "0.5rem",
                   transition: "all 0.2s",
-                  boxShadow: "0 2px 4px rgba(241, 161, 36, 0.3)",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#d98e1d";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "#f1a124";
                 }}
               >
                 😊
