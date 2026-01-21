@@ -35,59 +35,6 @@ export default function CustomerOTPPage() {
     return `${minutes}:${seconds}`;
   };
 
-  // Auto-send OTP function
-  const autoSendOTP = async (customerId, waNumber) => {
-    if (!customerId || !waNumber) {
-      console.log("⚠️ [OTP] Cannot auto-send: missing customerId or waNumber");
-      return;
-    }
-
-    try {
-      console.log("🔵 [OTP] Auto-sending OTP on page load...");
-
-      // Format nomor WA (pastikan format 62xxxxxxxxxx)
-      let formattedWa = waNumber.trim();
-      if (formattedWa.startsWith("0")) {
-        formattedWa = "62" + formattedWa.substring(1);
-      } else if (!formattedWa.startsWith("62")) {
-        formattedWa = "62" + formattedWa;
-      }
-
-      const token = localStorage.getItem("customer_token");
-
-      if (!token) {
-        console.error("❌ [OTP] No token found for auto-send");
-        return;
-      }
-
-      const response = await fetch("/api/customer/otp/send", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          customer_id: customerId,
-          wa: formattedWa,
-        }),
-      });
-
-      const result = await response.json();
-      console.log("[OTP] Auto-send response:", result);
-
-      if (result.success) {
-        setMessage("Kode OTP telah dikirim ke WhatsApp Anda!");
-        toast.success("OTP terkirim!");
-        resetOtpTimer();
-      } else {
-        console.error("❌ [OTP] Auto-send failed:", result.message);
-      }
-    } catch (error) {
-      console.error("❌ [OTP] Error auto-sending:", error);
-    }
-  };
-
   useEffect(() => {
     const session = getCustomerSession();
     if (!session.user || !session.user.id) {
@@ -116,11 +63,6 @@ export default function CustomerOTPPage() {
     console.log("🔵 [OTP] Customer ID:", customerIdValue);
     console.log("🔵 [OTP] WA:", waNumber);
     resetOtpTimer();
-
-    // Auto-send OTP ketika halaman dimuat
-    if (customerIdValue && waNumber) {
-      autoSendOTP(customerIdValue, waNumber);
-    }
   }, [router]);
 
   useEffect(() => {

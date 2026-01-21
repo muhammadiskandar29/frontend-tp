@@ -181,7 +181,6 @@ const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran, prod
 
   // 1. Bubble Logo WA & "W" (Register)
   const activeW = isWAActive();
-  bubbles.push(createBubble(null, activeW, "wa-logo", true, activeW ? "Order Dibuat (Sukses)" : "Order Dibuat"));
   bubbles.push(createBubble("W", activeW, "bubble-w", false, activeW ? "Register (Sukses)" : "Register"));
 
   // 2. Bubble Follow Up 1-4

@@ -169,7 +169,6 @@ const WABubbleChat = ({ customerId, orderId, orderStatus, statusPembayaran, prod
 
   const bubbles = [];
   const activeW = isWAActive();
-  bubbles.push(createBubble(null, activeW, "wa-logo", true, activeW ? "Order Dibuat (Sukses)" : "Order Dibuat"));
   bubbles.push(createBubble("W", activeW, "bubble-w", false, activeW ? "Register (Sukses)" : "Register"));
 
   for (let i = 1; i <= 4; i++) {
