@@ -12,8 +12,8 @@ const BASE_URL = "/api";
 const STATUS_PEMBAYARAN_MAP = {
   0: { label: "Unpaid", class: "unpaid" },
   null: { label: "Unpaid", class: "unpaid" },
-  1: { label: "Waiting Approval", class: "pending" }, // Menunggu approve finance
-  2: { label: "Paid", class: "paid" },             // Finance approved
+  1: { label: "Waiting Approval", class: "pending" },
+  2: { label: "Paid", class: "paid" },
   3: { label: "Rejected", class: "rejected" },
   4: { label: "Partial Payment", class: "partial" },
 };
@@ -24,32 +24,6 @@ const STATUS_ORDER_MAP = {
   "3": { label: "Failed", class: "failed" },
   "4": { label: "Completed", class: "completed" },
   "N": { label: "Deleted", class: "deleted" },
-};
-
-// Helper function to format Date Only
-const formatDateOnly = (dateStr) => {
-  if (!dateStr) return "-";
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return "-";
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const day = date.getDate();
-  const month = monthNames[date.getMonth()];
-  const year = date.getFullYear();
-  return `${day} ${month} ${year}`;
-};
-
-// Helper function to format Date Time
-const formatDateTime = (dateStr) => {
-  if (!dateStr) return "-";
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return "-";
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const day = date.getDate();
-  const month = monthNames[date.getMonth()];
-  const year = date.getFullYear();
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  return `${day} ${month} ${year} ${hours}:${minutes}`;
 };
 
 // Helper function to clean order data
@@ -85,6 +59,7 @@ export default function UpdateOrders({ order, onClose, onSave }) {
   const [submitting, setSubmitting] = useState(false);
   const [isDP, setIsDP] = useState(false);
   const [amount, setAmount] = useState("");
+  const [showRejectModal, setShowRejectModal] = useState(false);
 
   useEffect(() => {
     if (order) {
@@ -211,8 +186,11 @@ export default function UpdateOrders({ order, onClose, onSave }) {
     // Ambil dari order_payment_rel jika ada
     if (orderData?.order_payment_rel && Array.isArray(orderData.order_payment_rel) && orderData.order_payment_rel.length > 0) {
       // Cari payment yang statusnya approved (status "2") terlebih dahulu
+      const approvedPayment = orderData.order_payment_rel.find(p => String(p.status).trim() === "2");
       if (approvedPayment && approvedPayment.create_at) {
-        return formatDateTime(approvedPayment.create_at);
+        const date = new Date(approvedPayment.create_at);
+        const pad = (n) => n.toString().padStart(2, "0");
+        return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
       }
       // Jika tidak ada yang approved, ambil yang terbaru
       const latestPayment = orderData.order_payment_rel.sort((a, b) => {
@@ -221,7 +199,9 @@ export default function UpdateOrders({ order, onClose, onSave }) {
         return dateB - dateA;
       })[0];
       if (latestPayment && latestPayment.create_at) {
-        return formatDateTime(latestPayment.create_at);
+        const date = new Date(latestPayment.create_at);
+        const pad = (n) => n.toString().padStart(2, "0");
+        return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
       }
     }
     return null;
@@ -269,8 +249,10 @@ export default function UpdateOrders({ order, onClose, onSave }) {
     setSubmitting(true);
 
     try {
-      // Format waktu: dd MMM yyyy HH:mm
-      const waktuPembayaran = formatDateTime(new Date());
+      // Format waktu: dd-mm-yyyy HH:mm:ss
+      const now = new Date();
+      const pad = (n) => n.toString().padStart(2, "0");
+      const waktuPembayaran = `${pad(now.getDate())}-${pad(now.getMonth() + 1)}-${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 
       // Build FormData sesuai API spec
       const formData = new FormData();
@@ -473,6 +455,37 @@ export default function UpdateOrders({ order, onClose, onSave }) {
     }
   };
 
+  const handleReject = async () => {
+    if (!order?.id) return;
+
+    setSubmitting(true);
+    setErrorMsg("");
+
+    try {
+      const token = localStorage.getItem("customer_token") || localStorage.getItem("token");
+      const res = await fetch(`${BASE_URL}/sales/order/${order.id}/reject`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      });
+
+      const json = await res.json();
+      if (res.ok && json.success) {
+        onSave(json.data || { ...order, status_order: "3" });
+        onClose();
+      } else {
+        setErrorMsg(json.message || "Gagal menolak pesanan");
+      }
+    } catch (err) {
+      console.error("❌ [REJECT ORDER] Error:", err);
+      setErrorMsg("Terjadi kesalahan saat menolak pesanan.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
 
 
   // Helper untuk build URL gambar via proxy
@@ -528,7 +541,7 @@ export default function UpdateOrders({ order, onClose, onSave }) {
                   <div className="detail-item">
                     <span className="detail-label">Tanggal</span>
                     <span className="detail-colon">:</span>
-                    <span className="detail-value">{formatDateOnly(order.tanggal) || "-"}</span>
+                    <span className="detail-value">{order.tanggal || "-"}</span>
                   </div>
                 </div>
 
@@ -731,13 +744,20 @@ export default function UpdateOrders({ order, onClose, onSave }) {
             )}
 
             {/* Footer */}
-            <div className="modal-footer">
-              <button type="button" onClick={onClose} className="btn-cancel">
-                Batal
-              </button>
-              <button type="submit" className="btn-save">
-                Simpan Perubahan
-              </button>
+            <div className="modal-footer" style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+              <div style={{ marginLeft: "auto", display: "flex", gap: "10px" }}>
+                <button
+                  type="button"
+                  onClick={() => setShowRejectModal(true)}
+                  className="btn-reject"
+                  disabled={submitting}
+                >
+                  {submitting ? "Memproses..." : "Reject Order"}
+                </button>
+                <button type="submit" className="btn-save" disabled={submitting}>
+                  {submitting ? "Menyimpan..." : "Simpan Perubahan"}
+                </button>
+              </div>
             </div>
           </form>
         </div>
@@ -982,6 +1002,28 @@ export default function UpdateOrders({ order, onClose, onSave }) {
           object-fit: contain;
         }
 
+        .btn-reject {
+          padding: 10px 20px;
+          background: #fee2e2;
+          color: #dc2626;
+          border: 1px solid #fecaca;
+          border-radius: 12px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .btn-reject:hover:not(:disabled) {
+          background: #fecaca;
+          color: #b91c1c;
+        }
+
+        .btn-reject:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
         @media (max-width: 768px) {
           .update-orders-grid {
             grid-template-columns: 1fr;
@@ -1115,6 +1157,62 @@ export default function UpdateOrders({ order, onClose, onSave }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Reject Confirmation */}
+      {showRejectModal && (
+        <div className="orders-modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowRejectModal(false)}>
+          <div className="konfirmasi-modal">
+            <div className="konfirmasi-header" style={{ background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)" }}>
+              <div className="konfirmasi-icon">⚠️</div>
+              <div>
+                <h3>Konfirmasi Reject</h3>
+                <p>Apakah Anda yakin ingin menolak pesanan ini?</p>
+              </div>
+              <button
+                className="konfirmasi-close"
+                onClick={() => setShowRejectModal(false)}
+                type="button"
+              >
+                <i className="pi pi-times" />
+              </button>
+            </div>
+
+            <div className="konfirmasi-form">
+              <p style={{ fontSize: "14px", color: "#4b5563", marginBottom: "20px", textAlign: "center" }}>
+                Tindakan ini tidak dapat dibatalkan. Status order akan berubah menjadi <strong>Rejected</strong>.
+              </p>
+
+              <div className="konfirmasi-footer">
+                <button
+                  type="button"
+                  className="orders-btn orders-btn--ghost"
+                  onClick={() => setShowRejectModal(false)}
+                  disabled={submitting}
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  className="orders-btn"
+                  style={{
+                    background: "#dc2626",
+                    color: "white",
+                    border: "none",
+                    padding: "10px 20px",
+                    borderRadius: "8px",
+                    fontWeight: "500",
+                    cursor: "pointer"
+                  }}
+                  onClick={handleReject}
+                  disabled={submitting}
+                >
+                  {submitting ? "Memproses..." : "Ya, Tolak Pesanan"}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

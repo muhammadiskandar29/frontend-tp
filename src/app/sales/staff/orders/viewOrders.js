@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import "@/styles/sales/orders.css";
 import "@/styles/sales/orders-page.css";
+import UpdateOrders from "./updateOrders";
 import { BACKEND_URL } from "@/config/env";
 
 const STATUS_PEMBAYARAN_MAP = {
@@ -110,6 +111,7 @@ export default function ViewOrders({ order, onClose }) {
   const [logs, setLogs] = useState([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [logsError, setLogsError] = useState("");
+  const [showUpdate, setShowUpdate] = useState(false);
 
   // Payment History State
   const [paymentHistoryData, setPaymentHistoryData] = useState(null);
@@ -312,10 +314,36 @@ export default function ViewOrders({ order, onClose }) {
                   <p style={{ fontSize: '0.95rem', color: '#1e293b', lineHeight: '1.5' }}>{order.alamat || "-"}</p>
 
                   <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155', marginBottom: '0.5rem', marginTop: '1.5rem' }}>Sisa Pembayaran</h4>
-                  <p style={{ fontSize: '1rem', fontWeight: 600, color: sisaPembayaran > 0 ? '#dc2626' : '#059669' }}>
+                  <p style={{ fontSize: "1rem", fontWeight: 600, color: sisaPembayaran > 0 ? "#dc2626" : "#059669" }}>
                     Rp {sisaPembayaran.toLocaleString("id-ID")}
                   </p>
                 </div>
+              </div>
+
+              {/* ACTION BUTTONS */}
+              <div style={{ marginTop: "2rem", paddingTop: "1.5rem", borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "flex-end" }}>
+                <button
+                  onClick={() => setShowUpdate(true)}
+                  className="orders-btn-update"
+                  style={{
+                    padding: "0.75rem 1.5rem",
+                    background: "linear-gradient(135deg, #ff6c00 0%, #ee6000 100%)",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "8px",
+                    fontWeight: "600",
+                    fontSize: "0.95rem",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    boxShadow: "0 4px 12px rgba(255, 108, 0, 0.2)",
+                    transition: "all 0.2s"
+                  }}
+                >
+                  <i className="pi pi-pencil"></i>
+                  Update / Konfirmasi
+                </button>
               </div>
             </div>
           )}
@@ -589,6 +617,26 @@ export default function ViewOrders({ order, onClose }) {
             </button>
           </div>
         </div>
+      )}
+
+      {/* UPDATE MODAL */}
+      {showUpdate && (
+        <UpdateOrders
+          order={{
+            ...order,
+            customer: order.customer_rel?.nama || "-",
+          }}
+          onClose={() => setShowUpdate(false)}
+          onSave={(updated) => {
+            // Kita bisa merefresh halaman atau mengupdate local state jika perlu
+            // Untuk saat ini, asumsikan parent akan handle refresh jika modal ini ditutup
+            setShowUpdate(false);
+            if (typeof window !== "undefined") {
+              // Option 1: Refresh data via broadcast/refresh jika ada mechanismenya
+              // Option 2: Sederhananya biarkan user close modal view.
+            }
+          }}
+        />
       )}
 
       {/* Internal Styles for Tabs */}

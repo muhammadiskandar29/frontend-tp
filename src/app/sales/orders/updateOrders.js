@@ -59,6 +59,7 @@ export default function UpdateOrders({ order, onClose, onSave }) {
   const [submitting, setSubmitting] = useState(false);
   const [isDP, setIsDP] = useState(false);
   const [amount, setAmount] = useState("");
+  const [showRejectModal, setShowRejectModal] = useState(false);
 
   useEffect(() => {
     if (order) {
@@ -456,7 +457,6 @@ export default function UpdateOrders({ order, onClose, onSave }) {
 
   const handleReject = async () => {
     if (!order?.id) return;
-    if (!confirm("Apakah Anda yakin ingin menolak pesanan ini?")) return;
 
     setSubmitting(true);
     setErrorMsg("");
@@ -748,7 +748,7 @@ export default function UpdateOrders({ order, onClose, onSave }) {
               <div style={{ marginLeft: "auto", display: "flex", gap: "10px" }}>
                 <button
                   type="button"
-                  onClick={handleReject}
+                  onClick={() => setShowRejectModal(true)}
                   className="btn-reject"
                   disabled={submitting}
                 >
@@ -1157,6 +1157,62 @@ export default function UpdateOrders({ order, onClose, onSave }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Reject Confirmation */}
+      {showRejectModal && (
+        <div className="orders-modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowRejectModal(false)}>
+          <div className="konfirmasi-modal">
+            <div className="konfirmasi-header" style={{ background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)" }}>
+              <div className="konfirmasi-icon">⚠️</div>
+              <div>
+                <h3>Konfirmasi Reject</h3>
+                <p>Apakah Anda yakin ingin menolak pesanan ini?</p>
+              </div>
+              <button
+                className="konfirmasi-close"
+                onClick={() => setShowRejectModal(false)}
+                type="button"
+              >
+                <i className="pi pi-times" />
+              </button>
+            </div>
+
+            <div className="konfirmasi-form">
+              <p style={{ fontSize: "14px", color: "#4b5563", marginBottom: "20px", textAlign: "center" }}>
+                Tindakan ini tidak dapat dibatalkan. Status order akan berubah menjadi <strong>Rejected</strong>.
+              </p>
+
+              <div className="konfirmasi-footer">
+                <button
+                  type="button"
+                  className="orders-btn orders-btn--ghost"
+                  onClick={() => setShowRejectModal(false)}
+                  disabled={submitting}
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  className="orders-btn"
+                  style={{
+                    background: "#dc2626",
+                    color: "white",
+                    border: "none",
+                    padding: "10px 20px",
+                    borderRadius: "8px",
+                    fontWeight: "500",
+                    cursor: "pointer"
+                  }}
+                  onClick={handleReject}
+                  disabled={submitting}
+                >
+                  {submitting ? "Memproses..." : "Ya, Tolak Pesanan"}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
