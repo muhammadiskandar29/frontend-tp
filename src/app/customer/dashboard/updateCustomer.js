@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 // Update customer menggunakan endpoint /api/customer/customer
 async function updateCustomer(payload) {
@@ -166,8 +166,7 @@ export default function UpdateCustomerModal({
   const [formData, setFormData] = useState(initialFormState);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-
+  const isSubmitting = useRef(false);
 
   // Fetch customer data from API
   const fetchCustomerDetail = async () => {
@@ -175,11 +174,6 @@ export default function UpdateCustomerModal({
       const token = localStorage.getItem("customer_token");
       if (!token) return;
 
-      // Gunakan endpoint yang diminta user (via proxy Next.js jika sudah disetup, atau langsung)
-      // Disarankan menggunakan proxy /api/customer/customer/detail agar tidak CORS jika beda domain
-      // Tapi karena user kasih full URL IP, kita coba fetch relative path dulu asumsi ada proxy rewrites
-      // atau fetch langsung jika memang backend allow CORS.
-      // Aman-nya: gunakan path relative yang di-proxy-kan ke backend.
       const response = await fetch("/api/customer/customer/detail", {
         method: "GET",
         headers: {
@@ -228,7 +222,7 @@ export default function UpdateCustomerModal({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (loading) return;
+    if (loading || isSubmitting.current) return;
 
     setError("");
 
@@ -250,9 +244,9 @@ export default function UpdateCustomerModal({
       return;
     }
 
-
-
     setLoading(true);
+    isSubmitting.current = true;
+
     try {
       // Prepare payload 
       const payload = {
@@ -286,6 +280,7 @@ export default function UpdateCustomerModal({
       setError(error.message || "Gagal menyimpan data. Silakan coba lagi.");
     } finally {
       setLoading(false);
+      isSubmitting.current = false;
     }
   };
 

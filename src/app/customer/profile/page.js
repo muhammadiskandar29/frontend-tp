@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Save, Smartphone, User, Briefcase, MapPin, Loader2, Shield } from "lucide-react";
 import toast from "react-hot-toast";
@@ -43,11 +43,16 @@ function ChangeWAModal({ isOpen, onClose, customerId }) {
     const router = useRouter();
     const [wa, setWa] = useState("");
     const [loading, setLoading] = useState(false);
+    const isSubmitting = useRef(false);
 
     if (!isOpen) return null;
 
     const handleSave = async (e) => {
         e.preventDefault();
+        e.stopPropagation();
+
+        if (loading || isSubmitting.current) return;
+
         if (!wa) return toast.error("Nomor WhatsApp wajib diisi");
 
         // Basic validation (must be digits, preferably starting with 62 or 08)
@@ -55,6 +60,7 @@ function ChangeWAModal({ isOpen, onClose, customerId }) {
         if (cleanWa.length < 9) return toast.error("Nomor WhatsApp tidak valid");
 
         try {
+            isSubmitting.current = true;
             setLoading(true);
             const secret = 'superkeyy023Ad_8!jf983hfFj';
             const timestamp = Math.floor(Date.now() / 1000).toString();
@@ -103,6 +109,7 @@ function ChangeWAModal({ isOpen, onClose, customerId }) {
             console.error(err);
             toast.error("Terjadi kesalahan sistem saat menghubungi server");
         } finally {
+            isSubmitting.current = false;
             setLoading(false);
         }
     };
