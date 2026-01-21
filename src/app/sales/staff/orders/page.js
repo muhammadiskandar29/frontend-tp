@@ -1940,6 +1940,162 @@ export default function DaftarPesanan() {
           opacity: 0.8;
           text-decoration: underline;
         }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        .modal-container {
+            background: white;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: slideUp 0.3s ease-out;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            background: #f8fafc;
+        }
+        .modal-title {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .modal-subtitle {
+            margin: 4px 0 0 0;
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+        .close-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+        }
+        .close-btn:hover { background: #e2e8f0; color: #ef4444; }
+        
+        .modal-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+        
+        .loading-state, .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: #64748b;
+        }
+        
+        /* TIMELINE STYLES */
+        .timeline-wrapper {
+            padding-left: 0.5rem;
+        }
+        .timeline-item {
+            display: flex;
+            gap: 1rem;
+            position: relative;
+            padding-bottom: 1.5rem;
+        }
+        .timeline-connector {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 24px;
+            flex-shrink: 0;
+        }
+        .timeline-dot {
+            width: 12px;
+            height: 12px;
+            background: #ff6c00;
+            border-radius: 50%;
+            box-shadow: 0 0 0 4px #fff8f1;
+            z-index: 2;
+        }
+        .timeline-line {
+            flex: 1;
+            width: 2px;
+            background: #e2e8f0;
+            margin-top: 4px;
+            min-height: 40px;
+        }
+        .timeline-content {
+            flex: 1;
+        }
+        .timeline-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .timeline-type {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 0.95rem;
+        }
+        .timeline-time {
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+        .timeline-card {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 12px;
+        }
+        .timeline-note {
+            margin: 0 0 8px 0;
+            color: #334155;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+        .timeline-product {
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.8rem;
+            color: #2563eb;
+            background: #eff6ff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+        .status-badge {
+            display: inline-block;
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 99px;
+            font-weight: 600;
+        }
+        .status-sent { background: #d1fae5; color: #059669; }
+        .status-failed { background: #fee2e2; color: #dc2626; }
+        .status-pending { background: #fef3c7; color: #d97706; }
+
+        .wa-bubble-container:hover {
+            transform: scale(1.02);
+        }
       `}</style>
 
       {/* Modal Payment History */}
@@ -2741,164 +2897,6 @@ export default function DaftarPesanan() {
               </div>
             </div>
           </div>
-
-          <style jsx>{`
-                .modal-overlay {
-                    position: fixed;
-                    top: 0; left: 0; right: 0; bottom: 0;
-                    background: rgba(0,0,0,0.5);
-                    z-index: 10000;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    backdrop-filter: blur(4px);
-                }
-                .modal-container {
-                    background: white;
-                    width: 90%;
-                    max-width: 600px;
-                    max-height: 90vh;
-                    border-radius: 16px;
-                    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-                    display: flex;
-                    flex-direction: column;
-                    overflow: hidden;
-                    animation: slideUp 0.3s ease-out;
-                }
-                @keyframes slideUp {
-                    from { transform: translateY(20px); opacity: 0; }
-                    to { transform: translateY(0); opacity: 1; }
-                }
-                .modal-header {
-                    padding: 1.5rem;
-                    border-bottom: 1px solid #e2e8f0;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: flex-start;
-                    background: #f8fafc;
-                }
-                .modal-title {
-                    margin: 0;
-                    font-size: 1.25rem;
-                    font-weight: 700;
-                    color: #0f172a;
-                }
-                .modal-subtitle {
-                    margin: 4px 0 0 0;
-                    font-size: 0.9rem;
-                    color: #64748b;
-                }
-                .close-btn {
-                    background: none;
-                    border: none;
-                    color: #94a3b8;
-                    cursor: pointer;
-                    padding: 4px;
-                    border-radius: 4px;
-                }
-                .close-btn:hover { background: #e2e8f0; color: #ef4444; }
-                
-                .modal-body {
-                    padding: 1.5rem;
-                    overflow-y: auto;
-                    flex: 1;
-                }
-                
-                .loading-state, .empty-state {
-                    text-align: center;
-                    padding: 2rem;
-                    color: #64748b;
-                }
-                
-                /* TIMELINE STYLES */
-                .timeline-wrapper {
-                    padding-left: 0.5rem;
-                }
-                .timeline-item {
-                    display: flex;
-                    gap: 1rem;
-                    position: relative;
-                    padding-bottom: 1.5rem;
-                }
-                .timeline-connector {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    width: 24px;
-                    flex-shrink: 0;
-                }
-                .timeline-dot {
-                    width: 12px;
-                    height: 12px;
-                    background: #ff6c00;
-                    border-radius: 50%;
-                    box-shadow: 0 0 0 4px #fff8f1;
-                    z-index: 2;
-                }
-                .timeline-line {
-                    flex: 1;
-                    width: 2px;
-                    background: #e2e8f0;
-                    margin-top: 4px;
-                    min-height: 40px;
-                }
-                .timeline-content {
-                    flex: 1;
-                }
-                .timeline-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 8px;
-                }
-                .timeline-type {
-                    font-weight: 600;
-                    color: #1e293b;
-                    font-size: 0.95rem;
-                }
-                .timeline-time {
-                    font-size: 0.8rem;
-                    color: #94a3b8;
-                }
-                .timeline-card {
-                    background: #f8fafc;
-                    border: 1px solid #cbd5e1;
-                    border-radius: 8px;
-                    padding: 12px;
-                }
-                .timeline-note {
-                    margin: 0 0 8px 0;
-                    color: #334155;
-                    font-size: 0.9rem;
-                    line-height: 1.5;
-                    overflow-wrap: break-word;
-                    word-break: break-word;
-                }
-                .timeline-product {
-                    display: inline-flex;
-                    align-items: center;
-                    font-size: 0.8rem;
-                    color: #2563eb;
-                    background: #eff6ff;
-                    padding: 2px 8px;
-                    border-radius: 4px;
-                    margin-bottom: 8px;
-                }
-                .status-badge {
-                    display: inline-block;
-                    font-size: 0.75rem;
-                    padding: 2px 8px;
-                    border-radius: 99px;
-                    font-weight: 600;
-                }
-                .status-sent { background: #d1fae5; color: #059669; }
-                .status-failed { background: #fee2e2; color: #dc2626; }
-                .status-pending { background: #fef3c7; color: #d97706; }
-
-                .wa-bubble-container:hover {
-                    transform: scale(1.02);
-                }
-            `}</style>
         </>
       )}
 
