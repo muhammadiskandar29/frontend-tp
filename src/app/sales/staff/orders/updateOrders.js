@@ -462,7 +462,7 @@ export default function UpdateOrders({ order, onClose, onSave }) {
     setErrorMsg("");
 
     try {
-      const token = localStorage.getItem("customer_token") || localStorage.getItem("token");
+      const token = localStorage.getItem("token");
       const res = await fetch(`${BASE_URL}/sales/order/${order.id}/reject`, {
         method: "POST",
         headers: {

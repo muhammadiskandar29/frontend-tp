@@ -115,31 +115,86 @@ function ChangeWAModal({ isOpen, onClose, customerId }) {
     };
 
     return (
-        <div className="modal-overlay">
+        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
             <div className="modal-content">
+                {/* Header dengan Gradient */}
                 <div className="modal-header">
-                    <h3>Ubah Nomor WhatsApp</h3>
-                    <button onClick={onClose} className="close-btn">&times;</button>
+                    <div className="header-content">
+                        <div className="wa-icon">
+                            <svg viewBox="0 0 24 24" width="28" height="28" fill="white">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                            </svg>
+                        </div>
+                        <div className="header-text">
+                            <h3>Ubah Nomor WhatsApp</h3>
+                            <p>Verifikasi diperlukan untuk keamanan akun</p>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="close-btn" disabled={loading}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
+
+                {/* Body */}
                 <div className="modal-body">
-                    <p className="modal-desc">
-                        Masukkan nomor WhatsApp baru Anda. Kami akan mengirimkan kode OTP untuk verifikasi.
-                    </p>
+                    <div className="info-banner">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 16v-4M12 8h.01" />
+                        </svg>
+                        <p>Kode OTP akan dikirim ke nomor WhatsApp baru Anda untuk verifikasi.</p>
+                    </div>
+
                     <div className="form-group">
-                        <label>Nomor WhatsApp Baru</label>
-                        <input
-                            type="text"
-                            className="form-input"
-                            placeholder="Contoh: 62812345678"
-                            value={wa}
-                            onChange={e => setWa(e.target.value.replace(/\D/g, ''))}
-                        />
+                        <label>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
+                            </svg>
+                            Nomor WhatsApp Baru
+                        </label>
+                        <div className="input-wrapper">
+                            <span className="input-prefix">+</span>
+                            <input
+                                type="text"
+                                className="form-input"
+                                placeholder="62812345678"
+                                value={wa}
+                                onChange={e => setWa(e.target.value.replace(/\D/g, ''))}
+                                disabled={loading}
+                                autoFocus
+                            />
+                        </div>
+                        <span className="input-hint">Format: 62 diikuti nomor (tanpa 0 di awal)</span>
                     </div>
                 </div>
+
+                {/* Footer */}
                 <div className="modal-footer">
-                    <button type="button" onClick={onClose} className="btn-cancel" disabled={loading}>Batal</button>
-                    <button type="button" onClick={handleSave} className="save-btn" disabled={loading}>
-                        {loading ? "Memproses..." : "Simpan dan Verifikasi"}
+                    <button type="button" onClick={onClose} className="btn-cancel" disabled={loading}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                        Batal
+                    </button>
+                    <button type="button" onClick={handleSave} className="btn-save" disabled={loading || !wa}>
+                        {loading ? (
+                            <>
+                                <svg className="spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M21 12a9 9 0 11-6.219-8.56" />
+                                </svg>
+                                Memproses...
+                            </>
+                        ) : (
+                            <>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+                                    <polyline points="22 4 12 14.01 9 11.01" />
+                                </svg>
+                                Simpan dan Verifikasi
+                            </>
+                        )}
                     </button>
                 </div>
             </div>
@@ -148,66 +203,309 @@ function ChangeWAModal({ isOpen, onClose, customerId }) {
                 .modal-overlay {
                     position: fixed;
                     top: 0; left: 0; right: 0; bottom: 0;
-                    background: rgba(0,0,0,0.5);
+                    background: rgba(15, 23, 42, 0.65);
+                    backdrop-filter: blur(4px);
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     z-index: 9999;
                     padding: 20px;
+                    animation: fadeIn 0.2s ease;
                 }
+
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+
+                @keyframes slideUp {
+                    from { 
+                        opacity: 0;
+                        transform: translateY(20px);
+                    }
+                    to { 
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+
+                @keyframes spin {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                }
+
                 .modal-content {
                     background: white;
-                    border-radius: 16px;
+                    border-radius: 20px;
                     width: 100%;
-                    max-width: 450px;
-                    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+                    max-width: 480px;
+                    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
                     overflow: hidden;
+                    animation: slideUp 0.3s ease;
                 }
+
                 .modal-header {
-                    padding: 20px;
-                    border-bottom: 1px solid #e2e8f0;
+                    background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+                    padding: 24px;
                     display: flex;
                     justify-content: space-between;
+                    align-items: flex-start;
+                    gap: 16px;
+                }
+
+                .header-content {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 16px;
+                    flex: 1;
+                }
+
+                .wa-icon {
+                    width: 48px;
+                    height: 48px;
+                    background: rgba(255, 255, 255, 0.2);
+                    border-radius: 12px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                    backdrop-filter: blur(10px);
+                }
+
+                .header-text {
+                    flex: 1;
+                }
+
+                .header-text h3 {
+                    margin: 0 0 4px 0;
+                    font-size: 20px;
+                    font-weight: 700;
+                    color: white;
+                    letter-spacing: -0.3px;
+                }
+
+                .header-text p {
+                    margin: 0;
+                    font-size: 13px;
+                    color: rgba(255, 255, 255, 0.9);
+                    font-weight: 500;
+                }
+
+                .close-btn {
+                    background: rgba(255, 255, 255, 0.2);
+                    border: none;
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 8px;
+                    color: white;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: all 0.2s;
+                    flex-shrink: 0;
+                }
+
+                .close-btn:hover:not(:disabled) {
+                    background: rgba(255, 255, 255, 0.3);
+                    transform: rotate(90deg);
+                }
+
+                .close-btn:disabled {
+                    opacity: 0.5;
+                    cursor: not-allowed;
+                }
+
+                .modal-body {
+                    padding: 28px 24px;
+                }
+
+                .info-banner {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 12px;
+                    background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
+                    border: 1px solid #BFDBFE;
+                    border-radius: 12px;
+                    padding: 14px 16px;
+                    margin-bottom: 24px;
+                }
+
+                .info-banner svg {
+                    color: #2563EB;
+                    flex-shrink: 0;
+                    margin-top: 2px;
+                }
+
+                .info-banner p {
+                    margin: 0;
+                    color: #1E40AF;
+                    font-size: 13px;
+                    line-height: 1.6;
+                    font-weight: 500;
+                }
+
+                .form-group {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                }
+
+                .form-group label {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #334155;
+                }
+
+                .form-group label svg {
+                    color: #64748B;
+                }
+
+                .input-wrapper {
+                    position: relative;
+                    display: flex;
                     align-items: center;
                 }
-                .modal-header h3 {
-                    margin: 0;
-                    font-size: 18px;
-                    font-weight: 700;
-                    color: #1e293b;
+
+                .input-prefix {
+                    position: absolute;
+                    left: 16px;
+                    color: #64748B;
+                    font-size: 16px;
+                    font-weight: 600;
+                    pointer-events: none;
+                    z-index: 1;
                 }
-                .close-btn {
-                    background: none;
-                    border: none;
-                    font-size: 24px;
-                    color: #94a3b8;
-                    cursor: pointer;
+
+                .form-input {
+                    width: 100%;
+                    padding: 14px 16px 14px 36px;
+                    border: 2px solid #E2E8F0;
+                    border-radius: 12px;
+                    font-size: 16px;
+                    font-weight: 600;
+                    color: #1E293B;
+                    background: #F8FAFC;
+                    transition: all 0.2s;
+                    font-family: 'Monaco', 'Consolas', monospace;
+                    letter-spacing: 0.5px;
                 }
-                .modal-body {
-                    padding: 24px;
+
+                .form-input:focus {
+                    outline: none;
+                    border-color: #25D366;
+                    background: white;
+                    box-shadow: 0 0 0 4px rgba(37, 211, 102, 0.1);
                 }
-                .modal-desc {
-                    margin-bottom: 20px;
-                    color: #64748b;
-                    font-size: 14px;
-                    line-height: 1.5;
+
+                .form-input:disabled {
+                    opacity: 0.6;
+                    cursor: not-allowed;
                 }
+
+                .form-input::placeholder {
+                    color: #94A3B8;
+                    font-weight: 500;
+                }
+
+                .input-hint {
+                    font-size: 12px;
+                    color: #64748B;
+                    font-weight: 500;
+                    padding-left: 4px;
+                }
+
                 .modal-footer {
-                    padding: 20px;
-                    border-top: 1px solid #e2e8f0;
+                    padding: 20px 24px;
+                    border-top: 1px solid #F1F5F9;
                     display: flex;
                     justify-content: flex-end;
                     gap: 12px;
-                    background: #f8fafc;
+                    background: #FAFBFC;
                 }
-                .btn-cancel {
-                    padding: 10px 20px;
-                    border: 1px solid #cbd5e1;
-                    background: white;
-                    border-radius: 8px;
-                    color: #475569;
-                    font-weight: 500;
+
+                .btn-cancel, .btn-save {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    padding: 12px 20px;
+                    border-radius: 10px;
+                    font-size: 14px;
+                    font-weight: 600;
                     cursor: pointer;
+                    transition: all 0.2s;
+                    border: none;
+                }
+
+                .btn-cancel {
+                    background: white;
+                    color: #64748B;
+                    border: 1.5px solid #E2E8F0;
+                }
+
+                .btn-cancel:hover:not(:disabled) {
+                    background: #F8FAFC;
+                    border-color: #CBD5E1;
+                    color: #475569;
+                    transform: translateY(-1px);
+                }
+
+                .btn-save {
+                    background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+                    color: white;
+                    box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+                }
+
+                .btn-save:hover:not(:disabled) {
+                    box-shadow: 0 6px 16px rgba(37, 211, 102, 0.4);
+                    transform: translateY(-2px);
+                }
+
+                .btn-save:disabled, .btn-cancel:disabled {
+                    opacity: 0.6;
+                    cursor: not-allowed;
+                    transform: none;
+                }
+
+                .spinner {
+                    animation: spin 1s linear infinite;
+                }
+
+                @media (max-width: 640px) {
+                    .modal-content {
+                        max-width: 100%;
+                        border-radius: 16px;
+                    }
+
+                    .modal-header {
+                        padding: 20px;
+                    }
+
+                    .wa-icon {
+                        width: 40px;
+                        height: 40px;
+                    }
+
+                    .header-text h3 {
+                        font-size: 18px;
+                    }
+
+                    .modal-body {
+                        padding: 24px 20px;
+                    }
+
+                    .modal-footer {
+                        padding: 16px 20px;
+                        flex-direction: column-reverse;
+                    }
+
+                    .btn-cancel, .btn-save {
+                        width: 100%;
+                        justify-content: center;
+                    }
                 }
             `}</style>
         </div>
