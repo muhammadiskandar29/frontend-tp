@@ -514,7 +514,10 @@ export default function DaftarPesanan() {
         }
       }
 
-      if (!currentUserId) return;
+      if (!currentUserId) {
+        console.warn("⚠️ [STATISTICS] No currentUserId found in localStorage");
+        return;
+      }
 
       // Gunakan helper getOrderStatisticPerSales
       const data = await getOrderStatisticPerSales();
@@ -524,10 +527,10 @@ export default function DaftarPesanan() {
         // Filter stats untuk sales yang sedang login
         const myStats = data.find(s => Number(s.sales_id) === Number(currentUserId));
         if (myStats) {
-          console.log("✅ [STATISTICS] Found stats for user ID", currentUserId, ":", myStats);
+          console.log("✅ [STATISTICS] Match found for ID", currentUserId, ":", myStats);
           setStatistics(myStats);
         } else {
-          console.warn("⚠️ [STATISTICS] No stats found matching sales ID:", currentUserId);
+          console.warn("⚠️ [STATISTICS] No stats match for sales ID:", currentUserId, " (Available IDs:", data.map(s => s.sales_id).join(", ") + ")");
           setStatistics({
             total_order: 0,
             total_order_unpaid: 0,
@@ -1208,7 +1211,7 @@ export default function DaftarPesanan() {
               </div>
               <div>
                 <p className="summary-card__label">Total orders</p>
-                <p className="summary-card__value">{totalOrders}</p>
+                <p className="summary-card__value">{(totalOrders || 0).toLocaleString("id-ID")}</p>
               </div>
             </div>
             <div className="summary-card__divider"></div>
@@ -1218,7 +1221,7 @@ export default function DaftarPesanan() {
               </div>
               <div>
                 <p className="summary-card__label">Unpaid</p>
-                <p className="summary-card__value">{unpaidOrders}</p>
+                <p className="summary-card__value">{(unpaidOrders || 0).toLocaleString("id-ID")}</p>
               </div>
             </div>
             <div className="summary-card__divider"></div>
@@ -1228,7 +1231,7 @@ export default function DaftarPesanan() {
               </div>
               <div>
                 <p className="summary-card__label">Pending</p>
-                <p className="summary-card__value">{menungguOrders}</p>
+                <p className="summary-card__value">{(menungguOrders || 0).toLocaleString("id-ID")}</p>
               </div>
             </div>
             <div className="summary-card__divider"></div>
@@ -1238,7 +1241,7 @@ export default function DaftarPesanan() {
               </div>
               <div>
                 <p className="summary-card__label">Sukses</p>
-                <p className="summary-card__value">{approvedOrders}</p>
+                <p className="summary-card__value">{(approvedOrders || 0).toLocaleString("id-ID")}</p>
               </div>
             </div>
             <div className="summary-card__divider"></div>
@@ -1248,7 +1251,7 @@ export default function DaftarPesanan() {
               </div>
               <div>
                 <p className="summary-card__label">Ditolak</p>
-                <p className="summary-card__value">{ditolakOrders}</p>
+                <p className="summary-card__value">{(ditolakOrders || 0).toLocaleString("id-ID")}</p>
               </div>
             </div>
           </article>
