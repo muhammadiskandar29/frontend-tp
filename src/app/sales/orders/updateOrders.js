@@ -1437,6 +1437,10 @@ export default function UpdateOrders({ order, onClose, onSave }) {
           margin-top: 4px;
         }
 
+        .modal-overlay {
+          z-index: 11000 !important;
+        }
+
         .field-input:disabled {
           background: #f3f4f6;
           cursor: not-allowed;
