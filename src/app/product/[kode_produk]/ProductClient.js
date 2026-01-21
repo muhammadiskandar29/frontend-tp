@@ -1390,6 +1390,80 @@ function ProductClient({ initialProductData, initialLandingPage }) {
                   Lengkapi Data:
                 </h2>
                 <div className="compact-form-card">
+                  {/* ✅ BUNDLING SECTION - ADDED BY REQUEST */}
+                  {productData?.isBundling && productData.bundling?.length > 0 && (
+                    <div className="compact-field" style={{ marginBottom: "20px" }}>
+                      <label className="compact-label" style={{ marginBottom: "10px", display: "block" }}>
+                        Pilih Paket <span className="required">*</span>
+                      </label>
+                      <div className="bundling-list" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                        {/* Option 0: Satuan */}
+                        <div
+                          className={`bundling-item ${!selectedBundling ? 'active' : ''}`}
+                          onClick={() => setSelectedBundling(null)}
+                          style={{
+                            border: !selectedBundling ? "2px solid #f1a124" : "1px solid #e5e7eb",
+                            borderRadius: "8px",
+                            padding: "12px",
+                            cursor: "pointer",
+                            backgroundColor: !selectedBundling ? "#fff8ed" : "white",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "12px",
+                            transition: "all 0.2s"
+                          }}
+                        >
+                          <div className="radio-circle" style={{
+                            width: "20px", height: "20px",
+                            borderRadius: "50%",
+                            border: !selectedBundling ? "6px solid #f1a124" : "2px solid #d1d5db",
+                            backgroundColor: "white",
+                            flexShrink: 0
+                          }}></div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: "600", fontSize: "14px", color: "#374151" }}>Beli Satuan (Tanpa Bundling)</div>
+                            <div style={{ fontSize: "14px", color: "#f1a124", fontWeight: "700" }}>Rp {formatPrice(productData.harga)}</div>
+                          </div>
+                        </div>
+
+                        {/* Bundling Options */}
+                        {productData.bundling.map((item) => (
+                          <div
+                            key={item.id}
+                            className={`bundling-item ${selectedBundling?.id === item.id ? 'active' : ''}`}
+                            onClick={() => setSelectedBundling(item)}
+                            style={{
+                              border: selectedBundling?.id === item.id ? "2px solid #f1a124" : "1px solid #e5e7eb",
+                              borderRadius: "8px",
+                              padding: "12px",
+                              cursor: "pointer",
+                              backgroundColor: selectedBundling?.id === item.id ? "#fff8ed" : "white",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "12px",
+                              transition: "all 0.2s"
+                            }}
+                          >
+                            <div className="radio-circle" style={{
+                              width: "20px", height: "20px",
+                              borderRadius: "50%",
+                              border: selectedBundling?.id === item.id ? "6px solid #f1a124" : "2px solid #d1d5db",
+                              backgroundColor: "white",
+                              flexShrink: 0
+                            }}></div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontWeight: "600", fontSize: "14px", color: "#374151" }}>{item.nama}</div>
+                              <div style={{ fontSize: "14px", color: "#f1a124", fontWeight: "700" }}>
+                                Rp {formatPrice(item.harga)}
+                                {item.harga < (item.subtotal_asli || 999999999) && <span style={{ fontSize: "11px", color: "#16a34a", marginLeft: "6px", backgroundColor: "#dcfce7", padding: "2px 6px", borderRadius: "4px" }}>Hemat!</span>}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="compact-field">
                     <label className="compact-label">Nama Lengkap <span className="required">*</span></label>
                     <input
@@ -2218,6 +2292,7 @@ function ProductClient({ initialProductData, initialLandingPage }) {
           bundlingData = data.bundling_rel
             .filter(item => item.status === 'A') // Hanya ambil yang status aktif
             .map(item => ({
+              ...item,
               id: item.id,
               nama: item.nama,
               harga: typeof item.harga === 'string' ? parseInt(item.harga) : item.harga

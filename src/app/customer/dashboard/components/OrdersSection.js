@@ -2,11 +2,11 @@
 
 import { useRouter } from "next/navigation";
 
-export default function OrdersSection({ 
-  orders, 
-  isLoading, 
+export default function OrdersSection({
+  orders,
+  isLoading,
   currentTime,
-  onOrderAction 
+  onOrderAction
 }) {
   const router = useRouter();
 
@@ -14,17 +14,17 @@ export default function OrdersSection({
     if (!order.startDate) return null;
     const diff = order.startDate.getTime() - currentTime;
     if (diff <= 0) return "Jadwal sudah dimulai";
-    
+
     const totalMinutes = Math.floor(diff / (1000 * 60));
     const days = Math.floor(totalMinutes / (60 * 24));
     const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
     const minutes = totalMinutes % 60;
-    
+
     const parts = [];
     if (days > 0) parts.push(`${days} hari`);
     if (hours > 0) parts.push(`${hours} jam`);
     parts.push(`${minutes} menit`);
-    
+
     return parts.join(" ");
   };
 
@@ -85,7 +85,7 @@ export default function OrdersSection({
                 <div className="empty-state__icon">📋</div>
                 <h3>Belum ada order aktif</h3>
                 <p>Mulai perjalanan pembelajaran Anda dengan menjelajahi produk kami</p>
-                <button 
+                <button
                   className="empty-state__cta"
                   onClick={() => router.push('/')}
                 >
@@ -100,10 +100,10 @@ export default function OrdersSection({
           const countdown = getCountdownLabel(order);
           // isPaid berdasarkan status_pembayaran === 2
           const isPaid = order.isPaid === true;
-          
+
           return (
-            <div 
-              key={order.id} 
+            <div
+              key={order.id}
               className={`order-card ${!isPaid ? 'order-card--locked' : ''}`}
               style={{ position: 'relative' }}
             >
@@ -128,8 +128,8 @@ export default function OrdersSection({
                 {countdown && isPaid && (
                   <div className="order-countdown">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                      <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5"/>
-                      <path d="M8 4V8L11 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                      <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5" />
+                      <path d="M8 4V8L11 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                     </svg>
                     <span>{countdown}</span>
                   </div>
@@ -158,10 +158,10 @@ export default function OrdersSection({
                 {order.schedule && isPaid && (
                   <div className="order-schedule">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                      <rect x="3" y="4" width="10" height="9" rx="1" stroke="currentColor" strokeWidth="1.5"/>
-                      <path d="M3 6H13" stroke="currentColor" strokeWidth="1.5"/>
-                      <path d="M6 2V4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                      <path d="M10 2V4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                      <rect x="3" y="4" width="10" height="9" rx="1" stroke="currentColor" strokeWidth="1.5" />
+                      <path d="M3 6H13" stroke="currentColor" strokeWidth="1.5" />
+                      <path d="M6 2V4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                      <path d="M10 2V4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                     </svg>
                     <div>
                       <span>Jadwal</span>
@@ -169,27 +169,28 @@ export default function OrdersSection({
                     </div>
                   </div>
                 )}
-                
+
                 {isPaid ? (
-                  <button 
+                  <button
                     className="order-action"
                     onClick={() => handleOrderClick(order)}
                   >
                     <span>{order.actionLabel}</span>
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                      <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </button>
                 ) : (
-                  <div style={{ 
-                    padding: '12px 16px', 
-                    textAlign: 'center', 
-                    color: '#666',
-                    fontSize: '14px',
-                    opacity: 0.7
-                  }}>
-                    Selesaikan pembayaran di halaman Pembayaran
-                  </div>
+                  <button
+                    className="order-action"
+                    onClick={() => handleOrderClick(order)}
+                    style={{ width: "100%", justifyContent: "center" }}
+                  >
+                    <span>Lanjutkan Pembayaran</span>
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
                 )}
               </div>
             </div>
