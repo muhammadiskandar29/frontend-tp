@@ -338,6 +338,18 @@ export default function FollowupReportPage() {
                       const isStart = idx === 0;
                       const isLatest = idx === timelineLogs.length - 1;
 
+                      // Keterangan Cleanup
+                      let noteContent = item.keterangan || "Tidak ada keterangan";
+                      try {
+                        // Extract only 'Pesan: ...' part if exists, ignoring Response JSON
+                        const messageMatch = noteContent.match(/Pesan:\s*(.*?)\s*(?:Response:|(?={"code":))/s);
+                        if (messageMatch && messageMatch[1]) {
+                          noteContent = `Pesan: ${messageMatch[1].trim()}`;
+                        }
+                      } catch (e) {
+                        // fallback use original
+                      }
+
                       return (
                         <div className="timeline-item" key={idx}>
                           <div className="timeline-connector">
@@ -355,7 +367,7 @@ export default function FollowupReportPage() {
                             </div>
                             <div className="timeline-card">
                               <p className="timeline-note">
-                                {item.keterangan || "Tidak ada keterangan"}
+                                {noteContent}
                               </p>
                               {item.produk_rel?.nama && (
                                 <div className="timeline-product">
@@ -510,6 +522,8 @@ export default function FollowupReportPage() {
                     color: #334155;
                     font-size: 0.9rem;
                     line-height: 1.5;
+                    overflow-wrap: break-word;
+                    word-break: break-word;
                 }
                 .timeline-product {
                     display: inline-flex;
