@@ -518,15 +518,16 @@ export default function DaftarPesanan() {
 
       // Gunakan helper getOrderStatisticPerSales
       const data = await getOrderStatisticPerSales();
+      console.log("📊 [STATISTICS] Raw data from API:", data);
 
       if (data && Array.isArray(data)) {
         // Filter stats untuk sales yang sedang login
         const myStats = data.find(s => Number(s.sales_id) === Number(currentUserId));
         if (myStats) {
-          console.log("📊 [STATISTICS] Found my stats:", myStats);
+          console.log("✅ [STATISTICS] Found stats for user ID", currentUserId, ":", myStats);
           setStatistics(myStats);
         } else {
-          console.warn("⚠️ [STATISTICS] No stats found for sales ID:", currentUserId);
+          console.warn("⚠️ [STATISTICS] No stats found matching sales ID:", currentUserId);
           setStatistics({
             total_order: 0,
             total_order_unpaid: 0,
@@ -535,9 +536,18 @@ export default function DaftarPesanan() {
             total_order_ditolak: 0
           });
         }
+      } else {
+        console.error("❌ [STATISTICS] Data is not an array:", data);
+        setStatistics({
+          total_order: 0,
+          total_order_unpaid: 0,
+          total_order_menunggu: 0,
+          total_order_sudah_diapprove: 0,
+          total_order_ditolak: 0
+        });
       }
     } catch (err) {
-      console.error("Error loading statistics:", err);
+      console.error("❌ [STATISTICS] Error loading statistics:", err);
     }
   }, []);
 
@@ -741,7 +751,11 @@ export default function DaftarPesanan() {
     setPage(1);
     setOrders([]);
     setHasMore(true);
-    fetchOrders(1);
+    // Fetch initial statistics and first page of orders
+    Promise.all([
+      loadStatistics(),
+      fetchOrders(1)
+    ]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Hanya sekali saat mount
 
