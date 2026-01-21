@@ -2715,18 +2715,6 @@ export default function DaftarPesanan() {
         }}
       />
 
-      {/* Broadcast Modal */}
-      {
-        showBroadcastModal && (
-          <OrderBroadcastModal
-            onClose={() => setShowBroadcastModal(false)}
-            onAdd={(data) => {
-              // Optional: refresh data or show success toast
-              setToast({ show: true, message: `Broadcast berhasil dibuat untuk ${data.total_target} customer`, type: "success" });
-            }}
-          />
-        )
-      }
 
       {/* Add Follow Up Modal */}
       {
