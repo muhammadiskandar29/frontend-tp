@@ -65,40 +65,40 @@ export default function DashboardPage() {
     // Tunggu sampai loading selesai
     if (dashboardLoading) return;
 
-    // Cek dari localStorage dulu (untuk trigger dari OTP page)
-    const showModalFlag = localStorage.getItem("customer_show_update_modal");
-    if (showModalFlag === "1") {
-      setShowUpdateModal(true);
-      setUpdateModalReason("password");
-      return;
-    }
-
     // Combine info for completeness check
     const combinedInfo = { ...session?.user, ...customerInfo };
     console.log("[DASHBOARD] Checking Data Completeness:", combinedInfo);
 
     // Cek apakah data customer sudah lengkap
     const isComplete = isCustomerDataComplete(combinedInfo);
+    console.log("[DASHBOARD] Is Data Complete?", isComplete);
 
-    // Jika data sudah lengkap (terutama alamat), hapus flag force show
+    // 1. Jika data sudah LENGKAP, segera bersihkan semua trigger modal
     if (isComplete) {
       if (localStorage.getItem("customer_show_update_modal")) {
+        console.log("[DASHBOARD] Data complete, removing localStorage flag");
         localStorage.removeItem("customer_show_update_modal");
       }
       if (showUpdateModal) {
         setShowUpdateModal(false);
       }
-    } else {
-      // Jika belum lengkap, cek apakah perlu dipaksa muncul atau karena flag
-      // Prioritas: Jika alamat kosong -> Munculkan
-      console.log("[DASHBOARD] Customer data incomplete (missing info), showing modal");
-      // Hanya munculkan jika belum muncul, untuk menghindari loop jika user menutup
-      // Tapi logic user bilang "selalu muncul".
-      // Kita gunakan logic: jika flag ada ATAU data tidak lengkap -> Show
-      // TAPI user bilang "jika alamat sudah terisi, jangan ditampilkan lagi".
-      // Jadi kita harus strict: Completeness check is king.
+      return; // Selesai, tidak perlu lanjut ke pengecekan show modal
+    }
 
+    // 2. Jika data TIDAK LENGKAP, baru cek trigger pemunculan
+
+    // Cek apakah ada flag force show dari localStorage (misal dari OTP page)
+    const showModalFlag = localStorage.getItem("customer_show_update_modal");
+
+    if (showModalFlag === "1") {
       if (!showUpdateModal) {
+        setShowUpdateModal(true);
+        setUpdateModalReason("password");
+      }
+    } else {
+      // Jika tidak ada flag, tapi data tetap tidak lengkap, munculkan dengan alasan 'data'
+      if (!showUpdateModal) {
+        console.log("[DASHBOARD] Customer data incomplete, showing modal");
         setShowUpdateModal(true);
         setUpdateModalReason("data");
       }
