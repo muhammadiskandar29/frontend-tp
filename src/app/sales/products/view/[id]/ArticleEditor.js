@@ -5,7 +5,8 @@ import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
 import Color from "@tiptap/extension-color";
-import TextStyle from "@tiptap/extension-text-style";
+import { TextStyle } from "@tiptap/extension-text-style";
+import TextAlign from "@tiptap/extension-text-align";
 import { useState, useEffect } from "react";
 import {
     Bold, Italic, List, ListOrdered, Quote,
@@ -126,6 +127,9 @@ export default function ArticleEditor({ initialData, onSave, onCancel }) {
             Link.configure({ openOnClick: false }),
             TextStyle,
             Color,
+            TextAlign.configure({
+                types: ['heading', 'paragraph'],
+            }),
         ],
         content: initialData?.content ? (typeof initialData.content === 'string' ? initialData.content : JSON.stringify(initialData.content)) : "<p>Mulai menulis...</p>",
     });

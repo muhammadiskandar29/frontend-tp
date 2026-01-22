@@ -75,7 +75,15 @@ export async function generateMetadata({ params }) {
       description: description,
       images: images,
     },
-    viewport: "width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes",
+  };
+}
+
+export async function generateViewport() {
+  return {
+    width: "device-width",
+    initialScale: 1.0,
+    maximumScale: 5.0,
+    userScalable: true,
   };
 }
 
