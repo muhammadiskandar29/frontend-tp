@@ -360,6 +360,19 @@ DASHBOARD SUMMARY & SUMMARY CARD
   box-shadow: 0 4px 14px 0 rgba(251, 133, 0, 0.25);
 }
 
+.orders-shell .orders-summary .summary-card__icon.accent-green {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #059669;
+  color: #ffffff;
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px 0 rgba(5, 150, 105, 0.25);
+}
+
 .orders-shell .orders-summary .summary-card__icon svg {
   width: 20px;
   height: 20px;
@@ -1458,70 +1471,72 @@ STATUS BADGES - All Status Types
 .orders-status-badge,
 .status-badge {
   display: inline-block;
-  padding: 4px 12px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
+  padding: 4px 14px;
+  border-radius: 50px;
+  font-size: 11px;
+  font-weight: 700;
   text-transform: capitalize;
   white-space: nowrap;
+  letter-spacing: 0.02em;
 }
 
 /* Payment Status Badges */
+/* Unpaid Status - Orange */
 .orders-status-badge--unpaid,
 .status-badge.unpaid {
-  background: #FEF3C7;
-  color: #92400E;
+  background: #FFF7ED !important;
+  color: #EA580C !important;
+  border: 1px solid #FFEDD5 !important;
 }
 
+/* Pending / Waiting Approval - Amber */
 .orders-status-badge--pending,
-.status-badge.pending {
-  background: #FEF3C7;
-  color: #92400E;
+.status-badge.pending,
+.status-badge.order-pending,
+.status-badge.order-1 {
+  background: #FFFBEB !important;
+  color: #D97706 !important;
+  border: 1px solid #FEF3C7 !important;
 }
 
+/* Paid / Success / Completed - Green */
 .orders-status-badge--paid,
-.status-badge.paid {
-  background: #D1FAE5;
-  color: #065F46;
-}
-
-.orders-status-badge--rejected,
-.status-badge.rejected {
-  background: #FEE2E2;
-  color: #991B1B;
-}
-
-.orders-status-badge--partial,
-.status-badge.partial {
-  background: #DBEAFE;
-  color: #1E40AF;
-}
-
-/* Order Status Badges */
+.status-badge.paid,
 .orders-status-badge--success,
 .status-badge.success,
-.status-badge.sukses {
-  background: #D1FAE5;
-  color: #065F46;
+.status-badge.sukses,
+.status-badge.order-success,
+.status-badge.order-2,
+.orders-status-badge--completed,
+.status-badge.completed,
+.status-badge.order-4 {
+  background: #F0FDF4 !important;
+  color: #16A34A !important;
+  border: 1px solid #DCFCE7 !important;
 }
 
+/* Rejected / Failed / Deleted - Red */
+.orders-status-badge--rejected,
+.status-badge.rejected,
 .orders-status-badge--failed,
 .status-badge.failed,
-.status-badge.gagal {
-  background: #FEE2E2;
-  color: #991B1B;
-}
-
-.orders-status-badge--completed,
-.status-badge.completed {
-  background: #E0E7FF;
-  color: #3730A3;
-}
-
+.status-badge.gagal,
+.status-badge.order-failed,
+.status-badge.order-3,
 .orders-status-badge--deleted,
-.status-badge.deleted {
-  background: #F3F4F6;
-  color: #6B7280;
+.status-badge.deleted,
+.status-badge.order-N {
+  background: #FEF2F2 !important;
+  color: #DC2626 !important;
+  border: 1px solid #FEE2E2 !important;
+}
+
+/* Partial Payment - Blue */
+.orders-status-badge--partial,
+.status-badge.partial {
+  background: #EFF6FF !important;
+  color: #2563EB !important;
+  border: 1px solid #DBEAFE !important;
 }
 
 .orders-status-badge--default,

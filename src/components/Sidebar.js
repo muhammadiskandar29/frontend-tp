@@ -454,109 +454,111 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
           </Link>
         </div>
 
-        <ul className="sidebar-menu">
+        <nav className="sidebar-menu">
           {menu.map((section, sectionIndex) => {
             if (!section || !section.section || !section.items) return null;
 
             return (
-              <li key={`section-${sectionIndex}`} className="sidebar-section-wrapper">
+              <section key={`section-${sectionIndex}`} className="sidebar-section-wrapper">
                 {/* Section Header - Non-clickable label */}
-                <div className="sidebar-section-header">
+                <h3 className="sidebar-section-header">
                   {section.section}
-                </div>
+                </h3>
 
                 {/* Section Items */}
-                {section.items.map((item) => {
-                  if (!item || !item.label) return null;
+                <ul className="sidebar-section-items">
+                  {section.items.map((item) => {
+                    if (!item || !item.label) return null;
 
-                  const active = isMenuActive(item);
-                  const isSubmenuOpen = openSubmenu === item.label;
+                    const active = isMenuActive(item);
+                    const isSubmenuOpen = openSubmenu === item.label;
 
-                  return (
-                    <li key={item.label} className="sidebar-item-wrapper">
-                      {item.submenu ? (
-                        <>
-                          <button
-                            onClick={() => {
-                              // If sidebar is collapsed, expand it first, then toggle submenu
-                              if (viewport === VIEWPORT.DESKTOP && !isRailExpanded) {
-                                setIsRailExpanded(true);
-                                setIsExplicitlyOpened(true);
-                                if (onToggle && !isOpen) {
-                                  onToggle();
-                                }
-                                // Small delay to ensure sidebar expands before toggling submenu
-                                setTimeout(() => {
-                                  toggleSubmenu(item.label);
-                                }, 100);
-                              } else {
-                                toggleSubmenu(item.label);
-                                // Expand sidebar when submenu is clicked (if not already expanded)
+                    return (
+                      <li key={item.label} className="sidebar-item-wrapper">
+                        {item.submenu ? (
+                          <>
+                            <button
+                              onClick={() => {
+                                // If sidebar is collapsed, expand it first, then toggle submenu
                                 if (viewport === VIEWPORT.DESKTOP && !isRailExpanded) {
                                   setIsRailExpanded(true);
                                   setIsExplicitlyOpened(true);
                                   if (onToggle && !isOpen) {
                                     onToggle();
                                   }
+                                  // Small delay to ensure sidebar expands before toggling submenu
+                                  setTimeout(() => {
+                                    toggleSubmenu(item.label);
+                                  }, 100);
+                                } else {
+                                  toggleSubmenu(item.label);
+                                  // Expand sidebar when submenu is clicked (if not already expanded)
+                                  if (viewport === VIEWPORT.DESKTOP && !isRailExpanded) {
+                                    setIsRailExpanded(true);
+                                    setIsExplicitlyOpened(true);
+                                    if (onToggle && !isOpen) {
+                                      onToggle();
+                                    }
+                                  }
                                 }
-                              }
-                            }}
-                            className={`sidebar-item has-submenu w-full ${active ? "sidebar-item-active" : ""
-                              } ${isSubmenuOpen ? "open" : ""}`}
-                            aria-expanded={isSubmenuOpen}
-                            aria-controls={`${item.label}-submenu`}
-                          >
-                            <div className="flex items-center gap-3" style={{ flex: 1 }}>
+                              }}
+                              className={`sidebar-item has-submenu w-full ${active ? "sidebar-item-active" : ""
+                                } ${isSubmenuOpen ? "open" : ""}`}
+                              aria-expanded={isSubmenuOpen}
+                              aria-controls={`${item.label}-submenu`}
+                            >
+                              <div className="flex items-center gap-3" style={{ flex: 1 }}>
+                                <span className="sidebar-item-icon-wrapper">
+                                  {item.icon}
+                                </span>
+                                <span>{item.label}</span>
+                              </div>
+                              {isSubmenuOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                            </button>
+
+                            <ul className={`submenu-list ${isSubmenuOpen ? "submenu-open" : ""}`} id={`${item.label}-submenu`}>
+                              {item.submenu.map((sub) => {
+                                if (!sub || !sub.href || !sub.label) return null;
+                                const normalizedPathname = String(pathname || "").replace(/^\/sales/, "/admin");
+                                const normalizedSubHref = String(sub.href).replace(/^\/sales/, "/admin");
+                                const isSubActive = normalizedPathname === normalizedSubHref || normalizedPathname.startsWith(normalizedSubHref + "/");
+                                return (
+                                  <li key={sub.href}>
+                                    <Link
+                                      href={sub.href}
+                                      className={`submenu-item ${isSubActive ? "submenu-item-active" : ""
+                                        }`}
+                                      onClick={handleLinkClick}
+                                    >
+                                      {sub.label}
+                                    </Link>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </>
+                        ) : (
+                          item.href ? (
+                            <Link
+                              href={item.href}
+                              className={`sidebar-item ${active ? "sidebar-item-active" : ""}`}
+                              onClick={handleLinkClick}
+                            >
                               <span className="sidebar-item-icon-wrapper">
                                 {item.icon}
                               </span>
                               <span>{item.label}</span>
-                            </div>
-                            {isSubmenuOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                          </button>
-
-                          <ul className={`submenu-list ${isSubmenuOpen ? "submenu-open" : ""}`} id={`${item.label}-submenu`}>
-                            {item.submenu.map((sub) => {
-                              if (!sub || !sub.href || !sub.label) return null;
-                              const normalizedPathname = String(pathname || "").replace(/^\/sales/, "/admin");
-                              const normalizedSubHref = String(sub.href).replace(/^\/sales/, "/admin");
-                              const isSubActive = normalizedPathname === normalizedSubHref || normalizedPathname.startsWith(normalizedSubHref + "/");
-                              return (
-                                <li key={sub.href}>
-                                  <Link
-                                    href={sub.href}
-                                    className={`submenu-item ${isSubActive ? "submenu-item-active" : ""
-                                      }`}
-                                    onClick={handleLinkClick}
-                                  >
-                                    {sub.label}
-                                  </Link>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        </>
-                      ) : (
-                        item.href ? (
-                          <Link
-                            href={item.href}
-                            className={`sidebar-item ${active ? "sidebar-item-active" : ""}`}
-                            onClick={handleLinkClick}
-                          >
-                            <span className="sidebar-item-icon-wrapper">
-                              {item.icon}
-                            </span>
-                            <span>{item.label}</span>
-                          </Link>
-                        ) : null
-                      )}
-                    </li>
-                  );
-                })}
-              </li>
+                            </Link>
+                          ) : null
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
             );
           })}
-        </ul>
+        </nav>
 
       </aside>
 

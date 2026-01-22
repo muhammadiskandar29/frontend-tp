@@ -27,7 +27,9 @@ const nextConfig = {
   // Turbopack config to silence warning
   turbopack: {},
 
-  // Webpack optimizations
+  /* 
+  // Webpack optimizations - Commented out because it may cause "Cannot read properties of undefined (reading 'call')" 
+  // in Next.js App Router, especially with HMR. Next.js default optimizations are recommended.
   webpack: (config, { isServer }) => {
     // Optimize bundle size
     if (!isServer) {
@@ -70,6 +72,7 @@ const nextConfig = {
     }
     return config;
   },
+  */
 
   async rewrites() {
     // Backend URL - Menggunakan environment variable

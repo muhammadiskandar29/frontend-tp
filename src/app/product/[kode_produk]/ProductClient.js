@@ -1856,9 +1856,13 @@ function ProductClient({ initialProductData, initialLandingPage }) {
                   type="button"
                   className="preview-form-submit-btn"
                   onClick={handleSubmit}
-                  disabled={submitting}
+                  disabled={submitting || (isBundling && selectedBundling === null)}
+                  style={{
+                    backgroundColor: (isBundling && selectedBundling === null) ? '#94a3b8' : '',
+                    cursor: (isBundling && selectedBundling === null) ? 'not-allowed' : 'pointer'
+                  }}
                 >
-                  {submitting ? "Memproses..." : "Pesan Sekarang"}
+                  {submitting ? "Memproses..." : (isBundling && selectedBundling === null ? "Pilih Paket Dahulu" : "Pesan Sekarang")}
                 </button>
               </div>
             </div>

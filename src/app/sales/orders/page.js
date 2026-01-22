@@ -1171,7 +1171,7 @@ export default function DaftarPesanan() {
               </div>
               <div>
                 <p className="summary-card__label">Total orders</p>
-                <p className="summary-card__value">{totalOrders}</p>
+                <p className="summary-card__value">{(totalOrders || 0).toLocaleString("id-ID")}</p>
               </div>
             </div>
             <div className="summary-card__divider"></div>
@@ -1181,7 +1181,7 @@ export default function DaftarPesanan() {
               </div>
               <div>
                 <p className="summary-card__label">Unpaid</p>
-                <p className="summary-card__value">{unpaidOrders}</p>
+                <p className="summary-card__value">{(unpaidOrders || 0).toLocaleString("id-ID")}</p>
               </div>
             </div>
             <div className="summary-card__divider"></div>
@@ -1191,7 +1191,7 @@ export default function DaftarPesanan() {
               </div>
               <div>
                 <p className="summary-card__label">Pending</p>
-                <p className="summary-card__value">{menungguOrders}</p>
+                <p className="summary-card__value">{(menungguOrders || 0).toLocaleString("id-ID")}</p>
               </div>
             </div>
             <div className="summary-card__divider"></div>
@@ -1201,7 +1201,7 @@ export default function DaftarPesanan() {
               </div>
               <div>
                 <p className="summary-card__label">Sukses</p>
-                <p className="summary-card__value">{approvedOrders}</p>
+                <p className="summary-card__value">{(approvedOrders || 0).toLocaleString("id-ID")}</p>
               </div>
             </div>
             <div className="summary-card__divider"></div>
@@ -1211,7 +1211,7 @@ export default function DaftarPesanan() {
               </div>
               <div>
                 <p className="summary-card__label">Ditolak</p>
-                <p className="summary-card__value">{ditolakOrders}</p>
+                <p className="summary-card__value">{(ditolakOrders || 0).toLocaleString("id-ID")}</p>
               </div>
             </div>
           </article>
@@ -1444,14 +1444,14 @@ export default function DaftarPesanan() {
 
                         {/* Status Order */}
                         <td>
-                          <span className={`status-badge status-${statusOrderInfo?.class || 'default'}`}>
+                          <span className={`status-badge order-${statusOrderInfo?.class || 'default'}`}>
                             {statusOrderInfo?.label || order.status_order}
                           </span>
                         </td>
 
                         {/* Status Pembayaran */}
                         <td>
-                          <span className={`status-badge payment-${statusPembayaranInfo?.class || 'default'}`}>
+                          <span className={`status-badge ${statusPembayaranInfo?.class || 'default'}`}>
                             {statusPembayaranInfo?.label || order.status_pembayaran}
                           </span>
                         </td>

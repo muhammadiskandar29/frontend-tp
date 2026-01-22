@@ -9,8 +9,9 @@ import { getUsers } from "@/lib/users";
 import FollowupSection from "./FollowupSection";
 import LinkZoomSection from "./LinkZoomSection";
 import TrainerSection from "./TrainerSection";
-import { 
-  ArrowLeft, Package, Tag, DollarSign, Calendar, 
+import ArticleSection from "./ArticleSection";
+import {
+  ArrowLeft, Package, Tag, DollarSign, Calendar,
   Globe, User, CheckCircle2, XCircle, FileText,
   Image as ImageIcon, Video, MessageSquare, List,
   Edit, ExternalLink, Copy, Eye, Users
@@ -20,20 +21,20 @@ import "@/styles/sales/product-detail.css";
 // Helper function untuk build image URL via proxy
 const buildImageUrl = (path) => {
   if (!path) return null;
-  
+
   // Jika path sudah full URL, return langsung
   if (path.startsWith("http://") || path.startsWith("https://")) {
     return path;
   }
-  
+
   // Bersihkan path dari prefix yang tidak diperlukan
   let cleanPath = path.replace(/^\/?(storage\/)?/, "");
-  
+
   // Pastikan path tidak kosong
   if (!cleanPath || cleanPath.trim() === "") {
     return null;
   }
-  
+
   return `/api/image?path=${encodeURIComponent(cleanPath)}`;
 };
 
@@ -79,12 +80,12 @@ export default function DetailProdukPage({ params }) {
         console.log("📦 [VIEW PRODUCT] Nama produk:", data?.nama);
         console.log("📦 [VIEW PRODUCT] Header:", data?.header);
         console.log("📦 [VIEW PRODUCT] Gambar:", data?.gambar);
-        
+
         if (!data) {
           console.error("❌ [VIEW PRODUCT] No data received");
           return;
         }
-        
+
         setProduct(data);
       } catch (err) {
         console.error("❌ Error fetching detail:", err);
@@ -99,11 +100,11 @@ export default function DetailProdukPage({ params }) {
   useEffect(() => {
     async function fetchAssignUsers() {
       if (!product || !product.assign) return;
-      
+
       try {
         setLoadingAssign(true);
         const users = await getUsers();
-        
+
         // Parse assign - bisa array atau JSON string
         let assignIds = [];
         if (Array.isArray(product.assign)) {
@@ -115,12 +116,12 @@ export default function DetailProdukPage({ params }) {
             assignIds = [];
           }
         }
-        
+
         // Filter users berdasarkan assign IDs
-        const assigned = users.filter(user => 
+        const assigned = users.filter(user =>
           assignIds.includes(user.id) || assignIds.includes(String(user.id))
         );
-        
+
         setAssignUsers(assigned);
       } catch (err) {
         console.error("❌ Error fetching assign users:", err);
@@ -128,7 +129,7 @@ export default function DetailProdukPage({ params }) {
         setLoadingAssign(false);
       }
     }
-    
+
     fetchAssignUsers();
   }, [product]);
 
@@ -178,7 +179,7 @@ export default function DetailProdukPage({ params }) {
             <ArrowLeft size={18} />
             <span>Kembali ke Daftar Produk</span>
           </button>
-          
+
           <div className="header-actions">
             <button
               className="action-btn secondary"
@@ -193,13 +194,13 @@ export default function DetailProdukPage({ params }) {
                 onClick={() => {
                   // ✅ FIX: Tambahkan /product/[kode_produk] sebelum product.url
                   let landingPageUrl = product.url;
-                  
+
                   // Jika product.url sudah dimulai dengan /product/, gunakan langsung
                   if (!landingPageUrl.startsWith('/product/')) {
                     // Tambahkan /product/[kode_produk] di depan
                     landingPageUrl = `/product/${product.kode}${landingPageUrl.startsWith('/') ? '' : '/'}${landingPageUrl}`;
                   }
-                  
+
                   window.open(landingPageUrl, '_blank');
                 }}
               >
@@ -254,6 +255,12 @@ export default function DetailProdukPage({ params }) {
           >
             Trainer
           </button>
+          <button
+            className={`tab ${activeTab === "artikel" ? "active" : ""}`}
+            onClick={() => setActiveTab("artikel")}
+          >
+            Artikel
+          </button>
         </div>
 
         {/* === TAB DETAIL === */}
@@ -292,7 +299,7 @@ export default function DetailProdukPage({ params }) {
                     </span>
                   </div>
                 </div>
-                
+
                 <div className="product-price-section">
                   {product.harga_coret && (
                     <div className="price-old">
@@ -304,7 +311,7 @@ export default function DetailProdukPage({ params }) {
                   </div>
                 </div>
               </div>
-              
+
               {/* Optional Header Image */}
               {product.header && (
                 <div className="product-hero-image">
@@ -344,7 +351,7 @@ export default function DetailProdukPage({ params }) {
                       </div>
                       <div className="info-value">
                         <span className="code-value">{product.kode}</span>
-                        <button 
+                        <button
                           className="copy-btn"
                           onClick={() => copyToClipboard(product.kode)}
                           title="Copy kode"
@@ -397,7 +404,7 @@ export default function DetailProdukPage({ params }) {
                       </div>
                     </div>
                   )}
-                  
+
                   {/* Bundling Information */}
                   {product.isBundling && bundling.length > 0 && (
                     <div className="info-item full-width" style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #f3f4f6' }}>
@@ -464,16 +471,16 @@ export default function DetailProdukPage({ params }) {
                         <span>URL</span>
                       </div>
                       <div className="info-value">
-                        <a 
+                        <a
                           href={`/product/${product.kode}`}
-                          target="_blank" 
+                          target="_blank"
                           rel="noopener noreferrer"
                           className="url-link"
                         >
                           /product/{product.kode}
                           <ExternalLink size={14} />
                         </a>
-                        <button 
+                        <button
                           className="copy-btn"
                           onClick={() => copyToClipboard(`/product/${product.kode}`)}
                           title="Copy URL"
@@ -658,10 +665,10 @@ export default function DetailProdukPage({ params }) {
                 <div className="info-card-body">
                   <div className="video-grid">
                     {video.map((url, i) => (
-                      <a 
-                        key={i} 
-                        href={url} 
-                        target="_blank" 
+                      <a
+                        key={i}
+                        href={url}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="video-card"
                       >
@@ -719,6 +726,10 @@ export default function DetailProdukPage({ params }) {
               setProduct(updatedProduct);
             }}
           />
+        )}
+        {/* === TAB ARTIKEL === */}
+        {activeTab === "artikel" && (
+          <ArticleSection productName={product.nama} />
         )}
       </div>
     </Layout>

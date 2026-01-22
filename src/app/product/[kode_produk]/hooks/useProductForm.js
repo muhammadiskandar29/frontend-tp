@@ -48,7 +48,8 @@ export function useProductForm({
     }, [formWilayah]);
 
     // Validation Logic (Now separate from price state)
-    const isFormValid = (isFisik) => {
+    const isFormValid = (isFisik, isBundling) => {
+        if (isBundling && selectedBundling === null) return "Silakan pilih paket produk terlebih dahulu";
         if (!customerForm.nama || customerForm.nama.trim().length === 0) return "Nama harus diisi";
         if (!customerForm.wa || customerForm.wa.trim().length < 8) return "Nomor WhatsApp tidak valid";
         if (!customerForm.email || !customerForm.email.includes("@")) return "Email tidak valid";
@@ -72,7 +73,10 @@ export function useProductForm({
 
         if (submitting) return;
 
-        const validationError = isFormValid(isKategoriBuku);
+        const bundlingData = productData?.bundling || [];
+        const isBundling = bundlingData.length > 0;
+
+        const validationError = isFormValid(isKategoriBuku, isBundling);
         if (validationError) {
             return toast.error(validationError);
         }

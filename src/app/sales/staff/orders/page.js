@@ -1470,6 +1470,7 @@ export default function DaftarPesanan() {
                                       <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: '#475569', width: '12%' }}>Order ID</th>
                                       <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: '#475569', width: '15%' }}>Tanggal</th>
                                       <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: '#475569', width: '20%' }}>Produk</th>
+                                      <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Status Order</th>
                                       <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Status Pembayaran</th>
                                       <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Follow Up</th>
                                       <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 600, color: '#475569' }}>Bukti</th>
@@ -1513,7 +1514,7 @@ export default function DaftarPesanan() {
                                           <td style={{ padding: '12px 16px', color: '#0f172a', fontWeight: 500 }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                               #{innerOrder.id}
-                                              {isLatest && <span style={{ fontSize: '10px', background: '#e0f2fe', color: '#0369a1', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>TERBARU</span>}
+                                              {isLatest && <span style={{ fontSize: '10px', background: '#FFF7ED', color: '#EA580C', padding: '2px 6px', borderRadius: '4px', fontWeight: 600, border: '1px solid #FFEDD5' }}>TERBARU</span>}
                                             </div>
                                           </td>
                                           <td style={{ padding: '12px 16px', color: '#64748b' }}>{formatDateOnly(innerOrder.tanggal || innerOrder.create_at)}</td>
@@ -1527,9 +1528,14 @@ export default function DaftarPesanan() {
                                             </span>
                                           </td>
 
-                                          {/* Status Pembayaran */}
                                           <td style={{ padding: '12px 16px' }}>
-                                            <span className={`status-badge payment-${innerStatusPembayaranInfo.class}`} style={{ fontSize: '0.7rem', padding: '2px 8px' }}>
+                                            <span className={`status-badge order-${innerStatusOrderInfo.class}`} style={{ fontSize: '0.7rem', padding: '2px 8px', width: 'fit-content' }}>
+                                              {innerStatusOrderInfo.label}
+                                            </span>
+                                          </td>
+
+                                          <td style={{ padding: '12px 16px' }}>
+                                            <span className={`status-badge ${innerStatusPembayaranInfo.class}`} style={{ fontSize: '0.7rem', padding: '2px 8px', width: 'fit-content' }}>
                                               {innerStatusPembayaranInfo.label}
                                             </span>
                                           </td>
