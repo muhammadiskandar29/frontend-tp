@@ -287,6 +287,12 @@ export default function EditProductsPage() {
       type: componentId,
       data: getDefaultData(componentId),
       order: blocks.length + 1,
+      // ✅ ARSITEKTUR BENAR: Section HARUS punya config.componentId
+      ...(componentId === "section" ? {
+        config: {
+          componentId: `section-${Date.now()}`
+        }
+      } : {})
     };
 
     setBlocks([...blocks, newBlock]);
@@ -324,28 +330,46 @@ export default function EditProductsPage() {
 
   // Handler untuk move child block
   const handleMoveChildBlock = (childId, direction) => {
-    // Find the block and its parent section
+    // ✅ ARSITEKTUR BENAR: Move child block berdasarkan order, tidak perlu data.children
     const childBlock = blocks.find(b => b.id === childId);
     if (!childBlock || !childBlock.parentId) return;
 
-    // Find parent section by componentId
+    // ✅ ARSITEKTUR BENAR: Find parent section HANYA berdasarkan config.componentId
+    const sectionComponentId = childBlock.parentId;
     const parentSection = blocks.find(b =>
-      b.type === "section" &&
-      (b.data.componentId === childBlock.parentId || b.id === childBlock.parentId)
+      b.type === "section" && b.config?.componentId === sectionComponentId
     );
-    if (!parentSection || !parentSection.data.children) return;
+    if (!parentSection) {
+      console.error(`[MOVE CHILD ERROR] Section dengan componentId "${sectionComponentId}" tidak ditemukan!`);
+      return;
+    }
 
-    const children = parentSection.data.children;
-    const currentIndex = children.indexOf(childId);
+    // Get all child blocks dari section ini, sorted by order
+    const childBlocks = blocks
+      .filter(b => b.parentId === sectionComponentId)
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+    const currentIndex = childBlocks.findIndex(b => b.id === childId);
     if (currentIndex === -1) return;
 
     const newIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
-    if (newIndex < 0 || newIndex >= children.length) return;
+    if (newIndex < 0 || newIndex >= childBlocks.length) return;
 
-    const newChildren = [...children];
-    [newChildren[currentIndex], newChildren[newIndex]] = [newChildren[newIndex], newChildren[currentIndex]];
+    // Swap order
+    const tempOrder = childBlocks[currentIndex].order;
+    childBlocks[currentIndex].order = childBlocks[newIndex].order;
+    childBlocks[newIndex].order = tempOrder;
 
-    handleUpdateBlock(parentSection.id, { ...parentSection.data, children: newChildren });
+    // Update blocks dengan order baru
+    setBlocks(blocks.map(b => {
+      if (b.id === childBlocks[currentIndex].id) {
+        return { ...b, order: childBlocks[currentIndex].order };
+      }
+      if (b.id === childBlocks[newIndex].id) {
+        return { ...b, order: childBlocks[newIndex].order };
+      }
+      return b;
+    }));
   };
 
   // Handler untuk reorder blocks
@@ -447,6 +471,7 @@ export default function EditProductsPage() {
         return (
           <SectionComponent
             {...commonProps}
+            block={block} // ✅ FIX: Pass block lengkap, bukan hanya data
             allBlocks={blocks}
             onAddChildBlock={handleAddChildBlock}
             onUpdateChildBlock={handleUpdateChildBlock}
@@ -3382,6 +3407,9 @@ export default function EditProductsPage() {
 
       setIsSaving(false);
       setShowExitModal(false);
+
+      // ✅ FIX: Invalidate cache before redirect
+      router.refresh();
       router.push("/sales/products");
 
     } catch (error) {
@@ -3545,6 +3573,8 @@ export default function EditProductsPage() {
       // ✅ FIX: Set loading state ke false sebelum redirect
       setIsSaving(false);
 
+      // ✅ FIX: Invalidate cache before redirect
+      router.refresh();
       // Redirect ke halaman products (langsung, tanpa setTimeout)
       router.push("/sales/products");
 
@@ -3567,44 +3597,10 @@ export default function EditProductsPage() {
   };
 
   // Render grid komponen dalam modal
-  // ✅ Helper function: Get all component types that are used inside sections
-  // GENERAL: Filter komponen yang sudah digunakan di dalam section agar tidak ditampilkan di sidebar
-  const getComponentsUsedInSections = () => {
-    const usedTypes = new Set();
-
-    // Find all section blocks
-    const sectionBlocks = blocks.filter(block => block.type === "section");
-
-    // For each section, get all its children
-    sectionBlocks.forEach(sectionBlock => {
-      const sectionComponentId = sectionBlock.data?.componentId || sectionBlock.id;
-      const sectionChildren = sectionBlock.data?.children || [];
-
-      // Find child blocks by both parentId and children array (sama dengan renderPreview)
-      const childBlocks = blocks.filter(block => {
-        if (!block || !block.type) return false;
-        // Check by parentId (from block.parentId)
-        if (block.parentId === sectionComponentId) return true;
-        // Check by children array (using componentId or block.id)
-        const childId = block.data?.componentId || block.id;
-        return sectionChildren.includes(childId);
-      });
-
-      // Add all child block types to usedTypes
-      childBlocks.forEach(childBlock => {
-        if (childBlock.type && childBlock.type !== "section") {
-          // Jangan include "section" karena section bisa nested
-          usedTypes.add(childBlock.type);
-        }
-      });
-    });
-
-    return usedTypes;
-  };
-
   const renderComponentGrid = () => {
-    // ✅ Get components that are already used inside sections
-    const usedInSections = getComponentsUsedInSections();
+    // ✅ FIX: Komponen bisa digunakan berkali-kali, baik di dalam section maupun di luar section
+    // TIDAK perlu filter komponen yang sudah digunakan di section
+    // User bebas menambahkan komponen yang sama berkali-kali
 
     return (
       <div className="component-modal-content">
@@ -3613,8 +3609,7 @@ export default function EditProductsPage() {
             <h3 className="component-category-title">{category.label}</h3>
             <div className="component-grid">
               {category.components
-                // ✅ Filter: Jangan tampilkan komponen yang sudah digunakan di dalam section
-                .filter(component => !usedInSections.has(component.id))
+                // ✅ FIX: Tampilkan semua komponen, tidak ada filter
                 .map((component) => {
                   const IconComponent = component.icon;
                   return (
@@ -3629,7 +3624,7 @@ export default function EditProductsPage() {
                         style={{ backgroundColor: "#f3f4f6" }}
                       >
                         <IconComponent
-                          size={24}
+                          size={20}
                           style={{ color: "#6b7280" }}
                         />
                       </div>
@@ -4813,9 +4808,22 @@ export default function EditProductsPage() {
                 </div>
               )}
 
-              {/* Preview komponen - hanya render blocks tanpa parentId (bukan child dari section) */}
+              {/* Preview komponen - hanya render blocks NON-CHILD */}
+              {/* ✅ RULE: Child component TIDAK BOLEH dirender oleh root renderer */}
+              {/* ✅ Hanya section yang boleh render child blocks */}
+              {/* ✅ FIX UTAMA: Filter blocks yang punya parentId - TIDAK BOLEH dirender di root */}
               {blocks
-                .filter(block => !block.parentId) // Hanya render blocks yang bukan child dari section
+                .filter(block => {
+                  if (!block || !block.type) return false;
+
+                  // ✅ ARSITEKTUR BENAR: Hanya child yang di-skip (bukan section)
+                  // Section boleh punya parentId jika nested, tapi child tidak boleh dirender di root
+                  if (block.parentId && block.type !== 'section') {
+                    return false;
+                  }
+
+                  return true;
+                })
                 .map((block) => (
                   <div
                     key={block.id}

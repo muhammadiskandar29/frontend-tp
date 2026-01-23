@@ -24,7 +24,7 @@ export async function GET(request, { params }) {
 
     // Decode URL encoding
     const decodedKode = decodeURIComponent(kode_produk);
-    
+
     console.log(`[LANDING] Fetching product with kode: ${decodedKode}`);
 
     // Gunakan endpoint sesuai dokumentasi: /api/landing/{kode_produk}
@@ -33,6 +33,7 @@ export async function GET(request, { params }) {
       headers: {
         Accept: "application/json",
       },
+      cache: 'no-store', // ✅ FIX: Jangan simpan di cache agar selalu dapat data terbaru
     });
 
     let data = await response.json().catch(() => ({}));
@@ -43,12 +44,13 @@ export async function GET(request, { params }) {
       const slugKode = generateSlug(decodedKode);
       if (slugKode !== decodedKode) {
         console.log(`[LANDING] Product not found, trying with slug: ${slugKode}`);
-        
+
         response = await fetch(`${BACKEND_URL}/api/landing/${slugKode}`, {
           method: "GET",
           headers: {
             Accept: "application/json",
           },
+          cache: 'no-store', // ✅ FIX: Jangan simpan di cache
         });
 
         data = await response.json().catch(() => ({}));

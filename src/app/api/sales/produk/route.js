@@ -3,6 +3,7 @@ export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 import FormData from "form-data";
 import axios from "axios";
+import { revalidatePath } from "next/cache";
 
 import { BACKEND_URL } from "@/config/env";
 
@@ -1015,6 +1016,19 @@ export async function POST(request) {
       const responseData = Array.isArray(data.data) ? data.data : [data.data];
 
       console.log("[ROUTE] ✅ Returning success response with data array:", responseData.length, "items");
+
+      // ✅ FIX: Invalidate cache for the product page
+      try {
+        const product = responseData[0];
+        const kode = product?.kode || product?.url?.replace(/^\//, '');
+        if (kode) {
+          console.log(`[ROUTE] Revalidating path: /product/${kode}`);
+          revalidatePath(`/product/${kode}`);
+          revalidatePath(`/product/${kode}`, 'page');
+        }
+      } catch (revalidateError) {
+        console.error(`[ROUTE] Revalidation failed:`, revalidateError);
+      }
 
       return NextResponse.json({
         success: true,
