@@ -14,7 +14,7 @@ import {
     AlignRight, Image as ImageIcon, Save, X, Eye,
     Code, Undo, Redo, Strikethrough, Minimize2,
     Heading1, Heading2, Heading3, Minus, Maximize2,
-    Paperclip, ExternalLink
+    Paperclip, ExternalLink, Link2Off, Keyboard
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import React, { useImperativeHandle, forwardRef } from "react";
@@ -81,9 +81,7 @@ const MenuBar = ({ editor }) => {
                     <option value="3">Heading 3</option>
                 </select>
 
-                <div className="toolbar-v-divider"></div>
-
-                <div className="toolbar-group">
+                <div className="toolbar-group" style={{ marginLeft: '10px' }}>
                     <button
                         onClick={() => editor.chain().focus().toggleBold().run()}
                         className={`toolbar-icon-btn ${editor.isActive("bold") ? "is-active" : ""}`}
@@ -99,8 +97,6 @@ const MenuBar = ({ editor }) => {
                         <Italic size={18} />
                     </button>
                 </div>
-
-                <div className="toolbar-v-divider"></div>
 
                 <div className="toolbar-group">
                     <button
@@ -126,8 +122,6 @@ const MenuBar = ({ editor }) => {
                     </button>
                 </div>
 
-                <div className="toolbar-v-divider"></div>
-
                 <div className="toolbar-group">
                     <button onClick={() => editor.chain().focus().setTextAlign('left').run()} className={`toolbar-icon-btn ${editor.isActive({ textAlign: 'left' }) ? 'is-active' : ''}`} title="Align Left">
                         <AlignLeft size={18} />
@@ -140,8 +134,6 @@ const MenuBar = ({ editor }) => {
                     </button>
                 </div>
 
-                <div className="toolbar-v-divider"></div>
-
                 <div className="toolbar-group">
                     <button
                         onClick={() => {
@@ -153,8 +145,19 @@ const MenuBar = ({ editor }) => {
                     >
                         <LinkIcon size={18} />
                     </button>
+                    <button
+                        onClick={() => editor.chain().focus().unsetLink().run()}
+                        className="toolbar-icon-btn"
+                        title="Remove Link"
+                        disabled={!editor.isActive("link")}
+                    >
+                        <Link2Off size={18} />
+                    </button>
                     <button onClick={() => editor.chain().focus().setHorizontalRule().run()} className="toolbar-icon-btn" title="Divider">
                         <Minus size={18} />
+                    </button>
+                    <button onClick={() => editor.chain().focus().toggleCode().run()} className="toolbar-icon-btn" title="Keyboard Shortcuts">
+                        <Keyboard size={18} />
                     </button>
                 </div>
 
@@ -452,46 +455,54 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
             transform: translateY(-1px);
         }
         
-        .toolbar-main-grid {
-            padding: 12px 20px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            background: #fafafa;
-        }
-
-        .toolbar-row {
+        .toolbar-main-row {
+            padding: 8px 20px;
             display: flex;
             align-items: center;
-            gap: 6px;
-            flex-wrap: wrap;
+            gap: 2px;
+            background: #f8fafc;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .toolbar-main-row::-webkit-scrollbar { display: none; }
+
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 2px;
         }
 
-        .toolbar-round-btn {
-          width: 38px;
-          height: 38px;
+        .toolbar-v-divider {
+            width: 1px;
+            height: 24px;
+            background: #e2e8f0;
+            margin: 0 10px;
+        }
+
+        .toolbar-icon-btn {
+          width: 34px;
+          height: 34px;
           display: flex;
           align-items: center;
           justify-content: center;
-          border: 1px solid #e2e8f0;
-          background: #fff;
+          border: 1px solid transparent;
+          background: transparent;
           color: #475569;
-          border-radius: 50%; /* Bulat Sempurna */
+          border-radius: 6px;
           cursor: pointer;
-          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-          box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+          transition: all 0.2s;
         }
-        .toolbar-round-btn:hover { 
-            background: #f1f5f9; 
+        .toolbar-icon-btn:hover { 
+            background: #fff; 
+            color: #ff7a00; 
+            border-color: #e2e8f0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .toolbar-icon-btn.is-active { 
+            background: #fff; 
             color: #ff7a00; 
             border-color: #ff7a00;
-            transform: scale(1.05);
-        }
-        .toolbar-round-btn.is-active { 
-            background: #ff7a00; 
-            color: #fff; 
-            border-color: #ff7a00;
-            box-shadow: 0 4px 12px rgba(255, 122, 0, 0.2);
+            box-shadow: 0 2px 8px rgba(255, 122, 0, 0.1);
         }
 
         .heading-select-premium {
