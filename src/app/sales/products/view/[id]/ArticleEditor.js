@@ -18,6 +18,7 @@ import {
 import { toast } from "react-hot-toast";
 import React, { useImperativeHandle, forwardRef } from "react";
 import "@/styles/sales/bonus.css";
+import Image from "@tiptap/extension-image";
 
 const MenuBar = ({ editor, viewMode, setViewMode }) => {
     if (!editor) return null;
@@ -31,8 +32,8 @@ const MenuBar = ({ editor, viewMode, setViewMode }) => {
             if (file) {
                 const reader = new FileReader();
                 reader.onload = (readerEvent) => {
-                    const content = `<img src="${readerEvent.target.result}" style="max-width: 100%; border-radius: 4px; margin: 10px 0;" />`;
-                    editor.chain().focus().insertContent(content).run();
+                    const src = readerEvent.target.result;
+                    editor.chain().focus().setImage({ src }).run();
                 };
                 reader.readAsDataURL(file);
             }
@@ -107,8 +108,14 @@ const MenuBar = ({ editor, viewMode, setViewMode }) => {
 
                     <button
                         onClick={() => {
-                            const url = window.prompt("Enter URL");
-                            if (url) editor.chain().focus().setLink({ href: url }).run();
+                            let url = window.prompt("Enter URL");
+                            if (url) {
+                                // Simple check to add protocol if missing
+                                if (!/^https?:\/\//i.test(url)) {
+                                    url = 'https://' + url;
+                                }
+                                editor.chain().focus().setLink({ href: url, target: '_blank' }).run();
+                            }
                         }}
                         className={`wp-toolbar-btn ${editor.isActive("link") ? "is-active" : ""}`}
                         title="Insert/edit link"
@@ -143,28 +150,14 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
             TextStyle,
             Color,
             TextAlign.configure({
-                types: ['heading', 'paragraph'],
+                types: ['heading', 'paragraph', 'image'],
+            }),
+            Image.configure({
+                inline: true,
+                allowBase64: true,
             }),
         ],
         content: initialData?.content ? (typeof initialData.content === 'string' ? initialData.content : JSON.stringify(initialData.content)) : "",
-        editorProps: {
-            handlePaste: (view, event) => {
-                const items = event.clipboardData.items;
-                for (let i = 0; i < items.length; i++) {
-                    if (items[i].type.indexOf('image') !== -1) {
-                        const file = items[i].getAsFile();
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                            const content = `<img src="${e.target.result}" style="max-width: 100%; border-radius: 4px; margin: 10px 0;" />`;
-                            editor.chain().focus().insertContent(content).run();
-                        };
-                        reader.readAsDataURL(file);
-                        return true;
-                    }
-                }
-                return false;
-            },
-        },
     });
 
     useEffect(() => {

@@ -368,6 +368,16 @@
     color: #32373c;
 }
 
+.ProseMirror a {
+    color: #2271b1;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.ProseMirror a:hover {
+    color: #135e96;
+}
+
 .ProseMirror p {
     margin-bottom: 1.2em;
 }

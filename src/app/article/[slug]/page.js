@@ -9,216 +9,75 @@ import { useRouter } from "next/navigation";
 
 // Simple custom renderer for Editor.js blocks
 const ArticleRenderer = ({ data }) => {
-    if (!data || !data.blocks) return null;
+    if (!data) return null;
 
-    return (
-        <div className="article-renderer">
-            {data.blocks.map((block, index) => {
-                switch (block.type) {
-                    case "header":
-                        const Tag = `h${block.data.level || 2}`;
-                        return <Tag key={index} className="rendered-h">{block.data.text}</Tag>;
+    // Check if the data is a string (HTML from Tiptap)
+    if (typeof data === "string") {
+        return (
+            <div
+                className="article-prose-content"
+                dangerouslySetInnerHTML={{ __html: data }}
+            />
+        );
+    }
 
-                    case "paragraph":
-                        return (
-                            <p
-                                key={index}
-                                className="rendered-p"
-                                dangerouslySetInnerHTML={{ __html: block.data.text }}
-                            ></p>
-                        );
+    // Fallback for old block-based data (Editor.js)
+    if (data.blocks) {
+        return (
+            <div className="article-renderer">
+                {data.blocks.map((block, index) => {
+                    switch (block.type) {
+                        case "header":
+                            const Tag = `h${block.data.level || 2}`;
+                            return <Tag key={index} className="rendered-h">{block.data.text}</Tag>;
 
-                    case "list":
-                        const ListTag = block.data.style === "ordered" ? "ol" : "ul";
-                        return (
-                            <ListTag key={index} className="rendered-list">
-                                {block.data.items.map((item, i) => (
-                                    <li key={i} dangerouslySetInnerHTML={{ __html: item }}></li>
-                                ))}
-                            </ListTag>
-                        );
+                        case "paragraph":
+                            return (
+                                <p
+                                    key={index}
+                                    className="rendered-p"
+                                    dangerouslySetInnerHTML={{ __html: block.data.text }}
+                                ></p>
+                            );
 
-                    case "image":
-                        return (
-                            <figure key={index} className="rendered-figure">
-                                <img src={block.data.file?.url || "/placeholder-image.jpg"} alt={block.data.caption} />
-                                {block.data.caption && <figcaption>{block.data.caption}</figcaption>}
-                            </figure>
-                        );
+                        case "list":
+                            const ListTag = block.data.style === "ordered" ? "ol" : "ul";
+                            return (
+                                <ListTag key={index} className="rendered-list">
+                                    {block.data.items.map((item, i) => (
+                                        <li key={i} dangerouslySetInnerHTML={{ __html: item }}></li>
+                                    ))}
+                                </ListTag>
+                            );
 
-                    case "quote":
-                        return (
-                            <blockquote key={index} className="rendered-quote">
-                                <p>{block.data.text}</p>
-                                {block.data.caption && <footer>— {block.data.caption}</footer>}
-                            </blockquote>
-                        );
+                        case "image":
+                            return (
+                                <figure key={index} className="rendered-figure">
+                                    <img src={block.data.file?.url || "/placeholder-image.jpg"} alt={block.data.caption} />
+                                    {block.data.caption && <figcaption>{block.data.caption}</figcaption>}
+                                </figure>
+                            );
 
-                    case "checklist":
-                        return (
-                            <div key={index} className="rendered-checklist">
-                                {block.data.items.map((item, i) => (
-                                    <div key={i} className="checklist-item">
-                                        <input type="checkbox" checked={item.checked} readOnly />
-                                        <span dangerouslySetInnerHTML={{ __html: item.text }}></span>
-                                    </div>
-                                ))}
-                            </div>
-                        )
+                        case "quote":
+                            return (
+                                <blockquote key={index} className="rendered-quote">
+                                    <p>{block.data.text}</p>
+                                    {block.data.caption && <footer>— {block.data.caption}</footer>}
+                                </blockquote>
+                            );
 
-                    case "table":
-                        return (
-                            <div key={index} className="rendered-table-wrapper">
-                                <table className="rendered-table">
-                                    {block.data.withHeadings && (
-                                        <thead>
-                                            <tr>
-                                                {block.data.content[0].map((cell, i) => (
-                                                    <th key={i} dangerouslySetInnerHTML={{ __html: cell }}></th>
-                                                ))}
-                                            </tr>
-                                        </thead>
-                                    )}
-                                    <tbody>
-                                        {block.data.content.slice(block.data.withHeadings ? 1 : 0).map((row, i) => (
-                                            <tr key={i}>
-                                                {row.map((cell, j) => (
-                                                    <td key={j} dangerouslySetInnerHTML={{ __html: cell }}></td>
-                                                ))}
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        );
+                        case "delimiter":
+                            return <hr key={index} className="rendered-hr-divider" />;
 
-                    case "delimiter":
-                        return <hr key={index} className="rendered-hr-divider" />;
+                        default:
+                            return null;
+                    }
+                })}
+            </div>
+        );
+    }
 
-                    default:
-                        console.log("Unsupported block type:", block.type);
-                        return null;
-                }
-            })}
-
-            <style jsx>{`
-        .article-renderer {
-          line-height: 1.8;
-          color: #334155;
-        }
-        .rendered-h {
-          margin: 2rem 0 1rem 0;
-          color: #1e293b;
-          font-weight: 700;
-        }
-        h1.rendered-h { font-size: 2.5rem; }
-        h2.rendered-h { font-size: 2rem; }
-        h3.rendered-h { font-size: 1.5rem; }
-        
-        .rendered-p {
-          margin-bottom: 1.5rem;
-          font-size: 1.125rem;
-        }
-        .rendered-list {
-          margin-bottom: 1.5rem;
-          padding-left: 1.5rem;
-        }
-        .rendered-list li {
-          margin-bottom: 0.5rem;
-        }
-        .rendered-figure {
-          margin: 2.5rem 0;
-        }
-        .rendered-figure img {
-          width: 100%;
-          border-radius: 12px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-        .rendered-figure figcaption {
-          text-align: center;
-          color: #64748b;
-          font-size: 0.875rem;
-          margin-top: 0.75rem;
-          font-style: italic;
-        }
-        .rendered-quote {
-          margin: 2.5rem 0;
-          padding: 1.5rem 2rem;
-          border-left: 4px solid #3b82f6;
-          background: #f8fafc;
-          font-style: italic;
-          font-size: 1.25rem;
-          border-radius: 0 8px 8px 0;
-        }
-        .rendered-quote footer {
-          font-size: 1rem;
-          color: #64748b;
-          margin-top: 0.5rem;
-          font-style: normal;
-        }
-        .rendered-checklist {
-            margin-bottom: 1.5rem;
-        }
-        .checklist-item {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            margin-bottom: 0.5rem;
-        }
-        .rendered-hr-divider {
-          margin: 3rem 0;
-          border: none;
-          height: 1px;
-          background: #e2e8f0;
-          position: relative;
-          overflow: visible;
-        }
-        .rendered-hr-divider::after {
-          content: "•••";
-          position: absolute;
-          left: 50%;
-          top: 50%;
-          transform: translate(-50%, -50%);
-          background: white;
-          padding: 0 1rem;
-          color: #94a3b8;
-          letter-spacing: 0.5rem;
-        }
-
-        /* Table Styles */
-        .rendered-table-wrapper {
-            margin: 2rem 0;
-            overflow-x: auto;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-        }
-        .rendered-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.95rem;
-        }
-        .rendered-table th {
-            background: #f8fafc;
-            padding: 0.75rem 1rem;
-            text-align: left;
-            font-weight: 600;
-            border-bottom: 2px solid #e2e8f0;
-        }
-        .rendered-table td {
-            padding: 0.75rem 1rem;
-            border-bottom: 1px solid #f1f5f9;
-        }
-        .rendered-table tr:last-child td {
-            border-bottom: none;
-        }
-
-        /* Typography Enhancements */
-        :global(.rendered-p b), :global(.rendered-p strong) { font-weight: 700; color: #0f172a; }
-        :global(.rendered-p i), :global(.rendered-p em) { font-style: italic; }
-        :global(.rendered-p u) { text-decoration: underline; }
-      `}</style>
-        </div>
-    );
+    return null;
 };
 
 export default function PublicArticlePage({ params }) {
@@ -427,146 +286,55 @@ export default function PublicArticlePage({ params }) {
             transition: all 0.2s;
         }
 
-        .btn-back:hover, .btn-share:hover { background: #f8fafc; color: #1e293b; border-color: #cbd5e1; }
-
         .article-hero {
             padding: 4rem 1.5rem;
             background: #f8fafc;
             border-bottom: 1px solid #f1f5f9;
             text-align: center;
         }
-
-        .hero-content {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .hero-title {
-            font-size: 3rem;
-            font-weight: 800;
-            color: #1e293b;
-            line-height: 1.1;
-            margin-bottom: 1.5rem;
-            letter-spacing: -0.025em;
-        }
-
-        .hero-meta {
-            display: flex;
-            justify-content: center;
-            gap: 1.5rem;
-            color: #64748b;
-        }
-
+        .hero-title { font-size: 3rem; font-weight: 800; color: #1e293b; line-height: 1.1; margin-bottom: 1.5rem; letter-spacing: -0.025em; }
+        .hero-meta { display: flex; justify-content: center; gap: 1.5rem; color: #64748b; }
         .meta-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; }
 
-        .main-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 3rem 1.5rem;
-        }
-
-        .content-grid {
-            display: grid;
-            grid-template-columns: 80px 1fr 300px;
-            gap: 4rem;
-        }
+        .main-content { max-width: 1200px; margin: 0 auto; padding: 3rem 1.5rem; }
+        .content-grid { display: grid; grid-template-columns: 80px 1fr 300px; gap: 4rem; }
 
         @media (max-width: 1024px) {
             .content-grid { grid-template-columns: 1fr; gap: 2rem; }
             .share-sidebar { display: none; }
-            .related-sidebar { order: 3; }
         }
 
-        .sticky-share {
-            position: sticky;
-            top: 100px;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            align-items: center;
-        }
-
-        .sticky-share span {
-            font-size: 0.65rem;
-            font-weight: 700;
-            color: #94a3b8;
-            letter-spacing: 0.1em;
-        }
-
-        .share-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid #e2e8f0;
-            background: #fff;
-            color: #64748b;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .share-icon:hover { 
-            transform: translateY(-3px); 
-            color: white; 
-            border-color: transparent;
-        }
+        .sticky-share { position: sticky; top: 100px; display: flex; flex-direction: column; gap: 1rem; align-items: center; }
+        .share-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; transition: all 0.2s; }
+        .share-icon:hover { transform: translateY(-3px); color: white; }
         .share-icon.twitter:hover { background: #1DA1F2; }
         .share-icon.facebook:hover { background: #1877F2; }
         .share-icon.linkedin:hover { background: #0A66C2; }
         .share-icon.wa:hover { background: #25D366; }
 
-        .article-body { max-width: 800px; }
+        .article-prose-content { line-height: 1.8; color: #334155; font-size: 1.125rem; }
+        .article-prose-content h1, .article-prose-content h2, .article-prose-content h3 { color: #1e293b; font-weight: 800; margin: 2.5rem 0 1rem 0; }
+        .article-prose-content h2 { border-bottom: 2px solid #f1f5f9; padding-bottom: 0.5rem; }
+        .article-prose-content p { margin-bottom: 1.5rem; }
+        .article-prose-content a { color: #3b82f6; text-decoration: underline; font-weight: 500; transition: color 0.2s; }
+        .article-prose-content a:hover { color: #2563eb; }
+        .article-prose-content img { max-width: 100%; height: auto; border-radius: 12px; margin: 1.5rem 0; display: block; }
+        
+        /* Alignment Support */
+        .article-prose-content [style*="text-align: center"] { text-align: center; }
+        .article-prose-content [style*="text-align: right"] { text-align: right; }
+        .article-prose-content [style*="text-align: center"] img { margin: 1.5rem auto; }
+        .article-prose-content [style*="text-align: right"] img { margin-left: auto; }
 
-        .author-card {
-            margin-top: 4rem;
-            padding: 2rem;
-            background: #f8fafc;
-            border: 1px solid #f1f5f9;
-            border-radius: 16px;
-            display: flex;
-            gap: 1.5rem;
-            align-items: center;
-        }
+        .article-prose-content blockquote { margin: 2rem 0; padding: 1rem 2rem; border-left: 4px solid #3b82f6; background: #f8fafc; font-style: italic; }
 
-        .author-avatar img { width: 80px; height: 80px; border-radius: 50%; border: 4px solid #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .author-details h4 { margin: 0 0 0.5rem 0; font-size: 1.125rem; color: #1e293b; }
-        .author-details p { margin: 0; font-size: 0.95rem; color: #64748b; line-height: 1.5; }
+        .author-card { margin-top: 4rem; padding: 2rem; background: #f8fafc; border-radius: 16px; display: flex; gap: 1.5rem; align-items: center; }
+        .author-avatar img { width: 80px; height: 80px; border-radius: 50%; }
 
-        .promo-box {
-            position: sticky;
-            top: 100px;
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            color: white;
-            padding: 2rem;
-            border-radius: 16px;
-            text-align: center;
-        }
+        .promo-box { position: sticky; top: 100px; background: #1e293b; color: white; padding: 2rem; border-radius: 16px; text-align: center; }
+        .btn-promo { width: 100%; padding: 0.75rem; background: #3b82f6; color: white; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; }
 
-        .promo-box h3 { font-size: 1.5rem; margin-top: 0; }
-        .promo-box p { font-size: 0.95rem; opacity: 0.8; margin-bottom: 2rem; }
-        .btn-promo {
-            width: 100%;
-            padding: 0.75rem;
-            background: #3b82f6;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .btn-promo:hover { background: #2563eb; transform: scale(1.02); }
-
-        .footer {
-            margin-top: 5rem;
-            padding: 3rem 1.5rem;
-            text-align: center;
-            border-top: 1px solid #f1f5f9;
-            color: #94a3b8;
-            font-size: 0.875rem;
-        }
+        .footer { margin-top: 5rem; padding: 3rem 1.5rem; text-align: center; border-top: 1px solid #f1f5f9; color: #94a3b8; }
       `}</style>
         </div>
     );

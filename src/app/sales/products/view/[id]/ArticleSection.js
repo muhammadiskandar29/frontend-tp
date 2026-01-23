@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import ArticleEditor from "./ArticleEditor";
+import axios from "axios";
 
 export default function ArticleSection({ productName }) {
   const params = useParams();
@@ -23,11 +24,6 @@ export default function ArticleSection({ productName }) {
   const fetchArticles = async () => {
     setLoading(true);
     try {
-      // Placeholder for actual API call
-      // const res = await fetch(`/api/sales/artikel?produk_id=${productId}`);
-      // const data = await res.json();
-      // if (data.success) setArticles(data.data);
-
       // Mock data for demonstration
       setArticles([
         {
@@ -71,7 +67,6 @@ export default function ArticleSection({ productName }) {
   const handleDelete = async (id) => {
     if (confirm("Apakah Anda yakin ingin menghapus artikel ini?")) {
       try {
-        // const res = await fetch(`/api/sales/artikel/${id}`, { method: 'DELETE' });
         toast.success("Artikel berhasil dihapus");
         setArticles(articles.filter(a => a.id !== id));
       } catch (err) {
@@ -83,18 +78,26 @@ export default function ArticleSection({ productName }) {
   const handleSave = async (data) => {
     setLoading(true);
     try {
-      console.log("Saving article data:", data);
-      // Simulate API call
-      // const res = await fetch('/api/sales/artikel', { 
-      //   method: currentArticle ? 'PUT' : 'POST',
-      //   body: JSON.stringify({ ...data, produk_id: productId })
-      // });
+      const payload = {
+        title: data.title,
+        content: data.content,
+        slug: data.slug,
+        status: data.status || "draft",
+        idproduk: [productId] // Wrapped in array
+      };
 
-      toast.success(currentArticle ? "Artikel dikirim ulang!" : "Artikel berhasil disimpan!");
-      setView("list");
-      fetchArticles(); // Refresh list
+      const response = await axios.post("/api/sales/post", payload);
+
+      if (response.data?.success) {
+        toast.success(currentArticle ? "Artikel diperbarui!" : "Artikel berhasil disimpan!");
+        setView("list");
+        fetchArticles();
+      } else {
+        toast.error(response.data?.message || "Gagal menyimpan");
+      }
     } catch (err) {
-      toast.error("Gagal menyimpan artikel");
+      console.error("Save error:", err);
+      toast.error(err.response?.data?.message || "Gagal menyambung ke server");
     } finally {
       setLoading(false);
     }

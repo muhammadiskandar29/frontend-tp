@@ -11,6 +11,7 @@ import React, { useRef } from "react";
 import ArticleEditor from "../products/view/[id]/ArticleEditor";
 import { getProducts } from "@/lib/sales/products";
 import "@/styles/sales/bonus.css";
+import axios from "axios";
 
 export default function BonusProdukPage() {
     const [view, setView] = useState("list"); // "list" | "editor"
@@ -77,12 +78,26 @@ export default function BonusProdukPage() {
     const handleSave = async (data) => {
         setLoading(true);
         try {
-            console.log("Saving bonus data:", data);
-            toast.success(currentArticle ? "Bonus diperbarui!" : "Bonus berhasil dibuat!");
-            setView("list");
-            fetchArticles();
+            const payload = {
+                title: data.title,
+                content: data.content,
+                slug: data.slug,
+                status: data.status,
+                idproduk: data.idproduk // Array of product IDs
+            };
+
+            const response = await axios.post("/api/sales/post", payload);
+
+            if (response.data.success) {
+                toast.success(currentArticle ? "Bonus diperbarui!" : "Bonus berhasil dibuat!");
+                setView("list");
+                fetchArticles();
+            } else {
+                toast.error(response.data.message || "Gagal menyimpan");
+            }
         } catch (err) {
-            toast.error("Gagal menyimpan");
+            console.error("Save error:", err);
+            toast.error(err.response?.data?.message || "Gagal menyambung ke server");
         } finally {
             setLoading(false);
         }
@@ -421,7 +436,7 @@ const ArticleWithTags = React.forwardRef(({ initialData, availableProducts, onSa
     const handleFinalSave = (editorData) => {
         onSave({
             ...editorData,
-            tag_produk: selectedProducts
+            idproduk: selectedProducts
         });
     };
 
