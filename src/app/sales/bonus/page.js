@@ -10,6 +10,7 @@ import { toast } from "react-hot-toast";
 import React, { useRef } from "react";
 import ArticleEditor from "../products/view/[id]/ArticleEditor";
 import { getProducts } from "@/lib/sales/products";
+import "@/styles/sales/bonus.css";
 
 export default function BonusProdukPage() {
     const [view, setView] = useState("list"); // "list" | "editor"
@@ -29,7 +30,6 @@ export default function BonusProdukPage() {
         setLoading(true);
         try {
             // Mock data for demonstration
-            // In real app, fetch from /api/sales/bonus-artikel
             setArticles([
                 {
                     id: 1,
@@ -38,7 +38,7 @@ export default function BonusProdukPage() {
                     status: "published",
                     updated_at: "2024-03-22 10:00:00",
                     author: "Admin Sales",
-                    tag_produk: [1, 2] // Array of product IDs
+                    tag_produk: [1, 2]
                 }
             ]);
         } catch (err) {
@@ -97,8 +97,6 @@ export default function BonusProdukPage() {
             <div className="bonus-page-container">
                 {view === "list" ? (
                     <div className="fade-in">
-
-
                         {/* Search Bar Section */}
                         <div className="search-container-premium">
                             <div className="search-box-premium card-shadow">
@@ -252,42 +250,12 @@ export default function BonusProdukPage() {
                     background: #fdfdfd;
                     min-height: 100vh;
                 }
-
-                /* Layout Shadow */
                 .card-shadow {
                     background: #fff;
                     border-radius: 12px;
                     box-shadow: 0 2px 12px rgba(0,0,0,0.03);
                     border: 1px solid #f1f5f9;
                 }
-
-                /* Stats Cards */
-                .stats-grid {
-                    display: grid;
-                    grid-template-columns: repeat(2, 1fr);
-                    gap: 24px;
-                    margin-bottom: 30px;
-                }
-                .stat-card {
-                    padding: 24px;
-                    display: flex;
-                    align-items: center;
-                    gap: 16px;
-                }
-                .stat-icon-box {
-                    width: 48px;
-                    height: 48px;
-                    border-radius: 10px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: white;
-                }
-                .stat-icon-box.orange { background: #ff7a00; }
-                .stat-info { display: flex; flex-direction: column; }
-                .stat-label { font-size: 13px; color: #94a3b8; font-weight: 500; }
-                .stat-value { font-size: 24px; font-weight: 700; color: #1e293b; }
-
                 .search-container-premium {
                     margin-bottom: 30px;
                     display: flex;
@@ -309,12 +277,10 @@ export default function BonusProdukPage() {
                 .search-box-premium:focus-within {
                     border-color: #ff7a00;
                     box-shadow: 0 8px 30px rgba(255, 122, 0, 0.1);
-                    transform: translateY(-1px);
                 }
                 .search-icon-left {
                     color: #94a3b8;
                     margin-right: 12px;
-                    flex-shrink: 0;
                 }
                 .search-input-premium {
                     flex: 1;
@@ -324,10 +290,6 @@ export default function BonusProdukPage() {
                     background: transparent;
                     font-size: 15px;
                     color: #1e293b;
-                    font-weight: 500;
-                }
-                .search-input-premium::placeholder {
-                    color: #cbd5e1;
                 }
                 .search-clear-btn {
                     background: #f1f5f9;
@@ -340,15 +302,7 @@ export default function BonusProdukPage() {
                     align-items: center;
                     justify-content: center;
                     cursor: pointer;
-                    margin-left: 8px;
-                    transition: all 0.2s;
                 }
-                .search-clear-btn:hover {
-                    background: #e2e8f0;
-                    color: #ef4444;
-                }
-
-                /* Main Content Card */
                 .main-content-card {
                     background: #fff;
                     padding-bottom: 20px;
@@ -362,7 +316,6 @@ export default function BonusProdukPage() {
                 .card-title-group { display: flex; flex-direction: column; }
                 .card-subtitle { font-size: 12px; font-weight: 600; color: #cbd5e1; letter-spacing: 0.1em; }
                 .card-title { font-size: 18px; font-weight: 700; color: #1e293b; margin: 0; }
-                
                 .btn-primary-orange {
                     background: #ff7a00;
                     color: white;
@@ -372,15 +325,7 @@ export default function BonusProdukPage() {
                     font-weight: 700;
                     font-size: 14px;
                     cursor: pointer;
-                    transition: all 0.2s;
                 }
-                .btn-primary-orange:hover {
-                    background: #e66e00;
-                    transform: translateY(-1px);
-                    box-shadow: 0 4px 12px rgba(255, 122, 0, 0.2);
-                }
-
-                /* Table Clean Styles */
                 .table-container-clean { padding: 0 30px; }
                 .bonus-table-clean {
                     width: 100%;
@@ -393,16 +338,12 @@ export default function BonusProdukPage() {
                     font-size: 12px;
                     font-weight: 800;
                     color: #475569;
-                    letter-spacing: 0.05em;
                 }
                 .bonus-table-clean tr td {
                     padding: 20px 16px;
                     color: #334155;
                     border-bottom: 1px solid #f8fafc;
                 }
-                .row-num { font-weight: 500; color: #94a3b8; }
-                .article-name { font-weight: 600; color: #1e293b; display: block; font-size: 15px; }
-                .article-slug-clean { font-size: 12px; color: #cbd5e1; }
                 .tag-badge-clean {
                     display: inline-block;
                     background: #fff7ed;
@@ -413,21 +354,15 @@ export default function BonusProdukPage() {
                     font-weight: 600;
                     margin: 2px;
                 }
-
                 .btn-action-icon {
                     background: none;
                     border: none;
                     color: #94a3b8;
                     cursor: pointer;
                     padding: 8px;
-                    transition: all 0.2s;
                 }
                 .btn-action-icon:hover { color: #ff7a00; }
                 .btn-action-icon.delete:hover { color: #ef4444; }
-
-                .spinner.orange { border-top-color: #ff7a00; }
-
-                /* Editor Specific View Styles */
                 .editor-view-header {
                     margin-bottom: 30px;
                     display: flex;
@@ -450,7 +385,6 @@ export default function BonusProdukPage() {
                 }
                 .editor-title { font-size: 28px; font-weight: 800; color: #1e293b; margin: 0; }
                 .editor-subtitle { color: #94a3b8; font-size: 15px; margin: 4px 0 0 0; }
-                
                 .btn-publish-orange {
                     background: #ff7a00;
                     color: white;
@@ -475,7 +409,6 @@ export default function BonusProdukPage() {
     );
 }
 
-// Sub-component for Editor with Tag Produk
 const ArticleWithTags = React.forwardRef(({ initialData, availableProducts, onSave, onCancel }, ref) => {
     const [selectedProducts, setSelectedProducts] = useState(initialData?.tag_produk || []);
 
@@ -525,83 +458,6 @@ const ArticleWithTags = React.forwardRef(({ initialData, availableProducts, onSa
                     ))}
                 </div>
             </div>
-
-            <style jsx>{`
-                .tags-section {
-                    padding: 40px;
-                    background: #f8fafc;
-                    border-top: 1px solid #e2e8f0;
-                }
-                .section-header {
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                    margin-bottom: 12px;
-                    color: #1e293b;
-                }
-                .section-header h3 { 
-                    margin: 0; 
-                    font-size: 20px; 
-                    font-weight: 800;
-                    letter-spacing: -0.01em;
-                }
-                .section-desc {
-                    color: #64748b;
-                    font-size: 15px;
-                    margin-bottom: 30px;
-                    max-width: 600px;
-                }
-                .products-selection-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-                    gap: 16px;
-                }
-                .product-checkbox-label {
-                    display: flex;
-                    align-items: center;
-                    gap: 14px;
-                    padding: 16px;
-                    background: #fff;
-                    border: 1px solid #e2e8f0;
-                    border-radius: 16px;
-                    cursor: pointer;
-                    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-                }
-                .product-checkbox-label:hover {
-                    border-color: #3b82f6;
-                    transform: translateY(-2px);
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-                }
-                .product-checkbox-label.selected {
-                    border-color: #3b82f6;
-                    background: #eff6ff;
-                    box-shadow: inset 0 0 0 1px #3b82f6;
-                }
-                .product-checkbox-label input {
-                    width: 20px;
-                    height: 20px;
-                    margin: 0;
-                    accent-color: #3b82f6;
-                }
-                .product-item-content {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 2px;
-                }
-                .p-name {
-                    font-weight: 700;
-                    font-size: 15px;
-                    color: #1e293b;
-                    line-height: 1.2;
-                }
-                .p-code {
-                    font-size: 12px;
-                    font-weight: 500;
-                    color: #94a3b8;
-                    text-transform: uppercase;
-                    letter-spacing: 0.05em;
-                }
-            `}</style>
         </div>
     );
 });
