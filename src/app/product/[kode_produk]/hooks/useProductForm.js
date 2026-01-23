@@ -50,14 +50,25 @@ export function useProductForm({
     // Validation Logic (Now separate from price state)
     const isFormValid = (isFisik, isBundling) => {
         if (isBundling && selectedBundling === null) return "Silakan pilih paket produk terlebih dahulu";
-        if (!customerForm.nama || customerForm.nama.trim().length === 0) return "Nama harus diisi";
-        if (!customerForm.wa || customerForm.wa.trim().length < 8) return "Nomor WhatsApp tidak valid";
-        if (!customerForm.email || !customerForm.email.includes("@")) return "Email tidak valid";
+        if (!customerForm.nama || customerForm.nama.trim().length < 3) return "Nama harus diisi (minimal 3 karakter)";
+
+        // WA validation: assuming 10 digits minimum for user input (excluding '62' prefix)
+        // customerForm.wa starts with '62', so its length should be at least 12
+        if (!customerForm.wa || customerForm.wa.replace(/\D/g, '').length < 12) {
+            return "Nomor WhatsApp tidak valid (minimal 10 digit)";
+        }
+
+        // Email validation regex (standard RFC 5322)
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!customerForm.email || !emailRegex.test(customerForm.email)) {
+            return "Email tidak valid (harus berisi @ dan domain yang benar)";
+        }
+
         if (!paymentMethod) return "Pilih metode pembayaran";
 
         if (isFisik) {
             if (!formWilayah.provinsi || !formWilayah.kabupaten || !formWilayah.kecamatan || !formWilayah.kode_pos) {
-                return "Silakan lengkapi alamat lengkap (Provinsi, Kota, Kecamatan, Kode Pos)";
+                return "Silakan lengkapi alamat pengiriman (Provinsi, Kota, Kecamatan, Kode Pos)";
             }
         } else {
             if (!formWilayah.provinsi || !formWilayah.kabupaten || !formWilayah.kecamatan) {

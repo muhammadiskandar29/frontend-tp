@@ -274,7 +274,9 @@ function VerifyOrderOTPPageContent() {
     // Hapus pending order dari localStorage setelah data sudah diambil
     localStorage.removeItem("pending_order");
 
-    switch (paymentMethod) {
+    const method = String(paymentMethod || "manual").toLowerCase();
+
+    switch (method) {
       case "ewallet":
         console.log("[VERIFY_ORDER] Calling Midtrans e-wallet");
         callMidtrans("ewallet", dataToUse);

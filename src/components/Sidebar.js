@@ -180,6 +180,7 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
               submenu: [
                 { label: "Kategori Produk", href: `${basePath}/kategori` },
                 { label: "Produk", href: `${basePath}/products` },
+                { label: "Bonus Produk", href: `${basePath}/bonus` },
               ],
             },
           ],

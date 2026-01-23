@@ -147,10 +147,28 @@ export default function DashboardPage() {
   };
 
   const handleContinuePayment = async (order) => {
-    const { paymentMethod, title: productName, total_harga: totalHarga, id: orderId } = order;
+    // Ambil data dari localStorage sebagai prioritas jika ada matching orderId
+    const storedOrderData = localStorage.getItem("customer_order_data");
+    let localPaymentMethod = null;
+
+    if (storedOrderData) {
+      try {
+        const parsed = JSON.parse(storedOrderData);
+        if (String(parsed.orderId) === String(order.id)) {
+          localPaymentMethod = parsed.paymentMethod;
+        }
+      } catch (e) {
+        console.error("Error parsing stored order data", e);
+      }
+    }
+
+    const { title: productName, total_harga: totalHarga, id: orderId } = order;
+    // Gunakan paymentMethod dari order (DB) atau fallback ke localPaymentMethod (localStorage)
+    const rawPaymentMethod = order.paymentMethod || localPaymentMethod || order.metode_bayar || "manual";
+    const paymentMethod = String(rawPaymentMethod).toLowerCase();
 
     // Jika metode pembayaran adalah E-Payment (ewallet, cc, va), panggil Midtrans
-    if (paymentMethod === "ewallet" || paymentMethod === "cc" || paymentMethod === "va") {
+    if (paymentMethod === "ewallet" || paymentMethod === "cc" || paymentMethod === "va" || paymentMethod === "midtrans") {
       // Ambil data customer dari session sebagai fallback
       const session = getCustomerSession();
       const finalNama = customerInfo?.nama || customerInfo?.nama_lengkap || session?.user?.nama || "";

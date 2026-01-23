@@ -66,6 +66,32 @@ const ArticleRenderer = ({ data }) => {
                             </div>
                         )
 
+                    case "table":
+                        return (
+                            <div key={index} className="rendered-table-wrapper">
+                                <table className="rendered-table">
+                                    {block.data.withHeadings && (
+                                        <thead>
+                                            <tr>
+                                                {block.data.content[0].map((cell, i) => (
+                                                    <th key={i} dangerouslySetInnerHTML={{ __html: cell }}></th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                    )}
+                                    <tbody>
+                                        {block.data.content.slice(block.data.withHeadings ? 1 : 0).map((row, i) => (
+                                            <tr key={i}>
+                                                {row.map((cell, j) => (
+                                                    <td key={j} dangerouslySetInnerHTML={{ __html: cell }}></td>
+                                                ))}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        );
+
                     case "delimiter":
                         return <hr key={index} className="rendered-hr-divider" />;
 
@@ -158,6 +184,38 @@ const ArticleRenderer = ({ data }) => {
           color: #94a3b8;
           letter-spacing: 0.5rem;
         }
+
+        /* Table Styles */
+        .rendered-table-wrapper {
+            margin: 2rem 0;
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        .rendered-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+        .rendered-table th {
+            background: #f8fafc;
+            padding: 0.75rem 1rem;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .rendered-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .rendered-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Typography Enhancements */
+        :global(.rendered-p b), :global(.rendered-p strong) { font-weight: 700; color: #0f172a; }
+        :global(.rendered-p i), :global(.rendered-p em) { font-style: italic; }
+        :global(.rendered-p u) { text-decoration: underline; }
       `}</style>
         </div>
     );

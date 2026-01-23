@@ -210,7 +210,7 @@ export default function DetailProdukPage({ params }) {
             )}
           </div>
         </div>
-
+        {/*
         <div className="analytics-box">
           <div className="analytics-item">
             <h3>Sales Page View</h3>
@@ -229,6 +229,7 @@ export default function DetailProdukPage({ params }) {
             <p>0</p>
           </div>
         </div>
+        */}
         {/* TABS */}
         <div className="top-tabs">
           <button

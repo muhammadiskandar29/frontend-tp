@@ -1306,11 +1306,28 @@ function ProductClient({ initialProductData, initialLandingPage }) {
                   <p style={{
                     fontSize: "18px",
                     color: "#000000",
-                    marginBottom: "20px",
+                    marginBottom: "12px",
                     fontWeight: "600"
                   }}>
                     Pilihan Paket
                   </p>
+                  {selectedBundling === null && (
+                    <div style={{
+                      backgroundColor: "#fff7ed",
+                      color: "#c2410c",
+                      padding: "10px 14px",
+                      borderRadius: "8px",
+                      fontSize: "13px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      marginBottom: "16px",
+                      border: "1px solid #ffedd5"
+                    }}>
+                      <Info size={16} />
+                      Silakan pilih paket produk terlebih dahulu
+                    </div>
+                  )}
                   <div style={{
                     display: "flex",
                     flexWrap: "wrap",
@@ -1421,6 +1438,11 @@ function ProductClient({ initialProductData, initialLandingPage }) {
                         }}
                       />
                     </div>
+                    {customerForm.wa && customerForm.wa.length > 2 && customerForm.wa.length < 12 && (
+                      <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>
+                        Nomor WhatsApp minimal 10 digit (saat ini: {customerForm.wa.length - 2} digit)
+                      </p>
+                    )}
                   </div>
                   <div className="compact-field">
                     <label className="compact-label">Email <span className="required">*</span></label>
@@ -1430,7 +1452,13 @@ function ProductClient({ initialProductData, initialLandingPage }) {
                       className="compact-input"
                       value={customerForm.email}
                       onChange={(e) => setCustomerForm({ ...customerForm, email: e.target.value })}
+                      required
                     />
+                    {customerForm.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerForm.email) && (
+                      <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>
+                        Gunakan format email yang valid (contoh: nama@email.com)
+                      </p>
+                    )}
                   </div>
 
                   {/* ✅ LOGIC PEMISAHAN FORM: FISIK vs NON-FISIK */}
@@ -1852,14 +1880,22 @@ function ProductClient({ initialProductData, initialLandingPage }) {
 
               {/* Submit Button */}
               <div className="preview-form-submit-wrapper">
+                {isBundling && selectedBundling === null && (
+                  <p style={{ color: "#f97316", fontSize: "13px", textAlign: "center", marginBottom: "12px", fontWeight: "600" }}>
+                    ⚠️ Anda belum memilih paket produk
+                  </p>
+                )}
                 <button
                   type="button"
                   className="preview-form-submit-btn"
                   onClick={handleSubmit}
-                  disabled={submitting || (isBundling && selectedBundling === null)}
+                  disabled={submitting || !!isFormValid(isKategoriBuku(), isBundling)}
                   style={{
-                    backgroundColor: (isBundling && selectedBundling === null) ? '#94a3b8' : '',
-                    cursor: (isBundling && selectedBundling === null) ? 'not-allowed' : 'pointer'
+                    backgroundColor: (!!isFormValid(isKategoriBuku(), isBundling)) ? '#cbd5e1' : '#F1A124',
+                    color: (!!isFormValid(isKategoriBuku(), isBundling)) ? '#64748b' : '#ffffff',
+                    cursor: (!!isFormValid(isKategoriBuku(), isBundling)) ? 'not-allowed' : 'pointer',
+                    boxShadow: (!!isFormValid(isKategoriBuku(), isBundling)) ? 'none' : '0 4px 14px rgba(241, 161, 36, 0.4)',
+                    opacity: submitting ? 0.8 : 1
                   }}
                 >
                   {submitting ? "Memproses..." : (isBundling && selectedBundling === null ? "Pilih Paket Dahulu" : "Pesan Sekarang")}
