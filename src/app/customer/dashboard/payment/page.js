@@ -202,7 +202,8 @@ export default function PaymentPage() {
           endpoint = "/api/midtrans/create-snap-ewallet";
         } else if (paymentMethod === "cc") {
           endpoint = "/api/midtrans/create-snap-cc";
-        } else if (paymentMethod === "va") {
+        } else {
+          // Default ke VA untuk va, midtrans, dll
           endpoint = "/api/midtrans/create-snap-va";
         }
 
@@ -290,6 +291,7 @@ export default function PaymentPage() {
         harga: totalHarga || "0",
         via: "manual",
         sumber: "dashboard",
+        order_id: orderId || "",
       });
       router.push(`/payment?${query.toString()}`);
     }

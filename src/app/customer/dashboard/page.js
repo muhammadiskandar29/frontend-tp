@@ -167,10 +167,8 @@ export default function DashboardPage() {
     const rawPaymentMethod = order.paymentMethod || localPaymentMethod || order.metode_bayar || "manual";
     const paymentMethod = String(rawPaymentMethod).toLowerCase();
 
-    // Jika metode pembayaran adalah E-Payment (ewallet, cc, va, midtrans, dll), panggil Midtrans
-    const isMidtransMethod = ["ewallet", "cc", "va", "midtrans", "virtual account", "e-payment", "qris"].includes(paymentMethod);
-
-    if (isMidtransMethod) {
+    // Jika metode pembayaran adalah E-Payment (ewallet, cc, va), panggil Midtrans
+    if (paymentMethod === "ewallet" || paymentMethod === "cc" || paymentMethod === "va" || paymentMethod === "midtrans") {
       // Ambil data customer dari session sebagai fallback
       const session = getCustomerSession();
       const finalNama = customerInfo?.nama || customerInfo?.nama_lengkap || session?.user?.nama || "";
@@ -202,13 +200,13 @@ export default function DashboardPage() {
         setPaymentLoading(true);
 
         // Tentukan endpoint berdasarkan metode pembayaran
-        let endpoint = "/api/midtrans/create-snap-va"; // Default fallback
-        if (paymentMethod === "ewallet" || paymentMethod === "qris") {
+        let endpoint = "";
+        if (paymentMethod === "ewallet") {
           endpoint = "/api/midtrans/create-snap-ewallet";
         } else if (paymentMethod === "cc") {
           endpoint = "/api/midtrans/create-snap-cc";
         } else {
-          // Default ke VA untuk midtrans, virtual account, e-payment, dll
+          // Default ke VA untuk va, midtrans, dll
           endpoint = "/api/midtrans/create-snap-va";
         }
 
@@ -247,9 +245,8 @@ export default function DashboardPage() {
             sessionStorage.setItem("midtrans_snap_token", data.snap_token);
           }
 
-          toast.success("Mengarahkan ke halaman pembayaran...");
-          // Gunakan window.location.href alih-alih window.open agar tidak diblokir browser
-          window.location.href = data.redirect_url;
+          toast.success("Halaman pembayaran Midtrans dibuka...");
+          window.open(data.redirect_url, "_blank");
         } else {
           toast.error(data.message || "Gagal membuat transaksi pembayaran");
           // Fallback
@@ -274,6 +271,7 @@ export default function DashboardPage() {
         harga: totalHarga || "0",
         via: "manual",
         sumber: "dashboard",
+        order_id: orderId || "",
       });
       router.push(`/payment?${query.toString()}`);
     }
