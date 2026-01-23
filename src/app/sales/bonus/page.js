@@ -228,7 +228,6 @@ export default function BonusProdukPage() {
                                     onClick={() => editorRef.current?.handleSave()}
                                     disabled={loading}
                                 >
-                                    <Save size={18} />
                                     {loading ? 'Menyimpan...' : 'Publish Bonus'}
                                 </button>
                             </div>

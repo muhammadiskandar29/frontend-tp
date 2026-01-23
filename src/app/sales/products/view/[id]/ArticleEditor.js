@@ -10,16 +10,15 @@ import TextAlign from "@tiptap/extension-text-align";
 import { useState, useEffect } from "react";
 import {
     Bold, Italic, List, ListOrdered, Quote,
-    Link as LinkIcon, Type, AlignLeft, AlignCenter,
-    AlignRight, Image as ImageIcon, Save, X, Eye,
-    Code, Undo, Redo, Strikethrough, Minimize2,
-    Heading1, Heading2, Heading3, Minus, Maximize2,
-    Paperclip, ExternalLink, Link2Off, Keyboard
+    Link as LinkIcon, AlignLeft, AlignCenter,
+    AlignRight, Image as ImageIcon, Save, X,
+    Maximize2, Minus, Link2Off, Keyboard,
+    Undo, Redo, Code
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import React, { useImperativeHandle, forwardRef } from "react";
 
-const MenuBar = ({ editor }) => {
+const MenuBar = ({ editor, viewMode, setViewMode }) => {
     if (!editor) return null;
 
     const addImage = () => {
@@ -31,7 +30,7 @@ const MenuBar = ({ editor }) => {
             if (file) {
                 const reader = new FileReader();
                 reader.onload = (readerEvent) => {
-                    const content = `<img src="${readerEvent.target.result}" style="max-width: 100%; border-radius: 8px; margin: 10px 0;" />`;
+                    const content = `<img src="${readerEvent.target.result}" style="max-width: 100%; border-radius: 4px; margin: 10px 0;" />`;
                     editor.chain().focus().insertContent(content).run();
                 };
                 reader.readAsDataURL(file);
@@ -41,135 +40,87 @@ const MenuBar = ({ editor }) => {
     };
 
     return (
-        <div className="editor-premium-toolbar">
-            {/* Action Bar (Top) */}
-            <div className="toolbar-top-actions">
-                <button className="wp-media-btn-premium" onClick={addImage}>
-                    <ImageIcon size={16} />
+        <div className="wordpress-menubar-container">
+            {/* Media & Tabs Row */}
+            <div className="menubar-top-row">
+                <button className="wp-add-media-btn" onClick={addImage}>
+                    <ImageIcon size={14} />
                     Add Media
                 </button>
-                <div className="toolbar-v-divider"></div>
-                <button className="toolbar-round-btn" onClick={() => toast.success("Attach feature ready!")} title="Attach File">
-                    <Paperclip size={18} />
-                </button>
-                <button className="toolbar-round-btn" onClick={() => {
-                    const url = window.prompt("Enter Backlink URL");
-                    if (url) editor.chain().focus().setLink({ href: url }).run();
-                }} title="Backlink">
-                    <ExternalLink size={18} />
-                </button>
+                <div className="view-mode-switch">
+                    <button
+                        className={`mode-btn ${viewMode === 'visual' ? 'active' : ''}`}
+                        onClick={() => setViewMode('visual')}
+                    >
+                        Visual
+                    </button>
+                    <button
+                        className={`mode-btn ${viewMode === 'text' ? 'active' : ''}`}
+                        onClick={() => setViewMode('text')}
+                    >
+                        Text
+                    </button>
+                </div>
             </div>
 
-            {/* Formatting Grid (Bottom) */}
-            <div className="toolbar-main-row">
-                <select
-                    className="heading-select-premium"
-                    onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === "paragraph") editor.chain().focus().setParagraph().run();
-                        else editor.chain().focus().toggleHeading({ level: parseInt(value) }).run();
-                    }}
-                    value={
-                        editor.isActive("heading", { level: 1 }) ? "1" :
-                            editor.isActive("heading", { level: 2 }) ? "2" :
-                                editor.isActive("heading", { level: 3 }) ? "3" : "paragraph"
-                    }
-                >
-                    <option value="paragraph">Paragraph</option>
-                    <option value="1">Heading 1</option>
-                    <option value="2">Heading 2</option>
-                    <option value="3">Heading 3</option>
-                </select>
+            {/* Main Toolbar Row */}
+            <div className="wordpress-main-toolbar">
+                <div className="toolbar-left-side">
+                    <select
+                        className="wp-format-select"
+                        onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === "paragraph") editor.chain().focus().setParagraph().run();
+                            else editor.chain().focus().toggleHeading({ level: parseInt(value) }).run();
+                        }}
+                        value={
+                            editor.isActive("heading", { level: 1 }) ? "1" :
+                                editor.isActive("heading", { level: 2 }) ? "2" :
+                                    editor.isActive("heading", { level: 3 }) ? "3" : "paragraph"
+                        }
+                    >
+                        <option value="paragraph">Paragraph</option>
+                        <option value="1">Heading 1</option>
+                        <option value="2">Heading 2</option>
+                        <option value="3">Heading 3</option>
+                    </select>
 
-                <div className="toolbar-group" style={{ marginLeft: '10px' }}>
-                    <button
-                        onClick={() => editor.chain().focus().toggleBold().run()}
-                        className={`toolbar-icon-btn ${editor.isActive("bold") ? "is-active" : ""}`}
-                        title="Bold"
-                    >
-                        <Bold size={18} />
-                    </button>
-                    <button
-                        onClick={() => editor.chain().focus().toggleItalic().run()}
-                        className={`toolbar-icon-btn ${editor.isActive("italic") ? "is-active" : ""}`}
-                        title="Italic"
-                    >
-                        <Italic size={18} />
-                    </button>
-                </div>
+                    <div className="wp-divider"></div>
 
-                <div className="toolbar-group">
-                    <button
-                        onClick={() => editor.chain().focus().toggleBulletList().run()}
-                        className={`toolbar-icon-btn ${editor.isActive("bulletList") ? "is-active" : ""}`}
-                        title="Bullet List"
-                    >
-                        <List size={18} />
-                    </button>
-                    <button
-                        onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                        className={`toolbar-icon-btn ${editor.isActive("orderedList") ? "is-active" : ""}`}
-                        title="Ordered List"
-                    >
-                        <ListOrdered size={18} />
-                    </button>
-                    <button
-                        onClick={() => editor.chain().focus().toggleBlockquote().run()}
-                        className={`toolbar-icon-btn ${editor.isActive("blockquote") ? "is-active" : ""}`}
-                        title="Blockquote"
-                    >
-                        <Quote size={18} />
-                    </button>
-                </div>
+                    <button onClick={() => editor.chain().focus().toggleBold().run()} className={`wp-toolbar-btn ${editor.isActive("bold") ? "is-active" : ""}`} title="Bold"><Bold size={16} /></button>
+                    <button onClick={() => editor.chain().focus().toggleItalic().run()} className={`wp-toolbar-btn ${editor.isActive("italic") ? "is-active" : ""}`} title="Italic"><Italic size={16} /></button>
 
-                <div className="toolbar-group">
-                    <button onClick={() => editor.chain().focus().setTextAlign('left').run()} className={`toolbar-icon-btn ${editor.isActive({ textAlign: 'left' }) ? 'is-active' : ''}`} title="Align Left">
-                        <AlignLeft size={18} />
-                    </button>
-                    <button onClick={() => editor.chain().focus().setTextAlign('center').run()} className={`toolbar-icon-btn ${editor.isActive({ textAlign: 'center' }) ? 'is-active' : ''}`} title="Align Center">
-                        <AlignCenter size={18} />
-                    </button>
-                    <button onClick={() => editor.chain().focus().setTextAlign('right').run()} className={`toolbar-icon-btn ${editor.isActive({ textAlign: 'right' }) ? 'is-active' : ''}`} title="Align Right">
-                        <AlignRight size={18} />
-                    </button>
-                </div>
+                    <div className="wp-divider"></div>
 
-                <div className="toolbar-group">
+                    <button onClick={() => editor.chain().focus().toggleBulletList().run()} className={`wp-toolbar-btn ${editor.isActive("bulletList") ? "is-active" : ""}`} title="Bulleted List"><List size={16} /></button>
+                    <button onClick={() => editor.chain().focus().toggleOrderedList().run()} className={`wp-toolbar-btn ${editor.isActive("orderedList") ? "is-active" : ""}`} title="Numbered List"><ListOrdered size={16} /></button>
+                    <button onClick={() => editor.chain().focus().toggleBlockquote().run()} className={`wp-toolbar-btn ${editor.isActive("blockquote") ? "is-active" : ""}`} title="Blockquote"><Quote size={16} /></button>
+
+                    <div className="wp-divider"></div>
+
+                    <button onClick={() => editor.chain().focus().setTextAlign('left').run()} className={`wp-toolbar-btn ${editor.isActive({ textAlign: 'left' }) ? 'is-active' : ''}`} title="Align Left"><AlignLeft size={16} /></button>
+                    <button onClick={() => editor.chain().focus().setTextAlign('center').run()} className={`wp-toolbar-btn ${editor.isActive({ textAlign: 'center' }) ? 'is-active' : ''}`} title="Align Center"><AlignCenter size={16} /></button>
+                    <button onClick={() => editor.chain().focus().setTextAlign('right').run()} className={`wp-toolbar-btn ${editor.isActive({ textAlign: 'right' }) ? 'is-active' : ''}`} title="Align Right"><AlignRight size={16} /></button>
+
+                    <div className="wp-divider"></div>
+
                     <button
                         onClick={() => {
                             const url = window.prompt("Enter URL");
                             if (url) editor.chain().focus().setLink({ href: url }).run();
                         }}
-                        className={`toolbar-icon-btn ${editor.isActive("link") ? "is-active" : ""}`}
-                        title="Link"
+                        className={`wp-toolbar-btn ${editor.isActive("link") ? "is-active" : ""}`}
+                        title="Insert/edit link"
                     >
-                        <LinkIcon size={18} />
+                        <LinkIcon size={16} />
                     </button>
-                    <button
-                        onClick={() => editor.chain().focus().unsetLink().run()}
-                        className="toolbar-icon-btn"
-                        title="Remove Link"
-                        disabled={!editor.isActive("link")}
-                    >
-                        <Link2Off size={18} />
-                    </button>
-                    <button onClick={() => editor.chain().focus().setHorizontalRule().run()} className="toolbar-icon-btn" title="Divider">
-                        <Minus size={18} />
-                    </button>
-                    <button onClick={() => editor.chain().focus().toggleCode().run()} className="toolbar-icon-btn" title="Keyboard Shortcuts">
-                        <Keyboard size={18} />
-                    </button>
+                    <button onClick={() => editor.chain().focus().unsetLink().run()} className="wp-toolbar-btn" title="Remove link" disabled={!editor.isActive("link")}><Link2Off size={16} /></button>
+                    <button onClick={() => editor.chain().focus().setHorizontalRule().run()} className="wp-toolbar-btn" title="Insert Read More tag"><Minus size={16} /></button>
+                    <button onClick={() => editor.chain().focus().toggleCode().run()} className={`wp-toolbar-btn ${editor.isActive("code") ? "is-active" : ""}`} title="Toolbar Toggle"><Keyboard size={16} /></button>
                 </div>
 
-                <div className="toolbar-v-divider"></div>
-
-                <div className="toolbar-group">
-                    <button onClick={() => editor.chain().focus().undo().run()} className="toolbar-icon-btn" title="Undo">
-                        <Undo size={18} />
-                    </button>
-                    <button onClick={() => editor.chain().focus().redo().run()} className="toolbar-icon-btn" title="Redo">
-                        <Redo size={18} />
-                    </button>
+                <div className="toolbar-right-side">
+                    <button className="wp-toolbar-btn" title="Distraction-free writing mode"><Maximize2 size={16} /></button>
                 </div>
             </div>
         </div>
@@ -194,7 +145,7 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
                 types: ['heading', 'paragraph'],
             }),
         ],
-        content: initialData?.content ? (typeof initialData.content === 'string' ? initialData.content : JSON.stringify(initialData.content)) : "<p>Mulai menulis...</p>",
+        content: initialData?.content ? (typeof initialData.content === 'string' ? initialData.content : JSON.stringify(initialData.content)) : "",
         editorProps: {
             handlePaste: (view, event) => {
                 const items = event.clipboardData.items;
@@ -203,7 +154,7 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
                         const file = items[i].getAsFile();
                         const reader = new FileReader();
                         reader.onload = (e) => {
-                            const content = `<img src="${e.target.result}" style="max-width: 100%; border-radius: 8px; margin: 10px 0;" />`;
+                            const content = `<img src="${e.target.result}" style="max-width: 100%; border-radius: 4px; margin: 10px 0;" />`;
                             editor.chain().focus().insertContent(content).run();
                         };
                         reader.readAsDataURL(file);
@@ -215,7 +166,6 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
         },
     });
 
-    // Sync slug
     useEffect(() => {
         if (!initialData && title) {
             setSlug(title.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, ''));
@@ -226,12 +176,12 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
         if (!title) return toast.error("Judul wajib diisi");
         setSaving(true);
         try {
-            const jsonContent = editor.getJSON();
+            const content = editor.getHTML();
             onSave({
                 title,
                 slug,
                 status: initialData?.status || "draft",
-                content: jsonContent
+                content: content
             });
         } catch (err) {
             toast.error("Gagal menyimpan");
@@ -251,421 +201,295 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
     };
 
     return (
-        <div className="editor-premium-wrapper">
-            <div className="editor-header-glass card-shadow">
-                <div className="title-row">
+        <div className="wp-classic-editor-wrapper">
+            <div className="editor-main-layout">
+                {/* Title Area */}
+                <div className="wp-title-container">
                     <input
                         type="text"
-                        className="premium-title-input"
-                        placeholder="Judul Artikel..."
+                        className="wp-title-input"
+                        placeholder="Enter title here"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
                     />
-                    <div className="segmented-control">
-                        <button
-                            className={`segment-btn ${viewMode === 'visual' ? 'active' : ''}`}
-                            onClick={() => setViewMode('visual')}
-                        >
-                            Visual
-                        </button>
-                        <button
-                            className={`segment-btn ${viewMode === 'text' ? 'active' : ''}`}
-                            onClick={() => setViewMode('text')}
-                        >
-                            Text
-                        </button>
-                    </div>
                 </div>
 
-                <div className="slug-preview-row">
-                    <span className="slug-label">Permalink:</span>
-                    <span className="slug-url">domain.com/article/</span>
-                    <input
-                        className="slug-input"
-                        value={slug}
-                        onChange={(e) => setSlug(e.target.value)}
-                    />
-                </div>
-            </div>
-
-            <div className="editor-main-canvas card-shadow">
-                {viewMode === 'visual' ? (
-                    <>
-                        <MenuBar editor={editor} />
-                        <div className="visual-content-area">
-                            <EditorContent editor={editor} />
-                        </div>
-                    </>
-                ) : (
-                    <div className="code-content-area">
-                        <textarea
-                            className="text-mode-textarea"
-                            value={editor?.getHTML() || ""}
-                            readOnly
+                {/* Permalink Section */}
+                {title && (
+                    <div className="wp-permalink-line">
+                        <strong>Permalink:</strong> <span>https://domain.com/article/</span>
+                        <input
+                            className="permalink-input"
+                            value={slug}
+                            onChange={(e) => setSlug(e.target.value)}
                         />
+                        <button className="permalink-edit-btn">Edit</button>
                     </div>
                 )}
 
-                <div className="editor-footer-status">
-                    <div className="status-item">
-                        <Code size={14} />
-                        <span>SEO Dynamic Content</span>
+                {/* Editor Container */}
+                <div className="wp-editor-box card-shadow">
+                    <MenuBar editor={editor} viewMode={viewMode} setViewMode={setViewMode} />
+
+                    <div className="wp-content-canvas">
+                        {viewMode === 'visual' ? (
+                            <div className="wp-visual-area">
+                                <EditorContent editor={editor} />
+                            </div>
+                        ) : (
+                            <div className="wp-text-area">
+                                <textarea
+                                    className="wp-raw-textarea"
+                                    value={editor?.getHTML() || ""}
+                                    readOnly
+                                />
+                            </div>
+                        )}
                     </div>
-                    <div className="status-item">
-                        <span>Mode: <strong>{viewMode.toUpperCase()}</strong></span>
-                    </div>
-                    <div className="word-count-badge">
-                        {getWordCount()} kata
+
+                    <div className="wp-editor-status-footer">
+                        <div className="word-count">Word count: {getWordCount()}</div>
+                        <div className="last-edit">Last edited on {new Date().toLocaleDateString('id-ID')}</div>
                     </div>
                 </div>
             </div>
 
             {!hideActions && (
-                <div className="floating-action-bar">
-                    <button className="btn-cancel-glass" onClick={onCancel}>
-                        <X size={18} />
-                        Cancel
+                <div className="wp-actions-floating">
+                    <button className="btn-wp-draft" onClick={() => onSave({ title, slug, status: 'draft', content: editor.getHTML() })}>
+                        Save Draft
                     </button>
-                    <button className="btn-publish-premium" onClick={handleSave} disabled={saving}>
-                        {saving ? <div className="loader-small"></div> : <Save size={18} />}
-                        {saving ? "Publishing..." : "Publish Article"}
+                    <button className="btn-wp-publish" onClick={handleSave} disabled={saving}>
+                        {saving ? "Publishing..." : (initialData ? "Update" : "Publish")}
                     </button>
                 </div>
             )}
 
             <style jsx>{`
-        .editor-premium-wrapper {
-          padding-bottom: 80px;
-          color: #1e293b;
-        }
+                .wp-classic-editor-wrapper {
+                    background: #f1f1f1;
+                    padding: 24px;
+                    border-radius: 4px;
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+                    color: #444;
+                }
 
-        /* Header Glass */
-        .editor-header-glass {
-          background: #fff;
-          border-radius: 16px;
-          padding: 24px;
-          margin-bottom: 24px;
-          border: 1px solid #f1f5f9;
-        }
-        .title-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 20px;
-          margin-bottom: 16px;
-        }
-        .premium-title-input {
-          flex: 1;
-          border: none;
-          outline: none;
-          font-size: 28px;
-          font-weight: 800;
-          color: #1e293b;
-          padding: 0;
-          background: transparent;
-        }
-        .premium-title-input::placeholder { color: #cbd5e1; }
+                .wp-title-container {
+                    margin-bottom: 20px;
+                }
 
-        .segmented-control {
-          background: #f1f5f9;
-          padding: 4px;
-          border-radius: 12px;
-          display: flex;
-          gap: 2px;
-        }
-        .segment-btn {
-          padding: 8px 16px;
-          border: none;
-          background: transparent;
-          font-size: 13px;
-          font-weight: 700;
-          color: #64748b;
-          border-radius: 8px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .segment-btn.active {
-          background: #fff;
-          color: #ff7a00;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        }
+                .wp-title-input {
+                    width: 100%;
+                    padding: 8px 12px;
+                    font-size: 1.7em;
+                    line-height: normal;
+                    height: auto;
+                    border: 1px solid #ddd;
+                    border-radius: 2px;
+                    box-shadow: inset 0 1px 2px rgba(0,0,0,0.07);
+                    outline: none;
+                    background-color: #fff;
+                    color: #32373c;
+                    transition: border-color 0.05s ease-in-out;
+                }
+                .wp-title-input:focus { border-color: #00a0d2; box-shadow: 0 0 2px rgba(0,160,210,0.8); }
+                .wp-title-input::placeholder { color: #aaa; }
 
-        .slug-preview-row {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 13px;
-          color: #94a3b8;
-        }
-        .slug-url { color: #cbd5e1; }
-        .slug-input {
-          border: 1px solid transparent;
-          background: #f8fafc;
-          padding: 2px 8px;
-          border-radius: 4px;
-          color: #64748b;
-          font-weight: 500;
-          outline: none;
-        }
-        .slug-input:focus { border-color: #ff7a00; background: #fff; }
+                .wp-permalink-line {
+                    margin: -10px 0 15px 5px;
+                    font-size: 13px;
+                    color: #666;
+                    display: flex;
+                    align-items: center;
+                    gap: 5px;
+                }
+                .permalink-input {
+                    border: 1px solid #ddd;
+                    padding: 2px 5px;
+                    font-size: 13px;
+                    color: #666;
+                    border-radius: 2px;
+                }
+                .permalink-edit-btn {
+                    background: #f7f7f7;
+                    border: 1px solid #ccc;
+                    padding: 2px 8px;
+                    border-radius: 3px;
+                    font-size: 12px;
+                    cursor: pointer;
+                }
 
-        /* Main Canvas */
-        .editor-main-canvas {
-          background: #fff;
-          border-radius: 16px;
-          overflow: hidden;
-          border: 1px solid #f1f5f9;
-        }
+                .wp-editor-box {
+                    background: #fff;
+                    border: 1px solid #ccd0d4;
+                    box-shadow: 0 1px 1px rgba(0,0,0,0.04);
+                }
 
-        /* Toolbar Premium Redesign */
-        .editor-premium-toolbar {
-          background: #fff;
-          padding: 0;
-          border-bottom: 2px solid #f1f5f9;
-          position: sticky;
-          top: 0;
-          z-index: 20;
-        }
-        .toolbar-top-actions {
-            padding: 12px 20px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            border-bottom: 1px solid #f8fafc;
-            background: #fff;
-        }
-        .wp-media-btn-premium {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            padding: 8px 18px;
-            border-radius: 10px;
-            font-size: 13px;
-            font-weight: 700;
-            color: #1e293b;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .wp-media-btn-premium:hover {
-            border-color: #ff7a00;
-            color: #ff7a00;
-            background: #fff7ed;
-            transform: translateY(-1px);
-        }
-        
-        .toolbar-main-row {
-            padding: 8px 20px;
-            display: flex;
-            align-items: center;
-            gap: 2px;
-            background: #f8fafc;
-            overflow-x: auto;
-            scrollbar-width: none;
-        }
-        .toolbar-main-row::-webkit-scrollbar { display: none; }
+                /* Menubar Styles */
+                .wordpress-menubar-container {
+                    background: #fff;
+                }
+                .menubar-top-row {
+                    padding: 10px 10px 0 10px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-end;
+                }
+                .wp-add-media-btn {
+                    background: #f7f7f7;
+                    border: 1px solid #ccc;
+                    padding: 4px 10px;
+                    border-radius: 3px;
+                    font-size: 13px;
+                    color: #555;
+                    display: flex;
+                    align-items: center;
+                    gap: 5px;
+                    cursor: pointer;
+                    box-shadow: 0 1px 0 #ccc;
+                    margin-bottom: 5px;
+                }
+                .wp-add-media-btn:hover { background: #fafafa; border-color: #999; color: #23282d; }
 
-        .toolbar-group {
-            display: flex;
-            align-items: center;
-            gap: 2px;
-        }
+                .view-mode-switch {
+                    display: flex;
+                    gap: 2px;
+                }
+                .mode-btn {
+                    padding: 5px 12px;
+                    background: #ebebeb;
+                    border: 1px solid #ccc;
+                    border-bottom: none;
+                    font-size: 13px;
+                    color: #555;
+                    cursor: pointer;
+                    border-radius: 3px 3px 0 0;
+                }
+                .mode-btn.active {
+                    background: #fff;
+                    border-bottom: 1px solid #fff;
+                    margin-bottom: -1px;
+                    color: #32373c;
+                }
 
-        .toolbar-v-divider {
-            width: 1px;
-            height: 24px;
-            background: #e2e8f0;
-            margin: 0 10px;
-        }
+                .wordpress-main-toolbar {
+                    padding: 6px 8px;
+                    background: #f7f7f7;
+                    border-top: 1px solid #ccc;
+                    border-bottom: 1px solid #ccc;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    flex-wrap: wrap;
+                }
+                .toolbar-left-side { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 
-        .toolbar-icon-btn {
-          width: 34px;
-          height: 34px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border: 1px solid transparent;
-          background: transparent;
-          color: #475569;
-          border-radius: 6px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .toolbar-icon-btn:hover { 
-            background: #fff; 
-            color: #ff7a00; 
-            border-color: #e2e8f0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-        .toolbar-icon-btn.is-active { 
-            background: #fff; 
-            color: #ff7a00; 
-            border-color: #ff7a00;
-            box-shadow: 0 2px 8px rgba(255, 122, 0, 0.1);
-        }
+                .wp-format-select {
+                    padding: 2px 4px;
+                    border: 1px solid #ccc;
+                    border-radius: 3px;
+                    font-size: 13px;
+                    color: #32373c;
+                    background: #fff;
+                    height: 28px;
+                }
 
-        .heading-select-premium {
-            background: #fff;
-            border: 1px solid #e2e8f0;
-            padding: 6px 10px;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 600;
-            color: #475569;
-            outline: none;
-            cursor: pointer;
-            min-width: 120px;
-            height: 34px;
-        }
-        /* Content Area */
-        .visual-content-area {
-          padding: 40px;
-          min-height: 500px;
-        }
-        :global(.ProseMirror) {
-          outline: none;
-          font-size: 17px;
-          line-height: 1.6; /* Deeper Spacing Fixed */
-          color: #334155;
-        }
-        :global(.ProseMirror p) { 
-            margin-bottom: 0.6em; /* Spacing Enter dideketin */
-            margin-top: 0;
-        }
-        :global(.ProseMirror h1) { font-size: 2.2em; font-weight: 800; margin-bottom: 0.8em; color: #0f172a; }
-        :global(.ProseMirror h2) { font-size: 1.8em; font-weight: 700; margin-bottom: 0.8em; color: #0f172a; margin-top: 1.2em; }
-        :global(.ProseMirror h3) { font-size: 1.4em; font-weight: 700; margin-bottom: 0.8em; color: #0f172a; margin-top: 1.2em; }
-        
-        :global(.ProseMirror ul) {
-          list-style-type: disc;
-          padding-left: 1.5em;
-          margin-bottom: 1.5em;
-        }
-        :global(.ProseMirror ol) {
-          list-style-type: decimal;
-          padding-left: 1.5em;
-          margin-bottom: 1.5em;
-        }
-        :global(.ProseMirror li) {
-          margin-bottom: 0.5em;
-        }
+                .wp-divider {
+                    width: 1px;
+                    height: 20px;
+                    background: #ddd;
+                    margin: 0 4px;
+                }
 
-        :global(.ProseMirror hr) {
-          border: none;
-          border-top: 2px dashed #e2e8f0;
-          margin: 2em 0;
-          position: relative;
-        }
-        :global(.ProseMirror hr::after) {
-          content: 'READ MORE';
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          background: #fff;
-          padding: 0 10px;
-          font-size: 10px;
-          font-weight: 800;
-          color: #cbd5e1;
-        }
+                .wp-toolbar-btn {
+                    width: 28px;
+                    height: 28px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background: #f7f7f7;
+                    border: 1px solid #ccc;
+                    border-radius: 3px;
+                    color: #555;
+                    cursor: pointer;
+                    box-shadow: 0 1px 0 #ccc;
+                    transition: all 0.1s;
+                }
+                .wp-toolbar-btn:hover { background: #fafafa; border-color: #999; color: #23282d; }
+                .wp-toolbar-btn.is-active { background: #eee; border-color: #999; box-shadow: inset 0 1px 2px rgba(0,0,0,0.1); }
+                .wp-toolbar-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        :global(.ProseMirror blockquote) {
-          border-left: 4px solid #ff7a00;
-          margin: 2em 0;
-          padding: 20px 30px;
-          background: #fffaf5;
-          font-size: 18px;
-          font-style: italic;
-          border-radius: 0 12px 12px 0;
-        }
+                /* Content Area */
+                .wp-visual-area {
+                    padding: 20px 30px;
+                    min-height: 450px;
+                }
+                .wp-text-area { padding: 0; }
+                .wp-raw-textarea {
+                    width: 100%;
+                    min-height: 450px;
+                    border: none;
+                    outline: none;
+                    padding: 20px;
+                    font-family: Consolas, Monaco, monospace;
+                    font-size: 14px;
+                    line-height: 1.5;
+                    color: #32373c;
+                    resize: vertical;
+                    background: #fff;
+                }
 
-        .code-content-area { background: #0f172a; padding: 20px; }
-        .text-mode-textarea {
-          width: 100%;
-          min-height: 500px;
-          background: transparent;
-          border: none;
-          outline: none;
-          color: #94a3b8;
-          font-family: 'JetBrains Mono', monospace;
-          line-height: 1.6;
-          resize: none;
-        }
+                :global(.ProseMirror) {
+                    outline: none;
+                    font-size: 16px;
+                    line-height: 1.6;
+                    color: #32373c;
+                }
+                :global(.ProseMirror p) { margin-bottom: 1.2em; }
 
-        /* Footer Status */
-        .editor-footer-status {
-          padding: 12px 24px;
-          background: #f8fafc;
-          border-top: 1px solid #f1f5f9;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          font-size: 12px;
-          color: #94a3b8;
-        }
-        .status-item { display: flex; align-items: center; gap: 6px; }
-        .word-count-badge {
-          background: #fff;
-          padding: 4px 12px;
-          border-radius: 20px;
-          border: 1px solid #e2e8f0;
-          color: #64748b;
-          font-weight: 600;
-        }
+                .wp-editor-status-footer {
+                    padding: 6px 10px;
+                    background: #f7f7f7;
+                    border-top: 1px solid #ccc;
+                    display: flex;
+                    justify-content: space-between;
+                    font-size: 12px;
+                    color: #666;
+                }
 
-        /* Floating Action Bar */
-        .floating-action-bar {
-          position: fixed;
-          bottom: 30px;
-          right: 30px;
-          display: flex;
-          gap: 12px;
-          z-index: 100;
-        }
-        .btn-cancel-glass {
-          background: #fff;
-          border: 1px solid #e2e8f0;
-          padding: 12px 24px;
-          border-radius: 14px;
-          font-weight: 700;
-          color: #64748b;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          cursor: pointer;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-          transition: all 0.2s;
-        }
-        .btn-cancel-glass:hover { transform: translateY(-2px); border-color: #ef4444; color: #ef4444; }
-
-        .btn-publish-premium {
-          background: #ff7a00;
-          border: none;
-          padding: 12px 30px;
-          border-radius: 14px;
-          font-weight: 700;
-          color: #fff;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          cursor: pointer;
-          box-shadow: 0 4px 20px rgba(255, 122, 0, 0.3);
-          transition: all 0.2s;
-        }
-        .btn-publish-premium:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(255, 122, 0, 0.4); }
-        .btn-publish-premium:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
-
-        .loader-small {
-          width: 18px;
-          height: 18px;
-          border: 2px solid rgba(255,255,255,0.3);
-          border-top-color: #fff;
-          border-radius: 50%;
-          animation: spin 0.8s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
+                .wp-actions-floating {
+                    margin-top: 20px;
+                    display: flex;
+                    justify-content: flex-end;
+                    gap: 12px;
+                }
+                .btn-wp-draft {
+                    background: #f7f7f7;
+                    border: 1px solid #ccc;
+                    padding: 8px 16px;
+                    border-radius: 3px;
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: #555;
+                    cursor: pointer;
+                    box-shadow: 0 1px 0 #ccc;
+                }
+                .btn-wp-publish {
+                    background: #007cba;
+                    border-color: #006799;
+                    box-shadow: 0 1px 0 #006799;
+                    color: #fff;
+                    text-decoration: none;
+                    text-shadow: 0 -1px 1px #006799, 1px 0 1px #006799, 0 1px 1px #006799, -1px 0 1px #006799;
+                    padding: 8px 24px;
+                    border-radius: 3px;
+                    font-size: 13px;
+                    font-weight: 600;
+                    cursor: pointer;
+                }
+                .btn-wp-publish:hover { background: #008ec2; border-color: #006799; color: #fff; }
+                .btn-wp-publish:disabled { opacity: 0.7; cursor: not-allowed; }
+            `}</style>
         </div>
     );
 });

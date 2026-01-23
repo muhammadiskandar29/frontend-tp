@@ -108,24 +108,34 @@ export default function ArticleSection({ productName }) {
     <div className="article-section-container">
       {view === "list" ? (
         <div className="article-list-view fade-in">
-          {/* Header List */}
-          <div className="card-header-inner-clean">
+          {/* Roster Header */}
+          <div className="card-header-inner">
             <div className="card-title-group">
               <span className="card-subtitle">DIRECTORY</span>
               <h2 className="card-title">Artikel Produk</h2>
             </div>
+            <button className="btn-primary-orange" onClick={handleCreate}>
+              + Tambah Artikel
+            </button>
           </div>
 
-          {/* Search Section */}
-          <div className="search-section-clean">
-            <input
-              type="text"
-              className="search-input-full-clean"
-              placeholder="Cari artikel..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <Search size={20} className="search-icon-right-clean" />
+          {/* Search Bar Premium */}
+          <div className="search-container-premium">
+            <div className="search-box-premium">
+              <Search size={20} className="search-icon-left" />
+              <input
+                type="text"
+                className="search-input-premium"
+                placeholder="Cari artikel..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button className="search-clear-btn" onClick={() => setSearchQuery("")}>
+                  <X size={16} />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Table / List */}
@@ -201,14 +211,14 @@ export default function ArticleSection({ productName }) {
       ) : (
         <div className="article-editor-view fade-in">
           {/* Editor Header */}
-          <div className="editor-header">
-            <button className="btn-back" onClick={() => setView("list")}>
-              <ChevronRight size={18} style={{ transform: 'rotate(180deg)' }} />
-              Kembali ke Daftar
-            </button>
-            <div className="editor-title-container">
-              <h2>{currentArticle ? 'Edit Artikel' : 'Buat Artikel Baru'}</h2>
-              <span className="product-context">untuk {productName}</span>
+          <div className="editor-view-header">
+            <div className="header-left-side">
+              <button className="btn-back" onClick={() => setView("list")}>
+                <ChevronRight size={18} style={{ transform: 'rotate(180deg)' }} />
+                Kembali ke Daftar
+              </button>
+              <h2 className="editor-title">{currentArticle ? 'Edit Artikel' : 'Buat Artikel Baru'}</h2>
+              <p className="editor-subtitle">Kelola konten artikel khusus untuk {productName}</p>
             </div>
           </div>
 
@@ -221,8 +231,14 @@ export default function ArticleSection({ productName }) {
       )}
 
       <style jsx>{`
-        /* Roster Theme */
-        .card-header-inner-clean {
+        /* Premium Theme Sync with Bonus Page */
+        .article-section-container {
+            background: #fff;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .card-header-inner {
             padding: 24px 30px;
             display: flex;
             justify-content: space-between;
@@ -231,29 +247,67 @@ export default function ArticleSection({ productName }) {
         .card-title-group { display: flex; flex-direction: column; }
         .card-subtitle { font-size: 11px; font-weight: 700; color: #cbd5e1; letter-spacing: 0.1em; }
         .card-title { font-size: 18px; font-weight: 700; color: #1e293b; margin: 0; }
-
-        .search-section-clean {
-            margin: 0 30px 20px 30px;
-            position: relative;
-            background: #fff;
-            border: 1px solid #f1f5f9;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-        }
-        .search-input-full-clean {
-            width: 100%;
-            padding: 12px 20px;
+        
+        .btn-primary-orange {
+            background: #ff7a00;
+            color: white;
             border: none;
-            background: transparent;
-            outline: none;
-            font-size: 14px;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
         }
-        .search-icon-right-clean {
-            position: absolute;
-            right: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #cbd5e1;
+        .btn-primary-orange:hover {
+            background: #e66e00;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 122, 0, 0.2);
+        }
+
+        .search-container-premium {
+            padding: 0 30px 24px 30px;
+        }
+        .search-box-premium {
+            display: flex;
+            align-items: center;
+            background: #f8fafc;
+            padding: 0 16px;
+            height: 48px;
+            width: 100%;
+            max-width: 400px;
+            border-radius: 12px;
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid #f1f5f9;
+        }
+        .search-box-premium:focus-within {
+            background: #fff;
+            border-color: #ff7a00;
+            box-shadow: 0 8px 30px rgba(255, 122, 0, 0.1);
+        }
+        .search-icon-left { color: #94a3b8; margin-right: 12px; flex-shrink: 0; }
+        .search-input-premium {
+            flex: 1;
+            height: 100%;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-size: 14px;
+            color: #1e293b;
+        }
+        .search-clear-btn {
+            background: #f1f5f9;
+            border: none;
+            color: #94a3b8;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
         }
 
         .table-container-clean { padding: 0 30px 30px 30px; }
@@ -275,6 +329,9 @@ export default function ArticleSection({ productName }) {
             color: #334155;
             border-bottom: 1px solid #f8fafc;
         }
+        .bonus-table-clean tr:hover td {
+            background: #fafafa;
+        }
         .row-num { font-weight: 500; color: #94a3b8; font-size: 13px; }
         .article-name { font-weight: 600; color: #1e293b; display: block; font-size: 14px; }
         .article-slug-clean { font-size: 11px; color: #cbd5e1; }
@@ -282,7 +339,7 @@ export default function ArticleSection({ productName }) {
         .status-pill-clean {
             padding: 4px 10px;
             border-radius: 6px;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 700;
             text-transform: uppercase;
         }
@@ -305,6 +362,32 @@ export default function ArticleSection({ productName }) {
         .btn-action-icon:hover { color: #ff7a00; }
         .btn-action-icon.delete:hover { color: #ef4444; }
 
+        /* Editor Header Sync */
+        .editor-view-header {
+            padding: 24px 30px;
+            border-bottom: 1px solid #f1f5f9;
+            margin-bottom: 0;
+            background: #fff;
+        }
+        .btn-back {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            color: #64748b;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .btn-back:hover { border-color: #ff7a00; color: #ff7a00; }
+        .editor-title { font-size: 24px; font-weight: 800; color: #1e293b; margin: 0; }
+        .editor-subtitle { color: #94a3b8; font-size: 14px; margin: 4px 0 0 0; }
+
         .spinner.orange {
             width: 24px;
             height: 24px;
@@ -315,127 +398,16 @@ export default function ArticleSection({ productName }) {
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .empty-icon-gray { color: #e2e8f0; margin-bottom: 12px; }
-        .w-10 { width: 40px; }
-
-        /* Buttons */
-        .btn-primary {
-          background: #3b82f6;
-          color: white;
-          padding: 0.625rem 1.25rem;
-          border-radius: 8px;
-          border: none;
-          font-weight: 500;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .btn-primary:hover {
-          background: #2563eb;
-        }
-
-        .btn-icon {
-          width: 32px;
-          height: 32px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 6px;
-          border: 1px solid #e2e8f0;
-          background: white;
-          color: #64748b;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .btn-icon:hover {
-          background: #f8fafc;
-          color: #3b82f6;
-          border-color: #3b82f6;
-        }
-
-        .btn-icon.delete:hover {
-          color: #ef4444;
-          border-color: #ef4444;
-          background: #fef2f2;
-        }
-
-        .btn-outline {
-          background: transparent;
-          border: 1px solid #e2e8f0;
-          color: #64748b;
-          padding: 0.5rem 1rem;
-          border-radius: 8px;
-          cursor: pointer;
-          margin-top: 1rem;
-        }
-
-        .btn-outline:hover {
-          background: #f8fafc;
-          color: #1e293b;
-        }
-
-        /* Empty State */
         .empty-state {
-          padding: 4rem 2rem;
-          text-align: center;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
+            padding: 60px 20px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-
-        .empty-icon {
-          color: #cbd5e1;
-          margin-bottom: 1rem;
-        }
-
-        .empty-state h3 {
-          margin: 0;
-          color: #1e293b;
-        }
-
-        .empty-state p {
-          color: #64748b;
-          max-width: 400px;
-          margin: 0.5rem 0 0 0;
-        }
-
-        /* Editor View */
-        .editor-header {
-          padding: 1.5rem;
-          border-bottom: 1px solid #f1f5f9;
-        }
-
-        .btn-back {
-          background: none;
-          border: none;
-          color: #64748b;
-          display: flex;
-          align-items: center;
-          gap: 0.25rem;
-          font-size: 0.875rem;
-          cursor: pointer;
-          padding: 0;
-          margin-bottom: 1rem;
-        }
-
-        .btn-back:hover {
-          color: #1e293b;
-        }
-
-        .editor-title-container h2 {
-          margin: 0;
-          font-size: 1.5rem;
-          color: #1e293b;
-        }
-
-        .product-context {
-          color: #94a3b8;
-          font-size: 0.875rem;
-        }
+        .empty-icon-gray { color: #f1f5f9; stroke-width: 1.5; margin-bottom: 16px; }
+        .empty-state h3 { font-size: 18px; font-weight: 700; color: #1e293b; margin: 0; }
+        .empty-state p { color: #94a3b8; font-size: 14px; margin-top: 8px; max-width: 320px; }
 
         .text-right { text-align: right; }
       `}</style>
