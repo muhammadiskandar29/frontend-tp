@@ -61,116 +61,110 @@ const MenuBar = ({ editor }) => {
             </div>
 
             {/* Formatting Grid (Bottom) */}
-            <div className="toolbar-main-grid">
-                <div className="toolbar-row">
-                    <select
-                        className="heading-select-premium"
-                        onChange={(e) => {
-                            const value = e.target.value;
-                            if (value === "paragraph") editor.chain().focus().setParagraph().run();
-                            else editor.chain().focus().toggleHeading({ level: parseInt(value) }).run();
-                        }}
-                        value={
-                            editor.isActive("heading", { level: 1 }) ? "1" :
-                                editor.isActive("heading", { level: 2 }) ? "2" :
-                                    editor.isActive("heading", { level: 3 }) ? "3" : "paragraph"
-                        }
-                    >
-                        <option value="paragraph">Paragraph</option>
-                        <option value="1">Heading 1</option>
-                        <option value="2">Heading 2</option>
-                        <option value="3">Heading 3</option>
-                    </select>
+            <div className="toolbar-main-row">
+                <select
+                    className="heading-select-premium"
+                    onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === "paragraph") editor.chain().focus().setParagraph().run();
+                        else editor.chain().focus().toggleHeading({ level: parseInt(value) }).run();
+                    }}
+                    value={
+                        editor.isActive("heading", { level: 1 }) ? "1" :
+                            editor.isActive("heading", { level: 2 }) ? "2" :
+                                editor.isActive("heading", { level: 3 }) ? "3" : "paragraph"
+                    }
+                >
+                    <option value="paragraph">Paragraph</option>
+                    <option value="1">Heading 1</option>
+                    <option value="2">Heading 2</option>
+                    <option value="3">Heading 3</option>
+                </select>
 
-                    <div className="toolbar-v-divider"></div>
+                <div className="toolbar-v-divider"></div>
 
+                <div className="toolbar-group">
                     <button
                         onClick={() => editor.chain().focus().toggleBold().run()}
-                        className={`toolbar-round-btn ${editor.isActive("bold") ? "is-active" : ""}`}
+                        className={`toolbar-icon-btn ${editor.isActive("bold") ? "is-active" : ""}`}
                         title="Bold"
                     >
                         <Bold size={18} />
                     </button>
                     <button
                         onClick={() => editor.chain().focus().toggleItalic().run()}
-                        className={`toolbar-round-btn ${editor.isActive("italic") ? "is-active" : ""}`}
+                        className={`toolbar-icon-btn ${editor.isActive("italic") ? "is-active" : ""}`}
                         title="Italic"
                     >
                         <Italic size={18} />
                     </button>
-                    <button
-                        onClick={() => editor.chain().focus().toggleUnderline().run()}
-                        className={`toolbar-round-btn ${editor.isActive("underline") ? "is-active" : ""}`}
-                        title="Underline"
-                    >
-                        <Type size={18} />
-                    </button>
-                    <button
-                        onClick={() => editor.chain().focus().toggleStrike().run()}
-                        className={`toolbar-round-btn ${editor.isActive("strike") ? "is-active" : ""}`}
-                        title="Strikethrough"
-                    >
-                        <Strikethrough size={18} />
-                    </button>
                 </div>
 
-                <div className="toolbar-row">
+                <div className="toolbar-v-divider"></div>
+
+                <div className="toolbar-group">
                     <button
                         onClick={() => editor.chain().focus().toggleBulletList().run()}
-                        className={`toolbar-round-btn ${editor.isActive("bulletList") ? "is-active" : ""}`}
+                        className={`toolbar-icon-btn ${editor.isActive("bulletList") ? "is-active" : ""}`}
                         title="Bullet List"
                     >
                         <List size={18} />
                     </button>
                     <button
                         onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                        className={`toolbar-round-btn ${editor.isActive("orderedList") ? "is-active" : ""}`}
+                        className={`toolbar-icon-btn ${editor.isActive("orderedList") ? "is-active" : ""}`}
                         title="Ordered List"
                     >
                         <ListOrdered size={18} />
                     </button>
                     <button
                         onClick={() => editor.chain().focus().toggleBlockquote().run()}
-                        className={`toolbar-round-btn ${editor.isActive("blockquote") ? "is-active" : ""}`}
+                        className={`toolbar-icon-btn ${editor.isActive("blockquote") ? "is-active" : ""}`}
                         title="Blockquote"
                     >
                         <Quote size={18} />
                     </button>
+                </div>
 
-                    <div className="toolbar-v-divider"></div>
+                <div className="toolbar-v-divider"></div>
 
-                    <button onClick={() => editor.chain().focus().setTextAlign('left').run()} className={`toolbar-round-btn ${editor.isActive({ textAlign: 'left' }) ? 'is-active' : ''}`} title="Align Left">
+                <div className="toolbar-group">
+                    <button onClick={() => editor.chain().focus().setTextAlign('left').run()} className={`toolbar-icon-btn ${editor.isActive({ textAlign: 'left' }) ? 'is-active' : ''}`} title="Align Left">
                         <AlignLeft size={18} />
                     </button>
-                    <button onClick={() => editor.chain().focus().setTextAlign('center').run()} className={`toolbar-round-btn ${editor.isActive({ textAlign: 'center' }) ? 'is-active' : ''}`} title="Align Center">
+                    <button onClick={() => editor.chain().focus().setTextAlign('center').run()} className={`toolbar-icon-btn ${editor.isActive({ textAlign: 'center' }) ? 'is-active' : ''}`} title="Align Center">
                         <AlignCenter size={18} />
                     </button>
-                    <button onClick={() => editor.chain().focus().setTextAlign('right').run()} className={`toolbar-round-btn ${editor.isActive({ textAlign: 'right' }) ? 'is-active' : ''}`} title="Align Right">
+                    <button onClick={() => editor.chain().focus().setTextAlign('right').run()} className={`toolbar-icon-btn ${editor.isActive({ textAlign: 'right' }) ? 'is-active' : ''}`} title="Align Right">
                         <AlignRight size={18} />
                     </button>
                 </div>
 
-                <div className="toolbar-row">
+                <div className="toolbar-v-divider"></div>
+
+                <div className="toolbar-group">
                     <button
                         onClick={() => {
                             const url = window.prompt("Enter URL");
                             if (url) editor.chain().focus().setLink({ href: url }).run();
                         }}
-                        className={`toolbar-round-btn ${editor.isActive("link") ? "is-active" : ""}`}
+                        className={`toolbar-icon-btn ${editor.isActive("link") ? "is-active" : ""}`}
                         title="Link"
                     >
                         <LinkIcon size={18} />
                     </button>
-                    <button onClick={() => editor.chain().focus().setHorizontalRule().run()} className="toolbar-round-btn" title="Divider">
+                    <button onClick={() => editor.chain().focus().setHorizontalRule().run()} className="toolbar-icon-btn" title="Divider">
                         <Minus size={18} />
                     </button>
+                </div>
 
-                    <div className="toolbar-v-divider"></div>
+                <div className="toolbar-v-divider"></div>
 
-                    <button onClick={() => editor.chain().focus().undo().run()} className="toolbar-round-btn" title="Undo">
+                <div className="toolbar-group">
+                    <button onClick={() => editor.chain().focus().undo().run()} className="toolbar-icon-btn" title="Undo">
                         <Undo size={18} />
                     </button>
-                    <button onClick={() => editor.chain().focus().redo().run()} className="toolbar-round-btn" title="Redo">
+                    <button onClick={() => editor.chain().focus().redo().run()} className="toolbar-icon-btn" title="Redo">
                         <Redo size={18} />
                     </button>
                 </div>
@@ -503,15 +497,15 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
         .heading-select-premium {
             background: #fff;
             border: 1px solid #e2e8f0;
-            padding: 8px 12px;
-            border-radius: 10px;
+            padding: 6px 10px;
+            border-radius: 6px;
             font-size: 13px;
-            font-weight: 700;
-            color: #1e293b;
+            font-weight: 600;
+            color: #475569;
             outline: none;
             cursor: pointer;
-            min-width: 140px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            min-width: 120px;
+            height: 34px;
         }
         /* Content Area */
         .visual-content-area {
