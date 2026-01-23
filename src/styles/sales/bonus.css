@@ -396,3 +396,17 @@
     font-size: 1.17em;
     margin: 0.83em 0;
 }
+
+/* Image styling in editor - Smaller and Centered */
+.ProseMirror img {
+    max-width: 50%;
+    height: auto;
+    display: block;
+    margin: 24px auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.ProseMirror img.is-selected {
+    outline: 3px solid #001e3c;
+}
