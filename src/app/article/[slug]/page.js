@@ -318,6 +318,9 @@ export default function PublicArticlePage({ params }) {
         .article-prose-content p { margin-bottom: 1.5rem; }
         .article-prose-content a { color: #3b82f6; text-decoration: underline; font-weight: 500; transition: color 0.2s; }
         .article-prose-content a:hover { color: #2563eb; }
+        .article-prose-content ul { list-style-type: disc; padding-left: 2rem; margin: 1.5rem 0; }
+        .article-prose-content ol { list-style-type: decimal; padding-left: 2rem; margin: 1.5rem 0; }
+        .article-prose-content li { margin-bottom: 0.5rem; }
         .article-prose-content img { max-width: 100%; height: auto; border-radius: 12px; margin: 1.5rem 0; display: block; }
         
         /* Alignment Support */

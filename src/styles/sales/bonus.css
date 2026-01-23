@@ -397,6 +397,33 @@
     margin: 0.83em 0;
 }
 
+/* List & Quote Styles */
+.ProseMirror ul {
+    list-style-type: disc;
+    padding-left: 1.5em;
+    margin-bottom: 1.2em;
+}
+
+.ProseMirror ol {
+    list-style-type: decimal;
+    padding-left: 1.5em;
+    margin-bottom: 1.2em;
+}
+
+.ProseMirror li {
+    margin-bottom: 0.5em;
+}
+
+.ProseMirror blockquote {
+    border-left: 4px solid #ddd;
+    padding-left: 1em;
+    color: #666;
+    font-style: italic;
+    margin-bottom: 1.2em;
+    margin-left: 0;
+    margin-right: 0;
+}
+
 /* Image styling in editor - Smaller and Centered */
 .ProseMirror img {
     max-width: 50%;
