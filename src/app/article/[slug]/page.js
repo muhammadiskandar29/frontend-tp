@@ -158,36 +158,46 @@ export default function PublicArticlePage({ params }) {
 
     React.useEffect(() => {
         const fetchArticle = async () => {
-            if (!params?.slug) return;
-
             try {
+                // Selesaikan params jika dia berupa Promise (Next.js 15+) 
+                // atau gunakan langsung jika dia Object (Next.js 14)
+                const resolvedParams = await params;
+                const slug = resolvedParams?.slug;
+
+                console.log("Fetching article for slug:", slug); // Debugging
+                if (!slug) {
+                    console.error("No slug found in params");
+                    setLoading(false);
+                    return;
+                }
+
                 const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "https://api.ternakproperti.com";
-                // Public fetch, no auth required as per clean architecture
-                const res = await fetch(`${baseUrl}/api/post/slug/${params.slug}`);
+                const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
+                const headers = token ? { "Authorization": `Bearer ${token}` } : {};
+
+                const res = await fetch(`${baseUrl}/api/post/slug/${slug}`, { headers });
                 const json = await res.json();
 
                 if (json.success && json.data) {
                     setArticle({
                         title: json.data.title,
                         author: json.data.author || "Admin",
-                        date: json.data.create_at || "Baru saja", // Mapping create_at from your Postman result
+                        date: json.data.create_at || "Baru saja",
                         content: json.data.content
                     });
                 } else {
+                    console.warn("Article not found in API response");
                     router.push("/404");
                 }
             } catch (err) {
                 console.error("Fetch article error:", err);
-                // Try fallback to local if needed, but the provided URL suggests external is key
             } finally {
                 setLoading(false);
             }
         };
 
-        if (params.slug) {
-            fetchArticle();
-        }
-    }, [params.slug]);
+        fetchArticle();
+    }, [params, router]);
 
     if (loading) {
         return (
