@@ -335,6 +335,9 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
                     color: #3c434a;
                     max-width: 100%;
                 }
+                .wp-title-section {
+                    margin-bottom: 5px;
+                }
                 .wp-title-input {
                     width: 100%;
                     padding: 3px 8px;
@@ -352,6 +355,13 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
                 .wp-title-input:focus {
                     border-color: #2271b1;
                     box-shadow: 0 0 0 1px #2271b1;
+                }
+                .wp-permalink-line {
+                    display: flex;
+                    align-items: center;
+                    margin-top: 2px;
+                    margin-bottom: 10px;
+                    font-size: 13px;
                 }
                 .wp-btn-small {
                     background: #f0f0f1;
