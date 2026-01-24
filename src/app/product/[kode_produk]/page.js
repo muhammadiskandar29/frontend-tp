@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import ProductClient from "./ProductClient";
 import { getBackendUrl } from "@/config/api";
 
