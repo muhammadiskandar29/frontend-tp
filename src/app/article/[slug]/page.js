@@ -151,9 +151,8 @@ const ArticleRenderer = ({ data }) => {
     return null;
 };
 
-export default function PublicArticlePage({ params: paramsPromise }) {
+export default function PublicArticlePage({ params }) {
     const router = useRouter();
-    const params = React.use(paramsPromise); // Support for Next.js 15 async params
     const [article, setArticle] = React.useState(null);
     const [loading, setLoading] = React.useState(true);
 
