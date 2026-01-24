@@ -166,6 +166,28 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     }
   }, [content, editor]);
 
+  // Update editor options when styling props change
+  useEffect(() => {
+    if (editor) {
+      editor.setOptions({
+        editorProps: {
+          attributes: {
+            class: 'rich-text-editor',
+            style: `
+              min-height: 200px;
+              padding: 12px 14px;
+              line-height: ${lineHeight};
+              font-family: ${fontFamily !== "Page Font" ? fontFamily : "inherit"};
+              color: ${textColor};
+              text-align: ${textAlign};
+              font-size: 16px;
+            `,
+          },
+        },
+      });
+    }
+  }, [editor, lineHeight, fontFamily, textColor, textAlign]);
+
   // Sync button state dengan editor selection (untuk color buttons)
   useEffect(() => {
     if (!editor) return;
