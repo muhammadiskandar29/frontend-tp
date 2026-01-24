@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useImperativeHandle, forwardRef } from "react";
+import { useState, useEffect, useImperativeHandle, forwardRef, useRef } from "react";
 import { toast } from "react-hot-toast";
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -19,6 +19,8 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
     const [title, setTitle] = useState(initialData?.title || "");
     const [slug, setSlug] = useState(initialData?.slug || "");
     const [saving, setSaving] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const fileInputRef = useRef(null);
 
     // Initial content parsing
     const parseInitialContent = () => {
@@ -57,23 +59,119 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
         }
     };
 
+    const uploadImage = async (file) => {
+        const token = localStorage.getItem("token");
+        if (!token) {
+            toast.error("Sesi habis, silakan login kembali");
+            return null;
+        }
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("category", "article-image");
+
+        const loadingToast = toast.loading("Mengupload gambar...");
+        setUploading(true);
+
+        try {
+            const res = await fetch("/api/sales/upload", {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+                body: formData,
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.message || "Gagal upload gambar");
+            }
+
+            // Handle berbagai variasi response dari backend
+            // Biasanya { success: true, url: "..." } atau { data: { url: "..." } } atau { file: { url: "..." } }
+            const imageUrl = data.url || data.data?.url || data.file?.url;
+
+            if (!imageUrl) {
+                throw new Error("URL gambar tidak ditemukan dalam response");
+            }
+
+            toast.dismiss(loadingToast);
+            toast.success("Gambar berhasil diupload");
+            return imageUrl;
+
+        } catch (error) {
+            console.error("Upload error:", error);
+            toast.dismiss(loadingToast);
+            toast.error(error.message || "Gagal upload gambar");
+            return null;
+        } finally {
+            setUploading(false);
+        }
+    };
+
     const editor = useEditor({
         extensions: [
             StarterKit,
             Underline,
             Link.configure({
                 openOnClick: false,
+                HTMLAttributes: {
+                    class: 'text-blue-600 underline',
+                },
             }),
-            Image,
+            Image.configure({
+                inline: true,
+                allowBase64: true, // Allow drop paste
+            }),
             TextAlign.configure({
-                types: ['heading', 'paragraph'],
+                types: ['heading', 'paragraph', 'image'],
             }),
         ],
         content: parseInitialContent(),
         editorProps: {
             attributes: {
-                class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[300px] p-4',
+                class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[400px] p-8 bg-white',
             },
+            handlePaste: (view, event, slice) => {
+                const items = (event.clipboardData || event.originalEvent.clipboardData).items;
+                for (const item of items) {
+                    if (item.type.indexOf('image') === 0) {
+                        event.preventDefault();
+                        const file = item.getAsFile();
+                        if (file) {
+                            uploadImage(file).then((url) => {
+                                if (url) {
+                                    const { schema } = view.state;
+                                    const node = schema.nodes.image.create({ src: url });
+                                    const transaction = view.state.tr.replaceSelectionWith(node);
+                                    view.dispatch(transaction);
+                                }
+                            });
+                        }
+                        return true; // Handled
+                    }
+                }
+                return false; // Let default handler handle text
+            },
+            handleDrop: (view, event, slice, moved) => {
+                if (!moved && event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length > 0) {
+                    const file = event.dataTransfer.files[0];
+                    if (file.type.indexOf('image') === 0) {
+                        event.preventDefault();
+                        uploadImage(file).then((url) => {
+                            if (url) {
+                                const { schema } = view.state;
+                                const node = schema.nodes.image.create({ src: url });
+                                const transaction = view.state.tr.replaceSelectionWith(node);
+                                view.dispatch(transaction);
+                            }
+                        });
+                        return true;
+                    }
+                }
+                return false;
+            }
         },
     });
 
@@ -137,7 +235,7 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
 
     const setLink = () => {
         const previousUrl = editor.getAttributes('link').href;
-        const url = window.prompt('URL', previousUrl);
+        const url = window.prompt('Enter URL', previousUrl);
 
         // cancelled
         if (url === null) {
@@ -150,23 +248,33 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
             return;
         }
 
-        // update
-        editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
-    };
-
-    const addImage = () => {
-        const url = window.prompt('Image URL');
-        if (url) {
-            editor.chain().focus().setImage({ src: url }).run();
+        // Fix logic: kalau user input "ternakproperti.com", otomatis jadi "https://ternakproperti.com"
+        // agar tidak dianggap relative path oleh browser (masalah "onedashboard.vercel.app/..." prefix)
+        let finalUrl = url;
+        if (!/^https?:\/\//i.test(url) && !url.startsWith('/')) {
+            finalUrl = 'https://' + url;
         }
+
+        // update
+        editor.chain().focus().extendMarkRange('link').setLink({ href: finalUrl }).run();
     };
 
-    const addYoutube = () => {
-        const url = window.prompt('Enter YouTube URL');
-        if (url) {
-            editor.chain().focus().setContent(editor.getHTML() + `<iframe src="${url}" width="640" height="360" frameborder="0" allowfullscreen></iframe>`).run();
+    const handleFileInputChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            uploadImage(file).then((url) => {
+                if (url) {
+                    editor.chain().focus().setImage({ src: url }).run();
+                }
+            });
+            // Reset input so valid change event triggers again if same file selected
+            e.target.value = '';
         }
     }
+
+    const triggerAddImage = () => {
+        fileInputRef.current?.click();
+    };
 
     if (!editor) {
         return <div className="p-8 text-center">Loading editor...</div>;
@@ -174,6 +282,14 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
 
     return (
         <div className="wp-classic-layout">
+            <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileInputChange}
+                className="hidden"
+                accept="image/*"
+            />
+
             {/* 1. Title Input Area */}
             <div className="wp-title-section">
                 <input
@@ -198,9 +314,9 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
 
             {/* 3. Add Media Button */}
             <div className="wp-media-section mt-4 mb-2">
-                <button className="wp-add-media-btn" onClick={addImage}>
+                <button className="wp-add-media-btn" onClick={triggerAddImage} disabled={uploading}>
                     <ImageIcon size={14} style={{ marginRight: 6 }} />
-                    Add Media
+                    {uploading ? "Uploading..." : "Add Media"}
                 </button>
             </div>
 
@@ -475,6 +591,14 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
                     margin-left: 0;
                     margin-right: 0;
                     font-style: italic;
+                }
+                .ProseMirror img {
+                    max-width: 80%; /* Resized to look like article image */
+                    height: auto;
+                    margin: 1.5rem auto;
+                    display: block;
+                    border-radius: 4px;
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
                 }
             `}</style>
         </div>
