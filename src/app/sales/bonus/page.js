@@ -13,6 +13,7 @@ import ArticleEditor from "../products/view/[id]/ArticleEditor";
 import { getProducts } from "@/lib/sales/products";
 import "@/styles/sales/bonus.css";
 import axios from "axios";
+import Link from "next/link";
 
 export default function BonusProdukPage() {
     const [view, setView] = useState("list"); // "list" | "editor"
@@ -199,13 +200,14 @@ export default function BonusProdukPage() {
                                                     </td>
                                                     <td>
                                                         <div className="action-buttons-minimal">
-                                                            <button
+                                                            <Link
+                                                                href={`/article/${article.slug}`}
+                                                                target="_blank"
                                                                 className="btn-icon-action"
-                                                                onClick={() => window.open(`/article/${article.slug}`, '_blank')}
                                                                 title="View Result"
                                                             >
                                                                 <Eye size={18} />
-                                                            </button>
+                                                            </Link>
                                                             <button
                                                                 className="btn-icon-action"
                                                                 onClick={() => handleEdit(article)}

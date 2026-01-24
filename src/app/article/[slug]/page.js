@@ -151,16 +151,18 @@ const ArticleRenderer = ({ data }) => {
     return null;
 };
 
-export default function PublicArticlePage({ params }) {
+export default function PublicArticlePage({ params: paramsPromise }) {
     const router = useRouter();
+    const params = React.use(paramsPromise); // Support for Next.js 15 async params
     const [article, setArticle] = React.useState(null);
     const [loading, setLoading] = React.useState(true);
 
     React.useEffect(() => {
         const fetchArticle = async () => {
+            if (!params?.slug) return;
+
             try {
-                // Fetch using environment variable for backend URL
-                const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+                const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "https://api.ternakproperti.com";
                 const res = await fetch(`${baseUrl}/api/post/slug/${params.slug}`);
                 const json = await res.json();
 
@@ -369,6 +371,16 @@ export default function PublicArticlePage({ params }) {
         .article-prose-content [style*="text-align: right"] img { margin-left: auto; }
 
         .article-prose-content blockquote { margin: 2rem 0; padding: 1rem 2rem; border-left: 4px solid #3b82f6; background: #f8fafc; font-style: italic; }
+
+        .table-responsive { overflow-x: auto; margin: 2rem 0; }
+        .rendered-table { width: 100%; border-collapse: collapse; border: 1px solid #e2e8f0; }
+        .rendered-table th { background: #f8fafc; text-align: left; padding: 12px; border: 1px solid #e2e8f0; font-weight: 700; }
+        .rendered-table td { padding: 12px; border: 1px solid #e2e8f0; }
+
+        .rendered-checklist { margin: 1.5rem 0; }
+        .checklist-item { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; }
+        .checklist-item.checked { color: #94a3b8; text-decoration: line-through; }
+        .checklist-item input { width: 18px; height: 18px; cursor: pointer; }
 
         .author-card { margin-top: 4rem; padding: 2rem; background: #f8fafc; border-radius: 16px; display: flex; gap: 1.5rem; align-items: center; }
         .author-avatar img { width: 80px; height: 80px; border-radius: 50%; }
