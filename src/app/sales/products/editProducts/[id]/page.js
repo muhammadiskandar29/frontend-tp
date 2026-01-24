@@ -556,7 +556,8 @@ export default function EditProductsPage() {
               ...textBackgroundStyle,
               ...textPaddingStyle,
               display: "block",
-              width: "100%"
+              width: "100%",
+              fontFamily: textData.fontFamily && textData.fontFamily !== "Page Font" ? `${textData.fontFamily} !important` : "inherit"
             }}
             dangerouslySetInnerHTML={{ __html: richContent }}
           />
