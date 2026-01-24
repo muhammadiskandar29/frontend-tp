@@ -67,9 +67,10 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     dataRef.current = data;
   }, [onUpdate, data]);
 
-  // ✅ FIX: handleChange yang selalu menggunakan versi terbaru dari props melalui Ref
+  // ✅ FIX: handleChange yang seseuai dengan arsitektur parent (parent yang melakukan merge)
+  // Tidak perlu lagi merge { ...dataRef.current } karena bisa menyebabkan race condition / stale data
   const handleChange = (field, value) => {
-    onUpdateRef.current?.({ ...dataRef.current, [field]: value });
+    onUpdateRef.current?.({ [field]: value });
   };
 
   // ===== SINGLE SOURCE OF TRUTH: Active Style State (MS Word Style) =====
