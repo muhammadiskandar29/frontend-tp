@@ -541,7 +541,6 @@ export default function AddProducts3Page() {
       case "text":
         const textData = blockToRender.data || {};
         const textStyles = {
-          // fontSize removed - now handled by inline styles in HTML content
           lineHeight: textData.lineHeight || 1.5,
           fontFamily: textData.fontFamily && textData.fontFamily !== "Page Font"
             ? textData.fontFamily
@@ -583,8 +582,14 @@ export default function AddProducts3Page() {
           paddingLeft: `${textData.paddingLeft || 0}px`,
         };
 
-        // Rich text content (HTML)
-        const richContent = textData.content || "<p>Teks...</p>";
+        // ✅ FIX: Enhanced check for empty content (handles <p></p>, <p>&nbsp;</p>, etc)
+        const rawContent = textData.content || "";
+        const isActuallyEmpty = !rawContent ||
+          rawContent === "<p></p>" ||
+          rawContent === "<p><br></p>" ||
+          rawContent.replace(/<[^>]*>/g, '').trim() === "";
+
+        const richContent = isActuallyEmpty ? "<p>Teks...</p>" : rawContent;
 
         const formattedFont = textData.fontFamily && textData.fontFamily !== "Page Font"
           ? (textData.fontFamily.includes(' ') && !textData.fontFamily.startsWith("'") ? `'${textData.fontFamily}'` : textData.fontFamily)
@@ -599,13 +604,14 @@ export default function AddProducts3Page() {
               ...textPaddingStyle,
               display: "block",
               width: "100%",
-              fontFamily: `${formattedFont} !important`
+              // ✅ FIX: fontFamily must NOT use !important in React style object
+              fontFamily: formattedFont
             }}
             dangerouslySetInnerHTML={{ __html: richContent }}
           />
         );
       case "image":
-        const imageData = blockToRender.data;
+        const imageData = blockToRender.data || {};
         if (!imageData.src) {
           return <div className="preview-placeholder">Gambar belum diupload</div>;
         }
@@ -778,14 +784,14 @@ export default function AddProducts3Page() {
         const handlePrev = () => {
           setTestimoniIndices(prev => ({
             ...prev,
-            [block.id]: Math.max(0, currentIndex - 1)
+            [blockToRender.id]: Math.max(0, currentIndex - 1)
           }));
         };
 
         const handleNext = () => {
           setTestimoniIndices(prev => ({
             ...prev,
-            [block.id]: Math.min(maxIndex, currentIndex + 1)
+            [blockToRender.id]: Math.min(maxIndex, currentIndex + 1)
           }));
         };
 
@@ -1476,21 +1482,22 @@ export default function AddProducts3Page() {
           </div>
         );
       case "button":
+        const buttonData = blockToRender.data || {};
         return (
-          <button className={`preview-button preview-button-${blockToRender.data?.style || 'primary'}`}>
-            {blockToRender.data?.text || "Klik Disini"}
+          <button className={`preview-button preview-button-${buttonData.style || 'primary'}`}>
+            {buttonData.text || "Klik Disini"}
           </button>
         );
       case "html":
-        return <div dangerouslySetInnerHTML={{ __html: block.data.code || "" }} />;
+        return <div dangerouslySetInnerHTML={{ __html: blockToRender.data?.code || "" }} />;
       case "embed":
-        return <div dangerouslySetInnerHTML={{ __html: block.data.code || "" }} />;
+        return <div dangerouslySetInnerHTML={{ __html: blockToRender.data?.code || "" }} />;
       case "countdown":
-        return <CountdownPreview data={block.data || {}} index={block.id} />;
+        return <CountdownPreview data={blockToRender.data || {}} index={blockToRender.id} />;
       case "image-slider":
-        return <ImageSliderPreview data={block.data || {}} />;
+        return <ImageSliderPreview data={blockToRender.data || {}} />;
       case "quota-info":
-        return <QuotaInfoPreview data={block.data || {}} />;
+        return <QuotaInfoPreview data={blockToRender.data || {}} />;
       case "section":
         // ✅ ARSITEKTUR BENAR: config.componentId adalah SATU-SATUNYA sumber kebenaran
         // ✅ FALLBACK: Untuk kompatibilitas data lama, generate componentId jika tidak ada

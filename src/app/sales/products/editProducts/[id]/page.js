@@ -501,11 +501,14 @@ export default function EditProductsPage() {
 
   // Render preview di canvas
   const renderPreview = (block) => {
-    switch (block.type) {
+    // ✅ Pastikan block memiliki data terbaru dari blocks array (sinkron dengan addProducts3)
+    const latestBlock = blocks.find(b => b.id === block.id) || block;
+    const blockToRender = latestBlock.id === block.id ? latestBlock : block;
+
+    switch (blockToRender.type) {
       case "text":
-        const textData = block.data || {};
+        const textData = blockToRender.data || {};
         const textStyles = {
-          // fontSize removed - now handled by inline styles in HTML content
           lineHeight: textData.lineHeight || 1.5,
           fontFamily: textData.fontFamily && textData.fontFamily !== "Page Font"
             ? textData.fontFamily
@@ -547,8 +550,14 @@ export default function EditProductsPage() {
           paddingLeft: `${textData.paddingLeft || 0}px`,
         };
 
-        // Rich text content (HTML)
-        const richContent = textData.content || "<p>Teks...</p>";
+        // ✅ FIX: Enhanced check for empty content (handles <p></p>, <p>&nbsp;</p>, etc)
+        const rawContent = textData.content || "";
+        const isActuallyEmpty = !rawContent ||
+          rawContent === "<p></p>" ||
+          rawContent === "<p><br></p>" ||
+          rawContent.replace(/<[^>]*>/g, '').trim() === "";
+
+        const richContent = isActuallyEmpty ? "<p>Teks...</p>" : rawContent;
 
         const formattedFont = textData.fontFamily && textData.fontFamily !== "Page Font"
           ? (textData.fontFamily.includes(' ') && !textData.fontFamily.startsWith("'") ? `'${textData.fontFamily}'` : textData.fontFamily)
@@ -563,13 +572,14 @@ export default function EditProductsPage() {
               ...textPaddingStyle,
               display: "block",
               width: "100%",
-              fontFamily: `${formattedFont} !important`
+              // ✅ FIX: fontFamily must NOT use !important in React style object
+              fontFamily: formattedFont
             }}
             dangerouslySetInnerHTML={{ __html: richContent }}
           />
         );
       case "image":
-        const imageData = block.data;
+        const imageData = blockToRender.data || {};
         if (!imageData.src) {
           return <div className="preview-placeholder">Gambar belum diupload</div>;
         }
@@ -669,7 +679,7 @@ export default function EditProductsPage() {
         );
       case "youtube":
       case "video":
-        const videoItems = block.data.items || [];
+        const videoItems = blockToRender.data?.items || [];
         if (videoItems.length === 0) {
           return <div className="preview-placeholder">Belum ada video</div>;
         }
@@ -731,29 +741,29 @@ export default function EditProductsPage() {
           </div>
         );
       case "testimoni":
-        const testimoniItems = block.data.items || [];
+        const testimoniItems = blockToRender.data?.items || [];
         if (testimoniItems.length === 0) {
           return <div className="preview-placeholder">Belum ada testimoni</div>;
         }
 
-        const currentIndex = testimoniIndices[block.id] || 0;
+        const currentIndex = testimoniIndices[blockToRender.id] || 0;
         const maxIndex = Math.max(0, testimoniItems.length - 3);
 
         const handlePrev = () => {
           setTestimoniIndices(prev => ({
             ...prev,
-            [block.id]: Math.max(0, currentIndex - 1)
+            [blockToRender.id]: Math.max(0, currentIndex - 1)
           }));
         };
 
         const handleNext = () => {
           setTestimoniIndices(prev => ({
             ...prev,
-            [block.id]: Math.min(maxIndex, currentIndex + 1)
+            [blockToRender.id]: Math.min(maxIndex, currentIndex + 1)
           }));
         };
 
-        const testimoniTitle = block.data.componentTitle || "";
+        const testimoniTitle = blockToRender.data?.componentTitle || "";
 
         return (
           <section className="preview-testimonials" aria-label="Customer testimonials">
@@ -851,7 +861,7 @@ export default function EditProductsPage() {
           </section>
         );
       case "list":
-        const listItems = block.data.items || [];
+        const listItems = blockToRender.data?.items || [];
 
         // Icon mapping
         const iconMap = {
@@ -865,8 +875,8 @@ export default function EditProductsPage() {
           MapPin, Calendar: CalendarIcon, Clock
         };
 
-        const listTitle = block.data.componentTitle || "";
-        const listData = block.data || {};
+        const listTitle = blockToRender.data?.componentTitle || "";
+        const listData = blockToRender.data || {};
 
         // Build styles from advance settings
         const listStyles = {
@@ -1443,20 +1453,20 @@ export default function EditProductsPage() {
         );
       case "button":
         return (
-          <button className={`preview-button preview-button-${block.data.style || 'primary'}`}>
-            {block.data.text || "Klik Disini"}
+          <button className={`preview-button preview-button-${blockToRender.data?.style || 'primary'}`}>
+            {blockToRender.data?.text || "Klik Disini"}
           </button>
         );
       case "html":
-        return <div dangerouslySetInnerHTML={{ __html: block.data.code || "" }} />;
+        return <div dangerouslySetInnerHTML={{ __html: blockToRender.data?.code || "" }} />;
       case "embed":
-        return <div dangerouslySetInnerHTML={{ __html: block.data.code || "" }} />;
+        return <div dangerouslySetInnerHTML={{ __html: blockToRender.data?.code || "" }} />;
       case "countdown":
-        return <CountdownPreview data={block.data || {}} index={block.id} />;
+        return <CountdownPreview data={blockToRender.data || {}} index={blockToRender.id} />;
       case "image-slider":
-        return <ImageSliderPreview data={block.data || {}} />;
+        return <ImageSliderPreview data={blockToRender.data || {}} />;
       case "quota-info":
-        return <QuotaInfoPreview data={block.data || {}} />;
+        return <QuotaInfoPreview data={blockToRender.data || {}} />;
       case "section":
         // ✅ SAMA DENGAN addProducts3: Pastikan block memiliki data terbaru dari blocks array
         const latestBlock = blocks.find(b => b.id === block.id) || block;

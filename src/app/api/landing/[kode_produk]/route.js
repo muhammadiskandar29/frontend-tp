@@ -16,7 +16,7 @@ const generateSlug = (text) =>
 
 export async function GET(request, { params }) {
   try {
-    const { kode_produk } = await params;
+    const { kode_produk } = params;
 
     if (!kode_produk) {
       return NextResponse.json(
@@ -35,12 +35,7 @@ export async function GET(request, { params }) {
       method: "GET",
       cache: 'no-store',
       headers: {
-        Accept: "application/json",
-        "Cache-Control": "no-cache, no-store, must-revalidate"
-      },
-      next: {
-        revalidate: 0,
-        tags: [`product-${decodedKode}`]
+        Accept: "application/json"
       }
     });
 
@@ -57,12 +52,7 @@ export async function GET(request, { params }) {
           method: "GET",
           cache: 'no-store',
           headers: {
-            Accept: "application/json",
-            "Cache-Control": "no-cache, no-store, must-revalidate"
-          },
-          next: {
-            revalidate: 0,
-            tags: [`product-${slugKode}`]
+            Accept: "application/json"
           }
         });
 
@@ -83,14 +73,7 @@ export async function GET(request, { params }) {
 
     console.log(`[LANDING] Product found: ${data.data?.nama || data.nama}`);
 
-    // ✅ FORCE NO-CACHE: Pastikan browser tidak meng-cache API response ini
-    const res = NextResponse.json(data);
-    res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
-    res.headers.set('Pragma', 'no-cache');
-    res.headers.set('Expires', '0');
-    res.headers.set('Surrogate-Control', 'no-store');
-
-    return res;
+    return NextResponse.json(data);
   } catch (error) {
     console.error("[LANDING] Error:", error);
     return NextResponse.json(

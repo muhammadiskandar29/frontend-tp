@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 export async function GET(request, { params }) {
-    const { slug } = await params;
+    const { slug } = params;
     const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "https://api.ternakproperti.com";
 
     try {

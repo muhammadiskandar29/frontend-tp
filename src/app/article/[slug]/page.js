@@ -146,8 +146,7 @@ export default function PublicArticlePage({ params }) {
     React.useEffect(() => {
         const fetchArticle = async () => {
             try {
-                const resolvedParams = await params;
-                const slug = resolvedParams?.slug;
+                const { slug } = params;
                 if (!slug) { setLoading(false); return; }
 
                 // Proxy fetch to avoid CORS

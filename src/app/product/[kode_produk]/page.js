@@ -1,7 +1,5 @@
-import { Suspense } from "react";
 import ProductClient from "./ProductClient";
 import { getBackendUrl } from "@/config/api";
-import { headers } from "next/headers";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -9,17 +7,10 @@ export const revalidate = 0;
 // Helper function to fetch product data on server
 async function getProduct(kode_produk) {
   try {
-    // ✅ AGGRESSIVE ANTI-CACHE: Tambahkan timestamp agar Fetch tidak pernah cached di level Vercel/Browser
-    const timestamp = Date.now();
-    const url = getBackendUrl(`landing/${kode_produk}?t=${timestamp}`);
+    const url = getBackendUrl(`landing/${kode_produk}`);
 
     const res = await fetch(url, {
-      cache: 'no-store',
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      }
+      cache: 'no-store'
     });
 
     if (!res.ok) {
@@ -36,13 +27,7 @@ async function getProduct(kode_produk) {
 }
 
 export async function generateMetadata({ params }) {
-  // ✅ FORCE DYNAMIC: Memastikan metadata tidak dicache
-  await headers();
-
-  // Await params karena di Next.js terbaru params adalah Promise
-  const resolvedParams = await params;
-  const { kode_produk } = resolvedParams;
-
+  const { kode_produk } = params;
   const result = await getProduct(kode_produk);
 
   if (!result || !result.success) {
@@ -54,7 +39,6 @@ export async function generateMetadata({ params }) {
   const { data: product, landingpage } = result;
 
   // Logic ekstraksi settings yang sama dengan Client Component
-  // Gunakan .find agar robust terhadap posisi block settings
   const settings = landingpage && Array.isArray(landingpage)
     ? landingpage.find(item => item.type === 'settings')
     : null;
@@ -98,12 +82,7 @@ export async function generateViewport() {
 
 // ✅ Server Component Wrapper
 export default async function ProductPage({ params }) {
-  // ✅ FORCE DYNAMIC: Memanggil headers() memastikan halaman ini 100% dinamis & NO-CACHE
-  await headers();
-
-  // Await params di Server Component
-  const resolvedParams = await params;
-  const { kode_produk } = resolvedParams;
+  const { kode_produk } = params;
 
   // Fetch data di server
   const result = await getProduct(kode_produk);
@@ -113,21 +92,10 @@ export default async function ProductPage({ params }) {
   const initialLandingPage = result?.success ? result.landingpage : null;
 
   return (
-    <Suspense fallback={
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh',
-        fontFamily: 'Inter, sans-serif'
-      }}>
-        <p>Loading...</p>
-      </div>
-    }>
-      <ProductClient
-        initialProductData={initialProductData}
-        initialLandingPage={initialLandingPage}
-      />
-    </Suspense>
+    <ProductClient
+      initialProductData={initialProductData}
+      initialLandingPage={initialLandingPage}
+    />
   );
 }
+
