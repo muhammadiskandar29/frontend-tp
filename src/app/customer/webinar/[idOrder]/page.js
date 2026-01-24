@@ -238,7 +238,7 @@ export default function WebinarGatewayPage() {
       ZoomMtg.i18n.reload("en-US");
 
       ZoomMtg.init({
-        leaveUrl: window.location.href,
+        leaveUrl: `${window.location.origin}/customer/dashboard`, // Redirect ke dashboard setelah leave
         patchJsMedia: true,
         success: () => {
           ZoomMtg.join({

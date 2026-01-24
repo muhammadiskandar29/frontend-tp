@@ -77,21 +77,20 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
 
                 if (!editorInstance.current && editorContainerRef.current) {
                     // Parse data jika string
+                    let initialBlocks = {};
                     if (initialData?.content) {
                         try {
-                            const parsed = typeof initialData.content === 'string'
+                            initialBlocks = typeof initialData.content === 'string'
                                 ? JSON.parse(initialData.content)
                                 : initialData.content;
 
-                            // Backend kirim array of blocks, Editor.js butuh object { blocks: [] }
-                            if (Array.isArray(parsed)) {
-                                initialBlocks = { blocks: parsed };
-                            } else {
-                                initialBlocks = parsed;
+                            // Handle jika backend mengirim array langsung (akibat fix sebelumnya)
+                            if (Array.isArray(initialBlocks)) {
+                                initialBlocks = { blocks: initialBlocks };
                             }
 
-                            // Validasi struktur blocks
-                            if (!initialBlocks || !initialBlocks.blocks) {
+                            // Pastikan jika structure-nya bukan Editor.js tapi HTML atau format lain
+                            if (!initialBlocks || (!initialBlocks.blocks && !Array.isArray(initialBlocks))) {
                                 initialBlocks = { blocks: [] };
                             }
                         } catch (e) {
