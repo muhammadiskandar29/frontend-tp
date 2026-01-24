@@ -11,7 +11,7 @@ import TextAlign from '@tiptap/extension-text-align';
 import {
     Bold, Italic, List, ListOrdered, Quote, AlignLeft,
     AlignCenter, AlignRight, Link as LinkIcon, Image as ImageIcon,
-    MoreHorizontal, ChevronDown, Strikethrough, Undo, Redo
+    MoreHorizontal, ChevronDown, Strikethrough, Undo, Redo, SplitSquareHorizontal
 } from "lucide-react";
 import "@/styles/sales/bonus.css";
 
@@ -270,7 +270,7 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
                         >
                             <LinkIcon size={14} />
                         </button>
-                        <button className="wp-tool-btn" title="Read More">Insert Read More tag</button>
+                        <button className="wp-tool-btn" title="Insert Read More tag"><SplitSquareHorizontal size={14} /></button>
                         <button className="wp-tool-btn" title="Toolbar Toggle"><MoreHorizontal size={14} /></button>
                     </div>
                 </div>
