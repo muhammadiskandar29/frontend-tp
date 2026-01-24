@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { BACKEND_URL } from "@/config/env";
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // Helper: Generate slug dari text
 const generateSlug = (text) =>
   (text || "")
@@ -28,12 +31,15 @@ export async function GET(request, { params }) {
     console.log(`[LANDING] Fetching product with kode: ${decodedKode}`);
 
     // Gunakan endpoint sesuai dokumentasi: /api/landing/{kode_produk}
-    let response = await fetch(`${BACKEND_URL}/api/landing/${decodedKode}`, {
+    // ✅ BUSSING CACHE: Tambahkan timestamp unik ke Laravel
+    let response = await fetch(`${BACKEND_URL}/api/landing/${decodedKode}?t=${Date.now()}`, {
       method: "GET",
       headers: {
         Accept: "application/json",
+        "Cache-Control": "no-cache",
+        "Pragma": "no-cache"
       },
-      cache: 'no-store', // ✅ FIX: Jangan simpan di cache agar selalu dapat data terbaru
+      cache: 'no-store',
     });
 
     let data = await response.json().catch(() => ({}));
@@ -45,12 +51,15 @@ export async function GET(request, { params }) {
       if (slugKode !== decodedKode) {
         console.log(`[LANDING] Product not found, trying with slug: ${slugKode}`);
 
-        response = await fetch(`${BACKEND_URL}/api/landing/${slugKode}`, {
+        // ✅ BUSSING CACHE: Tambahkan timestamp unik ke Laravel
+        response = await fetch(`${BACKEND_URL}/api/landing/${slugKode}?t=${Date.now()}`, {
           method: "GET",
           headers: {
             Accept: "application/json",
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache"
           },
-          cache: 'no-store', // ✅ FIX: Jangan simpan di cache
+          cache: 'no-store',
         });
 
         data = await response.json().catch(() => ({}));
