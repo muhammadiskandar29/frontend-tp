@@ -19,7 +19,7 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
     const [title, setTitle] = useState(initialData?.title || "");
     const [slug, setSlug] = useState(initialData?.slug || "");
     const [saving, setSaving] = useState(false);
-    const [uploading, setUploading] = useState(false);
+    const [processingImage, setProcessingImage] = useState(false);
     const fileInputRef = useRef(null);
 
     // Initial content parsing
@@ -59,54 +59,35 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
         }
     };
 
-    const uploadImage = async (file) => {
-        const token = localStorage.getItem("token");
-        if (!token) {
-            toast.error("Sesi habis, silakan login kembali");
+    // Convert File to Base64
+    const convertFileToBase64 = (file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = (error) => reject(error);
+        });
+    };
+
+    const handleImageFile = async (file) => {
+        if (!file) return null;
+
+        // Validasi tipe file
+        if (!file.type.startsWith('image/')) {
+            toast.error("File harus berupa gambar");
             return null;
         }
 
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("category", "article-image");
-
-        const loadingToast = toast.loading("Mengupload gambar...");
-        setUploading(true);
-
+        setProcessingImage(true);
         try {
-            const res = await fetch("/api/sales/upload", {
-                method: "POST",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-                body: formData,
-            });
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                throw new Error(data.message || "Gagal upload gambar");
-            }
-
-            // Handle berbagai variasi response dari backend
-            // Biasanya { success: true, url: "..." } atau { data: { url: "..." } } atau { file: { url: "..." } }
-            const imageUrl = data.url || data.data?.url || data.file?.url;
-
-            if (!imageUrl) {
-                throw new Error("URL gambar tidak ditemukan dalam response");
-            }
-
-            toast.dismiss(loadingToast);
-            toast.success("Gambar berhasil diupload");
-            return imageUrl;
-
+            const base64 = await convertFileToBase64(file);
+            return base64;
         } catch (error) {
-            console.error("Upload error:", error);
-            toast.dismiss(loadingToast);
-            toast.error(error.message || "Gagal upload gambar");
+            console.error("Error converting image:", error);
+            toast.error("Gagal memproses gambar");
             return null;
         } finally {
-            setUploading(false);
+            setProcessingImage(false);
         }
     };
 
@@ -122,7 +103,7 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
             }),
             Image.configure({
                 inline: true,
-                allowBase64: true, // Allow drop paste
+                allowBase64: true,
             }),
             TextAlign.configure({
                 types: ['heading', 'paragraph', 'image'],
@@ -140,29 +121,29 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
                         event.preventDefault();
                         const file = item.getAsFile();
                         if (file) {
-                            uploadImage(file).then((url) => {
-                                if (url) {
+                            handleImageFile(file).then((base64) => {
+                                if (base64) {
                                     const { schema } = view.state;
-                                    const node = schema.nodes.image.create({ src: url });
+                                    const node = schema.nodes.image.create({ src: base64 });
                                     const transaction = view.state.tr.replaceSelectionWith(node);
                                     view.dispatch(transaction);
                                 }
                             });
                         }
-                        return true; // Handled
+                        return true;
                     }
                 }
-                return false; // Let default handler handle text
+                return false;
             },
             handleDrop: (view, event, slice, moved) => {
                 if (!moved && event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length > 0) {
                     const file = event.dataTransfer.files[0];
                     if (file.type.indexOf('image') === 0) {
                         event.preventDefault();
-                        uploadImage(file).then((url) => {
-                            if (url) {
+                        handleImageFile(file).then((base64) => {
+                            if (base64) {
                                 const { schema } = view.state;
-                                const node = schema.nodes.image.create({ src: url });
+                                const node = schema.nodes.image.create({ src: base64 });
                                 const transaction = view.state.tr.replaceSelectionWith(node);
                                 view.dispatch(transaction);
                             }
@@ -175,7 +156,6 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
         },
     });
 
-    // Cleanup
     useEffect(() => {
         return () => {
             if (editor) {
@@ -184,7 +164,6 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
         };
     }, [editor]);
 
-    // Update slug when title changes (only if no initial data)
     useEffect(() => {
         if (!initialData && title) {
             setSlug(title.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, ''));
@@ -197,12 +176,7 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
 
         setSaving(true);
         try {
-            // Get JSON content
             const json = editor.getJSON();
-
-            // Backend validasi "The content must be an array"
-            // Tiptap 'doc' structure: { type: 'doc', content: [...] }
-            // We send json.content which is the array of blocks
             const contentToSend = json.content || [];
 
             onSave({
@@ -237,37 +211,28 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
         const previousUrl = editor.getAttributes('link').href;
         const url = window.prompt('Enter URL', previousUrl);
 
-        // cancelled
-        if (url === null) {
-            return;
-        }
-
-        // empty
+        if (url === null) return;
         if (url === '') {
             editor.chain().focus().extendMarkRange('link').unsetLink().run();
             return;
         }
 
-        // Fix logic: kalau user input "ternakproperti.com", otomatis jadi "https://ternakproperti.com"
-        // agar tidak dianggap relative path oleh browser (masalah "onedashboard.vercel.app/..." prefix)
         let finalUrl = url;
         if (!/^https?:\/\//i.test(url) && !url.startsWith('/')) {
             finalUrl = 'https://' + url;
         }
 
-        // update
         editor.chain().focus().extendMarkRange('link').setLink({ href: finalUrl }).run();
     };
 
     const handleFileInputChange = (e) => {
         const file = e.target.files[0];
         if (file) {
-            uploadImage(file).then((url) => {
-                if (url) {
-                    editor.chain().focus().setImage({ src: url }).run();
+            handleImageFile(file).then((base64) => {
+                if (base64) {
+                    editor.chain().focus().setImage({ src: base64 }).run();
                 }
             });
-            // Reset input so valid change event triggers again if same file selected
             e.target.value = '';
         }
     }
@@ -290,7 +255,6 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
                 accept="image/*"
             />
 
-            {/* 1. Title Input Area */}
             <div className="wp-title-section">
                 <input
                     type="text"
@@ -301,7 +265,6 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
                 />
             </div>
 
-            {/* 2. Permalink Area */}
             {title && (
                 <div className="wp-permalink-line">
                     <span className="text-gray-500 text-sm">Permalink: </span>
@@ -312,99 +275,45 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
                 </div>
             )}
 
-            {/* 3. Add Media Button */}
             <div className="wp-media-section mt-4 mb-2">
-                <button className="wp-add-media-btn" onClick={triggerAddImage} disabled={uploading}>
+                <button className="wp-add-media-btn" onClick={triggerAddImage} disabled={processingImage}>
                     <ImageIcon size={14} style={{ marginRight: 6 }} />
-                    {uploading ? "Uploading..." : "Add Media"}
+                    {processingImage ? "Procesing..." : "Add Media"}
                 </button>
             </div>
 
-            {/* 4. Main Editor Container (The Box) */}
             <div className="wp-editor-frame">
-                {/* Visual / Text Tabs */}
                 <div className="wp-editor-tabs">
                     <button className="wp-tab active">Visual</button>
                     <button className="wp-tab">Text</button>
                 </div>
 
-                {/* Toolbar */}
                 <div className="wp-toolbar">
                     <div className="wp-toolbar-row">
                         <button className={`wp-tool-btn dropdown ${editor.isActive('paragraph') ? 'active' : ''}`} title="Paragraph">Paragraph <ChevronDown size={10} /></button>
-                        <button
-                            className={`wp-tool-btn ${editor.isActive('bold') ? 'active' : ''}`}
-                            onClick={toggleBold} title="Bold"
-                        >
-                            <Bold size={14} />
-                        </button>
-                        <button
-                            className={`wp-tool-btn ${editor.isActive('italic') ? 'active' : ''}`}
-                            onClick={toggleItalic} title="Italic"
-                        >
-                            <Italic size={14} />
-                        </button>
-                        <button
-                            className={`wp-tool-btn ${editor.isActive('bulletList') ? 'active' : ''}`}
-                            onClick={toggleBulletList} title="Bulleted List"
-                        >
-                            <List size={14} />
-                        </button>
-                        <button
-                            className={`wp-tool-btn ${editor.isActive('orderedList') ? 'active' : ''}`}
-                            onClick={toggleOrderedList} title="Numbered List"
-                        >
-                            <ListOrdered size={14} />
-                        </button>
-                        <button
-                            className={`wp-tool-btn ${editor.isActive('blockquote') ? 'active' : ''}`}
-                            onClick={toggleBlockquote} title="Blockquote"
-                        >
-                            <Quote size={14} />
-                        </button>
-                        <button
-                            className={`wp-tool-btn ${editor.isActive({ textAlign: 'left' }) ? 'active' : ''}`}
-                            onClick={() => setTextAlign('left')} title="Align Left"
-                        >
-                            <AlignLeft size={14} />
-                        </button>
-                        <button
-                            className={`wp-tool-btn ${editor.isActive({ textAlign: 'center' }) ? 'active' : ''}`}
-                            onClick={() => setTextAlign('center')} title="Align Center"
-                        >
-                            <AlignCenter size={14} />
-                        </button>
-                        <button
-                            className={`wp-tool-btn ${editor.isActive({ textAlign: 'right' }) ? 'active' : ''}`}
-                            onClick={() => setTextAlign('right')} title="Align Right"
-                        >
-                            <AlignRight size={14} />
-                        </button>
-                        <button
-                            className={`wp-tool-btn ${editor.isActive('link') ? 'active' : ''}`}
-                            onClick={setLink} title="Insert/edit link"
-                        >
-                            <LinkIcon size={14} />
-                        </button>
+                        <button className={`wp-tool-btn ${editor.isActive('bold') ? 'active' : ''}`} onClick={toggleBold} title="Bold"><Bold size={14} /></button>
+                        <button className={`wp-tool-btn ${editor.isActive('italic') ? 'active' : ''}`} onClick={toggleItalic} title="Italic"><Italic size={14} /></button>
+                        <button className={`wp-tool-btn ${editor.isActive('bulletList') ? 'active' : ''}`} onClick={toggleBulletList} title="Bulleted List"><List size={14} /></button>
+                        <button className={`wp-tool-btn ${editor.isActive('orderedList') ? 'active' : ''}`} onClick={toggleOrderedList} title="Numbered List"><ListOrdered size={14} /></button>
+                        <button className={`wp-tool-btn ${editor.isActive('blockquote') ? 'active' : ''}`} onClick={toggleBlockquote} title="Blockquote"><Quote size={14} /></button>
+                        <button className={`wp-tool-btn ${editor.isActive({ textAlign: 'left' }) ? 'active' : ''}`} onClick={() => setTextAlign('left')} title="Align Left"><AlignLeft size={14} /></button>
+                        <button className={`wp-tool-btn ${editor.isActive({ textAlign: 'center' }) ? 'active' : ''}`} onClick={() => setTextAlign('center')} title="Align Center"><AlignCenter size={14} /></button>
+                        <button className={`wp-tool-btn ${editor.isActive({ textAlign: 'right' }) ? 'active' : ''}`} onClick={() => setTextAlign('right')} title="Align Right"><AlignRight size={14} /></button>
+                        <button className={`wp-tool-btn ${editor.isActive('link') ? 'active' : ''}`} onClick={setLink} title="Insert/edit link"><LinkIcon size={14} /></button>
                         <button className="wp-tool-btn" title="Insert Read More tag"><SplitSquareHorizontal size={14} /></button>
                         <button className="wp-tool-btn" title="Toolbar Toggle"><MoreHorizontal size={14} /></button>
                     </div>
                 </div>
 
-                {/* The Editor Area */}
                 <div className="wp-editor-content-area" onClick={() => editor.chain().focus().run()}>
                     <EditorContent editor={editor} />
                 </div>
 
-                {/* Status Bar */}
                 <div className="wp-editor-footer">
-                    <div className="text-xs text-gray-500">
-                        p
-                    </div>
+                    <div className="text-xs text-gray-500">p</div>
                 </div>
             </div>
 
-            {/* 5. Publish Actions (Optional Sidebar Simulation) */}
             {!hideActions && (
                 <div className="wp-publish-actions mt-6 p-4 bg-white border border-gray-300">
                     <div className="flex justify-between items-center mb-4">
@@ -421,14 +330,11 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
             )}
 
             <style jsx global>{`
-                /* Container Layout */
                 .wp-classic-layout {
                     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
                     color: #3c434a;
                     max-width: 100%;
                 }
-
-                /* 1. Title Input */
                 .wp-title-input {
                     width: 100%;
                     padding: 3px 8px;
@@ -447,8 +353,6 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
                     border-color: #2271b1;
                     box-shadow: 0 0 0 1px #2271b1;
                 }
-
-                /* 2. Permalink & Buttons */
                 .wp-btn-small {
                     background: #f0f0f1;
                     border: 1px solid #8c8f94;
@@ -478,15 +382,11 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
                     color: #135e96;
                     border-color: #135e96;
                 }
-
-                /* 4. Editor Frame */
                 .wp-editor-frame {
                     border: 1px solid #c3c4c7;
                     background: #fff;
                     margin-top: 10px;
                 }
-
-                /* Tabs */
                 .wp-editor-tabs {
                     display: flex;
                     justify-content: flex-end;
@@ -513,8 +413,6 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
                     border-bottom: 1px solid #f6f7f7;
                     z-index: 10;
                 }
-
-                /* Toolbar */
                 .wp-toolbar {
                     background: #f6f7f7;
                     padding: 4px;
@@ -553,8 +451,6 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
                     gap: 4px;
                     font-size: 13px;
                 }
-
-                /* Editor Content Area */
                 .wp-editor-content-area {
                     min-height: 400px;
                     padding: 20px;
@@ -565,8 +461,6 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
                     padding: 4px 10px;
                     border-top: 1px solid #dcdcde;
                 }
-                
-                /* Tiptap specific */
                 .ProseMirror {
                     outline: none;
                     min-height: 400px;
@@ -593,7 +487,7 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
                     font-style: italic;
                 }
                 .ProseMirror img {
-                    max-width: 80%; /* Resized to look like article image */
+                    max-width: 80%;
                     height: auto;
                     margin: 1.5rem auto;
                     display: block;
