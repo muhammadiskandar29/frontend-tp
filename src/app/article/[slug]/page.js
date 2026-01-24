@@ -11,21 +11,20 @@ import { useRouter } from "next/navigation";
 const ArticleRenderer = ({ data }) => {
     if (!data) return null;
 
-    // Check if the data is a string (HTML from Tiptap)
-    if (typeof data === "string") {
-        return (
-            <div
-                className="article-prose-content"
-                dangerouslySetInnerHTML={{ __html: data }}
-            />
-        );
+    // Parse data if it's a string
+    let contentObj;
+    try {
+        contentObj = typeof data === 'string' ? JSON.parse(data) : data;
+    } catch (e) {
+        // If not JSON, assume it's HTML string from Tiptap
+        return <div className="article-prose-content" dangerouslySetInnerHTML={{ __html: data }} />;
     }
 
-    // Standard Tiptap JSON logic (recursive)
-    const renderNode = (node, index) => {
-        if (!node) return null;
+    if (!contentObj) return null;
 
-        // Text nodes
+    // Standard Tiptap JSON logic (recursive)
+    const renderTiptapNode = (node, index) => {
+        if (!node) return null;
         if (node.type === 'text') {
             let content = node.text;
             if (node.marks) {
@@ -39,63 +38,47 @@ const ArticleRenderer = ({ data }) => {
             return content;
         }
 
-        const children = node.content ? node.content.map((child, i) => renderNode(child, i)) : null;
+        const children = node.content ? node.content.map((child, i) => renderTiptapNode(child, i)) : null;
 
         switch (node.type) {
-            case 'doc':
-                return <div key={index} className="article-tiptap-content">{children}</div>;
-            case 'paragraph':
-                return <p key={index} style={{ textAlign: node.attrs?.textAlign }}>{children}</p>;
+            case 'doc': return <div key={index} className="article-tiptap-content">{children}</div>;
+            case 'paragraph': return <p key={index} style={{ textAlign: node.attrs?.textAlign }}>{children}</p>;
             case 'heading':
                 const Tag = `h${node.attrs?.level || 1}`;
                 return <Tag key={index} style={{ textAlign: node.attrs?.textAlign }}>{children}</Tag>;
-            case 'bulletList':
-                return <ul key={index}>{children}</ul>;
-            case 'orderedList':
-                return <ol key={index}>{children}</ol>;
-            case 'listItem':
-                return <li key={index}>{children}</li>;
-            case 'blockquote':
-                return <blockquote key={index}>{children}</blockquote>;
+            case 'bulletList': return <ul key={index}>{children}</ul>;
+            case 'orderedList': return <ol key={index}>{children}</ol>;
+            case 'listItem': return <li key={index}>{children}</li>;
+            case 'blockquote': return <blockquote key={index}>{children}</blockquote>;
             case 'image':
                 return (
                     <figure key={index} style={{ textAlign: node.attrs?.textAlign }}>
-                        <img src={node.attrs.src} alt={node.attrs.alt} title={node.attrs.title} className="max-w-full rounded-lg" />
+                        <img src={node.attrs.src} alt={node.attrs.alt} className="max-w-full rounded-lg" />
                     </figure>
                 );
-            case 'horizontalRule':
-                return <hr key={index} />;
-            case 'hardBreak':
-                return <br key={index} />;
-            default:
-                return null;
+            case 'horizontalRule': return <hr key={index} />;
+            case 'hardBreak': return <br key={index} />;
+            default: return null;
         }
     };
 
-    // If it's Tiptap JSON (has type field, usually 'doc')
-    const contentObj = typeof data === 'string' ? JSON.parse(data) : data;
-    if (contentObj && contentObj.type) {
-        return <div className="article-renderer tiptap">{renderNode(contentObj, 0)}</div>;
+    // If it's Tiptap JSON
+    if (contentObj.type === 'doc') {
+        return <div className="article-renderer tiptap">{renderTiptapNode(contentObj, 0)}</div>;
     }
 
-    // Fallback for old block-based data (Editor.js)
-    if (contentObj && contentObj.blocks) {
+    // Fallback for Editor.js blocks (based on your Postman result)
+    if (contentObj.blocks) {
         return (
-            <div className="article-renderer">
-                {data.blocks.map((block, index) => {
+            <div className="article-renderer editorjs">
+                {contentObj.blocks.map((block, index) => {
                     switch (block.type) {
                         case "header":
                             const Tag = `h${block.data.level || 2}`;
                             return <Tag key={index} className="rendered-h">{block.data.text}</Tag>;
 
                         case "paragraph":
-                            return (
-                                <p
-                                    key={index}
-                                    className="rendered-p"
-                                    dangerouslySetInnerHTML={{ __html: block.data.text }}
-                                ></p>
-                            );
+                            return <p key={index} className="rendered-p" dangerouslySetInnerHTML={{ __html: block.data.text }}></p>;
 
                         case "list":
                             const ListTag = block.data.style === "ordered" ? "ol" : "ul";
@@ -107,10 +90,41 @@ const ArticleRenderer = ({ data }) => {
                                 </ListTag>
                             );
 
+                        case "checklist":
+                            return (
+                                <div key={index} className="rendered-checklist">
+                                    {block.data.items.map((item, i) => (
+                                        <div key={i} className={`checklist-item ${item.checked ? 'checked' : ''}`}>
+                                            <input type="checkbox" checked={item.checked} readOnly />
+                                            <span dangerouslySetInnerHTML={{ __html: item.text }}></span>
+                                        </div>
+                                    ))}
+                                </div>
+                            );
+
+                        case "table":
+                            return (
+                                <div key={index} className="table-responsive">
+                                    <table className="rendered-table">
+                                        <tbody>
+                                            {block.data.content.map((row, i) => (
+                                                <tr key={i}>
+                                                    {row.map((cell, j) => (
+                                                        block.data.withHeadings && i === 0
+                                                            ? <th key={j} dangerouslySetInnerHTML={{ __html: cell }}></th>
+                                                            : <td key={j} dangerouslySetInnerHTML={{ __html: cell }}></td>
+                                                    ))}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            );
+
                         case "image":
                             return (
                                 <figure key={index} className="rendered-figure">
-                                    <img src={block.data.file?.url || "/placeholder-image.jpg"} alt={block.data.caption} />
+                                    <img src={block.data.file?.url || "/placeholder.jpg"} alt={block.data.caption} />
                                     {block.data.caption && <figcaption>{block.data.caption}</figcaption>}
                                 </figure>
                             );
@@ -145,22 +159,24 @@ export default function PublicArticlePage({ params }) {
     React.useEffect(() => {
         const fetchArticle = async () => {
             try {
-                // Fetch dynamic data using the slug
-                const res = await fetch(`/api/post/slug/${params.slug}`);
+                // Fetch using environment variable for backend URL
+                const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+                const res = await fetch(`${baseUrl}/api/post/slug/${params.slug}`);
                 const json = await res.json();
 
                 if (json.success && json.data) {
                     setArticle({
                         title: json.data.title,
                         author: json.data.author || "Admin",
-                        date: json.data.created_at || "Baru saja",
-                        content: json.data.content // Expected to be Tiptap JSON or string
+                        date: json.data.create_at || "Baru saja", // Mapping create_at from your Postman result
+                        content: json.data.content
                     });
                 } else {
                     router.push("/404");
                 }
             } catch (err) {
                 console.error("Fetch article error:", err);
+                // Try fallback to local if needed, but the provided URL suggests external is key
             } finally {
                 setLoading(false);
             }
