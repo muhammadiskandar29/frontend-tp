@@ -163,7 +163,10 @@ export default function PublicArticlePage({ params: paramsPromise }) {
 
             try {
                 const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "https://api.ternakproperti.com";
-                const res = await fetch(`${baseUrl}/api/post/slug/${params.slug}`);
+                const token = localStorage.getItem("token");
+                const headers = token ? { "Authorization": `Bearer ${token}` } : {};
+
+                const res = await fetch(`${baseUrl}/api/post/slug/${params.slug}`, { headers });
                 const json = await res.json();
 
                 if (json.success && json.data) {
