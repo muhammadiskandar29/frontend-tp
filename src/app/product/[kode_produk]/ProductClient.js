@@ -370,6 +370,44 @@ function ProductClient({ initialProductData, initialLandingPage }) {
   const [loading, setLoading] = useState(!initialProductData);
   const [testimoniIndices, setTestimoniIndices] = useState({});
 
+  // ✅ LIVE SYNC: Dengerin sinyal dari tab Edit
+  useEffect(() => {
+    // Fungsi untuk fetch ulang data paling baru secara manual
+    const refreshData = async () => {
+      try {
+        console.log('[LIVE-SYNC] Mendapat sinyal update, mengambil data terbaru...');
+        // Path API disesuaikan dengan route.js yang tersedia (proxied ke backend)
+        const res = await fetch(`/api/landing/${kode_produk}?t=${Date.now()}`, {
+          cache: 'no-store'
+        });
+        const result = await res.json();
+
+        if (result.success) {
+          // Update state internal dengan data paling fresh
+          setProductData(result.data);
+          setLandingpage(result.landingpage);
+          console.log('[LIVE-SYNC] Data berhasil di-update secara instan di browser!');
+        } else {
+          // Fallback refresh halaman jika gagal
+          window.location.reload();
+        }
+      } catch (e) {
+        console.error('[LIVE-SYNC] Gagal sync data:', e);
+        window.location.reload();
+      }
+    };
+
+    try {
+      const bc = new BroadcastChannel('product_update');
+      bc.onmessage = (event) => {
+        if (event.data?.type === 'REFRESH_PRODUCT' && event.data?.kode === kode_produk) {
+          refreshData(); // Lakukan fetch manual ke API, bukan reload router
+        }
+      };
+      return () => bc.close();
+    } catch (e) { }
+  }, [kode_produk]);
+
   // -- HOOKS INTEGRATION --
 
   // 1. Address Logic & Data

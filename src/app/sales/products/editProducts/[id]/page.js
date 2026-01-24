@@ -3409,6 +3409,13 @@ export default function EditProductsPage() {
 
       toast.success("Draft berhasil disimpan!", { id: "save-draft" });
 
+      // ✅ Trik Ajaib: Beritahu tab lain (Landing Page) untuk refresh
+      try {
+        const bc = new BroadcastChannel('product_update');
+        bc.postMessage({ type: 'REFRESH_PRODUCT', kode: payload.kode });
+        bc.close();
+      } catch (e) { }
+
       setIsSaving(false);
       setShowExitModal(false);
 
@@ -3573,6 +3580,13 @@ export default function EditProductsPage() {
       }
 
       toast.success("Produk berhasil diupdate dan dipublish!", { id: "save-product" });
+
+      // ✅ Trik Ajaib: Beritahu tab lain (Landing Page) untuk refresh
+      try {
+        const bc = new BroadcastChannel('product_update');
+        bc.postMessage({ type: 'REFRESH_PRODUCT', kode: payload.kode });
+        bc.close();
+      } catch (e) { }
 
       // ✅ FIX: Set loading state ke false sebelum redirect
       setIsSaving(false);

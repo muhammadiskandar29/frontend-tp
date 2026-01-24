@@ -8,12 +8,16 @@ export const revalidate = 0;
 // Helper function to fetch product data on server
 async function getProduct(kode_produk) {
   try {
-    // Gunakan getBackendUrl untuk memastikan URL absolut di server
-    const url = getBackendUrl(`landing/${kode_produk}`);
+    // ✅ BUSSING CACHE: Tambahkan timestamp agar server fetch rute baru setiap saat
+    const url = getBackendUrl(`landing/${kode_produk}?t=${Date.now()}`);
     // fetch dengan cache: 'no-store' agar selalu dapat update terbaru
     // Tambahkan timeout 10 detik agar tidak hang selamanya saat build
     const res = await fetch(url, {
       cache: 'no-store',
+      headers: {
+        'Pragma': 'no-cache',
+        'Cache-Control': 'no-cache'
+      },
       signal: AbortSignal.timeout(10000)
     });
 
