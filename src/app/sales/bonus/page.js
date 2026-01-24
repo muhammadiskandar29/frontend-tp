@@ -111,11 +111,12 @@ export default function BonusProdukPage() {
                         <div className="main-content-card card-shadow">
                             <div className="card-header-inner">
                                 <div className="card-title-group">
-                                    <span className="card-subtitle">DIRECTORY</span>
-                                    <h2 className="card-title">Bonus roster</h2>
+                                    <h2 className="card-title">Bonus Roster</h2>
+                                    <p className="card-subtitle">Manage bonus articles and perks for your product catalog</p>
                                 </div>
                                 <button className="btn-primary-orange" onClick={handleCreate}>
-                                    + Tambah Bonus
+                                    <TagIcon size={16} className="btn-icon" />
+                                    Tambah Bonus Baru
                                 </button>
                             </div>
 
@@ -187,10 +188,16 @@ export default function BonusProdukPage() {
                                         </tbody>
                                     </table>
                                 ) : (
-                                    <div className="empty-state">
-                                        <LayoutIcon size={48} className="empty-icon" />
-                                        <h3>Belum ada bonus</h3>
-                                        <p>Buat artikel bonus pertama Anda untuk meningkatkan value produk.</p>
+                                    <div className="empty-state-modern">
+                                        <div className="empty-state-visual">
+                                            <div className="blob-bg"></div>
+                                            <Folder size={40} className="empty-icon" />
+                                        </div>
+                                        <h3>Belum ada bonus artikel</h3>
+                                        <p>Mulai tingkatkan nilai konversi produk Anda dengan memberikan artikel bonus atau panduan eksklusif kepada pembeli.</p>
+                                        <button className="btn-outline-create" onClick={handleCreate}>
+                                            Buat Artikel Sekarang
+                                        </button>
                                     </div>
                                 )}
                             </div>
@@ -237,18 +244,22 @@ export default function BonusProdukPage() {
 
             <style jsx>{`
                 .bonus-page-container {
-                    padding: 30px;
-                    background: #fdfdfd;
+                    padding: 40px;
+                    background: #f8fafc;
                     min-height: 100vh;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 30px;
                 }
                 .card-shadow {
                     background: #fff;
-                    border-radius: 12px;
-                    box-shadow: 0 2px 12px rgba(0,0,0,0.03);
+                    border-radius: 20px;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.02);
                     border: 1px solid #f1f5f9;
+                    overflow: hidden;
                 }
                 .search-container-premium {
-                    margin-bottom: 30px;
+                    margin-bottom: 0;
                     display: flex;
                     justify-content: flex-start;
                 }
@@ -256,22 +267,22 @@ export default function BonusProdukPage() {
                     display: flex;
                     align-items: center;
                     background: #fff;
-                    padding: 0 16px;
-                    height: 54px;
+                    padding: 0 20px;
+                    height: 56px;
                     width: 100%;
-                    max-width: 500px;
-                    border-radius: 14px;
+                    max-width: 440px;
+                    border-radius: 16px;
                     position: relative;
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                    border: 1px solid #f1f5f9;
+                    transition: all 0.3s ease;
+                    border: 1px solid #e2e8f0;
                 }
                 .search-box-premium:focus-within {
                     border-color: #ff7a00;
-                    box-shadow: 0 8px 30px rgba(255, 122, 0, 0.1);
+                    box-shadow: 0 10px 40px rgba(255, 122, 0, 0.08);
                 }
                 .search-icon-left {
                     color: #94a3b8;
-                    margin-right: 12px;
+                    margin-right: 14px;
                 }
                 .search-input-premium {
                     flex: 1;
@@ -280,12 +291,13 @@ export default function BonusProdukPage() {
                     outline: none;
                     background: transparent;
                     font-size: 15px;
+                    font-weight: 500;
                     color: #1e293b;
                 }
                 .search-clear-btn {
                     background: #f1f5f9;
                     border: none;
-                    color: #94a3b8;
+                    color: #64748b;
                     width: 24px;
                     height: 24px;
                     border-radius: 50%;
@@ -293,108 +305,231 @@ export default function BonusProdukPage() {
                     align-items: center;
                     justify-content: center;
                     cursor: pointer;
+                    transition: all 0.2s;
                 }
+                .search-clear-btn:hover { background: #e2e8f0; color: #1e293b; }
+
                 .main-content-card {
                     background: #fff;
-                    padding-bottom: 20px;
                 }
                 .card-header-inner {
-                    padding: 24px 30px;
+                    padding: 32px 40px;
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
+                    border-bottom: 1px solid #f1f5f9;
                 }
-                .card-title-group { display: flex; flex-direction: column; }
-                .card-subtitle { font-size: 12px; font-weight: 600; color: #cbd5e1; letter-spacing: 0.1em; }
-                .card-title { font-size: 18px; font-weight: 700; color: #1e293b; margin: 0; }
+                .card-title-group { display: flex; flex-direction: column; gap: 4px; }
+                .card-title { font-size: 24px; font-weight: 800; color: #1e293b; margin: 0; letter-spacing: -0.02em; }
+                .card-subtitle { font-size: 14px; font-weight: 500; color: #64748b; margin: 0; }
+                
                 .btn-primary-orange {
                     background: #ff7a00;
                     color: white;
                     border: none;
-                    padding: 12px 24px;
-                    border-radius: 10px;
+                    padding: 12px 28px;
+                    border-radius: 14px;
                     font-weight: 700;
-                    font-size: 14px;
+                    font-size: 15px;
                     cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    box-shadow: 0 4px 14px rgba(255, 122, 0, 0.2);
                 }
-                .table-container-clean { padding: 0 30px; }
+                .btn-primary-orange:hover {
+                    background: #e66e00;
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 25px rgba(255, 122, 0, 0.3);
+                }
+                .btn-icon { stroke-width: 2.5; }
+
+                .table-container-clean { padding: 0; }
                 .bonus-table-clean {
                     width: 100%;
                     border-collapse: collapse;
                 }
                 .bonus-table-clean thead th {
                     background: #f8fafc;
-                    padding: 14px 16px;
+                    padding: 16px 40px;
                     text-align: left;
                     font-size: 12px;
                     font-weight: 800;
                     color: #475569;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
                 }
                 .bonus-table-clean tr td {
-                    padding: 20px 16px;
+                    padding: 24px 40px;
                     color: #334155;
-                    border-bottom: 1px solid #f8fafc;
+                    border-bottom: 1px solid #f1f5f9;
                 }
+                .bonus-table-clean tr:hover td {
+                    background: #fdfdfd;
+                }
+                .article-info-clean { display: flex; flex-direction: column; gap: 2px; }
+                .article-name { font-weight: 700; color: #1e293b; font-size: 16px; }
+                .article-slug-clean { font-size: 13px; color: #94a3b8; font-weight: 500; }
+
                 .tag-badge-clean {
                     display: inline-block;
-                    background: #fff7ed;
-                    color: #ff7a00;
-                    padding: 2px 10px;
-                    border-radius: 6px;
-                    font-size: 11px;
+                    background: #eff6ff;
+                    color: #3b82f6;
+                    padding: 4px 12px;
+                    border-radius: 8px;
+                    font-size: 12px;
                     font-weight: 600;
-                    margin: 2px;
+                    margin: 4px;
+                    border: 1px solid #dbeafe;
                 }
                 .btn-action-icon {
                     background: none;
                     border: none;
-                    color: #94a3b8;
+                    color: #cbd5e1;
                     cursor: pointer;
-                    padding: 8px;
+                    padding: 10px;
+                    border-radius: 10px;
+                    transition: all 0.2s;
                 }
-                .btn-action-icon:hover { color: #ff7a00; }
-                .btn-action-icon.delete:hover { color: #ef4444; }
+                .btn-action-icon:hover { 
+                    color: #ff7a00; 
+                    background: #fff7ed;
+                }
+                .btn-action-icon.delete:hover { 
+                    color: #ef4444; 
+                    background: #fef2f2;
+                }
+
+                .empty-state-modern {
+                    padding: 100px 40px;
+                    text-align: center;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    max-width: 500px;
+                    margin: 0 auto;
+                }
+                .empty-state-visual {
+                    position: relative;
+                    margin-bottom: 30px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .blob-bg {
+                    position: absolute;
+                    width: 120px;
+                    height: 120px;
+                    background: #fff7ed;
+                    border-radius: 50%;
+                    filter: blur(20px);
+                    z-index: 1;
+                }
+                .empty-icon { 
+                    position: relative;
+                    z-index: 2;
+                    color: #ff7a00; 
+                    opacity: 0.8;
+                }
+                .empty-state-modern h3 { 
+                    font-size: 22px; 
+                    font-weight: 800; 
+                    color: #1e293b; 
+                    margin: 0 0 12px 0; 
+                    letter-spacing: -0.01em;
+                }
+                .empty-state-modern p { 
+                    color: #64748b; 
+                    font-size: 15px; 
+                    line-height: 1.6;
+                    margin-bottom: 32px;
+                }
+                .btn-outline-create {
+                    background: white;
+                    border: 1px solid #e2e8f0;
+                    color: #1e293b;
+                    padding: 12px 24px;
+                    border-radius: 12px;
+                    font-weight: 700;
+                    font-size: 14px;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .btn-outline-create:hover {
+                    border-color: #ff7a00;
+                    color: #ff7a00;
+                    background: #fff7ed;
+                }
+
                 .editor-view-header {
                     margin-bottom: 30px;
                     display: flex;
                     justify-content: space-between;
                     align-items: flex-end;
+                    padding: 0 10px;
                 }
                 .btn-back {
-                    background: #f8fafc;
-                    border: 1px solid #e2e8f0;
-                    color: #64748b;
-                    padding: 8px 16px;
-                    border-radius: 10px;
-                    font-size: 13px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    margin-bottom: 12px;
                     display: flex;
                     align-items: center;
-                    gap: 6px;
+                    gap: 8px;
+                    background: white;
+                    border: 1px solid #e2e8f0;
+                    color: #64748b;
+                    padding: 10px 18px;
+                    border-radius: 12px;
+                    font-size: 14px;
+                    font-weight: 700;
+                    cursor: pointer;
+                    margin-bottom: 16px;
+                    transition: all 0.2s;
                 }
-                .editor-title { font-size: 28px; font-weight: 800; color: #1e293b; margin: 0; }
-                .editor-subtitle { color: #94a3b8; font-size: 15px; margin: 4px 0 0 0; }
+                .btn-back:hover { border-color: #1e293b; color: #1e293b; }
+                .editor-title { font-size: 32px; font-weight: 800; color: #1e293b; margin: 0; letter-spacing: -0.03em; }
+                .editor-subtitle { color: #64748b; font-size: 16px; font-weight: 500; margin-top: 6px; }
+                
                 .btn-publish-orange {
                     background: #ff7a00;
                     color: white;
                     border: none;
-                    padding: 12px 28px;
-                    border-radius: 12px;
+                    padding: 14px 32px;
+                    border-radius: 14px;
                     font-weight: 700;
+                    font-size: 15px;
                     cursor: pointer;
+                    transition: all 0.3s;
+                    box-shadow: 0 4px 14px rgba(255, 122, 0, 0.2);
+                }
+                .btn-publish-orange:hover {
+                    background: #e66e00;
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 25px rgba(255, 122, 0, 0.3);
                 }
                 .btn-cancel-top {
-                    background: #fff;
+                    background: white;
                     border: 1px solid #e2e8f0;
-                    color: #94a3b8;
-                    padding: 12px 24px;
-                    border-radius: 12px;
-                    font-weight: 600;
+                    color: #64748b;
+                    padding: 14px 28px;
+                    border-radius: 14px;
+                    font-weight: 700;
+                    font-size: 15px;
                     cursor: pointer;
                     margin-right: 12px;
+                    transition: all 0.2s;
                 }
+                .btn-cancel-top:hover { border-color: #ef4444; color: #ef4444; background: #fef2f2; }
+
+                .spinner.orange {
+                    width: 32px;
+                    height: 32px;
+                    border: 4px solid #f1f5f9;
+                    border-top: 4px solid #ff7a00;
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                    margin: 0 auto 16px;
+                }
+                @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                .loading-state { text-align: center; padding: 100px 0; color: #64748b; font-weight: 500; }
             `}</style>
         </Layout>
     );
