@@ -170,7 +170,7 @@ export default function AddProducts3Page() {
   const [userOptions, setUserOptions] = useState([]);
   const [showBgColorPicker, setShowBgColorPicker] = useState(false);
   const bgColorPickerRef = useRef(null);
-
+  const calendarRef = useRef(null);
   // Refs untuk scroll ke komponen di sidebar
   const componentRefs = useRef({});
 
@@ -2907,7 +2907,8 @@ export default function AddProducts3Page() {
       toast.success("Produk berhasil disimpan dan dipublish!", { id: "save-product" });
 
       // Redirect langsung ke halaman products
-      router.push("/sales/products");
+      console.log("Redirecting to /sales/products...");
+      window.location.href = "/sales/products";
 
     } catch (error) {
       console.error("Error saving product:", error);
@@ -3035,9 +3036,9 @@ export default function AddProducts3Page() {
       toast.success("Draft berhasil disimpan!", { id: "save-draft" });
 
       // Tutup modal dan redirect
-      setIsSaving(false);
-      setShowExitModal(false);
-      router.push("/sales/products");
+      // Invalidate cache before redirect
+      router.refresh();
+      window.location.href = "/sales/products";
 
     } catch (error) {
       console.error("Error saving draft:", error);
@@ -3049,7 +3050,8 @@ export default function AddProducts3Page() {
   // Handler untuk exit tanpa save
   const handleExitWithoutSave = () => {
     setShowExitModal(false);
-    router.push("/sales/products");
+    console.log("Exiting to /sales/products...");
+    window.location.href = "/sales/products";
   };
 
   // Render grid komponen dalam modal
@@ -3407,6 +3409,7 @@ export default function AddProducts3Page() {
                   <div className="pengaturan-form-group">
                     <label className="pengaturan-label">Tanggal Event</label>
                     <Calendar
+                      ref={calendarRef}
                       className="pengaturan-input"
                       value={pengaturanForm.tanggal_event}
                       onChange={(e) => handlePengaturanChange("tanggal_event", e.value)}
@@ -3418,6 +3421,31 @@ export default function AddProducts3Page() {
                       timeOnly={false}
                       showSeconds={false}
                       showButtonBar
+                      footerTemplate={() => (
+                        <div style={{
+                          padding: '12px',
+                          display: 'flex',
+                          justifyContent: 'flex-end',
+                          borderTop: '1px solid #eee',
+                          gap: '8px'
+                        }}>
+                          <button
+                            type="button"
+                            onClick={() => calendarRef.current?.hide()}
+                            style={{
+                              backgroundColor: '#F1A124',
+                              color: 'white',
+                              border: 'none',
+                              padding: '8px 16px',
+                              borderRadius: '6px',
+                              fontWeight: '600',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Ok
+                          </button>
+                        </div>
+                      )}
                     />
                   </div>
                 </div>

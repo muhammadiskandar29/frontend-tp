@@ -171,8 +171,7 @@ export default function EditProductsPage() {
   const [userOptions, setUserOptions] = useState([]);
   const [showBgColorPicker, setShowBgColorPicker] = useState(false);
   const bgColorPickerRef = useRef(null);
-
-  // Refs untuk scroll ke komponen di sidebar
+  const calendarRef = useRef(null);
   const componentRefs = useRef({});
 
   // Close background color picker when clicking outside
@@ -3410,7 +3409,7 @@ export default function EditProductsPage() {
 
       // ✅ FIX: Invalidate cache before redirect
       router.refresh();
-      router.push("/sales/products");
+      window.location.href = "/sales/products";
 
     } catch (error) {
       console.error("Error saving draft:", error);
@@ -3575,8 +3574,9 @@ export default function EditProductsPage() {
 
       // ✅ FIX: Invalidate cache before redirect
       router.refresh();
-      // Redirect ke halaman products (langsung, tanpa setTimeout)
-      router.push("/sales/products");
+      // Redirect ke halaman products
+      console.log("Redirecting to /sales/products...");
+      window.location.href = "/sales/products";
 
     } catch (error) {
       console.error("Error saving product:", error);
@@ -3593,7 +3593,8 @@ export default function EditProductsPage() {
   // Handler untuk exit tanpa save
   const handleExitWithoutSave = () => {
     setShowExitModal(false);
-    router.push("/sales/products");
+    console.log("Exiting to /sales/products...");
+    window.location.href = "/sales/products";
   };
 
   // Render grid komponen dalam modal
@@ -3981,6 +3982,7 @@ export default function EditProductsPage() {
                   <div className="pengaturan-form-group">
                     <label className="pengaturan-label">Tanggal Event</label>
                     <Calendar
+                      ref={calendarRef}
                       className="pengaturan-input"
                       value={pengaturanForm.tanggal_event}
                       onChange={(e) => handlePengaturanChange("tanggal_event", e.value)}
@@ -3992,6 +3994,31 @@ export default function EditProductsPage() {
                       timeOnly={false}
                       showSeconds={false}
                       showButtonBar
+                      footerTemplate={() => (
+                        <div style={{
+                          padding: '12px',
+                          display: 'flex',
+                          justifyContent: 'flex-end',
+                          borderTop: '1px solid #eee',
+                          gap: '8px'
+                        }}>
+                          <button
+                            type="button"
+                            onClick={() => calendarRef.current?.hide()}
+                            style={{
+                              backgroundColor: '#F1A124',
+                              color: 'white',
+                              border: 'none',
+                              padding: '8px 16px',
+                              borderRadius: '6px',
+                              fontWeight: '600',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Ok
+                          </button>
+                        </div>
+                      )}
                     />
                   </div>
                 </div>

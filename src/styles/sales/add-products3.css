@@ -31,9 +31,25 @@ textarea::placeholder {
 }
 
 /* Semua heading dan text elements */
-h1, h2, h3, h4, h5, h6,
-p, span, div, a, li, ul, ol,
-article, section, aside, header, footer, main {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+span,
+div,
+a,
+li,
+ul,
+ol,
+article,
+section,
+aside,
+header,
+footer,
+main {
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 
@@ -168,6 +184,7 @@ article, section, aside, header, footer, main {
     opacity: 0;
     transform: translateY(-8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -682,8 +699,8 @@ article, section, aside, header, footer, main {
   color: #dc2626 !important;
 }
 
-.pengaturan-content .p-datepicker-calendar td > span,
-.pengaturan-input .p-datepicker-calendar td > span {
+.pengaturan-content .p-datepicker-calendar td>span,
+.pengaturan-input .p-datepicker-calendar td>span {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -698,30 +715,30 @@ article, section, aside, header, footer, main {
   cursor: pointer !important;
 }
 
-.pengaturan-content .p-datepicker-calendar td:first-child > span:not(.p-disabled):not(.p-highlight),
-.pengaturan-content .p-datepicker-calendar td:last-child > span:not(.p-disabled):not(.p-highlight),
-.pengaturan-input .p-datepicker-calendar td:first-child > span:not(.p-disabled):not(.p-highlight),
-.pengaturan-input .p-datepicker-calendar td:last-child > span:not(.p-disabled):not(.p-highlight) {
+.pengaturan-content .p-datepicker-calendar td:first-child>span:not(.p-disabled):not(.p-highlight),
+.pengaturan-content .p-datepicker-calendar td:last-child>span:not(.p-disabled):not(.p-highlight),
+.pengaturan-input .p-datepicker-calendar td:first-child>span:not(.p-disabled):not(.p-highlight),
+.pengaturan-input .p-datepicker-calendar td:last-child>span:not(.p-disabled):not(.p-highlight) {
   color: #dc2626 !important;
 }
 
-.pengaturan-content .p-datepicker-calendar td > span:not(.p-disabled):not(.p-highlight):hover,
-.pengaturan-input .p-datepicker-calendar td > span:not(.p-disabled):not(.p-highlight):hover {
+.pengaturan-content .p-datepicker-calendar td>span:not(.p-disabled):not(.p-highlight):hover,
+.pengaturan-input .p-datepicker-calendar td>span:not(.p-disabled):not(.p-highlight):hover {
   background: #f3f4f6 !important;
   color: #111827 !important;
   transform: scale(1.05) !important;
 }
 
-.pengaturan-content .p-datepicker-calendar td > span.p-highlight,
-.pengaturan-input .p-datepicker-calendar td > span.p-highlight {
+.pengaturan-content .p-datepicker-calendar td>span.p-highlight,
+.pengaturan-input .p-datepicker-calendar td>span.p-highlight {
   background: #ff9800 !important;
   color: #ffffff !important;
   font-weight: 400 !important;
   border: 0 none !important;
 }
 
-.pengaturan-content .p-datepicker-calendar td > span.p-datepicker-day-today:not(.p-highlight),
-.pengaturan-input .p-datepicker-calendar td > span.p-datepicker-day-today:not(.p-highlight) {
+.pengaturan-content .p-datepicker-calendar td>span.p-datepicker-day-today:not(.p-highlight),
+.pengaturan-input .p-datepicker-calendar td>span.p-datepicker-day-today:not(.p-highlight) {
   background: #f3f4f6 !important;
   font-weight: 600 !important;
 }
@@ -818,9 +835,11 @@ article, section, aside, header, footer, main {
   min-width: 100% !important;
   max-width: 100% !important;
 }
+
 .p-dropdown-items-wrapper {
-background-color: white;
+  background-color: white;
 }
+
 .p-multiselect-items-wrapper {
   background-color: white;
 }
@@ -878,7 +897,8 @@ html:has(.add-products3-container) {
   padding: 20px 24px;
   background: #ffffff;
   border-bottom: 1px solid #e5e7eb;
-  flex-shrink: 0; /* Prevent header from shrinking */
+  flex-shrink: 0;
+  /* Prevent header from shrinking */
   min-height: 80px;
   box-sizing: border-box;
   display: flex;
@@ -912,8 +932,10 @@ html:has(.add-products3-container) {
   flex: 1;
   display: flex;
   overflow: hidden;
-  min-height: 0; /* Important untuk flex child dengan overflow */
-  max-height: calc(100vh - 80px); /* Kurangi tinggi header */
+  min-height: 0;
+  /* Important untuk flex child dengan overflow */
+  max-height: calc(100vh - 80px);
+  /* Kurangi tinggi header */
   position: relative;
 }
 
@@ -974,7 +996,8 @@ html:has(.add-products3-container) {
   flex: 1;
   min-height: 0;
   max-height: 100%;
-  height: 0; /* Force flex child to respect max-height */
+  height: 0;
+  /* Force flex child to respect max-height */
   width: 100%;
 }
 
@@ -1591,7 +1614,7 @@ html:has(.add-products3-container) {
   padding: 2px !important;
 }
 
-.pengaturan-input .p-datepicker-calendar td > span {
+.pengaturan-input .p-datepicker-calendar td>span {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -1608,20 +1631,20 @@ html:has(.add-products3-container) {
 }
 
 /* ===== WEEKEND DATES (Sunday & Saturday) - RED COLOR ===== */
-.pengaturan-input .p-datepicker-calendar td:first-child > span:not(.p-disabled):not(.p-highlight),
-.pengaturan-input .p-datepicker-calendar td:last-child > span:not(.p-disabled):not(.p-highlight) {
+.pengaturan-input .p-datepicker-calendar td:first-child>span:not(.p-disabled):not(.p-highlight),
+.pengaturan-input .p-datepicker-calendar td:last-child>span:not(.p-disabled):not(.p-highlight) {
   color: #dc2626 !important;
 }
 
-.pengaturan-input .p-datepicker-calendar td:first-child > span:not(.p-disabled):not(.p-highlight):hover,
-.pengaturan-input .p-datepicker-calendar td:last-child > span:not(.p-disabled):not(.p-highlight):hover {
+.pengaturan-input .p-datepicker-calendar td:first-child>span:not(.p-disabled):not(.p-highlight):hover,
+.pengaturan-input .p-datepicker-calendar td:last-child>span:not(.p-disabled):not(.p-highlight):hover {
   background: #fee2e2 !important;
   background-color: #fee2e2 !important;
   color: #dc2626 !important;
 }
 
 /* ===== REGULAR DATE HOVER ===== */
-.pengaturan-input .p-datepicker-calendar td > span:not(.p-disabled):not(.p-highlight):hover {
+.pengaturan-input .p-datepicker-calendar td>span:not(.p-disabled):not(.p-highlight):hover {
   background: #f3f4f6 !important;
   background-color: #f3f4f6 !important;
   color: #374151 !important;
@@ -1629,7 +1652,7 @@ html:has(.add-products3-container) {
 }
 
 /* ===== SELECTED DATE - BLUE BACKGROUND (Like in Image) ===== */
-.pengaturan-input .p-datepicker-calendar td > span.p-highlight {
+.pengaturan-input .p-datepicker-calendar td>span.p-highlight {
   background: #F1A124 !important;
   background-color: #F1A124 !important;
   color: #ffffff !important;
@@ -1639,14 +1662,14 @@ html:has(.add-products3-container) {
 }
 
 /* ===== TODAY DATE - LIGHT GRAY BACKGROUND ===== */
-.pengaturan-input .p-datepicker-calendar td > span.p-datepicker-day-today:not(.p-highlight) {
+.pengaturan-input .p-datepicker-calendar td>span.p-datepicker-day-today:not(.p-highlight) {
   background: #f3f4f6 !important;
   background-color: #f3f4f6 !important;
   color: #374151 !important;
   font-weight: 600 !important;
 }
 
-.pengaturan-input .p-datepicker-calendar td > span.p-disabled {
+.pengaturan-input .p-datepicker-calendar td>span.p-disabled {
   color: #d1d5db !important;
   cursor: not-allowed !important;
   opacity: 0.5 !important;
@@ -1933,6 +1956,7 @@ html:has(.add-products3-container) {
     opacity: 0;
     transform: translateY(-8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -2002,10 +2026,10 @@ html:has(.add-products3-container) {
   position: relative;
   overflow: hidden;
   padding: 0;
-  background: linear-gradient(45deg, #f9fafb 25%, transparent 25%), 
-              linear-gradient(-45deg, #f9fafb 25%, transparent 25%), 
-              linear-gradient(45deg, transparent 75%, #f9fafb 75%), 
-              linear-gradient(-45deg, transparent 75%, #f9fafb 75%);
+  background: linear-gradient(45deg, #f9fafb 25%, transparent 25%),
+    linear-gradient(-45deg, #f9fafb 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #f9fafb 75%),
+    linear-gradient(-45deg, transparent 75%, #f9fafb 75%);
   background-size: 8px 8px;
   background-position: 0 0, 0 4px, 4px -4px, -4px 0px;
 }
@@ -2303,7 +2327,7 @@ html:has(.add-products3-container) {
   box-sizing: border-box;
 }
 
-.canvas-preview-block > * {
+.canvas-preview-block>* {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
@@ -2536,11 +2560,13 @@ html:has(.add-products3-container) {
   color: #6b7280;
   transition: transform 0.2s ease;
   pointer-events: none;
-  transform: rotate(-90deg); /* Default: collapsed (pointing right) */
+  transform: rotate(-90deg);
+  /* Default: collapsed (pointing right) */
 }
 
 .component-expand-icon.expanded {
-  transform: rotate(0deg); /* Expanded: pointing down */
+  transform: rotate(0deg);
+  /* Expanded: pointing down */
 }
 
 .component-move-btn-up:hover:not(:disabled) {
@@ -2639,6 +2665,7 @@ html:has(.add-products3-container) {
     opacity: 0;
     max-height: 0;
   }
+
   to {
     opacity: 1;
     max-height: 2000px;
@@ -3627,7 +3654,8 @@ html:has(.add-products3-container) {
   overflow: hidden;
   border: 1.5px solid #e5e7eb;
   transition: all 0.2s ease;
-  background: #e5e7eb; /* Abu-abu lebih gelap */
+  background: #e5e7eb;
+  /* Abu-abu lebih gelap */
 }
 
 .text-editor-area:hover {
@@ -3681,16 +3709,19 @@ html:has(.add-products3-container) {
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   resize: vertical;
   color: #1f2937;
-  background: #e5e7eb; /* Abu-abu lebih gelap */
+  background: #e5e7eb;
+  /* Abu-abu lebih gelap */
   word-wrap: break-word;
   overflow-wrap: break-word;
   direction: ltr !important;
   text-align: left !important;
-  transition: none !important; /* No transition for immediate updates */
+  transition: none !important;
+  /* No transition for immediate updates */
 }
 
 .rich-text-editor * {
-  transition: none !important; /* No transition for immediate updates */
+  transition: none !important;
+  /* No transition for immediate updates */
 }
 
 /* Underline color should match text color - more specific */
@@ -3712,10 +3743,14 @@ html:has(.add-products3-container) {
 }
 
 .rich-text-editor p {
-  margin: 0 0 0px 0; /* No margin - very tight spacing */
-  font-size: 16px; /* Default font size 16px */
-  font-weight: normal; /* Default not bold */
-  line-height: 1.2; /* Tighter line height */
+  margin: 0 0 1em 0;
+  /* Memberikan jarak antar paragraf agar Enter terlihat */
+  font-size: 16px;
+  /* Default font size 16px */
+  font-weight: normal;
+  /* Default not bold */
+  line-height: 1.5;
+  /* Line height lebih nyaman */
   direction: ltr !important;
   text-align: left !important;
 }
@@ -3779,7 +3814,8 @@ html:has(.add-products3-container) {
 
 .text-editor-area.dark .rich-text-editor {
   color: #ffffff;
-  background: #1f2937; /* Dark mode tetap gelap */
+  background: #1f2937;
+  /* Dark mode tetap gelap */
 }
 
 .text-editor-area.dark .rich-text-editor:empty:before {
@@ -4397,11 +4433,14 @@ html:has(.add-products3-container) {
 
 /* ===== PREVIEW STYLES ===== */
 .preview-text {
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important; /* ✅ Tambahkan !important untuk override */
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  /* ✅ Tambahkan !important untuk override */
   font-size: 16px;
-  line-height: 1.2; /* Tighter line height */
+  line-height: 1.2;
+  /* Tighter line height */
   color: #1f2937;
-  transition: none !important; /* No transition for immediate updates */
+  transition: none !important;
+  /* No transition for immediate updates */
 }
 
 /* Underline color should match text color in preview - more specific */
@@ -4419,11 +4458,15 @@ html:has(.add-products3-container) {
 }
 
 .preview-text p {
-  margin: 0 0 0px 0 !important; /* No margin - very tight spacing in canvas */
+  margin: 0 0 0px 0 !important;
+  /* No margin - very tight spacing in canvas */
   /* Removed default font-size and font-weight to allow inline styles from HTML content */
-  line-height: 1.2; /* Tighter line height */
-  transition: none !important; /* No transition for immediate updates */
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important; /* ✅ Ganti dari inherit ke font Inter secara eksplisit */
+  line-height: 1.2;
+  /* Tighter line height */
+  transition: none !important;
+  /* No transition for immediate updates */
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  /* ✅ Ganti dari inherit ke font Inter secara eksplisit */
 }
 
 .preview-text *,
@@ -4442,8 +4485,10 @@ html:has(.add-products3-container) {
 .rincian-pesanan-total-label *,
 .rincian-pesanan-total-price *,
 .compact-form-title * {
-  transition: none !important; /* No transition for immediate updates */
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important; /* ✅ Pastikan semua child elements menggunakan Inter */
+  transition: none !important;
+  /* No transition for immediate updates */
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  /* ✅ Pastikan semua child elements menggunakan Inter */
 }
 
 .preview-text p:last-child {
@@ -5059,7 +5104,8 @@ html:has(.add-products3-container) {
 .preview-video-wrapper.preview-video-thumbnail {
   width: 100% !important;
   max-width: 750px !important;
-  padding-bottom: 0% !important; /* 16:9 aspect ratio - landscape seperti thumbnail YouTube */
+  padding-bottom: 0% !important;
+  /* 16:9 aspect ratio - landscape seperti thumbnail YouTube */
   margin: 0 auto;
 }
 
@@ -5320,12 +5366,14 @@ html:has(.add-products3-container) {
   line-height: 1.5;
   color: #374151;
   font-size: 14px;
-  transition: none !important; /* No transition for immediate updates */
+  transition: none !important;
+  /* No transition for immediate updates */
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 
 .preview-list-content * {
-  transition: none !important; /* No transition for immediate updates */
+  transition: none !important;
+  /* No transition for immediate updates */
 }
 
 .preview-list-content p {
@@ -5563,7 +5611,7 @@ html:has(.add-products3-container) {
   .page-builder-sidebar {
     width: 200px;
   }
-  
+
   .canvas-wrapper {
     max-width: 100%;
   }
@@ -5573,7 +5621,7 @@ html:has(.add-products3-container) {
   .page-header-section {
     padding: 16px;
   }
-  
+
   .page-builder-sidebar {
     width: 100%;
     max-width: 320px;
@@ -5584,34 +5632,34 @@ html:has(.add-products3-container) {
     z-index: 20;
     box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
   }
-  
+
   .page-builder-canvas {
     padding: 20px;
   }
-  
+
   .canvas-wrapper {
     padding: 20px;
   }
-  
+
   .simple-modal {
     width: 90vw;
     max-width: 500px;
   }
-  
+
   .component-grid {
     grid-template-columns: repeat(3, 1fr);
     gap: 6px;
   }
-  
+
   .component-item {
     padding: 8px 6px;
   }
-  
+
   .component-icon {
     width: 32px;
     height: 32px;
   }
-  
+
   .component-name {
     font-size: 10px;
   }
@@ -5904,6 +5952,7 @@ html:has(.add-products3-container) {
 
 /* Tablet (max-width: 1024px) */
 @media (max-width: 1024px) {
+
   /* Global fix untuk semua elemen */
   * {
     max-width: 100%;
@@ -5946,7 +5995,8 @@ html:has(.add-products3-container) {
   .canvas-content-area {
     width: 100%;
     max-width: 100%;
-    padding: 15px 12px 100px 12px; /* Tambah padding-bottom untuk button */
+    padding: 15px 12px 100px 12px;
+    /* Tambah padding-bottom untuk button */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -5975,7 +6025,7 @@ html:has(.add-products3-container) {
     padding: 0;
   }
 
-  .canvas-preview-block > * {
+  .canvas-preview-block>* {
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
@@ -6062,7 +6112,7 @@ html:has(.add-products3-container) {
     word-wrap: break-word !important;
   }
 
-  .preview-section > * {
+  .preview-section>* {
     max-width: 100% !important;
     box-sizing: border-box !important;
   }
@@ -6276,7 +6326,8 @@ html:has(.add-products3-container) {
   /* Button wrapper - normal tapi tetap terlihat */
   .preview-form-submit-wrapper {
     margin-top: 24px !important;
-    margin-bottom: 60px !important; /* Space cukup untuk browser bar */
+    margin-bottom: 60px !important;
+    /* Space cukup untuk browser bar */
     padding-bottom: 10px !important;
   }
 
@@ -6370,6 +6421,7 @@ html:has(.add-products3-container) {
 
 /* Mobile (max-width: 768px) */
 @media (max-width: 768px) {
+
   /* Global fix untuk semua elemen */
   * {
     max-width: 100%;
@@ -6413,7 +6465,8 @@ html:has(.add-products3-container) {
   .canvas-content-area {
     width: 100%;
     max-width: 100%;
-    padding: 12px 10px 120px 10px; /* Tambah padding-bottom lebih besar untuk button + browser bar */
+    padding: 12px 10px 120px 10px;
+    /* Tambah padding-bottom lebih besar untuk button + browser bar */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -6442,7 +6495,7 @@ html:has(.add-products3-container) {
     padding: 0;
   }
 
-  .canvas-preview-block > * {
+  .canvas-preview-block>* {
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
@@ -6540,7 +6593,7 @@ html:has(.add-products3-container) {
     word-wrap: break-word !important;
   }
 
-  .preview-section > * {
+  .preview-section>* {
     max-width: 100% !important;
     box-sizing: border-box !important;
   }
@@ -6778,7 +6831,8 @@ html:has(.add-products3-container) {
   /* Button wrapper - normal tapi tetap terlihat di iPhone */
   .preview-form-submit-wrapper {
     margin-top: 20px !important;
-    margin-bottom: 70px !important; /* Space cukup untuk browser bar iPhone Safari */
+    margin-bottom: 70px !important;
+    /* Space cukup untuk browser bar iPhone Safari */
     padding-bottom: 15px !important;
     width: 100% !important;
     max-width: 100% !important;
@@ -6909,6 +6963,7 @@ html:has(.add-products3-container) {
 
 /* Small Mobile (max-width: 480px) */
 @media (max-width: 480px) {
+
   /* Content area - minimal padding for small screens */
   .canvas-content-area {
     padding: 12px 16px 24px 16px;
