@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import {
-    Eye, Edit2, Trash2, Layout as LayoutIcon,
-    ChevronRight, Tag as TagIcon, Save, X, Folder, Search as SearchIcon
+    ChevronRight, Tag as TagIcon, Save, X, Folder, Search as SearchIcon,
+    Filter, FileText, CheckCircle, HelpCircle
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import React, { useRef } from "react";
@@ -88,36 +88,75 @@ export default function BonusProdukPage() {
             <div className="bonus-page-container">
                 {view === "list" ? (
                     <div className="fade-in">
-                        {/* Search Bar Section */}
-                        <div className="search-container-premium">
-                            <div className="search-box-premium card-shadow">
-                                <SearchIcon size={20} className="search-icon-left" />
+                        {/* Summary Stats Cards */}
+                        <div className="dashboard-summary-cards">
+                            <div className="summary-card-mini card-shadow">
+                                <div className="card-mini-icon orange-bg">
+                                    <FileText size={20} />
+                                </div>
+                                <div className="card-mini-info">
+                                    <span className="card-mini-label">TOTAL BONUS</span>
+                                    <span className="card-mini-value">{articles.length}</span>
+                                </div>
+                            </div>
+                            <div className="summary-card-mini card-shadow">
+                                <div className="card-mini-icon orange-bg">
+                                    <CheckCircle size={20} />
+                                </div>
+                                <div className="card-mini-info">
+                                    <span className="card-mini-label">PUBLISHED</span>
+                                    <span className="card-mini-value">
+                                        {articles.filter(a => a.status === 'published').length}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="summary-card-mini card-shadow">
+                                <div className="card-mini-icon orange-bg">
+                                    <HelpCircle size={20} />
+                                </div>
+                                <div className="card-mini-info">
+                                    <span className="card-mini-label">DRAFT</span>
+                                    <span className="card-mini-value">
+                                        {articles.filter(a => a.status !== 'published').length}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Search & Filter Bar Section */}
+                        <div className="toolbar-container-modern">
+                            <div className="search-box-modern card-shadow">
                                 <input
                                     type="text"
-                                    className="search-input-premium"
-                                    placeholder="Cari artikel bonus..."
+                                    className="search-input-modern"
+                                    placeholder="Cari nama bonus atau slug..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                 />
-                                {searchQuery && (
-                                    <button className="search-clear-btn" onClick={() => setSearchQuery("")}>
-                                        <X size={16} />
-                                    </button>
-                                )}
+                                <SearchIcon size={18} className="search-icon-right" />
                             </div>
+                            <button className="filter-button-modern">
+                                <Filter size={20} />
+                            </button>
                         </div>
 
                         {/* Table Card Section */}
                         <div className="main-content-card card-shadow">
                             <div className="card-header-inner">
-                                <div className="card-title-group">
-                                    <h2 className="card-title">Bonus Roster</h2>
-                                    <p className="card-subtitle">Manage bonus articles and perks for your product catalog</p>
+                                <div className="card-header-titles">
+                                    <span className="eyebrow-text">DIRECTORY</span>
+                                    <h2 className="card-title">Bonus roster</h2>
                                 </div>
-                                <button className="btn-primary-orange" onClick={handleCreate}>
-                                    <TagIcon size={16} className="btn-icon" />
-                                    Tambah Bonus Baru
-                                </button>
+                                <div className="card-header-actions">
+                                    <button className="btn-secondary-white" onClick={() => toast.success("Report generation started")}>
+                                        <FileText size={16} />
+                                        Report Bonus
+                                    </button>
+                                    <button className="btn-primary-orange" onClick={handleCreate}>
+                                        <TagIcon size={16} />
+                                        + Tambah Bonus
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="table-container-clean">
@@ -245,132 +284,164 @@ export default function BonusProdukPage() {
             <style jsx>{`
                 .bonus-page-container {
                     padding: 40px;
-                    background: #f8fafc;
+                    background: transparent;
                     min-height: 100vh;
                     display: flex;
                     flex-direction: column;
-                    gap: 30px;
+                    gap: 25px;
                 }
                 .card-shadow {
                     background: #fff;
-                    border-radius: 20px;
-                    box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+                    border-radius: 12px;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
                     border: 1px solid #f1f5f9;
-                    overflow: hidden;
                 }
-                .search-container-premium {
-                    margin-bottom: 0;
+
+                /* Summary Cards */
+                .dashboard-summary-cards {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                    gap: 20px;
+                    margin-bottom: 5px;
+                }
+                .summary-card-mini {
+                    padding: 24px;
                     display: flex;
-                    justify-content: flex-start;
+                    align-items: center;
+                    gap: 18px;
                 }
-                .search-box-premium {
+                .card-mini-icon {
+                    width: 48px;
+                    height: 48px;
+                    border-radius: 12px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .orange-bg {
+                    background: #fff7ed;
+                    color: #ff7a00;
+                    box-shadow: 0 4px 10px rgba(255, 122, 0, 0.1);
+                }
+                .card-mini-info { display: flex; flex-direction: column; gap: 4px; }
+                .card-mini-label { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: 0.5px; }
+                .card-mini-value { font-size: 28px; font-weight: 800; color: #1e293b; line-height: 1; }
+
+                /* Toolbar Area */
+                .toolbar-container-modern {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    gap: 20px;
+                }
+                .search-box-modern {
+                    flex: 1;
+                    max-width: 400px;
                     display: flex;
                     align-items: center;
                     background: #fff;
                     padding: 0 20px;
-                    height: 56px;
-                    width: 100%;
-                    max-width: 440px;
-                    border-radius: 16px;
-                    position: relative;
-                    transition: all 0.3s ease;
-                    border: 1px solid #e2e8f0;
+                    height: 48px;
+                    border-radius: 10px;
+                    transition: all 0.2s;
                 }
-                .search-box-premium:focus-within {
-                    border-color: #ff7a00;
-                    box-shadow: 0 10px 40px rgba(255, 122, 0, 0.08);
-                }
-                .search-icon-left {
-                    color: #94a3b8;
-                    margin-right: 14px;
-                }
-                .search-input-premium {
+                .search-box-modern:focus-within { border-color: #ff7a00; }
+                .search-input-modern {
                     flex: 1;
-                    height: 100%;
                     border: none;
                     outline: none;
                     background: transparent;
-                    font-size: 15px;
-                    font-weight: 500;
-                    color: #1e293b;
+                    font-size: 14px;
+                    color: #334155;
                 }
-                .search-clear-btn {
-                    background: #f1f5f9;
-                    border: none;
-                    color: #64748b;
-                    width: 24px;
-                    height: 24px;
-                    border-radius: 50%;
+                .search-icon-right { color: #94a3b8; }
+                
+                .filter-button-modern {
+                    width: 44px;
+                    height: 44px;
+                    background: #fff;
+                    border: 1px solid #ff7a00;
+                    color: #ff7a00;
+                    border-radius: 10px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     cursor: pointer;
                     transition: all 0.2s;
                 }
-                .search-clear-btn:hover { background: #e2e8f0; color: #1e293b; }
+                .filter-button-modern:hover { background: #fff7ed; transform: translateY(-1px); }
 
-                .main-content-card {
-                    background: #fff;
-                }
+                /* Main Table Card */
+                .main-content-card { overflow: hidden; }
                 .card-header-inner {
-                    padding: 32px 40px;
+                    padding: 30px 35px;
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    border-bottom: 1px solid #f1f5f9;
+                    border-bottom: 2px solid #f8f9fa;
                 }
-                .card-title-group { display: flex; flex-direction: column; gap: 4px; }
-                .card-title { font-size: 24px; font-weight: 800; color: #1e293b; margin: 0; letter-spacing: -0.02em; }
-                .card-subtitle { font-size: 14px; font-weight: 500; color: #64748b; margin: 0; }
+                .card-header-titles { display: flex; flex-direction: column; gap: 2px; }
+                .eyebrow-text { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: 1px; }
+                .card-title { font-size: 18px; font-weight: 700; color: #334155; margin: 0; }
                 
+                .card-header-actions { display: flex; gap: 12px; }
+                .btn-secondary-white {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    background: white;
+                    border: 1px solid #ff7a00;
+                    color: #ff7a00;
+                    padding: 0 20px;
+                    height: 42px;
+                    border-radius: 8px;
+                    font-size: 13px;
+                    font-weight: 700;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .btn-secondary-white:hover { background: #fff7ed; }
+
                 .btn-primary-orange {
                     background: #ff7a00;
                     color: white;
                     border: none;
-                    padding: 12px 28px;
-                    border-radius: 14px;
+                    padding: 0 24px;
+                    height: 44px;
+                    border-radius: 8px;
                     font-weight: 700;
-                    font-size: 15px;
+                    font-size: 13px;
                     cursor: pointer;
                     display: flex;
                     align-items: center;
-                    gap: 10px;
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                    box-shadow: 0 4px 14px rgba(255, 122, 0, 0.2);
+                    gap: 8px;
+                    transition: all 0.2s;
+                    box-shadow: 0 4px 10px rgba(255, 122, 0, 0.2);
                 }
-                .btn-primary-orange:hover {
-                    background: #e66e00;
-                    transform: translateY(-2px);
-                    box-shadow: 0 8px 25px rgba(255, 122, 0, 0.3);
-                }
-                .btn-icon { stroke-width: 2.5; }
+                .btn-primary-orange:hover { background: #e66e00; transform: translateY(-1px); }
 
+                /* Table Styling */
                 .table-container-clean { padding: 0; }
-                .bonus-table-clean {
-                    width: 100%;
-                    border-collapse: collapse;
-                }
+                .bonus-table-clean { width: 100%; border-collapse: collapse; }
                 .bonus-table-clean thead th {
-                    background: #f8fafc;
-                    padding: 16px 40px;
+                    background: #f1f4f7;
+                    padding: 15px 35px;
                     text-align: left;
-                    font-size: 12px;
+                    font-size: 11px;
                     font-weight: 800;
                     color: #475569;
+                    border-bottom: 1px solid #e2e8f0;
                     text-transform: uppercase;
-                    letter-spacing: 0.05em;
                 }
                 .bonus-table-clean tr td {
-                    padding: 24px 40px;
+                    padding: 20px 35px;
                     color: #334155;
+                    font-size: 14px;
                     border-bottom: 1px solid #f1f5f9;
                 }
-                .bonus-table-clean tr:hover td {
-                    background: #fdfdfd;
-                }
-                .article-info-clean { display: flex; flex-direction: column; gap: 2px; }
-                .article-name { font-weight: 700; color: #1e293b; font-size: 16px; }
-                .article-slug-clean { font-size: 13px; color: #94a3b8; font-weight: 500; }
+                .bonus-table-clean tr:hover td { background: #fdfdfd; }
+                .article-name { font-weight: 700; color: #0ea5e9; font-size: 14px; cursor: pointer; }
+                .article-slug-clean { font-size: 11px; color: #94a3b8; margin-top: 3px; font-weight: 500; }
 
                 .tag-badge-clean {
                     display: inline-block;
