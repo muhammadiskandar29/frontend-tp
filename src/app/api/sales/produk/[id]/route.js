@@ -666,6 +666,8 @@ export async function PUT(request, { params }) {
           console.log(`[ROUTE_UPDATE_PUT] Revalidating path: /product/${kode}`);
           revalidatePath(`/product/${kode}`);
           revalidatePath(`/product/${kode}`, 'page');
+          revalidatePath("/sales/products");
+          revalidatePath("/api/sales/produk");
         }
       } catch (revalidateError) {
         console.error(`[ROUTE_UPDATE_PUT] Revalidation failed:`, revalidateError);
@@ -1122,6 +1124,21 @@ export async function POST(request, { params }) {
       const responseData = Array.isArray(data.data) ? data.data : [data.data];
 
       console.log(`[ROUTE_UPDATE] ✅ Returning success response with data array:`, responseData.length, "items");
+
+      // ✅ FIX: Invalidate cache for the product page
+      try {
+        const product = responseData[0];
+        const kode = product?.kode || product?.url?.replace(/^\//, '');
+        if (kode) {
+          console.log(`[ROUTE_UPDATE] Revalidating path: /product/${kode}`);
+          revalidatePath(`/product/${kode}`);
+          revalidatePath(`/product/${kode}`, 'page');
+          revalidatePath("/sales/products");
+          revalidatePath("/api/sales/produk");
+        }
+      } catch (revalidateError) {
+        console.error(`[ROUTE_UPDATE] Revalidation failed:`, revalidateError);
+      }
 
       return NextResponse.json({
         success: true,

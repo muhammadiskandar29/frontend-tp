@@ -3412,9 +3412,9 @@ export default function EditProductsPage() {
       setIsSaving(false);
       setShowExitModal(false);
 
-      // ✅ FIX: Invalidate cache before redirect
+      // ✅ FIX: Invalidate cache and instant navigation
       router.refresh();
-      window.location.href = "/sales/products";
+      router.push("/sales/products");
 
     } catch (error) {
       console.error("Error saving draft:", error);
@@ -3577,11 +3577,11 @@ export default function EditProductsPage() {
       // ✅ FIX: Set loading state ke false sebelum redirect
       setIsSaving(false);
 
-      // ✅ FIX: Invalidate cache before redirect
+      // ✅ FIX: Invalidate cache and instant navigation
       router.refresh();
       // Redirect ke halaman products
       console.log("Redirecting to /sales/products...");
-      window.location.href = "/sales/products";
+      router.push("/sales/products");
 
     } catch (error) {
       console.error("Error saving product:", error);

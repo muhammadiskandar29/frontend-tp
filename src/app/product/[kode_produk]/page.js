@@ -1,6 +1,8 @@
-import { Suspense } from "react";
 import ProductClient from "./ProductClient";
 import { getBackendUrl } from "@/config/api";
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 // Helper function to fetch product data on server
 async function getProduct(kode_produk) {

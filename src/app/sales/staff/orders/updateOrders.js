@@ -402,7 +402,7 @@ export default function UpdateOrders({ order, onClose, onSave }) {
       setTimeout(() => {
         onClose();
         // Redirect ke halaman orders
-        router.push("/sales/orders");
+        router.push("/sales/staff/orders");
       }, 1200);
     } catch (err) {
       console.error("[KONFIRMASI] Error:", err);
