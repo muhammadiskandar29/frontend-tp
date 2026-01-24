@@ -212,87 +212,340 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
     }));
 
     return (
-        <div className="wp-classic-editor-wrapper">
-            <div className="editor-main-layout">
-                {/* Title Area */}
-                <div className="wp-title-container">
-                    <input
-                        type="text"
-                        className="wp-title-input"
-                        placeholder="Judul Artikel Bonus"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                    />
-                </div>
+        <div className="wp-classic-layout">
+            <div className="wp-header">
+                <h2>Add New Post</h2>
+            </div>
 
-                {/* Permalink Section */}
-                {title && (
-                    <div className="wp-permalink-line">
-                        <strong>Permalink:</strong> <span>/article/{slug || '...'}</span>
+            <div className="wp-grid-container">
+                {/* Main Content Column */}
+                <div className="wp-main-column">
+                    {/* Title Input */}
+                    <div className="wp-title-wrapper">
                         <input
-                            className="permalink-input"
-                            value={slug}
-                            onChange={(e) => setSlug(e.target.value)}
+                            type="text"
+                            className="wp-title-input"
+                            placeholder="Enter title here"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
                         />
                     </div>
-                )}
 
-                {/* Editor Container */}
-                <div className="wp-editor-box card-shadow" style={{ minHeight: '500px', padding: '40px 60px', backgroundColor: '#fff' }}>
-                    {!editorLoaded && (
-                        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '300px' }}>
-                            <div className="spinner-orange" style={{ marginBottom: '10px' }}></div>
-                            <p style={{ color: '#64748b' }}>Menyiapkan Editor...</p>
+                    {/* Permalink (WP Style) */}
+                    {title && (
+                        <div className="wp-permalink">
+                            <span className="permalink-label">Permalink:</span>
+                            <span className="permalink-base">{typeof window !== 'undefined' ? window.location.origin : ''}/article/</span>
+                            <span className="permalink-slug">{slug}</span>
+                            <button className="permalink-edit-btn" onClick={() => toast.success("Slug copied")}>Edit</button>
                         </div>
                     )}
-                    <div ref={editorContainerRef} className="editorjs-content-wrapper"></div>
+
+                    {/* Toolbar Area (Add Media + Fake Toolbar Visuals) */}
+                    <div className="wp-toolbar-area">
+                        <button className="wp-add-media-btn">
+                            <span className="dashicons dashicons-admin-media"></span> Add Media
+                        </button>
+                    </div>
+
+                    {/* Editor Box */}
+                    <div className="wp-editor-container card-shadow">
+                        {!editorLoaded && (
+                            <div className="wp-editor-loading">
+                                <div className="spinner-wp"></div>
+                                <p>Loading editor...</p>
+                            </div>
+                        )}
+                        <div ref={editorContainerRef} className="editorjs-content-wrapper wp-editor-content"></div>
+                        <div className="wp-word-count">
+                            Word count: 0
+                        </div>
+                    </div>
+                </div>
+
+                {/* Sidebar Column (Publish Box) */}
+                <div className="wp-sidebar-column">
+                    {!hideActions && (
+                        <div className="wp-meta-box card-shadow">
+                            <div className="wp-box-header">
+                                <h3>Publish</h3>
+                            </div>
+                            <div className="wp-box-content">
+                                <div className="wp-misc-actions">
+                                    <button className="btn-wp-simple" onClick={() => handleSave('draft')} disabled={saving}>Save Draft</button>
+                                    <button className="btn-wp-simple" style={{ float: 'right' }}>Preview</button>
+                                </div>
+                                <div className="wp-status-info">
+                                    <p><i className="icon-status"></i> Status: <strong>{initialData?.status || 'Draft'}</strong></p>
+                                    <p><i className="icon-visibility"></i> Visibility: <strong>Public</strong></p>
+                                    <p><i className="icon-calendar"></i> Publish: <strong>immediately</strong></p>
+                                </div>
+                            </div>
+                            <div className="wp-box-footer">
+                                <button className="btn-wp-link-delete">Move to Trash</button>
+                                <button
+                                    className="btn-wp-primary-publish"
+                                    onClick={() => handleSave('published')}
+                                    disabled={saving}
+                                >
+                                    {saving ? "Publishing..." : "Publish"}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="wp-meta-box card-shadow">
+                        <div className="wp-box-header">
+                            <h3>Categories</h3>
+                        </div>
+                        <div className="wp-box-content" style={{ maxHeight: '150px', overflowY: 'auto' }}>
+                            <div style={{ padding: '10px' }}>
+                                <label style={{ display: 'block', marginBottom: '5px' }}><input type="checkbox" /> Uncategorized</label>
+                                <label style={{ display: 'block', marginBottom: '5px' }}><input type="checkbox" /> News</label>
+                                <label style={{ display: 'block', marginBottom: '5px' }}><input type="checkbox" /> Updates</label>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {!hideActions && (
-                <div className="wp-actions-floating">
-                    <button
-                        className="btn-wp-draft"
-                        onClick={() => handleSave('draft')}
-                        disabled={saving}
-                    >
-                        Simpan Draft
-                    </button>
-                    <button
-                        className="btn-wp-publish"
-                        onClick={() => handleSave('published')}
-                        disabled={saving}
-                    >
-                        {saving ? "Menyimpan..." : (initialData ? "Simpan Perubahan" : "Terbitkan Artikel")}
-                    </button>
-                </div>
-            )}
-
             <style jsx global>{`
-                .editorjs-content-wrapper {
-                    width: 100%;
+                /* WP Admin Like Styles */
+                .wp-classic-layout {
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+                    background-color: #f1f1f1;
+                    padding: 20px;
+                    min-height: 100vh;
+                    color: #3c434a;
                 }
-                /* Menghilangkan padding default Editor.js agar memenuhi kontainer */
+                .wp-header h2 {
+                    font-size: 23px;
+                    font-weight: 400;
+                    padding: 9px 0 4px 0;
+                    line-height: 1.3;
+                    color: #1d2327;
+                    margin-bottom: 20px;
+                }
+                .wp-grid-container {
+                    display: flex;
+                    gap: 20px;
+                    flex-wrap: wrap;
+                }
+                .wp-main-column {
+                    flex: 1; /* Takes remaining width */
+                    min-width: 60%;
+                }
+                .wp-sidebar-column {
+                    width: 280px;
+                    flex-shrink: 0;
+                }
+
+                /* Title Input */
+                .wp-title-wrapper {
+                    margin-bottom: 20px;
+                }
+                .wp-title-input {
+                    padding: 3px 8px;
+                    font-size: 1.7em;
+                    line-height: 100%;
+                    height: 1.7em;
+                    width: 100%;
+                    outline: 0;
+                    margin: 0;
+                    background-color: #fff;
+                    border: 1px solid #8c8f94;
+                    box-shadow: 0 0 0 transparent;
+                    border-radius: 4px;
+                    transition: box-shadow .1s linear;
+                }
+                .wp-title-input:focus {
+                    border-color: #2271b1;
+                    box-shadow: 0 0 0 1px #2271b1;
+                }
+
+                /* Permalink */
+                .wp-permalink {
+                    font-size: 13px;
+                    line-height: 1.5;
+                    color: #646970;
+                    margin-bottom: 20px;
+                    margin-top: -10px;
+                }
+                .permalink-slug {
+                    font-weight: 600;
+                    color: #1d2327;
+                }
+                .permalink-edit-btn {
+                    background: none;
+                    border: none;
+                    color: #2271b1;
+                    font-size: 11px;
+                    text-decoration: underline;
+                    cursor: pointer;
+                    margin-left: 5px;
+                }
+
+                /* Toolbar Area */
+                .wp-toolbar-area {
+                    margin-bottom: 10px;
+                }
+                .wp-add-media-btn {
+                    background: #f6f7f7;
+                    border-color: #2271b1;
+                    color: #2271b1;
+                    text-decoration: none;
+                    display: inline-flex;
+                    align-items: center;
+                    font-size: 13px;
+                    line-height: 2.15384615;
+                    min-height: 30px;
+                    margin: 0;
+                    padding: 0 10px;
+                    cursor: pointer;
+                    border-width: 1px;
+                    border-style: solid;
+                    appearance: none;
+                    border-radius: 3px;
+                    white-space: nowrap;
+                    font-weight: 600;
+                }
+                .wp-add-media-btn:hover {
+                    background: #f0f0f1;
+                    border-color: #0a4b78;
+                    color: #0a4b78;
+                }
+
+                /* Editor Box */
+                .wp-editor-container {
+                    background: #fff;
+                    border: 1px solid #c3c4c7;
+                    min-height: 400px;
+                    position: relative;
+                }
+                .wp-editor-content {
+                    padding: 20px;
+                    min-height: 400px;
+                }
+                .wp-word-count {
+                    padding: 8px 12px;
+                    background: #f6f7f7;
+                    border-top: 1px solid #dcdcde;
+                    font-size: 12px;
+                    color: #646970;
+                }
+
+                /* Sidebar Meta Box */
+                .wp-meta-box {
+                    background: #fff;
+                    border: 1px solid #c3c4c7;
+                    margin-bottom: 20px;
+                }
+                .wp-box-header {
+                    border-bottom: 1px solid #c3c4c7;
+                    padding: 8px 12px;
+                }
+                .wp-box-header h3 {
+                    font-size: 14px;
+                    font-weight: 600;
+                    margin: 0;
+                    color: #1d2327;
+                }
+                .wp-box-content {
+                    padding: 12px;
+                    font-size: 13px;
+                }
+                .wp-box-footer {
+                    background: #f6f7f7;
+                    border-top: 1px solid #c3c4c7;
+                    padding: 10px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+                
+                .wp-misc-actions {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-bottom: 10px;
+                }
+                .wp-status-info p {
+                    margin: 8px 0;
+                    color: #3c434a;
+                }
+
+                /* Buttons */
+                .btn-wp-simple {
+                    background: #f6f7f7;
+                    border: 1px solid #c3c4c7;
+                    color: #2271b1;
+                    font-size: 13px;
+                    padding: 4px 10px;
+                    cursor: pointer;
+                    border-radius: 3px;
+                }
+                .btn-wp-simple:hover {
+                    background: #f0f0f1;
+                    border-color: #8c8f94;
+                    color: #0a4b78;
+                }
+                .btn-wp-primary-publish {
+                    background: #2271b1;
+                    border-color: #2271b1;
+                    color: #fff;
+                    text-decoration: none;
+                    text-shadow: none;
+                    display: inline-block;
+                    font-size: 13px;
+                    line-height: 2.15384615;
+                    min-height: 30px;
+                    margin: 0;
+                    padding: 0 10px;
+                    cursor: pointer;
+                    border-width: 1px;
+                    border-style: solid;
+                    appearance: none;
+                    border-radius: 3px;
+                    white-space: nowrap;
+                    font-weight: 600;
+                }
+                .btn-wp-primary-publish:hover {
+                    background: #135e96;
+                    border-color: #135e96;
+                }
+                .btn-wp-primary-publish:disabled {
+                    background: #a7aaad !important;
+                    border-color: #a7aaad !important;
+                    color: #fff !important;
+                    cursor: default;
+                }
+                .btn-wp-link-delete {
+                    color: #a00;
+                    text-decoration: none;
+                    background: none;
+                    border: none;
+                    cursor: pointer;
+                    font-size: 13px;
+                    padding: 0;
+                }
+                .btn-wp-link-delete:hover {
+                    color: #dc3232;
+                }
+
+                /* EditorJS overrides to fit WP theme */
                 .codex-editor__redactor {
                     padding-bottom: 50px !important;
+                    margin-right: 0 !important;
                 }
-                /* Memastikan toolbar mengikuti lebar penuh */
-                .ce-block__content, .ce-toolbar__content {
-                    max-width: 90% !important;
+                .ce-block__content {
+                    max-width: 100% !important; /* Full width like classic editor */
+                    padding: 0 !important;
                 }
-                .ce-header {
-                    font-weight: 800;
-                    margin-top: 1.5em;
+                .ce-toolbar__content {
+                    max-width: 100% !important;
                 }
-                .spinner-orange {
-                    width: 30px;
-                    height: 30px;
-                    border: 3px solid #f1f5f9;
-                    border-top: 3px solid #ff7a00;
-                    border-radius: 50%;
-                    animation: spin 1s linear infinite;
+                .ce-popover {
+                    z-index: 9999;
                 }
-                @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
             `}</style>
         </div>
     );
