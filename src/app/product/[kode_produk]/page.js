@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import ProductClient from "./ProductClient";
 import { getBackendUrl } from "@/config/api";
+import { headers } from "next/headers";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -8,17 +9,16 @@ export const revalidate = 0;
 // Helper function to fetch product data on server
 async function getProduct(kode_produk) {
   try {
-    // ✅ CLEAN REVALIDATION: Gunakan tags untuk invalidasi cache tanpa query params
-    const url = getBackendUrl(`landing/${kode_produk}`);
+    // ✅ AGGRESSIVE ANTI-CACHE: Tambahkan timestamp agar Fetch tidak pernah cached di level Vercel/Browser
+    const timestamp = Date.now();
+    const url = getBackendUrl(`landing/${kode_produk}?t=${timestamp}`);
+
     const res = await fetch(url, {
       cache: 'no-store',
-      next: {
-        revalidate: 0,
-        tags: [`product-${kode_produk}`]
-      },
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache'
+        'Pragma': 'no-cache',
+        'Expires': '0'
       }
     });
 
@@ -35,9 +35,10 @@ async function getProduct(kode_produk) {
   }
 }
 
-// ✅ IMPLEMENTASI GENERATE METADATA SERVER-SIDE
-// Ini memungkinkan SEO title, desc, og, twitter card, dll, terbaca oleh crawler
 export async function generateMetadata({ params }) {
+  // ✅ FORCE DYNAMIC: Memastikan metadata tidak dicache
+  await headers();
+
   // Await params karena di Next.js terbaru params adalah Promise
   const resolvedParams = await params;
   const { kode_produk } = resolvedParams;
@@ -97,6 +98,9 @@ export async function generateViewport() {
 
 // ✅ Server Component Wrapper
 export default async function ProductPage({ params }) {
+  // ✅ FORCE DYNAMIC: Memanggil headers() memastikan halaman ini 100% dinamis & NO-CACHE
+  await headers();
+
   // Await params di Server Component
   const resolvedParams = await params;
   const { kode_produk } = resolvedParams;
