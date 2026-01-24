@@ -162,10 +162,8 @@ export default function PublicArticlePage({ params }) {
 
             try {
                 const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "https://api.ternakproperti.com";
-                const token = localStorage.getItem("token");
-                const headers = token ? { "Authorization": `Bearer ${token}` } : {};
-
-                const res = await fetch(`${baseUrl}/api/post/slug/${params.slug}`, { headers });
+                // Public fetch, no auth required as per clean architecture
+                const res = await fetch(`${baseUrl}/api/post/slug/${params.slug}`);
                 const json = await res.json();
 
                 if (json.success && json.data) {
