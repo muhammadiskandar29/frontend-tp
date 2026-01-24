@@ -145,8 +145,8 @@ export default function PublicArticlePage({ params }) {
     React.useEffect(() => {
         const fetchArticle = async () => {
             try {
-                // Fetch dynamic data from real API
-                const res = await fetch(`/api/sales/post/${params.slug}`);
+                // Fetch dynamic data using the slug
+                const res = await fetch(`/api/post/slug/${params.slug}`);
                 const json = await res.json();
 
                 if (json.success && json.data) {

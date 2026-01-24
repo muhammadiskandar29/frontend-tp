@@ -16,7 +16,7 @@ import {
 import axios from "axios";
 import "@/styles/sales/bonus.css";
 
-const ArticleEditor = forwardRef(({ initialData, idorder, onSuccess, onCancel, hideActions = false }, ref) => {
+const ArticleEditor = forwardRef(({ initialData, idorder, onSuccess, onCancel, extraPayload = {}, hideActions = false }, ref) => {
     const [title, setTitle] = useState(initialData?.title || "");
     const [slug, setSlug] = useState(initialData?.slug || "");
     const [saving, setSaving] = useState(false);
@@ -182,7 +182,8 @@ const ArticleEditor = forwardRef(({ initialData, idorder, onSuccess, onCancel, h
                 title,
                 slug,
                 status: forceStatus || initialData?.status || "draft",
-                content: json
+                content: json,
+                ...extraPayload
             };
 
             const token = localStorage.getItem("token");

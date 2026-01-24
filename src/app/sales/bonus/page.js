@@ -122,26 +122,17 @@ export default function BonusProdukPage() {
             <div className="bonus-page-container">
                 {view === "list" ? (
                     <div className="fade-in">
-                        {/* Compact Search & Filter Bar Section */}
-                        <div className="toolbar-container-modern">
-                            <div className="toolbar-left-group">
-                                <div className="search-box-modern card-shadow">
-                                    <input
-                                        type="text"
-                                        className="search-input-modern"
-                                        placeholder="Cari customer, produk, bonus..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                    />
-                                    <SearchIcon size={16} className="search-icon-right" />
-                                </div>
-                                <button className="filter-button-modern card-shadow">
-                                    <Filter size={18} />
-                                </button>
-                                <div className="date-picker-mock card-shadow">
-                                    <span>Pilih tanggal</span>
-                                    <Calendar size={16} />
-                                </div>
+                        {/* Large Search Bar Section */}
+                        <div className="search-container-top">
+                            <div className="search-box-large card-shadow">
+                                <SearchIcon size={20} className="search-icon-left" />
+                                <input
+                                    type="text"
+                                    className="search-input-large"
+                                    placeholder="Cari produk, kategori, atau pembuat"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
                             </div>
                         </div>
 
@@ -170,21 +161,23 @@ export default function BonusProdukPage() {
                                     <table className="bonus-table-clean">
                                         <thead>
                                             <tr>
-                                                <th className="w-10">#</th>
-                                                <th>NAMA BONUS</th>
-                                                <th>TAG PRODUK</th>
+                                                <th style={{ width: '40%' }}>PRODUCT</th>
+                                                <th>CATEGORY</th>
                                                 <th>STATUS</th>
-                                                <th className="text-right">ACTIONS</th>
+                                                <th>EVENT DATE</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {filteredArticles.map((article, index) => (
                                                 <tr key={article.id}>
-                                                    <td className="row-num">{index + 1}</td>
                                                     <td>
-                                                        <div className="article-info-clean">
-                                                            <span className="article-name">{article.title}</span>
-                                                            <span className="article-slug-clean">/{article.slug}</span>
+                                                        <div className="article-main-cell">
+                                                            <span className="article-name-blue">{article.title}</span>
+                                                            <div className="article-action-links">
+                                                                <button className="link-action" onClick={() => window.open(`/article/${article.slug}`, '_blank')}>Review</button>
+                                                                <button className="link-action" onClick={() => handleEdit(article)}>Edit</button>
+                                                                <button className="link-action delete-pill" onClick={() => handleDelete(article.id)}>Delete</button>
+                                                            </div>
                                                         </div>
                                                     </td>
                                                     <td>
@@ -193,45 +186,23 @@ export default function BonusProdukPage() {
                                                                 article.tag_produk.map(prodId => {
                                                                     const p = availableProducts.find(item => item.id == prodId);
                                                                     return p ? (
-                                                                        <span key={prodId} className="tag-badge-clean">
+                                                                        <span key={prodId} className="tag-item-text">
                                                                             {p.nama}
                                                                         </span>
                                                                     ) : null;
                                                                 })
                                                             ) : (
-                                                                <span className="text-xs text-gray-400">No tags</span>
+                                                                <span className="text-xs text-gray-400">-</span>
                                                             )}
                                                         </div>
                                                     </td>
                                                     <td>
-                                                        <span className={`status-badge-modern ${article.status === 'published' ? 'is-published' : 'is-draft'}`}>
-                                                            {article.status === 'published' ? 'Published' : 'Draft'}
+                                                        <span className={`status-pill-outline ${article.status === 'published' ? 'is-active' : 'is-draft'}`}>
+                                                            {article.status === 'published' ? 'Active' : 'Draft'}
                                                         </span>
                                                     </td>
                                                     <td>
-                                                        <div className="action-buttons-clean">
-                                                            <button
-                                                                className="btn-action-icon"
-                                                                onClick={() => window.open(`/article/${article.id}`, '_blank')}
-                                                                title="View"
-                                                            >
-                                                                <Eye size={18} />
-                                                            </button>
-                                                            <button
-                                                                className="btn-action-icon"
-                                                                onClick={() => handleEdit(article)}
-                                                                title="Edit"
-                                                            >
-                                                                <Edit2 size={18} />
-                                                            </button>
-                                                            <button
-                                                                className="btn-action-icon delete"
-                                                                onClick={() => handleDelete(article.id)}
-                                                                title="Delete"
-                                                            >
-                                                                <Trash2 size={18} />
-                                                            </button>
-                                                        </div>
+                                                        <span className="date-text">{article.created_at ? new Date(article.created_at).toLocaleDateString('id-ID') : '28/01/2026'}</span>
                                                     </td>
                                                 </tr>
                                             ))}
@@ -299,7 +270,7 @@ export default function BonusProdukPage() {
                     min-height: 100vh;
                     display: flex;
                     flex-direction: column;
-                    gap: 35px; /* Spacing between toolbars and table cards */
+                    gap: 45px; /* Spacing between toolbars and table cards */
                 }
                 .card-shadow {
                     background: #fff;
@@ -308,189 +279,129 @@ export default function BonusProdukPage() {
                     border: 1px solid #f1f5f9;
                 }
 
-                /* Toolbar Area */
-                .toolbar-container-modern {
+                /* Search Area */
+                .search-container-top {
                     display: flex;
                     justify-content: flex-start;
-                    align-items: center;
+                    margin-bottom: 5px;
                 }
-                .toolbar-left-group {
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                    width: 100%;
-                }
-                .search-box-modern {
-                    width: 320px;
+                .search-box-large {
+                    width: 480px;
                     display: flex;
                     align-items: center;
                     background: #fff;
                     padding: 0 15px;
-                    height: 38px;
-                    border-radius: 6px;
+                    height: 48px;
+                    border-radius: 10px;
                     border: 1px solid #e2e8f0;
                 }
-                .search-input-modern {
+                .search-input-large {
                     flex: 1;
                     border: none;
                     outline: none;
                     background: transparent;
-                    font-size: 13px;
-                    color: #475569;
+                    font-size: 14px;
+                    color: #64748b;
+                    padding-left: 10px;
                 }
-                .search-icon-right { color: #94a3b8; }
-                
-                .filter-button-modern {
-                    width: 38px;
-                    height: 38px;
-                    background: #fff;
-                    border: 1px solid #ff7a00;
-                    color: #ff7a00;
-                    border-radius: 6px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    cursor: pointer;
-                    transition: all 0.2s;
-                }
-                .filter-button-modern:hover { background: #fff7ed; }
-
-                .date-picker-mock {
-                    display: flex;
-                    align-items: center;
-                    gap: 40px;
-                    padding: 0 15px;
-                    height: 38px;
-                    background: #fff;
-                    border: 1px solid #e2e8f0;
-                    border-radius: 6px;
-                    font-size: 13px;
-                    color: #94a3b8;
-                    cursor: default;
-                }
+                .search-icon-left { color: #94a3b8; }
 
                 /* Main Table Card */
-                .main-content-card { overflow: hidden; border-top: 1px solid #e2e8f0; border-radius: 10px; }
+                .main-content-card { 
+                    overflow: hidden; 
+                    border: 1px solid #e2e8f0; 
+                    border-radius: 12px; 
+                    background: #fff;
+                }
                 .card-header-inner {
-                    padding: 30px 35px;
+                    padding: 30px 40px;
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    border-bottom: 2px solid #f8f9fa;
                 }
-                .card-header-titles { display: flex; flex-direction: column; gap: 2px; }
-                .eyebrow-text { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: 1px; }
-                .card-title { font-size: 18px; font-weight: 700; color: #334155; margin: 0; }
+                .card-header-titles { display: flex; flex-direction: column; gap: 4px; }
+                .eyebrow-text { font-size: 12px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+                .card-title { font-size: 20px; font-weight: 700; color: #1e293b; margin: 0; }
                 
-                .card-header-actions { display: flex; gap: 12px; }
-                .btn-secondary-white {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    background: white;
-                    border: 1px solid #ff7a00;
-                    color: #ff7a00;
-                    padding: 0 20px;
-                    height: 42px;
-                    border-radius: 8px;
-                    font-size: 13px;
-                    font-weight: 700;
-                    cursor: pointer;
-                    transition: all 0.2s;
-                }
-                .btn-secondary-white:hover { background: #fff7ed; }
-
                 .btn-primary-orange {
                     background: #ff7a00;
                     color: white;
                     border: none;
-                    padding: 0 24px;
-                    height: 44px;
+                    padding: 10px 24px;
                     border-radius: 8px;
-                    font-weight: 700;
-                    font-size: 13px;
+                    font-weight: 600;
+                    font-size: 14px;
                     cursor: pointer;
                     display: flex;
                     align-items: center;
                     gap: 8px;
                     transition: all 0.2s;
-                    box-shadow: 0 4px 10px rgba(255, 122, 0, 0.2);
                 }
-                .btn-primary-orange:hover { background: #e66e00; transform: translateY(-1px); }
+                .btn-primary-orange:hover { background: #e66e00; }
 
                 /* Table Styling */
-                .table-container-clean { padding: 0; }
                 .bonus-table-clean { width: 100%; border-collapse: collapse; }
                 .bonus-table-clean thead th {
-                    background: #f1f4f7;
-                    padding: 15px 35px;
+                    background: #f8fafc;
+                    padding: 15px 40px;
                     text-align: left;
-                    font-size: 11px;
-                    font-weight: 800;
-                    color: #475569;
-                    border-bottom: 1px solid #e2e8f0;
-                    text-transform: uppercase;
-                }
-                .bonus-table-clean tr td {
-                    padding: 20px 35px;
-                    color: #334155;
-                    font-size: 14px;
+                    font-size: 12px;
+                    font-weight: 700;
+                    color: #64748b;
                     border-bottom: 1px solid #f1f5f9;
                 }
-                .bonus-table-clean tr:hover td { background: #fdfdfd; }
-                .status-badge-modern {
-                    display: inline-block;
-                    padding: 4px 10px;
-                    border-radius: 6px;
-                    font-size: 11px;
-                    font-weight: 700;
-                    text-transform: uppercase;
-                    letter-spacing: 0.5px;
+                .bonus-table-clean tr td {
+                    padding: 25px 40px;
+                    color: #334155;
+                    font-size: 14px;
+                    border-bottom: 1px solid #f8fafc;
+                    vertical-align: middle;
                 }
-                .status-badge-modern.is-published {
-                    background: #ecfdf5;
-                    color: #059669;
-                    border: 1px solid #d1fae5;
-                }
-                .status-badge-modern.is-draft {
-                    background: #f1f5f9;
-                    color: #64748b;
-                    border: 1px solid #e2e8f0;
-                }
-
-                .article-info-clean { display: flex; flex-direction: column; gap: 2px; }
-                .article-name { font-weight: 700; color: #1e293b; font-size: 14px; cursor: pointer; transition: color 0.2s; }
-                .article-name:hover { color: #0ea5e9; }
-                .article-slug-clean { font-size: 12px; color: #94a3b8; font-weight: 400; font-family: monospace; }
-
-                .tag-badge-clean {
-                    display: inline-block;
-                    background: #eff6ff;
-                    color: #3b82f6;
-                    padding: 4px 12px;
-                    border-radius: 8px;
-                    font-size: 12px;
-                    font-weight: 600;
-                    margin: 4px;
-                    border: 1px solid #dbeafe;
-                }
-                .btn-action-icon {
+                
+                /* Product Cell Improvements */
+                .article-main-cell { display: flex; flex-direction: column; gap: 8px; }
+                .article-name-blue { font-size: 15px; font-weight: 600; color: #0ea5e9; cursor: pointer; }
+                .article-action-links { display: flex; align-items: center; gap: 20px; }
+                .link-action {
                     background: none;
                     border: none;
-                    color: #cbd5e1;
+                    padding: 0;
+                    font-size: 13px;
+                    color: #64748b;
                     cursor: pointer;
-                    padding: 10px;
-                    border-radius: 10px;
-                    transition: all 0.2s;
+                    font-weight: 500;
+                    transition: color 0.2s;
                 }
-                .btn-action-icon:hover { 
-                    color: #ff7a00; 
-                    background: #fff7ed;
+                .link-action:hover { color: #0ea5e9; }
+                .link-action.delete-pill {
+                    background: #fff1f2;
+                    color: #e11d48;
+                    padding: 2px 10px;
+                    border-radius: 6px;
                 }
-                .btn-action-icon.delete:hover { 
-                    color: #ef4444; 
-                    background: #fef2f2;
+                .link-action.delete-pill:hover { background: #ffe4e6; }
+
+                /* Status Pill Outline */
+                .status-pill-outline {
+                    display: inline-block;
+                    padding: 4px 14px;
+                    border-radius: 8px;
+                    font-size: 13px;
+                    font-weight: 600;
+                    border: 1px solid #e2e8f0;
                 }
+                .status-pill-outline.is-active {
+                    background: #f0fdf4;
+                    color: #16a34a;
+                    border-color: #22c55e;
+                }
+                .status-pill-outline.is-draft {
+                    background: #f8fafc;
+                    color: #64748b;
+                }
+
+                .tag-item-text { display: block; color: #334155; font-weight: 500; margin-bottom: 4px; }
+                .date-text { color: #334155; font-weight: 500; }
 
                 .empty-state-modern {
                     padding: 100px 40px;
@@ -626,7 +537,7 @@ export default function BonusProdukPage() {
     );
 }
 
-const ArticleWithTags = React.forwardRef(({ initialData, availableProducts, onSave, onCancel }, ref) => {
+const ArticleWithTags = React.forwardRef(({ initialData, availableProducts, onSuccess, onCancel }, ref) => {
     const [selectedProducts, setSelectedProducts] = useState(initialData?.tag_produk || []);
 
     const handleToggleProduct = (id) => {
@@ -644,6 +555,7 @@ const ArticleWithTags = React.forwardRef(({ initialData, availableProducts, onSa
             <ArticleEditor
                 ref={ref}
                 initialData={initialData}
+                extraPayload={{ tag_produk: selectedProducts }}
                 onSuccess={handleFinalSuccess}
                 onCancel={onCancel}
                 hideActions={true}
