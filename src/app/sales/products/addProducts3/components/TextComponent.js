@@ -177,7 +177,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
               min-height: 200px;
               padding: 12px 14px;
               line-height: ${lineHeight};
-              font-family: ${fontFamily !== "Page Font" ? fontFamily : "inherit"};
+              font-family: ${fontFamily !== "Page Font" ? (fontFamily.includes(' ') && !fontFamily.startsWith("'") ? `'${fontFamily}'` : fontFamily) : "inherit"};
               color: ${textColor};
               text-align: ${textAlign};
               font-size: 16px;
@@ -1705,7 +1705,16 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     if (family === "Page Font") {
       editor.chain().focus().unsetFontFamily().run();
     } else {
-      editor.chain().focus().setFontFamily(family).run();
+      const formattedFamily = family.includes(' ') && !family.startsWith("'") ? `'${family}'` : family;
+
+      // Jika ada seleksi, apply ke seleksi
+      if (!editor.state.selection.empty) {
+        editor.chain().focus().setFontFamily(formattedFamily).run();
+      } else {
+        // Jika tidak ada seleksi, apply ke seluruh teks (opsional, tapi lebih intuitif)
+        // Atau biarkan saja karena useEffect di bawah akan mengontrol font dasar container
+        editor.chain().focus().setFontFamily(formattedFamily).run();
+      }
     }
   };
 
@@ -2380,17 +2389,17 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
 
   const fontFamilyOptions = [
     { label: "Page Font", value: "Page Font" },
-    { label: "Arial", value: "Arial, sans-serif" },
-    { label: "Helvetica", value: "Helvetica, Arial, sans-serif" },
-    { label: "Times New Roman", value: "'Times New Roman', serif" },
-    { label: "Georgia", value: "Georgia, serif" },
-    { label: "Verdana", value: "Verdana, sans-serif" },
-    { label: "Courier New", value: "'Courier New', monospace" },
-    { label: "Roboto", value: "'Roboto', sans-serif" },
-    { label: "Open Sans", value: "'Open Sans', sans-serif" },
-    { label: "Lato", value: "'Lato', sans-serif" },
-    { label: "Montserrat", value: "'Montserrat', sans-serif" },
-    { label: "Poppins", value: "'Poppins', sans-serif" },
+    { label: "Arial", value: "Arial" },
+    { label: "Helvetica", value: "Helvetica" },
+    { label: "Times New Roman", value: "Times New Roman" },
+    { label: "Georgia", value: "Georgia" },
+    { label: "Verdana", value: "Verdana" },
+    { label: "Courier New", value: "Courier New" },
+    { label: "Roboto", value: "Roboto" },
+    { label: "Open Sans", value: "Open Sans" },
+    { label: "Lato", value: "Lato" },
+    { label: "Montserrat", value: "Montserrat" },
+    { label: "Poppins", value: "Poppins" },
   ];
 
   const textAlignOptions = [

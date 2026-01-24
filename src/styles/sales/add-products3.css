@@ -3722,7 +3722,6 @@ html:has(.add-products3-container) {
 .rich-text-editor * {
   transition: none !important;
   /* No transition for immediate updates */
-  font-family: inherit;
 }
 
 /* Underline color should match text color - more specific */
@@ -4493,8 +4492,6 @@ html:has(.add-products3-container) {
 .compact-form-title * {
   transition: none !important;
   /* No transition for immediate updates */
-  font-family: inherit;
-  /* ✅ Biarkan inherit untuk fleksibilitas font */
 }
 
 .preview-text p:last-child {

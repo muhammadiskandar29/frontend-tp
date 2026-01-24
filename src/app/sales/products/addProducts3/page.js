@@ -586,6 +586,10 @@ export default function AddProducts3Page() {
         // Rich text content (HTML)
         const richContent = textData.content || "<p>Teks...</p>";
 
+        const formattedFont = textData.fontFamily && textData.fontFamily !== "Page Font"
+          ? (textData.fontFamily.includes(' ') && !textData.fontFamily.startsWith("'") ? `'${textData.fontFamily}'` : textData.fontFamily)
+          : "inherit";
+
         return (
           <Tag
             className="preview-text"
@@ -595,7 +599,7 @@ export default function AddProducts3Page() {
               ...textPaddingStyle,
               display: "block",
               width: "100%",
-              fontFamily: textData.fontFamily && textData.fontFamily !== "Page Font" ? `${textData.fontFamily} !important` : "inherit"
+              fontFamily: `${formattedFont} !important`
             }}
             dangerouslySetInnerHTML={{ __html: richContent }}
           />
