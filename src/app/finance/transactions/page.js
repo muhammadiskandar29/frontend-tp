@@ -49,12 +49,12 @@ export default function FinanceOrders() {
   const [loading, setLoading] = useState(false);
   const [paginationInfo, setPaginationInfo] = useState(null); // info pagination dari backend
   const perPage = 15; // Data per halaman
-  
+
   // Filter state
   const [searchInput, setSearchInput] = useState("");
   const [filterPreset, setFilterPreset] = useState("all"); // all | today
   const [dateRange, setDateRange] = useState(null); // [startDate, endDate] atau null
-  
+
   // State lainnya
   const [statistics, setStatistics] = useState(null);
   const [showView, setShowView] = useState(false);
@@ -65,7 +65,7 @@ export default function FinanceOrders() {
   const [toast, setToast] = useState(DEFAULT_TOAST);
   const toastTimeoutRef = useRef(null);
   const fetchingRef = useRef(false); // Prevent multiple simultaneous fetches
-  
+
   // Cache untuk menyimpan order details berdasarkan order_id
   // Format: { [orderId]: { status_pembayaran: 4, ... } }
   const [orderDetailsCache, setOrderDetailsCache] = useState({});
@@ -140,7 +140,7 @@ export default function FinanceOrders() {
       }
 
       const json = await res.json();
-      
+
       // Extract order data dari response
       // Format bisa: { success: true, data: { ... } } atau { success: true, data: [{ ... }] }
       let order = null;
@@ -151,7 +151,7 @@ export default function FinanceOrders() {
           order = json.data;
         }
       }
-      
+
       if (order) {
         // Simpan ke cache
         setOrderDetailsCache((prev) => ({
@@ -203,7 +203,7 @@ export default function FinanceOrders() {
       }
 
       const json = await res.json();
-      
+
       // Handle response dengan struktur: { success: true, data: [...], pagination: {...} }
       if (json.success && json.data && Array.isArray(json.data)) {
         // Selalu replace data (bukan append) - setiap page menampilkan data yang berbeda
@@ -253,7 +253,7 @@ export default function FinanceOrders() {
         setHasMore(false);
         setPaginationInfo(null);
       }
-      
+
       setLoading(false);
       fetchingRef.current = false;
     } catch (err) {
@@ -276,7 +276,7 @@ export default function FinanceOrders() {
       const paymentsToFetch = orders.filter((payment) => {
         const orderRel = payment.order_rel || {};
         const orderId = orderRel.id ?? payment.order_id ?? payment.id;
-        
+
         // Skip jika:
         // 1. orderId tidak valid
         // 2. sudah di cache
@@ -286,7 +286,7 @@ export default function FinanceOrders() {
         if (orderDetailsCache[orderId]) return false;
         if (fetchingOrdersRef.current.has(orderId)) return false;
         if (orderRel.status_pembayaran !== undefined && orderRel.status_pembayaran !== null) return false;
-        
+
         return true;
       });
 
@@ -294,7 +294,7 @@ export default function FinanceOrders() {
       for (const payment of paymentsToFetch) {
         const orderRel = payment.order_rel || {};
         const orderId = orderRel.id ?? payment.order_id ?? payment.id;
-        
+
         if (orderId && orderId !== "-") {
           await fetchOrderDetail(orderId);
         }
@@ -330,7 +330,7 @@ export default function FinanceOrders() {
   // 🔹 Next page
   const handleNextPage = useCallback(() => {
     if (loading || !hasMore) return; // Jangan load jika sedang loading atau sudah habis
-    
+
     const nextPage = page + 1;
     console.log("🔄 Next page clicked, loading page:", nextPage);
     setPage(nextPage);
@@ -339,7 +339,7 @@ export default function FinanceOrders() {
   // 🔹 Previous page
   const handlePrevPage = useCallback(() => {
     if (loading || page <= 1) return; // Jangan load jika sedang loading atau sudah di page 1
-    
+
     const prevPage = page - 1;
     console.log("🔄 Previous page clicked, loading page:", prevPage);
     setPage(prevPage);
@@ -358,7 +358,7 @@ export default function FinanceOrders() {
   useEffect(() => {
     // Skip pada initial mount (sudah ada useEffect untuk initial load)
     if (orders.length === 0) return;
-    
+
     // Reset ke page 1 dan fetch ulang data
     setPage(1);
     setOrders([]);
@@ -392,7 +392,7 @@ export default function FinanceOrders() {
         const totalOrder = payment.order_rel?.total_harga?.toString() || "";
         const totalPaid = payment.total_paid?.toString() || "";
         const remaining = payment.remaining?.toString() || "";
-        
+
         return (
           customerName.includes(searchLower) ||
           productName.includes(searchLower) ||
@@ -426,7 +426,7 @@ export default function FinanceOrders() {
   const menungguOrders = statistics?.menunggu_validasi || 0;
   const approvedOrders = statistics?.sudah_diapprove || 0;
   const ditolakOrders = statistics?.ditolak || 0;
-  
+
   // Format total nilai menunggu - handle nilai besar hingga ratusan juta
   const formatCurrency = (value) => {
     if (!value && value !== 0) return "Rp 0";
@@ -436,9 +436,9 @@ export default function FinanceOrders() {
     const numValue = typeof value === "number" ? value : parseFloat(value) || 0;
     return `Rp ${numValue.toLocaleString("id-ID")}`;
   };
-  
-  const totalNilaiMenunggu = statistics?.total_nilai_menunggu_formatted 
-    ? statistics.total_nilai_menunggu_formatted 
+
+  const totalNilaiMenunggu = statistics?.total_nilai_menunggu_formatted
+    ? statistics.total_nilai_menunggu_formatted
     : formatCurrency(statistics?.total_nilai_menunggu || 0);
 
   // === EVENT HANDLERS ===
@@ -595,7 +595,7 @@ export default function FinanceOrders() {
             </div>
           </article>
         </section>
-        
+
 
         <section className="dashboard-hero orders-hero">
           <div className="orders-toolbar">
@@ -630,7 +630,7 @@ export default function FinanceOrders() {
                   className="orders-filter-btn orders-filter-icon-btn"
                   title="Filter"
                   aria-label="Filter"
-                  onClick={() => {}}
+                  onClick={() => { }}
                 >
                   <Filter size={16} />
                 </button>
@@ -715,14 +715,14 @@ export default function FinanceOrders() {
                     const totalPaid = Number(payment.total_paid || 0);
                     const remaining =
                       payment.remaining !== undefined &&
-                      payment.remaining !== null
+                        payment.remaining !== null
                         ? Number(payment.remaining)
                         : Math.max(totalOrder - totalPaid, 0);
 
                     // Cek apakah status pembayaran adalah type 4 (DP)
                     // Menggunakan relasi order_id (payment.order_rel) untuk mendapatkan status_pembayaran dari order
                     // Hanya tampilkan Total Paid & Remaining jika status_pembayaran === 4 (DP)
-                    
+
                     // Prioritas 1: order_rel.status_pembayaran (dari relasi payment ke order)
                     let statusPembayaran = null;
                     if (orderRel.status_pembayaran !== undefined && orderRel.status_pembayaran !== null) {
@@ -745,7 +745,7 @@ export default function FinanceOrders() {
                         }
                       });
                     }
-                    
+
                     // Tentukan isDP:
                     // 1. Jika statusPembayaran sudah tersedia, gunakan itu (statusPembayaran === 4)
                     // 2. Jika statusPembayaran masih null, gunakan heuristik: jika total_paid > 0 dan remaining > 0, kemungkinan besar ini DP
@@ -808,7 +808,7 @@ export default function FinanceOrders() {
                             <div className="payment-main">
                               <strong>Rp {totalOrder.toLocaleString("id-ID")}</strong>
                             </div>
-                            
+
                             {/* Total Paid & Remaining - hanya tampilkan untuk status pembayaran DP (4) */}
                             {isDP && (
                               <div className="payment-breakdown">
@@ -862,19 +862,21 @@ export default function FinanceOrders() {
 
                           {canApproveReject && (
                             <>
-                              <button
-                                className="orders-action-btn"
-                                title="Approve"
-                                onClick={() => handleApprove(payment)}
-                                style={{
-                                  background: "#10b981",
-                                  color: "#fff",
-                                  borderColor: "#10b981",
-                                  padding: "0.4rem 0.8rem",
-                                }}
-                              >
-                                Approve
-                              </button>
+                              {statusCode !== 2 && (
+                                <button
+                                  className="orders-action-btn"
+                                  title="Approve"
+                                  onClick={() => handleApprove(payment)}
+                                  style={{
+                                    background: "#10b981",
+                                    color: "#fff",
+                                    borderColor: "#10b981",
+                                    padding: "0.4rem 0.8rem",
+                                  }}
+                                >
+                                  Approve
+                                </button>
+                              )}
                               <button
                                 className="orders-action-btn"
                                 title="Reject"
@@ -1029,7 +1031,7 @@ export default function FinanceOrders() {
             <div className="toast-content">
               <div className="toast-message">{toast.message}</div>
             </div>
-            <button 
+            <button
               className="toast-close"
               onClick={() => setToast({ show: false, message: "", type: "success" })}
               aria-label="Close"

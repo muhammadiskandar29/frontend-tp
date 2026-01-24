@@ -10,13 +10,77 @@ export default function WebinarGatewayPage() {
   const params = useParams();
   const router = useRouter();
   const idOrder = params?.idOrder;
-  
+
   const [loading, setLoading] = useState(true);
   const [validating, setValidating] = useState(true);
   const [webinarData, setWebinarData] = useState(null);
   const [error, setError] = useState("");
   const [errorType, setErrorType] = useState(""); // "unauthorized", "not_found", "server_error", "network_error"
   const [showZoom, setShowZoom] = useState(false);
+
+  // Zoom SDK Clean-up: Mencegah tampilan "nyangkut" saat navigasi Back
+  // Zoom SDK Clean-up: Mencegah tampilan "nyangkut" saat navigasi Back
+  useEffect(() => {
+    // Fungsi cleanup yang aman dan urut
+    const performCleanup = () => {
+      // 1. Leave meeting API call (PRIORITAS UTAMA: SDK harus leave sebelum DOM hancur)
+      if (typeof window !== 'undefined' && window.ZoomMtg) {
+        try {
+          window.ZoomMtg.leaveMeeting({});
+          console.log("🚪 Zoom leaving meeting...");
+        } catch (e) {
+          console.warn("⚠️ Zoom leave cleanup warning:", e);
+        }
+      }
+
+      // 2. Sembunyikan visual Zoom SEGERA agar UI Dashboard terlihat
+      // Kita tidak menghapus DOM dulu agar SDK masih bisa 'bernapas' saat proses leave
+      const zoomRoot = document.getElementById('zmmtg-root');
+      if (zoomRoot) {
+        zoomRoot.style.display = 'none';
+      }
+
+      // 3. Reset style body/html (PENTING: Agar scrollbar kembali muncul)
+      document.body.style.overflow = "auto";
+      document.body.style.position = "static";
+      document.body.style.width = "auto";
+      document.body.style.height = "auto";
+      document.documentElement.style.overflow = "auto";
+
+      // 4. Hapus DOM dan Overlay sisa Zoom dengan sedikit delay (aman)
+      // Delay memberi waktu SDK menyelesaikan network request 'leave'
+      setTimeout(() => {
+        if (zoomRoot) {
+          zoomRoot.innerHTML = '';
+          // Jika Zoom memindahkan elemen ini langsung ke body (keluar dari React root)
+          if (zoomRoot.parentNode === document.body) {
+            zoomRoot.remove();
+          }
+        }
+
+        // Bersihkan overlay & notifikasi global
+        const globalOverlays = document.querySelectorAll('.zmmtg-modal, .zmmtg-toast, #zmmtg-root-mask, .zmmtg-loading-layer');
+        globalOverlays.forEach(el => el.remove());
+
+        const ariaNotify = document.getElementById('aria-notify-area');
+        if (ariaNotify) ariaNotify.remove();
+
+      }, 200); // 200ms cukup untuk proses leave in background
+    };
+
+    // Tambahkan event listener untuk cover kasus Back Button & Close Tab
+    // 'popstate' meng-handle navigasi history browser (tombol back)
+    // 'beforeunload' meng-handle refresh/close tab
+    window.addEventListener('popstate', performCleanup);
+    window.addEventListener('beforeunload', performCleanup);
+
+    // Fungsi cleanup React unmount (saat pindah halaman via router)
+    return () => {
+      performCleanup();
+      window.removeEventListener('popstate', performCleanup);
+      window.removeEventListener('beforeunload', performCleanup);
+    };
+  }, []); // Empty dependency array = run on mount & unmount only
 
   useEffect(() => {
     if (!idOrder) {
@@ -49,7 +113,7 @@ export default function WebinarGatewayPage() {
       // Fetch customer dashboard untuk mendapatkan list orders
       const dashboardData = await fetchCustomerDashboard(session.token);
       const customer = dashboardData.customer || {};
-      
+
       // Gabungkan semua orders (aktif dan pending)
       const allOrders = [
         ...(dashboardData.orders_aktif || []),
@@ -193,7 +257,7 @@ export default function WebinarGatewayPage() {
               console.error("❌ Zoom join error:", error);
               alert(
                 error?.reason ||
-                  "Gagal bergabung ke meeting. Silakan coba lagi atau hubungi support."
+                "Gagal bergabung ke meeting. Silakan coba lagi atau hubungi support."
               );
             },
           });
@@ -277,25 +341,25 @@ export default function WebinarGatewayPage() {
               {errorType === "unauthorized" ? "🔒" : errorType === "not_found" ? "🔍" : "⚠️"}
             </div>
             <h2>
-              {errorType === "unauthorized" 
+              {errorType === "unauthorized"
                 ? "Akses Ditolak"
                 : errorType === "not_found"
-                ? "Tidak Ditemukan"
-                : errorType === "network_error"
-                ? "Koneksi Gagal"
-                : "Terjadi Kesalahan"
+                  ? "Tidak Ditemukan"
+                  : errorType === "network_error"
+                    ? "Koneksi Gagal"
+                    : "Terjadi Kesalahan"
               }
             </h2>
             <p className="error-message">{error}</p>
             <div className="error-actions">
-              <button 
+              <button
                 className="error-btn-primary"
                 onClick={() => router.push("/customer/dashboard")}
               >
                 Kembali ke Dashboard
               </button>
               {errorType === "network_error" && (
-                <button 
+                <button
                   className="error-btn-secondary"
                   onClick={() => {
                     setError("");
@@ -348,7 +412,7 @@ export default function WebinarGatewayPage() {
           <div className="webinar-gateway">
             <div className="webinar-header">
               <h1>
-                {webinarData.kategoriNama?.toLowerCase() === "seminar" 
+                {webinarData.kategoriNama?.toLowerCase() === "seminar"
                   ? "Seminar Online"
                   : "Webinar Online"
                 }
@@ -357,7 +421,7 @@ export default function WebinarGatewayPage() {
 
             <div className="webinar-content">
               <h2 className="webinar-title">
-                {webinarData.kategoriNama?.toLowerCase() === "seminar" 
+                {webinarData.kategoriNama?.toLowerCase() === "seminar"
                   ? `Bergabung ke seminar ${webinarData.produkNama}`
                   : `Bergabung ke webinar ${webinarData.produkNama}`
                 }
