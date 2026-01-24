@@ -161,48 +161,66 @@ export default function BonusProdukPage() {
                                     <table className="bonus-table-clean">
                                         <thead>
                                             <tr>
-                                                <th style={{ width: '40%' }}>PRODUCT</th>
-                                                <th>CATEGORY</th>
+                                                <th style={{ width: '35%' }}>NAMA BONUS ARTIKEL</th>
+                                                <th>TAG PRODUK</th>
                                                 <th>STATUS</th>
-                                                <th>EVENT DATE</th>
+                                                <th className="text-right">ACTIONS</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {filteredArticles.map((article, index) => (
                                                 <tr key={article.id}>
                                                     <td>
-                                                        <div className="article-main-cell">
-                                                            <span className="article-name-blue">{article.title}</span>
-                                                            <div className="article-action-links">
-                                                                <button className="link-action" onClick={() => window.open(`/article/${article.slug}`, '_blank')}>Review</button>
-                                                                <button className="link-action" onClick={() => handleEdit(article)}>Edit</button>
-                                                                <button className="link-action delete-pill" onClick={() => handleDelete(article.id)}>Delete</button>
-                                                            </div>
+                                                        <div className="article-info-simple">
+                                                            <span className="article-title-main">{article.title}</span>
+                                                            <span className="article-slug-small">/{article.slug}</span>
                                                         </div>
                                                     </td>
                                                     <td>
-                                                        <div className="tag-badges-clean">
+                                                        <div className="tag-badges-row">
                                                             {article.tag_produk && article.tag_produk.length > 0 ? (
                                                                 article.tag_produk.map(prodId => {
                                                                     const p = availableProducts.find(item => item.id == prodId);
                                                                     return p ? (
-                                                                        <span key={prodId} className="tag-item-text">
+                                                                        <span key={prodId} className="tag-badge-minimal">
                                                                             {p.nama}
                                                                         </span>
                                                                     ) : null;
                                                                 })
                                                             ) : (
-                                                                <span className="text-xs text-gray-400">-</span>
+                                                                <span className="no-tags">-</span>
                                                             )}
                                                         </div>
                                                     </td>
                                                     <td>
-                                                        <span className={`status-pill-outline ${article.status === 'published' ? 'is-active' : 'is-draft'}`}>
-                                                            {article.status === 'published' ? 'Active' : 'Draft'}
+                                                        <span className={`status-badge-modern ${article.status === 'published' ? 'is-published' : 'is-draft'}`}>
+                                                            {article.status === 'published' ? 'Published' : 'Draft'}
                                                         </span>
                                                     </td>
                                                     <td>
-                                                        <span className="date-text">{article.created_at ? new Date(article.created_at).toLocaleDateString('id-ID') : '28/01/2026'}</span>
+                                                        <div className="action-buttons-minimal">
+                                                            <button
+                                                                className="btn-icon-action"
+                                                                onClick={() => window.open(`/article/${article.slug}`, '_blank')}
+                                                                title="View Result"
+                                                            >
+                                                                <Eye size={18} />
+                                                            </button>
+                                                            <button
+                                                                className="btn-icon-action"
+                                                                onClick={() => handleEdit(article)}
+                                                                title="Edit"
+                                                            >
+                                                                <Edit2 size={18} />
+                                                            </button>
+                                                            <button
+                                                                className="btn-icon-action delete"
+                                                                onClick={() => handleDelete(article.id)}
+                                                                title="Delete"
+                                                            >
+                                                                <Trash2 size={18} />
+                                                            </button>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))}
@@ -343,65 +361,86 @@ export default function BonusProdukPage() {
                 .bonus-table-clean { width: 100%; border-collapse: collapse; }
                 .bonus-table-clean thead th {
                     background: #f8fafc;
-                    padding: 15px 40px;
+                    padding: 18px 35px;
                     text-align: left;
-                    font-size: 12px;
-                    font-weight: 700;
-                    color: #64748b;
-                    border-bottom: 1px solid #f1f5f9;
+                    font-size: 11px;
+                    font-weight: 800;
+                    color: #475569;
+                    border-bottom: 2px solid #f1f5f9;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
                 }
                 .bonus-table-clean tr td {
-                    padding: 25px 40px;
+                    padding: 22px 35px;
                     color: #334155;
                     font-size: 14px;
                     border-bottom: 1px solid #f8fafc;
                     vertical-align: middle;
                 }
+                .text-right { text-align: right !important; }
                 
-                /* Product Cell Improvements */
-                .article-main-cell { display: flex; flex-direction: column; gap: 8px; }
-                .article-name-blue { font-size: 15px; font-weight: 600; color: #0ea5e9; cursor: pointer; }
-                .article-action-links { display: flex; align-items: center; gap: 20px; }
-                .link-action {
-                    background: none;
-                    border: none;
-                    padding: 0;
-                    font-size: 13px;
-                    color: #64748b;
-                    cursor: pointer;
-                    font-weight: 500;
-                    transition: color 0.2s;
-                }
-                .link-action:hover { color: #0ea5e9; }
-                .link-action.delete-pill {
-                    background: #fff1f2;
-                    color: #e11d48;
-                    padding: 2px 10px;
+                .article-info-simple { display: flex; flex-direction: column; gap: 4px; }
+                .article-title-main { font-weight: 700; color: #1e293b; font-size: 15px; }
+                .article-slug-small { font-size: 12px; color: #94a3b8; font-family: monospace; }
+
+                .tag-badges-row { display: flex; flex-wrap: wrap; gap: 6px; }
+                .tag-badge-minimal {
+                    background: #eff6ff;
+                    color: #3b82f6;
+                    padding: 4px 10px;
                     border-radius: 6px;
-                }
-                .link-action.delete-pill:hover { background: #ffe4e6; }
-
-                /* Status Pill Outline */
-                .status-pill-outline {
-                    display: inline-block;
-                    padding: 4px 14px;
-                    border-radius: 8px;
-                    font-size: 13px;
+                    font-size: 12px;
                     font-weight: 600;
-                    border: 1px solid #e2e8f0;
+                    border: 1px solid #dbeafe;
                 }
-                .status-pill-outline.is-active {
-                    background: #f0fdf4;
-                    color: #16a34a;
-                    border-color: #22c55e;
+                .no-tags { color: #cbd5e1; font-style: italic; }
+
+                .status-badge-modern {
+                    display: inline-block;
+                    padding: 4px 12px;
+                    border-radius: 6px;
+                    font-size: 11px;
+                    font-weight: 700;
+                    text-transform: uppercase;
                 }
-                .status-pill-outline.is-draft {
-                    background: #f8fafc;
+                .status-badge-modern.is-published {
+                    background: #ecfdf5;
+                    color: #059669;
+                    border: 1px solid #d1fae5;
+                }
+                .status-badge-modern.is-draft {
+                    background: #f1f5f9;
                     color: #64748b;
                 }
 
-                .tag-item-text { display: block; color: #334155; font-weight: 500; margin-bottom: 4px; }
-                .date-text { color: #334155; font-weight: 500; }
+                .action-buttons-minimal {
+                    display: flex;
+                    justify-content: flex-end;
+                    gap: 8px;
+                }
+                .btn-icon-action {
+                    background: white;
+                    border: 1px solid #e2e8f0;
+                    color: #64748b;
+                    padding: 8px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .btn-icon-action:hover {
+                    color: #ff7a00;
+                    border-color: #ff7a00;
+                    background: #fff7ed;
+                    transform: translateY(-2px);
+                }
+                .btn-icon-action.delete:hover {
+                    color: #ef4444;
+                    border-color: #ef4444;
+                    background: #fef2f2;
+                }
 
                 .empty-state-modern {
                     padding: 100px 40px;
