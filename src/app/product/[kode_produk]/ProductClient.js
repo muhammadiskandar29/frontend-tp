@@ -2387,8 +2387,41 @@ function ProductClient({ initialProductData, initialLandingPage }) {
       setMeta('og:image', image, 'property');
       setMeta('twitter:image', image);
     }
-
   }, [settings, productData]);
+
+  // ✅ Handle Right Click Disable
+  useEffect(() => {
+    if (settings?.disable_rightclick) {
+      const handleContextMenu = (e) => {
+        // Allow right click on input fields and textareas
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+          return true;
+        }
+        e.preventDefault();
+        return false;
+      };
+
+      const handleKeyDown = (e) => {
+        // Block Inspect Element shortcuts
+        if (
+          (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
+          (e.ctrlKey && e.key === 'u') ||
+          e.key === 'F12'
+        ) {
+          e.preventDefault();
+          return false;
+        }
+      };
+
+      document.addEventListener('contextmenu', handleContextMenu);
+      document.addEventListener('keydown', handleKeyDown);
+
+      return () => {
+        document.removeEventListener('contextmenu', handleContextMenu);
+        document.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [settings?.disable_rightclick]);
 
   // ✅ MOVED UP: Global Style Injection (Plain JS - No styled-jsx)
   useEffect(() => {

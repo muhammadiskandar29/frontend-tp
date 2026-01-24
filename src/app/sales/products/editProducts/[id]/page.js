@@ -4401,7 +4401,7 @@ export default function EditProductsPage() {
                         {pengaturanForm.seo_title || "Produk Baru"}
                       </div>
                       <div style={{ fontSize: "14px", color: "#006621" }}>
-                        {pengaturanForm.url ? `https://ternak-properti.myscalev.com${pengaturanForm.url}` : "https://ternak-properti.myscalev.com/landing-page-baru"}
+                        {pengaturanForm.kode ? `https://app.ternakproperti.com/product/${pengaturanForm.kode}` : "https://app.ternakproperti.com/product/landing-page-baru"}
                       </div>
                     </div>
                   </div>
@@ -4418,49 +4418,14 @@ export default function EditProductsPage() {
                         {pengaturanForm.seo_title || "Produk Baru"}
                       </div>
                       <div style={{ fontSize: "12px", color: "#6b7280" }}>
-                        {pengaturanForm.url ? `https://ternak-properti.myscalev.com${pengaturanForm.url}` : "https://ternak-properti.myscalev.com/landing-page-baru"}
+                        {pengaturanForm.kode ? `https://app.ternakproperti.com/product/${pengaturanForm.kode}` : "https://app.ternakproperti.com/product/landing-page-baru"}
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Favicon Section */}
-                <div className="pengaturan-section">
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
-                    <h3 className="pengaturan-section-title" style={{ margin: 0 }}>Favicon</h3>
-                    <Info size={16} color="#6b7280" />
-                  </div>
-                  <div className="pengaturan-form-group">
-                    <input
-                      type="file"
-                      accept=".ico,.png,.jpeg,.jpg,.webp"
-                      onChange={(e) => {
-                        const file = e.target.files[0];
-                        if (file) {
-                          const reader = new FileReader();
-                          reader.onload = (event) => {
-                            handlePengaturanChange("favicon", event.target.result);
-                          };
-                          reader.readAsDataURL(file);
-                        }
-                      }}
-                      className="component-file-input"
-                      id="favicon-upload"
-                    />
-                    <label htmlFor="favicon-upload" className="meta-upload-label">
-                      <ImageIcon size={32} color="#F1A124" />
-                      <span>Upload Favicon</span>
-                      <small>.ico, .png, .jpeg, .jpg, .webp</small>
-                    </label>
-                    {pengaturanForm.favicon && (
-                      <div style={{ marginTop: "8px" }}>
-                        <img src={pengaturanForm.favicon} alt="Favicon preview" style={{ width: "32px", height: "32px", borderRadius: "4px" }} />
-                      </div>
-                    )}
-                  </div>
-                </div>
 
-                {/* Loading Logo Section */}
+                {/* Loading Logo Section - KOMENTAR DULU
                 <div className="pengaturan-section">
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
                     <h3 className="pengaturan-section-title" style={{ margin: 0 }}>Loading Logo</h3>
@@ -4495,11 +4460,13 @@ export default function EditProductsPage() {
                     )}
                   </div>
                 </div>
+                */}
 
                 {/* Settings Toggles */}
                 <div className="pengaturan-section">
                   <h3 className="pengaturan-section-title">Pengaturan</h3>
 
+                  {/* Matikan Search Engine Crawler - KOMENTAR DULU
                   <div className="pengaturan-form-group">
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -4512,6 +4479,7 @@ export default function EditProductsPage() {
                       />
                     </div>
                   </div>
+                  */}
 
                   <div className="pengaturan-form-group">
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -4526,6 +4494,7 @@ export default function EditProductsPage() {
                     </div>
                   </div>
 
+                  {/* HTML Language - KOMENTAR DULU
                   <div className="pengaturan-form-group">
                     <label className="pengaturan-label">HTML Language</label>
                     <Dropdown
@@ -4541,9 +4510,10 @@ export default function EditProductsPage() {
                       onChange={(e) => handlePengaturanChange("html_language", e.value)}
                     />
                   </div>
+                  */}
                 </div>
 
-                {/* Speed Boost Section */}
+                {/* Speed Boost Section - KOMENTAR DULU
                 <div className="pengaturan-section">
                   <h3 className="pengaturan-section-title">Speed Boost</h3>
 
@@ -4557,6 +4527,7 @@ export default function EditProductsPage() {
                     </div>
                   </div>
                 </div>
+                */}
 
                 {/* Analytics - Facebook */}
                 <div className="pengaturan-section">
@@ -4746,7 +4717,7 @@ export default function EditProductsPage() {
                   </div>
                 </div>
 
-                {/* Share Access */}
+                {/* Share Access - KOMENTAR DULU
                 <div className="pengaturan-section">
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
                     <h3 className="pengaturan-section-title" style={{ margin: 0 }}>Share Access</h3>
@@ -4781,8 +4752,9 @@ export default function EditProductsPage() {
                     <span style={{ fontSize: "14px", color: "#6b7280" }}>This page hasn't been shared to anyone.</span>
                   </div>
                 </div>
+                */}
 
-                {/* Custom Head Script */}
+                {/* Custom Head Script - KOMENTAR DULU 
                 <div className="pengaturan-section">
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
                     <h3 className="pengaturan-section-title" style={{ margin: 0 }}>Custom Head Script</h3>
@@ -4804,6 +4776,7 @@ export default function EditProductsPage() {
                     </div>
                   )}
                 </div>
+                */}
               </div>
             )}
           </div>

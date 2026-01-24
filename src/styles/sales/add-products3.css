@@ -3753,6 +3753,8 @@ html:has(.add-products3-container) {
   /* Line height lebih nyaman */
   direction: ltr !important;
   text-align: left !important;
+  min-height: 1.5em;
+  /* Pastikan p kosong tetap punya tinggi */
 }
 
 /* List Item Editor - Ensure LTR direction */
@@ -4433,11 +4435,11 @@ html:has(.add-products3-container) {
 
 /* ===== PREVIEW STYLES ===== */
 .preview-text {
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
-  /* ✅ Tambahkan !important untuk override */
+  font-family: inherit;
+  /* ✅ Biarkan inherit agar font dari inline style (pilihan user) bisa tampil */
   font-size: 16px;
-  line-height: 1.2;
-  /* Tighter line height */
+  line-height: 1.5;
+  /* Line height seragam */
   color: #1f2937;
   transition: none !important;
   /* No transition for immediate updates */
@@ -4458,15 +4460,17 @@ html:has(.add-products3-container) {
 }
 
 .preview-text p {
-  margin: 0 0 0px 0 !important;
-  /* No margin - very tight spacing in canvas */
+  margin: 0 0 1em 0 !important;
+  /* Memberikan jarak antar paragraf agar Enter terlihat */
   /* Removed default font-size and font-weight to allow inline styles from HTML content */
-  line-height: 1.2;
-  /* Tighter line height */
+  line-height: 1.5;
+  /* Line height lebih nyaman */
   transition: none !important;
   /* No transition for immediate updates */
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
-  /* ✅ Ganti dari inherit ke font Inter secara eksplisit */
+  font-family: inherit !important;
+  /* ✅ Biarkan inherit agar font yang dipilih user bisa tampil */
+  min-height: 1.5em;
+  /* Pastikan p kosong tetap punya tinggi di preview */
 }
 
 .preview-text *,
@@ -4487,8 +4491,8 @@ html:has(.add-products3-container) {
 .compact-form-title * {
   transition: none !important;
   /* No transition for immediate updates */
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
-  /* ✅ Pastikan semua child elements menggunakan Inter */
+  font-family: inherit;
+  /* ✅ Biarkan inherit untuk fleksibilitas font */
 }
 
 .preview-text p:last-child {
