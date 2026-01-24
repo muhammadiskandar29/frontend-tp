@@ -63,15 +63,48 @@ export default function BonusProdukPage() {
         setView("editor");
     };
 
-    const handleEdit = (article) => {
-        setCurrentArticle(article);
-        setView("editor");
+    const handleEdit = async (article) => {
+        setLoading(true);
+        try {
+            const token = localStorage.getItem("token");
+            const headers = { Authorization: `Bearer ${token}` };
+            // Ambil data lengkap termasuk konten (Tiptap JSON)
+            const response = await axios.get(`/api/sales/post/${article.id}`, { headers });
+
+            if (response.data?.success) {
+                setCurrentArticle(response.data.data);
+                setView("editor");
+            } else {
+                toast.error("Gagal mengambil detail artikel");
+            }
+        } catch (err) {
+            console.error("Fetch detail error:", err);
+            toast.error("Koneksi gagal saat mengambil detail");
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleDelete = async (id) => {
         if (confirm("Apakah Anda yakin ingin menghapus bonus ini?")) {
-            toast.success("Bonus berhasil dihapus");
-            setArticles(articles.filter(a => a.id !== id));
+            setLoading(true);
+            try {
+                const token = localStorage.getItem("token");
+                const headers = { Authorization: `Bearer ${token}` };
+                const response = await axios.delete(`/api/sales/post/${id}`, { headers });
+
+                if (response.data?.success) {
+                    toast.success("Bonus berhasil dihapus");
+                    fetchArticles();
+                } else {
+                    toast.error(response.data?.message || "Gagal menghapus bonus");
+                }
+            } catch (err) {
+                console.error("Delete error:", err);
+                toast.error("Terjadi kesalahan saat menghapus data");
+            } finally {
+                setLoading(false);
+            }
         }
     };
 
@@ -140,6 +173,7 @@ export default function BonusProdukPage() {
                                                 <th className="w-10">#</th>
                                                 <th>NAMA BONUS</th>
                                                 <th>TAG PRODUK</th>
+                                                <th>STATUS</th>
                                                 <th className="text-right">ACTIONS</th>
                                             </tr>
                                         </thead>
@@ -155,15 +189,24 @@ export default function BonusProdukPage() {
                                                     </td>
                                                     <td>
                                                         <div className="tag-badges-clean">
-                                                            {article.tag_produk?.map(prodId => {
-                                                                const p = availableProducts.find(item => item.id == prodId);
-                                                                return p ? (
-                                                                    <span key={prodId} className="tag-badge-clean">
-                                                                        {p.nama}
-                                                                    </span>
-                                                                ) : null;
-                                                            })}
+                                                            {article.tag_produk && article.tag_produk.length > 0 ? (
+                                                                article.tag_produk.map(prodId => {
+                                                                    const p = availableProducts.find(item => item.id == prodId);
+                                                                    return p ? (
+                                                                        <span key={prodId} className="tag-badge-clean">
+                                                                            {p.nama}
+                                                                        </span>
+                                                                    ) : null;
+                                                                })
+                                                            ) : (
+                                                                <span className="text-xs text-gray-400">No tags</span>
+                                                            )}
                                                         </div>
+                                                    </td>
+                                                    <td>
+                                                        <span className={`status-badge-modern ${article.status === 'published' ? 'is-published' : 'is-draft'}`}>
+                                                            {article.status === 'published' ? 'Published' : 'Draft'}
+                                                        </span>
                                                     </td>
                                                     <td>
                                                         <div className="action-buttons-clean">
@@ -395,6 +438,26 @@ export default function BonusProdukPage() {
                     border-bottom: 1px solid #f1f5f9;
                 }
                 .bonus-table-clean tr:hover td { background: #fdfdfd; }
+                .status-badge-modern {
+                    display: inline-block;
+                    padding: 4px 10px;
+                    border-radius: 6px;
+                    font-size: 11px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+                .status-badge-modern.is-published {
+                    background: #ecfdf5;
+                    color: #059669;
+                    border: 1px solid #d1fae5;
+                }
+                .status-badge-modern.is-draft {
+                    background: #f1f5f9;
+                    color: #64748b;
+                    border: 1px solid #e2e8f0;
+                }
+
                 .article-name { font-weight: 700; color: #0ea5e9; font-size: 14px; cursor: pointer; }
                 .article-slug-clean { font-size: 11px; color: #94a3b8; margin-top: 3px; font-weight: 500; }
 
