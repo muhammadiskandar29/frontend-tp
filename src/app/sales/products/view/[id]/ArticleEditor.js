@@ -80,16 +80,26 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
                     let initialBlocks = {};
                     if (initialData?.content) {
                         try {
-                            initialBlocks = typeof initialData.content === 'string'
+                            const parsed = typeof initialData.content === 'string'
                                 ? JSON.parse(initialData.content)
                                 : initialData.content;
 
-                            // Pastikan jika structure-nya bukan Editor.js tapi HTML, kita handle
-                            if (typeof initialBlocks === 'string' || !initialBlocks.blocks) {
-                                console.warn("Content detected as HTML or non-block format, clearing for new Editor.js instance");
+                            // Handling Robust:
+                            // 1. Jika backend kirim Array (blocks only) -> BUNGKUS jadi { blocks: [...] }
+                            // 2. Jika backend kirim Object (full EditorJS data) -> Pakai langsung
+                            if (Array.isArray(parsed)) {
+                                initialBlocks = { blocks: parsed };
+                            } else {
+                                initialBlocks = parsed;
+                            }
+
+                            // Validasi akhir: harus punya properti 'blocks'
+                            if (!initialBlocks || !initialBlocks.blocks) {
+                                // Fallback jika struktur tidak dikenali (misal HTML raw)
                                 initialBlocks = { blocks: [] };
                             }
                         } catch (e) {
+                            console.warn("Failed to parse content:", e);
                             initialBlocks = { blocks: [] };
                         }
                     }
@@ -182,14 +192,12 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
             const savedData = await editorInstance.current.save();
 
             // Backend validasi "The content must be an array"
-            // Laravel akan menerima object ini sebagai associative array.
-            // Namun jika backend secara spesifik mengharapkan array of blocks, 
-            // kita bisa sesuaikan. Tapi biasanya standard Editor.js adalah satu object utuh.
+            // Kita kirimkan array blocks-nya saja agar sesuai permintaan backend
             onSave({
                 title,
                 slug,
                 status: forceStatus || initialData?.status || "draft",
-                content: savedData
+                content: savedData.blocks || []
             });
         } catch (err) {
             console.error("Save error:", err);
