@@ -13,11 +13,13 @@ import {
     AlignCenter, AlignRight, Link as LinkIcon, Image as ImageIcon,
     MoreHorizontal, ChevronDown, Strikethrough, Undo, Redo, SplitSquareHorizontal
 } from "lucide-react";
+import axios from "axios";
 import "@/styles/sales/bonus.css";
 
-const ArticleEditor = forwardRef(({ initialData, idorder, onSave, onCancel, hideActions = false }, ref) => {
+const ArticleEditor = forwardRef(({ initialData, idorder, onSuccess, onCancel, hideActions = false }, ref) => {
     const [title, setTitle] = useState(initialData?.title || "");
     const [slug, setSlug] = useState(initialData?.slug || "");
+    const [idOrder, setIdOrder] = useState(initialData?.idorder || idorder || 0);
     const [saving, setSaving] = useState(false);
     const [processingImage, setProcessingImage] = useState(false);
     const fileInputRef = useRef(null);
@@ -177,19 +179,34 @@ const ArticleEditor = forwardRef(({ initialData, idorder, onSave, onCancel, hide
         setSaving(true);
         try {
             const json = editor.getJSON();
-            const contentToSend = json.content || [];
-
-            onSave({
-                id: initialData?.id,
-                idorder: idorder || initialData?.idorder,
+            const payload = {
+                idorder: idOrder,
                 title,
                 slug,
                 status: forceStatus || initialData?.status || "draft",
-                content: contentToSend
-            });
+                content: json
+            };
+
+            const token = localStorage.getItem("token");
+            const headers = { Authorization: `Bearer ${token}` };
+
+            let response;
+            if (initialData?.id) {
+                response = await axios.put(`/api/sales/post/${initialData.id}`, payload, { headers });
+            } else {
+                response = await axios.post("/api/sales/post", payload, { headers });
+            }
+
+            if (response.data?.success) {
+                toast.success(initialData ? "Artikel diperbarui!" : "Artikel berhasil disimpan!");
+                if (onSuccess) onSuccess();
+            } else {
+                toast.error(response.data?.message || "Gagal menyimpan");
+            }
         } catch (err) {
             console.error("Save error:", err);
-            toast.error("Gagal menyimpan");
+            const msg = err.response?.data?.message || "Gagal menyambung ke server";
+            toast.error(msg);
         } finally {
             setSaving(false);
         }
@@ -269,11 +286,24 @@ const ArticleEditor = forwardRef(({ initialData, idorder, onSave, onCancel, hide
 
             {title && (
                 <div className="wp-permalink-line">
-                    <span className="text-gray-500 text-sm">Permalink: </span>
-                    <a href="#" className="text-blue-600 text-sm hover:underline">
-                        {typeof window !== 'undefined' ? window.location.origin : ''}/article/{slug}
-                    </a>
-                    <button className="wp-btn-small ml-2">Edit</button>
+                    <div className="flex items-center gap-4 flex-wrap">
+                        <div className="flex items-center">
+                            <span className="text-gray-500 text-sm">Permalink: </span>
+                            <a href="#" className="text-blue-600 text-sm hover:underline ml-1">
+                                {typeof window !== 'undefined' ? window.location.origin : ''}/article/{slug}
+                            </a>
+                        </div>
+                        <div className="flex items-center gap-2 ml-auto">
+                            <span className="text-gray-500 text-sm">Order: </span>
+                            <input
+                                type="number"
+                                className="wp-order-input"
+                                value={idOrder}
+                                onChange={(e) => setIdOrder(parseInt(e.target.value) || 0)}
+                                title="Determine the display order of this article"
+                            />
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -364,6 +394,17 @@ const ArticleEditor = forwardRef(({ initialData, idorder, onSave, onCancel, hide
                     margin-top: 2px;
                     margin-bottom: 10px;
                     font-size: 13px;
+                }
+                .wp-order-input {
+                    width: 60px;
+                    border: 1px solid #8c8f94;
+                    font-size: 13px;
+                    padding: 2px 6px;
+                    border-radius: 3px;
+                    outline: none;
+                }
+                .wp-order-input:focus {
+                    border-color: #2271b1;
                 }
                 .wp-btn-small {
                     background: #f0f0f1;

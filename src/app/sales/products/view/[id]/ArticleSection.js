@@ -24,8 +24,11 @@ export default function ArticleSection({ productName }) {
   const fetchArticles = async () => {
     setLoading(true);
     try {
-      // ✅ Fetch data nyata dari backend berdasarkan produk_id
-      const response = await axios.get(`/api/sales/post?produk_id=${productId}`);
+      const token = localStorage.getItem("token");
+      const headers = { Authorization: `Bearer ${token}` };
+
+      // ✅ Fetch data nyata dari backend
+      const response = await axios.get(`/api/sales/post`, { headers });
 
       if (response.data?.success) {
         setArticles(response.data.data || []);
@@ -59,7 +62,9 @@ export default function ArticleSection({ productName }) {
   const handleDelete = async (id) => {
     if (confirm("Apakah Anda yakin ingin menghapus artikel ini?")) {
       try {
-        const response = await axios.delete(`/api/sales/post/${id}`);
+        const token = localStorage.getItem("token");
+        const headers = { Authorization: `Bearer ${token}` };
+        const response = await axios.delete(`/api/sales/post/${id}`, { headers });
         if (response.data?.success) {
           toast.success("Artikel berhasil dihapus");
           fetchArticles();
@@ -72,50 +77,9 @@ export default function ArticleSection({ productName }) {
     }
   };
 
-  const handleSave = async (data) => {
-    setLoading(true);
-    try {
-      // ✅ Sesuai struktur payload yang diminta USER & Backend
-      // "content" berupa Object (Editor.js output) akan dianggap sebagai Array/Associative Array oleh Laravel
-      const payload = {
-        id: data.id,
-        idorder: data.idorder,
-        produk_id: productId,
-        title: data.title,
-        content: data.content, // Ini sudah JSON Object { time, blocks, version }
-        slug: data.slug,
-        status: data.status || "draft"
-      };
-
-      let response;
-      if (currentArticle?.id) {
-        // Update existing article
-        response = await axios.put(`/api/sales/post/${currentArticle.id}`, payload);
-      } else {
-        // Create new article
-        response = await axios.post("/api/sales/post", payload);
-      }
-
-      if (response.data?.success) {
-        toast.success(currentArticle ? "Artikel diperbarui!" : "Artikel berhasil disimpan!");
-        setView("list");
-        fetchArticles();
-      } else {
-        toast.error(response.data?.message || "Gagal menyimpan");
-      }
-    } catch (err) {
-      console.error("Save error:", err);
-      const msg = err.response?.data?.message || "Gagal menyambung ke server";
-
-      // Jika ada error spesifik dari Laravel validation
-      if (err.response?.data?.errors?.content) {
-        toast.error("Format konten tidak valid (Harus berupa array/objek)");
-      } else {
-        toast.error(msg);
-      }
-    } finally {
-      setLoading(false);
-    }
+  const handleSuccessSave = () => {
+    setView("list");
+    fetchArticles();
   };
 
   const filteredArticles = articles.filter(a =>
@@ -242,7 +206,8 @@ export default function ArticleSection({ productName }) {
 
           <ArticleEditor
             initialData={currentArticle}
-            onSave={handleSave}
+            idorder={articles.length + 1}
+            onSuccess={handleSuccessSave}
             onCancel={() => setView("list")}
           />
         </div>
