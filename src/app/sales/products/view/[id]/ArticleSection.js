@@ -78,6 +78,8 @@ export default function ArticleSection({ productName }) {
       // ✅ Sesuai struktur payload yang diminta USER & Backend
       // "content" berupa Object (Editor.js output) akan dianggap sebagai Array/Associative Array oleh Laravel
       const payload = {
+        id: data.id,
+        idorder: data.idorder,
         produk_id: productId,
         title: data.title,
         content: data.content, // Ini sudah JSON Object { time, blocks, version }
