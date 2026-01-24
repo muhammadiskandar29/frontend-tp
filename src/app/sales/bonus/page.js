@@ -212,7 +212,7 @@ export default function BonusProdukPage() {
                                                         <div className="action-buttons-clean">
                                                             <button
                                                                 className="btn-action-icon"
-                                                                onClick={() => window.open(`/article/${article.slug}`, '_blank')}
+                                                                onClick={() => window.open(`/article/${article.id}`, '_blank')}
                                                                 title="View"
                                                             >
                                                                 <Eye size={18} />
@@ -458,8 +458,10 @@ export default function BonusProdukPage() {
                     border: 1px solid #e2e8f0;
                 }
 
-                .article-name { font-weight: 700; color: #0ea5e9; font-size: 14px; cursor: pointer; }
-                .article-slug-clean { font-size: 11px; color: #94a3b8; margin-top: 3px; font-weight: 500; }
+                .article-info-clean { display: flex; flex-direction: column; gap: 2px; }
+                .article-name { font-weight: 700; color: #1e293b; font-size: 14px; cursor: pointer; transition: color 0.2s; }
+                .article-name:hover { color: #0ea5e9; }
+                .article-slug-clean { font-size: 12px; color: #94a3b8; font-weight: 400; font-family: monospace; }
 
                 .tag-badge-clean {
                     display: inline-block;
