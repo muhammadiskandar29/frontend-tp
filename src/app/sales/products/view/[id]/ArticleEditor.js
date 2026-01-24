@@ -19,7 +19,6 @@ import "@/styles/sales/bonus.css";
 const ArticleEditor = forwardRef(({ initialData, idorder, onSuccess, onCancel, hideActions = false }, ref) => {
     const [title, setTitle] = useState(initialData?.title || "");
     const [slug, setSlug] = useState(initialData?.slug || "");
-    const [idOrder, setIdOrder] = useState(initialData?.idorder || idorder || 0);
     const [saving, setSaving] = useState(false);
     const [processingImage, setProcessingImage] = useState(false);
     const fileInputRef = useRef(null);
@@ -180,7 +179,6 @@ const ArticleEditor = forwardRef(({ initialData, idorder, onSuccess, onCancel, h
         try {
             const json = editor.getJSON();
             const payload = {
-                idorder: idOrder,
                 title,
                 slug,
                 status: forceStatus || initialData?.status || "draft",
@@ -293,16 +291,6 @@ const ArticleEditor = forwardRef(({ initialData, idorder, onSuccess, onCancel, h
                                 {typeof window !== 'undefined' ? window.location.origin : ''}/article/{slug}
                             </a>
                         </div>
-                        <div className="flex items-center gap-2 ml-auto">
-                            <span className="text-gray-500 text-sm">Order: </span>
-                            <input
-                                type="number"
-                                className="wp-order-input"
-                                value={idOrder}
-                                onChange={(e) => setIdOrder(parseInt(e.target.value) || 0)}
-                                title="Determine the display order of this article"
-                            />
-                        </div>
                     </div>
                 </div>
             )}
@@ -394,17 +382,6 @@ const ArticleEditor = forwardRef(({ initialData, idorder, onSuccess, onCancel, h
                     margin-top: 2px;
                     margin-bottom: 10px;
                     font-size: 13px;
-                }
-                .wp-order-input {
-                    width: 60px;
-                    border: 1px solid #8c8f94;
-                    font-size: 13px;
-                    padding: 2px 6px;
-                    border-radius: 3px;
-                    outline: none;
-                }
-                .wp-order-input:focus {
-                    border-color: #2271b1;
                 }
                 .wp-btn-small {
                     background: #f0f0f1;
