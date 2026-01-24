@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import "@/styles/sales/bonus.css";
 
-const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions = false }, ref) => {
+const ArticleEditor = forwardRef(({ initialData, idorder, onSave, onCancel, hideActions = false }, ref) => {
     const [title, setTitle] = useState(initialData?.title || "");
     const [slug, setSlug] = useState(initialData?.slug || "");
     const [saving, setSaving] = useState(false);
@@ -180,6 +180,8 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
             const contentToSend = json.content || [];
 
             onSave({
+                id: initialData?.id,
+                idorder: idorder || initialData?.idorder,
                 title,
                 slug,
                 status: forceStatus || initialData?.status || "draft",
