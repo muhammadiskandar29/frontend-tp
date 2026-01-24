@@ -303,7 +303,7 @@ export default function EditProductsPage() {
 
   // Handler untuk update block data
   const handleUpdateBlock = (blockId, newData) => {
-    setBlocks(blocks.map(block =>
+    setBlocks(prevBlocks => prevBlocks.map(block =>
       block.id === blockId
         ? { ...block, data: { ...block.data, ...newData } }
         : block
@@ -317,7 +317,7 @@ export default function EditProductsPage() {
 
   // Handler untuk update child block
   const handleUpdateChildBlock = (childId, newData) => {
-    setBlocks(blocks.map(block =>
+    setBlocks(prevBlocks => prevBlocks.map(block =>
       block.id === childId
         ? { ...block, data: { ...block.data, ...newData } }
         : block

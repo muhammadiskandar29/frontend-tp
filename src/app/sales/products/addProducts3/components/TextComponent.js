@@ -58,6 +58,20 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
   const [showMoreColors, setShowMoreColors] = useState(false);
   const [showMoreBgColors, setShowMoreBgColors] = useState(false);
 
+  // ✅ FIX: Gunakan Ref untuk menghindari stale closure pada Tiptap - Sangat penting agar mirroring real-time!
+  const onUpdateRef = useRef(onUpdate);
+  const dataRef = useRef(data);
+
+  useEffect(() => {
+    onUpdateRef.current = onUpdate;
+    dataRef.current = data;
+  }, [onUpdate, data]);
+
+  // ✅ FIX: handleChange yang selalu menggunakan versi terbaru dari props melalui Ref
+  const handleChange = (field, value) => {
+    onUpdateRef.current?.({ ...dataRef.current, [field]: value });
+  };
+
   // ===== SINGLE SOURCE OF TRUTH: Active Style State (MS Word Style) =====
   const [activeFontSize, setActiveFontSize] = useState(16);
   const [activeFontFamily, setActiveFontFamily] = useState("Page Font");
@@ -329,9 +343,7 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
     };
   }, [showColorPicker, showBgColorPicker]);
 
-  const handleChange = (field, value) => {
-    onUpdate?.({ ...data, [field]: value });
-  };
+  // handleChange moved up to handle Tiptap stale closure via Ref
 
   // ===== TYPOGRAPHY STANDARD =====
   const TYPOGRAPHY_STANDARD = {
