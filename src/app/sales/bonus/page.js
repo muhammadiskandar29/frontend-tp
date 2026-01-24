@@ -88,56 +88,27 @@ export default function BonusProdukPage() {
             <div className="bonus-page-container">
                 {view === "list" ? (
                     <div className="fade-in">
-                        {/* Summary Stats Cards */}
-                        <div className="dashboard-summary-cards">
-                            <div className="summary-card-mini card-shadow">
-                                <div className="card-mini-icon orange-bg">
-                                    <FileText size={20} />
-                                </div>
-                                <div className="card-mini-info">
-                                    <span className="card-mini-label">TOTAL BONUS</span>
-                                    <span className="card-mini-value">{articles.length}</span>
-                                </div>
-                            </div>
-                            <div className="summary-card-mini card-shadow">
-                                <div className="card-mini-icon orange-bg">
-                                    <CheckCircle size={20} />
-                                </div>
-                                <div className="card-mini-info">
-                                    <span className="card-mini-label">PUBLISHED</span>
-                                    <span className="card-mini-value">
-                                        {articles.filter(a => a.status === 'published').length}
-                                    </span>
-                                </div>
-                            </div>
-                            <div className="summary-card-mini card-shadow">
-                                <div className="card-mini-icon orange-bg">
-                                    <HelpCircle size={20} />
-                                </div>
-                                <div className="card-mini-info">
-                                    <span className="card-mini-label">DRAFT</span>
-                                    <span className="card-mini-value">
-                                        {articles.filter(a => a.status !== 'published').length}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Search & Filter Bar Section */}
+                        {/* Compact Search & Filter Bar Section */}
                         <div className="toolbar-container-modern">
-                            <div className="search-box-modern card-shadow">
-                                <input
-                                    type="text"
-                                    className="search-input-modern"
-                                    placeholder="Cari nama bonus atau slug..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
-                                <SearchIcon size={18} className="search-icon-right" />
+                            <div className="toolbar-left-group">
+                                <div className="search-box-modern card-shadow">
+                                    <input
+                                        type="text"
+                                        className="search-input-modern"
+                                        placeholder="Cari customer, produk, bonus..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
+                                    <SearchIcon size={16} className="search-icon-right" />
+                                </div>
+                                <button className="filter-button-modern card-shadow">
+                                    <Filter size={18} />
+                                </button>
+                                <div className="date-picker-mock card-shadow">
+                                    <span>Pilih tanggal</span>
+                                    <Calendar size={16} />
+                                </div>
                             </div>
-                            <button className="filter-button-modern">
-                                <Filter size={20} />
-                            </button>
                         </div>
 
                         {/* Table Card Section */}
@@ -148,12 +119,8 @@ export default function BonusProdukPage() {
                                     <h2 className="card-title">Bonus roster</h2>
                                 </div>
                                 <div className="card-header-actions">
-                                    <button className="btn-secondary-white" onClick={() => toast.success("Report generation started")}>
-                                        <FileText size={16} />
-                                        Report Bonus
-                                    </button>
                                     <button className="btn-primary-orange" onClick={handleCreate}>
-                                        <TagIcon size={16} />
+                                        <TagIcon size={16} strokeWidth={3} />
                                         + Tambah Bonus
                                     </button>
                                 </div>
@@ -283,96 +250,83 @@ export default function BonusProdukPage() {
 
             <style jsx>{`
                 .bonus-page-container {
-                    padding: 40px;
+                    padding: 30px 40px;
                     background: transparent;
                     min-height: 100vh;
                     display: flex;
                     flex-direction: column;
-                    gap: 25px;
+                    gap: 35px; /* Spacing between toolbars and table cards */
                 }
                 .card-shadow {
                     background: #fff;
-                    border-radius: 12px;
-                    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+                    border-radius: 8px;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
                     border: 1px solid #f1f5f9;
                 }
-
-                /* Summary Cards */
-                .dashboard-summary-cards {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-                    gap: 20px;
-                    margin-bottom: 5px;
-                }
-                .summary-card-mini {
-                    padding: 24px;
-                    display: flex;
-                    align-items: center;
-                    gap: 18px;
-                }
-                .card-mini-icon {
-                    width: 48px;
-                    height: 48px;
-                    border-radius: 12px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-                .orange-bg {
-                    background: #fff7ed;
-                    color: #ff7a00;
-                    box-shadow: 0 4px 10px rgba(255, 122, 0, 0.1);
-                }
-                .card-mini-info { display: flex; flex-direction: column; gap: 4px; }
-                .card-mini-label { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: 0.5px; }
-                .card-mini-value { font-size: 28px; font-weight: 800; color: #1e293b; line-height: 1; }
 
                 /* Toolbar Area */
                 .toolbar-container-modern {
                     display: flex;
-                    justify-content: space-between;
+                    justify-content: flex-start;
                     align-items: center;
-                    gap: 20px;
+                }
+                .toolbar-left-group {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    width: 100%;
                 }
                 .search-box-modern {
-                    flex: 1;
-                    max-width: 400px;
+                    width: 320px;
                     display: flex;
                     align-items: center;
                     background: #fff;
-                    padding: 0 20px;
-                    height: 48px;
-                    border-radius: 10px;
-                    transition: all 0.2s;
+                    padding: 0 15px;
+                    height: 38px;
+                    border-radius: 6px;
+                    border: 1px solid #e2e8f0;
                 }
-                .search-box-modern:focus-within { border-color: #ff7a00; }
                 .search-input-modern {
                     flex: 1;
                     border: none;
                     outline: none;
                     background: transparent;
-                    font-size: 14px;
-                    color: #334155;
+                    font-size: 13px;
+                    color: #475569;
                 }
                 .search-icon-right { color: #94a3b8; }
                 
                 .filter-button-modern {
-                    width: 44px;
-                    height: 44px;
+                    width: 38px;
+                    height: 38px;
                     background: #fff;
                     border: 1px solid #ff7a00;
                     color: #ff7a00;
-                    border-radius: 10px;
+                    border-radius: 6px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     cursor: pointer;
                     transition: all 0.2s;
                 }
-                .filter-button-modern:hover { background: #fff7ed; transform: translateY(-1px); }
+                .filter-button-modern:hover { background: #fff7ed; }
+
+                .date-picker-mock {
+                    display: flex;
+                    align-items: center;
+                    gap: 40px;
+                    padding: 0 15px;
+                    height: 38px;
+                    background: #fff;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 6px;
+                    font-size: 13px;
+                    color: #94a3b8;
+                    cursor: default;
+                }
 
                 /* Main Table Card */
-                .main-content-card { overflow: hidden; }
+                .main-content-card { overflow: hidden; border-top: 1px solid #e2e8f0; border-radius: 10px; }
                 .card-header-inner {
                     padding: 30px 35px;
                     display: flex;
