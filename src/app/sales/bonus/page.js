@@ -30,20 +30,19 @@ export default function BonusProdukPage() {
     const fetchArticles = async () => {
         setLoading(true);
         try {
-            // Mock data for demonstration
-            setArticles([
-                {
-                    id: 1,
-                    title: "Bonus: Panduan Eksklusif Digital Marketing",
-                    slug: "bonus-panduan-eksklusif",
-                    status: "published",
-                    updated_at: "2024-03-22 10:00:00",
-                    author: "Admin Sales",
-                    tag_produk: [1, 2]
-                }
-            ]);
+            const token = localStorage.getItem("token");
+            const headers = { Authorization: `Bearer ${token}` };
+            const response = await axios.get("/api/sales/post", { headers });
+
+            if (response.data?.success) {
+                setArticles(response.data.data || []);
+            } else {
+                setArticles([]);
+            }
         } catch (err) {
+            console.error("Fetch articles error:", err);
             toast.error("Gagal memuat bonus produk");
+            setArticles([]);
         } finally {
             setLoading(false);
         }
@@ -75,32 +74,9 @@ export default function BonusProdukPage() {
         }
     };
 
-    const handleSave = async (data) => {
-        setLoading(true);
-        try {
-            const payload = {
-                title: data.title,
-                content: data.content,
-                slug: data.slug,
-                status: data.status,
-                idproduk: data.idproduk // Array of product IDs
-            };
-
-            const response = await axios.post("/api/sales/post", payload);
-
-            if (response.data.success) {
-                toast.success(currentArticle ? "Bonus diperbarui!" : "Bonus berhasil dibuat!");
-                setView("list");
-                fetchArticles();
-            } else {
-                toast.error(response.data.message || "Gagal menyimpan");
-            }
-        } catch (err) {
-            console.error("Save error:", err);
-            toast.error(err.response?.data?.message || "Gagal menyambung ke server");
-        } finally {
-            setLoading(false);
-        }
+    const handleSuccessSave = () => {
+        setView("list");
+        fetchArticles();
     };
 
     const filteredArticles = articles.filter(a =>
@@ -251,7 +227,7 @@ export default function BonusProdukPage() {
                                 ref={editorRef}
                                 initialData={currentArticle}
                                 availableProducts={availableProducts}
-                                onSave={handleSave}
+                                onSuccess={handleSuccessSave}
                                 onCancel={() => setView("list")}
                             />
                         </div>
@@ -433,11 +409,8 @@ const ArticleWithTags = React.forwardRef(({ initialData, availableProducts, onSa
         );
     };
 
-    const handleFinalSave = (editorData) => {
-        onSave({
-            ...editorData,
-            idproduk: selectedProducts
-        });
+    const handleFinalSuccess = () => {
+        if (onSuccess) onSuccess();
     };
 
     return (
@@ -445,7 +418,7 @@ const ArticleWithTags = React.forwardRef(({ initialData, availableProducts, onSa
             <ArticleEditor
                 ref={ref}
                 initialData={initialData}
-                onSave={handleFinalSave}
+                onSuccess={handleFinalSuccess}
                 onCancel={onCancel}
                 hideActions={true}
             />

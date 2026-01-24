@@ -21,8 +21,65 @@ const ArticleRenderer = ({ data }) => {
         );
     }
 
+    // Standard Tiptap JSON logic (recursive)
+    const renderNode = (node, index) => {
+        if (!node) return null;
+
+        // Text nodes
+        if (node.type === 'text') {
+            let content = node.text;
+            if (node.marks) {
+                node.marks.forEach(mark => {
+                    if (mark.type === 'bold') content = <strong key={index}>{content}</strong>;
+                    if (mark.type === 'italic') content = <em key={index}>{content}</em>;
+                    if (mark.type === 'underline') content = <u key={index}>{content}</u>;
+                    if (mark.type === 'link') content = <a key={index} href={mark.attrs.href} target="_blank" rel="noopener">{content}</a>;
+                });
+            }
+            return content;
+        }
+
+        const children = node.content ? node.content.map((child, i) => renderNode(child, i)) : null;
+
+        switch (node.type) {
+            case 'doc':
+                return <div key={index} className="article-tiptap-content">{children}</div>;
+            case 'paragraph':
+                return <p key={index} style={{ textAlign: node.attrs?.textAlign }}>{children}</p>;
+            case 'heading':
+                const Tag = `h${node.attrs?.level || 1}`;
+                return <Tag key={index} style={{ textAlign: node.attrs?.textAlign }}>{children}</Tag>;
+            case 'bulletList':
+                return <ul key={index}>{children}</ul>;
+            case 'orderedList':
+                return <ol key={index}>{children}</ol>;
+            case 'listItem':
+                return <li key={index}>{children}</li>;
+            case 'blockquote':
+                return <blockquote key={index}>{children}</blockquote>;
+            case 'image':
+                return (
+                    <figure key={index} style={{ textAlign: node.attrs?.textAlign }}>
+                        <img src={node.attrs.src} alt={node.attrs.alt} title={node.attrs.title} className="max-w-full rounded-lg" />
+                    </figure>
+                );
+            case 'horizontalRule':
+                return <hr key={index} />;
+            case 'hardBreak':
+                return <br key={index} />;
+            default:
+                return null;
+        }
+    };
+
+    // If it's Tiptap JSON (has type field, usually 'doc')
+    const contentObj = typeof data === 'string' ? JSON.parse(data) : data;
+    if (contentObj && contentObj.type) {
+        return <div className="article-renderer tiptap">{renderNode(contentObj, 0)}</div>;
+    }
+
     // Fallback for old block-based data (Editor.js)
-    if (data.blocks) {
+    if (contentObj && contentObj.blocks) {
         return (
             <div className="article-renderer">
                 {data.blocks.map((block, index) => {
@@ -86,67 +143,33 @@ export default function PublicArticlePage({ params }) {
     const [loading, setLoading] = React.useState(true);
 
     React.useEffect(() => {
-        // Mock fetch data
-        setTimeout(() => {
-            setArticle({
-                title: "Panduan Penggunaan Produk Premium",
-                author: "Tim Support Antigravity",
-                date: "22 Januari 2026",
-                content: JSON.stringify({
-                    time: 1705928123000,
-                    blocks: [
-                        {
-                            type: "header",
-                            data: { text: "Selamat Datang di Panduan Resmi", level: 2 }
-                        },
-                        {
-                            type: "paragraph",
-                            data: { text: "Terima kasih telah memilih produk kami. Artikel ini akan membantu Anda memahami cara mengoptimalkan setiap fitur yang tersedia dengan cara yang mudah dan efisien." }
-                        },
-                        {
-                            type: "image",
-                            data: {
-                                file: { url: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80" },
-                                caption: "Ilustrasi Dashboard Produk Modern"
-                            }
-                        },
-                        {
-                            type: "header",
-                            data: { text: "Langkah Pertama: Konfigurasi", level: 3 }
-                        },
-                        {
-                            type: "list",
-                            data: {
-                                style: "ordered",
-                                items: [
-                                    "Daftar akun baru menggunakan email aktif",
-                                    "Verifikasi identitas melalui OTP WhatsApp",
-                                    "Hubungkan nomor rekening untuk penarikan saldo",
-                                    "Lengkapi profil profesional Anda"
-                                ]
-                            }
-                        },
-                        {
-                            type: "quote",
-                            data: {
-                                text: "Sistem yang baik bukan tentang seberapa kompleks fiturnya, tapi seberapa mudah ia membantu penggunanya.",
-                                caption: "Steven Jobs (Tribute)"
-                            }
-                        },
-                        {
-                            type: "paragraph",
-                            data: { text: "Pastikan Anda selalu memperbarui aplikasi ke versi terbaru untuk mendapatkan dukungan keamanan maksimal." }
-                        },
-                        {
-                            type: "delimiter",
-                            data: {}
-                        }
-                    ]
-                })
-            });
-            setLoading(false);
-        }, 800);
-    }, []);
+        const fetchArticle = async () => {
+            try {
+                // Fetch dynamic data from real API
+                const res = await fetch(`/api/sales/post/${params.slug}`);
+                const json = await res.json();
+
+                if (json.success && json.data) {
+                    setArticle({
+                        title: json.data.title,
+                        author: json.data.author || "Admin",
+                        date: json.data.created_at || "Baru saja",
+                        content: json.data.content // Expected to be Tiptap JSON or string
+                    });
+                } else {
+                    router.push("/404");
+                }
+            } catch (err) {
+                console.error("Fetch article error:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (params.slug) {
+            fetchArticle();
+        }
+    }, [params.slug]);
 
     if (loading) {
         return (
@@ -212,7 +235,7 @@ export default function PublicArticlePage({ params }) {
 
                     {/* Article Body */}
                     <article className="article-body">
-                        <ArticleRenderer data={JSON.parse(article.content)} />
+                        <ArticleRenderer data={article.content} />
 
                         {/* Author Footer */}
                         <div className="author-card">
