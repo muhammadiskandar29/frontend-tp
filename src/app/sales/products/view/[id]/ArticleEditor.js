@@ -84,13 +84,9 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
                                 ? JSON.parse(initialData.content)
                                 : initialData.content;
 
-                            // Handle jika backend mengirim array langsung (akibat fix sebelumnya)
-                            if (Array.isArray(initialBlocks)) {
-                                initialBlocks = { blocks: initialBlocks };
-                            }
-
-                            // Pastikan jika structure-nya bukan Editor.js tapi HTML atau format lain
-                            if (!initialBlocks || (!initialBlocks.blocks && !Array.isArray(initialBlocks))) {
+                            // Pastikan jika structure-nya bukan Editor.js tapi HTML, kita handle
+                            if (typeof initialBlocks === 'string' || !initialBlocks.blocks) {
+                                console.warn("Content detected as HTML or non-block format, clearing for new Editor.js instance");
                                 initialBlocks = { blocks: [] };
                             }
                         } catch (e) {
@@ -193,7 +189,7 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
                 title,
                 slug,
                 status: forceStatus || initialData?.status || "draft",
-                content: savedData.blocks || [] // Backend expect array of blocks
+                content: savedData
             });
         } catch (err) {
             console.error("Save error:", err);
