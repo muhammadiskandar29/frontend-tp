@@ -72,7 +72,19 @@ export function middleware(req) {
     }
   }
 
-  return NextResponse.next();
+  // 4. Force No-Cache for Landing Pages & Landing API (Kill Browser Disk Cache)
+  const isLandingRoute = pathname.startsWith("/product/") || pathname.startsWith("/api/landing/");
+
+  const response = NextResponse.next();
+
+  if (isLandingRoute) {
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    response.headers.set('Surrogate-Control', 'no-store');
+  }
+
+  return response;
 }
 
 // Fungsi helper untuk mendepak user ke 'rumah' aslinya jika coba masuk divisi lain
@@ -93,5 +105,7 @@ export const config = {
     "/sales/:path*",
     "/finance/:path*",
     "/hr/:path*",
+    "/product/:path*",
+    "/api/landing/:path*",
   ],
 };
