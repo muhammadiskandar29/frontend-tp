@@ -24,27 +24,19 @@ export default function ArticleSection({ productName }) {
   const fetchArticles = async () => {
     setLoading(true);
     try {
-      // Mock data for demonstration
-      setArticles([
-        {
-          id: 1,
-          title: "Panduan Penggunaan " + (productName || "Produk"),
-          slug: "panduan-penggunaan",
-          status: "published",
-          updated_at: "2024-03-20 10:00:00",
-          author: "Admin Sales"
-        },
-        {
-          id: 2,
-          title: "Tips & Trick Maksimalkan Fitur",
-          slug: "tips-trick",
-          status: "draft",
-          updated_at: "2024-03-21 15:30:00",
-          author: "Admin Sales"
-        }
-      ]);
+      // ✅ Fetch data nyata dari backend berdasarkan produk_id
+      const response = await axios.get(`/api/sales/post?produk_id=${productId}`);
+
+      if (response.data?.success) {
+        setArticles(response.data.data || []);
+      } else {
+        // Jika belum ada data atau gagal, tampilkan list kosong
+        setArticles([]);
+      }
     } catch (err) {
-      toast.error("Gagal memuat artikel");
+      console.error("Fetch articles error:", err);
+      // Jika 404 atau error lain, set empty list
+      setArticles([]);
     } finally {
       setLoading(false);
     }
@@ -67,8 +59,13 @@ export default function ArticleSection({ productName }) {
   const handleDelete = async (id) => {
     if (confirm("Apakah Anda yakin ingin menghapus artikel ini?")) {
       try {
-        toast.success("Artikel berhasil dihapus");
-        setArticles(articles.filter(a => a.id !== id));
+        const response = await axios.delete(`/api/sales/post/${id}`);
+        if (response.data?.success) {
+          toast.success("Artikel berhasil dihapus");
+          fetchArticles();
+        } else {
+          toast.error("Gagal menghapus: " + (response.data?.message || "Unknown error"));
+        }
       } catch (err) {
         toast.error("Gagal menghapus artikel");
       }
@@ -78,15 +75,24 @@ export default function ArticleSection({ productName }) {
   const handleSave = async (data) => {
     setLoading(true);
     try {
+      // ✅ Sesuai struktur payload yang diminta USER & Backend
+      // "content" berupa Object (Editor.js output) akan dianggap sebagai Array/Associative Array oleh Laravel
       const payload = {
+        produk_id: productId,
         title: data.title,
-        content: data.content,
+        content: data.content, // Ini sudah JSON Object { time, blocks, version }
         slug: data.slug,
-        status: data.status || "draft",
-        idproduk: [productId] // Wrapped in array
+        status: data.status || "draft"
       };
 
-      const response = await axios.post("/api/sales/post", payload);
+      let response;
+      if (currentArticle?.id) {
+        // Update existing article
+        response = await axios.put(`/api/sales/post/${currentArticle.id}`, payload);
+      } else {
+        // Create new article
+        response = await axios.post("/api/sales/post", payload);
+      }
 
       if (response.data?.success) {
         toast.success(currentArticle ? "Artikel diperbarui!" : "Artikel berhasil disimpan!");
@@ -97,14 +103,21 @@ export default function ArticleSection({ productName }) {
       }
     } catch (err) {
       console.error("Save error:", err);
-      toast.error(err.response?.data?.message || "Gagal menyambung ke server");
+      const msg = err.response?.data?.message || "Gagal menyambung ke server";
+
+      // Jika ada error spesifik dari Laravel validation
+      if (err.response?.data?.errors?.content) {
+        toast.error("Format konten tidak valid (Harus berupa array/objek)");
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const filteredArticles = articles.filter(a =>
-    a.title.toLowerCase().includes(searchQuery.toLowerCase())
+    (a.title || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -170,7 +183,7 @@ export default function ArticleSection({ productName }) {
                       </td>
                       <td>
                         <span className={`status-pill-clean ${article.status}`}>
-                          {article.status.toUpperCase()}
+                          {(article.status || "draft").toUpperCase()}
                         </span>
                       </td>
                       <td>
