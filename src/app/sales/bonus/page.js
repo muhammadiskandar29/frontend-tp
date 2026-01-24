@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import {
     ChevronRight, Tag as TagIcon, Save, X, Folder, Search as SearchIcon,
-    Filter, FileText, CheckCircle, HelpCircle, Calendar
+    Filter, FileText, CheckCircle, HelpCircle, Calendar,
+    Eye, Edit2, Trash2
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import React, { useRef } from "react";
