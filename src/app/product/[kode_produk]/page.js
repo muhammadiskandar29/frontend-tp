@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import ProductClient from "./ProductClient";
 import { getBackendUrl } from "@/config/api";
 
@@ -82,6 +83,7 @@ export async function generateViewport() {
 
 // ✅ Server Component Wrapper
 export default async function ProductPage({ params }) {
+  headers(); // ← PENTING: Menandai request ini truly request-bound & mematikan browser disk cache
   const { kode_produk } = params;
 
   // Fetch data di server
