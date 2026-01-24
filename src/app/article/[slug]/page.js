@@ -159,23 +159,16 @@ export default function PublicArticlePage({ params }) {
     React.useEffect(() => {
         const fetchArticle = async () => {
             try {
-                // Selesaikan params jika dia berupa Promise (Next.js 15+) 
-                // atau gunakan langsung jika dia Object (Next.js 14)
                 const resolvedParams = await params;
                 const slug = resolvedParams?.slug;
 
-                console.log("Fetching article for slug:", slug); // Debugging
                 if (!slug) {
-                    console.error("No slug found in params");
                     setLoading(false);
                     return;
                 }
 
-                const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "https://api.ternakproperti.com";
-                const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
-                const headers = token ? { "Authorization": `Bearer ${token}` } : {};
-
-                const res = await fetch(`${baseUrl}/api/post/slug/${slug}`, { headers });
+                // Fetch through local proxy to avoid CORS
+                const res = await fetch(`/api/post/slug/${slug}`);
                 const json = await res.json();
 
                 if (json.success && json.data) {
@@ -186,7 +179,6 @@ export default function PublicArticlePage({ params }) {
                         content: json.data.content
                     });
                 } else {
-                    console.warn("Article not found in API response");
                     router.push("/404");
                 }
             } catch (err) {
@@ -212,6 +204,8 @@ export default function PublicArticlePage({ params }) {
             </div>
         );
     }
+
+    if (!article) return null;
 
     return (
         <div className="public-article-container">
