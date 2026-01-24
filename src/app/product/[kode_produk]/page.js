@@ -11,6 +11,7 @@ async function getProduct(kode_produk) {
     // ✅ CLEAN REVALIDATION: Gunakan tags untuk invalidasi cache tanpa query params
     const url = getBackendUrl(`landing/${kode_produk}`);
     const res = await fetch(url, {
+      cache: 'no-store',
       next: {
         revalidate: 0,
         tags: [`product-${kode_produk}`]

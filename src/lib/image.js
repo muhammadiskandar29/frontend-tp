@@ -13,8 +13,15 @@ export const buildImageUrl = (path) => {
     if (!path) return "";
     if (typeof path !== "string") return "";
 
-    // If already a full URL with https, return directly
-    if (path.startsWith("https://")) return path;
+    // If already a full URL with https, or a blob/data URL, return directly
+    if (
+        path.startsWith("https://") ||
+        path.startsWith("http://") ||
+        path.startsWith("blob:") ||
+        path.startsWith("data:")
+    ) {
+        return path;
+    }
 
     // Clean path
     let cleanPath = path;

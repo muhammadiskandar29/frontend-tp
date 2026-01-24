@@ -1,6 +1,10 @@
 "use client";
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import { useState, useEffect, useRef } from "react";
+import { buildImageUrl } from "@/lib/image";
 import { useRouter, useParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import {
@@ -651,7 +655,7 @@ export default function EditProductsPage() {
           <div style={containerStyle}>
             <div style={imageWrapperStyle}>
               <img
-                src={imageData.src}
+                src={buildImageUrl(imageData.src)}
                 alt={imageData.alt || ""}
                 style={{
                   width: "100%",
@@ -784,7 +788,7 @@ export default function EditProductsPage() {
                           {item.gambar ? (
                             <div className="testi-avatar-wrapper-new">
                               <img
-                                src={item.gambar}
+                                src={buildImageUrl(item.gambar)}
                                 alt={`Foto ${item.nama}`}
                                 className="testi-avatar-new"
                                 itemProp="author"
@@ -2060,7 +2064,7 @@ export default function EditProductsPage() {
               postal_code: img.postal_code || ""
             })),
             autoslide: content?.autoplay || false,
-            autoslideDuration: content?.interval || 5000,
+            autoslideDuration: content?.interval ? content.interval / 1000 : 5, // Konversi ms ke detik
             showCaption: false,
             componentId: config?.componentId || `image-slider-${Date.now()}`,
             parentId: blockParentId || config?.parentId || null // ✅ TAMBAHKAN parentId untuk image-slider
@@ -2190,7 +2194,10 @@ export default function EditProductsPage() {
       const headers = { Authorization: `Bearer ${token}` };
 
       // Fetch produk berdasarkan ID
-      const produkRes = await fetch(`/api/sales/produk/${productId}`, { headers });
+      const produkRes = await fetch(`/api/sales/produk/${productId}`, {
+        headers,
+        cache: 'no-store'
+      });
       const produkResponse = await produkRes.json();
 
       if (!produkRes.ok || !produkResponse.success) {
@@ -2888,7 +2895,7 @@ export default function EditProductsPage() {
             postal_code: img.postal_code || ""
           })),
           autoplay: data.autoslide || false,
-          interval: data.autoslideDuration || 5000,
+          interval: (data.autoslideDuration || 5) * 1000, // Konversi detik ke ms untuk backend
           showDots: true,
           showArrows: true
         };
@@ -3421,7 +3428,17 @@ export default function EditProductsPage() {
 
       // ✅ FIX: Invalidate cache and instant navigation
       router.refresh();
-      router.push("/sales/products");
+
+      // ✅ REDIRECT KUAT: Tunggu sebentar agar toast terlihat, lalu pindah halaman
+      setTimeout(() => {
+        router.push("/sales/products");
+        // Fallback jika router.push gagal
+        setTimeout(() => {
+          if (window.location.pathname !== "/sales/products") {
+            window.location.href = "/sales/products";
+          }
+        }, 500);
+      }, 800);
 
     } catch (error) {
       console.error("Error saving draft:", error);
@@ -3593,9 +3610,17 @@ export default function EditProductsPage() {
 
       // ✅ FIX: Invalidate cache and instant navigation
       router.refresh();
-      // Redirect ke halaman products
-      console.log("Redirecting to /sales/products...");
-      router.push("/sales/products");
+
+      // ✅ REDIRECT KUAT: Tunggu sebentar agar toast terlihat, lalu pindah halaman
+      setTimeout(() => {
+        router.push("/sales/products");
+        // Fallback jika router.push gagal
+        setTimeout(() => {
+          if (window.location.pathname !== "/sales/products") {
+            window.location.href = "/sales/products";
+          }
+        }, 500);
+      }, 800);
 
     } catch (error) {
       console.error("Error saving product:", error);
@@ -4398,7 +4423,7 @@ export default function EditProductsPage() {
                     </label>
                     {pengaturanForm.meta_image && (
                       <div style={{ marginTop: "8px" }}>
-                        <img src={pengaturanForm.meta_image} alt="Meta preview" style={{ maxWidth: "100%", borderRadius: "6px", maxHeight: "200px" }} />
+                        <img src={buildImageUrl(pengaturanForm.meta_image)} alt="Meta preview" style={{ maxWidth: "100%", borderRadius: "6px", maxHeight: "200px" }} />
                       </div>
                     )}
                   </div>

@@ -194,17 +194,41 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
 
     const updateColorFromSelection = () => {
       try {
-        // Get current text color dari editor selection
+        // Get attributes dari selection/cursor
         const textStyleAttrs = editor.getAttributes('textStyle');
+        const highlightAttrs = editor.getAttributes('highlight');
 
-        // Update text color jika ada
+        // 1. Detect Font Size
+        if (textStyleAttrs.fontSize) {
+          const size = parseInt(textStyleAttrs.fontSize);
+          if (!isNaN(size)) {
+            setDisplayedFontSize(size);
+            setActiveFontSize(size);
+            setSelectedFontSize(size);
+          }
+        } else {
+          // Default font size jika tidak ada attribute spesifik
+          setDisplayedFontSize(16);
+          setActiveFontSize(16);
+          setSelectedFontSize(16);
+        }
+
+        // 2. Detect Font Family
+        if (textStyleAttrs.fontFamily) {
+          const family = textStyleAttrs.fontFamily.replace(/['"]/g, "");
+          setActiveFontFamily(family);
+        } else {
+          setActiveFontFamily("Page Font");
+        }
+
+        // 3. Detect Text Color
         if (textStyleAttrs.color) {
           const color = textStyleAttrs.color;
-          // Hanya update jika berbeda untuk avoid infinite loop
           if (currentTextColor !== color) {
             setCurrentTextColor(color);
             setSelectedColor(color);
             setDisplayedColor(color);
+            setActiveColor(color);
 
             // Update button visual
             requestAnimationFrame(() => {
@@ -218,12 +242,12 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
             });
           }
         } else {
-          // Jika tidak ada color attribute, gunakan default
           const defaultColor = "#000000";
           if (currentTextColor !== defaultColor) {
             setCurrentTextColor(defaultColor);
             setSelectedColor(defaultColor);
             setDisplayedColor(defaultColor);
+            setActiveColor(defaultColor);
 
             requestAnimationFrame(() => {
               if (textColorButtonRef.current) {
@@ -237,18 +261,15 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
           }
         }
 
-        // Get current background color dari highlight extension
-        const highlightAttrs = editor.getAttributes('highlight');
+        // 4. Detect Background Color (Highlight)
         if (highlightAttrs && highlightAttrs.color) {
           const bgColor = highlightAttrs.color;
-          // Hanya update jika berbeda
           if (currentBgColor !== bgColor) {
             setCurrentBgColor(bgColor);
             setSelectedBgColor(bgColor);
             setDisplayedBgColor(bgColor);
             setActiveBgColor(bgColor);
 
-            // Update button visual
             requestAnimationFrame(() => {
               if (bgColorButtonRef.current) {
                 const btn = bgColorButtonRef.current;
@@ -260,7 +281,6 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
             });
           }
         } else {
-          // Tidak ada highlight - set ke transparent
           const defaultBgColor = "transparent";
           if (currentBgColor !== defaultBgColor) {
             setCurrentBgColor(defaultBgColor);
@@ -279,8 +299,38 @@ export default function TextComponent({ data = {}, onUpdate, onMoveUp, onMoveDow
             });
           }
         }
+
+        // 5. Detect Active Marks (Bold, Italic, etc)
+        const isBold = editor.isActive('bold');
+        const isItalic = editor.isActive('italic');
+        const isUnderline = editor.isActive('underline');
+        const isStrike = editor.isActive('strike');
+
+        setDisplayedBold(isBold);
+        setCurrentBold(isBold);
+        setActiveBold(isBold);
+
+        setDisplayedItalic(isItalic);
+        setCurrentItalic(isItalic);
+        setActiveItalic(isItalic);
+
+        setDisplayedUnderline(isUnderline);
+        setCurrentUnderline(isUnderline);
+        setActiveUnderline(isUnderline);
+
+        // 6. Detect Paragraph Style
+        let pStyle = "normal";
+        if (editor.isActive('heading', { level: 1 })) pStyle = "h1";
+        else if (editor.isActive('heading', { level: 2 })) pStyle = "h2";
+        else if (editor.isActive('heading', { level: 3 })) pStyle = "h3";
+
+        // Update data state via handleChange without triggering infinite update
+        if (data.paragraphStyle !== pStyle) {
+          handleChange("paragraphStyle", pStyle);
+        }
+
       } catch (e) {
-        // Ignore errors
+        console.error("Error detecting styles from selection:", e);
       }
     };
 

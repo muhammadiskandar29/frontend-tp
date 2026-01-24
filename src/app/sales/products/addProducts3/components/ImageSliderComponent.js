@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { buildImageUrl } from "@/lib/image";
 import { flushSync } from "react-dom";
 import { InputText } from "primereact/inputtext";
 import { InputNumber } from "primereact/inputnumber";
 import { Slider } from "primereact/slider";
 import { Dropdown } from "primereact/dropdown";
 import { InputSwitch } from "primereact/inputswitch";
-import { 
+import {
   Image as ImageIcon, Info, ChevronDown as ChevronDownIcon, ChevronUp,
   Pencil, Trash2, Eye, Settings, X, ChevronDown, ChevronUp as ChevronUpIcon,
   ArrowDown, ArrowUp
@@ -20,7 +21,7 @@ export default function ImageSliderComponent({ data = {}, onUpdate, onMoveUp, on
   const autoslide = data.autoslide || false;
   const autoslideDuration = data.autoslideDuration || 5;
   const showCaption = data.showCaption || false;
-  
+
   // Advanced settings state (sama seperti ImageComponent)
   const [alignment, setAlignment] = useState(data.alignment || "center");
   const [imageWidth, setImageWidth] = useState(data.imageWidth || 100);
@@ -107,7 +108,7 @@ export default function ImageSliderComponent({ data = {}, onUpdate, onMoveUp, on
   const moveImage = (imageIndex, direction) => {
     if (direction === "up" && imageIndex === 0) return;
     if (direction === "down" && imageIndex === images.length - 1) return;
-    
+
     const newImages = [...images];
     const newIndex = direction === "up" ? imageIndex - 1 : imageIndex + 1;
     [newImages[imageIndex], newImages[newIndex]] = [newImages[newIndex], newImages[imageIndex]];
@@ -153,20 +154,20 @@ export default function ImageSliderComponent({ data = {}, onUpdate, onMoveUp, on
       {images.map((image, i) => (
         <div key={i} className="image-slider-item" style={{ marginBottom: "16px" }}>
           <div className="uploaded-image-container">
-            <div 
+            <div
               className="uploaded-image-preview-box"
               onMouseEnter={() => setShowImageActions({ ...showImageActions, [i]: true })}
               onMouseLeave={() => setShowImageActions({ ...showImageActions, [i]: false })}
             >
-              <img 
-                src={image.src} 
-                alt="Preview" 
-                className="uploaded-image-preview-img" 
+              <img
+                src={buildImageUrl(image.src)}
+                alt="Preview"
+                className="uploaded-image-preview-img"
               />
               {showImageActions[i] && (
                 <div className="image-action-overlay">
-                  <button 
-                    className="image-action-btn" 
+                  <button
+                    className="image-action-btn"
                     title={i === 0 ? "Tidak bisa pindah ke atas" : "Pindah ke atas"}
                     onClick={() => moveImage(i, "up")}
                     disabled={i === 0}
@@ -174,8 +175,8 @@ export default function ImageSliderComponent({ data = {}, onUpdate, onMoveUp, on
                   >
                     <ArrowUp size={16} />
                   </button>
-                  <button 
-                    className="image-action-btn" 
+                  <button
+                    className="image-action-btn"
                     title={i === images.length - 1 ? "Tidak bisa pindah ke bawah" : "Pindah ke bawah"}
                     onClick={() => moveImage(i, "down")}
                     disabled={i === images.length - 1}
@@ -183,8 +184,8 @@ export default function ImageSliderComponent({ data = {}, onUpdate, onMoveUp, on
                   >
                     <ArrowDown size={16} />
                   </button>
-                  <button 
-                    className="image-action-btn" 
+                  <button
+                    className="image-action-btn"
                     title="Hapus"
                     onClick={() => removeImage(i)}
                   >
@@ -210,7 +211,7 @@ export default function ImageSliderComponent({ data = {}, onUpdate, onMoveUp, on
               Ganti Gambar
             </label>
           </div>
-          
+
           {/* Image Details */}
           <div className="form-field-group" style={{ marginTop: "8px" }}>
             <InputText
@@ -318,23 +319,23 @@ export default function ImageSliderComponent({ data = {}, onUpdate, onMoveUp, on
 
       {/* Advance Section */}
       <div className="component-advance-section">
-        <button 
+        <button
           className="component-advance-toggle"
           onClick={() => setShowAdvance(!showAdvance)}
         >
           <span>Advance</span>
-          <ChevronDownIcon 
-            size={16} 
+          <ChevronDownIcon
+            size={16}
             className={showAdvance ? "rotate-180" : ""}
           />
         </button>
-        
+
         {showAdvance && (
           <div className="component-advance-content">
             {/* Desain Section */}
             <div className="advance-section-group">
               <label className="advance-section-label">Desain</label>
-              
+
               {/* Perataan Gambar */}
               <div className="advance-subsection">
                 <label className="advance-section-sublabel">Perataan Gambar</label>

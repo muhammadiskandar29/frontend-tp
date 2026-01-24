@@ -33,6 +33,7 @@ export async function GET(request, { params }) {
     // Gunakan endpoint sesuai dokumentasi: /api/landing/{kode_produk}
     let response = await fetch(`${BACKEND_URL}/api/landing/${decodedKode}`, {
       method: "GET",
+      cache: 'no-store',
       headers: {
         Accept: "application/json",
         "Cache-Control": "no-cache, no-store, must-revalidate"
@@ -54,6 +55,7 @@ export async function GET(request, { params }) {
 
         response = await fetch(`${BACKEND_URL}/api/landing/${slugKode}`, {
           method: "GET",
+          cache: 'no-store',
           headers: {
             Accept: "application/json",
             "Cache-Control": "no-cache, no-store, must-revalidate"
@@ -80,7 +82,15 @@ export async function GET(request, { params }) {
     }
 
     console.log(`[LANDING] Product found: ${data.data?.nama || data.nama}`);
-    return NextResponse.json(data);
+
+    // ✅ FORCE NO-CACHE: Pastikan browser tidak meng-cache API response ini
+    const res = NextResponse.json(data);
+    res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+    res.headers.set('Pragma', 'no-cache');
+    res.headers.set('Expires', '0');
+    res.headers.set('Surrogate-Control', 'no-store');
+
+    return res;
   } catch (error) {
     console.error("[LANDING] Error:", error);
     return NextResponse.json(

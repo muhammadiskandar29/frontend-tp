@@ -1922,11 +1922,6 @@ function ProductClient({ initialProductData, initialLandingPage }) {
 
               {/* Submit Button */}
               <div className="preview-form-submit-wrapper">
-                {isBundling && selectedBundling === null && (
-                  <p style={{ color: "#f97316", fontSize: "13px", textAlign: "center", marginBottom: "12px", fontWeight: "600" }}>
-                    ⚠️ Anda belum memilih paket produk
-                  </p>
-                )}
                 <button
                   type="button"
                   className="preview-form-submit-btn"

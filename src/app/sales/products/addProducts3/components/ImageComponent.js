@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { buildImageUrl } from "@/lib/image";
 import { InputText } from "primereact/inputtext";
 import { InputNumber } from "primereact/inputnumber";
 import { Slider } from "primereact/slider";
@@ -13,7 +14,7 @@ export default function ImageComponent({ data = {}, onUpdate, onMoveUp, onMoveDo
   const caption = data.caption || "";
   const [showAdvance, setShowAdvance] = useState(false);
   const [showImageActions, setShowImageActions] = useState(false);
-  
+
   // Advanced settings state
   const [alignment, setAlignment] = useState(data.alignment || "center");
   const [imageWidth, setImageWidth] = useState(data.imageWidth || 100);
@@ -97,12 +98,12 @@ export default function ImageComponent({ data = {}, onUpdate, onMoveUp, onMoveDo
       <div className="component-upload-area">
         {src ? (
           <div className="uploaded-image-container">
-            <div 
+            <div
               className="uploaded-image-preview-box"
               onMouseEnter={() => setShowImageActions(true)}
               onMouseLeave={() => setShowImageActions(false)}
             >
-              <img src={src} alt="Preview" className="uploaded-image-preview-img" />
+              <img src={buildImageUrl(src)} alt="Preview" className="uploaded-image-preview-img" />
               {showImageActions && (
                 <div className="image-action-overlay">
                   <button className="image-action-btn" title="Edit">
@@ -153,17 +154,17 @@ export default function ImageComponent({ data = {}, onUpdate, onMoveUp, onMoveDo
 
       {/* Advance Section */}
       <div className="component-advance-section">
-        <button 
+        <button
           className="component-advance-toggle"
           onClick={() => setShowAdvance(!showAdvance)}
         >
           <span>Advance</span>
-          <ChevronDownIcon 
-            size={16} 
+          <ChevronDownIcon
+            size={16}
             className={showAdvance ? "rotate-180" : ""}
           />
         </button>
-        
+
         {showAdvance && (
           <div className="component-advance-content">
             {/* Alt Text */}
@@ -191,7 +192,7 @@ export default function ImageComponent({ data = {}, onUpdate, onMoveUp, onMoveDo
             {/* Desain Section */}
             <div className="advance-section-group">
               <label className="advance-section-label">Desain</label>
-              
+
               {/* Perataan Gambar */}
               <div className="advance-subsection">
                 <label className="advance-section-sublabel">Perataan Gambar</label>
