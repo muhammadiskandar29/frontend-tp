@@ -2,16 +2,21 @@
 
 import { useState, useEffect, useRef, useImperativeHandle, forwardRef } from "react";
 import { toast } from "react-hot-toast";
+import {
+    Bold, Italic, List, ListOrdered, Quote, AlignLeft,
+    AlignCenter, AlignRight, Link, Image as ImageIcon,
+    MoreHorizontal, Undo, Redo, Strikethrough, ChevronDown
+} from "lucide-react";
 import "@/styles/sales/bonus.css";
 
 // Editor.js core and plugins
 let EditorJS;
 let Header;
-let List;
+let ListBlock;
 let Table;
-let Image;
+let ImageBlock;
 let Checklist;
-let Quote;
+let QuoteBlock;
 let Code;
 let Delimiter;
 let InlineCode;
@@ -63,11 +68,11 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
 
                     EditorJS = EditorJSModule.default;
                     Header = HeaderModule.default;
-                    List = ListModule.default;
+                    ListBlock = ListModule.default;
                     Table = TableModule.default;
-                    Image = ImageModule.default;
+                    ImageBlock = ImageModule.default;
                     Checklist = ChecklistModule.default;
-                    Quote = QuoteModule.default;
+                    QuoteBlock = QuoteModule.default;
                     Code = CodeModule.default;
                     Delimiter = DelimiterModule.default;
                     InlineCode = InlineCodeModule.default;
@@ -76,7 +81,6 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
                 }
 
                 if (!editorInstance.current && editorContainerRef.current) {
-                    // Parse data jika string
                     let initialBlocks = {};
                     if (initialData?.content) {
                         try {
@@ -84,18 +88,13 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
                                 ? JSON.parse(initialData.content)
                                 : initialData.content;
 
-                            // Handling Robust:
-                            // 1. Jika backend kirim Array (blocks only) -> BUNGKUS jadi { blocks: [...] }
-                            // 2. Jika backend kirim Object (full EditorJS data) -> Pakai langsung
                             if (Array.isArray(parsed)) {
                                 initialBlocks = { blocks: parsed };
                             } else {
                                 initialBlocks = parsed;
                             }
 
-                            // Validasi akhir: harus punya properti 'blocks'
                             if (!initialBlocks || !initialBlocks.blocks) {
-                                // Fallback jika struktur tidak dikenali (misal HTML raw)
                                 initialBlocks = { blocks: [] };
                             }
                         } catch (e) {
@@ -107,52 +106,15 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
                     const editor = new EditorJS({
                         holder: editorContainerRef.current,
                         tools: {
-                            header: {
-                                class: Header,
-                                shortcut: 'CMD+SHIFT+H',
-                                config: {
-                                    levels: [1, 2, 3, 4],
-                                    defaultLevel: 2
-                                },
-                                inlineToolbar: true
-                            },
-                            list: {
-                                class: List,
-                                inlineToolbar: true,
-                            },
-                            checklist: {
-                                class: Checklist,
-                                inlineToolbar: true,
-                            },
-                            table: {
-                                class: Table,
-                                inlineToolbar: true,
-                            },
-                            quote: {
-                                class: Quote,
-                                inlineToolbar: true,
-                                config: {
-                                    quotePlaceholder: 'Enter a quote',
-                                    captionPlaceholder: 'Quote\'s author',
-                                },
-                            },
-                            code: Code,
+                            header: { class: Header, inlineToolbar: true },
+                            list: { class: ListBlock, inlineToolbar: true },
+                            image: { class: ImageBlock },
+                            quote: { class: QuoteBlock, inlineToolbar: true },
                             delimiter: Delimiter,
-                            inlineCode: InlineCode,
-                            marker: Marker,
-                            embed: Embed,
-                            image: {
-                                class: Image,
-                                config: {
-                                    endpoints: {
-                                        byFile: '/api/sales/upload/image',
-                                        byUrl: '/api/sales/upload/image-url',
-                                    }
-                                }
-                            }
                         },
                         data: initialBlocks,
-                        placeholder: 'Mulai tulis artikel edukasi Anda di sini...',
+                        placeholder: 'Tulis artikel Anda di sini...',
+                        minHeight: 300,
                         onReady: () => {
                             editorInstance.current = editor;
                             setEditorLoaded(true);
@@ -176,6 +138,7 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
         };
     }, [initialData]);
 
+    // Slug generation
     useEffect(() => {
         if (!initialData && title) {
             setSlug(title.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, ''));
@@ -188,11 +151,7 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
 
         setSaving(true);
         try {
-            // ✅ Output Editor.js : { time, blocks: [...], version }
             const savedData = await editorInstance.current.save();
-
-            // Backend validasi "The content must be an array"
-            // Kita kirimkan array blocks-nya saja agar sesuai permintaan backend
             onSave({
                 title,
                 slug,
@@ -201,84 +160,99 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
             });
         } catch (err) {
             console.error("Save error:", err);
-            toast.error("Gagal mengambil data dari editor");
+            toast.error("Gagal menyimpan");
         } finally {
             setSaving(false);
         }
     };
 
-    useImperativeHandle(ref, () => ({
-        handleSave
-    }));
+    useImperativeHandle(ref, () => ({ handleSave }));
 
     return (
         <div className="wp-classic-layout">
-            <div className="wp-header">
-                <h2>Add New Post</h2>
+            {/* 1. Title Input Area */}
+            <div className="wp-title-section">
+                <input
+                    type="text"
+                    className="wp-title-input"
+                    placeholder="Enter title here"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                />
+            </div>
+            
+            {/* 2. Permalink Area */}
+            {title && (
+                <div className="wp-permalink-line">
+                    <span className="text-gray-500 text-sm">Permalink: </span>
+                    <a href="#" className="text-blue-600 text-sm hover:underline">
+                        {typeof window !== 'undefined' ? window.location.origin : ''}/article/{slug}
+                    </a>
+                    <button className="wp-btn-small ml-2">Edit</button>
+                </div>
+            )}
+
+            {/* 3. Add Media Button */}
+            <div className="wp-media-section mt-4 mb-2">
+                <button className="wp-add-media-btn">
+                    <ImageIcon size={14} style={{marginRight: 6}} /> 
+                    Add Media
+                </button>
             </div>
 
-            <div className="wp-grid-container">
-                {/* Main Content Column */}
-                <div className="wp-main-column">
-                    {/* Title Input */}
-                    <div className="wp-title-wrapper">
-                        <input
-                            type="text"
-                            className="wp-title-input"
-                            placeholder="Enter title here"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                        />
-                    </div>
+            {/* 4. Main Editor Container (The Box) */}
+            <div className="wp-editor-frame">
+                {/* Visual / Text Tabs */}
+                <div className="wp-editor-tabs">
+                    <button className="wp-tab active">Visual</button>
+                    <button className="wp-tab">Text</button>
+                </div>
 
-                    {/* Permalink (WP Style) */}
-                    {title && (
-                        <div className="wp-permalink">
-                            <span className="permalink-label">Permalink:</span>
-                            <span className="permalink-base">{typeof window !== 'undefined' ? window.location.origin : ''}/article/</span>
-                            <span className="permalink-slug">{slug}</span>
-                            <button className="permalink-edit-btn" onClick={() => toast.success("Slug copied")}>Edit</button>
-                        </div>
-                    )}
-
-                    {/* Toolbar Area (Add Media + Fake Toolbar Visuals) */}
-                    <div className="wp-toolbar-area">
-                        <button className="wp-add-media-btn">
-                            <span className="dashicons dashicons-admin-media"></span> Add Media
-                        </button>
-                    </div>
-
-                    {/* Editor Box */}
-                    <div className="wp-editor-container card-shadow">
-                        {!editorLoaded && (
-                            <div className="wp-editor-loading">
-                                <div className="spinner-wp"></div>
-                                <p>Loading editor...</p>
-                            </div>
-                        )}
-                        <div ref={editorContainerRef} className="editorjs-content-wrapper wp-editor-content"></div>
-                        <div className="wp-word-count">
-                            Word count: 0
-                        </div>
+                {/* Toolbar */}
+                <div className="wp-toolbar">
+                    <div className="wp-toolbar-row">
+                        <button className="wp-tool-btn dropdown" title="Paragraph">Paragraph <ChevronDown size={10} /></button>
+                        <button className="wp-tool-btn" title="Bold"><Bold size={14} /></button>
+                        <button className="wp-tool-btn" title="Italic"><Italic size={14} /></button>
+                        <button className="wp-tool-btn" title="Bulleted List"><List size={14} /></button>
+                        <button className="wp-tool-btn" title="Numbered List"><ListOrdered size={14} /></button>
+                        <button className="wp-tool-btn" title="Blockquote"><Quote size={14} /></button>
+                        <button className="wp-tool-btn" title="Align Left"><AlignLeft size={14} /></button>
+                        <button className="wp-tool-btn" title="Align Center"><AlignCenter size={14} /></button>
+                        <button className="wp-tool-btn" title="Align Right"><AlignRight size={14} /></button>
+                        <button className="wp-tool-btn" title="Insert/edit link"><Link size={14} /></button>
+                        <button className="wp-tool-btn" title="Read More">Insert Read More tag</button>
+                        <button className="wp-tool-btn" title="Toolbar Toggle"><MoreHorizontal size={14} /></button>
                     </div>
                 </div>
 
-                {/* Sidebar Column (Publish Box) */}
-                <div className="wp-sidebar-column">
-                    {!hideActions && (
-                        <div className="wp-meta-box card-shadow">
-                            <div className="wp-box-header">
-                                <h3>Publish</h3>
-                            </div>
-                            <div className="wp-box-content">
-                                <div className="wp-misc-actions">
-                                    <button className="btn-wp-simple" onClick={() => handleSave('draft')} disabled={saving}>Save Draft</button>
-                                    <button className="btn-wp-simple" style={{ float: 'right' }}>Preview</button>
-                                </div>
-                                <div className="wp-status-info">
-                                    <p><i className="icon-status"></i> Status: <strong>{initialData?.status || 'Draft'}</strong></p>
-                                    <p><i className="icon-visibility"></i> Visibility: <strong>Public</strong></p>
-                                    <p><i className="icon-calendar"></i> Publish: <strong>immediately</strong></p>
+                {/* The Editor Area */}
+                <div className="wp-editor-content-area" onClick={() => editorInstance.current?.focus?.()}>
+                    {!editorLoaded && <div className="p-4 text-gray-400">Loading editor...</div>}
+                    <div ref={editorContainerRef} className="editorjs-override"></div>
+                </div>
+
+                {/* Status Bar */}
+                <div className="wp-editor-footer">
+                    <div className="text-xs text-gray-500">
+                        p
+                    </div>
+                </div>
+            </div>
+
+            {/* 5. Publish Actions (Optional Sidebar Simulation) */}
+            {!hideActions && (
+                <div className="wp-publish-actions mt-6 p-4 bg-white border border-gray-300">
+                    <div className="flex justify-between items-center mb-4">
+                        <button className="text-red-600 text-sm hover:underline">Move to Trash</button>
+                        <button 
+                            className="bg-blue-600 text-white px-4 py-1.5 rounded text-sm font-semibold hover:bg-blue-700 disabled:opacity-50"
+                            onClick={() => handleSave('published')}
+                            disabled={saving}
+                        >
+                            {saving ? 'Publishing...' : 'Publish'}
+                        </button>
+                    </div>
                                 </div>
                             </div>
                             <div className="wp-box-footer">
@@ -291,25 +265,25 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
                                     {saving ? "Publishing..." : "Publish"}
                                 </button>
                             </div>
-                        </div>
+                        </div >
                     )}
 
-                    <div className="wp-meta-box card-shadow">
-                        <div className="wp-box-header">
-                            <h3>Categories</h3>
-                        </div>
-                        <div className="wp-box-content" style={{ maxHeight: '150px', overflowY: 'auto' }}>
-                            <div style={{ padding: '10px' }}>
-                                <label style={{ display: 'block', marginBottom: '5px' }}><input type="checkbox" /> Uncategorized</label>
-                                <label style={{ display: 'block', marginBottom: '5px' }}><input type="checkbox" /> News</label>
-                                <label style={{ display: 'block', marginBottom: '5px' }}><input type="checkbox" /> Updates</label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+<div className="wp-meta-box card-shadow">
+    <div className="wp-box-header">
+        <h3>Categories</h3>
+    </div>
+    <div className="wp-box-content" style={{ maxHeight: '150px', overflowY: 'auto' }}>
+        <div style={{ padding: '10px' }}>
+            <label style={{ display: 'block', marginBottom: '5px' }}><input type="checkbox" /> Uncategorized</label>
+            <label style={{ display: 'block', marginBottom: '5px' }}><input type="checkbox" /> News</label>
+            <label style={{ display: 'block', marginBottom: '5px' }}><input type="checkbox" /> Updates</label>
+        </div>
+    </div>
+</div>
+                </div >
+            </div >
 
-            <style jsx global>{`
+    <style jsx global>{`
                 /* WP Admin Like Styles */
                 .wp-classic-layout {
                     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
@@ -547,7 +521,7 @@ const ArticleEditor = forwardRef(({ initialData, onSave, onCancel, hideActions =
                     z-index: 9999;
                 }
             `}</style>
-        </div>
+        </div >
     );
 });
 
