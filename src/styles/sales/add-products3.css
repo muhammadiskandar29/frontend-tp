@@ -3743,7 +3743,7 @@ html:has(.add-products3-container) {
 }
 
 .rich-text-editor p {
-  margin: 0 0 1em 0;
+  margin: 0 0 0.5em 0;
   /* Memberikan jarak antar paragraf agar Enter terlihat */
   font-size: 16px;
   /* Default font size 16px */
@@ -4460,7 +4460,7 @@ html:has(.add-products3-container) {
 }
 
 .preview-text p {
-  margin: 0 0 1em 0 !important;
+  margin: 0 0 0.5em 0 !important;
   /* Memberikan jarak antar paragraf agar Enter terlihat */
   /* Removed default font-size and font-weight to allow inline styles from HTML content */
   line-height: 1.5;
