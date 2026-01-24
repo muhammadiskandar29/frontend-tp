@@ -3,7 +3,7 @@ export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 import FormData from "form-data";
 import axios from "axios";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 import { BACKEND_URL } from "@/config/env";
 
@@ -668,6 +668,8 @@ export async function PUT(request, { params }) {
           revalidatePath(`/product/${kode}`, 'page');
           revalidatePath("/sales/products");
           revalidatePath("/api/sales/produk");
+          revalidatePath(`/api/landing/${kode}`);
+          revalidateTag(`product-${kode}`);
         }
       } catch (revalidateError) {
         console.error(`[ROUTE_UPDATE_PUT] Revalidation failed:`, revalidateError);
@@ -1135,6 +1137,8 @@ export async function POST(request, { params }) {
           revalidatePath(`/product/${kode}`, 'page');
           revalidatePath("/sales/products");
           revalidatePath("/api/sales/produk");
+          revalidatePath(`/api/landing/${kode}`);
+          revalidateTag(`product-${kode}`);
         }
       } catch (revalidateError) {
         console.error(`[ROUTE_UPDATE] Revalidation failed:`, revalidateError);

@@ -300,7 +300,7 @@ export default function AdminProductsPage() {
                                 if (!kodeProduk || kodeProduk.includes(' ') || kodeProduk.includes('%20')) {
                                   kodeProduk = generateSlug(p.nama);
                                 }
-                                if (kodeProduk) window.open(`/product/${kodeProduk}?t=${Date.now()}`, '_blank');
+                                if (kodeProduk) window.open(`/product/${kodeProduk}`, '_blank');
                                 else alert('Kode produk tidak tersedia');
                               }}
                             >

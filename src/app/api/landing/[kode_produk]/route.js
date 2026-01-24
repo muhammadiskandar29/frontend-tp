@@ -31,15 +31,16 @@ export async function GET(request, { params }) {
     console.log(`[LANDING] Fetching product with kode: ${decodedKode}`);
 
     // Gunakan endpoint sesuai dokumentasi: /api/landing/{kode_produk}
-    // ✅ BUSSING CACHE: Tambahkan timestamp unik ke Laravel
-    let response = await fetch(`${BACKEND_URL}/api/landing/${decodedKode}?t=${Date.now()}`, {
+    let response = await fetch(`${BACKEND_URL}/api/landing/${decodedKode}`, {
       method: "GET",
       headers: {
         Accept: "application/json",
-        "Cache-Control": "no-cache",
-        "Pragma": "no-cache"
+        "Cache-Control": "no-cache, no-store, must-revalidate"
       },
-      cache: 'no-store',
+      next: {
+        revalidate: 0,
+        tags: [`product-${decodedKode}`]
+      }
     });
 
     let data = await response.json().catch(() => ({}));
@@ -51,15 +52,16 @@ export async function GET(request, { params }) {
       if (slugKode !== decodedKode) {
         console.log(`[LANDING] Product not found, trying with slug: ${slugKode}`);
 
-        // ✅ BUSSING CACHE: Tambahkan timestamp unik ke Laravel
-        response = await fetch(`${BACKEND_URL}/api/landing/${slugKode}?t=${Date.now()}`, {
+        response = await fetch(`${BACKEND_URL}/api/landing/${slugKode}`, {
           method: "GET",
           headers: {
             Accept: "application/json",
-            "Cache-Control": "no-cache",
-            "Pragma": "no-cache"
+            "Cache-Control": "no-cache, no-store, must-revalidate"
           },
-          cache: 'no-store',
+          next: {
+            revalidate: 0,
+            tags: [`product-${slugKode}`]
+          }
         });
 
         data = await response.json().catch(() => ({}));

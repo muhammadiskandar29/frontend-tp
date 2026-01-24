@@ -377,8 +377,12 @@ function ProductClient({ initialProductData, initialLandingPage }) {
       try {
         console.log('[LIVE-SYNC] Mendapat sinyal update, mengambil data terbaru...');
         // Path API disesuaikan dengan route.js yang tersedia (proxied ke backend)
-        const res = await fetch(`/api/landing/${kode_produk}?t=${Date.now()}`, {
-          cache: 'no-store'
+        const res = await fetch(`/api/landing/${kode_produk}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
+          }
         });
         const result = await res.json();
 

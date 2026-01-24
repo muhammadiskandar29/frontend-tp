@@ -8,17 +8,17 @@ export const revalidate = 0;
 // Helper function to fetch product data on server
 async function getProduct(kode_produk) {
   try {
-    // ✅ BUSSING CACHE: Tambahkan timestamp agar server fetch rute baru setiap saat
-    const url = getBackendUrl(`landing/${kode_produk}?t=${Date.now()}`);
-    // fetch dengan cache: 'no-store' agar selalu dapat update terbaru
-    // Tambahkan timeout 10 detik agar tidak hang selamanya saat build
+    // ✅ CLEAN REVALIDATION: Gunakan tags untuk invalidasi cache tanpa query params
+    const url = getBackendUrl(`landing/${kode_produk}`);
     const res = await fetch(url, {
-      cache: 'no-store',
-      headers: {
-        'Pragma': 'no-cache',
-        'Cache-Control': 'no-cache'
+      next: {
+        revalidate: 0,
+        tags: [`product-${kode_produk}`]
       },
-      signal: AbortSignal.timeout(10000)
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
+      }
     });
 
     if (!res.ok) {
