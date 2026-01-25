@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
     Calendar, User, ArrowLeft, BookOpen, Clock, ChevronRight,
     FileText, PlayCircle, CheckCircle, Lock
@@ -39,7 +39,7 @@ const ArticleRenderer = ({ data }) => {
 
         switch (node.type) {
             case 'doc': return <div key={index} className="article-tiptap-content">{children}</div>;
-            case 'paragraph': return <p key={index} style={{ textAlign: node.attrs?.textAlign }}>{children}</p>;
+            case 'paragraph': return <div key={index} className="tiptap-p" style={{ textAlign: node.attrs?.textAlign, marginBottom: '2rem' }}>{children}</div>;
             case 'heading':
                 const Tag = `h${node.attrs?.level || 1}`;
                 return <Tag key={index} style={{ textAlign: node.attrs?.textAlign }}>{children}</Tag>;
@@ -72,7 +72,7 @@ const ArticleRenderer = ({ data }) => {
                             const Tag = `h${block.data.level || 2}`;
                             return <Tag key={index} className="rendered-h">{block.data.text}</Tag>;
                         case "paragraph":
-                            return <p key={index} className="rendered-p" dangerouslySetInnerHTML={{ __html: block.data.text }}></p>;
+                            return <div key={index} className="rendered-p" style={{ marginBottom: '2rem' }} dangerouslySetInnerHTML={{ __html: block.data.text }}></div>;
                         case "list":
                             const ListTag = block.data.style === "ordered" ? "ol" : "ul";
                             return (
@@ -140,6 +140,11 @@ const ArticleRenderer = ({ data }) => {
 
 export default function ArticleClient({ article }) {
     const router = useRouter();
+    const [hasMounted, setHasMounted] = useState(false);
+
+    useEffect(() => {
+        setHasMounted(true);
+    }, []);
 
     if (!article) return null;
 
@@ -241,7 +246,7 @@ export default function ArticleClient({ article }) {
                         </header>
 
                         <div className="prose-body">
-                            <ArticleRenderer data={article.content} />
+                            {hasMounted ? <ArticleRenderer data={article.content} /> : <div className="animate-pulse bg-gray-100 h-64 rounded-xl"></div>}
                         </div>
 
                         <footer className="reading-footer">
