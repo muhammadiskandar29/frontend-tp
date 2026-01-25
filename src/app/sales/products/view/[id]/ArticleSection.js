@@ -16,12 +16,14 @@ export default function ArticleSection({ productName }) {
   const productId = params.id;
 
   const [view, setView] = useState("list"); // "list" | "editor"
-  const [articles, setArticles] = useState([]);
+  const [linkedArticles, setLinkedArticles] = useState([]);
+  const [allGlobalArticles, setAllGlobalArticles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [currentArticle, setCurrentArticle] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [modalSearch, setModalSearch] = useState("");
+  const [showAddModal, setShowAddModal] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
-  const [initialSelectedIds, setInitialSelectedIds] = useState([]);
   const [isSyncing, setIsSyncing] = useState(false);
 
   const fetchArticles = async () => {
@@ -30,28 +32,22 @@ export default function ArticleSection({ productName }) {
       const token = localStorage.getItem("token");
       const headers = { Authorization: `Bearer ${token}` };
 
-      // 1. Fetch ALL articles
+      // 1. Fetch ALL global articles for modal
       const allRes = await axios.get(`/api/sales/post`, { headers });
       if (allRes.data?.success) {
-        setArticles(allRes.data.data || []);
+        setAllGlobalArticles(allRes.data.data || []);
       }
 
-      // 2. Fetch articles LINKED to this product
-      try {
-        const linkedRes = await axios.get(`/api/sales/produk/${productId}/post`, { headers });
-        if (linkedRes.data?.success) {
-          // Assuming the backend returns objects with ids or just ids
-          const linkedData = linkedRes.data.data || [];
-          const ids = linkedData.map(item => item.id || item);
-          setSelectedIds(ids);
-          setInitialSelectedIds(ids);
-        }
-      } catch (err) {
-        console.warn("Fetch linked articles failed, might not be implemented yet:", err);
+      // 2. Fetch specific product data to get post_rel
+      const productRes = await axios.get(`/api/sales/produk/${productId}`, { headers });
+      if (productRes.data?.success) {
+        const data = productRes.data.data;
+        const linked = data.post_rel || [];
+        setLinkedArticles(linked);
+        setSelectedIds(linked.map(a => a.id));
       }
     } catch (err) {
       console.error("Fetch articles error:", err);
-      setArticles([]);
     } finally {
       setLoading(false);
     }
@@ -100,18 +96,19 @@ export default function ArticleSection({ productName }) {
     );
   };
 
-  const handleUpdateRelation = async () => {
+  const handleUpdateRelation = async (newIds) => {
     setIsSyncing(true);
     try {
       const token = localStorage.getItem("token");
       const headers = { Authorization: `Bearer ${token}` };
-      const payload = { post: selectedIds };
+      const payload = { post: newIds || selectedIds };
 
       const response = await axios.put(`/api/sales/produk/${productId}/post`, payload, { headers });
 
       if (response.data?.success) {
         toast.success("Relasi artikel berhasil diperbarui");
-        setInitialSelectedIds([...selectedIds]);
+        setShowAddModal(false);
+        fetchArticles();
       } else {
         toast.error(response.data?.message || "Gagal memperbarui relasi");
       }
@@ -123,10 +120,12 @@ export default function ArticleSection({ productName }) {
     }
   };
 
-  const hasChanges = JSON.stringify(selectedIds.sort()) !== JSON.stringify(initialSelectedIds.sort());
-
-  const filteredArticles = articles.filter(a =>
+  const filteredLinked = linkedArticles.filter(a =>
     (a.title || "").toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredGlobal = allGlobalArticles.filter(a =>
+    (a.title || "").toLowerCase().includes(modalSearch.toLowerCase())
   );
 
   return (
@@ -136,22 +135,15 @@ export default function ArticleSection({ productName }) {
           {/* Roster Header */}
           <div className="card-header-inner">
             <div className="card-title-group">
-              <span className="card-subtitle">DIRECTORY</span>
-              <h2 className="card-title">Artikel Produk</h2>
+              <span className="card-subtitle">EXCLUSIVE ACCESS</span>
+              <h2 className="card-title">Materi Pembelajaran</h2>
             </div>
             <div className="header-actions">
-              {hasChanges && (
-                <button
-                  className="btn-sync-relation"
-                  onClick={handleUpdateRelation}
-                  disabled={isSyncing}
-                >
-                  <Save size={16} />
-                  {isSyncing ? "Menyimpan..." : "Simpan Relasi"}
-                </button>
-              )}
+              <button className="btn-add-bonus" onClick={() => setShowAddModal(true)}>
+                <Plus size={16} /> Tambahkan Bonus Artikel
+              </button>
               <button className="btn-primary-orange" onClick={handleCreate}>
-                + Tambah Artikel
+                <FileText size={16} /> Buat Artikel Baru
               </button>
             </div>
           </div>
@@ -177,53 +169,29 @@ export default function ArticleSection({ productName }) {
 
           {/* Table / List */}
           <div className="table-container-clean">
-            {loading && articles.length === 0 ? (
+            {loading && linkedArticles.length === 0 ? (
               <div className="loading-state">
                 <div className="spinner orange"></div>
-                <p>Memuat artikel...</p>
+                <p>Memuat materi...</p>
               </div>
-            ) : filteredArticles.length > 0 ? (
+            ) : filteredLinked.length > 0 ? (
               <table className="bonus-table-clean">
                 <thead>
                   <tr>
-                    <th className="w-10">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.length === filteredArticles.length && filteredArticles.length > 0}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedIds(filteredArticles.map(a => a.id));
-                          } else {
-                            setSelectedIds([]);
-                          }
-                        }}
-                      />
-                    </th>
-                    <th>JUDUL ARTIKEL</th>
-                    <th>STATUS</th>
+                    <th className="w-10 text-center">#</th>
+                    <th>JUDUL MATERI</th>
                     <th className="text-right">AKSI</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredArticles.map((article, index) => (
-                    <tr key={article.id} className={selectedIds.includes(article.id) ? 'selected-row' : ''}>
-                      <td className="row-num">
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.includes(article.id)}
-                          onChange={() => handleToggleSelection(article.id)}
-                        />
-                      </td>
+                  {filteredLinked.map((article, index) => (
+                    <tr key={article.id}>
+                      <td className="row-num">{index + 1}</td>
                       <td>
                         <div className="article-info-clean">
                           <span className="article-name">{article.title}</span>
                           <span className="article-slug-clean">/{article.slug}</span>
                         </div>
-                      </td>
-                      <td>
-                        <span className={`status-pill-clean ${article.status}`}>
-                          {(article.status || "draft").toUpperCase()}
-                        </span>
                       </td>
                       <td>
                         <div className="action-buttons-clean">
@@ -243,8 +211,11 @@ export default function ArticleSection({ productName }) {
                           </button>
                           <button
                             className="btn-action-icon delete"
-                            title="Hapus"
-                            onClick={() => handleDelete(article.id)}
+                            title="Hapus Relasi"
+                            onClick={() => {
+                              const updated = selectedIds.filter(id => id !== article.id);
+                              handleUpdateRelation(updated);
+                            }}
                           >
                             <Trash2 size={18} />
                           </button>
@@ -256,12 +227,73 @@ export default function ArticleSection({ productName }) {
               </table>
             ) : (
               <div className="empty-state">
-                <LayoutIcon size={48} className="empty-icon-gray" />
-                <h3>Belum ada artikel</h3>
-                <p>Mulai buat artikel pertama Anda untuk membantuk customer mengenal produk lebih jauh.</p>
+                <Gift size={48} className="empty-icon-gray" />
+                <h3>Belum ada materi bonus</h3>
+                <p>Klik "Tambahkan Bonus Artikel" untuk memilih materi yang sudah ada atau buat materi baru.</p>
               </div>
             )}
           </div>
+
+          {/* ADD BONUS MODAL */}
+          {showAddModal && (
+            <div className="modal-overlay">
+              <div className="modal-content-premium">
+                <div className="modal-header">
+                  <div className="header-title-group">
+                    <h3 className="modal-title">Tambahkan Bonus Artikel</h3>
+                    <p className="modal-subtitle">Pilih artikel materi untuk ditambahkan ke produk ini</p>
+                  </div>
+                  <button className="modal-close-btn" onClick={() => setShowAddModal(false)}>
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div className="modal-body">
+                  <div className="modal-search-box">
+                    <Search size={18} />
+                    <input
+                      type="text"
+                      placeholder="Cari artikel global..."
+                      value={modalSearch}
+                      onChange={(e) => setModalSearch(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="global-articles-list">
+                    {filteredGlobal.map(article => {
+                      const isSelected = selectedIds.includes(article.id);
+                      return (
+                        <div
+                          key={article.id}
+                          className={`global-article-item ${isSelected ? 'selected' : ''}`}
+                          onClick={() => handleToggleSelection(article.id)}
+                        >
+                          <div className="checkbox-box">
+                            {isSelected && <Check size={14} />}
+                          </div>
+                          <div className="article-details">
+                            <span className="a-title">{article.title}</span>
+                            <span className="a-slug">/{article.slug}</span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                <div className="modal-footer">
+                  <button className="btn-cancel" onClick={() => setShowAddModal(false)}>Batal</button>
+                  <button
+                    className="btn-save-modal"
+                    onClick={() => handleUpdateRelation()}
+                    disabled={isSyncing}
+                  >
+                    {isSyncing ? "Menyimpan..." : "Simpan Relasi"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="article-editor-view fade-in">
@@ -501,7 +533,120 @@ export default function ArticleSection({ productName }) {
         .empty-state h3 { font-size: 18px; font-weight: 700; color: #1e293b; margin: 0; }
         .empty-state p { color: #94a3b8; font-size: 14px; margin-top: 8px; max-width: 320px; }
 
-        .text-right { text-align: right; }
+        /* Modal & Add Bonus Styles */
+        .btn-add-bonus {
+          background: #fff;
+          color: #ff7a00;
+          border: 1px solid #ff7a00;
+          padding: 10px 16px;
+          border-radius: 10px;
+          font-weight: 700;
+          font-size: 13px;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-right: 12px;
+        }
+        .btn-add-bonus:hover { background: #fff7ed; transform: translateY(-1px); }
+
+        .modal-overlay {
+          position: fixed;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background: rgba(0,0,0,0.5);
+          backdrop-filter: blur(4px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          padding: 20px;
+        }
+        .modal-content-premium {
+          background: #fff;
+          width: 100%;
+          max-width: 500px;
+          border-radius: 20px;
+          box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+          overflow: hidden;
+        }
+        .modal-header {
+          padding: 24px;
+          border-bottom: 1px solid #f1f5f9;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .modal-title { font-size: 18px; font-weight: 800; color: #1e293b; margin: 0; }
+        .modal-subtitle { font-size: 12px; color: #94a3b8; margin: 4px 0 0 0; }
+        .modal-close-btn { background: none; border: none; color: #cbd5e1; cursor: pointer; padding: 4px; }
+        .modal-close-btn:hover { color: #ef4444; }
+
+        .modal-body { padding: 24px; }
+        .modal-search-box {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          background: #f8fafc;
+          padding: 10px 16px;
+          border-radius: 12px;
+          border: 1px solid #f1f5f9;
+          margin-bottom: 20px;
+        }
+        .modal-search-box input { border: none; background: none; outline: none; font-size: 14px; flex: 1; }
+        .modal-search-box svg { color: #94a3b8; }
+
+        .global-articles-list {
+          max-height: 300px;
+          overflow-y: auto;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .global-article-item {
+          padding: 12px 16px;
+          border-radius: 12px;
+          border: 1px solid #f8fafc;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          transition: all 0.2s;
+        }
+        .global-article-item:hover { background: #f8fafc; border-color: #e2e8f0; }
+        .global-article-item.selected { background: #fff7ed; border-color: #ffdebd; }
+
+        .checkbox-box {
+          width: 20px; height: 20px; border: 2px solid #e2e8f0; border-radius: 6px;
+          display: flex; align-items: center; justify-content: center; color: #ff7a00;
+          transition: all 0.2s; background: #fff;
+        }
+        .global-article-item.selected .checkbox-box { border-color: #ff7a00; background: #fff; }
+        
+        .article-details { display: flex; flex-direction: column; }
+        .a-title { font-size: 14px; font-weight: 600; color: #1e293b; }
+        .a-slug { font-size: 11px; color: #94a3b8; }
+
+        .modal-footer {
+          padding: 20px 24px;
+          background: #f8fafc;
+          display: flex; gap: 12px;
+          justify-content: flex-end;
+        }
+        .btn-cancel { background: none; border: none; color: #64748b; font-weight: 700; cursor: pointer; font-size: 13px; }
+        .btn-save-modal {
+          background: #ff7a00;
+          color: #fff;
+          border: none;
+          padding: 10px 24px;
+          border-radius: 10px;
+          font-weight: 700;
+          cursor: pointer;
+          font-size: 13px;
+        }
+        .btn-save-modal:disabled { opacity: 0.5; }
+
+        .text-center { text-align: center; }
       `}</style>
     </div>
   );

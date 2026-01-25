@@ -5,6 +5,7 @@ import {
     ArrowLeft, ChevronRight, CheckCircle, Search, HelpCircle,
     MessageSquare, Smile, Meh, Frown
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 // Intercom-style Article Renderer
 const ArticleRenderer = ({ data }) => {
@@ -99,7 +100,8 @@ const ArticleRenderer = ({ data }) => {
     return null;
 };
 
-export default function ArticleClient({ article }) {
+export default function ArticleClient({ article, allArticles = [] }) {
+    const router = useRouter();
     const [hasMounted, setHasMounted] = useState(false);
 
     useEffect(() => {
@@ -114,68 +116,63 @@ export default function ArticleClient({ article }) {
             <header className="intercom-navbar">
                 <div className="intercom-nav-container">
                     <div className="intercom-nav-left">
-                        <img src="/assets/logo.png" alt="Logo" className="intercom-logo" />
-                    </div>
-                    <div className="intercom-nav-right">
-                        <div className="intercom-search-box">
-                            <Search size={16} className="search-icon" />
-                            <input type="text" placeholder="Search for articles..." disabled />
-                        </div>
-                        <button className="intercom-nav-link" onClick={() => window.history.back()}>
-                            Go to Ternak Properti
-                        </button>
+                        <img src="/assets/logo.png" alt="Logo" className="intercom-logo" onClick={() => router.push('/')} />
                     </div>
                 </div>
             </header>
 
             {/* INTERCOM CONTENT AREA */}
             <main className="intercom-main">
-                <div className="intercom-content-container">
-                    {/* BREADCRUMBS */}
-                    <nav className="intercom-breadcrumb">
-                        <a href="#">All Collections</a>
-                        <ChevronRight size={12} />
-                        <a href="#">Education Center</a>
-                        <ChevronRight size={12} />
-                        <span className="current">{article.title}</span>
-                    </nav>
+                <div className="intercom-content-wrapper">
+                    {/* LEFT COLUMN: MAIN CONTENT */}
+                    <div className="intercom-article-container">
 
-                    {/* ARTICLE HEADER */}
-                    <header className="intercom-article-header">
-                        <h1 className="intercom-title">{article.title}</h1>
-                        <p className="intercom-subtitle">Learn how to manage and organize your knowledge base effectively.</p>
+                        <header className="intercom-article-header">
+                            <h1 className="intercom-title">{article.title}</h1>
+                        </header>
 
-                        <div className="intercom-author-box">
-                            <div className="author-avatar-stack">
-                                <img src={`https://ui-avatars.com/api/?name=${article.author}&background=0ea5e9&color=fff`} alt="Author" />
+                        <article className="intercom-article-body">
+                            {hasMounted ? (
+                                <ArticleRenderer data={article.content} />
+                            ) : (
+                                <div className="intercom-skeleton"></div>
+                            )}
+                        </article>
+
+                        {/* FEEDBACK SECTION */}
+                        <footer className="intercom-feedback">
+                            <div className="feedback-inner">
+                                <h3>Did this answer your question?</h3>
+                                <div className="feedback-icons">
+                                    <button title="Disappointed"><Frown size={32} /></button>
+                                    <button title="Neutral"><Meh size={32} /></button>
+                                    <button title="Smiley"><Smile size={32} /></button>
+                                </div>
                             </div>
-                            <div className="author-info-text">
-                                <p className="author-attribution">Written by <span>{article.author}</span></p>
-                                <p className="update-info">Updated over a week ago</p>
-                            </div>
+                        </footer>
+                    </div>
+
+                    {/* RIGHT COLUMN: SIDEBAR */}
+                    <aside className="intercom-sidebar">
+                        <div className="sidebar-group">
+                            {allArticles.map((other, idx) => {
+                                const isActive = other.slug === article.slug;
+                                return (
+                                    <div
+                                        key={other.id || idx}
+                                        className={`sidebar-item ${isActive ? 'active' : ''}`}
+                                        onClick={() => {
+                                            if (!isActive) {
+                                                window.location.href = `/article/${other.slug}`;
+                                            }
+                                        }}
+                                    >
+                                        {other.title}
+                                    </div>
+                                );
+                            })}
                         </div>
-                    </header>
-
-                    {/* ARTICLE BODY */}
-                    <article className="intercom-article-body">
-                        {hasMounted ? (
-                            <ArticleRenderer data={article.content} />
-                        ) : (
-                            <div className="intercom-skeleton"></div>
-                        )}
-                    </article>
-
-                    {/* FEEDBACK SECTION */}
-                    <footer className="intercom-feedback">
-                        <div className="feedback-inner">
-                            <h3>Did this answer your question?</h3>
-                            <div className="feedback-icons">
-                                <button title="Disappointed"><Frown size={32} /></button>
-                                <button title="Neutral"><Meh size={32} /></button>
-                                <button title="Smiley"><Smile size={32} /></button>
-                            </div>
-                        </div>
-                    </footer>
+                    </aside>
                 </div>
             </main>
 
@@ -239,15 +236,52 @@ export default function ArticleClient({ article }) {
                     gap: 6px;
                 }
 
-                /* MAIN */
+                /* MAIN LAYOUT */
                 .intercom-main {
                     padding: 3rem 1.5rem 6rem;
                     display: flex;
                     justify-content: center;
                 }
-                .intercom-content-container {
-                    max-width: 720px; /* Lebar standar Intercom */
+                .intercom-content-wrapper {
+                    max-width: 1100px;
                     width: 100%;
+                    display: grid;
+                    grid-template-columns: 1fr 300px;
+                    gap: 5rem;
+                }
+                .intercom-article-container {
+                    min-width: 0;
+                }
+
+                /* SIDEBAR STYLES */
+                .intercom-sidebar {
+                    position: sticky;
+                    top: 100px;
+                    height: fit-content;
+                }
+                .sidebar-group {
+                    display: flex;
+                    flex-direction: column;
+                    border-left: 1px solid #E5E7EB;
+                }
+                .sidebar-item {
+                    font-size: 15px;
+                    color: #4B5563;
+                    padding: 0.75rem 0 0.75rem 1.5rem;
+                    cursor: pointer;
+                    line-height: 1.4;
+                    position: relative;
+                    margin-left: -1px;
+                    transition: all 0.2s;
+                }
+                .sidebar-item:hover {
+                    color: #111827;
+                }
+                .sidebar-item.active {
+                    color: #111827;
+                    font-weight: 600;
+                    border-left: 2px solid #111827;
+                    padding-left: calc(1.5rem - 1px);
                 }
 
                 /* BREADCRUMB */

@@ -56,6 +56,30 @@ async function getArticle(slug, token = null) {
     }
 }
 
+async function getAllArticles(token = null) {
+    const headersList = {
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+    };
+
+    if (token) {
+        headersList["Authorization"] = `Bearer ${token}`;
+    }
+
+    const url = getBackendUrl("post");
+    try {
+        const res = await fetch(url, {
+            headers: headersList,
+            cache: "no-store"
+        });
+        if (!res.ok) return [];
+        const json = await res.json();
+        return json?.data ?? [];
+    } catch (e) {
+        return [];
+    }
+}
+
 /**
  * 🥈 METADATA
  */
@@ -93,7 +117,10 @@ export default async function PublicArticlePage({ params }) {
     }
 
     LOG("Processing article with auth for slug:", slug);
-    const data = await getArticle(slug, token);
+    const [data, allArticles] = await Promise.all([
+        getArticle(slug, token),
+        getAllArticles(token)
+    ]);
 
     if (!data) {
         LOG("Article data not found in backend for slug:", slug);
@@ -107,7 +134,9 @@ export default async function PublicArticlePage({ params }) {
                 author: data.author || "Ternak Properti Team",
                 date: data.create_at || "Just now",
                 content: data.content,
+                slug: data.slug || slug
             }}
+            allArticles={allArticles}
         />
     );
 }
