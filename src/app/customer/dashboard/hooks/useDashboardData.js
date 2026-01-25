@@ -13,6 +13,7 @@ export function useDashboardData() {
       { id: "active", label: "Order Aktif", value: 0 },
     ],
     activeOrders: [],
+    articles: [],
     customerInfo: null,
     unpaidCount: 0,
   });
@@ -196,6 +197,7 @@ export function useDashboardData() {
       setDashboardData({
         stats: newStats,
         activeOrders: adaptOrders(activeOrders),
+        articles: data?.post_rel || [],
         customerInfo: customerData || session.user,
         unpaidCount,
       });

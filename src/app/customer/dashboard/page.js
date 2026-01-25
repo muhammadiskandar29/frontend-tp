@@ -9,6 +9,7 @@ import StatsSection from "./components/StatsSection";
 import OrdersSection from "./components/OrdersSection";
 import ProductsSection from "./components/ProductsSection";
 import QuickActions from "./components/QuickActions";
+import BonusArticlesCard from "./components/BonusArticlesCard";
 import { useDashboardData } from "./hooks/useDashboardData";
 import { useProducts } from "./hooks/useProducts";
 import { getCustomerSession } from "@/lib/customerAuth";
@@ -23,6 +24,7 @@ export default function DashboardPage() {
   const {
     stats,
     activeOrders,
+    articles,
     customerInfo,
     unpaidCount,
     loading: dashboardLoading,
@@ -324,8 +326,11 @@ export default function DashboardPage() {
           }}
         />
 
-        {/* Stats Section */}
+        {/* Stats Section (Ringkasan) */}
         <StatsSection stats={stats} isLoading={dashboardLoading} />
+
+        {/* Exclusive Bonus Articles Card */}
+        <BonusArticlesCard articles={articles} isLoading={dashboardLoading} />
 
         {/* Orders Section */}
         <OrdersSection
