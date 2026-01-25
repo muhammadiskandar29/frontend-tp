@@ -4,6 +4,9 @@ import { notFound } from "next/navigation";
 import ArticleClient from "./ArticleClient";
 import { getBackendUrl } from "@/config/api";
 
+const LOG = (...args) => console.log("[ARTICLE]", ...args);
+const ERR = (...args) => console.error("[ARTICLE][ERROR]", ...args);
+
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
