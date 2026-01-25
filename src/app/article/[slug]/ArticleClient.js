@@ -166,59 +166,11 @@ export default function ArticleClient({ article }) {
                             <img src="/assets/logo.png" alt="Logo" className="logo-img" />
                         </div>
                     </div>
-                    <div className="nav-center">
-                        <div className="module-badge">
-                            <Lock size={12} className="icon-gold" />
-                            <span>EXCLUSIVE MODULE ACCESS</span>
-                        </div>
-                    </div>
-                    <div className="nav-right">
-                        <button className="btn-complete-module">
-                            Selesaikan Modul
-                            <CheckCircle size={18} />
-                        </button>
-                    </div>
                 </div>
             </nav>
 
-            <div className="module-layout">
-                {/* Sidebar Curriculum (Left) */}
-                <aside className="curriculum-sidebar">
-                    <div className="sidebar-section">
-                        <div className="sidebar-title">
-                            <h3>Kurikulum Modul</h3>
-                            <p>5 Pelajaran • 45 Menit</p>
-                        </div>
-                        <div className="lesson-list">
-                            <div className="lesson-item active">
-                                <div className="lesson-icon"><FileText size={18} /></div>
-                                <div className="lesson-meta">
-                                    <span className="lesson-title">{article.title}</span>
-                                    <span className="lesson-type">Reading • 12 min</span>
-                                </div>
-                                <div className="lesson-status"><CheckCircle size={16} className="text-blue" /></div>
-                            </div>
-                            <div className="lesson-item locked">
-                                <div className="lesson-icon"><PlayCircle size={18} /></div>
-                                <div className="lesson-meta">
-                                    <span className="lesson-title">Fundamental Investasi Properti</span>
-                                    <span className="lesson-type">Video • 20 min</span>
-                                </div>
-                                <div className="lesson-status"><Lock size={14} className="text-gray" /></div>
-                            </div>
-                            <div className="lesson-item locked">
-                                <div className="lesson-icon"><FileText size={18} /></div>
-                                <div className="lesson-meta">
-                                    <span className="lesson-title">Analisis Cashflow Properti</span>
-                                    <span className="lesson-type">Worksheet • 15 min</span>
-                                </div>
-                                <div className="lesson-status"><Lock size={14} className="text-gray" /></div>
-                            </div>
-                        </div>
-                    </div>
-                </aside>
-
-                {/* Main Content Area (Right) */}
+            <div className="article-main-layout">
+                {/* Main Content Area */}
                 <main className="content-module-area">
                     <div className="reading-container">
                         <header className="module-header">
@@ -253,20 +205,6 @@ export default function ArticleClient({ article }) {
                         <div className="prose-body">
                             {hasMounted ? <ArticleRenderer data={article.content} /> : <div className="animate-pulse bg-gray-100 h-64 rounded-xl"></div>}
                         </div>
-
-                        <footer className="reading-footer">
-                            <div className="footer-gradient"></div>
-                            <div className="footer-navigation">
-                                <button className="btn-nav prev disabled">
-                                    <ArrowLeft size={18} />
-                                    <span>Kembali ke Sebelumnya</span>
-                                </button>
-                                <button className="btn-nav next">
-                                    <span>Lanjut ke Modul Berikutnya</span>
-                                    <ChevronRight size={18} />
-                                </button>
-                            </div>
-                        </footer>
                     </div>
                 </main>
             </div>
@@ -300,24 +238,7 @@ export default function ArticleClient({ article }) {
 
                 .module-badge { background: #fffbeb; border: 1px solid #fde68a; padding: 6px 14px; border-radius: 50px; display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 800; color: #b45309; text-transform: uppercase; letter-spacing: 0.5px; }
                 .icon-gold { color: #f59e0b; }
-
-                .btn-complete-module { background: #0ea5e9; color: white; border: none; padding: 10px 20px; border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: 0.2s; font-size: 14px; }
-                .btn-complete-module:hover { background: #0284c7; transform: translateY(-1px); box-shadow: 0 5px 15px rgba(14, 165, 233, 0.25); }
-
                 /* Layout Grid */
-                .module-layout { flex: 1; display: flex; }
-
-                /* Curriculum Sidebar */
-                .curriculum-sidebar { width: 360px; background: #f8fafc; border-right: 1px solid #f1f5f9; position: sticky; top: 72px; height: calc(100vh - 72px); overflow-y: auto; padding: 2rem 1.5rem; }
-                .sidebar-title { margin-bottom: 2rem; }
-                .sidebar-title h3 { font-size: 16px; font-weight: 800; color: #1e293b; margin: 0 0 4px 0; }
-                .sidebar-title p { font-size: 13px; color: #64748b; margin: 0; font-weight: 500; }
-
-                .lesson-list { display: flex; flex-direction: column; gap: 12px; }
-                .lesson-item { padding: 1rem; border-radius: 14px; background: #fff; border: 1px solid #e2e8f0; display: flex; align-items: flex-start; gap: 1rem; cursor: pointer; transition: 0.2s; position: relative; }
-                .lesson-item:hover:not(.locked) { border-color: #3b82f6; background: #eff6ff; }
-                .lesson-item.active { border-color: #3b82f6; background: #eff6ff; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.1); }
-                .lesson-item.locked { opacity: 0.6; cursor: not-allowed; border-style: dashed; }
                 .lesson-icon { width: 40px; height: 40px; border-radius: 10px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #64748b; flex-shrink: 0; }
                 .active .lesson-icon { background: #3b82f6; color: white; }
                 .lesson-meta { flex: 1; display: flex; flex-direction: column; gap: 4px; }
@@ -360,26 +281,27 @@ export default function ArticleClient({ article }) {
                     margin-bottom: 1.5rem; 
                 }
                 
-                /* Refined Image Handling */
+                /* Refined Image Handling - MUCH SMALLER */
                 .article-figure {
                     margin: 2.5rem 0;
                     display: flex;
                     flex-direction: column;
                     align-items: center;
+                    width: 100%;
                 }
                 .article-img-refined {
-                    max-width: 70%;
+                    max-width: 45%;
                     height: auto;
-                    border-radius: 8px;
-                    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+                    border-radius: 6px;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
                     border: 1px solid #edf2f7;
                 }
                 .caption-refined {
                     margin-top: 0.75rem;
-                    font-size: 0.875rem;
+                    font-size: 0.8125rem;
                     color: #718096;
                     font-style: italic;
-                    max-width: 70%;
+                    max-width: 45%;
                     text-align: center;
                 }
 
@@ -406,22 +328,11 @@ export default function ArticleClient({ article }) {
 
                 .rendered-divider { display: flex; justify-content: center; margin: 4rem 0; color: #cbd5e1; letter-spacing: 10px; font-size: 18px; }
 
-                /* Footer Navigation */
-                .reading-footer { margin-top: 6rem; padding-bottom: 4rem; border-top: 1px solid #edf2f7; padding-top: 3rem; }
-                .btn-nav { display: flex; align-items: center; gap: 10px; padding: 12px 24px; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; transition: 0.2s; }
-                .btn-nav.prev { background: #fff; border: 1px solid #e2e8f0; color: #4a5568; }
-                .btn-nav.next { background: #2d3748; color: #fff; border: none; }
-                .btn-nav:hover:not(.disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-                .disabled { opacity: 0.5; cursor: not-allowed; }
-
-                @media (max-width: 1100px) {
-                    .curriculum-sidebar { display: none; }
-                }
                 @media (max-width: 640px) {
                     .content-title { font-size: 28px; }
                     .reading-container { padding: 0 1.25rem; margin: 2rem auto; }
                     .meta-box { flex-wrap: wrap; gap: 0.75rem; font-size: 13px; }
-                    .article-img-refined, .caption-refined { max-width: 100%; }
+                    .article-img-refined, .caption-refined { max-width: 90%; }
                 }
             `}</style>
         </div>
