@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import {
   FileText, Plus, Edit2, Trash2, Search,
   ExternalLink, Calendar, User, ChevronRight,
-  Eye, Save, X, Layout as LayoutIcon
+  Eye, Save, X, Layout as LayoutIcon, Gift, Check
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import ArticleEditor from "./ArticleEditor";
