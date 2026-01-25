@@ -1,5 +1,5 @@
 import React from "react";
-import { headers, cookies } from "next/headers";
+import { headers } from "next/headers";
 import ArticleClient from "./ArticleClient";
 import { getBackendUrl } from "@/config/api";
 
@@ -7,122 +7,88 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 /**
- * Fetch article data from backend with Debug Logs
+ * 🥇 PURE PUBLIC FETCH - Tanpa Token, Persis Postman
+ * Menghindari backend masuk ke mode private yang memblokir draft publik
  */
 async function getArticle(slug) {
     if (!slug) {
-        console.error("[ARTICLE] No slug provided!");
+        console.error("[ARTICLE] slug from params is UNDEFINED!");
         return null;
     }
 
-    // Debug slug original
-    console.log("[ARTICLE] Original slug from params:", slug);
+    const fetchOptions = {
+        headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+        },
+        cache: 'no-store'
+    };
 
     try {
-        // Ambil token dari cookie (PENTING untuk artikel eksklusif)
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
+        const url = getBackendUrl(`post/slug/${slug}`);
+        console.log("[ARTICLE] Fetching URL:", url);
 
-        const fetchOptions = {
-            headers: {
-                "Accept": "application/json",
-                "Content-Type": "application/json"
-            },
-            cache: 'no-store'
-        };
+        const res = await fetch(url, fetchOptions);
 
-        if (token) {
-            fetchOptions.headers["Authorization"] = `Bearer ${token}`;
-            console.log("[ARTICLE] Token found, adding to request.");
-        }
-
-        // 🔍 TRY 1: Direct Slug
-        const url1 = getBackendUrl(`post/slug/${slug}`);
-        console.log("[ARTICLE] Fetching Try 1:", url1);
-        const res1 = await fetch(url1, fetchOptions);
-
-        if (res1.ok) {
-            const json = await res1.json();
+        if (res.ok) {
+            const json = await res.json();
             if (json.success && json.data) {
-                console.log("[ARTICLE] Success on Try 1!");
+                console.log("[ARTICLE] Success on Public Fetch!");
                 return json.data;
             }
         }
 
-        // 🔍 TRY 2: Decoded Slug (just in case)
-        const decodedSlug = decodeURIComponent(slug);
-        if (decodedSlug !== slug) {
-            const url2 = getBackendUrl(`post/slug/${decodedSlug}`);
-            console.log("[ARTICLE] Fetching Try 2 (Decoded):", url2);
-            const res2 = await fetch(url2, fetchOptions);
-            if (res2.ok) {
-                const json = await res2.json();
-                if (json.success && json.data) return json.data;
-            }
+        // Fallback jika slug tidak ketemu, coba ID
+        console.warn("[ARTICLE] Slug not found, trying ID fallback...");
+        const resId = await fetch(getBackendUrl(`post/${slug}`), fetchOptions);
+        if (resId.ok) {
+            const jsonId = await resId.json();
+            if (jsonId.success) return jsonId.data;
         }
 
-        // 🔍 TRY 3: Fallback to ID
-        const url3 = getBackendUrl(`post/${slug}`);
-        console.log("[ARTICLE] Fetching Try 3 (ID Fallback):", url3);
-        const res3 = await fetch(url3, fetchOptions);
-        if (res3.ok) {
-            const json = await res3.json();
-            if (json.success && json.data) return json.data;
-        }
-
-        console.warn("[ARTICLE] All fetch attempts failed for slug:", slug);
-        return null;
     } catch (err) {
-        console.error("[ARTICLE] Error in getArticle:", err);
-        return null;
+        console.error("[ARTICLE] Critical Error Fetching:", err);
     }
+    return null;
 }
 
 export async function generateMetadata({ params }) {
-    // Hybrid approach for Next.js 14/15/16
-    const resolvedParams = await params;
-    const slug = resolvedParams?.slug || params?.slug;
-
-    if (!slug) return { title: "Article Not Found" };
-
+    // 🥈 Perbaiki params: SESUAI SARAN, JANGAN PAKE AWAIT
+    const { slug } = params;
     const data = await getArticle(slug);
-    if (!data) return { title: "Article Not Found | Ternak Properti" };
+
+    if (!data) return { title: "Article Not Found" };
 
     return {
         title: `${data.title} | Ternak Properti`,
-        description: data.meta_description || data.title
+        description: data.meta_description || data.title,
     };
 }
 
 export default async function PublicArticlePage({ params }) {
-    // Force Dynamic
-    headers();
+    headers(); // Force Dynamic
 
-    // Hybrid params handling
-    const resolvedParams = await params;
-    const slug = resolvedParams?.slug || params?.slug;
-
-    console.log("[ARTICLE PAGE] Rendering for slug:", slug);
+    // 🥈 Perbaiki params: SESUAI SARAN, JANGAN PAKE AWAIT
+    const { slug } = params;
+    console.log("[ARTICLE] Render Page for Slug:", slug);
 
     const data = await getArticle(slug);
 
     if (!data) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-slate-50">
-                <div className="text-center p-8 bg-white rounded-2xl shadow-sm border border-slate-100 max-w-md">
-                    <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+            <div className="flex items-center justify-center min-h-screen bg-white">
+                <div className="text-center p-8 max-w-md">
+                    <div className="mb-4 text-red-500">
+                        <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
                     </div>
-                    <p className="text-xl font-bold text-slate-800 mb-2">Artikel Tidak Ditemukan</p>
-                    <p className="text-slate-500 mb-2 text-sm">Gagal memuat konten dari server.</p>
-                    <div className="bg-slate-50 p-3 rounded-lg mt-4 mb-6 text-left">
-                        <p className="text-[10px] text-slate-400 uppercase font-bold mb-1">Debug Info:</p>
-                        <p className="text-xs font-mono text-slate-600 break-all">Slug: {slug || "undefined"}</p>
+                    <h1 className="text-2xl font-bold text-gray-800">Artikel Tidak Ditemukan</h1>
+                    <p className="text-gray-500 mt-2">Server tidak dapat menemukan konten untuk alamat ini.</p>
+                    <div className="mt-4 p-3 bg-gray-50 rounded text-xs font-mono text-gray-400">
+                        Slug: {String(slug)}
                     </div>
-                    <a
-                        href="/sales/bonus"
-                        className="inline-block w-full px-6 py-3 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition font-bold text-sm"
-                    >
+                    <a href="/sales/bonus" className="mt-6 inline-block w-full py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-gray-800 transition">
                         Kembali ke Dashboard
                     </a>
                 </div>
@@ -133,7 +99,7 @@ export default async function PublicArticlePage({ params }) {
     return <ArticleClient article={{
         title: data.title,
         author: data.author || "Ternak Properti Team",
-        date: data.create_at || "Baru saja",
+        date: data.create_at || "Just now",
         content: data.content
     }} />;
 }
