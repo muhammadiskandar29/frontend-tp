@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import CustomerLayout from "@/components/customer/CustomerLayout";
 import UpdateCustomerModal from "./updateCustomer";
 import HeroSection from "./components/HeroSection";
-import VerificationCard from "./components/VerificationCard";
 import StatsSection from "./components/StatsSection";
 import OrdersSection from "./components/OrdersSection";
 import ProductsSection from "./components/ProductsSection";
@@ -300,14 +299,9 @@ export default function DashboardPage() {
         <HeroSection
           customerInfo={customerInfo}
           isLoading={dashboardLoading}
+          isVerified={isVerified}
         />
 
-        {/* Verification Status Card */}
-        {!dashboardLoading && (
-          <div style={{ marginBottom: '2rem' }}>
-            <VerificationCard isVerified={isVerified} />
-          </div>
-        )}
 
         {/* Error Alert */}
         {!dashboardLoading && dashboardError && (

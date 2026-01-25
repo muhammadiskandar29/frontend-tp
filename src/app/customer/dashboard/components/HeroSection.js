@@ -2,13 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, Check, Info } from "lucide-react";
+import { Copy, Check, Info, ShieldCheck, ShieldAlert } from "lucide-react";
 import Image from "next/image";
+import { useRef } from "react";
+import { toast } from "react-hot-toast";
+import { getCustomerSession } from "@/lib/customerAuth";
+import CryptoJS from "crypto-js";
 
-export default function HeroSection({ customerInfo, isLoading }) {
+export default function HeroSection({ customerInfo, isLoading, isVerified }) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
   const [origin, setOrigin] = useState("");
+  const [verityLoading, setVerifyLoading] = useState(false);
+  const isSubmitting = useRef(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -21,6 +27,57 @@ export default function HeroSection({ customerInfo, isLoading }) {
       navigator.clipboard.writeText(String(customerInfo.id));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleVerify = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (verityLoading || isSubmitting.current) return;
+
+    isSubmitting.current = true;
+    setVerifyLoading(true);
+
+    try {
+      const session = getCustomerSession();
+      if (!session || !session.user) {
+        toast.error("Sesi tidak valid. Silakan login kembali.");
+        router.push("/customer");
+        return;
+      }
+
+      const customer = session.user;
+      const secret = process.env.NEXT_PUBLIC_OTP_SECRET_KEY;
+      const timestamp = Math.floor(Date.now() / 1000).toString();
+      const hash = CryptoJS.HmacSHA256(timestamp, secret).toString(CryptoJS.enc.Hex);
+
+      const payload = {
+        customer_id: customer.id,
+        wa: customer.wa
+      };
+
+      const res = await fetch("/api/otp/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Timestamp": timestamp,
+          "X-API-Hash": hash
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        toast.success("OTP berhasil dikirim ke WhatsApp!");
+        router.push('/customer/otp');
+      } else {
+        toast.error(data.message || "Gagal mengirim OTP.");
+      }
+    } catch (error) {
+      console.error("OTP Error:", error);
+      toast.error("Terjadi kesalahan saat mengirim OTP.");
+    } finally {
+      isSubmitting.current = false;
+      setVerifyLoading(false);
     }
   };
 
@@ -63,6 +120,26 @@ export default function HeroSection({ customerInfo, isLoading }) {
           <p className="hero-subtitle">
             Selamat datang kembali! Berikut adalah kartu keanggotaan digital Anda.
           </p>
+
+          {/* Account Status Refactored */}
+          {!isLoading && isVerified !== undefined && (
+            <div className={`hero-status-pill ${isVerified ? 'verified' : 'unverified'}`}>
+              <div className="status-label">STATUS AKUN</div>
+              <div className="status-value-group">
+                {isVerified ? <ShieldCheck size={16} /> : <ShieldAlert size={16} />}
+                <span className="status-value">{isVerified ? "TERVERIFIKASI" : "BELUM VERIFIKASI"}</span>
+                {!isVerified && (
+                  <button
+                    className="hero-verify-btn"
+                    onClick={handleVerify}
+                    disabled={verityLoading}
+                  >
+                    {verityLoading ? "..." : "Verifikasi Sekarang"}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
 
 
         </div>
@@ -178,6 +255,53 @@ export default function HeroSection({ customerInfo, isLoading }) {
           line-height: 1.6;
           max-width: 90%;
           margin-bottom: 1.5rem;
+        }
+        
+        /* New Status Pill Style */
+        .hero-status-pill {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          padding: 8px 0;
+        }
+        .status-label {
+          font-size: 0.65rem;
+          font-weight: 800;
+          color: #94a3b8;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+        }
+        .status-value-group {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .status-value {
+          font-size: 1rem;
+          font-weight: 800;
+          letter-spacing: -0.01em;
+        }
+        .verified .status-value { color: #10b981; }
+        .verified :global(svg) { color: #10b981; }
+        
+        .unverified .status-value { color: #ef4444; }
+        .unverified :global(svg) { color: #ef4444; }
+        
+        .hero-verify-btn {
+          margin-left: 12px;
+          background: #ef4444;
+          color: white;
+          border: none;
+          padding: 4px 12px;
+          border-radius: 6px;
+          font-size: 0.75rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .hero-verify-btn:hover {
+          background: #dc2626;
+          transform: translateY(-1px);
         }
 
 
