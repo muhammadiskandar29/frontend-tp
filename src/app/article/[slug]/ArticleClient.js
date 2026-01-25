@@ -39,14 +39,14 @@ const ArticleRenderer = ({ data }) => {
 
         switch (node.type) {
             case 'doc': return <div key={index} className="article-tiptap-content">{children}</div>;
-            case 'paragraph': return <div key={index} className="tiptap-p" style={{ textAlign: node.attrs?.textAlign, marginBottom: '2rem' }}>{children}</div>;
+            case 'paragraph': return <div key={index} className="tiptap-p" style={{ textAlign: node.attrs?.textAlign || 'center', marginBottom: '1.5rem' }}>{children}</div>;
             case 'heading':
                 const Tag = `h${node.attrs?.level || 1}`;
-                return <Tag key={index} style={{ textAlign: node.attrs?.textAlign }}>{children}</Tag>;
-            case 'bulletList': return <ul key={index}>{children}</ul>;
-            case 'orderedList': return <ol key={index}>{children}</ol>;
+                return <Tag key={index} style={{ textAlign: node.attrs?.textAlign || 'center' }}>{children}</Tag>;
+            case 'bulletList': return <ul key={index} style={{ display: 'inline-block', textAlign: 'left' }}>{children}</ul>;
+            case 'orderedList': return <ol key={index} style={{ display: 'inline-block', textAlign: 'left' }}>{children}</ol>;
             case 'listItem': return <li key={index}>{children}</li>;
-            case 'blockquote': return <blockquote key={index}>{children}</blockquote>;
+            case 'blockquote': return <blockquote key={index} style={{ textAlign: 'center' }}>{children}</blockquote>;
             case 'image':
                 return (
                     <figure key={index} className="article-figure" style={{ textAlign: node.attrs?.textAlign || 'center' }}>
@@ -71,23 +71,25 @@ const ArticleRenderer = ({ data }) => {
                     switch (block.type) {
                         case "header":
                             const Tag = `h${block.data.level || 2}`;
-                            return <Tag key={index} className="rendered-h">{block.data.text}</Tag>;
+                            return <Tag key={index} className="rendered-h text-center">{block.data.text}</Tag>;
                         case "paragraph":
-                            return <div key={index} className="rendered-p" style={{ marginBottom: '2rem' }} dangerouslySetInnerHTML={{ __html: block.data.text }}></div>;
+                            return <div key={index} className="rendered-p text-center" style={{ marginBottom: '1.5rem' }} dangerouslySetInnerHTML={{ __html: block.data.text }}></div>;
                         case "list":
                             const ListTag = block.data.style === "ordered" ? "ol" : "ul";
                             return (
-                                <ListTag key={index} className="rendered-list">
-                                    {block.data.items.map((item, i) => (
-                                        <li key={i} dangerouslySetInnerHTML={{ __html: item }}></li>
-                                    ))}
-                                </ListTag>
+                                <div key={index} className="text-center">
+                                    <ListTag className="rendered-list inline-block text-left">
+                                        {block.data.items.map((item, i) => (
+                                            <li key={i} dangerouslySetInnerHTML={{ __html: item }}></li>
+                                        ))}
+                                    </ListTag>
+                                </div>
                             );
                         case "checklist":
                             return (
                                 <div key={index} className="rendered-checklist">
                                     {block.data.items.map((item, i) => (
-                                        <div key={i} className={`checklist-item ${item.checked ? 'checked' : ''}`}>
+                                        <div key={i} className={`checklist-item ${item.checked ? 'checked' : ''} justify-center`}>
                                             <div className="custom-checkbox">{item.checked && <CheckCircle size={14} />}</div>
                                             <span dangerouslySetInnerHTML={{ __html: item.text }}></span>
                                         </div>
@@ -125,7 +127,7 @@ const ArticleRenderer = ({ data }) => {
                             );
                         case "quote":
                             return (
-                                <blockquote key={index} className="rendered-quote">
+                                <blockquote key={index} className="rendered-quote text-center">
                                     <div className="quote-icon">“</div>
                                     <p>{block.data.text}</p>
                                     {block.data.caption && <footer>— {block.data.caption}</footer>}
@@ -154,201 +156,253 @@ export default function ArticleClient({ article }) {
     if (!article) return null;
 
     return (
-        <div className="learning-module-container">
-            {/* Simple Standard Navbar */}
-            <nav className="article-standard-nav">
-                <div className="nav-container-refined">
-                    <button className="back-btn-minimal" onClick={() => window.history.back()}>
-                        <ArrowLeft size={18} />
-                        <span>Kembali</span>
-                    </button>
-                    <div className="center-logo">
-                        <img src="/assets/logo.png" alt="Logo" className="logo-img-small" />
+        <div className="article-page-root">
+            {/* Navbar Refactored */}
+            <nav className="navbar-standard">
+                <div className="nav-inner">
+                    <div className="nav-left-branding">
+                        <img src="/assets/logo.png" alt="Logo" className="logo-main" />
                     </div>
-                    <div className="empty-right"></div>
+                    <div className="nav-right-actions">
+                        <button className="back-btn-pill" onClick={() => window.history.back()}>
+                            <ArrowLeft size={16} />
+                            <span>Kembali</span>
+                        </button>
+                    </div>
                 </div>
             </nav>
 
-            <div className="article-body-wrapper">
-                <main className="article-content-container">
-                    <div className="article-reading-surface">
-                        <header className="article-header-clean">
-                            <nav className="article-breadcrumb">
+            <div className="article-scroll-area">
+                <main className="article-center-layout">
+                    <div className="article-content-wrapper">
+                        <header className="article-header-centered">
+                            <nav className="article-breadcrumb-centered">
                                 <span>Dashboard</span>
                                 <ChevronRight size={12} />
                                 <span>Education Center</span>
                                 <ChevronRight size={12} />
-                                <span className="active-path">{article.title}</span>
+                                <span className="current-path">{article.title}</span>
                             </nav>
 
-                            <h1 className="article-main-title">{article.title}</h1>
+                            <h1 className="article-display-title">{article.title}</h1>
 
-                            <div className="article-meta-clean">
-                                <div className="author-info">
-                                    <div className="author-avatar">
+                            <div className="article-author-meta-centered">
+                                <div className="author-pill">
+                                    <div className="author-img-frame">
                                         <img src={`https://ui-avatars.com/api/?name=${article.author}&background=0ea5e9&color=fff`} alt="Author" />
                                     </div>
-                                    <span className="author-name">{article.author}</span>
+                                    <span className="author-label">{article.author}</span>
                                 </div>
-                                <span className="meta-dot">•</span>
-                                <span className="meta-item">{article.date}</span>
-                                <span className="meta-dot">•</span>
-                                <span className="meta-item">12 Menit Belajar</span>
+                                <span className="meta-divider">•</span>
+                                <span className="meta-text">{article.date}</span>
+                                <span className="meta-divider">•</span>
+                                <span className="meta-text">12 Menit Belajar</span>
                             </div>
                         </header>
 
-                        <div className="article-prose-refined">
-                            {hasMounted ? <ArticleRenderer data={article.content} /> : <div className="skeleton-loader"></div>}
+                        <div className="article-body-centered">
+                            {hasMounted ? (
+                                <div className="content-render-target">
+                                    <ArticleRenderer data={article.content} />
+                                </div>
+                            ) : (
+                                <div className="skeleton-placeholder"></div>
+                            )}
                         </div>
                     </div>
                 </main>
             </div>
 
             <style jsx>{`
-                .learning-module-container {
+                .article-page-root {
                     background: #fff;
                     min-height: 100vh;
                     display: flex;
                     flex-direction: column;
-                    font-family: 'Inter', system-ui, sans-serif;
+                    font-family: 'Inter', system-ui, -apple-system, sans-serif;
                 }
 
-                .article-standard-nav {
-                    height: 60px;
+                /* NAVBAR REFACTORED */
+                .navbar-standard {
+                    height: 70px;
                     background: #fff;
-                    border-bottom: 1px solid #edf2f7;
+                    border-bottom: 1px solid #f1f5f9;
                     display: flex;
                     align-items: center;
                     position: sticky;
                     top: 0;
-                    z-index: 100;
-                }
-                .nav-container-refined {
-                    max-width: 1200px;
+                    z-index: 1000;
                     width: 100%;
-                    margin: 0 auto;
+                }
+                .nav-inner {
+                    width: 100%;
+                    padding: 0 2rem;
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    padding: 0 2rem;
                 }
-                .back-btn-minimal {
+                .logo-main {
+                    height: 32px; /* Lebih besar sedikit */
+                    width: auto;
+                    display: block;
+                }
+                .back-btn-pill {
                     display: flex;
                     align-items: center;
                     gap: 8px;
-                    background: none;
-                    border: none;
-                    color: #4a5568;
+                    background: #f8fafc;
+                    border: 1px solid #e2e8f0;
+                    padding: 8px 16px;
+                    border-radius: 50px;
                     font-size: 14px;
                     font-weight: 600;
+                    color: #475569;
                     cursor: pointer;
-                    padding: 8px;
-                    border-radius: 8px;
-                    transition: 0.2s;
+                    transition: all 0.2s;
                 }
-                .back-btn-minimal:hover { background: #f7fafc; color: #1a202c; }
-                .logo-img-small { height: 24px; }
+                .back-btn-pill:hover {
+                    background: #f1f5f9;
+                    color: #1e293b;
+                    border-color: #cbd5e1;
+                }
 
-                .article-body-wrapper {
-                    background: #fff;
-                    min-height: 100vh;
+                /* CENTERED LAYOUT */
+                .article-scroll-area {
+                    flex: 1;
                     width: 100%;
                 }
-                .article-content-container {
-                    max-width: 850px;
+                .article-center-layout {
+                    max-width: 800px;
                     margin: 0 auto;
-                    padding: 4rem 2rem;
+                    padding: 5rem 1.5rem;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center; /* Rata tengah container */
                 }
-                .article-breadcrumb {
+                .article-content-wrapper {
+                    width: 100%;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                }
+
+                /* HEADER CENTERED */
+                .article-header-centered {
+                    text-align: center;
+                    margin-bottom: 4rem;
+                    width: 100%;
+                }
+                .article-breadcrumb-centered {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    font-size: 13px;
+                    color: #94a3b8;
+                    font-weight: 500;
+                    margin-bottom: 2rem;
+                }
+                .current-path { color: #0ea5e9; }
+                .article-display-title {
+                    font-size: 3.5rem;
+                    font-weight: 800;
+                    color: #0f172a;
+                    line-height: 1.1;
+                    margin-bottom: 2rem;
+                    letter-spacing: -0.02em;
+                }
+                .article-author-meta-centered {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 12px;
+                    font-size: 14px;
+                    color: #64748b;
+                }
+                .author-pill {
                     display: flex;
                     align-items: center;
                     gap: 8px;
-                    font-size: 13px;
-                    color: #a0aec0;
-                    font-weight: 500;
-                    margin-bottom: 1.5rem;
+                    color: #1e293b;
+                    font-weight: 600;
                 }
-                .active-path { color: #4299e1; }
-                .article-main-title {
-                    font-size: 3rem;
-                    font-weight: 800;
-                    color: #1a202c;
-                    line-height: 1.2;
-                    margin-bottom: 1.5rem;
-                    letter-spacing: -0.02em;
-                }
-                .article-meta-clean {
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                    font-size: 14px;
-                    color: #718096;
-                    margin-bottom: 3rem;
-                }
-                .author-info { display: flex; align-items: center; gap: 8px; color: #2d3748; font-weight: 600; }
-                .author-avatar { width: 24px; height: 24px; border-radius: 50%; overflow: hidden; }
-                .author-avatar img { width: 100%; height: 100%; }
-                .meta-dot { color: #cbd5e1; }
+                .author-img-frame { width: 26px; height: 26px; border-radius: 50%; overflow: hidden; }
+                .author-img-frame img { width: 100%; height: 100%; }
+                .meta-divider { color: #e2e8f0; }
 
-                /* CONTENT PROSE */
-                .article-prose-refined {
+                /* BODY CENTERED */
+                .article-body-centered {
+                    width: 100%;
+                    text-align: center; /* Paksa konten text rata tengah */
+                }
+                .content-render-target {
                     line-height: 1.8;
-                    color: #2d3748;
+                    color: #334155;
                     font-size: 1.15rem;
                 }
-                .article-prose-refined :global(h2) {
-                    font-size: 1.85rem;
-                    font-weight: 700;
-                    color: #1a202c;
-                    margin: 3.5rem 0 1.5rem;
-                }
-                .article-prose-refined :global(p), .article-prose-refined :global(.rendered-p), .article-prose-refined :global(.tiptap-p) {
-                    margin-bottom: 1.5rem;
-                }
 
-                /* IMAGE FIXED - SMALL & CENTERED */
-                .article-figure {
+                /* LOGIC RATA TENGAH UNTUK ELEMEN KHUSUS */
+                :global(.text-center) { text-align: center !important; }
+                :global(.inline-block) { display: inline-block !important; }
+                :global(.justify-center) { justify-content: center !important; }
+
+                /* IMAGE - KECIL & CENTERED */
+                :global(.article-figure) {
                     margin: 3rem auto;
-                    width: 100%;
-                    max-width: 500px; /* Container max */
                     display: flex;
                     flex-direction: column;
                     align-items: center;
                     justify-content: center;
                 }
-                .article-img-refined {
+                :global(.article-img-refined) {
                     display: block;
                     width: auto;
-                    max-width: 350px; /* INI YANG BIKIN KECIL */
+                    max-width: 320px; /* Lebih kecil lagi sesuai permintaan */
                     height: auto;
-                    border-radius: 4px;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+                    border-radius: 12px;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
                     margin: 0 auto;
                 }
-                .caption-refined {
-                    margin-top: 10px;
-                    font-size: 0.85rem;
-                    color: #718096;
+                :global(.caption-refined) {
+                    margin-top: 1rem;
+                    font-size: 0.9rem;
+                    color: #94a3b8;
                     font-style: italic;
-                    text-align: center;
                 }
 
-                .skeleton-loader {
+                /* OTHER TYPOGRAPHY */
+                :global(.rendered-h), :global(h2) {
+                    font-size: 2rem;
+                    font-weight: 700;
+                    color: #0f172a;
+                    margin: 3rem 0 1.5rem;
+                    line-height: 1.3;
+                }
+                :global(blockquote) {
+                    margin: 3rem auto;
+                    padding: 2rem;
+                    background: #f8fafc;
+                    border-radius: 16px;
+                    font-style: italic;
+                    color: #475569;
+                    max-width: 90%;
+                }
+
+                .skeleton-placeholder {
                     width: 100%;
-                    height: 400px;
-                    background: #f7fafc;
-                    border-radius: 12px;
-                    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+                    height: 500px;
+                    background: #f1f5f9;
+                    border-radius: 20px;
+                    animation: pulse 2s infinite;
                 }
                 @keyframes pulse {
                     0%, 100% { opacity: 1; }
                     50% { opacity: .5; }
                 }
 
-                @media (max-width: 640px) {
-                    .article-main-title { font-size: 2rem; }
-                    .article-content-container { padding: 2rem 1.25rem; }
-                    .article-img-refined { max-width: 100%; }
+                @media (max-width: 768px) {
+                    .article-display-title { font-size: 2.5rem; }
+                    .article-center-layout { padding: 3rem 1.25rem; }
                 }
             `}</style>
         </div>
