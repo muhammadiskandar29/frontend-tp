@@ -179,6 +179,8 @@ const ArticleEditor = forwardRef(({ initialData, idorder, onSuccess, onCancel, e
         try {
             const json = editor.getJSON();
             const payload = {
+                id: initialData?.id,
+                idorder: idorder || initialData?.idorder,
                 title,
                 slug,
                 status: forceStatus || initialData?.status || "draft",

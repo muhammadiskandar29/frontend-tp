@@ -206,6 +206,7 @@ export default function ArticleSection({ productName }) {
 
           <ArticleEditor
             initialData={currentArticle}
+            idorder={productId}
             onSuccess={handleSuccessSave}
             onCancel={() => setView("list")}
           />
